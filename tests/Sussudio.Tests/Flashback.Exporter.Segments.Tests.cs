@@ -121,8 +121,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentPacketWriteStateText = segmentPacketReadLoopText;
         var segmentPacketRebasingText = segmentPacketReadLoopText;
-        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
-            .Replace("\r\n", "\n");
+        var packetBuffersText = segmentPacketWritingText;
 
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
         AssertContains(sourceText, "FreeBufferedPackets(segmentPacketState.BufferedPackets, segmentPacketState.BufferedStreamIndices);");
@@ -134,7 +133,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
-            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.SegmentPacketWriting.cs");
         AssertContains(singleFileText, "WriteSingleFilePacketsToActiveOutput(");
         AssertContains(singleFilePacketWritingText, "WriteSingleFilePacketReadLoop(");
         AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
@@ -338,7 +337,7 @@ static partial class Program
     internal static Task FlashbackExporter_TimestampConversionsAreSaturating()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
+        var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "TotalSeconds * ffmpeg.AV_TIME_BASE");

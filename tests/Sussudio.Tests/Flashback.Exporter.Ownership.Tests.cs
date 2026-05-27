@@ -33,8 +33,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var segmentValidationText = validationText;
         var libAvErrorsText = lifecycleText;
-        var packetTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
-            .Replace("\r\n", "\n");
+        var packetTimingText = segmentPacketWritingText;
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
@@ -186,7 +185,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
-            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.SegmentPacketWriting.cs");
         AssertContains(streamsText, "private void OpenInput(string inputPath)");
         AssertContains(streamsText, "private void CreateOutputContext(string tmpPath, bool fastStart)");
         AssertContains(streamsText, "private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)");
@@ -266,7 +265,7 @@ static partial class Program
     internal static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs")
+        var packetBuffersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var executionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
             .Replace("\r\n", "\n");
@@ -320,7 +319,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.PacketBuffers.cs")),
-            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.PacketTiming.cs");
+            "FlashbackExporter.PacketBuffers.cs folded into FlashbackExporter.SegmentPacketWriting.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.RuntimePolicy.cs")),

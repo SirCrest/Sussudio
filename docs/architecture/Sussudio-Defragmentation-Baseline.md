@@ -336,7 +336,7 @@ Partial clusters reduced: `FlashbackExporter` partial cluster reduced from 9 fil
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML bindings, export request DTOs, or Flashback command surfaces changed
 Behavior preserved: stale temp cleanup, orphan `.mp4.tmp` cleanup, active output trailer write, IO close, temp-output validation, overwrite refusal, atomic final move, invalid final-output deletion, `_activeTempPath` clearing, and single-file/segment export failure shaping remain unchanged.
-Notes for future agents: keep Flashback export request scheduling, progress/pacing, temp output preparation, and final output replacement in `FlashbackExporter.Execution.cs`; keep native input/output context cleanup and dispose-time locking in `FlashbackExporter.Lifecycle.cs`, stream setup in `FlashbackExporter.Streams.cs`, packet timing/buffer helpers in `FlashbackExporter.PacketTiming.cs`, and packet read/rebase loops in their packet owners.
+Notes for future agents: keep Flashback export request scheduling, progress/pacing, temp output preparation, and final output replacement in `FlashbackExporter.Execution.cs`; keep native input/output context cleanup and dispose-time locking in `FlashbackExporter.Lifecycle.cs`, stream setup in `FlashbackExporter.Streams.cs`, and packet timing/buffer helpers with packet writing in `FlashbackExporter.SegmentPacketWriting.cs`.
 
 Date: 2026-05-26
 Area: MainViewModel automation test locality
@@ -1225,6 +1225,18 @@ Build/tests/runtime checks: pending in current slice
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source ownership tests and runtime snapshot regression tests
 Behavior preserved: source, decode, preview, render, present, recording, audio, Flashback recording/export/temp/playback lane strings and recent-renderer summary values are unchanged; they now live with diagnostic evaluation orchestration
 Notes for future agents: keep diagnostic lane text builders with `AutomationDiagnosticsHub.Evaluation.cs` unless a lane grows independent policy or a dedicated evaluator type replaces the partial helper
+
+Date: 2026-05-26
+Area: Flashback exporter packet timing
+Problem: Packet timing, timestamp normalization, packet clone/free helpers, and buffered packet flushing lived in a small Flashback exporter partial even though those helpers only support exporter packet writing and timestamp rebasing.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackExporter` -1 file
+Build/tests/runtime checks: pending in current slice
+CLI/MCP/pipe checks, if applicable: covered by Flashback exporter ownership/source tests and runtime snapshot regression tests
+Behavior preserved: export time-span conversion, saturated arithmetic, timestamp-base repair, packet timestamp normalization, packet clone/free behavior, and buffered packet flushing are unchanged; they now live beside the segment packet writing/rebase owner
+Notes for future agents: keep Flashback exporter packet timing/buffer helpers with `FlashbackExporter.SegmentPacketWriting.cs` unless they grow into an independent writer service
 
 Date: 2026-05-21
 Area: Automation diagnostics realtime evaluation

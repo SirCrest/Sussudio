@@ -1582,13 +1582,13 @@ validation, export-range validation, and segment/export-range overlap
 classification there. FFmpeg error string formatting/throwing lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`, and timestamp
 math/saturated arithmetic lives in
-`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs` so
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs` so
 `FlashbackExporter.Lifecycle.cs` stays focused on export native state and
-lifetime policy.
+lifetime policy while packet timestamp policy stays with packet writing.
 Packet timestamp normalization, export time-span conversion, saturated time arithmetic, segment
 boundary timestamp repair, packet clone/free helpers, and buffered packet
 flushes live in
-`Sussudio/Services/Flashback/FlashbackExporter.PacketTiming.cs`. FFmpeg input and
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`. FFmpeg input and
 output context setup, stream count validation, and output header writing live in
 `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`. Stream-template copying
 and segment stream-layout compatibility checks live in
