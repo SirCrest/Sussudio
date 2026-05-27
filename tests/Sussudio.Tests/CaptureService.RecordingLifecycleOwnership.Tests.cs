@@ -34,8 +34,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
-            .Replace("\r\n", "\n");
+        var libAvStartText = lifecycleText;
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
         var libAvFinalizeText = (
@@ -92,7 +91,7 @@ static partial class Program
         AssertContains(lifecycleText, "await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);");
         AssertContains(lifecycleText, "await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);\n                throw;");
         AssertDoesNotContain(lifecycleText, "FLASHBACK_UNIFIED_RECORDING_START");
-        AssertDoesNotContain(lifecycleText, "HDR_NEGOTIATION");
+        AssertContains(lifecycleText, "HDR_NEGOTIATION");
         AssertContains(lifecycleText, "private sealed class RecordingStartRollbackState");
         AssertContains(lifecycleText, "public RecordingContext? RecordingContext { get; set; }");
         AssertContains(lifecycleText, "public FlashbackEncoderSink? FlashbackRecordingStartedSink { get; set; }");
@@ -152,14 +151,16 @@ static partial class Program
         AssertContains(libAvStartText, "MICROPHONE_CAPTURE_START");
         AssertEqual(
             false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartLibAv.cs")),
+            "LibAv recording startup folded into recording lifecycle owner");
+        AssertEqual(
+            false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartLibAv.VideoCapture.cs")),
             "old LibAv recording video-capture startup partial removed");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingStartLibAv.AudioInputs.cs")),
             "old LibAv recording audio-input startup partial removed");
-        AssertDoesNotContain(libAvStartText, "StorageFolder.GetFolderFromPathAsync");
-        AssertDoesNotContain(libAvStartText, "new RecordingContextRequest");
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertContains(lifecycleText, "public Task StopRecordingAsync(");
         AssertContains(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
@@ -298,8 +299,7 @@ static partial class Program
 
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
-        var libAvStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingStartLibAv.cs")
-            .Replace("\r\n", "\n");
+        var libAvStartText = lifecycleText;
 
         AssertContains(flashbackStartText, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
         AssertContains(libAvStartText, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
