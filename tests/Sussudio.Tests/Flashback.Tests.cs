@@ -70,7 +70,6 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs").Replace("\r\n", "\n")
         };
 

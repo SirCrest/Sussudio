@@ -539,13 +539,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial()
+    internal static Task FlashbackBufferManager_LifecycleHelpersLiveWithRootState()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs")
-            .Replace("\r\n", "\n");
-        var recoveryPreserveText = lifecycleText;
+        var lifecycleText = rootText;
+        var recoveryPreserveText = rootText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
             ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
@@ -560,13 +559,12 @@ static partial class Program
         AssertContains(recoveryPreserveText, "RecoveryPreserveMarkerFileName");
         AssertContains(recoveryPreserveText, "FLASHBACK_RECOVERY_PRESERVE_MARKER");
         AssertContains(recoveryPreserveText, "FLASHBACK_RECOVERY_PRESERVE_MARKER_CHECK_WARN");
-        AssertDoesNotContain(rootText, "public void MarkSessionPreservedForRecovery()");
-        AssertDoesNotContain(rootText, "public void SetSegmentExtension(string extension)");
-        AssertDoesNotContain(rootText, "public void Initialize(string sessionId)");
-        AssertDoesNotContain(rootText, "public void Dispose()");
-        AssertDoesNotContain(rootText, "private void ThrowIfDisposed()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Lifecycle.cs")),
+            "FlashbackBufferManager.Lifecycle.cs folded into FlashbackBufferManager.cs");
         AssertContains(docsText, "FlashbackBufferManager.Segments.cs");
-        AssertContains(docsText, "FlashbackBufferManager.Lifecycle.cs");
+        AssertContains(docsText, "FlashbackBufferManager.cs");
         AssertContains(docsText, "recovery-preserve state");
 
         return Task.CompletedTask;
@@ -576,7 +574,7 @@ static partial class Program
     {
         var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs")
             .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs")
+        var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(lifecycleText, "public void PurgeCompletedSegments()");
@@ -602,7 +600,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Purge.cs")),
-            "FlashbackBufferManager.Purge.cs folded into FlashbackBufferManager.Lifecycle.cs");
+            "FlashbackBufferManager.Purge.cs folded into FlashbackBufferManager.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Lifecycle.cs")),
+            "FlashbackBufferManager.Lifecycle.cs folded into FlashbackBufferManager.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Retention.cs")),

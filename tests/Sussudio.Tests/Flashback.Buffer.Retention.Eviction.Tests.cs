@@ -314,7 +314,7 @@ static partial class Program
             AssertEqual(0L, GetLongProperty(manager, "TotalDiskBytes"), "Full purge resets total disk bytes");
             AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Full purge resets monotonic bytes for a new buffer session");
 
-            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs")
+            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
                 .Replace("\r\n", "\n");
             var purgeCoreBlock = ExtractTextBetween(
                 source,

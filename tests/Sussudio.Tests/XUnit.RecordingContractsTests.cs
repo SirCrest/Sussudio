@@ -366,8 +366,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_LiveAccountingLivesWithRootState();
 
     [Fact]
-    public Task FlashbackBufferManagerLifecycleHelpersLiveInFocusedPartial()
-        => global::Program.FlashbackBufferManager_LifecycleHelpersLiveInFocusedPartial();
+    public Task FlashbackBufferManagerLifecycleHelpersLiveWithRootState()
+        => global::Program.FlashbackBufferManager_LifecycleHelpersLiveWithRootState();
 
     [Fact]
     public Task FlashbackBufferManagerPurgeHelpersLiveWithLifecycleCleanup()

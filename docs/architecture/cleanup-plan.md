@@ -1462,20 +1462,21 @@ segment index it mutates. Keep segment eviction selection, eviction file
 deletion, disk-budget/window retention policy, eviction pause state, recording
 PTS range capture, and pause-driven disk-warning state there. Explicit
 purge/delete-all lifecycle behavior now lives in
-`Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`; keep
+`Sussudio/Services/Flashback/FlashbackBufferManager.cs`; keep
 `PurgeCompletedSegments`, `PurgeAllSegments`, `PurgeAllSegmentsCore`, and
 guarded purge deletion there. The root buffer manager keeps core state,
 read-only live counters, PTS reset/update, sink-cycle active segment
-finalization, encoder frame-rate truth, and disk-byte accounting updates.
+finalization, encoder frame-rate truth, initialization, segment-extension setup,
+disposal, recovery-preserve state, and disk-byte accounting updates.
 Flashback buffer segment ownership now lives in
 `Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs`. Keep active
 segment path generation, active segment start/abandonment, completion
 registration, duplicate-path rejection, and same-path segment extension there.
 Flashback buffer initialization, segment-extension setup, disposal, and
 disposed-state guards now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
+`Sussudio/Services/Flashback/FlashbackBufferManager.cs`.
 Recovery-preserve state and marker files now live in
-`Sussudio/Services/Flashback/FlashbackBufferManager.Lifecycle.cs`.
+`Sussudio/Services/Flashback/FlashbackBufferManager.cs`.
 Flashback buffer segment file lookup, range selection, start-PTS lookup, shared
 segment path safety, segment counts, active-path projection, active segment
 start PTS calculation, and segment-info projection also live in
