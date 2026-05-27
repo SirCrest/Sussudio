@@ -13,7 +13,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupWatchdogText = ReadMainWindowPreviewStartupAdapterSource();
-        var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs")
+        var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
             .Replace("\r\n", "\n");
         var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs")
             .Replace("\r\n", "\n");

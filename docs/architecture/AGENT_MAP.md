@@ -2121,7 +2121,7 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML/MainWindow
   adapter that supplies renderer-stop-before-teardown and UI callback endpoints
   for reinit completion.
-- `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs` owns preview
+- `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, state/log transitions, first-visual confirmation sequencing,
   signal-window predicates, snapshot missing-signal refresh gates, and reset
@@ -2131,7 +2131,7 @@ Primary current owners:
   projections, startup state, renderer-attached, first-visual, begin-attempt,
   reset adapters, raw timeout diagnostic snapshots, live preview signal state,
   renderer visibility details, logging, and confirmation callbacks.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs` owns
+  `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs` also owns
   watchdog/telemetry timers, timeout configuration, timeout recovery, and
   failure-stop scheduling. The MainWindow/XAML-facing adapter stays in
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`.
@@ -2144,7 +2144,7 @@ Primary current owners:
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the
   coordinator context, stable signal snapshot properties used by automation,
   GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
-  `PreviewStartupWatchdogController.cs`
+  `PreviewStartupControllers.cs`
   owns preview startup timeout reason, timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for

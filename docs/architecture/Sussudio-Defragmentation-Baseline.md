@@ -3857,7 +3857,7 @@ Partial clusters reduced: preview transition production owner count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, preview button labels, reinit log text, or animation timing changed
 Behavior preserved: preview reinit animation active flag, completion presentation selection, unavailable placeholder reveal, confirmed visual reset, first-visual transition clear, startup-reset preservation, operation-scoped clear logging, and `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` log strings now live in `PreviewTransitionAnimationController.cs` with preview shell/content transition and startup overlay presentation.
-Notes for future agents: keep preview transition animation, startup overlay presentation, and reinit transition state in `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`; keep preview startup attempt/session bookkeeping in `PreviewStartupSessionController.cs`.
+Notes for future agents: keep preview transition animation, startup overlay presentation, and reinit transition state in `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`; keep preview startup attempt/session bookkeeping and watchdog timeout recovery in `PreviewStartupControllers.cs`.
 
 Date: 2026-05-26
 Area: D3D11 preview renderer shader source locality
@@ -4772,3 +4772,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
 Behavior preserved: audio and microphone stream state, public sample entry points, payload alignment checks, accumulator handoff, AAC stream initialization, sample queue/drain mechanics, A/V sync diagnostics, pending flush, and audio packet writes now live in `LibAvEncoder.Audio.cs` beside the shared state they operate on.
 Notes for future agents: keep LibAv encoder audio submission, queue/drain mechanics, A/V sync diagnostics, and AAC stream initialization together in `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`; split again only if audio becomes a named collaborator instead of another encoder partial.
+
+Date: 2026-05-27
+Area: Preview startup controller locality
+Problem: preview startup attempt/session bookkeeping and watchdog timeout recovery were split across two small files even though MainWindow composes them together as one startup feature and watchdog timeout decisions depend on session state, attempt labels, missing-signal snapshots, and first-visual confirmation.
+Files consolidated: `Sussudio/Controllers/Preview/Startup/PreviewStartupSessionController.cs`; `Sussudio/Controllers/Preview/Startup/PreviewStartupWatchdogController.cs`
+Files added: `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; preview startup controller file count -1 while preserving `PreviewStartupSessionController`, `PreviewStartupWatchdogController`, and their context/state types
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PreviewStartup|FullyQualifiedName~PreviewRuntime|FullyQualifiedName~PresentationPreview"` (181 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
+Behavior preserved: startup attempt state, timestamps, first-visual confirmation, reset orchestration, watchdog timers, telemetry tick logging, timeout reason/status formatting, and failure-stop scheduling keep the same type and method names but now live together in `PreviewStartupControllers.cs`.
+Notes for future agents: keep preview startup session state and watchdog timeout recovery together in `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs`; keep readiness-signal tracking and timeout diagnostic payload formatting in `PreviewStartupSignalsController.cs`.
