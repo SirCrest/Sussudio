@@ -16,7 +16,7 @@ static partial class Program
         var recordingTransitionControllerText =
             ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
                 .Replace("\r\n", "\n");
-        var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs")
+        var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var captureSettingsBuilderText = ReadRepoFile("Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs")
             .Replace("\r\n", "\n");
@@ -24,7 +24,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSettings.cs")),
-            "MainViewModel capture-settings adapter folded into capture state owner");
+            "MainViewModel capture-settings adapter folded into MainViewModel.cs");
         AssertContains(captureStateText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(captureStateText, "var runtime = _captureService.GetRuntimeSnapshot();");
         AssertContains(captureStateText, "var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();");
@@ -59,7 +59,7 @@ static partial class Program
         AssertDoesNotContain(captureStateText, "ProjectCaptureSettingsFrameRate");
         AssertDoesNotContain(captureStateText, "private string? ResolveRequestedPixelFormat()");
         AssertDoesNotContain(captureStateText, "private bool ShouldForceMjpegDecode()");
-        AssertDoesNotContain(captureText, "private CaptureSettings BuildCaptureSettings()");
+        AssertContains(captureText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(previewLifecycleControllerText, "await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken)");
         AssertContains(recordingTransitionControllerText, "await _context.StartRecordingAsync(settings, cancellationToken);");
         AssertDoesNotContain(recordingLifecycleText, "await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);");

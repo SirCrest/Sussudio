@@ -2040,7 +2040,7 @@ Partial clusters reduced: `MainViewModel` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: Effective resolution sampling, runtime/source telemetry capture, frame-rate option snapshotting, HDR/MJPEG/recording/Flashback/audio/microphone input projection, and pure `CaptureSettingsProjectionBuilder` policy remain unchanged
-Notes for future agents: keep the impure `BuildCaptureSettings` adapter with `MainViewModel.CaptureState.cs`; keep pure capture-settings policy and DTOs in `CaptureSettingsProjectionBuilder.cs`
+Notes for future agents: keep the impure `BuildCaptureSettings` adapter with `MainViewModel.cs`; keep pure capture-settings policy and DTOs in `CaptureSettingsProjectionBuilder.cs`
 
 Date: 2026-05-24
 Area: MainViewModel dispatch adapter locality

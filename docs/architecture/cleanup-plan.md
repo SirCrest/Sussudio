@@ -2462,7 +2462,7 @@ formatting now live in `Sussudio/ViewModels/ViewModelBuilders.cs`.
 HDR runtime state/readiness projection from capture runtime snapshots,
 target-summary property application, live-signal info projection, and
 auto-resolution display text live together in
-`Sussudio/ViewModels/MainViewModel.CaptureState.cs`.
+`Sussudio/ViewModels/MainViewModel.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live in
@@ -3312,7 +3312,7 @@ owner, fold it back into that owner and update the source-shape tests and
    coordination gates, `MainViewModel.cs`
    owns preview lifecycle compatibility entry points, preview-sink handoff,
    preview lifecycle flags, preview reinitialize coordination, and preview
-   request events, `MainViewModel.CaptureState.cs` owns capture-selection
+   request events, `MainViewModel.cs` owns capture-selection
    state, option collections, HDR capture/runtime presentation state, and
    source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone
    state plus audio-preview property-change routing,
@@ -3363,14 +3363,14 @@ owner, fold it back into that owner and update the source-shape tests and
    smoothing shared by recording and Flashback bitrate presentation also live in
    `MainViewModel.cs`, and
    capture presentation adapters now live in
-   `MainViewModel.CaptureState.cs`: live-capture info projection from
+   `MainViewModel.cs`: live-capture info projection from
    runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
    assignment, preview-stop live-info reset, HDR runtime state/readiness
    projection, target-summary property application, and auto-resolution display
    text; live-signal label formatting now lives in
    `Sussudio/ViewModels/ViewModelBuilders.cs`. Capture
    settings projection from UI/runtime state is sampled by the capture-state
-   owner in `MainViewModel.CaptureState.cs` and projected by
+   owner in `MainViewModel.cs` and projected by
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, which owns final
    `CaptureSettings` assembly, audio/microphone device application, pure
    projection policy, and input DTOs:
@@ -3466,7 +3466,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Shared frame-rate selection reset,
    resolved automatic frame-rate application, disabled frame-rate reason
    projection, and capture-mode reset flags live in
-   `MainViewModel.CaptureState.cs`. Source-rate filtering now assumes
+   `MainViewModel.cs`. Source-rate filtering now assumes
    capture options are always visible in
    `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while deferred rebuild
    behavior, duplicate-reinit suppression, and the active capture-mode automation
@@ -3552,7 +3552,7 @@ owner, fold it back into that owner and update the source-shape tests and
     Automatic resolution ranking and source-aware frame-rate selection now
     live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
-    `MainViewModel.CaptureState.cs`.
+    `MainViewModel.cs`.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
    owns xUnit execution for the resolution-selection ownership and behavior
    checks after their removal from the legacy presentation-preview capture catalog.
@@ -3573,7 +3573,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Source telemetry summary, telemetry age, and target-summary display text
    formatting now live in `Sussudio/ViewModels/ViewModelBuilders.cs`;
    HDR runtime state/readiness projection and target-summary property
-   application live in `MainViewModel.CaptureState.cs`; keep snapshot
+   application live in `MainViewModel.cs`; keep snapshot
    application, source telemetry ingress behavior, telemetry age refresh,
    enum-string caching, source-aware auto-retargeting, and source telemetry
    graph-port contract in

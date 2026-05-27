@@ -8,7 +8,7 @@ static partial class Program
         var compositionText = rootText;
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs").Replace("\r\n", "\n");
+        var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
@@ -114,6 +114,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewState.cs")),
             "MainViewModel.PreviewState.cs folded into MainViewModel.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureState.cs")),
+            "MainViewModel.CaptureState.cs folded into MainViewModel.cs");
         AssertContains(captureStateText, "public partial ObservableCollection<CaptureDevice> Devices");
         AssertContains(captureStateText, "public partial ObservableCollection<ResolutionOption> AvailableResolutions");
         AssertContains(captureStateText, "public partial ObservableCollection<FrameRateOption> AvailableFrameRates");
@@ -123,14 +127,14 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureHdrState.cs")),
-            "MainViewModel.CaptureHdrState.cs folded into MainViewModel.CaptureState.cs");
+            "MainViewModel.CaptureHdrState.cs folded into MainViewModel.cs");
         AssertContains(captureStateText, "private SourceSignalTelemetrySnapshot _latestSourceTelemetry");
         AssertContains(captureStateText, "public partial double? DetectedSourceFrameRate");
         AssertContains(captureStateText, "public partial string SourceTelemetryAvailability");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSourceState.cs")),
-            "MainViewModel.CaptureSourceState.cs folded into MainViewModel.CaptureState.cs");
+            "MainViewModel.CaptureSourceState.cs folded into MainViewModel.cs");
         AssertContains(audioStateText, "public partial bool IsAudioPreviewActive");
         AssertContains(audioStateText, "private AudioRampTraceRecorder CreateAudioRampTraceRecorder()");
         AssertContains(audioStateText, "public Task<AudioRampTraceSnapshot> GetAudioRampTraceSnapshotAsync");

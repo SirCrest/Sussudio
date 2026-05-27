@@ -267,7 +267,7 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelSharedStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelPreviewStateText = viewModelFiles["MainViewModel.cs"];
-        var viewModelCaptureStateText = viewModelFiles["MainViewModel.CaptureState.cs"];
+        var viewModelCaptureStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");

@@ -2277,7 +2277,7 @@ Primary current owners:
   kick-off, non-preview coordination gates, and small bridge methods.
   `MainViewModel.cs` owns preview lifecycle compatibility entry
   points, preview-sink handoff, preview lifecycle flags,
-  preview reinitialize coordination, and preview request events; `MainViewModel.CaptureState.cs` owns capture-selection
+  preview reinitialize coordination, and preview request events; `MainViewModel.cs` owns capture-selection
   state, option collections, HDR capture/runtime presentation state, and
   source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
   microphone state, live meter callback state, custom audio-input retargeting,
@@ -2363,7 +2363,7 @@ Primary current owners:
   recording size/bitrate label assignment, recording-state reset reactions, and
   the bounded byte-sample smoothing helper shared by recording and Flashback
   bitrate presentation.
-  `MainViewModel.CaptureState.cs` owns capture presentation adapters:
+  `MainViewModel.cs` owns capture presentation adapters:
   live-capture info projection from `CaptureRuntimeSnapshot`, including
   audio-preview activity and live-resolution/frame-rate/pixel-format
   assignment, preview-stop live-info reset, HDR runtime state/readiness
@@ -2371,7 +2371,7 @@ Primary current owners:
   text used by status and telemetry presentation. It delegates live-signal
   label formatting to
   `Sussudio/ViewModels/ViewModelBuilders.cs`.
-  `MainViewModel.CaptureState.cs` owns the impure capture-settings adapter that
+  `MainViewModel.cs` owns the impure capture-settings adapter that
   samples UI selection and observed runtime/source state.
   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`
   owns final `CaptureSettings` assembly, audio/microphone device application,
@@ -2454,7 +2454,7 @@ Primary current owners:
   owns pure frame-rate option choice: pending SDR bucket preference,
   Source-rate nearest match with timing-family tie-break, generic auto fallback,
   and previous/manual selection fallback.
-  `MainViewModel.CaptureState.cs` owns shared frame-rate selection reset,
+  `MainViewModel.cs` owns shared frame-rate selection reset,
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.
   `Sussudio/ViewModels/FrameRateTimingPolicy.cs` also owns source-rate filtering

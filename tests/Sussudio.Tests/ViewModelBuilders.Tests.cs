@@ -241,7 +241,7 @@ public sealed class ViewModelBuildersTests
     public void LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
     {
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs");
-        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs");
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
         var liveSignalText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
         var builderType = RequireType("Sussudio.ViewModels.LiveSignalTextPresentationBuilder");
         var snapshotType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
@@ -404,7 +404,7 @@ public sealed class ViewModelBuildersTests
     {
         var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs");
-        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs");
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
         var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
         var sourceTelemetryBuilderText = ExtractTextBetween(
             builderText,
