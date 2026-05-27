@@ -198,7 +198,7 @@ static partial class Program
         var sources = ReadRecordingQueueOverloadPolicySources();
         var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
             .Replace("\r\n", "\n");
-        var finalizeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
+        var finalizeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");

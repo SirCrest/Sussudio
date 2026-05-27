@@ -40,7 +40,7 @@ static partial class Program
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
             .Replace("\r\n", "\n");
-        var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs")
+        var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
@@ -227,7 +227,7 @@ static partial class Program
             "\n",
             new[]
             {
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
             }).Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
@@ -271,7 +271,7 @@ static partial class Program
             "\n",
             new[]
             {
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
             }).Replace("\r\n", "\n");
         var routerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")

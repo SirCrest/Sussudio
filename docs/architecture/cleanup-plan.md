@@ -1069,20 +1069,14 @@ sink/shared-device handoff, video pipeline installation, audio-input startup,
 WASAPI sink attachment, preview playback preservation, recording microphone
 capture wiring, and recording-start rollback cleanup.
 `CaptureService.FlashbackRecording.cs`
-owns Flashback recording fast-path reuse and backend startup.
+owns Flashback recording fast-path reuse, backend startup, live-edge
+finalize/export handoff, boundary snapshots, post-finalize reconciliation, and
+Flashback-specific microphone monitor restart.
 Recording
 stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, including
 normal stop routing, the emergency stop overload that feeds finalization, and
 the stop/finalize dispatcher for active Flashback and LibAv backends.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
-owns active Flashback recording backend finalization: live-edge finalize/export
-handoff, finalize-in-progress choreography, export finalization, live-edge
-boundary snapshots, cancellation-result classification, Flashback
-recording-integrity summaries, post-finalize backend reconciliation,
-failed-finalize recovery preservation, deferred settings apply, buffer cycling,
-buffer-cycle failure classification, outcome publication, backend cleanup
-launch, and Flashback-specific microphone monitor restart.
 `Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
 owns standard LibAv recording finalization sequencing: unified-video recording
 stop, source-reader boundary diagnostics, WASAPI recording sink detach,
@@ -1099,7 +1093,7 @@ Recording outcome field publication now lives with
 microphone monitor restart mechanics live in
 `Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`.
 The live-edge boundary snapshot in
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs`
+`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`
 keeps idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
 counters, recording integrity counters, and audio integrity counters with the
 backend finalization path that consumes them.

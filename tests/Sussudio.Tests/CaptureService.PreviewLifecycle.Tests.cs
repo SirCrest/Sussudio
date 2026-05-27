@@ -306,7 +306,14 @@ static partial class Program
 
     internal static Task CaptureService_MicrophoneRestartAfterRecordingLivesInAudioPreviewLifecyclePartial()
     {
-        var finalizationText = ReadCaptureServiceRecordingFinalizationSource()
+        var flashbackFinalizationText = ExtractTextBetween(
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs").Replace("\r\n", "\n"),
+            "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(",
+            "private async Task<OperationCanceledException?> ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
+        var finalizationText = string.Join(
+            "\n",
+            flashbackFinalizationText,
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
             .Replace("\r\n", "\n");
         var microphoneRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
             .Replace("\r\n", "\n");

@@ -11,7 +11,7 @@ static partial class Program
 
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs",
+        "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"
     };
 
@@ -167,7 +167,7 @@ static partial class Program
     internal static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
     {
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
-        var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeFlashbackBackend.cs");
+        var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
         var libAvBackendFinalizationText =
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
         var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
@@ -249,7 +249,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashback.cs")),
-            "Flashback export-finalize helpers folded into CaptureService.RecordingFinalizeFlashbackBackend.cs");
+            "Flashback export-finalize helpers folded into CaptureService.FlashbackRecording.cs");
         AssertContains(recordingLifecycleText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
         AssertContains(recordingLifecycleText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertEqual(
