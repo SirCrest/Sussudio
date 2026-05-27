@@ -2583,7 +2583,7 @@ responsive visibility for the complete control-bar label set, and
 capture-settings grid placement together. `MainWindow.ShellChrome.Composition.cs`
 remains the XAML-facing adapter.
 Responsive layout ownership checks live in
-`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`.
+`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`. The

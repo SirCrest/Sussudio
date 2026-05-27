@@ -172,7 +172,7 @@ add xUnit alongside, and port incrementally.
   `XUnit.AutomationContractsTests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
   policy, advanced command-map alignment, and pipe/tool protocol contracts),
-  `RuntimeContracts.Tests.cs`, `MainWindow.ControllerOwnership.Layout.Tests.cs`,
+  `RuntimeContracts.Tests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
   and `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   already run through `dotnet test`.
 

@@ -1,6 +1,9 @@
+using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Xunit;
 
 static partial class Program
 {
@@ -637,5 +640,669 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(inactiveInputs, "MicrophoneComboBoxEnabled"), "microphone disabled locks microphone combo");
 
         return Task.CompletedTask;
+    }
+
+internal static Task ResponsiveShellLayout_LivesInController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private ControlBarLabelVisibilityController _controlBarLabelVisibilityController = null!;");
+        AssertContains(adapterText, "private ResponsiveShellLayoutController _responsiveShellLayoutController = null!;");
+        AssertContains(adapterText, "private void InitializeResponsiveShellLayoutController()");
+        AssertContains(adapterText, "var controlBarLabels = new UIElement[]");
+        AssertContains(adapterText, "CaptureSettingsGrid = CaptureSettingsGrid,");
+        AssertContains(adapterText, "FlashbackToggleLabel,");
+        AssertContains(adapterText, "_controlBarLabelVisibilityController = new ControlBarLabelVisibilityController(new ControlBarLabelVisibilityControllerContext");
+        AssertContains(adapterText, "ControlBarBorder = ControlBarBorder,");
+        AssertContains(adapterText, "ControlBarLabels = controlBarLabels,");
+        AssertContains(adapterText, "private void SetupResponsiveShellLayoutBindings()");
+        AssertContains(adapterText, "_controlBarLabelVisibilityController.Attach();");
+        AssertContains(adapterText, "_responsiveShellLayoutController.Attach();");
+        AssertContains(adapterText, "private void SetupResponsiveShellLayoutBindings()\n    {\n        _controlBarLabelVisibilityController.Attach();\n        _responsiveShellLayoutController.Attach();\n    }");
+        AssertContains(xamlText, "x:Name=\"FlashbackToggleLabel\"");
+        AssertContains(mainWindowText, "InitializeResponsiveShellLayoutController();");
+        AssertContains(bindingsText, "SetupResponsiveShellLayoutBindings();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Bindings.cs")),
+            "root startup binding sequence lives with the MainWindow composition root");
+        AssertContains(controllerText, "internal sealed class ResponsiveShellLayoutController");
+        AssertContains(controllerText, "internal sealed class ControlBarLabelVisibilityController");
+        AssertContains(controllerText, "public required UIElement[] ControlBarLabels { get; init; }");
+        AssertContains(controllerText, "internal static class ResponsiveShellLayoutPolicy");
+        AssertContains(controllerText, "public const double ControlBarLabelThreshold = 900.0;");
+        AssertContains(controllerText, "public const double CaptureSettingsNarrowWidth = 700.0;");
+        AssertContains(controllerText, "internal readonly record struct ResponsiveCaptureSettingsPlacement");
+        AssertContains(controllerText, "private bool _toggleLabelsVisible;");
+        AssertContains(controllerText, "private bool _captureSettingsNarrow;");
+        AssertContains(controllerText, "public void Attach()");
+        AssertContains(controllerText, "_context.ControlBarBorder.SizeChanged += (_, e) => ApplyControlBarWidth(e.NewSize.Width);");
+        AssertContains(controllerText, "ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels(controlBarWidth);");
+        AssertContains(controllerText, "foreach (var label in _context.ControlBarLabels)");
+        AssertContains(controllerText, "label.Visibility = visibility;");
+        AssertContains(controllerText, "ResponsiveShellLayoutPolicy.GetCaptureSettingsLayoutKind(width);");
+        AssertContains(controllerText, "private void ApplyCaptureSettingsLayout(ResponsiveCaptureSettingsPlacement placement)");
+        AssertContains(controllerText, "private static void ApplyGridSlot(FrameworkElement element, ResponsiveGridSlot slot)");
+        AssertContains(agentMapText, "complete control-bar label set");
+        AssertContains(cleanupPlanText, "complete control-bar label set");
+        AssertDoesNotContain(mainWindowText, "private bool _toggleLabelsVisible;");
+        AssertDoesNotContain(mainWindowText, "private bool _captureSettingsNarrow;");
+        AssertDoesNotContain(mainWindowText, "private const double ControlBarLabelThreshold = 900.0;");
+        AssertDoesNotContain(controllerText, "private const double ControlBarLabelThreshold = 900.0;");
+        AssertDoesNotContain(controllerText, "private const double CaptureSettingsNarrowWidth = 700.0;");
+        AssertDoesNotContain(controllerText, "_context.HdrToggleLabel.Visibility = visibility;");
+        AssertDoesNotContain(controllerText, "_context.FrameTimeOverlayToggleLabel.Visibility = visibility;");
+        AssertDoesNotContain(adapterText, "FlashbackToggleLabel = FlashbackToggleLabel,");
+        AssertDoesNotContain(controllerText, "private void ApplyNarrowCaptureSettingsLayout()");
+        AssertDoesNotContain(controllerText, "private void ApplyWideCaptureSettingsLayout()");
+        AssertDoesNotContain(bindingsText, "private void UpdateToggleLabelVisibility(");
+        AssertDoesNotContain(bindingsText, "private void CaptureSettingsGrid_SizeChanged(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ResponsiveShellLayout.cs")),
+            "responsive shell layout adapter lives with shell chrome composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ControlBarLabelVisibilityController.cs")),
+            "control-bar label visibility lives with responsive shell layout application");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ResponsiveShellLayoutPolicy.cs")),
+            "responsive shell layout policy lives with responsive shell layout application");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task ResponsiveShellLayoutPolicy_PreservesBreakpointsAndPlacements()
+    {
+        var policyType = RequireType("Sussudio.Controllers.ResponsiveShellLayoutPolicy");
+        var shouldShowLabels = policyType.GetMethod(
+            "ShouldShowControlBarLabels",
+            BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("ResponsiveShellLayoutPolicy.ShouldShowControlBarLabels not found.");
+        var getLayoutKind = policyType.GetMethod(
+            "GetCaptureSettingsLayoutKind",
+            BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("ResponsiveShellLayoutPolicy.GetCaptureSettingsLayoutKind not found.");
+        var getPlacement = policyType.GetMethod(
+            "GetCaptureSettingsPlacement",
+            BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("ResponsiveShellLayoutPolicy.GetCaptureSettingsPlacement not found.");
+
+        AssertEqual(false, (bool)shouldShowLabels.Invoke(null, new object[] { 899.99 })!, "control bar labels below 900");
+        AssertEqual(true, (bool)shouldShowLabels.Invoke(null, new object[] { 900.0 })!, "control bar labels at 900");
+
+        var narrowKind = getLayoutKind.Invoke(null, new object[] { 699.99 })
+            ?? throw new InvalidOperationException("Narrow responsive shell layout kind was null.");
+        var wideKind = getLayoutKind.Invoke(null, new object[] { 700.0 })
+            ?? throw new InvalidOperationException("Wide responsive shell layout kind was null.");
+        AssertEqual("Narrow", narrowKind.ToString()!, "capture settings below 700");
+        AssertEqual("Wide", wideKind.ToString()!, "capture settings at 700");
+
+        var narrowPlacement = getPlacement.Invoke(null, new[] { narrowKind })
+            ?? throw new InvalidOperationException("Narrow responsive shell placement was null.");
+        AssertEqual(true, GetBoolProperty(narrowPlacement, "CollapseCaptureOptionColumns"), "narrow columns collapse");
+        AssertGridSlot(narrowPlacement, "VideoFormat", 1, 1);
+        AssertGridSlot(narrowPlacement, "Preset", 1, 2);
+        AssertGridSlot(narrowPlacement, "Split", 1, 3);
+        AssertGridSlot(narrowPlacement, "CustomBitrate", 1, 2);
+
+        var widePlacement = getPlacement.Invoke(null, new[] { wideKind })
+            ?? throw new InvalidOperationException("Wide responsive shell placement was null.");
+        AssertEqual(false, GetBoolProperty(widePlacement, "CollapseCaptureOptionColumns"), "wide columns stay flexible");
+        AssertGridSlot(widePlacement, "VideoFormat", 0, 0);
+        AssertGridSlot(widePlacement, "Preset", 0, 5);
+        AssertGridSlot(widePlacement, "Split", 0, 6);
+        AssertGridSlot(widePlacement, "CustomBitrate", 0, 5);
+
+        return Task.CompletedTask;
+    }
+
+    private static void AssertGridSlot(object placement, string propertyName, int expectedRow, int expectedColumn)
+    {
+        var slot = GetPropertyValue(placement, propertyName)
+            ?? throw new InvalidOperationException($"Responsive grid slot '{propertyName}' was null.");
+        AssertEqual(expectedRow, GetIntProperty(slot, "Row"), $"{propertyName} row");
+        AssertEqual(expectedColumn, GetIntProperty(slot, "Column"), $"{propertyName} column");
+    }
+    internal static Task OutputPathDisplay_LivesInController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Output", "OutputPathController.cs")),
+            "output path controller folded into RecordingControlsControllers.cs");
+        const string formatterMarker = "internal static class OutputPathDisplayTextFormatter";
+        var formatterStart = controllerText.IndexOf(formatterMarker, System.StringComparison.Ordinal);
+        if (formatterStart < 0)
+        {
+            throw new System.InvalidOperationException("OutputPathDisplayTextFormatter was not found in RecordingControlsControllers.cs.");
+        }
+
+        var formatterText = controllerText[formatterStart..];
+
+        AssertContains(adapterText, "private OutputPathController _outputPathController = null!;");
+        AssertContains(adapterText, "private void InitializeOutputPathController()");
+        AssertContains(adapterText, "OutputPathTextBox = OutputPathTextBox,");
+        AssertContains(adapterText, "GetOutputPath = () => ViewModel.OutputPath,");
+        AssertContains(adapterText, "private void AttachOutputPathDisplay()");
+        AssertContains(adapterText, "=> _outputPathController.AttachDisplay();");
+        AssertContains(adapterText, "private void UpdateOutputPathDisplay()");
+        AssertContains(adapterText, "=> _outputPathController.UpdateDisplay();");
+        AssertContains(mainWindowText, "InitializeOutputPathController();");
+        AssertContains(bindingsText, "AttachOutputPathDisplay();");
+        AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
+        AssertContains(adapterText, "private bool TryHandleOutputPropertyChanged(string propertyName)");
+        AssertContains(adapterText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
+        AssertDoesNotContain(adapterText, "case nameof(MainViewModel.OutputPath):");
+        AssertContains(controllerText, "internal sealed class OutputPathController");
+        AssertContains(controllerText, "public void AttachDisplay()");
+        AssertContains(controllerText, "public void UpdateDisplay()");
+        AssertContains(controllerText, "public bool TryHandlePropertyChanged(string propertyName)");
+        AssertContains(controllerText, "case nameof(MainViewModel.OutputPath):");
+        AssertContains(controllerText, "UpdateDisplay();");
+        AssertContains(controllerText, "ToolTipService.SetToolTip(_context.OutputPathTextBox, path);");
+        AssertContains(controllerText, "OutputPathDisplayTextFormatter.Format(path, availableWidth);");
+        AssertContains(formatterText, "internal static class OutputPathDisplayTextFormatter");
+        AssertContains(formatterText, "public static string Format(string path, double availableWidth)");
+        AssertContains(formatterText, "var maxChars = (int)((availableWidth - 20) / 7);");
+        AssertContains(formatterText, "var parts = path.Split('\\\\', '/');");
+        AssertContains(formatterText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
+        AssertDoesNotContain(adapterText, "var maxChars = (int)((availableWidth - 20) / 7);");
+        AssertDoesNotContain(adapterText, "var parts = path.Split('\\\\', '/');");
+        AssertDoesNotContain(adapterText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
+        AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
+        AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
+        AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task OutputPathDisplayTextFormatter_PreservesTruncationPolicy()
+    {
+        var formatterType = RequireType("Sussudio.Controllers.OutputPathDisplayTextFormatter");
+        var format = formatterType.GetMethod("Format", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("OutputPathDisplayTextFormatter.Format was not found.");
+
+        string Format(string path, double availableWidth)
+        {
+            return format.Invoke(null, new object[] { path, availableWidth })?.ToString()
+                ?? throw new InvalidOperationException("OutputPathDisplayTextFormatter.Format returned null.");
+        }
+
+        AssertEqual(
+            "C:\\captures\\clip.mp4",
+            Format("C:\\captures\\clip.mp4", 240),
+            "Full output path fits when width has enough characters");
+        AssertEqual(
+            "C:\\captures\\clip.mp4",
+            Format("C:\\captures\\clip.mp4", 0),
+            "Zero output path width preserves full path");
+        AssertEqual(
+            "C:\\captures\\clip.mp4",
+            Format("C:\\captures\\clip.mp4", -10),
+            "Negative output path width preserves full path");
+        AssertEqual(
+            "clip-with-a-very-long-name.mp4",
+            Format("clip-with-a-very-long-name.mp4", 40),
+            "Simple path without folder segments stays unchanged");
+        AssertEqual(
+            "C:\\...\\session\\captures\\clip.mp4",
+            Format("C:\\users\\crest\\videos\\session\\captures\\clip.mp4", 250),
+            "Deep output path keeps root and fitting tail segments");
+        AssertEqual(
+            "C:\\...\\clip.mp4",
+            Format("C:\\users\\crest\\videos\\session\\captures\\clip.mp4", 80),
+            "Deep output path falls back to root and filename");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task OutputPathButtonActions_LiveInController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "Output", "OutputPathController.cs")),
+            "output path button actions folded into RecordingControlsControllers.cs");
+
+        AssertContains(adapterText, "private OutputPathController _outputPathController = null!;");
+        AssertContains(adapterText, "private void InitializeOutputPathController()");
+        AssertContains(adapterText, "GetWindowHandle = () => _hwnd,");
+        AssertContains(adapterText, "GetOutputPath = () => ViewModel.OutputPath,");
+        AssertContains(adapterText, "SetOutputPath = path => ViewModel.OutputPath = path,");
+        AssertContains(adapterText, "SetStatusText = text => ViewModel.StatusText = text,");
+        AssertContains(adapterText, "OpenRecordingsFolderAsync = () => OpenRecordingsFolderAsync()");
+        AssertContains(adapterText, "private Task BrowseOutputPathFromButtonAsync()");
+        AssertContains(adapterText, "=> _outputPathController.BrowseAsync();");
+        AssertContains(adapterText, "private Task OpenRecordingsFolderFromButtonAsync()");
+        AssertContains(adapterText, "=> _outputPathController.OpenRecordingsFolderIfAvailableAsync();");
+        AssertContains(adapterText, "private void BrowseButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => BrowseOutputPathFromButtonAsync(), nameof(BrowseButton_Click));");
+        AssertContains(adapterText, "private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => OpenRecordingsFolderFromButtonAsync(), nameof(OpenRecordingsButton_Click));");
+        AssertContains(mainWindowText, "InitializeOutputPathController();");
+        AssertContains(controllerText, "internal sealed class OutputPathController");
+        AssertContains(controllerText, "public async Task BrowseAsync()");
+        AssertContains(controllerText, "var picker = new FolderPicker();");
+        AssertContains(controllerText, "picker.SuggestedStartLocation = PickerLocationId.VideosLibrary;");
+        AssertContains(controllerText, "picker.FileTypeFilter.Add(\"*\");");
+        AssertContains(controllerText, "WinRT.Interop.InitializeWithWindow.Initialize(picker, _context.GetWindowHandle());");
+        AssertContains(controllerText, "await picker.PickSingleFolderAsync();");
+        AssertContains(controllerText, "_context.SetOutputPath(folder.Path);");
+        AssertContains(controllerText, "_context.SetStatusText($\"Error selecting folder: {ex.Message}\");");
+        AssertContains(controllerText, "public Task OpenRecordingsFolderIfAvailableAsync()");
+        AssertContains(controllerText, "var path = _context.GetOutputPath();");
+        AssertContains(controllerText, "string.IsNullOrWhiteSpace(path) || !Directory.Exists(path)");
+        AssertContains(controllerText, "return _context.OpenRecordingsFolderAsync();");
+        AssertDoesNotContain(adapterText, "ViewModel.BrowseOutputPathAsync()");
+        AssertDoesNotContain(adapterText, "System.IO.Directory.Exists(path)");
+        AssertContains(controllerText, "case nameof(MainViewModel.OutputPath):");
+
+        return Task.CompletedTask;
+    }
+
+
+    internal static Task MainViewModelOutputPathSelection_LivesInFocusedPartial()
+    {
+        var mainViewModelFiles = ReadMainViewModelCodeFiles();
+        var mainViewModelText = string.Join("\n", mainViewModelFiles.Values);
+        var outputPathSelectionPath = Path.Combine(
+            GetRepoRoot(),
+            "Sussudio",
+            "ViewModels",
+            "MainViewModel.OutputPathSelection.cs");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
+
+        AssertEqual(false, File.Exists(outputPathSelectionPath), "MainViewModel output picker partial retired");
+        AssertDoesNotContain(mainViewModelText, "BrowseOutputPathAsync");
+        AssertDoesNotContain(mainViewModelText, "FolderPicker");
+        AssertDoesNotContain(mainViewModelText, "FileTypeFilter");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns recording output-");
+        AssertContains(agentMapText, "`MainViewModel.cs` owns the stable recording facade:");
+        AssertContains(agentMapText, "bridge, recording option selections, output path, counters, and observable");
+        AssertContains(cleanupPlanText, "Recording output-path textbox, tooltip, resize-event updates, browse, and");
+        AssertDoesNotContain(agentMapText, "`MainViewModel.OutputPathSelection.cs` owns output folder picker and path assignment.");
+        AssertDoesNotContain(cleanupPlanText, "`MainViewModel.OutputPathSelection.cs`");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task OutputDriveSpacePresentationBuilder_InvalidPathReturnsEmpty()
+    {
+        var builderType = RequireType("Sussudio.ViewModels.OutputDriveSpacePresentationBuilder");
+        var buildMethod = builderType.GetMethod(
+            "Build",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("OutputDriveSpacePresentationBuilder.Build was not found.");
+
+        AssertEqual(
+            "",
+            buildMethod.Invoke(null, new object?[] { "\0" }),
+            "Output drive space invalid path fallback");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task OutputDriveSpacePresentationBuilder_LivesInFocusedHelper()
+    {
+        var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
+            .Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
+
+        AssertContains(bridgeText, "private void UpdateDiskSpace()");
+        AssertContains(bridgeText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
+        AssertDoesNotContain(bridgeText, "new DriveInfo(");
+        AssertDoesNotContain(bridgeText, "Path.GetPathRoot(");
+        AssertDoesNotContain(bridgeText, "Trace.TraceWarning(");
+        AssertDoesNotContain(bridgeText, "Free: {freeGb:F1} GB");
+
+        AssertContains(builderText, "internal static class OutputDriveSpacePresentationBuilder");
+        AssertContains(builderText, "internal static string Build(string outputPath)");
+        AssertContains(builderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
+        AssertContains(builderText, "return $\"Free: {freeGb:F1} GB\";");
+        AssertContains(builderText, "Trace.TraceWarning($\"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}\");");
+        AssertContains(builderText, "return \"\";");
+        AssertDoesNotContain(builderText, "DiskSpaceInfo =");
+
+        AssertContains(agentMapText, "`MainViewModel.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge");
+        AssertContains(agentMapText, "`Sussudio/ViewModels/ViewModelBuilders.cs` owns output drive probing");
+        AssertContains(cleanupPlanText, "`ViewModelBuilders.cs`");
+
+        return Task.CompletedTask;
+    }
+
+internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs").Replace("\r\n", "\n");
+        const string policyMarker = "internal static class PreviewScreenshotPlanPolicy";
+        var policyStart = controllerText.IndexOf(policyMarker, StringComparison.Ordinal);
+        if (policyStart < 0)
+        {
+            throw new InvalidOperationException("PreviewScreenshotPlanPolicy was not found in ScreenshotControllers.cs.");
+        }
+
+        var policyEnd = controllerText.IndexOf("internal sealed class WindowScreenshotController", policyStart, StringComparison.Ordinal);
+        if (policyEnd < 0)
+        {
+            throw new InvalidOperationException("WindowScreenshotController was not found after PreviewScreenshotPlanPolicy.");
+        }
+
+        var policyText = controllerText[policyStart..policyEnd];
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+
+        AssertContains(adapterText, "private PreviewScreenshotController _previewScreenshotController = null!;");
+        AssertContains(adapterText, "private void InitializePreviewScreenshotController()");
+        AssertContains(adapterText, "ViewModel = ViewModel,");
+        AssertContains(adapterText, "ScreenshotButton = ScreenshotButton,");
+        AssertContains(adapterText, "private Task CapturePreviewScreenshotAsync()");
+        AssertContains(adapterText, "=> _previewScreenshotController.CaptureAsync();");
+        AssertContains(adapterText, "private void ScreenshotButton_Click(object sender, RoutedEventArgs e)");
+        AssertContains(adapterText, "_ = RunUiEventHandlerAsync(() => CapturePreviewScreenshotAsync(), nameof(ScreenshotButton_Click));");
+        AssertContains(mainWindowText, "InitializePreviewScreenshotController();");
+        AssertContains(controllerText, "internal sealed class PreviewScreenshotController");
+        AssertContains(controllerText, "public async Task CaptureAsync()");
+        AssertContains(controllerText, "PreviewScreenshotPlanPolicy.PreviewRequiredStatusText");
+        AssertContains(controllerText, "PreviewScreenshotPlanPolicy.Create(");
+        AssertContains(controllerText, "Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)");
+        AssertContains(controllerText, "DateTime.Now");
+        AssertContains(controllerText, "Directory.CreateDirectory(plan.OutputDirectory);");
+        AssertContains(controllerText, "CapturePreviewFrameAsync(plan.FilePath)");
+        AssertContains(controllerText, "PreviewScreenshotPlanPolicy.FormatSavedStatus(plan.FilePath)");
+        AssertContains(controllerText, "PreviewScreenshotPlanPolicy.FormatSavedLog(plan.FilePath, result.CapturedWidth, result.CapturedHeight)");
+        AssertContains(controllerText, "PreviewScreenshotPlanPolicy.FormatFailedStatus(result.Message)");
+        AssertContains(controllerText, "PreviewScreenshotPlanPolicy.FormatFailedLog(result.Message)");
+        AssertContains(policyText, "internal static class PreviewScreenshotPlanPolicy");
+        AssertContains(policyText, "PreviewRequiredStatusText = \"Start preview before capturing a screenshot\"");
+        AssertContains(policyText, "Path.Combine(picturesFolder, DefaultOutputFolderName)");
+        AssertContains(policyText, "$\"Screenshot_{timestamp.ToString(TimestampFormat)}.png\"");
+        AssertContains(policyText, "=> $\"Screenshot saved: {Path.GetFileName(filePath)}\";");
+        AssertContains(policyText, "=> $\"Screenshot failed: {message}\";");
+        AssertContains(policyText, "=> $\"SCREENSHOT_SAVED path={filePath} width={capturedWidth} height={capturedHeight}\";");
+        AssertContains(policyText, "=> $\"SCREENSHOT_FAILED reason={message}\";");
+        AssertContains(policyText, "internal readonly record struct PreviewScreenshotPlan(string OutputDirectory, string FilePath);");
+        AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = false;");
+        AssertContains(controllerText, "_context.ScreenshotButton.IsEnabled = true;");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns");
+        AssertContains(agentMapText, "pure preview-frame screenshot output-directory fallback");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns");
+        AssertContains(cleanupPlanText, "owns the pure output\ndirectory fallback");
+        AssertDoesNotContain(adapterText, "Directory.CreateDirectory(outputDir);");
+        AssertDoesNotContain(adapterText, "CapturePreviewFrameAsync(");
+        AssertDoesNotContain(controllerText, "Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), \"Sussudio\")");
+        AssertDoesNotContain(adapterText, "Screenshot saved: {Path.GetFileName(filePath)}");
+        AssertDoesNotContain(policyText, "Button");
+        AssertDoesNotContain(policyText, "CapturePreviewFrameAsync");
+        AssertDoesNotContain(policyText, "Directory.CreateDirectory");
+        AssertDoesNotContain(policyText, "Logger.Log");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Screenshot.cs")),
+            "preview screenshot button adapter lives with MainWindow button actions");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Preview", "PreviewScreenshotController.cs")),
+            "preview screenshot workflow lives with the screenshot controller owner");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewScreenshotPlanPolicy_PreservesPathAndTextContracts()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewScreenshotPlanPolicy");
+        var create = policyType.GetMethod("Create", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.Create was not found.");
+        var savedStatus = policyType.GetMethod("FormatSavedStatus", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.FormatSavedStatus was not found.");
+        var failedStatus = policyType.GetMethod("FormatFailedStatus", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.FormatFailedStatus was not found.");
+        var savedLog = policyType.GetMethod("FormatSavedLog", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.FormatSavedLog was not found.");
+        var failedLog = policyType.GetMethod("FormatFailedLog", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.FormatFailedLog was not found.");
+        var previewRequired = policyType.GetField("PreviewRequiredStatusText", BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.PreviewRequiredStatusText was not found.");
+
+        var timestamp = new System.DateTime(2026, 5, 16, 14, 3, 4);
+        var fallbackPlan = create.Invoke(null, new object?[] { "   ", "C:\\Users\\crest\\Pictures", timestamp })
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.Create returned null.");
+        var configuredPlan = create.Invoke(null, new object?[] { "D:\\Captures", "C:\\Users\\crest\\Pictures", timestamp })
+            ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.Create returned null.");
+        var fallbackPath = GetStringProperty(fallbackPlan, "FilePath");
+        var configuredPath = GetStringProperty(configuredPlan, "FilePath");
+
+        AssertEqual(
+            "Start preview before capturing a screenshot",
+            previewRequired.GetValue(null)?.ToString(),
+            "preview screenshot not-previewing status");
+        AssertEqual(
+            "C:\\Users\\crest\\Pictures\\Sussudio",
+            GetStringProperty(fallbackPlan, "OutputDirectory"),
+            "preview screenshot fallback output directory");
+        AssertEqual(
+            "C:\\Users\\crest\\Pictures\\Sussudio\\Screenshot_2026-05-16_14-03-04.png",
+            fallbackPath,
+            "preview screenshot fallback path");
+        AssertEqual(
+            "D:\\Captures",
+            GetStringProperty(configuredPlan, "OutputDirectory"),
+            "preview screenshot configured output directory");
+        AssertEqual(
+            "D:\\Captures\\Screenshot_2026-05-16_14-03-04.png",
+            configuredPath,
+            "preview screenshot configured path");
+        AssertEqual(
+            "Screenshot saved: Screenshot_2026-05-16_14-03-04.png",
+            savedStatus.Invoke(null, new object[] { configuredPath })?.ToString(),
+            "preview screenshot saved status");
+        AssertEqual(
+            "SCREENSHOT_SAVED path=D:\\Captures\\Screenshot_2026-05-16_14-03-04.png width=1280 height=720",
+            savedLog.Invoke(null, new object[] { configuredPath, 1280, 720 })?.ToString(),
+            "preview screenshot saved log");
+        AssertEqual(
+            "Screenshot failed: renderer unavailable",
+            failedStatus.Invoke(null, new object[] { "renderer unavailable" })?.ToString(),
+            "preview screenshot failed status");
+        AssertEqual(
+            "SCREENSHOT_FAILED reason=renderer unavailable",
+            failedLog.Invoke(null, new object[] { "renderer unavailable" })?.ToString(),
+            "preview screenshot failed log");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
+    {
+        var windowText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
+            .Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
+            .Replace("\r\n", "\n");
+        var method = ExtractTextBetween(
+            controllerText,
+            "public Task<WindowScreenshotResult> CaptureAsync",
+            "    private WindowScreenshotResult CaptureCore");
+
+        AssertContains(windowText, "public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync");
+        AssertContains(windowText, "=> _windowScreenshotController.CaptureAsync(outputPath, cancellationToken);");
+        AssertContains(method, "if (cancellationToken.IsCancellationRequested)");
+        AssertContains(method, "Message = \"Screenshot canceled.\"");
+        AssertContains(method, "CancellationTokenRegistration cancellationRegistration = default;");
+        AssertContains(method, "cancellationToken.Register(() =>");
+        AssertContains(method, "_ = completion.Task.ContinueWith(");
+        AssertContains(method, "cancellationRegistration.Dispose()");
+        AssertContains(method, "if (!_dispatcherQueue.TryEnqueue(() =>");
+        AssertContains(method, "Message = \"Failed to enqueue screenshot capture on the UI thread.\"");
+        AssertContains(controllerText, "=> CaptureNative(_windowHandleProvider(), outputPath);");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task WindowScreenshotNativeCapture_LivesWithWindowScreenshotController()
+    {
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(controllerText, "=> CaptureNative(_windowHandleProvider(), outputPath);");
+        AssertContains(controllerText, "private static WindowScreenshotResult CaptureNative(IntPtr hwnd, string outputPath)");
+        AssertContains(controllerText, "Message = \"Window handle not available.\"");
+        AssertContains(controllerText, "Message = \"PrintWindow failed.\"");
+        AssertContains(controllerText, "var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);");
+        AssertContains(controllerText, "GetDIBits(hdcScreen, hBitmap, 0, (uint)height, pixelData, ref bmi, 0);");
+        AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
+        AssertContains(controllerText, "Message = $\"Window screenshot saved: {width}x{height}\"");
+        AssertContains(controllerText, "[DllImport(\"user32.dll\")]");
+        AssertContains(controllerText, "private struct BITMAPINFOHEADER");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotNativeCapture.cs")),
+            "native whole-window capture stays with WindowScreenshotController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotController.cs")),
+            "whole-window screenshot capture lives with the screenshot controller owner");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task WindowScreenshotImageEncoding_LivesInFocusedHelper()
+    {
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
+            .Replace("\r\n", "\n");
+        var encoderText = controllerText;
+
+        AssertContains(controllerText, "private static void SaveHBitmapAsImage(");
+        AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
+        AssertContains(controllerText, "internal static void WritePngToStream");
+        AssertContains(controllerText, "internal static void WriteBmpToStream");
+        AssertContains(encoderText, "internal static class WindowScreenshotImageEncoder");
+        AssertContains(encoderText, "internal static void WritePngToStream");
+        AssertContains(encoderText, "internal static void WriteBmpToStream");
+        AssertContains(encoderText, "internal static uint[] InitCrc32Table()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Screenshot", "Window", "WindowScreenshotImageEncoder.cs")),
+            "whole-window screenshot image encoder folded into WindowScreenshotController");
+
+        var encoderType = RequireType("Sussudio.Controllers.WindowScreenshotImageEncoder");
+        var writePng = encoderType.GetMethod("WritePngToStream", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WritePngToStream missing.");
+        var writeBmp = encoderType.GetMethod("WriteBmpToStream", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("WindowScreenshotImageEncoder.WriteBmpToStream missing.");
+        var bgra = new byte[] { 0, 0, 255, 255 };
+
+        using var pngStream = new MemoryStream();
+        writePng.Invoke(null, new object[] { pngStream, 1, 1, bgra });
+        var pngBytes = pngStream.ToArray();
+        AssertSequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }, pngBytes.Take(8).ToArray(), "PNG signature");
+        AssertEqual((byte)73, pngBytes[12], "PNG IHDR I");
+        AssertEqual((byte)72, pngBytes[13], "PNG IHDR H");
+        AssertEqual((byte)68, pngBytes[14], "PNG IHDR D");
+        AssertEqual((byte)82, pngBytes[15], "PNG IHDR R");
+
+        using var bmpStream = new MemoryStream();
+        writeBmp.Invoke(null, new object[] { bmpStream, 1, 1, bgra });
+        var bmpBytes = bmpStream.ToArray();
+        AssertEqual((byte)0x42, bmpBytes[0], "BMP signature B");
+        AssertEqual((byte)0x4D, bmpBytes[1], "BMP signature M");
+        AssertEqual(58, bmpBytes.Length, "BMP byte length");
+        AssertEqual(1, BitConverter.ToInt32(bmpBytes, 18), "BMP width");
+        AssertEqual(-1, BitConverter.ToInt32(bmpBytes, 22), "BMP top-down height");
+
+        return Task.CompletedTask;
+    }
+}
+
+namespace Sussudio.Tests
+{
+    public sealed class WindowSnapRegionLayoutPolicyTests
+    {
+        private const string PolicyTypeName = "Sussudio.Controllers.WindowSnapRegionLayoutPolicy";
+        private const string ActionTypeName = "Sussudio.Models.AutomationWindowAction";
+
+        [Theory]
+        [InlineData("SnapLeft", 10, 20, 50, 55)]
+        [InlineData("SnapRight", 60, 20, 51, 55)]
+        [InlineData("SnapTopLeft", 10, 20, 50, 27)]
+        [InlineData("SnapTopRight", 60, 20, 51, 27)]
+        [InlineData("SnapBottomLeft", 10, 47, 50, 28)]
+        [InlineData("SnapBottomRight", 60, 47, 51, 28)]
+        [InlineData("Center", 44, 40, 33, 15)]
+        public void ResolveTargetBounds_PreservesExistingSnapGeometry(string actionName, int x, int y, int width, int height)
+        {
+            var policyType = SussudioAssembly.Load().GetType(PolicyTypeName, throwOnError: true)!;
+            var actionType = SussudioAssembly.Load().GetType(ActionTypeName, throwOnError: true)!;
+            var method = policyType.GetMethod("ResolveTargetBounds", BindingFlags.Public | BindingFlags.Static)!;
+            var parameterTypes = method.GetParameters();
+            var workArea = CreateStruct(parameterTypes[1].ParameterType, 10, 20, 101, 55);
+            var currentSize = CreateStruct(parameterTypes[2].ParameterType, 33, 15);
+            var action = Enum.Parse(actionType, actionName);
+
+            var result = method.Invoke(null, new[] { action, workArea, currentSize });
+
+            Assert.NotNull(result);
+            AssertRect(result!, x, y, width, height);
+        }
+
+        [Theory]
+        [InlineData("Restore")]
+        [InlineData(null)]
+        public void ResolveTargetBounds_ReturnsNullForNonSnapActions(string? actionName)
+        {
+            var policyType = SussudioAssembly.Load().GetType(PolicyTypeName, throwOnError: true)!;
+            var actionType = SussudioAssembly.Load().GetType(ActionTypeName, throwOnError: true)!;
+            var method = policyType.GetMethod("ResolveTargetBounds", BindingFlags.Public | BindingFlags.Static)!;
+            var parameterTypes = method.GetParameters();
+            var workArea = CreateStruct(parameterTypes[1].ParameterType, 10, 20, 101, 55);
+            var currentSize = CreateStruct(parameterTypes[2].ParameterType, 33, 15);
+            var action = actionName is null
+                ? Enum.ToObject(actionType, 999)
+                : Enum.Parse(actionType, actionName);
+
+            var result = method.Invoke(null, new[] { action, workArea, currentSize });
+
+            Assert.Null(result);
+        }
+
+        private static object CreateStruct(Type type, params int[] args)
+            => Activator.CreateInstance(type, args.Cast<object>().ToArray())!;
+
+        private static void AssertRect(object rect, int x, int y, int width, int height)
+        {
+            Assert.Equal(x, ReadIntProperty(rect, "X"));
+            Assert.Equal(y, ReadIntProperty(rect, "Y"));
+            Assert.Equal(width, ReadIntProperty(rect, "Width"));
+            Assert.Equal(height, ReadIntProperty(rect, "Height"));
+        }
+
+        private static int ReadIntProperty(object instance, string propertyName)
+        {
+            var type = instance.GetType();
+            var property = type.GetProperty(propertyName, ReflectionFlags.Instance);
+            if (property != null)
+            {
+                return (int)property.GetValue(instance)!;
+            }
+
+            return (int)type.GetField(propertyName, ReflectionFlags.Instance)!.GetValue(instance)!;
+        }
     }
 }

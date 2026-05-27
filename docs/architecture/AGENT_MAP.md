@@ -1217,16 +1217,17 @@ Primary current owners:
   MainWindow property-change routing ownership assertions across focused
   controller adapters, visual shell/preview controller-adapter ownership for
   control bar, shell elevation, preview-transition, preview startup overlay,
-  and preview fade-in controllers, plus recording-button chrome,
+  and preview fade-in controllers, plus recording-button chrome, responsive
+  shell layout adapter/controller ownership, responsive breakpoint/placement and
+  snap-region rectangle policy checks, output path display/action ownership,
+  output picker and output drive free-space presentation bridge checks, preview
+  screenshot workflow/text-policy, and whole-window screenshot ownership checks.
   recording-state presentation, and recording-state presentation policy
   assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
   owns MainWindow controller-adapter ownership assertions for recording action,
   preview audio fade, preview button presentation, audio control presentation,
   and microphone controls.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs` owns
-  MainWindow responsive shell layout controller-adapter and breakpoint/placement
-  policy assertions plus snap-region rectangle policy behavior checks.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
   owns capture selection binding XAML-adapter, controller shell,
   `PropertyChanged` routing, collection sync, queued sync, available-option
@@ -1238,12 +1239,6 @@ Primary current owners:
   capture option presentation controller-adapter, refresh/apply button
   controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
   assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs` owns
-  MainWindow output path display/action ownership assertions plus output picker
-  ownership and output drive free-space presentation bridge checks.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
-  owns MainWindow preview screenshot workflow, preview screenshot text-policy,
-  and whole-window screenshot ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns Flashback
   status/playback polling, timeline track layout, marker/export presentation,
   playhead/CTI motion, playback presentation/coordinator, settings binding, and

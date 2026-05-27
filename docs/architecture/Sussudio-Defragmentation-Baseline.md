@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: MainWindow controller ownership test locality
+Problem: `MainWindow.ControllerOwnership.Layout.Tests.cs`, `MainWindow.ControllerOwnership.Output.Tests.cs`, and `MainWindow.ControllerOwnership.Screenshot.Tests.cs` were small source-shape shards for the same MainWindow controller ownership review surface already rooted in `MainWindow.ControllerOwnership.Tests.cs`. Reviewing MainWindow controller boundaries still required hopping through separate layout, output, and screenshot files even though the xUnit forwarding surface and helper inputs were shared.
+Files consolidated: `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`, `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs`, `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Partial clusters reduced: `Program` MainWindow controller ownership test partial-family file count -3; test `.cs` count 146 -> 143
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MainWindow|FullyQualifiedName~PresentationPreview|FullyQualifiedName~WindowSnapRegionLayoutPolicyTests|FullyQualifiedName~StatsOverlay"` (199 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no production automation behavior changed; full build still rebuilt `ssctl`, `McpServer`, `AutomationClient`, and automation contracts
+Behavior preserved: same `Program` method names, xUnit forwarding methods, and `WindowSnapRegionLayoutPolicyTests` class/method names now live under `MainWindow.ControllerOwnership.Tests.cs`; responsive layout, output path, screenshot workflow, whole-window screenshot, and image-encoding assertions are unchanged.
+Notes for future agents: keep MainWindow root/property routing, layout, output, screenshot, and button/controller ownership source-shape assertions in `MainWindow.ControllerOwnership.Tests.cs`; use separate MainWindow ownership test files only for cohesive sub-surfaces with enough independent fixture or assertion volume, such as capture selection or option presentation.
+
+Date: 2026-05-27
 Area: Small no-hardware xUnit contract locality
 Problem: `XUnit.SmallContractsTests.cs` was a standalone catch-all wrapper for small no-hardware model, logging, diagnostic-threshold, automation-window-action, and pipe-security facts while `XUnit.CoreRuntimeContractsTests.cs` already owned the core runtime xUnit execution surface. Reviewing these small compatibility xUnit facts required opening a separate tiny file even though the `SmallContractsTests` class and `[Fact]` method identities can live with the existing runtime xUnit owner.
 Files consolidated: `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs`
