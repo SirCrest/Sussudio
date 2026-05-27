@@ -303,8 +303,8 @@ public sealed class PresentationPreviewD3DRenderSetupOwnershipTests
         => global::Program.D3D11PreviewRenderer_SharedDeviceLivesInFocusedPartial();
 
     [Fact]
-    public Task FrameUploadLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_FrameUploadLivesInFocusedPartial();
+    public Task RenderPassesOwnInputUpload()
+        => global::Program.D3D11PreviewRenderer_RenderPassesOwnInputUpload();
 
     [Fact]
     public Task InputResourcesLiveWithD3DResources()

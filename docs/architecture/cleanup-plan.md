@@ -1653,19 +1653,14 @@ VideoProcessor execution, shader draw execution, and shared present accounting i
 `D3D11PreviewRenderer.RenderPasses.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`.
 
-D3D preview renderer frame upload now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.FrameUpload.cs`. Keep
-VideoProcessor input view resolution and external texture input-view creation
-there, along with raw frame byte/lease upload, direct texture update fallback,
-and staging copy mechanics. Keep present tracking in
-`D3D11PreviewRenderer.RenderPasses.cs`.
-
 D3D preview renderer render-pass selection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`. Keep
 VideoProcessor execution, HDR fallback logging, timing bucket attribution, pass
 precedence, native-call guard consumption, NV12/HDR shader-resource binding,
-draw calls, passthrough/tonemap mode selection, and shader-mode present messages
-there. Shader resource/cache state now lives in
+draw calls, passthrough/tonemap mode selection, shader-mode present messages,
+VideoProcessor input view resolution, external texture input-view creation, raw
+frame byte/lease upload, direct texture update fallback, and staging copy
+mechanics there. Shader resource/cache state now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
 fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep
 render-thread orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep
