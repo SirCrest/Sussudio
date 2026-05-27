@@ -1003,8 +1003,8 @@ and Flashback eviction resume warnings used by lifecycle/export/cleanup
 partials.
 
 Deferred Flashback artifact cleanup adapter handoff and export-lock delegation
-now live with the Flashback preview backend owner in
-`Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs`.
+now live with the Flashback controls owner in
+`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`.
 Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CapturePipelineResources.cs`. Flashback backend
@@ -3680,9 +3680,9 @@ owner, fold it back into that owner and update the source-shape tests and
    backend teardown, and artifact cleanup mechanics. CaptureService callers now use that aggregate directly
    instead of private root resource shim properties. Keep later Flashback backend
    mechanics in the matching focused owner before inventing another small owner;
-   `CaptureService.FlashbackPreviewBackend.cs` should stay the transition
-   coordinator for AV1 probing, readiness waiting, cleanup handoff, and preview
-   backend disposal request construction.
+   `CaptureService.FlashbackControls.cs` stays the transition coordinator for
+   AV1 probing, readiness waiting, cleanup handoff, and preview backend disposal
+   request construction.
    `CapturePipelineResources.cs` now owns active capture resource holders:
    preview audio graph resources, recording backend resources, and video
    pipeline resources. Recording start, finalization, rollback, snapshot,

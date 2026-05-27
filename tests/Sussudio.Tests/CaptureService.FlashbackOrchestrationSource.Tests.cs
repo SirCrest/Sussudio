@@ -6,8 +6,7 @@ static partial class Program
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs"
+        "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"
     };
 
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
@@ -62,7 +61,7 @@ static partial class Program
     {
         var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
-        var previewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
+        var previewBackendText = flashbackStateText;
         var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
@@ -80,6 +79,10 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackAudioInputs.cs")),
             "Flashback audio input restoration folded into Flashback recording owner");
         AssertContains(flashbackRecordingText, "private async Task EnsureFlashbackAudioInputsAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackPreviewBackend.cs")),
+            "Flashback preview backend lifecycle folded into Flashback controls owner");
         AssertContains(previewBackendText, "private async Task EnsureFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
@@ -145,8 +148,6 @@ static partial class Program
         AssertContains(backendResourcesText, "public void AttachProducers(FlashbackProducerAttachRequest request)");
         AssertContains(backendResourcesText, "public void DetachProducers(FlashbackProducerDetachRequest request)");
         AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackAudioInputsAsync(");
-        AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackPreviewBackendAsync(");
-        AssertDoesNotContain(flashbackStateText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackState.cs")),

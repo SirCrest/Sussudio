@@ -164,7 +164,7 @@ static partial class Program
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var previewBackendEntry = ExtractTextBetween(
             agentMapText,
-            "- `CaptureService.FlashbackPreviewBackend.cs` owns Flashback preview backend",
+            "- `CaptureService.FlashbackControls.cs` owns Flashback public state",
             "- `CaptureService.FlashbackControls.cs` owns buffer-cycle");
 
         AssertContains(previewBackendEntry, "transition coordination");

@@ -67,7 +67,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs");
+        var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
         var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var viewModelPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
             .Replace("\r\n", "\n");

@@ -113,7 +113,7 @@ static partial class Program
         var audioGraphText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n");
         var stopText = startText;
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs").Replace("\r\n", "\n");
-        var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackPreviewBackend.cs").Replace("\r\n", "\n");
+        var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
