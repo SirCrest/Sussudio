@@ -4652,3 +4652,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: shared dispatcher source-family and live-dispatch helpers now live with `AutomationCommandDispatcher.CommandOwnership.Tests.cs`, while existing dispatcher, automation tool contract, and MainViewModel automation tests continue to call the same `Program` helper methods.
 Notes for future agents: keep shared dispatcher/proxy helpers with `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs` while they serve dispatcher ownership and automation contract source checks; split only for a named reusable fixture or a non-`Program` harness type.
+
+Date: 2026-05-27
+Area: MainViewModel capture selection-policy helper locality
+Problem: `MainViewModel.Capture.SelectionPolicy.Helpers.cs` was a helper-only `Program` partial for selection-policy reflection, option-list creation, and capture-mode model fixture construction. Its callers are the capture selection-policy, settings-projection, and MainWindow capture-selection binding tests, so reviewing selection behavior still required opening a separate helper shard before the core policy owner.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` MainViewModel capture selection-policy test partial-family file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SelectionPolicy|FullyQualifiedName~SettingsProjection|FullyQualifiedName~SelectionBindings|FullyQualifiedName~PresentationPreviewContracts"` (21 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: capture selection-policy fixture helpers now live in `MainViewModel.Capture.SelectionPolicy.Tests.cs`; related selection-policy, settings-projection, and MainWindow capture-binding tests continue to call the same `Program` helper methods.
+Notes for future agents: keep capture selection-policy reflection and option-list fixture helpers with `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` while they only support capture selection behavior tests; split only for a named reusable fixture type.

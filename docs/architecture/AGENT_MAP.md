@@ -1391,9 +1391,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Helpers.cs` owns
-  shared reflection, option-list, and capture-mode model construction helpers
-  for the selection-policy test family.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
+  capture format and recording settings selection-policy ownership checks plus
+  the shared reflection, option-list, and capture-mode model construction
+  helpers for the selection-policy test family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`
   owns preview startup watchdog controller/adapter ownership, timeout, and
   failure-stop contract assertions.
