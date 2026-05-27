@@ -2926,10 +2926,15 @@ Primary owners:
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback
   command-health deltas, and shared counter-delta helpers.
-- `tools/Common/DiagnosticSessionFlashbackExports.cs` owns rotated-export
-  segment-count parsing, strict export verification payload construction, and
-  range-selection cleanup, plus the audio-toggle companion used by the range
-  export audio-switch scenario.
+- `tools/Common/DiagnosticSessionFlashbackSupport.cs` owns Flashback diagnostic
+  support helpers: rotated-export segment-count parsing, strict export
+  verification payload construction, range-selection cleanup, the audio-toggle
+  companion used by the range export audio-switch scenario, read-only
+  `FlashbackGetSegments` response parsing, completed-segment discovery,
+  playable completed-segment target selection, buffered-boundary projection,
+  playback headroom polling, parsed segment DTOs, and Flashback recording,
+  playback, and preview scheduler warning policy over already projected
+  metrics. Keep state-mutating scenario steps in the scenario owners.
 - `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
   export diagnostic scenario task registration plus concurrent export, rotated
   export, disable-during-export command coordination, export-during-playback
@@ -2966,11 +2971,6 @@ Primary owners:
   Flashback completed-segment playback scenario: task registration, target
   acquisition, boundary-crossing playback, go-live restore, snapshot/FPS/
   command-health validation, and recording-assisted segment rotation fallback.
-- `tools/Common/DiagnosticSessionFlashbackSegments.cs` owns read-only
-  `FlashbackGetSegments` response parsing, completed-segment discovery,
-  playable completed-segment target selection, buffered-boundary projection,
-  playback headroom polling, and the parsed segment DTOs. Do not add
-  state-mutating scenario steps to the segment helper.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds, stress/scrub-stress task registration, main stress and
   scrub-stress command choreography, stress export verification, warmed-playback
@@ -2982,9 +2982,6 @@ Primary owners:
   Flashback-backed recording readiness, stress buffer readiness, playback
   state, boundary crossing, warmed-playback frame-count/FPS, and position
   convergence.
-- `tools/Common/DiagnosticSessionFlashbackValidation.cs` owns Flashback
-  recording, playback, and preview scheduler warning policy over already
-  projected metrics.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   observation, severity, Flashback warmup filtering, source/preview/Flashback
   health-observation classifiers, sparse-cadence tolerances, and tolerated

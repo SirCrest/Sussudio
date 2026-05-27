@@ -2938,12 +2938,12 @@ projections: source, preview, and visual cadence aggregation, visual-cadence
 health classification, D3D metric aggregation, playback command-health deltas,
 and shared counter-delta helpers.
 
-Diagnostic-session Flashback export helpers now live in
-`tools/Common/DiagnosticSessionFlashbackExports.cs`, which owns strict export
-verification payload construction, rotated-export segment-count parsing, and
-range-selection cleanup, plus the range export audio-switch companion command
-because it performs a stateful toggle/restore workflow. Scenario command
-sequencing lives in separate scenario owners.
+Diagnostic-session Flashback support helpers now live in
+`tools/Common/DiagnosticSessionFlashbackSupport.cs`, which owns strict export
+verification payload construction, rotated-export segment-count parsing,
+range-selection cleanup, read-only segment parsing/waits/playback headroom
+polling, and recording/playback/preview warning validation. Keep scenario
+command sequencing in separate scenario owners.
 
 Diagnostic-session Flashback export scenarios now live in
 `DiagnosticSessionFlashbackExportScenarios.cs`. It owns scenario task
@@ -2998,16 +2998,15 @@ Diagnostic-session Flashback segment playback now lives in
 task registration, completed-segment boundary-crossing choreography, playback
 target acquisition, recording-assisted retry routing, go-live restore,
 post-boundary snapshot/FPS/command-health warning policy, and best-effort
-recording cleanup. `DiagnosticSessionFlashbackSegments.cs` stays the read-only
+recording cleanup. `DiagnosticSessionFlashbackSupport.cs` stays the read-only
 segment parsing and wait-policy helper.
 
-Diagnostic-session Flashback segment handling now lives in a small read-only
-family. `.Parsing.cs` owns `FlashbackGetSegments` response parsing and the
-parsed segment probe DTO,
-`.CompletedWaits.cs` owns completed-segment discovery waits,
-`.PlaybackTargetWaits.cs` owns playable completed-segment target selection plus
-the playback-target DTO, and `.PlaybackHeadroomWaits.cs` owns playback-boundary
-headroom polling while the runner keeps scenario command sequencing.
+Diagnostic-session Flashback segment handling is a section of
+`DiagnosticSessionFlashbackSupport.cs`. It owns `FlashbackGetSegments` response
+parsing, the parsed segment probe DTO, completed-segment discovery waits,
+playable completed-segment target selection plus the playback-target DTO, and
+playback-boundary headroom polling while the runner keeps scenario command
+sequencing.
 
 Diagnostic-session Flashback snapshot waits now live in
 `tools/Common/DiagnosticSessionFlashbackWaits.cs`. It owns read-only polling
@@ -3037,8 +3036,8 @@ low checks, audio-master fallback delta capture/classification, shared
 live/empty-queue drain polling, and command-health/latency/final-state warning
 policy while the runner only starts the scenario tasks.
 
-Diagnostic-session Flashback validation now lives in
-`tools/Common/DiagnosticSessionFlashbackValidation.cs`. It owns recording,
+Diagnostic-session Flashback validation is also a section of
+`tools/Common/DiagnosticSessionFlashbackSupport.cs`. It owns recording,
 playback, and preview scheduler warning thresholds over already projected
 metrics while the runner retains scenario orchestration.
 
@@ -3091,16 +3090,14 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionPostRunActions.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
-- `DiagnosticSessionFlashbackExports.cs`
+- `DiagnosticSessionFlashbackSupport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
-- `DiagnosticSessionFlashbackSegments.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionFlashbackWaits.cs`
-- `DiagnosticSessionFlashbackValidation.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionResult.cs`

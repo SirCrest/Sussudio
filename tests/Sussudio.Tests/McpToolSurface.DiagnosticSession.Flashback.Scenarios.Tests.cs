@@ -8,7 +8,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(validationText, "internal static class DiagnosticSessionFlashbackValidation");
@@ -347,7 +347,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
-        var exportHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs")
+        var exportHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(exportHelpersText, "internal static class DiagnosticSessionFlashbackExports");

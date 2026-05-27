@@ -64,7 +64,7 @@ static partial class Program
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
         var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
             .Replace("\r\n", "\n");
-        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs")
+        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(formatterRootText, "internal static class DiagnosticSessionOptionalTextFormatter");

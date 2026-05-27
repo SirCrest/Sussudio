@@ -226,16 +226,14 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionResultBuilderSource()
                 + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
-                + "\n" + ReadDiagnosticSessionFlashbackExportsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackMetricsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
-                + "\n" + ReadDiagnosticSessionFlashbackSegmentsSource()
+                + "\n" + ReadDiagnosticSessionFlashbackSupportSource()
                 + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
-                + "\n" + ReadDiagnosticSessionFlashbackValidationSource()
                 + "\n" + ReadDiagnosticSessionFlashbackWaitsSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs")
@@ -256,19 +254,14 @@ static partial class Program
             ReadNormalizedRepoFile("tools/McpServer/Tools/AppStateTools.cs"));
     }
 
-    private static string ReadDiagnosticSessionFlashbackValidationSource()
-    {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackValidation.cs");
-    }
-
     private static string ReadDiagnosticSessionScenarioCatalogSource()
     {
         return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs");
     }
 
-    private static string ReadDiagnosticSessionFlashbackExportsSource()
+    private static string ReadDiagnosticSessionFlashbackSupportSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackExports.cs");
+        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs");
     }
 
     private static string ReadNormalizedRepoFile(string path)

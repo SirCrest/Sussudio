@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Diagnostic-session Flashback helper locality
+Problem: Small internal Flashback diagnostic-session helper surfaces for export payload/cleanup, segment polling/parsing, and warning validation lived in three files even though scenario review usually needs all three together. The split preserved type names but forced file hopping across adjacent support-only helpers with no separate transport or runtime boundary.
+Files consolidated: `tools/Common/DiagnosticSessionFlashbackExports.cs`; `tools/Common/DiagnosticSessionFlashbackSegments.cs`; `tools/Common/DiagnosticSessionFlashbackValidation.cs`
+Files added: `tools/Common/DiagnosticSessionFlashbackSupport.cs`
+Net production .cs delta: -2
+Partial clusters reduced: n/a; diagnostic-session Flashback support helper file count 3 -> 1 while preserving the internal `DiagnosticSessionFlashbackExports`, `DiagnosticSessionFlashbackSegments`, and `DiagnosticSessionFlashbackValidation` type names
+Build/tests/runtime checks: `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` (0 warnings); `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (0 warnings after stale assembly guard); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession|FullyQualifiedName~Flashback"` (296 passed after MCP rebuild); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: diagnostic-session MCP/source ownership tests cover Flashback export helper use, segment polling/parsing, and warning validation policy; no automation command names/IDs or wire payloads changed
+Behavior preserved: export segment-count parsing, export verification payloads, selection cleanup, audio toggling during export, segment wait/parsing, playback headroom checks, recording/playback/preview warning policy, and optional diagnostic text formatting remain unchanged.
+Notes for future agents: keep support-only Flashback diagnostic-session helpers in `DiagnosticSessionFlashbackSupport.cs` while they are small internal static helper sections; move a section back out only if it grows independent scenario orchestration, transport policy, or reusable runtime state.
+
+Date: 2026-05-27
 Area: MCP automation command-control tool locality
 Problem: Device/capture/pipeline settings, window/UI/preview/recording/wait controls, Flashback commands, and verification commands lived in four adjacent MCP files even though they were all shallow command-control wrappers over the same pipe-client and formatter path. Reviewing automation command routing required opening `CaptureSettingsTools.cs`, `WindowTools.cs`, `FlashbackTools.cs`, and `VerificationTools.cs` to follow one public MCP control surface.
 Files consolidated: `tools/McpServer/Tools/CaptureSettingsTools.cs`; `tools/McpServer/Tools/WindowTools.cs`; `tools/McpServer/Tools/FlashbackTools.cs`; `tools/McpServer/Tools/VerificationTools.cs`
@@ -4135,7 +4147,7 @@ Partial clusters reduced: n/a; diagnostic-session Flashback scenario helper coun
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, MCP, `ssctl`, automation contracts, app, and console harnesses; no public scenario names, task labels, priorities, automation command names, IDs, wire payloads, warning text, or lifecycle validation semantics changed
 Behavior preserved: Flashback lifecycle registration, pause/seek/play choreography, disable/re-enable commands, post-disable playback-thread and pending-command checks, and post-re-enable active-state validation now live in `DiagnosticSessionFlashbackCycleScenarios.cs` with restart and encoder cycle scenario flows.
-Notes for future agents: keep Flashback restart, encoder, and lifecycle scenario command flows in `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`; keep preview stop/restart scenarios in `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`, export flows in `DiagnosticSessionFlashbackExportScenarios.cs`, and read-only segment helpers in `DiagnosticSessionFlashbackSegments.cs`.
+Notes for future agents: keep Flashback restart, encoder, and lifecycle scenario command flows in `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`; keep preview stop/restart scenarios in `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`, export flows in `DiagnosticSessionFlashbackExportScenarios.cs`, and read-only segment helpers in `DiagnosticSessionFlashbackSupport.cs`.
 
 Date: 2026-05-26
 Area: diagnostic-session post-run action locality

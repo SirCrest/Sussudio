@@ -41,7 +41,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackSegmentsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackSegments.cs");
+            "tools/Common/DiagnosticSessionFlashbackSupport.cs");
 
     private static string ReadDiagnosticSessionFlashbackStressScenarioSource()
         => ReadNormalizedSourceFiles(
