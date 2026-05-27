@@ -270,7 +270,7 @@ public partial class StatsPresentationTests
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
-        var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
+        var statsPresentationModelsText = statsPresentationText;
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowPresentationControllerText = statsWindowText;
         var statsWindowTelemetryDetailsControllerText = statsWindowPresentationControllerText;
@@ -312,9 +312,9 @@ public partial class StatsPresentationTests
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
         AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
         AssertContains(statsPresentationModelsText, "internal enum StatsMetricStatus");
-        AssertDoesNotContain(statsPresentationText, "internal sealed record StatsDockPresentation(");
-        AssertDoesNotContain(statsPresentationText, "internal sealed record StatsWindowPresentation(");
-        AssertDoesNotContain(statsPresentationText, "internal enum StatsMetricStatus");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "ViewModels", "StatsPresentationModels.cs")),
+            "stats presentation DTOs folded into StatsPresentationBuilder.cs");
         AssertContains(statsDockRefreshControllerText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(frameTimeOverlayControllerText, "internal sealed class FrameTimeOverlayPresentationController");
@@ -495,7 +495,6 @@ public partial class StatsPresentationTests
                 - refreshControllerText.IndexOf("internal sealed class StatsHardwareRowsInputProviderContext", StringComparison.Ordinal));
         var hardwareRowsInputBuilderText = hardwareRowsInputProviderText;
         var hardwareRowsBuilderText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
-        var statsPresentationModelsText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationModels.cs").Replace("\r\n", "\n");
 
         AssertContains(statsDockCompositionText, "private static StatsDiagnosticRowsController CreateDiagnosticRowsController(");
         AssertContains(statsDockCompositionText, "private static StatsDockRowChromeController CreateRowChromeController(");
@@ -550,9 +549,9 @@ public partial class StatsPresentationTests
         AssertContains(hardwareRowsBuilderText, "public static IReadOnlyList<StatsHardwareRowPresentation> BuildHardwareGpuRows(StatsHardwareGpuRowsInput? nvml)");
         AssertDoesNotContain(hardwareRowsBuilderText, "using Sussudio.Services.Gpu;");
         AssertContains(refreshControllerText, "using Sussudio.Services.Gpu;");
-        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);");
-        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
-        AssertContains(statsPresentationModelsText, "internal readonly record struct StatsHardwareGpuRowsInput(");
+        AssertContains(hardwareRowsBuilderText, "internal readonly record struct StatsHardwareRowPresentation(string Label, string Value);");
+        AssertContains(hardwareRowsBuilderText, "internal readonly record struct StatsHardwareDecodeRowsInput(");
+        AssertContains(hardwareRowsBuilderText, "internal readonly record struct StatsHardwareGpuRowsInput(");
         AssertContains(hardwareRowsControllerText, "_context.RowChromeController.CollapseSimpleRows(StatsDockSimpleRowPool.Decode);");
         AssertContains(hardwareRowsControllerText, "_context.RowChromeController.UpdateSimpleRows(");
         AssertContains(hardwareRowsControllerText, "StatsDockSimpleRowPool.Decode,");

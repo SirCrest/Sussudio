@@ -1178,8 +1178,8 @@ Primary current owners:
   text projection over presentation inputs, frame-lane diagnostic health summary
   classification, detached stats-window text, telemetry-detail presentation,
   stats lane status classification, and the visual-repeat drift result.
-  `Sussudio/ViewModels/StatsPresentationModels.cs` owns the internal DTO
-  records/enums consumed by the stats overlay and stats-window controllers.
+  The internal presentation DTO records/enums live in the same file so stats
+  text/model contracts can be reviewed with the builder.
   `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO plus
   capture-health, renderer, and shell view-state projection into that DTO after
   acquisition.
