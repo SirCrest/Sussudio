@@ -1482,10 +1482,10 @@ Primary current owners:
   telemetry provider ownership, rolling command-group split, shared snapshot
   assembly ownership, cohesive KS bridge source/probe-link ownership, and
   supported 4K X product-revision checks.
-- `tests/Sussudio.Tests/CaptureDiscovery.SourceOwnership.Tests.cs` owns
-  DeviceService scoring, cohesive MF device enumerator ownership,
+- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
+  owns DeviceService scoring, cohesive MF device enumerator ownership,
   source-reader negotiation/interop ownership, and MF symbolic-link matching
-  assertions.
+  assertions with the broader service-layer source-ownership checks.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface plus the ported HdrOutputPolicy, HDR output
   environment-switch, and disabled source-telemetry-provider behavior checks.
