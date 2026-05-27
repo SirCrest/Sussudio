@@ -167,7 +167,7 @@ static partial class Program
 
     internal static Task CaptureService_ObservedPixelTelemetry_LivesWithSourceTelemetry()
     {
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(telemetryText, "private void ResetObservedPixelTelemetry()");
@@ -186,6 +186,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.CaptureFormatTelemetry.cs")),
             "old capture-format telemetry partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
+            "source telemetry polling folded into CaptureService.Snapshots.cs");
 
         return Task.CompletedTask;
     }

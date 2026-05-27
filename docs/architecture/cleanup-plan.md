@@ -935,8 +935,9 @@ activation in `MfDeviceEnumerator.cs`.
 Capture service source telemetry polling, provider reads, fallback snapshot
 construction, merge policy, capture-format runtime telemetry, NTSC frame-rate
 correction, frame-rate argument formatting, and observed pixel-format
-normalization/reset/counters now live in
-`Sussudio/Services/Capture/CaptureService.Telemetry.cs`. The root capture service
+normalization/reset/counters now live with the read-only diagnostics and
+automation probe helpers in
+`Sussudio/Services/Capture/CaptureService.Snapshots.cs`. The root capture service
 owns shared state, construction, and public event surface, but these diagnostics
 are no longer embedded in the lifecycle/orchestration file.
 

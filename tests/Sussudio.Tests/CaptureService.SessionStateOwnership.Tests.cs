@@ -105,7 +105,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Telemetry.cs")
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()");
@@ -136,6 +136,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.CaptureFormatTelemetry.cs")),
             "old capture-format telemetry partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
+            "source telemetry polling folded into CaptureService.Snapshots.cs");
 
         return Task.CompletedTask;
     }

@@ -597,7 +597,7 @@ static partial class Program
         AssertContains(nvdecText, "private static string GetErrorString");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
-        var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs"));
+        var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs"));
         AssertContains(captureServiceTelemetryText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");
         AssertContains(captureServiceText, "_telemetryPollSync");
         AssertContains(captureServiceTelemetryText, "lock (_telemetryPollSync)");
@@ -606,6 +606,10 @@ static partial class Program
         AssertContains(captureServiceTelemetryText, "Telemetry poll start deferred until canceled poll exits");
         AssertContains(captureServiceTelemetryText, "private SourceSignalTelemetrySnapshot BuildFallbackTelemetry()");
         AssertContains(captureServiceTelemetryText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
+            "CaptureService telemetry polling folded into snapshot diagnostics owner");
     }
 
     internal static Task MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator()
