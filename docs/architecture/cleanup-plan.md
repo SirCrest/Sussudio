@@ -1765,7 +1765,7 @@ negotiated-output validation, runtime field reset, and COM/startup ownership
 handoff after successful initialization also live in this initialization owner.
 
 Media Foundation source-reader active lifetime now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`. Keep
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
 start/stop/dispose, read thread priority, `ReadSample` outstanding-state
 tracking, sample timestamp cadence handoff, frame-delivery invocation,
 frame-drop accounting, and fatal D3D output failure break behavior there.
@@ -1786,7 +1786,7 @@ placeholder slots exactly; keep behavioral source-reader logic in the root and
 negotiation partials.
 
 Media Foundation source cadence metrics now live with active source-reader
-lifetime in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`.
+lifetime in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`.
 Keep the public cadence snapshot record, expected-rate/window sizing, stop-time
 cadence reset, timestamp interval tracking, and percentile/drop estimate
 calculations near the read loop that observes Media Foundation timestamps; keep
@@ -1802,17 +1802,17 @@ texture/subresource extraction, D3D texture IID lookup, DXGI fallback
 diagnostics, and dual GPU/CPU delivery orchestration in
 `MfSourceReaderVideoCapture.FrameDelivery.cs`; keep raw/compressed CPU frame
 delivery helpers in the same file with sample-to-buffer dispatch and reader
-start/stop/dispose in the lifecycle partial.
+start/stop/dispose in the root source-reader file.
 
 Media Foundation packed-frame layout helpers now live with the source-reader
 state in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
 frame-size/row-byte calculation, packed-stride inference, stride-aware YUV
 copying, and source subtype labels there; keep frame delivery in
 `MfSourceReaderVideoCapture.FrameDelivery.cs` and reader start/stop/dispose in
-the lifecycle partial.
+the root source-reader file.
 
 Media Foundation source-reader lifecycle now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Lifecycle.cs`. Keep
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
 public start/stop/dispose, reader/source COM release, lifecycle logging, and
 fatal-error callback dispatch there; keep initialization and frame delivery in
 their named source-reader partials.

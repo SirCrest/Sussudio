@@ -280,10 +280,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.ReadLoop.cs")),
             "source-reader read loop folded into active lifecycle owner");
-        AssertDoesNotContain(sourceReaderRootText, "public void StartReading(RawFrameCallback onFrame, CancellationToken ct)");
-        AssertDoesNotContain(sourceReaderRootText, "public async Task StopAsync()");
-        AssertDoesNotContain(sourceReaderRootText, "private void ReleaseReaderAndSource()");
-        AssertDoesNotContain(sourceReaderRootText, "private void SignalFatalError(Exception ex)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Lifecycle.cs")),
+            "source-reader lifecycle folded into root source-reader state");
         AssertContains(sourceReaderInitializationText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
         AssertContains(sourceReaderInitializationText, "MF_SOURCE_READER_INIT ");
         AssertContains(sourceReaderInitializationText, "SelectConvertedMediaType(");
@@ -305,7 +305,6 @@ static partial class Program
         AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
         AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
-        AssertDoesNotContain(sourceReaderRootText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverFrame(");
         AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverDualFrameFromBuffer(");
         AssertContains(sourceReaderFrameDeliveryText, "Marshal.Release(gpuTexture)");
