@@ -4760,3 +4760,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
 Behavior preserved: MJPEG preview-jitter queue, timing, adaptive-drop, and scheduler-event projection/flattening now live in `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` with MJPEG totals, timing, packet-hash projection, and the `MjpegProjection.PreviewJitter` parent record that consumes them.
 Notes for future agents: keep MJPEG preview-jitter projection with `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` while it remains nested under `MjpegProjection`; split again only if preview jitter becomes a standalone automation projection owner with callers outside MJPEG snapshot composition.
+
+Date: 2026-05-27
+Area: LibAv encoder audio locality
+Problem: `LibAvEncoder.Audio.cs`, `LibAvEncoder.AudioQueue.cs`, and `LibAvEncoder.AudioInitialization.cs` split one audio stream owner across three partial files. Reviewing audio/microphone sample submission, AAC stream setup, sample queueing, A/V drift diagnostics, pending flush, and packet writing required opening multiple fragments that all shared the same `AudioStreamState` and encoder fields.
+Files consolidated: `Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs`; `Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs`
+Files added: none
+Net production .cs delta: -2; net test .cs delta: 0
+Partial clusters reduced: `LibAvEncoder` production partial count 8 -> 6
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~LibAvEncoder|FullyQualifiedName~RecordingContracts"` (54 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
+Behavior preserved: audio and microphone stream state, public sample entry points, payload alignment checks, accumulator handoff, AAC stream initialization, sample queue/drain mechanics, A/V sync diagnostics, pending flush, and audio packet writes now live in `LibAvEncoder.Audio.cs` beside the shared state they operate on.
+Notes for future agents: keep LibAv encoder audio submission, queue/drain mechanics, A/V sync diagnostics, and AAC stream initialization together in `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`; split again only if audio becomes a named collaborator instead of another encoder partial.

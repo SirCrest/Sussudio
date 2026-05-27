@@ -1208,28 +1208,17 @@ libav exceptions, and D3D11 device-removed checks there.
 
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone
-stream state, public status properties, interleaved packet writes,
-pending-sample flush, and accumulator ingress there.
-Audio queue/drain mechanics now live in
-`Sussudio/Services/Recording/LibAvEncoder.AudioQueue.cs`; keep sample
-queue/drain helpers, drift-corrected encode chunks, planar sample copies, and
-prepared-frame drains there. Keep drift-correction thresholds, sync counters,
-current-drift reporting, and sync warning logs with this queue path so the
-small A/V sync fragment does not become a separate boundary.
-
-LibAv encoder audio submission now lives in
-`Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep the public
-audio/microphone sample entry points, payload alignment checks, accumulator
-handoff, and stream-chunk submission beside shared audio/microphone stream
-state, public status properties, interleaved packet writes, pending-sample
-flush, and accumulator ingress.
-
-LibAv encoder audio stream initialization now lives in
-`Sussudio/Services/Recording/LibAvEncoder.AudioInitialization.cs`. Keep audio
-and microphone AAC stream creation, codec opening, stream time-base setup,
-resampler/frame/buffer setup calls, microphone-specific setup, AAC codec
-context configuration, resampler setup, audio frame allocation, accumulator
-allocation, and sample-queue allocation there.
+stream state, public status properties, public audio/microphone sample entry
+points, payload alignment checks, accumulator handoff, interleaved packet
+writes, pending-sample flush, accumulator ingress, sample queue/drain helpers,
+drift-corrected encode chunks, planar sample copies, prepared-frame drains,
+drift-correction thresholds, sync counters, current-drift reporting, sync
+warning logs, audio and microphone AAC stream creation, codec opening, stream
+time-base setup, resampler/frame/buffer setup, microphone-specific setup, AAC
+codec context configuration, frame allocation, accumulator allocation, and
+sample-queue allocation there. Do not re-split `LibAvEncoder.AudioQueue.cs` or
+`LibAvEncoder.AudioInitialization.cs` unless audio becomes a named collaborator
+instead of another encoder partial.
 
 LibAv encoder HDR frame side-data helpers now live with video submission in
 `Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep software-frame
