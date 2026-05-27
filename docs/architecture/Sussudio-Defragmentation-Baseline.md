@@ -4856,3 +4856,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, stats dock/overlay/window consumers, automation snapshot projections, tools, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, UI text, or runtime behavior changed.
 Behavior preserved: `StatsDockPresentation`, `StatsWindowPresentation`, telemetry detail rows, frame-time presentation/range, diagnostic rows, hardware decode/GPU row inputs, `StatsMetricStatus`, and all stats presentation builder outputs remain top-level internal types in `StatsPresentationBuilder.cs`.
 Notes for future agents: keep pure stats presentation DTO records/enums with `Sussudio/ViewModels/StatsPresentationBuilder.cs` while they remain a private builder/controller contract; split only if a DTO surface becomes shared outside stats presentation or gains independent policy.
+
+Date: 2026-05-27
+Area: Recording model locality
+Problem: `MediaFormat.cs` was a small recording-model leaf beside `RecordingModels.cs`; both files lived in the same namespace and modeled recording-facing format/options/status data, but reviewing format display/equality/HDR helper policy required opening a separate file from the rest of the recording model surface.
+Files consolidated: `Sussudio/Models/Recording/MediaFormat.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; recording model file count -1 while preserving the public `MediaFormat` type name and namespace
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, recording format consumers, automation snapshot projections, tools, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
+Behavior preserved: `MediaFormat` display text, rational frame-rate handling, equality/hash policy, HDR and true-10-bit pixel-format detection, pixel-format priority, and NVENC codec mapping now live in `RecordingModels.cs` with encoder support, recording integrity, queue options, and byte stats.
+Notes for future agents: keep recording model leaf types together in `Sussudio/Models/Recording/RecordingModels.cs` while they remain DTO/policy helpers in the shared `Sussudio.Models` namespace; split only if a recording model becomes a separately owned collaborator with non-model behavior or external shared-source constraints.
