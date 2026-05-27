@@ -422,11 +422,15 @@ static partial class Program
         var previewRuntimeSnapshotText = previewRendererText;
         var previewRuntimeSnapshotInitialization = ExtractMemberCode(previewRuntimeSnapshotText, "InitializePreviewRuntimeSnapshotSamplingController");
         var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotControllerBuildText = ExtractMemberCode(previewRuntimeSnapshotControllerText, "Build");
         var previewRuntimeSnapshotSamplingControllerText = previewRuntimeSnapshotControllerText;
-        var previewRuntimeSnapshotMapperText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs").Replace("\r\n", "\n");
-        var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotMapperText;
-        var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotMapperText;
-        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotMapperText;
+        var previewRuntimeSnapshotMapperText = ExtractTextBetween(
+            previewRuntimeSnapshotControllerText,
+            "internal static class PreviewRuntimeSnapshotMapper",
+            "internal sealed class PreviewRuntimeSnapshotHealthInput");
+        var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
         var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
@@ -529,7 +533,7 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
         AssertContains(agentMapText, "MainWindow.PreviewLifecycle.Composition.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
         AssertContains(agentMapText, "health input factory");
         AssertContains(cleanupPlanText, "MainWindow.PreviewLifecycle.Composition.cs");
@@ -537,9 +541,13 @@ static partial class Program
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotController.cs");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertDoesNotContain(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");
         AssertContains(cleanupPlanText, "health input factory");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotMapper.cs")),
+            "Preview runtime snapshot mapper stays folded into the snapshot controller owner");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuActive = d3dProjection.GpuActive,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "FramesArrived = d3dProjection.FramesArrived,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "BlankSuspected = health.BlankSuspected,");
@@ -548,9 +556,9 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPlaybackState = d3dProjection.GpuPlaybackState,");
         AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
-        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "return new PreviewRuntimeSnapshot\n        {");
-        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "BlankSuspected = health.BlankSuspected,");
-        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "StallSuspected = health.StallSuspected,");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "return new PreviewRuntimeSnapshot\n        {");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "BlankSuspected = health.BlankSuspected,");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "StallSuspected = health.StallSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
         AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
         AssertDoesNotContain(previewRuntimeSnapshotText, "new PreviewRuntimeSnapshotInput");

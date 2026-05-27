@@ -1028,13 +1028,10 @@ Primary current owners:
   sampling, startup missing-signal refresh, sampled-input assembly, read-only
   preview runtime snapshot construction orchestration, and the UI-thread
   sampled preview snapshot input contract shared by the snapshot controller and
-  D3D projection builder.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotMapper.cs`
-  owns final preview runtime snapshot DTO flattening from sampled input, D3D
-  projection, and surface/startup/GPU playback projection policies.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
-  owns the health input factory, preview startup elapsed timing, and blank/stall
-  suspicion policy beside snapshot construction.
+  D3D projection builder; final preview runtime snapshot DTO flattening from
+  sampled input and D3D projection; surface/startup/GPU playback projection policies;
+  the health input factory; preview startup elapsed timing; and
+  blank/stall suspicion policy.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
   owns the renderer projection data contract, D3D policy records, policy
   evaluation order, and assignment from evaluated policy records. It keeps the
