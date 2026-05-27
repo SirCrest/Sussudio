@@ -22,7 +22,7 @@ static partial class Program
             ?? throw new InvalidOperationException("RtkI2cProbe.Run method not found.");
         var getRtkDeviceName = probeType.GetMethod("GetRtkDeviceName", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("RtkI2cProbe.GetRtkDeviceName method not found.");
-        var rtkProbeSource = ReadRepoFile("tools/NativeXuAudioProbe/RtkI2cProbe.cs");
+        var rtkProbeSource = ReadRepoFile("tools/NativeXuAudioProbe/Program.cs");
 
         var missingPathDevice = CreateNativeXuProbeDevice(assembly, "capture-1", "Elgato 4K X (PID 0x0070)", null);
         var missingPath = CaptureConsole(() => InvokeRtkRun(run, [], missingPathDevice));
@@ -239,10 +239,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.ServiceProbe.cs")),
             "NativeXu service-control smoke/payload workflows live with top-level probe command routing");
-        var rtkProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "RtkI2cProbe.cs"));
-        AssertContains(rtkProbeText, "Run(string[] args, CaptureDevice device)");
-        AssertContains(rtkProbeText, "RTK I2C switch is disabled");
-        AssertDoesNotContain(rtkProbeText, "rtk_setCurrentDevice(\"Elgato 4K X\"");
+        AssertContains(probeProgramText, "static class RtkI2cProbe");
+        AssertContains(probeProgramText, "Run(string[] args, CaptureDevice device)");
+        AssertContains(probeProgramText, "RTK I2C switch is disabled");
+        AssertDoesNotContain(probeProgramText, "rtk_setCurrentDevice(\"Elgato 4K X\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "RtkI2cProbe.cs")),
+            "RTK I2C probe workflow lives with top-level probe command routing");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "Sussudio"), SearchOption.AllDirectories))
         {

@@ -2708,7 +2708,8 @@ Primary owners:
   real boundary.
 - `tools/NativeXuAudioProbe/Program.cs` owns probe command routing, direct
   AT read/write/input subcommands, the captured audio-switch replay workflow,
-  service-control smoke/payload workflows, supported-device lookup, and
+  RTK I2C unsafe-native-path probe workflow, service-control smoke/payload
+  workflows, supported-device lookup, and
   probe-local runtime shims for linked app service sources;
   `Program.DefaultExperiment.cs` owns the default baseline/experiment/restore
   runner, experiment spec records, shared Native XU command IDs, shared

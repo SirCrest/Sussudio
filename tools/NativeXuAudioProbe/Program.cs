@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
@@ -120,6 +121,184 @@ public sealed class CaptureDevice
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? "Unknown Device" : Name;
 
     public override string ToString() => DisplayName;
+}
+
+/// <summary>
+/// Direct P/Invoke probe for RTK_IO_x64.dll's rtk_sendI2CATCommand.
+/// Uses the real DLL to test I2C AT audio switching without RTICE_SDK.
+/// </summary>
+static class RtkI2cProbe
+{
+    private const string RtkIoDll = "RTK_IO_x64.dll";
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_initialize(long a1, long a2, long a3, long a4);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_uninitialize();
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_setUVCExtension(long a1, long a2, long a3, long a4);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern long rtk_setCurrentDevice([MarshalAs(UnmanagedType.LPStr)] string deviceName, IntPtr a2);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_openPort(long a1, long a2, long a3, long a4);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_closePort();
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_isOpen(long a1, long a2, long a3, long a4);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern long rtk_sendI2CATCommand(
+        long type,
+        IntPtr context,
+        byte[] i2cFrame,
+        long frameLen,
+        long a5,
+        long a6,
+        long a7,
+        long a8);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl, EntryPoint = "rtk_sendI2CATCommand")]
+    private static extern long rtk_sendI2CATCommand_v2(
+        long type,
+        IntPtr context,
+        byte[] i2cFrame,
+        long frameLen,
+        long a5,
+        byte[] outBuffer,
+        long a7,
+        long a8);
+
+    [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr rtk_getCurrentDeviceName();
+
+    public static int Run(string[] args, CaptureDevice device)
+    {
+        var subCmd = args.Length > 0 ? args[0] : "init";
+        if (string.IsNullOrWhiteSpace(device.NativeXuInterfacePath))
+        {
+            Console.Error.WriteLine("RTK I2C probe requires a selected native XU interface path.");
+            return 1;
+        }
+
+        if (string.Equals(subCmd, "switch", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Error.WriteLine("RTK I2C switch is disabled: RTK_IO selects devices by name and cannot guarantee the selected native XU path.");
+            Console.Error.WriteLine("Use the native XU service/probe path for write-capable audio switching.");
+            return 1;
+        }
+
+        Console.WriteLine("=== RTK_IO Direct P/Invoke Probe ===");
+        Console.WriteLine($"Selected device: {device.Name}");
+        Console.WriteLine($"Selected XU path: {device.NativeXuInterfacePath}");
+
+        try
+        {
+            Console.WriteLine("\n--- rtk_initialize ---");
+            var initResult = rtk_initialize(-1, 0, 0, 0);
+            Console.WriteLine($"  Result: {initResult}");
+
+            Console.WriteLine("\n--- rtk_setUVCExtension ---");
+            var uvcResult = rtk_setUVCExtension(2, 0, 0, 0);
+            Console.WriteLine($"  Result: {uvcResult}");
+
+            Console.WriteLine("\n--- rtk_setCurrentDevice ---");
+            var rtkDeviceName = GetRtkDeviceName(device);
+            Console.WriteLine($"  RTK device name: {rtkDeviceName}");
+            var setDevResult = rtk_setCurrentDevice(rtkDeviceName, IntPtr.Zero);
+            Console.WriteLine($"  Result: {setDevResult}");
+
+            var namePtr = rtk_getCurrentDeviceName();
+            if (namePtr != IntPtr.Zero)
+            {
+                var name = Marshal.PtrToStringAnsi(namePtr);
+                Console.WriteLine($"  Current device: {name}");
+            }
+
+            Console.WriteLine("\n--- rtk_openPort ---");
+            var openResult = rtk_openPort(0, 0, -4, 0);
+            Console.WriteLine($"  Result: {openResult}");
+
+            var isOpenResult = rtk_isOpen(0, 0, 0, 0);
+            Console.WriteLine($"  isOpen: {isOpenResult}");
+
+            if (subCmd == "get" || subCmd == "init")
+            {
+                Console.WriteLine("\n--- rtk_sendI2CATCommand (I2C GET) ---");
+                var i2cFrame = new byte[64];
+                i2cFrame[0] = 0x00;
+                i2cFrame[1] = 0x4A;
+                i2cFrame[2] = 0x02;
+                i2cFrame[3] = 0x00;
+                i2cFrame[4] = 0x09;
+                i2cFrame[5] = 0x42;
+
+                var outBuffer = new byte[64];
+
+                Console.WriteLine("  Trying v2 (outBuffer as a6):");
+                try
+                {
+                    var resp = rtk_sendI2CATCommand_v2(0x1C, IntPtr.Zero, i2cFrame, 6, 1, outBuffer, 0, 0);
+                    Console.WriteLine($"    Return: {resp}");
+                    Console.WriteLine($"    outBuffer: {BitConverter.ToString(outBuffer, 0, 16)}");
+                    Console.WriteLine($"    i2cFrame after: {BitConverter.ToString(i2cFrame, 0, 16)}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"    Exception: {ex.GetType().Name}: {ex.Message}");
+                }
+
+                Console.WriteLine("  Trying v1 (all long params):");
+                var i2cFrame2 = new byte[64];
+                Array.Copy(new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x09, 0x42 }, i2cFrame2, 6);
+                try
+                {
+                    var resp2 = rtk_sendI2CATCommand(0x1C, IntPtr.Zero, i2cFrame2, 6, 1, 0, 0, 0);
+                    Console.WriteLine($"    Return: {resp2}");
+                    Console.WriteLine($"    i2cFrame after: {BitConverter.ToString(i2cFrame2, 0, 16)}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"    Exception: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            Console.WriteLine("\n--- Cleanup ---");
+            rtk_closePort();
+            rtk_uninitialize();
+            Console.WriteLine("  Done");
+        }
+        catch (DllNotFoundException ex)
+        {
+            Console.Error.WriteLine($"RTK_IO_x64.dll not found: {ex.Message}");
+            Console.Error.WriteLine("Copy RTK_IO_x64.dll to the probe's output directory.");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error: {ex.GetType().Name}: {ex.Message}");
+            Console.Error.WriteLine(ex.StackTrace);
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private static string GetRtkDeviceName(CaptureDevice device)
+    {
+        var name = string.IsNullOrWhiteSpace(device.Name)
+            ? "Elgato 4K X"
+            : device.Name;
+        var pidSuffix = name.IndexOf(" (PID ", StringComparison.OrdinalIgnoreCase);
+        return pidSuffix > 0
+            ? name[..pidSuffix]
+            : name;
+    }
 }
 
 // CLI-only device locator for NativeXuAudioProbe. It finds supported Elgato

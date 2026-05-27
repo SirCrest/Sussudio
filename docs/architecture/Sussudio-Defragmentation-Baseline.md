@@ -3729,7 +3729,7 @@ Notes for future agents: keep MJPEG preview jitter source ownership, adaptive po
 
 Date: 2026-05-26
 Area: NativeXu RTK probe test locality
-Problem: `RtkI2cProbe.Tests.cs` split NativeXuAudioProbe RTK unsafe-path behavior checks away from `ServiceNamespace.NativeXuProbe.Tests.cs`, even though that owner already protects NativeXuAudioProbe routing, RTK command wiring, linked source layout, and `RtkI2cProbe.cs` source guard text.
+Problem: `RtkI2cProbe.Tests.cs` split NativeXuAudioProbe RTK unsafe-path behavior checks away from `ServiceNamespace.NativeXuProbe.Tests.cs`, even though that owner already protects NativeXuAudioProbe routing, RTK command wiring, linked source layout, and RTK probe source guard text.
 Files consolidated: `tests/Sussudio.Tests/RtkI2cProbe.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
@@ -5096,3 +5096,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, capture runtime, Flashback backend cleanup paths, recording/failure projections, automation snapshot projections, tools, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, capture behavior, recording behavior, Flashback behavior, or HDR semantics changed.
 Behavior preserved: explicit cleanup transitions, disposal-triggered cleanup, dispose flow, app shutdown teardown, resource-release helpers, Flashback recovery segment preservation, fatal capture cleanup launch, Flashback backend cleanup launch, GPU device-lost classification, generation-stale guards, status/error publication, last recording/Flashback failure telemetry mutation/clear/readback, and no direct session-state writes now live in `CaptureService.Cleanup.cs`.
 Notes for future agents: keep CaptureService cleanup, disposal, fatal cleanup, Flashback backend failure cleanup, failure telemetry, and best-effort resource-release helpers together in `Sussudio/Services/Capture/CaptureService.Cleanup.cs`; split only if fatal cleanup becomes a named coordinator instead of another partial.
+
+Date: 2026-05-27
+Area: NativeXuAudioProbe RTK workflow locality
+Problem: `tools/NativeXuAudioProbe/RtkI2cProbe.cs` was a probe-private RTK_IO workflow called only by the top-level `rtk-i2c` command router in `Program.cs`. Reviewing RTK command admission, the native-XU-path safety guard, RTK device-name normalization, and the P/Invoke workflow required opening a small sidecar after the router, even though the baseline already keeps other top-level NativeXuAudioProbe command workflows in `Program.cs`.
+Files consolidated: `tools/NativeXuAudioProbe/RtkI2cProbe.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: 0; net tool/support .cs delta: -1
+Partial clusters reduced: n/a; NativeXuAudioProbe support file count -1
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~NativeXu|FullyQualifiedName~RtkI2cProbe"` passed (7 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` build and RTK unsafe-path/source-ownership tests covered the moved workflow; no public command names or arguments changed.
+Behavior preserved: `rtk-i2c` routing, device-filter rejection, missing native-XU-path rejection, disabled switch rejection, RTK_IO initialization/open/get cleanup flow, DLL-not-found diagnostics, and RTK device-name normalization now live in `tools/NativeXuAudioProbe/Program.cs`.
+Notes for future agents: keep the RTK I2C unsafe-native-path probe with `tools/NativeXuAudioProbe/Program.cs` while it remains a top-level NativeXuAudioProbe command workflow; keep I2C-over-AT transport and richer I2C command experiments in `Program.I2cCommands.cs`.

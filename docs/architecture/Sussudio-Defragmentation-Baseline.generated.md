@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-27T09:20:30Z
+Generated UTC: 2026-05-27T09:47:40Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 281 |
+| Production .cs files | 280 |
 | Test .cs files | 141 |
 | Production .cs files under 60 lines | 1 (0.4%) |
 | Production .cs files under 80 lines | 4 (1.4%) |
@@ -70,6 +70,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 830 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 823 | Sussudio/ViewModels/MainViewModel.cs |
 | 814 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs |
+| 790 | tools/NativeXuAudioProbe/Program.cs |
 | 771 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
 | 765 | Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs |
 | 757 | tools/Common/AutomationSnapshotFormatter.cs |
@@ -77,7 +78,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 744 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs |
 | 738 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
 | 735 | tools/McpServer/Tools/AutomationControlTools.cs |
-| 734 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 
 ## Sample production files under 60 lines
 
