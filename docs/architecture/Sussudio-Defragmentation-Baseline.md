@@ -4616,3 +4616,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: shared config-property reflection assertions, media-format fixture helpers, enum-value checks, `CreateConfigInstance`, and `AssertSequenceEqual` now live in `HarnessCore.cs` with the other cross-cutting legacy `Program` test primitives.
 Notes for future agents: keep cross-cutting legacy `Program` test helpers in `tests/Sussudio.Tests/HarnessCore.cs`; create a new helper file only when a fixture family has distinct setup state or a named reusable harness type.
+
+Date: 2026-05-27
+Area: Recording queue finalize test locality
+Problem: `RecordingQueue.OverloadPolicy.Finalize.Tests.cs` was a small `Program` partial for recording backend finalization, Flashback cleanup, microphone restart, and post-finalize telemetry assertions. It depended on the shared recording queue source readers in `RecordingQueue.OverloadPolicy.Tests.cs`, so reviewing recording queue overload and backend recovery policies still required opening a second shard for the same source-contract surface.
+Files consolidated: `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Finalize.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` recording queue test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RecordingQueue|FullyQualifiedName~RecordingContracts|FullyQualifiedName~RecordingBackend"` (58 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: the same xUnit wrapper still calls `RecordingBackendFinalizeAndCleanup_PreservesFlashbackBoundaries`; its assertions now live beside the overload-policy, buffer-cycle, source-reader, and recording/Flashback queue policy checks in `RecordingQueue.OverloadPolicy.Tests.cs`.
+Notes for future agents: keep recording backend finalize/cleanup source-shape assertions with `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` while they share the same recording queue and Flashback backend source readers; split only if they gain distinct fixture state or a runtime harness.

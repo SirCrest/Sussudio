@@ -1492,10 +1492,9 @@ Primary current owners:
   shared recording queue source readers, source-block extraction helpers,
   recording/Flashback queue overload, fatal-failure, lifecycle, recording
   backend start-policy, source-loading, buffer-cycle, LibAv/Flashback overload,
-  buffer recovery, and health/automation telemetry assertions.
-- `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Finalize.Tests.cs` owns
-  recording backend finalization, Flashback cleanup, microphone restart, and
-  post-finalize telemetry assertions.
+  buffer recovery, recording backend finalization, Flashback cleanup,
+  microphone restart, post-finalize telemetry, and health/automation telemetry
+  assertions.
   `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
   recording lifecycle, recording-stop finalization failure propagation, active
   recording backend resource aggregate, recording start rollback, and recording
