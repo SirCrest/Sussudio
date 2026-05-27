@@ -8,7 +8,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
+        var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
@@ -116,7 +116,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Metrics.cs")
+        var metricsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         var resetMetricsBlock = ExtractTextBetween(
@@ -153,10 +153,10 @@ static partial class Program
         AssertContains(metricsText, "private bool TryDecodeNextVideoFrameWithMetrics(");
         AssertContains(metricsText, "private void TrackPlaybackDecodeDuration(");
         AssertContains(metricsText, "private static string ResolveDominantDecodePhase(FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)");
-        AssertDoesNotContain(rootText, "private long _playbackFrameCount;");
-        AssertDoesNotContain(rootText, "private readonly Stopwatch _playbackFpsClock = new();");
-        AssertDoesNotContain(rootText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
-        AssertDoesNotContain(rootText, "private string _playbackMaxDecodePhase = string.Empty;");
+        AssertContains(rootText, "private long _playbackFrameCount;");
+        AssertContains(rootText, "private readonly Stopwatch _playbackFpsClock = new();");
+        AssertContains(rootText, "private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];");
+        AssertContains(rootText, "private string _playbackMaxDecodePhase = string.Empty;");
         AssertContains(resetMetricsBlock, "Interlocked.Exchange(ref _playbackPreviewPresentId, 0);");
         AssertContains(sourceText, "if (phaseTimings.FeedMs > max) { phase = \"feed\"; max = phaseTimings.FeedMs; }");
 
