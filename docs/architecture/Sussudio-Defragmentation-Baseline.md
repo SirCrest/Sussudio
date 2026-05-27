@@ -3077,7 +3077,7 @@ Partial clusters reduced: legacy `Program` service namespace helper partial file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: app-service contract namespace assertions, automation-contract isolation checks, pooled-frame lease locality check, service-interface locality checks, and AGENT_MAP service-contract coverage checks remain unchanged.
-Notes for future agents: keep service namespace entry-point orchestration and service-contract boundary helper assertions in `ServiceNamespace.FolderRules.Tests.cs`; keep shared project/source parsing helpers in `ServiceNamespace.Helpers.Tests.cs`.
+Notes for future agents: keep service namespace entry-point orchestration and service-contract boundary helper assertions in `ServiceNamespace.FolderRules.Tests.cs`. Later cleanup folded the shared project/source parsing helpers into that same owner; do not recreate `ServiceNamespace.Helpers.Tests.cs` unless those helpers become an independent fixture.
 
 Date: 2026-05-26
 Area: MCP frame-pacing verdict test locality
@@ -4230,7 +4230,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: n/a; service namespace architecture-boundary shard count -1 while preserving the automation contract source/project alignment fact
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, runtime behavior, project references, or automation contract source ownership changed.
-Behavior preserved: service folder namespace rules, service contract boundary assertions, AutomationCommandKind/catalog/protocol source ownership, and app/tool project-reference alignment now live in `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs`; shared XML/source parsing helpers remain in `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs`.
+Behavior preserved: service folder namespace rules, service contract boundary assertions, AutomationCommandKind/catalog/protocol source ownership, and app/tool project-reference alignment now live in `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs`; later cleanup folded the shared XML/source parsing helpers into that same file.
 Notes for future agents: keep service namespace and app/tool automation-contract boundary assertions together in `ServiceNamespace.FolderRules.Tests.cs`; create a separate service namespace file only for a distinct assertion owner, reusable helper boundary, or independent fixture.
 
 Date: 2026-05-26
@@ -4628,3 +4628,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: the same xUnit wrapper still calls `RecordingBackendFinalizeAndCleanup_PreservesFlashbackBoundaries`; its assertions now live beside the overload-policy, buffer-cycle, source-reader, and recording/Flashback queue policy checks in `RecordingQueue.OverloadPolicy.Tests.cs`.
 Notes for future agents: keep recording backend finalize/cleanup source-shape assertions with `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` while they share the same recording queue and Flashback backend source readers; split only if they gain distinct fixture state or a runtime harness.
+
+Date: 2026-05-27
+Area: Service namespace helper locality
+Problem: `ServiceNamespace.Helpers.Tests.cs` was a helper-only `Program` partial for source enumeration, project XML parsing, and C# comment/string stripping used by the service namespace architecture assertions. Reviewing the harness-visible service namespace boundary required opening a second file that had no independent execution surface or fixture state.
+Files consolidated: `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` service namespace test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ServiceNamespace|FullyQualifiedName~AutomationContracts"` (5 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: service namespace folder rules, service/source ownership orchestration, automation contract project/source alignment, and the shared XML/source parsing helpers now live together in `ServiceNamespace.FolderRules.Tests.cs`.
+Notes for future agents: keep service namespace architecture helpers with `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` while they only serve that test family; create a separate helper only if it becomes an independent fixture or is reused outside service namespace ownership tests.

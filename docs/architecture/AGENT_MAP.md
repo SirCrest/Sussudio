@@ -1750,8 +1750,7 @@ Primary current owners:
   orchestrator, plus app-service contract boundary assertions that keep
   `Sussudio/Services/Contracts` separate from `Sussudio.Automation.Contracts`
   wire/protocol ownership, and AutomationCommandKind project/source ownership
-  alignment across the app and automation tools.
-- `tests/Sussudio.Tests/ServiceNamespace.Helpers.Tests.cs` owns the shared source
+  alignment across the app and automation tools, plus the shared source
   enumeration, project XML, and C# comment/string stripping helpers used by
   service namespace architecture assertions.
 - `tests/Sussudio.Tests/ServiceNamespace.NativeXuProbe.Tests.cs` owns
