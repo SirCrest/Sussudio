@@ -271,7 +271,7 @@ static partial class Program
         var templateSelectionBlock = ExtractTextBetween(
             sourceText,
             "private bool TryInitializeSegmentOutputTemplate(",
-            "    private static bool TryValidateSegmentExportInputs");
+            "    private bool TryOpenSegmentInputForExport");
         var incompleteVideoParamsBlock = ExtractTextBetween(
             sourceText,
             "var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];",

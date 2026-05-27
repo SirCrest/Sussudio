@@ -1548,10 +1548,12 @@ DTS monotonicity, and native packet writes live there too.
 fields.
 
 Flashback exporter validation policy now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Validation.cs`. Keep
-completed-output length validation, normalized path comparison, output path
-validation, export-range validation, and segment/export-range overlap
-classification there. FFmpeg error string formatting/throwing lives in
+`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs` with the request
+execution and output replacement paths that consume it. Keep completed-output
+length validation, normalized path comparison, output path validation,
+export-range validation, segment/export-range overlap classification,
+multi-segment input validation, and readable-segment byte estimation there.
+FFmpeg error string formatting/throwing lives in
 `Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`, and timestamp
 math/saturated arithmetic lives in
 `Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs` so

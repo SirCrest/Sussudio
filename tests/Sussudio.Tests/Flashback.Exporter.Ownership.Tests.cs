@@ -28,8 +28,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var singleFileText = executionPolicyText;
         var outputFilesText = executionPolicyText;
-        var validationText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Validation.cs")
-            .Replace("\r\n", "\n");
+        var validationText = executionPolicyText;
         var segmentValidationText = validationText;
         var libAvErrorsText = lifecycleText;
         var packetTimingText = segmentPacketWritingText;
@@ -218,18 +217,19 @@ static partial class Program
         {
             "FlashbackExporter.OutputValidation.cs",
             "FlashbackExporter.PathValidation.cs",
-            "FlashbackExporter.SegmentSelection.cs"
+            "FlashbackExporter.SegmentSelection.cs",
+            "FlashbackExporter.Validation.cs"
         })
         {
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackExporter.Validation.cs");
+                $"{removedFile} folded into FlashbackExporter.Execution.cs");
         }
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SegmentValidation.cs")),
-            "FlashbackExporter.SegmentValidation.cs folded into FlashbackExporter.Validation.cs");
+            "FlashbackExporter.SegmentValidation.cs folded into FlashbackExporter.Execution.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackExporter.Progress.cs",
