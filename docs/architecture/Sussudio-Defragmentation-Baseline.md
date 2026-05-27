@@ -1214,6 +1214,18 @@ CLI/MCP/pipe checks, if applicable: not applicable
 Behavior preserved: `FfmpegRuntimeInit` and `FfmpegLogSuppressionScope` type names and call sites are unchanged; only their file owner changed to `FfmpegRuntimeLocator.cs`
 Notes for future agents: keep FFmpeg runtime root resolution, capability probes, native initialization, and log callback/suppression policy together unless native initialization needs a distinct lifecycle owner
 
+Date: 2026-05-26
+Area: Automation diagnostics evaluation lanes
+Problem: Diagnostic lane text builders lived in their own small partial even though they are constructed only inside `BuildDiagnosticEvaluation` and consumed by realtime/Flashback diagnostic verdicts.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: pending in current slice
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source ownership tests and runtime snapshot regression tests
+Behavior preserved: source, decode, preview, render, present, recording, audio, Flashback recording/export/temp/playback lane strings and recent-renderer summary values are unchanged; they now live with diagnostic evaluation orchestration
+Notes for future agents: keep diagnostic lane text builders with `AutomationDiagnosticsHub.Evaluation.cs` unless a lane grows independent policy or a dedicated evaluator type replaces the partial helper
+
 Date: 2026-05-21
 Area: Automation diagnostics realtime evaluation
 Problem: Idle and warmup diagnostic verdicts lived in a tiny partial separate from the realtime diagnostic verdict ordering that always evaluates them first.
@@ -1320,7 +1332,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership tests and runtime snapshot regression tests
 Behavior preserved: source and source-signal diagnostic lane text still feeds the same `DiagnosticEvaluationLanes` record before diagnostic verdict construction
-Notes for future agents: keep lightweight diagnostic lane text builders with `DiagnosticEvaluationLanes.cs` unless a lane grows independent policy
+Notes for future agents: lightweight diagnostic lane text builders now live with `AutomationDiagnosticsHub.Evaluation.cs`; extract a lane owner only if a lane grows independent policy
 
 Date: 2026-05-21
 Area: Automation diagnostics PreviewD3D projection
@@ -1560,7 +1572,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership and runtime snapshot regression tests
 Behavior preserved: Diagnostic lane text still reports the same decode, recording integrity, and audio integrity details
-Notes for future agents: keep trivial realtime lane text helpers with `DiagnosticEvaluationLanes.cs` unless they grow lane-specific policy
+Notes for future agents: keep trivial realtime lane text helpers with `AutomationDiagnosticsHub.Evaluation.cs` unless they grow lane-specific policy
 
 Date: 2026-05-21
 Area: Automation diagnostics Flashback evaluation lanes
@@ -1572,7 +1584,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -3 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership and runtime snapshot regression tests
 Behavior preserved: Flashback diagnostic lane text still reports the same recording, export, temp-cache, playback command, and playback performance details
-Notes for future agents: keep simple diagnostic lane text helpers with `DiagnosticEvaluationLanes.cs` unless they grow lane-specific policy
+Notes for future agents: keep simple diagnostic lane text helpers with `AutomationDiagnosticsHub.Evaluation.cs` unless they grow lane-specific policy
 
 Date: 2026-05-21
 Area: Automation diagnostics signal alert orchestration

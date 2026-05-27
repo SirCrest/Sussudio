@@ -118,7 +118,6 @@ static partial class Program
             "Realtime preview diagnostic evaluation helpers folded into realtime evaluation owner");
         AssertDoesNotContain(diagnostics.EvaluationText, "\"flashback_storage\"");
         AssertDoesNotContain(diagnostics.EvaluationText, "\"source_capture\"");
-        AssertDoesNotContain(diagnostics.EvaluationText, "var sourceTarget =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildSourceLane(health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildPreviewLane(");
@@ -143,6 +142,10 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationRenderLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationLanes(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs")),
+            "Diagnostic lane text builders folded into Evaluation owner");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluation.cs")),
