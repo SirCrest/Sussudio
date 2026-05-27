@@ -228,12 +228,12 @@ source projection flattening orchestration, source dimensions, frame-rate, HDR,
 video/audio format, firmware, input, USB, HDCP, raw timing field flattening, and
 final source telemetry availability, confidence, detail, age, backend,
 suppression, circuit-state, summary, and target-summary field flattening.
-`AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
-runtime, UI state, and recording verification plus HDR availability/request
-state, runtime/readiness fallback, HDR warmup/downgrade, pipeline parity,
-telemetry-alignment, and HDR truth verdict projection consumed by the automation
-snapshot DTO plus final HDR pipeline projection-to-`AutomationSnapshot` field
-flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns HDR truth
+classification from capture runtime, UI state, and recording verification plus
+HDR availability/request state, runtime/readiness fallback, HDR warmup/
+downgrade, pipeline parity, telemetry-alignment, and HDR truth verdict
+projection consumed by the automation snapshot DTO plus final HDR pipeline
+projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
 transitions, signal alert orchestration and rules for preview blank/stall/
 startup/cadence/display 1% low, capture cadence drop/1% low, audio muted
@@ -274,10 +274,10 @@ preview scheduler/renderer/present/display/visual-cadence lane formatting,
 Flashback recording/export/playback lane formatting, lane DTOs used by
 diagnostic verdicts, shared alert-detail formatting, and health classifiers
 used by alerts and diagnostic evaluation.
-`AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
-pipeline, source-HDR, and verification metadata evidence, plus preview HDR
-input detection, HDR pixel-format helpers used by preview state, and tone-map
-state projection.
+`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns HDR truth
+classification from capture pipeline, source-HDR, and verification metadata
+evidence, plus preview HDR input detection, HDR pixel-format helpers used by
+preview state, and tone-map state projection.
 `AutomationDiagnosticsHub.cs` owns start/stop/dispose and the polling loop.
 `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh
 APIs, refresh-gate serialization, core snapshot refresh orchestration, cached

@@ -431,12 +431,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsHdrPipelineProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsHdrPipelineProjection_LivesWithCaptureFormatProjection()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs")
+        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
@@ -479,7 +479,11 @@ static partial class Program
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs")),
-            "HDR pipeline projection partial folded into HDR diagnostics owner");
+            "HDR pipeline projection partial folded into capture-format projection owner");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Hdr.cs")),
+            "HDR diagnostics partial folded into capture-format projection owner");
 
         return Task.CompletedTask;
     }

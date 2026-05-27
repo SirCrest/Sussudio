@@ -532,8 +532,8 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsCaptureTransportProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task AutomationDiagnosticsHdrPipelineProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsHdrPipelineProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsHdrPipelineProjectionLivesWithCaptureFormatProjection()
+        => global::Program.AutomationDiagnosticsHdrPipelineProjection_LivesWithCaptureFormatProjection();
 
     [Fact]
     public Task AutomationDiagnosticsCaptureCadenceProjectionLivesInFocusedPartial()

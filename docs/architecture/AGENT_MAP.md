@@ -262,10 +262,10 @@ Automation diagnostics ownership:
   visual-cadence lane formatting, Flashback recording/export/playback lane
   formatting, lane DTOs used by diagnostic verdicts, shared alert-detail
   formatting, and health classifiers used by alerts and diagnostic evaluation.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs` owns HDR truth
-  classification from capture pipeline, source-HDR, and verification metadata
-  evidence, plus preview HDR input detection, HDR pixel-format helpers used by
-  preview state, and tone-map state projection.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
+  owns HDR truth classification from capture pipeline, source-HDR, and
+  verification metadata evidence, plus preview HDR input detection, HDR
+  pixel-format helpers used by preview state, and tone-map state projection.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   automation snapshot input projection for preview pacing stage classification.
 - `Sussudio/Services/Automation/PreviewPacingSlowStageClassifier.cs` owns the
@@ -327,10 +327,14 @@ Automation diagnostics ownership:
   format/quality/HDR toggle/audio toggle, negotiated capture
   dimensions/frame-rate/pixel format, source-reader subtype and observed
   pixel/surface format projection inputs, encoder format/codec/profile and
-  ten-bit confirmation projection, capture memory preference, requested/
-  negotiated video subtype, frame-ledger projection, final capture-format
-  flattening, and final capture-transport projection-to-`AutomationSnapshot`
-  field flattening.
+  ten-bit confirmation projection, HDR truth classification from capture
+  runtime, UI state, and recording verification, HDR availability/request state,
+  runtime/readiness fallback, HDR warmup/downgrade, pipeline parity, telemetry
+  alignment, HDR truth verdict projection, preview HDR input detection,
+  tone-map state projection, capture memory preference, requested/negotiated
+  video subtype, frame-ledger projection, final capture-format flattening, and
+  final capture-transport/HDR-pipeline projection-to-`AutomationSnapshot` field
+  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`
   owns CPU MJPEG totals, compressed queue, failure,
   decode/interop-copy/callback/reorder/pipeline timing, decoder count,
@@ -385,12 +389,6 @@ Automation diagnostics ownership:
   metadata, last verification result projection consumed by `AutomationSnapshot`,
   and final recording integrity/pipeline/backend/output projection-to-
   `AutomationSnapshot` field flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Hdr.cs` owns HDR truth
-  classification from capture runtime, UI state, and recording verification plus
-  HDR availability/request state, runtime/readiness fallback, HDR
-  warmup/downgrade, pipeline parity, telemetry-alignment, and HDR truth verdict
-  projection plus final HDR pipeline projection-to-`AutomationSnapshot` field
-  flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` owns
   stateful snapshot bookkeeping for audio mute suspicion and recording file
   growth tracking.
