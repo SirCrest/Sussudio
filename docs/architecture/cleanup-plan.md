@@ -250,7 +250,7 @@ orchestration, command queue/failure alerts, target-rate/present-cadence/
 slow-playback/frametime alerts, submit-failure alerts, audio-master fallback
 alerts, audio-queue backlog alerts, diagnostics event publication, event
 throttling, Flashback export completion events, and recent event storage.
-`AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
+`AutomationDiagnosticsHub.Snapshots.cs` also owns manual recording/file
 verification entry points, flashback-export verification profile shaping, event
 publication for explicit verification, last-verification snapshot state,
 post-recording auto-verification gating, and background scheduling.
@@ -286,17 +286,14 @@ state projection.
 APIs, refresh-gate serialization, core snapshot refresh orchestration, cached
 last-output file existence/size probing, process CPU/memory/GC/thread-pool
 sampling, latest-snapshot publication, timeline append, event notification, and
-auto-verification handoff plus automation snapshot input projection for preview
-pacing stage classification.
+auto-verification handoff, manual recording/file verification commands,
+verification-profile adaptation, explicit verification events, automatic
+post-recording verification scheduling, recording-start verification reset, plus
+automation snapshot input projection for preview pacing stage classification.
 `PreviewPacingSlowStageClassifier.cs` owns the preview pacing DTOs plus pure
 slow-stage classification ordering: source capture, visual duplicate/low-motion,
 MJPEG decode, preview jitter scheduler, compositor-miss, renderer-submit, and
 D3D dominance predicates/evidence.
-`AutomationDiagnosticsHub.Verification.cs` owns manual recording/file
-verification commands, verification-profile adaptation, explicit verification
-events, automatic post-recording verification scheduling, and recording-start
-verification reset.
-
 Automation command dispatch now keeps the root router focused on the command
 envelope, correlation setup, manifest revision checks, auth command handling,
 unauthorized-command rejection, readiness gating, dispatch pipeline shell, and

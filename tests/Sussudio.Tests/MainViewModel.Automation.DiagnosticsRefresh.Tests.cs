@@ -630,9 +630,9 @@ static partial class Program
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);");
-        AssertDoesNotContain(diagnostics.SnapshotsText, "_lastVerification = null;");
+        AssertContains(diagnostics.SnapshotsText, "_lastVerification = null;");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
-        AssertDoesNotContain(diagnostics.SnapshotsText, "Automatic recording verification started.");
+        AssertContains(diagnostics.SnapshotsText, "Automatic recording verification started.");
         AssertContains(diagnostics.SnapshotsCoreText, "new FileInfo(lastOutputPath).Length");
         AssertContains(diagnostics.SnapshotsCoreText, "GC.GetGCMemoryInfo()");
         AssertDoesNotContain(diagnostics.HubText, "private double CalculateProcessCpuPercent(double processCpuTotalMs)");
