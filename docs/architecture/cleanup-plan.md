@@ -90,7 +90,7 @@ intentionally a single `init`-property map: do not split it by adding mutable
 setters or shallow fragment records unless a deliberate snapshot construction
 pattern is introduced first. `AutomationDiagnosticsHub.Snapshots.cs` owns
 stateful snapshot bookkeeping for audio mute suspicion and recording file growth
-tracking. `AutomationDiagnosticsHub.Timeline.cs` owns performance-timeline ring
+tracking. `AutomationDiagnosticsHub.cs` owns performance-timeline ring
 reads, append mechanics, final `AutomationSnapshot` to
 `PerformanceTimelineEntry` assignment, timestamp, observed capture/preview FPS,
 encoder video queue depth/drop, capture cadence, process, memory, GC,
@@ -278,7 +278,7 @@ used by alerts and diagnostic evaluation.
 classification from capture pipeline, source-HDR, and verification metadata
 evidence, plus preview HDR input detection, HDR pixel-format helpers used by
 preview state, and tone-map state projection.
-`AutomationDiagnosticsHub.cs` owns start/stop/dispose and the polling loop.
+`AutomationDiagnosticsHub.cs` owns start/stop/dispose, the polling loop, and performance-timeline ring reads/projection.
 `AutomationDiagnosticsHub.Snapshots.cs` owns public snapshot read/refresh
 APIs, refresh-gate serialization, core snapshot refresh orchestration, cached
 last-output file existence/size probing, process CPU/memory/GC/thread-pool

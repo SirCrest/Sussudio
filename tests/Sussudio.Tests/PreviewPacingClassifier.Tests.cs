@@ -74,8 +74,7 @@ public sealed class PreviewPacingClassifierTests
             + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText
             + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
             + "\n" + diagnosticsPreviewPacingText
-            + "\n" + diagnosticsCountersText
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs");
+            + "\n" + diagnosticsCountersText;
 
         Assert.Contains("public string PreviewPacingLikelySlowStage { get; init; }", contractsText);
         Assert.Contains("public string PreviewPacingSlowStageConfidence { get; init; }", contractsText);

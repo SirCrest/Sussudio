@@ -24,8 +24,7 @@ public partial class SnapshotModelsTests
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"),
-            sourceSignalProjectionText,
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Timeline.cs"));
+            sourceSignalProjectionText);
 
         Assert.Contains("public string? SourceFirmware { get; init; }", contractsText);
         Assert.Contains("public string? SourceAudioFormat { get; init; }", contractsText);
