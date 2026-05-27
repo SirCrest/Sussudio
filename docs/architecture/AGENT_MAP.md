@@ -943,8 +943,8 @@ Primary current owners:
   behavior plus full-screen key routing and timeline eligibility.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` wires the controller context,
   button/menu/double-tap and automation command adapters, key routing, pointer,
-  and auto-hide adapters. Flashback command execution remains in
-  `Sussudio/Controllers/Flashback/FlashbackCommandController.cs`.
+  and auto-hide adapters. Flashback command execution lives in
+  `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns automation
   whole-window screenshot dispatch plus preview-frame screenshot button workflow:
   UI-thread enqueue/cancellation, failure wrapping, native PrintWindow capture,
@@ -1979,9 +1979,7 @@ Primary current owners:
   sizing, show/hide storyboard state, immediate collapse, and fullscreen
   animation reset. `Sussudio/MainWindow.Flashback.Interactions.cs` owns the XAML-facing
   command, polling, playhead, scrub, settings, timeline, and presentation
-  adapter surface.
-  Command semantics live in
-  `FlashbackCommandController`.
+  adapter surface. Command semantics live in `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` owns active
   Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
   cleanup, fullscreen scrub termination, lockout clearing, and scrub visual
@@ -2006,11 +2004,11 @@ Primary current owners:
   refresh order, playback state polling start/stop, play/pause glyph policy,
   Go Live enabled state, buffer-duration text, buffer-fill/position/marker
   refresh order, and position-label updates with CTI re-anchor gating.
-- `Sussudio/Controllers/Flashback/FlashbackCommandController.cs` owns Flashback command
-  semantics for in/out points, clear, play/pause, Go Live, fullscreen keyboard
-  shortcuts including left/right nudge rejection logging, export, save-last-5m,
-  enable-toggle rollback, and apply/restart. `Sussudio/MainWindow.Flashback.Interactions.cs`
-  preserves the XAML command event-handler surface.
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
+  Flashback command semantics for in/out points, clear, play/pause, Go Live,
+  fullscreen keyboard shortcuts including left/right nudge rejection logging,
+  export, save-last-5m, enable-toggle rollback, apply/restart, and the XAML
+  command event-handler surface adapter.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback export progress-bar value, visibility, and reset-on-complete
   semantics. `Sussudio/MainWindow.Flashback.Interactions.cs` wires the
@@ -2020,7 +2018,7 @@ Primary current owners:
   duration combo selection/sync, and buffer-duration change logging.
   `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing settings
   adapter; enable toggle rollback and apply/restart command behavior live in
-  `FlashbackCommandController`.
+  `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.Flashback.Interactions.cs`
   is the XAML-facing adapter; CTI anchor timing lives in

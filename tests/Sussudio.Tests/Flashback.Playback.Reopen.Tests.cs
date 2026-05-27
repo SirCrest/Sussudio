@@ -254,7 +254,7 @@ static partial class Program
         AssertContains(sourceText, "public TimeSpan SetOutPointAt(TimeSpan position) => SetOutPointAt((TimeSpan?)position);");
         AssertContains(sourceText, "InPoint = null;\n        OutPoint = null;\n        ClearLastCommandFailure();");
 
-        var flashbackCommandController = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
+        var flashbackCommandController = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
             .Replace("\r\n", "\n");
         AssertContains(flashbackCommandController, "_context.ViewModel.FlashbackSetInPointAt(_context.ViewModel.FlashbackPlaybackPosition)");
         AssertContains(flashbackCommandController, "_context.ViewModel.FlashbackSetOutPointAt(_context.ViewModel.FlashbackPlaybackPosition)");

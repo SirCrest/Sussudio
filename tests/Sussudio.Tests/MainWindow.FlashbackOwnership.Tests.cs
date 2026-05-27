@@ -235,7 +235,7 @@ static partial class Program
         var adapterText = ReadMainWindowFlashbackAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var commandAdapterText = ReadMainWindowFlashbackAdapterSource();
-        var commandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs").Replace("\r\n", "\n");
+        var commandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private FlashbackSettingsBindingController _flashbackSettingsBindingController = null!;");
         AssertContains(adapterText, "private void InitializeFlashbackSettingsBindingController()");
@@ -305,6 +305,10 @@ static partial class Program
             true,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
             "Flashback command adapter lives in the consolidated Flashback interaction adapter");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackCommandController.cs")),
+            "Flashback command controller folded into FlashbackUiControllers.cs");
         AssertDoesNotContain(flashbackText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
         AssertDoesNotContain(bindingsText, "FlashbackEnabledToggle.IsOn = ViewModel.IsFlashbackEnabled;");
         AssertDoesNotContain(bindingsText, "FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;");

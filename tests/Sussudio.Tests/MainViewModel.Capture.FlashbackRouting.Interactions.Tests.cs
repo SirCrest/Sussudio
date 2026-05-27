@@ -10,7 +10,7 @@ static partial class Program
     internal static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
     {
         var flashbackWindowText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
+        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
             .Replace("\r\n", "\n");
         var flashbackScrubText = ReadMainWindowFlashbackAdapterSource();
         var flashbackScrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs")
@@ -198,7 +198,7 @@ static partial class Program
     {
         var flashbackWindowText = ReadMainWindowFlashbackAdapterSource();
         var flashbackCommandAdapterText = ReadMainWindowFlashbackAdapterSource();
-        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackCommandController.cs")
+        var flashbackCommandControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs")
             .Replace("\r\n", "\n");
         var flashbackTimelineText = ReadMainWindowFlashbackAdapterSource();
         var fullScreenText = ReadMainWindowShellChromeAdapterSource();
@@ -281,6 +281,10 @@ static partial class Program
         AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = true;");
         AssertContains(flashbackCommandControllerText, "_context.FlashbackEnabledToggle.IsOn = previousEnabled;");
         AssertContains(flashbackCommandControllerText, "_suppressFlashbackEnabledToggle = false;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackCommandController.cs")),
+            "Flashback command controller folded into FlashbackUiControllers.cs");
         AssertDoesNotContain(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
         AssertDoesNotContain(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
 
