@@ -2447,6 +2447,9 @@ Primary current owners:
   `MainViewModel.AutomationCommands.cs` also owns automation-facing source/preview probes and preview frame capture.
   `MainViewModel.AutomationCommands.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
   `ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.
+  `tests/Sussudio.Tests/ViewModelBuilders.Tests.cs` owns executable coverage for
+  those pure view-model DTO builders plus source telemetry and live-signal text
+  presentation helpers.
   `MainViewModel.AutomationCommands.cs` owns automation-facing options
   UI-thread snapshot capture for CLI/MCP clients, while
   `ViewModelBuilders.cs` owns the pure selected-control-state DTO

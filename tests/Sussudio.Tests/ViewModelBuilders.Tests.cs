@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using Xunit;
 
@@ -236,6 +237,227 @@ public sealed class ViewModelBuildersTests
         Assert.Equal(string.Empty, Get(snapshot, "CaptureCommandLastError"));
     }
 
+    [Fact]
+    public void LiveSignalTextProjection_PreservesPixelFormatFallbackOrder()
+    {
+        var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs");
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs");
+        var liveSignalText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
+        var builderType = RequireType("Sussudio.ViewModels.LiveSignalTextPresentationBuilder");
+        var snapshotType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
+        var buildMethod = builderType.GetMethod("Build", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build was not found.");
+
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(runtimeLifecycleControllerText, "_context.ResetLiveCaptureInfo();");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "IsAudioPreviewActive =");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateLiveCaptureInfo(");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "private void ResetLiveCaptureInfo()");
+        AssertContains(capturePresentationText, "private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(capturePresentationText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
+        AssertContains(capturePresentationText, "var liveSignalText = LiveSignalTextPresentationBuilder.Build(");
+        AssertContains(capturePresentationText, "_captureService.EncoderCodecName,");
+        AssertContains(capturePresentationText, "LiveInfoUnavailable);");
+        AssertContains(capturePresentationText, "LiveResolution = liveSignalText.Resolution;");
+        AssertContains(capturePresentationText, "LiveFrameRate = liveSignalText.FrameRate;");
+        AssertContains(capturePresentationText, "LivePixelFormat = liveSignalText.PixelFormat;");
+        AssertContains(capturePresentationText, "private void ResetLiveCaptureInfo()");
+        AssertContains(capturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
+        AssertContains(capturePresentationText, "if (!value && !IsRecording)");
+        AssertContains(capturePresentationText, "IsAudioPreviewActive = false;");
+        AssertContains(capturePresentationText, "LiveResolution = LiveInfoUnavailable;");
+        AssertContains(capturePresentationText, "LiveFrameRate = LiveInfoUnavailable;");
+        AssertContains(capturePresentationText, "LivePixelFormat = LiveInfoUnavailable;");
+        Assert.False(
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CapturePresentation.cs")),
+            "MainViewModel.CapturePresentation.cs folded into capture state");
+        Assert.False(
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.LiveSignalPresentation.cs")),
+            "old live signal presentation file removed");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.ReaderSourceSubtype ??");
+        AssertDoesNotContain(runtimeLifecycleControllerText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertContains(liveSignalText, "internal static class LiveSignalTextPresentationBuilder");
+        AssertContains(liveSignalText, "internal static LiveSignalTextPresentation Build(");
+        AssertContains(liveSignalText, "runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth");
+        AssertContains(liveSignalText, "runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight");
+        AssertContains(liveSignalText, "runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate");
+        AssertContains(liveSignalText, "frameRateValue.Value.ToString(\"0.00\")");
+        AssertContains(liveSignalText, "runtime.ReaderSourceSubtype ??");
+        AssertContains(liveSignalText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertContains(liveSignalText, "\"hevc_nvenc\" => \" / HEVC\"");
+        AssertContains(liveSignalText, "\"h264_nvenc\" => \" / H264\"");
+        AssertContains(liveSignalText, "\"av1_nvenc\" => \" / AV1\"");
+        AssertContains(liveSignalText, "? unavailableText");
+        Assert.True(
+            liveSignalText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) <
+            liveSignalText.IndexOf("runtime.LatestObservedFramePixelFormat ??", StringComparison.Ordinal),
+            "MainViewModel.LivePixelFormat should prefer ReaderSourceSubtype before LatestObservedFramePixelFormat.");
+
+        var actualRuntime = Activator.CreateInstance(snapshotType)
+            ?? throw new InvalidOperationException("Failed to create CaptureRuntimeSnapshot.");
+        SetPropertyOrBackingField(actualRuntime, "RequestedWidth", (uint?)1280);
+        SetPropertyOrBackingField(actualRuntime, "RequestedHeight", (uint?)720);
+        SetPropertyOrBackingField(actualRuntime, "NegotiatedWidth", (uint?)1920);
+        SetPropertyOrBackingField(actualRuntime, "NegotiatedHeight", (uint?)1080);
+        SetPropertyOrBackingField(actualRuntime, "ActualWidth", (uint?)3840);
+        SetPropertyOrBackingField(actualRuntime, "ActualHeight", (uint?)2160);
+        SetPropertyOrBackingField(actualRuntime, "RequestedFrameRate", 30d);
+        SetPropertyOrBackingField(actualRuntime, "NegotiatedFrameRate", 59.94d);
+        SetPropertyOrBackingField(actualRuntime, "ActualFrameRate", 119.88d);
+        SetPropertyOrBackingField(actualRuntime, "RequestedPixelFormat", "MJPG");
+        SetPropertyOrBackingField(actualRuntime, "RequestedReaderSubtype", "YUY2");
+        SetPropertyOrBackingField(actualRuntime, "LatestObservedFramePixelFormat", "P010");
+        SetPropertyOrBackingField(actualRuntime, "NegotiatedPixelFormat", "NV12");
+        SetPropertyOrBackingField(actualRuntime, "VideoNegotiatedSubtype", "I420");
+        SetPropertyOrBackingField(actualRuntime, "ReaderSourceSubtype", "RGB32");
+
+        var actualPresentation = buildMethod.Invoke(null, new object?[] { actualRuntime, "av1_nvenc", "\u2014" })
+            ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build returned null.");
+        Assert.Equal("3840x2160", GetStringProperty(actualPresentation, "Resolution"));
+        Assert.Equal("119.88", GetStringProperty(actualPresentation, "FrameRate"));
+        Assert.Equal("RGB32 / AV1", GetStringProperty(actualPresentation, "PixelFormat"));
+
+        var fallbackRuntime = Activator.CreateInstance(snapshotType)
+            ?? throw new InvalidOperationException("Failed to create fallback CaptureRuntimeSnapshot.");
+        SetPropertyOrBackingField(fallbackRuntime, "RequestedWidth", (uint?)1280);
+        SetPropertyOrBackingField(fallbackRuntime, "RequestedHeight", (uint?)720);
+        SetPropertyOrBackingField(fallbackRuntime, "RequestedFrameRate", 30d);
+        SetPropertyOrBackingField(fallbackRuntime, "VideoNegotiatedSubtype", null);
+        SetPropertyOrBackingField(fallbackRuntime, "NegotiatedPixelFormat", null);
+        SetPropertyOrBackingField(fallbackRuntime, "LatestObservedFramePixelFormat", null);
+        SetPropertyOrBackingField(fallbackRuntime, "RequestedReaderSubtype", null);
+        SetPropertyOrBackingField(fallbackRuntime, "RequestedPixelFormat", "MJPG");
+
+        var fallbackPresentation = buildMethod.Invoke(null, new object?[] { fallbackRuntime, "hevc_nvenc", "\u2014" })
+            ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build returned null.");
+        Assert.Equal("1280x720", GetStringProperty(fallbackPresentation, "Resolution"));
+        Assert.Equal("30.00", GetStringProperty(fallbackPresentation, "FrameRate"));
+        Assert.Equal("MJPG / HEVC", GetStringProperty(fallbackPresentation, "PixelFormat"));
+
+        var unavailablePresentation = buildMethod.Invoke(
+                null,
+                new object?[] { CreateLiveSignalUnavailableRuntime(snapshotType), "libx264", "\u2014" })
+            ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build returned null.");
+        Assert.Equal("\u2014", GetStringProperty(unavailablePresentation, "Resolution"));
+        Assert.Equal("\u2014", GetStringProperty(unavailablePresentation, "FrameRate"));
+        Assert.Equal("\u2014", GetStringProperty(unavailablePresentation, "PixelFormat"));
+    }
+
+    [Fact]
+    public void SourceTelemetryPresentationBuilder_PreservesSummaryAndTargetText()
+    {
+        var builderType = RequireType("Sussudio.ViewModels.SourceTelemetryPresentationBuilder");
+        var snapshotType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var buildSourceSummary = builderType.GetMethod("BuildSourceSummary", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("SourceTelemetryPresentationBuilder.BuildSourceSummary was not found.");
+        var buildAgeText = builderType.GetMethod("BuildAgeText", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("SourceTelemetryPresentationBuilder.BuildAgeText was not found.");
+        var buildTargetSummary = builderType.GetMethod("BuildTargetSummary", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("SourceTelemetryPresentationBuilder.BuildTargetSummary was not found.");
+
+        var now = new DateTimeOffset(2026, 5, 14, 22, 10, 30, TimeSpan.Zero);
+        var unavailable = snapshotType.GetMethod(
+            "CreateUnavailable",
+            BindingFlags.Public | BindingFlags.Static,
+            binder: null,
+            types: new[] { typeof(string), typeof(string) },
+            modifiers: null)!.Invoke(null, new object?[] { "telemetry-not-started", null })!;
+        Assert.Equal(
+            "Source: waiting for signal telemetry",
+            buildSourceSummary.Invoke(null, new[] { unavailable, now }));
+
+        var full = Activator.CreateInstance(snapshotType)
+            ?? throw new InvalidOperationException("Failed to create SourceSignalTelemetrySnapshot.");
+        SetPropertyOrBackingField(full, "Availability", ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Available"));
+        SetPropertyOrBackingField(full, "Confidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "High"));
+        SetPropertyOrBackingField(full, "Width", 3840);
+        SetPropertyOrBackingField(full, "Height", 2160);
+        SetPropertyOrBackingField(full, "FrameRateExact", 120000d / 1001d);
+        SetPropertyOrBackingField(full, "FrameRateArg", "120000/1001");
+        SetPropertyOrBackingField(full, "IsHdr", true);
+        SetPropertyOrBackingField(full, "TimestampUtc", now.AddSeconds(-17));
+        Assert.Equal(
+            "Source: 3840x2160 @ 120000/1001 | HDR | Available/High | updated 17s ago",
+            buildSourceSummary.Invoke(null, new[] { full, now }));
+
+        var partial = Activator.CreateInstance(snapshotType)
+            ?? throw new InvalidOperationException("Failed to create partial SourceSignalTelemetrySnapshot.");
+        SetPropertyOrBackingField(partial, "Availability", ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Stale"));
+        SetPropertyOrBackingField(partial, "Confidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "Low"));
+        SetPropertyOrBackingField(partial, "FrameRateExact", 59.94d);
+        SetPropertyOrBackingField(partial, "TimestampUtc", now.AddSeconds(2));
+        Assert.Equal(
+            "Source: ?x? @ 59.94 | HDR? | Stale/Low | updated now",
+            buildSourceSummary.Invoke(null, new[] { partial, now }));
+
+        Assert.Equal("updated ?", buildAgeText.Invoke(null, new object?[] { null, now }));
+        Assert.Equal(
+            "Target: Auto (3840 x 2160) @ 60 (exact 60000/1001) | HDR=Ready",
+            buildTargetSummary.Invoke(null, new object?[] { "Auto (3840 x 2160)", 59.94d, 60d, 60000d / 1001d, "60000/1001", "Ready" }));
+        Assert.Equal(
+            "Target: 1080p @ 0 (exact ?) | HDR=Unknown",
+            buildTargetSummary.Invoke(null, new object?[] { "1080p", 0d, null, null, null, " " }));
+    }
+
+    [Fact]
+    public void SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
+    {
+        var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs");
+        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs");
+        var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureState.cs");
+        var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
+        var sourceTelemetryBuilderText = ExtractTextBetween(
+            builderText,
+            "internal static class SourceTelemetryPresentationBuilder",
+            "internal static class AutomationOptionsSnapshotBuilder");
+
+        AssertContains(telemetryText, "_context.BuildSourceTelemetrySummary(_context.GetLatestSourceTelemetry(), DateTimeOffset.UtcNow);");
+        AssertContains(telemetryText, "_context.SetSourceTelemetrySummaryText(_context.BuildSourceTelemetrySummary(snapshot, DateTimeOffset.UtcNow));");
+        AssertContains(controllerGraphText, "BuildSourceTelemetrySummary = SourceTelemetryPresentationBuilder.BuildSourceSummary,");
+        AssertContains(telemetryText, "_context.UpdateTargetSummary();");
+        AssertDoesNotContain(telemetryText, "private void UpdateHdrRuntimeStatusFromCapture(");
+        AssertContains(capturePresentationText, "private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)");
+        AssertContains(capturePresentationText, "HdrRuntimeState = runtime.HdrRuntimeState;");
+        AssertContains(capturePresentationText, "HdrReadinessReason = runtime.HdrReadinessReason;");
+        AssertContains(capturePresentationText, "UpdateTargetSummary();");
+        AssertDoesNotContain(telemetryText, "private void UpdateTargetSummary()");
+        AssertDoesNotContain(telemetryText, "SourceTelemetryPresentationBuilder.BuildTargetSummary(");
+        AssertContains(capturePresentationText, "private void UpdateTargetSummary()");
+        AssertContains(capturePresentationText, "SourceTargetSummaryText = SourceTelemetryPresentationBuilder.BuildTargetSummary(");
+        AssertContains(capturePresentationText, "GetSelectedResolutionDisplayText(),");
+        AssertContains(capturePresentationText, "SelectedFriendlyFrameRate,");
+        AssertContains(capturePresentationText, "SelectedExactFrameRate,");
+        AssertContains(capturePresentationText, "SelectedExactFrameRateArg,");
+        Assert.False(
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.HdrRuntimePresentation.cs")),
+            "old HDR runtime presentation file removed");
+        Assert.False(
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetSummaryPresentation.cs")),
+            "old target summary presentation file removed");
+        AssertContains(capturePresentationText, "private string GetSelectedResolutionDisplayText()");
+        Assert.False(
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.TargetPresentation.cs")),
+            "old target presentation file removed");
+        Assert.False(
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutoResolutionPresentation.cs")),
+            "old auto resolution presentation file removed");
+        AssertDoesNotContain(telemetryText, "private static string BuildSourceTelemetrySummaryText(");
+        AssertDoesNotContain(telemetryText, "private static string BuildTelemetryAgeText(");
+        AssertDoesNotContain(telemetryText, "Source: waiting for signal telemetry");
+        AssertDoesNotContain(telemetryText, "Target: {GetSelectedResolutionDisplayText()}");
+        AssertContains(sourceTelemetryBuilderText, "internal static class SourceTelemetryPresentationBuilder");
+        AssertContains(sourceTelemetryBuilderText, "internal static string BuildSourceSummary(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)");
+        AssertContains(sourceTelemetryBuilderText, "internal static string BuildAgeText(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)");
+        AssertContains(sourceTelemetryBuilderText, "TelemetryAgeHelper.ComputeAgeSeconds(timestampUtc, nowUtc)");
+        AssertContains(sourceTelemetryBuilderText, "snapshot.FrameRateArg ??");
+        AssertContains(sourceTelemetryBuilderText, "snapshot.FrameRateExact?.ToString(\"0.###\")");
+        AssertContains(sourceTelemetryBuilderText, "snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? \"HDR\" : \"SDR\") : \"HDR?\"");
+        AssertContains(sourceTelemetryBuilderText, "internal static string BuildTargetSummary(");
+        AssertContains(sourceTelemetryBuilderText, "string.IsNullOrWhiteSpace(hdrRuntimeState) ? \"Unknown\" : hdrRuntimeState");
+        AssertDoesNotContain(sourceTelemetryBuilderText, "GetSelectedResolutionDisplayText()");
+        AssertDoesNotContain(sourceTelemetryBuilderText, "SourceTelemetrySummaryText =");
+    }
+
     private static object CreateInput(Type type, params (string Property, object? Value)[] values)
     {
         var instance = Activator.CreateInstance(type)
@@ -272,4 +494,61 @@ public sealed class ViewModelBuildersTests
                        ?? throw new InvalidOperationException($"{instance.GetType().Name}.{propertyName} was not found.");
         return property.GetValue(instance);
     }
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static object ParseEnum(string typeName, string value)
+        => Enum.Parse(RequireType(typeName), value);
+
+    private static void SetPropertyOrBackingField(object instance, string propertyName, object? value)
+    {
+        var property = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+        if (property?.SetMethod != null)
+        {
+            property.SetValue(instance, value);
+            return;
+        }
+
+        var field = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Backing field for {propertyName} was not found.");
+        field.SetValue(instance, value);
+    }
+
+    private static string GetStringProperty(object instance, string propertyName)
+        => Get(instance, propertyName) as string
+           ?? throw new InvalidOperationException($"{propertyName} was not a string.");
+
+    private static object CreateLiveSignalUnavailableRuntime(Type snapshotType)
+    {
+        var runtime = Activator.CreateInstance(snapshotType)
+            ?? throw new InvalidOperationException("Failed to create unavailable CaptureRuntimeSnapshot.");
+        SetPropertyOrBackingField(runtime, "VideoNegotiatedSubtype", null);
+        SetPropertyOrBackingField(runtime, "NegotiatedPixelFormat", null);
+        SetPropertyOrBackingField(runtime, "LatestObservedFramePixelFormat", null);
+        SetPropertyOrBackingField(runtime, "RequestedReaderSubtype", null);
+        SetPropertyOrBackingField(runtime, "RequestedPixelFormat", null);
+        return runtime;
+    }
+
+    private static string ReadRepoFile(string relativePath)
+        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
+
+    private static string GetRepoRoot()
+        => RuntimeContractSource.GetRepoRoot();
+
+    private static string ExtractTextBetween(string source, string startToken, string endToken)
+    {
+        var start = source.IndexOf(startToken, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Start token '{startToken}' was not found.");
+        var end = source.IndexOf(endToken, start + startToken.Length, StringComparison.Ordinal);
+        Assert.True(end >= 0, $"End token '{endToken}' was not found after '{startToken}'.");
+        return source.Substring(start, end - start);
+    }
+
+    private static void AssertContains(string actual, string expectedSubstring)
+        => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
+
+    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
+        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 }

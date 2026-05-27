@@ -4676,3 +4676,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: capture selection-policy fixture helpers now live in `MainViewModel.Capture.SelectionPolicy.Tests.cs`; related selection-policy, settings-projection, and MainWindow capture-binding tests continue to call the same `Program` helper methods.
 Notes for future agents: keep capture selection-policy reflection and option-list fixture helpers with `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` while they only support capture selection behavior tests; split only for a named reusable fixture type.
+
+Date: 2026-05-27
+Area: ViewModel builder test locality
+Problem: `MainViewModel.PresentationTelemetry.SourceBuilder.Tests.cs` was a small legacy `Program` partial carrying source telemetry and live-signal presentation-builder checks for the same `ViewModelBuilders.cs` owner already covered by direct xUnit tests in `ViewModelBuilders.Tests.cs`. The wrapper class in `XUnit.PresentationPreviewContractsTests.cs` added another forwarding layer for builder-only checks with no independent fixture state.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.PresentationTelemetry.SourceBuilder.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` MainViewModel presentation telemetry test partial-family file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ViewModelBuilders|FullyQualifiedName~PresentationPreviewMainViewModelSourceTelemetry|FullyQualifiedName~SourceTelemetryPresentation|FullyQualifiedName~LiveSignalTextProjection"` (5 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: automation options builder, view-model runtime snapshot builder, source telemetry presentation, target summary formatting, and live-signal fallback-order checks now run directly from `ViewModelBuilders.Tests.cs`.
+Notes for future agents: keep pure `ViewModelBuilders.cs` executable coverage in `tests/Sussudio.Tests/ViewModelBuilders.Tests.cs`; use presentation-preview wrapper files only for feature-facing `Program` legacy tests that still need that compatibility surface.

@@ -118,14 +118,18 @@ add xUnit alongside, and port incrementally.
   diagnostic-session catalog has no remaining legacy registrations.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview harness registration guard.
+- `ViewModelBuilders.Tests.cs` owns the direct xUnit coverage for pure
+  `ViewModelBuilders.cs` DTO builders plus source telemetry and live-signal
+  text presentation helpers; do not add a legacy `Program` partial for new
+  builder-only presentation checks.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former
   legacy presentation-preview MainViewModel xUnit execution groups: initial
   recording transition failure propagation, audio controls and monitoring,
-  output path and disk-space presentation, source telemetry, dependency
-  composition, runtime automation/capture settings, preview lifecycle, and
-  audio ramp trace telemetry. The public wrapper classes remain separate inside
-  this file so existing test identities stay stable while the execution surface
-  is easier to scan.
+  output path and disk-space presentation, dependency composition, runtime
+  automation/capture settings, preview lifecycle, and audio ramp trace
+  telemetry. The public wrapper classes remain separate inside this file so
+  existing test identities stay stable while the execution surface is easier to
+  scan.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview MainWindow xUnit execution groups: window lifecycle,
   launch/startup, preview screenshot, shell chrome, visual shell, recording

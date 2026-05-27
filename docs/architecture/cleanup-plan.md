@@ -3444,7 +3444,9 @@ owner, fold it back into that owner and update the source-shape tests and
    probes, and preview frame capture now live in
    `MainViewModel.AutomationCommands.cs`; automation-facing view-model runtime snapshot UI-thread capture now lives in
    `MainViewModel.AutomationCommands.cs`; pure view-model runtime snapshot DTO
-   construction lives in `ViewModelBuilders.cs`;
+   construction lives in `ViewModelBuilders.cs`, with executable builder,
+   source telemetry, and live-signal text coverage in
+   `tests/Sussudio.Tests/ViewModelBuilders.Tests.cs`;
    automation options UI-thread snapshot capture now lives in
    `MainViewModel.AutomationCommands.cs`; pure selected-control-state DTO
    construction lives in `ViewModelBuilders.cs`.
