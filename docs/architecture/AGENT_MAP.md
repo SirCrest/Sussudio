@@ -2592,7 +2592,7 @@ Primary current owners:
   `MainViewModel.AutomationCommands.cs` keeps the stable public automation
   facade for capture resolution, frame-rate, video-format, MJPEG decoder
   worker-count, recording format, encoder, and output-path settings.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`
   is a top-level `Sussudio.Controllers` owner for UI-thread setting mutations,
   validation, MJPEG decoder clamping, and active capture-mode reinitialization
   routing.
@@ -2602,7 +2602,7 @@ Primary current owners:
   `MainViewModel.CaptureSelection.cs` owns capture-mode/HDR
   property-change side effects outside the capture-settings automation
   controller.
-  `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`
   is a top-level `Sussudio.Controllers` owner for UI-thread setting mutations,
   HDR compatibility enforcement, Flashback cycle suppression, coordinator side
   effects, bitrate clamp policy, encoder preset, and output-path directory

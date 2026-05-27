@@ -3634,7 +3634,7 @@ owner, fold it back into that owner and update the source-shape tests and
    suppression, coordinator side effects, custom bitrate clamping, encoder
    preset, and output-path directory creation live in
    the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.
    It also owns the recording-settings automation graph-port contract for UI
    dispatch, option collections, suppression flags, selected encoder/output
    state, recording-format coordinator updates, and Flashback encoder setting
@@ -3653,7 +3653,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `MainViewModel.AutomationCommands.cs` compatibility facade, while
    UI-thread mutations, validation, MJPEG decoder clamping, and active
    capture-mode reinitialization routing live in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureSettingsAutomationController.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.
    It also owns the capture-settings automation graph-port contract for option
    collections, selected capture-mode state, preview reinitialization checks,
    UI-thread dispatch, and format-change suppression.

@@ -41,7 +41,7 @@ static partial class Program
         }
 
         var viewModelFiles = ReadMainViewModelCodeFiles();
-        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsAutomationController.cs")
+        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs")
             .Replace("\r\n", "\n");
         var viewModelText = string.Join("\n", viewModelFiles.Values) + "\n" + recordingSettingsAutomationControllerText;
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
