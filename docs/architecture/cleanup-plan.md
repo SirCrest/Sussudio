@@ -2740,10 +2740,9 @@ Diagnostic-session result construction now lives in
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission plus summary-write failure repair while the runner keeps the
 phase sequence. It also owns final-result orchestration from analysis and
-artifact paths into the named projection-set owner and flattening owner.
-`DiagnosticSessionResultBuilder.Flattening.cs` owns final
-`DiagnosticSessionResult` DTO assignment from the projection set; keep domain
-projection composition outside this initializer.
+artifact paths into the named projection-set owner, plus final
+`DiagnosticSessionResult` DTO assignment from the projection set. Keep domain
+projection composition in the projection owner rather than in the initializer.
 `DiagnosticSessionResultBuilder.Projections.cs` owns projection-set assembly,
 the private projection-set handoff record, and the result projection
 records/builders for overview, capture, Flashback playback/recording/export,
@@ -3140,7 +3139,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
-- `DiagnosticSessionResultBuilder.Flattening.cs`
 - `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultFormatter.cs`

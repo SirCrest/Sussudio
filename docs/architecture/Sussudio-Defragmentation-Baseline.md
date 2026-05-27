@@ -4556,3 +4556,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: focused diagnostic-session and automation tool contract coverage passed; no public automation command names, IDs, wire payloads, tool behavior, app runtime code, or XAML bindings changed.
 Behavior preserved: shared recording queue source readers and source-block extraction helpers now live in `RecordingQueue.OverloadPolicy.Tests.cs`; shared diagnostic-session source-family readers now live in `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`.
 Notes for future agents: keep recording queue source readers with the overload-policy owner unless they become a real fixture; keep diagnostic-session source readers with the broad diagnostic-session ownership tests unless a dedicated reusable fixture type replaces the `Program` partial helpers.
+
+Date: 2026-05-26
+Area: Diagnostic-session result builder flattening locality
+Problem: `DiagnosticSessionResultBuilder.Flattening.cs` only carried the final `DiagnosticSessionResult` DTO initializer called by `DiagnosticSessionResultBuilder.CreateResult`. Reviewing diagnostic-session summary construction required opening the root builder for phase/artifact orchestration, then a second small partial for the final result assignment, even though projection composition remains in the named projection owner.
+Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `DiagnosticSessionResultBuilder` partial file count 4 -> 3
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings) and refreshed stale `ssctl` and MCP assemblies; focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionResultBuilder|FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface"` (66 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: solution build refreshed `ssctl`, MCP, automation contracts, and shared tools; focused MCP/diagnostic-session coverage passed; no public automation command names, IDs, wire payloads, MCP tool schemas, app runtime code, or XAML bindings changed.
+Behavior preserved: result phase orchestration, pre-summary artifact writes, summary-write failure repair, projection-set construction, and final `DiagnosticSessionResult` field assignment are unchanged; the final initializer now lives in `DiagnosticSessionResultBuilder.cs`.
+Notes for future agents: keep final `DiagnosticSessionResult` DTO assignment with `tools/Common/DiagnosticSessionResultBuilder.cs`; keep domain projection composition in `DiagnosticSessionResultBuilder.Projections.cs` and metric/health analysis in `DiagnosticSessionResultBuilder.Analysis.cs`.

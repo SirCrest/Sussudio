@@ -61,7 +61,6 @@ static partial class Program
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionResultBuilder.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Projections.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Flattening.cs",
             "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()

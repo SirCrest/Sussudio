@@ -19,8 +19,7 @@ static partial class Program
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
-            .Replace("\r\n", "\n");
+        var flatteningText = builderText;
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
@@ -169,8 +168,7 @@ static partial class Program
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
-            .Replace("\r\n", "\n");
+        var flatteningText = builderText;
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
@@ -229,10 +227,14 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
             "Flashback playback result projection folded into DiagnosticSessionResultBuilder.Projections.cs");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Flattening.cs")),
+            "final result DTO flattening folded into DiagnosticSessionResultBuilder.cs");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
-        AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
+        AssertContains(builderText, "return new DiagnosticSessionResult\n        {");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
     }
 
@@ -288,8 +290,7 @@ static partial class Program
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
-            .Replace("\r\n", "\n");
+        var flatteningText = builderText;
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
@@ -301,7 +302,7 @@ static partial class Program
 
         AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
         AssertContains(builderText, "return FlattenResultProjectionSet(");
-        AssertDoesNotContain(builderText, "return new DiagnosticSessionResult\n        {");
+        AssertContains(builderText, "return new DiagnosticSessionResult\n        {");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
         AssertContains(projectionSetText, "Overview: BuildOverviewResultProjection(request, runState, analysis)");
         AssertContains(flatteningText, "var overviewResult = resultProjections.Overview;");
@@ -346,8 +347,7 @@ static partial class Program
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Flattening.cs")
-            .Replace("\r\n", "\n");
+        var flatteningText = builderText;
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = projectionSetText;

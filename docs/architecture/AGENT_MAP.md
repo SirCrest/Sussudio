@@ -2876,18 +2876,15 @@ Primary owners:
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
-  orchestration from analysis and artifact paths into the named projection set
-  and flattening owner. It also owns result artifact path construction,
-  pre-summary sample, frame-ledger, and timeline artifact writes, frame-ledger
-  trace shaping, shared JSON object creation / artifact serialization helpers,
-  Flashback playback projection composition from focused playback projection
-  owners, plus the result-build request handoff created by
-  `DiagnosticSessionRunner.cs` and consumed by the result builder. Keep
-  `summary.json` field shape stable in the builder family.
-- `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs` owns final
-  `DiagnosticSessionResult` DTO assignment from the projection set. Keep
-  domain projection composition in the projection owners and projection-set
-  owner, not in this initializer.
+  orchestration from analysis and artifact paths into the named projection set,
+  plus final `DiagnosticSessionResult` DTO assignment from the projection set.
+  It also owns result artifact path construction, pre-summary sample,
+  frame-ledger, and timeline artifact writes, frame-ledger trace shaping,
+  shared JSON object creation / artifact serialization helpers, Flashback
+  playback projection composition from focused playback projection owners, plus
+  the result-build request handoff created by `DiagnosticSessionRunner.cs` and
+  consumed by the result builder. Keep `summary.json` field shape stable in the
+  builder family.
 - `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` owns the
   private projection-set handoff record, projection-set assembly, and the
   result projection records/builders for overview, capture, Flashback
