@@ -3356,12 +3356,12 @@ owner, fold it back into that owner and update the source-shape tests and
    capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
    graph-port contract, and event subscription/unsubscription ordering,
    output drive free-space assignment now lives in
-   `MainViewModel.RecordingState.cs`, while output drive probing,
+   `MainViewModel.cs`, while output drive probing,
    fallback, formatting, and suppressed-warning logging now live in
    `ViewModelBuilders.cs`. Recording size/bitrate label
    assignment, recording-state reset reactions, and bounded byte-sample
    smoothing shared by recording and Flashback bitrate presentation also live in
-   `MainViewModel.RecordingState.cs`, and
+   `MainViewModel.cs`, and
    capture presentation adapters now live in
    `MainViewModel.CaptureState.cs`: live-capture info projection from
    runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
@@ -3401,7 +3401,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Output folder display plus browse/open-recordings button workflows now live in
    `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`.
    Recording facade entry points, including the direct emergency-stop
-   coordinator bridge, now live in `MainViewModel.RecordingState.cs`, while
+   coordinator bridge, now live in `MainViewModel.cs`, while
    recording toggle serialization,
    desired-state routing, graceful stop, transition gating, and in-flight
    transition wait/error propagation now live in the top-level
@@ -3412,7 +3412,7 @@ owner, fold it back into that owner and update the source-shape tests and
    failure/cancellation state repair, and direct use of the preview lifecycle
    owner for recording startup initialization.
    Recording option selections, output path, counters, and transition flags also
-   live in `MainViewModel.RecordingState.cs`. Bounded teardown, dispose timeout policy,
+   live in `MainViewModel.cs`. Bounded teardown, dispose timeout policy,
    watcher disposal, coordinator cleanup/dispose, and capture-service
    async-dispose fallback through graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`.
@@ -3634,12 +3634,12 @@ owner, fold it back into that owner and update the source-shape tests and
    state, recording-format coordinator updates, and Flashback encoder setting
    cycles.
    The automation recording desired-state bridge enters through
-   `MainViewModel.RecordingState.cs` and is serialized by
+   `MainViewModel.cs` and is serialized by
    the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs`,
    with graph-built context ports and start/stop execution in the same owner.
    The emergency recording-stop bridge also enters through
-   `MainViewModel.RecordingState.cs` but routes directly to
+   `MainViewModel.cs` but routes directly to
    `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
    so it keeps bypassing UI-thread dispatch and normal transition gates.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
@@ -3654,7 +3654,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds now live with source telemetry readiness in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`.
-   `Sussudio/ViewModels/MainViewModel.RecordingState.cs` keeps recording-runtime
+   `Sussudio/ViewModels/MainViewModel.cs` keeps recording-runtime
    counters, disk-space assignment, and the stable recording-capability facade
    methods used by settings initialization and HDR mode-change rebuild callers.
    It also owns the recording-capability graph-port contract for default encoder

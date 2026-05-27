@@ -103,7 +103,7 @@ static partial class Program
     {
         var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs")
             .Replace("\r\n", "\n");
-        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs")
             .Replace("\r\n", "\n");

@@ -61,7 +61,7 @@ static partial class Program
     internal static Task RecordingSettingsSelectionPolicy_LivesInFocusedHelper()
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
-        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs").Replace("\r\n", "\n");
+        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs").Replace("\r\n", "\n");
         var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");

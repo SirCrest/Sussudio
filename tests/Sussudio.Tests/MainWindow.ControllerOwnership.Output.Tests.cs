@@ -165,7 +165,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelText, "FolderPicker");
         AssertDoesNotContain(mainViewModelText, "FileTypeFilter");
         AssertContains(agentMapText, "`Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns recording output-");
-        AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns the stable recording facade:");
+        AssertContains(agentMapText, "`MainViewModel.cs` owns the stable recording facade:");
         AssertContains(agentMapText, "bridge, recording option selections, output path, counters, and observable");
         AssertContains(cleanupPlanText, "Recording output-path textbox, tooltip, resize-event updates, browse, and");
         AssertDoesNotContain(agentMapText, "`MainViewModel.OutputPathSelection.cs` owns output folder picker and path assignment.");
@@ -192,7 +192,7 @@ static partial class Program
 
     internal static Task OutputDriveSpacePresentationBuilder_LivesInFocusedHelper()
     {
-        var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+        var bridgeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
             .Replace("\r\n", "\n");
@@ -214,7 +214,7 @@ static partial class Program
         AssertContains(builderText, "return \"\";");
         AssertDoesNotContain(builderText, "DiskSpaceInfo =");
 
-        AssertContains(agentMapText, "`MainViewModel.RecordingState.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge");
+        AssertContains(agentMapText, "`MainViewModel.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge");
         AssertContains(agentMapText, "`Sussudio/ViewModels/ViewModelBuilders.cs` owns output drive probing");
         AssertContains(cleanupPlanText, "`ViewModelBuilders.cs`");
 

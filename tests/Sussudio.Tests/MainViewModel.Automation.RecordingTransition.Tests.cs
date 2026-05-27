@@ -8,7 +8,7 @@ static partial class Program
     {
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+        var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
             .Replace("\r\n", "\n");
@@ -36,7 +36,7 @@ static partial class Program
                 .Replace("\r\n", "\n");
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingRuntimeText = recordingStateText;
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
@@ -64,6 +64,10 @@ static partial class Program
             "MainViewModel recording lifecycle facade partial");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs")),
+            "MainViewModel recording state folded into MainViewModel.cs");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
             "MainViewModel capture lifecycle facade partial");
         AssertContains(recordingLifecycleText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
@@ -71,9 +75,9 @@ static partial class Program
         AssertContains(recordingLifecycleText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingLifecycleText, "public Task ToggleRecordingAsync()\n        => _recordingTransitionController.ToggleRecordingAsync();");
         AssertContains(recordingLifecycleText, "=> _recordingTransitionController.SetRecordingDesiredStateAsync(enabled, cancellationToken);");
-        AssertDoesNotContain(rootViewModelText, "public Task ToggleRecordingAsync()");
-        AssertDoesNotContain(rootViewModelText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootViewModelText, "internal Task SetRecordingDesiredStateAsync");
+        AssertContains(rootViewModelText, "public Task ToggleRecordingAsync()");
+        AssertContains(rootViewModelText, "public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(rootViewModelText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(recordingTransitionControllerRootText, "namespace Sussudio.Controllers;");
         AssertContains(recordingTransitionControllerRootText, "internal sealed class MainViewModelRecordingTransitionController");
         AssertDoesNotContain(recordingTransitionControllerRootText, "partial class MainViewModelRecordingTransitionController");
@@ -121,15 +125,15 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "BitrateSampleWindow.cs")),
-            "BitrateSampleWindow folded into MainViewModel.RecordingState.cs");
+            "BitrateSampleWindow folded into MainViewModel.cs");
         AssertContains(recordingRuntimeText, "_pendingModeOptionsRefresh = false;");
         AssertContains(recordingRuntimeText, "RebuildResolutionOptions();");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateRecordingStats();");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private void UpdateRecordingStats()");
         AssertDoesNotContain(runtimeLifecycleControllerText, "private static double? ComputeAverageBitrate(");
         AssertDoesNotContain(runtimeLifecycleControllerText, "partial void OnIsRecordingChanged(bool value)");
-        AssertDoesNotContain(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
-        AssertDoesNotContain(rootViewModelText, "public partial string OutputPath");
+        AssertContains(rootViewModelText, "public partial ObservableCollection<string> AvailableRecordingFormats");
+        AssertContains(rootViewModelText, "public partial string OutputPath");
         AssertContains(automationText, "=> SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
@@ -259,14 +263,14 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.RecordingState.cs")
+        var recordingStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(recordingStateText, "internal Task StopRecordingForEmergencyAsync");
         // Fix #12: emergency stop now routes through the coordinator's emergency-flagged path
         // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
         AssertContains(recordingStateText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
-        AssertDoesNotContain(rootViewModelText, "internal Task StopRecordingForEmergencyAsync");
+        AssertContains(rootViewModelText, "internal Task StopRecordingForEmergencyAsync");
         AssertDoesNotContain(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "StopRecordingForEmergencyAsync");
         AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
         AssertContains(appText, "if (e.IsTerminating || !recoverable)");

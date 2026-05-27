@@ -2356,10 +2356,10 @@ Primary current owners:
   UI-side late-probe retarget application, HDR/SDR reinitialize dispatch,
   MJPG HFR preserve, session mismatch checks, and active-capture restore
   through graph-built context ports.
-  `MainViewModel.RecordingState.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge,
+  `MainViewModel.cs` owns recording-runtime counters and the DiskSpaceInfo assignment bridge,
   while `Sussudio/ViewModels/ViewModelBuilders.cs` owns output drive probing,
   fallback, formatting, and suppressed-warning logging.
-  `MainViewModel.RecordingState.cs` owns
+  `MainViewModel.cs` owns
   recording size/bitrate label assignment, recording-state reset reactions, and
   the bounded byte-sample smoothing helper shared by recording and Flashback
   bitrate presentation.
@@ -2398,7 +2398,7 @@ Primary current owners:
   device/format state, generation coalescing, pending Flashback-cycle waits,
   debounce/timeout policy, renderer notifications, restart cancellation, and
   reinit gate access.
-  `MainViewModel.RecordingState.cs` owns the stable recording facade:
+  `MainViewModel.cs` owns the stable recording facade:
   toggle, desired-state, graceful-stop, the direct emergency-stop coordinator
   bridge, recording option selections, output path, counters, and observable
   transition flags.
@@ -2608,7 +2608,7 @@ Primary current owners:
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
   probes for recording formats and split-encode modes plus observable
   recording-format option rebuilds.
-  `Sussudio/ViewModels/MainViewModel.RecordingState.cs` keeps recording-runtime
+  `Sussudio/ViewModels/MainViewModel.cs` keeps recording-runtime
   counters, disk-space assignment, and the stable recording-capability facade
   methods used by settings initialization and HDR mode-change rebuild callers.
   It also owns the recording-capability graph-port contract for default encoder

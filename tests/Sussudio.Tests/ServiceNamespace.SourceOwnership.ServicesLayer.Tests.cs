@@ -82,7 +82,7 @@ static partial class Program
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelRuntimeEventIngressController.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
-        var mainViewModelRecordingStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingState.cs"));
+        var mainViewModelRecordingStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelRecordingRuntimeText = mainViewModelRecordingStateText;
         var outputDriveSpacePresentationBuilderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelBuilders.cs"));
         var mainViewModelCapturePresentationText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureState.cs"));
@@ -198,21 +198,21 @@ static partial class Program
         AssertContains(mainViewModelRecordingStateText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(mainViewModelRecordingStateText, "public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)");
         AssertContains(mainViewModelRecordingStateText, "internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(mainViewModelText, "public Task ToggleRecordingAsync()");
-        AssertDoesNotContain(mainViewModelText, "internal Task SetRecordingDesiredStateAsync");
+        AssertContains(mainViewModelText, "public Task ToggleRecordingAsync()");
+        AssertContains(mainViewModelText, "internal Task SetRecordingDesiredStateAsync");
         AssertContains(mainViewModelRecordingRuntimeText, "private void UpdateDiskSpace()");
         AssertContains(mainViewModelRecordingRuntimeText, "DiskSpaceInfo = OutputDriveSpacePresentationBuilder.Build(OutputPath);");
         AssertContains(mainViewModelRecordingRuntimeText, "_recordingBitrateSamples.AddSampleAndCompute(now, totalBytes);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.RecordingRuntime.cs")),
-            "MainViewModel.RecordingRuntime.cs folded into MainViewModel.RecordingState.cs");
+            "MainViewModel.RecordingRuntime.cs folded into MainViewModel.cs");
         AssertContains(mainViewModelRecordingStateText, "internal sealed class BitrateSampleWindow");
         AssertContains(mainViewModelRecordingStateText, "private readonly Queue<(long Tick, long Bytes)> _samples = new();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "BitrateSampleWindow.cs")),
-            "BitrateSampleWindow folded into MainViewModel.RecordingState.cs");
+            "BitrateSampleWindow folded into MainViewModel.cs");
         AssertContains(outputDriveSpacePresentationBuilderText, "new DriveInfo(Path.GetPathRoot(outputPath) ?? \"C:\");");
         AssertContains(outputDriveSpacePresentationBuilderText, "return $\"Free: {freeGb:F1} GB\";");
         AssertContains(outputDriveSpacePresentationBuilderText, "Suppressed exception in MainViewModel.RefreshDiskSpace");
