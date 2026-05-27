@@ -2028,7 +2028,7 @@ Partial clusters reduced: `D3D11PreviewRenderer` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: DXGI frame-statistics sampling, visible-frame tick estimation, `IPreviewDisplayClock` snapshot construction, letterbox rectangle math, viewport constant-buffer upload, shader draw paths, and VideoProcessor destination-rectangle behavior remain unchanged
-Notes for future agents: keep display-clock projection with `D3D11PreviewRenderer.DxgiFrameStatistics.cs`; keep letterbox/viewport helpers with `D3D11PreviewRenderer.RenderPasses.cs`; keep D3D resource creation in `Resources.cs` and VideoProcessor pipeline setup in `VideoProcessorPipeline.cs`
+Notes for future agents: keep display-clock projection with `D3D11PreviewRenderer.Metrics.cs`; keep letterbox/viewport helpers with `D3D11PreviewRenderer.RenderPasses.cs`; keep D3D resource creation in `Resources.cs` and VideoProcessor pipeline setup in `VideoProcessorPipeline.cs`
 
 Date: 2026-05-24
 Area: MainViewModel capture-settings adapter locality
@@ -4003,7 +4003,7 @@ Partial clusters reduced: D3D11PreviewRenderer partial count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, preview renderer, automation snapshot projections, `ssctl`, MCP, and console harnesses; no public automation command names, IDs, wire payloads, renderer metric record names, runtime snapshot fields, slow-frame diagnostic properties, first-frame notification, or render-thread failure event behavior changed
 Behavior preserved: recent slow-frame snapshot access, slow-frame ring reset/writes, thresholding, sample assembly, DXGI refresh-slip capture, slow-frame reason classification, render-thread failure counters/latest fields/UI notification, and first-frame reset/UI notification now live in `D3D11PreviewRenderer.Metrics.cs` with present cadence, latency, CPU timing, wait, and frame-ownership metrics.
-Notes for future agents: keep D3D11 renderer metric state, runtime diagnostics, slow-frame projection, first-frame notification, and render-thread failure telemetry together in `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`; keep DXGI counter sampling/display-clock projection in `D3D11PreviewRenderer.DxgiFrameStatistics.cs` and render-pass call sites in `D3D11PreviewRenderer.RenderPasses.cs`.
+Notes for future agents: keep D3D11 renderer metric state, runtime diagnostics, slow-frame projection, first-frame notification, render-thread failure telemetry, DXGI counter sampling, and display-clock projection together in `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`; keep render-pass call sites in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 Date: 2026-05-26
 Area: CaptureService runtime snapshot projection locality
@@ -4820,3 +4820,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
 Behavior preserved: recording-integrity status/video/backpressure/audio/A-V sync projection, recording-pipeline encoder/ingest/video/GPU/CUDA queue projection, recording backend/output/finalized-file/verification projection, and all flattened automation snapshot recording fields now live in `AutomationDiagnosticsHub.SnapshotProjection.Recording.cs` with the same private method and record names.
 Notes for future agents: keep automation recording integrity, pipeline, backend, and output projection records together in `AutomationDiagnosticsHub.SnapshotProjection.Recording.cs` while they remain private snapshot-construction DTO groups; split only if a real recording diagnostics projection collaborator replaces the current private-record pattern.
+
+Date: 2026-05-27
+Area: D3D11 preview renderer DXGI metrics locality
+Problem: `D3D11PreviewRenderer.DxgiFrameStatistics.cs` was a small partial split from the renderer metrics owner even though its record type already lived in `D3D11PreviewRenderer.Metrics.cs`, slow-frame diagnostics consumed its counters there, and render-pass completion only called the tracker. Reviewing D3D timing evidence required opening both files before reaching the render-pass call sites.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `D3D11PreviewRenderer` production partial count 13 -> 12
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, preview renderer, automation snapshot projections, `ssctl`, MCP, and console harnesses; no public automation command names, IDs, wire payloads, renderer metric record names, runtime snapshot fields, XAML bindings, present cadence, display-clock projection, or slow-frame diagnostic behavior changed.
+Behavior preserved: DXGI `GetFrameStatistics` sampling, optional `DwmFlush`, counter deltas, missed-refresh accounting, visible-frame tick estimation, `IPreviewDisplayClock` snapshot construction, and DXGI refresh-slip consumption now live in `D3D11PreviewRenderer.Metrics.cs` with present cadence, latency, CPU timing, wait, frame-ownership, and slow-frame metrics.
+Notes for future agents: keep D3D11 renderer metric state, DXGI frame-stat sampling, display-clock projection, slow-frame projection, first-frame notification, and render-thread failure telemetry together in `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`; keep render-pass call sites in `D3D11PreviewRenderer.RenderPasses.cs`.

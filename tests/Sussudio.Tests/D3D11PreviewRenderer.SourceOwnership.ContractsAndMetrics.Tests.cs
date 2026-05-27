@@ -33,7 +33,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             .Replace("\r\n", "\n");
-        var dxgiStatisticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
+        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
 
         AssertEqual(
@@ -46,8 +46,8 @@ static partial class Program
         AssertContains(shaderRenderingText, "private static extern int D3DCompileNative(");
         AssertContains(shaderRenderingText, "private static byte[] CompileShader(string hlslSource, string entryPoint, string profile)");
         AssertContains(shaderRenderingText, "private static string ReadBlobString(IntPtr blobPtr)");
-        AssertContains(dxgiStatisticsText, "private static extern int DwmFlush()");
-        AssertContains(dxgiStatisticsText, "_ = DwmFlush();");
+        AssertContains(metricsText, "private static extern int DwmFlush()");
+        AssertContains(metricsText, "_ = DwmFlush();");
         AssertDoesNotContain(rootText, "private interface ISwapChainPanelNative");
         AssertDoesNotContain(rootText, "private interface ID3DBlob");
         AssertDoesNotContain(rootText, "D3DCompileNative(");
@@ -121,39 +121,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_DxgiFrameStatisticsLiveInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_DxgiFrameStatisticsLiveWithMetrics()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
-        var dxgiText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(dxgiText, "private readonly object _dxgiFrameStatisticsLock = new();");
-        AssertContains(dxgiText, "private long _dxgiFrameStatisticsSampleCount;");
-        AssertContains(dxgiText, "private long _dxgiFrameStatisticsMissedRefreshCount;");
-        AssertContains(dxgiText, "private long _dxgiFrameStatisticsLastSampleFrameCounter;");
-        AssertContains(dxgiText, "private long _dxgiFrameStatisticsPresentCount = -1;");
-        AssertContains(dxgiText, "private bool _dxgiFrameStatisticsHasBaseline;");
-        AssertContains(dxgiText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
-        AssertContains(dxgiText, "private void TrackDxgiFrameStatistics()");
-        AssertContains(dxgiText, "_ = DwmFlush();");
-        AssertContains(dxgiText, "_swapChain.GetFrameStatistics(out var stats)");
-        AssertContains(dxgiText, "private long EstimateVisibleTick(long presentReturnTick)");
-        AssertContains(dxgiText, "private long GetEstimatedDisplayFrameIntervalTicks()");
-        AssertContains(dxgiText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
-        AssertContains(dxgiText, "new PreviewDisplayClockSnapshot(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DxgiFrameStatistics.cs")),
+            "DXGI frame-statistics partial folded into renderer metrics owner");
+        AssertContains(metricsText, "private readonly object _dxgiFrameStatisticsLock = new();");
+        AssertContains(metricsText, "private long _dxgiFrameStatisticsSampleCount;");
+        AssertContains(metricsText, "private long _dxgiFrameStatisticsMissedRefreshCount;");
+        AssertContains(metricsText, "private long _dxgiFrameStatisticsLastSampleFrameCounter;");
+        AssertContains(metricsText, "private long _dxgiFrameStatisticsPresentCount = -1;");
+        AssertContains(metricsText, "private bool _dxgiFrameStatisticsHasBaseline;");
+        AssertContains(metricsText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
+        AssertContains(metricsText, "private void TrackDxgiFrameStatistics()");
+        AssertContains(metricsText, "_ = DwmFlush();");
+        AssertContains(metricsText, "_swapChain.GetFrameStatistics(out var stats)");
+        AssertContains(metricsText, "private long EstimateVisibleTick(long presentReturnTick)");
+        AssertContains(metricsText, "private long GetEstimatedDisplayFrameIntervalTicks()");
+        AssertContains(metricsText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
+        AssertContains(metricsText, "new PreviewDisplayClockSnapshot(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DisplayClock.cs")),
-            "D3D11 preview display-clock projection lives with DXGI frame statistics");
+            "D3D11 preview display-clock projection lives with renderer metrics");
         AssertDoesNotContain(rootText, "private readonly object _dxgiFrameStatisticsLock = new();");
         AssertDoesNotContain(rootText, "private long _dxgiFrameStatisticsPresentCount = -1;");
-        AssertDoesNotContain(metricsText, "public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()");
-        AssertDoesNotContain(metricsText, "private void TrackDxgiFrameStatistics()");
-        AssertDoesNotContain(metricsText, "private long EstimateVisibleTick(long presentReturnTick)");
-        AssertDoesNotContain(metricsText, "public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)");
 
         return Task.CompletedTask;
     }

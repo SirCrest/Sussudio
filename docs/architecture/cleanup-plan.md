@@ -1626,7 +1626,7 @@ overrides, DXGI statistics toggles, MMCSS settings, and stop-fence timeouts ther
 interop declarations now live with their behavior owners: keep
 `ISwapChainPanelNative` in `D3D11PreviewRenderer.PanelBinding.cs`,
 `ID3DBlob` and `D3DCompileNative` in `D3D11PreviewRenderer.ShaderRendering.cs`,
-and `DwmFlush` in `D3D11PreviewRenderer.DxgiFrameStatistics.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
+and `DwmFlush` in `D3D11PreviewRenderer.Metrics.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
 `D3D11PreviewRenderer.RenderThread.cs`.
 
 D3D preview renderer shader compilation now lives in
@@ -1701,19 +1701,18 @@ creation in `D3D11PreviewRenderer.Resources.cs`.
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
 lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep
 frame ownership snapshot projection and submitted/presented/dropped ownership
-state updates with cadence, latency, and frame-latency timing there; keep DXGI
-statistics in `D3D11PreviewRenderer.DxgiFrameStatistics.cs`, with slow-frame
-diagnostic projection in `D3D11PreviewRenderer.Metrics.cs`.
+state updates with cadence, latency, frame-latency timing, DXGI statistics, and
+slow-frame diagnostic projection there.
 
 D3D preview renderer DXGI frame statistics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.DxgiFrameStatistics.cs`.
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`.
 Keep `GetFrameStatistics`, optional `DwmFlush`, DXGI counter deltas, and missed
 refresh accounting there. Display-clock projection also lives there; keep
 visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
 with the DXGI statistics state it samples. Keep pending-frame lifetime, queue control, and `IPreviewFrameQueueControl` in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs`. Keep
-slow-frame diagnostic consumption of the latest DXGI counters in
-`D3D11PreviewRenderer.Metrics.cs`.
+slow-frame diagnostic consumption of the latest DXGI counters in the same metrics
+owner.
 
 D3D preview renderer frame-latency waitable swap-chain setup and waits now live
 in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep
