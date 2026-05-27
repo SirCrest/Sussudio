@@ -254,13 +254,13 @@ publication for explicit verification, last-verification snapshot state,
 post-recording auto-verification gating, and background scheduling.
 `AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring, diagnostic
 verdict orchestration, and the final healthy/mixed fallback.
-`AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs` owns Flashback-specific
+`AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns Flashback-specific
 diagnostic verdict ordering plus Flashback storage pressure, recording encoder
 failure, export-rotation gap, backend staleness, recording degradation,
 Flashback recording diagnostic condition assembly, active/stalled export,
 playback command, playback performance, frametime, and submission diagnostic
 verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs` owns realtime
+`AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns realtime
 diagnostic verdict ordering plus idle, warmup, recording integrity, audio
 integrity, source/capture cadence, duplicate source-signal, and MJPEG
 decode/reorder diagnostic verdicts, plus realtime preview scheduler, renderer

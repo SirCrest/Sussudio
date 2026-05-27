@@ -888,7 +888,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Flashback export diagnostic severity, code, progress-age detail, running/stalled messages, and lane mapping remain unchanged
-Notes for future agents: keep lightweight export verdict policy with `DiagnosticEvaluationFlashback.cs`; keep recording and playback separate while they own larger policy sets
+Notes for future agents: keep lightweight export verdict policy with `DiagnosticEvaluation.cs`; keep recording and playback separate while they own larger policy sets
 
 Date: 2026-05-21
 Area: Automation diagnostics realtime evaluation
@@ -900,7 +900,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Realtime MJPEG duplicate-source and decode/reorder diagnostic severity, codes, messages, and lane mapping remain unchanged
-Notes for future agents: keep lightweight MJPEG realtime verdict policy with `DiagnosticEvaluationRealtime.cs`; keep source and preview separate while they own larger policy sets
+Notes for future agents: keep lightweight MJPEG realtime verdict policy with `DiagnosticEvaluation.cs`; keep source and preview separate while they own larger policy sets
 
 Date: 2026-05-21
 Area: Automation diagnostics capture-format projection
@@ -936,7 +936,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Realtime recording-integrity and audio-integrity diagnostic severity, codes, messages, and lane mapping remain unchanged
-Notes for future agents: keep lightweight realtime recording/audio verdict policy with `DiagnosticEvaluationRealtime.cs`; keep source and preview separate while they own larger policy sets
+Notes for future agents: keep lightweight realtime recording/audio verdict policy with `DiagnosticEvaluation.cs`; keep source and preview separate while they own larger policy sets
 
 Date: 2026-05-21
 Area: Automation diagnostics realtime evaluation
@@ -948,7 +948,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Realtime source/capture cadence diagnostic severity, codes, messages, and lane mapping remain unchanged
-Notes for future agents: keep lightweight realtime source verdict policy with `DiagnosticEvaluationRealtime.cs`; keep preview separate while it owns scheduler and renderer policy
+Notes for future agents: keep lightweight realtime source verdict policy with `DiagnosticEvaluation.cs`; keep preview separate while it owns scheduler and renderer policy
 
 Date: 2026-05-21
 Area: Automation diagnostics realtime preview evaluation
@@ -960,7 +960,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Realtime present/display cadence and preview display 1% low diagnostic severity, codes, messages, and lane mapping remain unchanged
-Notes for future agents: realtime preview verdict policy is now folded into `DiagnosticEvaluationRealtime.cs`; extract a named collaborator only if preview verdict policy grows beyond one cohesive scan unit
+Notes for future agents: realtime preview verdict policy is now folded into `DiagnosticEvaluation.cs`; extract a named collaborator only if preview verdict policy grows beyond one cohesive scan unit
 
 Date: 2026-05-21
 Area: Automation diagnostics Flashback recording alerts
@@ -1008,7 +1008,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation source-ownership tests and runtime snapshot regression tests
 Behavior preserved: Preview scheduler diagnostic severity, code, message selection, and lane mapping remain unchanged
-Notes for future agents: preview scheduler, renderer, and present/display verdict policy now live with `DiagnosticEvaluationRealtime.cs`; extract a named collaborator only if preview verdict policy grows beyond one cohesive scan unit
+Notes for future agents: preview scheduler, renderer, and present/display verdict policy now live with `DiagnosticEvaluation.cs`; extract a named collaborator only if preview verdict policy grows beyond one cohesive scan unit
 
 Date: 2026-05-21
 Area: Automation diagnostics preview runtime projection
@@ -1248,7 +1248,7 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics evaluation ownership tests and runtime snapshot regression tests
 Behavior preserved: idle and warming-up `diagnostic_unavailable` verdicts keep the same severities, messages, details, and lane mappings
-Notes for future agents: keep first-branch realtime state verdicts with `DiagnosticEvaluationRealtime.cs` unless they grow independent policy
+Notes for future agents: keep first-branch realtime state verdicts with `DiagnosticEvaluation.cs` unless they grow independent policy
 
 Date: 2026-05-21
 Area: Automation diagnostics capture-format projection

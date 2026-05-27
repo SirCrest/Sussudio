@@ -148,8 +148,12 @@ static partial class Program
             "Diagnostic lane text builders folded into Evaluation owner");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluation.cs")),
-            "Root diagnostic evaluation partial folded into Evaluation owner");
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs")),
+            "Flashback diagnostic evaluation folded into DiagnosticEvaluation owner");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs")),
+            "Realtime diagnostic evaluation folded into DiagnosticEvaluation owner");
         AssertDoesNotContain(diagnostics.HubText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertDoesNotContain(diagnostics.HubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
     }
