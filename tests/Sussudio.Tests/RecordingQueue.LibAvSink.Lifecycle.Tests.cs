@@ -189,42 +189,40 @@ static partial class Program
             .Replace("\r\n", "\n");
         var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs")
             .Replace("\r\n", "\n");
-        var startupText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs")
-            .Replace("\r\n", "\n");
         var stopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public long DroppedVideoFrames =>");
         AssertContains(rootText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
+        AssertContains(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
+        AssertContains(rootText, "InitializeVideoSessionQueues();");
+        AssertContains(rootText, "ResetVideoSessionState(context);");
+        AssertContains(rootText, "_encodingTask = Task.Factory.StartNew(");
+        AssertContains(rootText, "TaskCreationOptions.LongRunning");
+        AssertContains(rootText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
+        AssertContains(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
+        AssertContains(rootText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
+        AssertContains(rootText, "private void InitializeVideoSessionQueues()");
+        AssertContains(rootText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
+        AssertContains(rootText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
+        AssertContains(rootText, "_videoQueue = Channel.CreateBounded<VideoFramePacket>");
+        AssertContains(rootText, "LIBAV_SINK_CUDA_QUEUE_INIT capacity=");
+        AssertContains(rootText, "LIBAV_SINK_GPU_QUEUE_INIT capacity=");
+        AssertContains(rootText, "private void ResetVideoSessionState(RecordingContext context)");
+        AssertContains(rootText, "_width = checked((int)context.EffectiveWidth);");
+        AssertContains(rootText, "_height = checked((int)context.EffectiveHeight);");
+        AssertContains(rootText, "private void ResetVideoSessionMetrics()");
+        AssertContains(rootText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
+        AssertContains(rootText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
+        AssertContains(rootText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
+        AssertContains(rootText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
+        AssertContains(rootText, "ResetVideoDiagnostics();");
+        AssertContains(rootText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Diagnostics.cs")),
             "LibAvRecordingSink diagnostics surface lives with the sink root state");
-        AssertContains(startupText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
-        AssertContains(startupText, "LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);");
-        AssertContains(startupText, "InitializeVideoSessionQueues();");
-        AssertContains(startupText, "ResetVideoSessionState(context);");
-        AssertContains(startupText, "_encodingTask = Task.Factory.StartNew(");
-        AssertContains(startupText, "TaskCreationOptions.LongRunning");
-        AssertContains(startupText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
-        AssertContains(startupText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
-        AssertContains(startupText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
-        AssertContains(startupText, "private void InitializeVideoSessionQueues()");
-        AssertContains(startupText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
-        AssertContains(startupText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
-        AssertContains(startupText, "_videoQueue = Channel.CreateBounded<VideoFramePacket>");
-        AssertContains(startupText, "LIBAV_SINK_CUDA_QUEUE_INIT capacity=");
-        AssertContains(startupText, "LIBAV_SINK_GPU_QUEUE_INIT capacity=");
-        AssertContains(startupText, "private void ResetVideoSessionState(RecordingContext context)");
-        AssertContains(startupText, "_width = checked((int)context.EffectiveWidth);");
-        AssertContains(startupText, "_height = checked((int)context.EffectiveHeight);");
-        AssertContains(startupText, "private void ResetVideoSessionMetrics()");
-        AssertContains(startupText, "Interlocked.Exchange(ref _videoFramesEnqueued, 0);");
-        AssertContains(startupText, "Interlocked.Exchange(ref _gpuFramesEnqueued, 0);");
-        AssertContains(startupText, "Interlocked.Exchange(ref _cudaFramesEnqueued, 0);");
-        AssertContains(startupText, "Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);");
-        AssertContains(startupText, "ResetVideoDiagnostics();");
-        AssertContains(startupText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertContains(stopText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency: false, cancellationToken);");
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
@@ -242,12 +240,10 @@ static partial class Program
         AssertContains(rootText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
-        AssertDoesNotContain(rootText, "public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(queueText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
-        AssertDoesNotContain(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
         AssertDoesNotContain(rootText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
 
         AssertEqual(
@@ -257,11 +253,15 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Options.cs")),
-            "LibAvRecordingSink.Options.cs folded into LibAvRecordingSink.Startup.cs");
+            "LibAvRecordingSink.Options.cs folded into the sink startup owner");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoSession.cs")),
-            "LibAvRecordingSink video session startup helpers folded into LibAvRecordingSink.Startup.cs");
+            "LibAvRecordingSink video session startup helpers folded into the sink root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Startup.cs")),
+            "LibAvRecordingSink startup shell folded into the sink root with encoding-loop lifecycle");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Lifetime.cs")),

@@ -2112,7 +2112,7 @@ Partial clusters reduced: `LibAvRecordingSink` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation/tool contract changes
 Behavior preserved: CUDA/GPU queue selection, bounded video/GPU/CUDA channel creation, width/height state reset, video/GPU/CUDA metric reset, enqueue/write tick reset, diagnostics reset, and startup ordering remain unchanged
-Notes for future agents: keep per-recording video session queue setup and startup metric reset with `LibAvRecordingSink.Startup.cs`; keep public queue admission and packet cleanup with the recording sink queue owner
+Notes for future agents: per-recording video session queue setup and startup metric reset now live with root startup/lifecycle state in `LibAvRecordingSink.cs`; keep public queue admission and packet cleanup with the recording sink queue owner
 
 Date: 2026-05-24
 Area: NVDEC MJPEG decoder lifecycle locality
@@ -2256,7 +2256,7 @@ Partial clusters reduced: `LibAvRecordingSink` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: synchronous dispose fallback, async dispose idempotence, writer completion, cancellation, encode-task observation, deferred cleanup timeout logging, queue buffer returns, queue-depth reset, cancellation-source disposal, queue nulling, GPU/CUDA/microphone flag reset, work semaphore disposal, and encoder dispose failure logging remain unchanged
-Notes for future agents: keep sink diagnostics, encoding loop, packet drains, queue completion signal, and dispose/deferred cleanup in `LibAvRecordingSink.cs`; keep startup in `Startup.cs` and stop/final output validation in `StopLifecycle.cs`
+Notes for future agents: keep sink diagnostics, startup/session initialization, encoding loop, packet drains, queue completion signal, and dispose/deferred cleanup in `LibAvRecordingSink.cs`; keep stop/final output validation in `StopLifecycle.cs`
 
 Date: 2026-05-25
 Area: shared automation pipe client locality
@@ -5228,3 +5228,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no live playback session was run; full solution build rebuilds app, Flashback playback, automation snapshot projections, tools, and console harnesses. No public automation command names, IDs, wire payloads, XAML bindings, recording behavior, Flashback behavior, capture behavior, preview behavior, or HDR semantics changed.
 Behavior preserved: component lifecycle, dispose, preview detach, deferred reattach, playback cadence/decode DTOs, counters/projections, sample rings, metric reset, seek-cap telemetry, decode timing wrappers, max decode phase state, and dominant decode phase resolution now live together in `FlashbackPlaybackController.cs`.
 Notes for future agents: keep playback root lifecycle and playback metrics together in `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`; keep command admission in `FlashbackPlaybackController.CommandQueue.cs`, thread dispatch in `FlashbackPlaybackController.ThreadCommands.cs`, audio routing in `FlashbackPlaybackController.AudioRouting.cs`, decoded-frame progression/submission in `FlashbackPlaybackController.PlaybackFrames.cs`, and position/file-PTS mapping in `FlashbackPlaybackController.Positioning.cs`.
+
+Date: 2026-05-27
+Area: LibAv recording sink startup lifecycle locality
+Problem: `LibAvRecordingSink.Startup.cs` held `StartAsync`, FFmpeg/runtime initialization, encoder option creation, per-session queue construction, startup metric reset, encoding-task creation, and rollback cleanup while `LibAvRecordingSink.cs` already owned the state fields, read-only telemetry, encoding loop, packet drains, queue-completion signal, and dispose/deferred cleanup that startup initializes and tears down. Reviewing recording sink lifecycle required opening both partials before reaching queueing or stop/finalization.
+Files consolidated: `Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `LibAvRecordingSink` production partial count 4 -> 3
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~LibAvRecordingSink|FullyQualifiedName~RecordingQueue|FullyQualifiedName~RecordingContracts|FullyQualifiedName~WasapiAudioCapture_HotAudio"` passed (56 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md` (production `.cs` count 270 -> 269; LibAvRecordingSink partial count 4 -> 3).
+CLI/MCP/pipe checks, if applicable: no live recording session was run; full solution build rebuilds app, recording sink, recording lifecycle callers, automation snapshot projections, tools, and console harnesses. No public automation command names, IDs, wire payloads, XAML bindings, recording behavior, Flashback behavior, capture behavior, preview behavior, or HDR semantics changed.
+Behavior preserved: `StartAsync`, FFmpeg/runtime initialization, encoder option creation/application, per-recording video/GPU/CUDA/audio/microphone queue setup, width/height session state, startup metric reset, video diagnostics reset, encoding-task creation, start logging, startup rollback cleanup, encoding loop orchestration, packet drains, and dispose/deferred cleanup now live together in `LibAvRecordingSink.cs`.
+Notes for future agents: keep LibAv recording sink root state, startup/session initialization, read-only telemetry, encoder drift accessors, background encode loop, packet drains, queue-completion signal, and dispose/deferred cleanup in `Sussudio/Services/Recording/LibAvRecordingSink.cs`; keep producer admission and packet ownership in `LibAvRecordingSink.Queueing.cs`; keep stop/final-output validation and bounded HDR script validation in `LibAvRecordingSink.StopLifecycle.cs`.

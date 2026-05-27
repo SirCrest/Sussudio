@@ -9,7 +9,6 @@ static partial class Program
         var parts = new[]
         {
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Startup.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs").Replace("\r\n", "\n")
         };

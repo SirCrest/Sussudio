@@ -1257,21 +1257,19 @@ lifecycle checks.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
 fatal signaling, queue cleanup, pooled video buffer leasing, pooled packet
 return helpers, and video packet records also live in
-`LibAvRecordingSink.Queueing.cs`. `LibAvRecordingSink.Startup.cs` owns the
+`LibAvRecordingSink.Queueing.cs`. `LibAvRecordingSink.cs` owns root state,
+construction, read-only telemetry, encoder drift accessors, the
 `IRecordingSink.StartAsync` adapter, FFmpeg/runtime initialization, encoder
 option creation/application, per-recording video session setup, hardware-frame
 queue selection, video/GPU/CUDA channel creation, width/height session state,
 video/GPU/CUDA metric reset, video diagnostics reset, audio/microphone queue
-setup, startup sequencing, encoding-task creation, start logging, and startup
-rollback cleanup. `LibAvRecordingSink.StopLifecycle.cs` owns public and emergency
-`StopAsync` routing, `_started` clearing, encode-drain deadline selection,
-emergency cancellation/flush fallback, encoding-failure classification, HDR
-script validation through the bounded process supervisor, stopped-output
-validation handoff, stop logging, and
-`FinalizeResult` shaping. Keep root state/construction, read-only telemetry,
-encoder drift accessors, the background encode loop, and dispose/deferred
-cleanup in `LibAvRecordingSink.cs`, and stopped-output validation in
-`LibAvRecordingSink.StopLifecycle.cs`.
+setup, startup sequencing, encoding-task creation, start logging, startup
+rollback cleanup, the background encode loop, and dispose/deferred cleanup.
+`LibAvRecordingSink.StopLifecycle.cs` owns public and emergency `StopAsync`
+routing, `_started` clearing, encode-drain deadline selection, emergency
+cancellation/flush fallback, encoding-failure classification, HDR script
+validation through the bounded process supervisor, stopped-output validation
+handoff, stop logging, and `FinalizeResult` shaping.
 
 LibAv recording sink encode-loop and packet-drain ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.cs`. Keep the
