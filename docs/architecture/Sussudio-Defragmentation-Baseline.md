@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: ssctl timeline formatter locality
+Problem: `Formatters.Timeline.cs` was the last small ssctl formatter partial outside the bulky snapshot renderer. Reviewing non-snapshot console projection behavior still required opening a second helper file for performance timeline response validation, JSON row projection, table output, and trend summaries, even though it used the same `TryGetData`, `AutomationSnapshotFormatter`, and projection-only `Formatters` facade as the general result/diagnostic/memory/options formatters.
+Files consolidated: `tools/ssctl/Formatters.Timeline.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `Formatters` partial-family file count 3 -> 2
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SsctlFormatters|FullyQualifiedName~Formatters|FullyQualifiedName~ToolContracts"` (25 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: ssctl formatter coverage and command-handler routing tests cover `FormatTimeline`; no automation command names/IDs or MCP tool names changed
+Behavior preserved: timeline data validation, row projection, invariant table formatting, first-vs-last trend summaries, empty/no-data text, and command-handler routing through `Formatters.FormatTimeline` remain unchanged.
+Notes for future agents: keep general ssctl projections, performance timeline output, and shared result helpers in `Formatters.Common.cs`; keep the bulky app snapshot renderer in `Formatters.Snapshot.cs` unless a snapshot subsection grows a named reusable collaborator.
+
+Date: 2026-05-27
 Area: Stats presentation contract test locality
 Problem: `StatsDockPresentation.Tests.cs` and `XUnit.StatsPresentation.Formatting.Tests.cs` still split the same `StatsPresentationTests` xUnit surface between source-shape/ownership checks and executable formatting checks. Reviewing stats presentation now required opening two files for one pure presentation builder/controller/DTO contract, even though both files shared the same reflection/file helpers and no independent fixture state.
 Files consolidated: `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs`
@@ -2801,7 +2813,7 @@ Partial clusters reduced: `Formatters` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`
 CLI/MCP/pipe checks, if applicable: ssctl formatter coverage and command-handler routing tests cover the public formatter methods; no automation command names/IDs changed
 Behavior preserved: generic command result output, pretty JSON, diagnostic-event output, memory/GC output, capture options summary, device-list output, selected-option markers, disabled suffixes, and capture option list ordering remain unchanged
-Notes for future agents: keep general ssctl projections in `Formatters.Common.cs`; keep app snapshot rendering in `Formatters.Snapshot.cs` and performance timeline table/trend rendering in `Formatters.Timeline.cs`.
+Notes for future agents: superseded by the later ssctl timeline formatter fold; keep general ssctl projections, performance timeline table/trend rendering, and shared result helpers in `Formatters.Common.cs`, and keep app snapshot rendering in `Formatters.Snapshot.cs`.
 
 Date: 2026-05-25
 Area: NativeXuAudioProbe command workflow locality

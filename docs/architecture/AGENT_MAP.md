@@ -2752,7 +2752,9 @@ Primary owners:
   validation, on/off and show/hide parsing, recording format normalization,
   snap action mapping, and assertion value parsing.
 - The `tools/ssctl/Formatters.*.cs` partial family is the console projection
-  facade only.
+  facade only. Keep the general result, diagnostics, memory, options, device,
+  and timeline projections together in `Formatters.Common.cs`; keep the bulky
+  app snapshot renderer in `Formatters.Snapshot.cs`.
 - `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section
   ordering, and simple row sections for Sussudio state/capture-command summary,
   audio, capture settings, friendly/exact frame-rate summary formatting,
@@ -2769,12 +2771,11 @@ Primary owners:
   cleanup text, Flashback export/playback text, MJPEG timing activation, decode/
   copy/callback/per-decoder timing, compressed queue/drop/reorder/pipeline
   timing, and preview-jitter snapshot text.
-- `tools/ssctl/Formatters.Timeline.cs` owns performance timeline response
-  validation, JSON row projection, private row model, table output, and
-  first-vs-last trend summary text.
 - `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers, recent
   diagnostic-event output, standalone memory/GC summaries, capture option
-  summaries, and device-list output.
+  summaries, device-list output, performance timeline response validation,
+  JSON row projection, private row model, table output, and first-vs-last trend
+  summary text.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,

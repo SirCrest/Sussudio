@@ -389,9 +389,9 @@ activation/header/order, decode/copy/callback/per-decoder timing,
 compressed-queue, drop-reason, reorder, pipeline timing, preview-jitter queue,
 latency, ownership, and underflow text in `Formatters.Snapshot.cs`,
 diagnostic-event text, capture option/device text, standalone memory/GC
-summaries, and shared JSON/result helpers in `Formatters.Common.cs`,
-performance timeline response validation, JSON row projection, private row
-model, table output, and trend summaries in `Formatters.Timeline.cs`, and
+summaries, performance timeline response validation, JSON row projection,
+private row model, table output, trend summaries, and shared JSON/result
+helpers in `Formatters.Common.cs`, and
 shared CLI formatter contracts in the command-handler tests.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
