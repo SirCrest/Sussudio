@@ -2299,7 +2299,12 @@ Keep live audio suppress/restore, decoder audio callback wiring, playback
 chunk validation/return, playback PTS gate handling, pooled audio-buffer return
 warnings, and playback-state audio/preview routing there alongside best-effort
 preview submission guards, audio renderer pause/resume/flush guards,
-decode-ahead prebuffer target/timeout/frame-budget policy, and rewind behavior.
+decode-ahead prebuffer target/timeout/frame-budget policy, rewind behavior,
+audio-master clock sample state, stale-clock detection, read-only A/V drift
+projection, clock-drift computation, pacing correction policy,
+delay-adjustment counters, fallback accounting/classification, pending fallback
+suppression, read-only fallback reason/drift/clock-age telemetry projection,
+and wall-clock sleep/spin pacing.
 
 Flashback playback component lifecycle now lives in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`. Keep
@@ -2356,12 +2361,6 @@ segment-edge handling now live in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
 The live-state recovery implementation is local to
 `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`.
-Audio-master clock sample state, stale-clock detection, read-only A/V drift
-projection, clock-drift computation, pacing correction policy, delay-adjustment
-counters, fallback accounting/classification, pending fallback suppression,
-read-only fallback reason/drift/clock-age telemetry projection, and wall-clock
-sleep/spin pacing now live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs`.
 Decoder close best-effort handling now lives with decoder file ownership, and
 decode-error snap-to-live recovery lives with the continuous playback loop, so
 the root controller can remain the construction and core state shell. Public

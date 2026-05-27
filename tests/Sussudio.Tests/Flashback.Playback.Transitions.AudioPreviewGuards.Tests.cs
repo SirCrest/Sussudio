@@ -14,8 +14,7 @@ static partial class Program
         var audioCallbackText = audioRoutingText;
         var audioPreviewGuardsText = audioRoutingText;
         var audioPrebufferText = audioRoutingText;
-        var audioMasterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioMasterPacing.cs")
-            .Replace("\r\n", "\n");
+        var audioMasterText = audioRoutingText;
         var audioMasterFallbacksText = audioMasterText;
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
@@ -26,6 +25,11 @@ static partial class Program
         var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
         var wasapiPlaybackRenderText = wasapiPlaybackText;
+
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.AudioMasterPacing.cs")),
+            "audio-master pacing folded into FlashbackPlaybackController.AudioRouting.cs");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
