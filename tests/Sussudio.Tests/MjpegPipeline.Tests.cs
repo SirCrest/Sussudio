@@ -26,8 +26,8 @@ namespace Sussudio.Tests
             => global::Program.UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails();
 
         [Fact]
-        public Task ParallelMjpegDecodePipelineLifecycleLivesInFocusedPartial()
-            => global::Program.ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial();
+        public Task ParallelMjpegDecodePipelineLifecycleLivesWithRoot()
+            => global::Program.ParallelMjpegDecodePipeline_LifecycleLivesWithRoot();
 
         [Fact]
         public Task ParallelMjpegDecodePipelineCompressedQueueLivesWithRoot()
@@ -267,8 +267,7 @@ static partial class Program
     internal static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
         var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
@@ -504,39 +503,35 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ParallelMjpegDecodePipeline_LifecycleLivesInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_LifecycleLivesWithRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
-        var lifecycleText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(lifecycleText, "public void Dispose()");
-        AssertContains(lifecycleText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
-        AssertContains(lifecycleText, "private void BeginStop()");
-        AssertContains(lifecycleText, "private Thread? _emitThread;");
-        AssertContains(lifecycleText, "private readonly AutoResetEvent _emitSignal = new(false);");
-        AssertContains(lifecycleText, "private void StartEmitter()");
-        AssertContains(lifecycleText, "Name = \"MjpegEmitter\"");
-        AssertContains(lifecycleText, "private void SignalEmitter(string operation)");
-        AssertContains(lifecycleText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
-        AssertContains(lifecycleText, "private void SignalFatalError(Exception ex)");
-        AssertContains(lifecycleText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
-        AssertContains(lifecycleText, "private void CleanupResources()");
-        AssertContains(lifecycleText, "private void DiscardRemainingReorderFrames(string reason)");
-        AssertContains(lifecycleText, "private void ReturnRemainingWorkItems()");
-        AssertContains(lifecycleText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
-        AssertContains(lifecycleText, "_emitSignal.Dispose();");
+        AssertContains(rootText, "public void Dispose()");
+        AssertContains(rootText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
+        AssertContains(rootText, "private void BeginStop()");
+        AssertContains(rootText, "private Thread? _emitThread;");
+        AssertContains(rootText, "private readonly AutoResetEvent _emitSignal = new(false);");
+        AssertContains(rootText, "private void StartEmitter()");
+        AssertContains(rootText, "Name = \"MjpegEmitter\"");
+        AssertContains(rootText, "private void SignalEmitter(string operation)");
+        AssertContains(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
+        AssertContains(rootText, "private void SignalFatalError(Exception ex)");
+        AssertContains(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
+        AssertContains(rootText, "private void CleanupResources()");
+        AssertContains(rootText, "private void DiscardRemainingReorderFrames(string reason)");
+        AssertContains(rootText, "private void ReturnRemainingWorkItems()");
+        AssertContains(rootText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
+        AssertContains(rootText, "_emitSignal.Dispose();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.ResourceCleanup.cs")),
-            "MJPEG pipeline resource cleanup folded into ParallelMjpegDecodePipeline.Lifecycle.cs");
-        AssertDoesNotContain(rootText, "public bool TryStop(TimeSpan timeout, out string? failureReason)");
-        AssertDoesNotContain(rootText, "private void BeginStop()");
-        AssertDoesNotContain(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)");
-        AssertDoesNotContain(rootText, "private void CleanupResources()");
-        AssertDoesNotContain(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
-        AssertDoesNotContain(rootText, "Name = \"MjpegEmitter\"");
+            "MJPEG pipeline resource cleanup folded into ParallelMjpegDecodePipeline root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Lifecycle.cs")),
+            "MJPEG pipeline lifecycle folded into the root pipeline owner");
 
         return Task.CompletedTask;
     }

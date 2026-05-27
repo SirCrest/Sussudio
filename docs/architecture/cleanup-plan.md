@@ -1912,11 +1912,11 @@ decoded-frame notification, and reorder/pipeline latency samples recorded during
 emission also live there beside the decoded-frame state they consume.
 
 Parallel MJPEG decode pipeline lifecycle now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Lifecycle.cs`. Keep
-stop/dispose, emitter signaling, shutdown joins, fatal-callback dispatch, and
-remaining-timeout helpers there. Final resource cleanup also lives there; keep
-decoder disposal, queued work-item return, remaining reorder-frame disposal, and
-emit-signal disposal with the stop/dispose owner.
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs` with construction,
+worker startup, and worker state. Keep stop/dispose, emitter signaling, shutdown
+joins, fatal-callback dispatch, remaining-timeout helpers, decoder disposal,
+queued work-item return, remaining reorder-frame disposal, and emit-signal
+disposal with the root pipeline owner.
 
 CUDA/D3D11 preview interop ownership lives in
 `Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`: bridge state, public texture
