@@ -35,6 +35,10 @@ add xUnit alongside, and port incrementally.
   checks.
 - `XUnit.CoreRuntimeContractsTests.cs` owns focused runtime helper behavior
   checks.
+- `XUnit.CoreRuntimeContractsTests.cs` owns RuntimePaths, FFmpeg runtime
+  location, bounded process supervision, MMCSS registration, ProcessSpec,
+  ProcessRunResult, and the shared `RuntimeContractSource` source-family
+  readers used by tool/runtime contract tests.
 - `XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*` partials own the
   former legacy CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
@@ -172,7 +176,7 @@ add xUnit alongside, and port incrementally.
   `XUnit.AutomationContractsTests.cs`,
   `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
   policy, advanced command-map alignment, and pipe/tool protocol contracts),
-  `RuntimeContracts.Tests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
+  `XUnit.CoreRuntimeContractsTests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
   and `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   already run through `dotnet test`.
 

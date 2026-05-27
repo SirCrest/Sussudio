@@ -635,8 +635,10 @@ legacy harness catalog.
 Core runtime checks now execute through
 `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs`, keeping runtime
 telemetry, capture-service snapshot, NativeXu, frame-ledger, recording-integrity,
-and basic app contract checks in xUnit after their removal from the legacy
-harness catalog.
+RuntimePaths, runtime helper, bounded process-supervision, FFmpeg runtime
+location, and basic app contract checks in xUnit after their removal from the
+legacy harness catalog. The shared `RuntimeContractSource` tool/source-family
+reader helpers also live with this runtime xUnit owner.
 Automation checks now execute through
 `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, keeping App exception
 policy, converter/display formatting, LoggingJsonContext, MainWindow automation

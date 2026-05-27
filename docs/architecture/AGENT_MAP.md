@@ -1561,10 +1561,11 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` own NVML snapshot
   computed-property/unit-conversion checks and `NvmlMonitor` native interop
   ownership assertions alongside the tool-model contract group.
-- `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns RuntimePaths,
+- `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns RuntimePaths,
   RuntimePaths resolution-policy source ownership, FFmpeg runtime location,
   bounded external process supervision, MMCSS registration, ProcessSpec, and
-  ProcessRunResult contract checks.
+  ProcessRunResult contract checks alongside the broader no-hardware core
+  runtime xUnit surface.
   `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution plus
   cached FFmpeg encoder/split-encode capability probes through bounded
   `ProcessSupervisor` calls, one-time native initialization, FFmpeg log callback
@@ -1654,7 +1655,7 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those ssctl formatter checks after their removal from the legacy
   offline harness catalog.
-- `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` owns
+- `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns
   `RuntimeContractSource`, including shared tool source-family readers used by
   legacy harness and xUnit contract tests.
 - `tests/Sussudio.Tests/CommandHandlers.Routing.Tests.cs` owns pipe-captured
@@ -1698,9 +1699,8 @@ Primary current owners:
   shared across multiple services: AtomicMax, TelemetryAgeHelper,
   EnvironmentHelpers, RingBufferHelpers, shared minimum-window-size Win32
   subclassing, and best-effort MMCSS worker registration.
-  `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` and
-  `tests/Sussudio.Tests/RuntimeContracts.Tests.cs` own their behavior and
-  native-entry-point contracts.
+  `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns their behavior
+  and native-entry-point contracts.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the former
   automation-diagnostics xUnit execution groups for app-surface, ViewModel and
   Flashback UI, dispatcher, capture/Flashback routing, snapshot projection,
