@@ -1350,25 +1350,27 @@ frame-rate rational inference, confidence scoring, and boolean token helpers
 there with the frame/LRC/envelope helpers that feed them.
 
 Flashback encoder sink startup now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`. Keep buffer
-session creation, generated session ID formatting, encoder initialization,
-active-segment setup, startup queue allocation, session validation, frame-rate
-fallback/clamping, startup metric/counter reset, video diagnostics reset,
-start-failure rollback, PTS continuation, background task startup, and
-start-transaction orchestration there.
+`Sussudio/Services/Flashback/FlashbackEncoderSink.cs` with the root lifetime
+state it initializes and rolls back. Keep buffer session creation, generated
+session ID formatting, encoder initialization, active-segment setup, startup
+queue allocation, session validation, frame-rate fallback/clamping, startup
+metric/counter reset, video diagnostics reset, start-failure rollback, PTS
+continuation, background task startup, and start-transaction orchestration
+there.
 
 Flashback encoder root state now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep construction,
 field ownership, public runtime counters, queue telemetry, encoder
-status/format projections, saturated PTS conversion, non-negative byte/duration
-math, and best-effort eviction resume fallback there.
+status/format projections, startup transaction state, saturated PTS conversion,
+non-negative byte/duration math, and best-effort eviction resume fallback
+there.
 
 Flashback encoder startup orchestration now owns generated session ID
 formatting, encoder option creation, segment extension policy, transport
 container selection, session frame-rate rational validation, `RecordingContext`
 to `FlashbackSessionContext` projection, recording-format codec mapping,
 split-encode mode wire mapping, and recording frame-rate argument parsing in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs`.
+`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`.
 
 Flashback encoder queueing now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`. Keep

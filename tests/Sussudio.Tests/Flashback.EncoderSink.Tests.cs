@@ -94,7 +94,7 @@ static partial class Program
     internal static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
-        var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Startup.cs")
+        var startupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var startupRollbackText = startupText;
 
@@ -102,7 +102,10 @@ static partial class Program
             startupText,
             "catch (Exception ex)\n        {",
             "            throw;\n        }");
-        var rollbackBlock = startupRollbackText;
+        var rollbackBlock = ExtractTextBetween(
+            startupRollbackText,
+            "private void RollBackStartFailure(Exception ex, string? startupGeneratedSegmentPath)\n    {",
+            "\n    private static int ResolveVideoQueueCapacity");
 
         AssertContains(sourceText, "ValidateSessionContext(context);");
         AssertContains(sourceText, "if (ptsBaseOffset < TimeSpan.Zero)\n        {\n            throw new ArgumentOutOfRangeException(nameof(ptsBaseOffset), \"PTS base offset must not be negative.\");\n        }");
