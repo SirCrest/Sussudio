@@ -974,8 +974,11 @@ Explicit capture cleanup now lives in
 `Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the
 public cleanup transition, shutdown teardown order, failed Flashback recording
 segment preservation, deferred LibAv/unified-video cleanup handoff, WASAPI
-capture disposal, mic teardown, telemetry stop, and the call to CaptureService's
-final session-state reset helper.
+capture disposal, mic teardown, telemetry stop, the call to CaptureService's
+final session-state reset helper, fatal capture/recording/Flashback backend
+failure callbacks, fatal cleanup launches, Flashback backend cleanup,
+GPU device-lost classification, recovery segment preservation, generation-stale
+guards, and last-failure telemetry state/projection.
 
 Capture transition execution now lives in
 `Sussudio/Services/Capture/CaptureService.cs` beside the public initialization
@@ -1016,15 +1019,6 @@ Capture read-only automation probes now live in
 and automation snapshot projection. Video source probing, preview color probing,
 and preview-frame screenshot waits stay separated from runtime lifecycle
 mutation code.
-
-Fatal capture and backend failure handling now lives in
-`Sussudio/Services/Capture/CaptureService.Failures.cs`. That file owns fatal
-error callbacks, fatal capture cleanup launch and generation-stale guards,
-Flashback backend cleanup launch, GPU device-lost classification, recovery
-segment preservation, the recording/Flashback last-failure telemetry state
-fields, lock, mutation helpers, clear helpers, and snapshot reads. Cleaning-up
-and faulted state writes route through root CaptureService transition helpers.
-Flashback backend cleanup must not write session state directly.
 
 Flashback-facing capture controls now live in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public

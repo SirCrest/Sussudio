@@ -10,11 +10,11 @@ using Xunit;
 public sealed class CaptureServiceFailureOwnershipTests
 {
     [Fact]
-    public void CaptureService_LastFailureTelemetryState_LivesInFailuresPartial()
+    public void CaptureService_LastFailureTelemetryState_LivesWithCleanupLifecycle()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
+        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
             .Replace("\r\n", "\n");
 
         var fieldNames = new[]
@@ -31,40 +31,43 @@ public sealed class CaptureServiceFailureOwnershipTests
         foreach (var fieldName in fieldNames)
         {
             AssertDoesNotContain(rootText, fieldName);
-            AssertContains(failuresText, fieldName);
+            AssertContains(cleanupText, fieldName);
         }
 
-        AssertContains(failuresText, "private readonly object _recordingFailureTelemetryLock = new();");
-        AssertContains(failuresText, "private bool _lastRecordingEncodingFailed;");
-        AssertContains(failuresText, "private string? _lastRecordingEncodingFailureType;");
-        AssertContains(failuresText, "private string? _lastRecordingEncodingFailureMessage;");
-        AssertContains(failuresText, "private bool _lastFlashbackEncodingFailed;");
-        AssertContains(failuresText, "private string? _lastFlashbackEncodingFailureType;");
-        AssertContains(failuresText, "private string? _lastFlashbackEncodingFailureMessage;");
-        AssertContains(failuresText, "private void RecordLastRecordingFailure(Exception ex)");
-        AssertContains(failuresText, "private void RecordLastFlashbackFailure(Exception ex)");
-        AssertContains(failuresText, "private void ClearLastRecordingFailure()");
-        AssertContains(failuresText, "private void ClearLastFlashbackFailure()");
-        AssertContains(failuresText, "private void BeginFatalCaptureCleanup(Exception ex)");
-        AssertContains(failuresText, "EnterCleanupState();");
-        AssertContains(failuresText, "EnterFaultedState();");
-        AssertContains(failuresText, "GetLastFailureTelemetry()");
+        AssertContains(cleanupText, "private readonly object _recordingFailureTelemetryLock = new();");
+        AssertContains(cleanupText, "private bool _lastRecordingEncodingFailed;");
+        AssertContains(cleanupText, "private string? _lastRecordingEncodingFailureType;");
+        AssertContains(cleanupText, "private string? _lastRecordingEncodingFailureMessage;");
+        AssertContains(cleanupText, "private bool _lastFlashbackEncodingFailed;");
+        AssertContains(cleanupText, "private string? _lastFlashbackEncodingFailureType;");
+        AssertContains(cleanupText, "private string? _lastFlashbackEncodingFailureMessage;");
+        AssertContains(cleanupText, "private void RecordLastRecordingFailure(Exception ex)");
+        AssertContains(cleanupText, "private void RecordLastFlashbackFailure(Exception ex)");
+        AssertContains(cleanupText, "private void ClearLastRecordingFailure()");
+        AssertContains(cleanupText, "private void ClearLastFlashbackFailure()");
+        AssertContains(cleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
+        AssertContains(cleanupText, "EnterCleanupState();");
+        AssertContains(cleanupText, "EnterFaultedState();");
+        AssertContains(cleanupText, "GetLastFailureTelemetry()");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Failures.cs")),
+            "fatal failure cleanup folded into CaptureService.Cleanup.cs");
     }
 
     [Fact]
-    public void CaptureService_FlashbackBackendFailureCleanup_LivesWithFailureCallbacksWithoutSessionStateWrites()
+    public void CaptureService_FlashbackBackendFailureCleanup_LivesWithCleanupLifecycleWithoutSessionStateWrites()
     {
-        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs")
+        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(failuresText, "private void BeginFatalCaptureCleanup(Exception ex)");
-        AssertContains(failuresText, "private void BeginFlashbackBackendCleanup(Exception ex)");
-        AssertContains(failuresText, "private static bool IsGpuDeviceLost(Exception ex)");
-        AssertContains(failuresText, "_flashbackBackend.PreserveRecoverySegments(\"device_lost\");");
-        AssertDoesNotContain(failuresText, "_sessionState =");
+        AssertContains(cleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
+        AssertContains(cleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
+        AssertContains(cleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertContains(cleanupText, "_flashbackBackend.PreserveRecoverySegments(\"device_lost\");");
+        AssertDoesNotContain(cleanupText, "_sessionState =");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),
-            "Flashback backend failure cleanup partial folded into CaptureService.Failures.cs");
+            "Flashback backend failure cleanup folded into CaptureService.Cleanup.cs");
     }
 
     private static void AssertContains(string text, string expected)
@@ -159,7 +162,7 @@ static partial class Program
         var stateMachineText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
         var resourceReleaseText = cleanupText;
-        var failuresText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Failures.cs").Replace("\r\n", "\n");
+        var failureCleanupText = cleanupText;
 
         AssertContains(rootText, "private readonly CaptureSessionStateMachine _sessionStateMachine = new();");
         AssertContains(rootText, "public CaptureSessionState SessionState => CurrentSessionState;");
@@ -233,16 +236,20 @@ static partial class Program
             "ResetSessionStateAfterCleanup();");
         AssertDoesNotContain(cleanupText, "_sessionState =");
 
-        var fatalCleanupText = ExtractMemberCode(failuresText, "BeginFatalCaptureCleanup");
+        var fatalCleanupText = ExtractMemberCode(failureCleanupText, "BeginFatalCaptureCleanup");
         AssertContains(fatalCleanupText, "EnterCleanupState();");
         AssertContains(fatalCleanupText, "EnterFaultedState();");
-        AssertDoesNotContain(failuresText, "_sessionState =");
-        AssertContains(failuresText, "private void BeginFlashbackBackendCleanup(Exception ex)");
-        AssertContains(failuresText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertDoesNotContain(failureCleanupText, "_sessionState =");
+        AssertContains(failureCleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
+        AssertContains(failureCleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),
-            "CaptureService Flashback backend failure cleanup partial folded into failures");
+            "CaptureService Flashback backend failure cleanup folded into cleanup lifecycle");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Failures.cs")),
+            "CaptureService failure callbacks folded into Cleanup.cs");
 
         return Task.CompletedTask;
     }
