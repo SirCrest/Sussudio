@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Automation support model protocol locality
+Problem: `AutomationCommandProtocol.cs` was a 135-line model island for automation response status/lifecycle converters, Flashback/window/wait enums, command request/response DTOs, and snapshot assertions while `AutomationSupportModels.cs` already owned the small automation support DTO surface used by diagnostics events, options, visual probes, verification, and runtime snapshots. Reviewing automation wire/support model types required opening a separate tiny file before returning to the support model owner.
+Files consolidated: `Sussudio/Models/Automation/AutomationCommandProtocol.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; automation model file count 6 -> 5
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationDispatcherContractsTests|FullyQualifiedName~AutomationAppSurfaceContractsTests|FullyQualifiedName~AutomationContractsProtocolXunitTests"` (46 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: full build rebuilt `ssctl`, `McpServer`, `AutomationClient`, and automation contracts; no public command names, IDs, JSON field names, response status/lifecycle wire spelling, pipe names, or manifest revision changed
+Behavior preserved: automation response status/lifecycle converters, Flashback/window/wait enums, command request/response DTOs, snapshot assertion DTOs, JSON attributes, and named-pipe dispatcher contracts now live in `AutomationSupportModels.cs` beside the rest of the small automation support model surface.
+Notes for future agents: keep automation command protocol DTOs/converters with `Sussudio/Models/Automation/AutomationSupportModels.cs` while they remain small support models; keep the broad runtime evidence surfaces in `AutomationSnapshot.cs`, `CaptureRuntimeSnapshot.cs`, `PreviewRuntimeSnapshot.cs`, and `PerformanceTimelineEntry.cs`.
+
+Date: 2026-05-27
 Area: Flashback exporter native stream setup locality
 Problem: `FlashbackExporter.Streams.cs` owned FFmpeg input opening, output context/header setup, stream-count validation, stream-template copying, and segment stream-layout compatibility, but all of that state is `_activeInputContext`/`_activeOutputContext` native lifecycle state owned and cleaned up by `FlashbackExporter.Lifecycle.cs`. Reviewing native export setup and cleanup required opening a separate partial before following the same active context lifetime.
 Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`

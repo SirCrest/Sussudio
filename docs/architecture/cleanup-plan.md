@@ -1956,10 +1956,10 @@ Automation snapshot contracts now live in named model files under
 with source telemetry, user settings, HDR, audio/ingest, recording, capture
 format, preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
 remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry.cs`, and
-`AutomationSupportModels.cs`; the support file owns the small automation
-evidence DTOs for diagnostics events, Flashback segments, preview startup,
-screenshot/window capture, recording verification, video source/color probes,
-and view-model runtime snapshots.
+`AutomationSupportModels.cs`; the support file owns command protocol DTOs and
+converters plus the small automation evidence DTOs for diagnostics events,
+Flashback segments, preview startup, screenshot/window capture, recording
+verification, video source/color probes, and view-model runtime snapshots.
 `CaptureRuntimeSnapshot.cs` owns the capture runtime DTO surface: root
 session/device identity, ingest/audio, reader transport, capture format, HDR
 pipeline, source telemetry, A/V sync, and recording evidence.
