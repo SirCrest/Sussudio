@@ -433,7 +433,7 @@ static partial class Program
         var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
-        var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/PreviewRuntimeSnapshot.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -531,6 +531,10 @@ static partial class Program
         AssertContains(previewRuntimeSnapshotModelText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
         AssertContains(previewRuntimeSnapshotModelText, "public string GpuPlaybackState { get; init; } = \"None\";");
         AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
+            "preview runtime DTO folded into AutomationRuntimeModels.cs");
         AssertContains(agentMapText, "MainWindow.PreviewLifecycle.Composition.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");

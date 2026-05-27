@@ -1946,21 +1946,18 @@ Automation snapshot contracts now live in named model files under
 `AutomationSnapshot*.cs` partial family by domain: root lifecycle/diagnostics
 with source telemetry, user settings, HDR, audio/ingest, recording, capture
 format, preview, MJPEG/cadence, system health, and Flashback. Other snapshot contracts
-remain in `CaptureRuntimeSnapshot.cs`, `PerformanceTimelineEntry.cs`, and
-`AutomationSupportModels.cs`; the support file owns command protocol DTOs and
-converters plus the small automation evidence DTOs for diagnostics events,
-Flashback segments, preview startup, screenshot/window capture, recording
-verification, video source/color probes, and view-model runtime snapshots.
-`CaptureRuntimeSnapshot.cs` owns the capture runtime DTO surface: root
-session/device identity, ingest/audio, reader transport, capture format, HDR
-pipeline, source telemetry, A/V sync, and recording evidence.
-`PreviewRuntimeSnapshot.cs` owns the preview runtime DTO surface: surface/frame
-health, startup, display cadence, D3D renderer diagnostics, and GPU playback.
-`PerformanceTimelineEntry.cs` owns the timeline DTO surface: capture/preview
-cadence, preview/MJPEG/D3D, Flashback playback, Flashback export, and
-process/system health. Do not
-recreate a broad `AutomationRuntimeSnapshots.cs` catch-all; add new DTO fields
-to the partial that matches the snapshot surface they own.
+now remain in `AutomationRuntimeModels.cs` and `AutomationSupportModels.cs`;
+the runtime file owns the capture runtime DTO surface, preview runtime DTO
+surface, and performance timeline DTO surface. The support file owns command
+protocol DTOs and converters plus the small automation evidence DTOs for
+diagnostics events, Flashback segments, preview startup, screenshot/window
+capture, recording verification, video source/color probes, and view-model
+runtime snapshots. The preview runtime DTO section owns surface/frame health,
+startup, display cadence, D3D renderer diagnostics, and GPU playback fields;
+the timeline DTO section owns capture/preview cadence, preview/MJPEG/D3D,
+Flashback playback, Flashback export, and process/system health fields. Keep
+runtime evidence DTOs in `AutomationRuntimeModels.cs`
+unless a future model grows behavior or external linked-source constraints.
 
 Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
@@ -1980,8 +1977,8 @@ in `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tes
 `CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
 The private runtime snapshot assembly handoff contract lives with the assembler
 that consumes it.
-The automation model surface lives in `CaptureRuntimeSnapshot.cs`, with sectioned
-runtime fields grouped by the same domain as the sampled field groups.
+The automation runtime model surface lives in `AutomationRuntimeModels.cs`, with
+sectioned runtime fields grouped by the same domain as the sampled field groups.
 Video ingest, source-reader health, WASAPI capture, playback output counter,
 requested/negotiated reader transport, memory preference, frame-ledger, preview
 renderer-mode projection, recording-integrity summary projection, HDR pipeline

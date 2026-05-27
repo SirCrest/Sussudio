@@ -243,7 +243,7 @@ static partial class Program
         var playbackVolumeText = playbackText;
         var runtimeContractsText = string.Join(
             "\n",
-            ReadRepoFile("Sussudio/Models/Automation/CaptureRuntimeSnapshot.cs"))
+            ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs"))
             .Replace("\r\n", "\n");
         var runtimeSnapshotText = string.Join(
             "\n",

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -154,7 +155,7 @@ static partial class Program
 
     internal static Task D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties()
     {
-        var rootModelText = ReadRepoFile("Sussudio/Models/Automation/PerformanceTimelineEntry.cs");
+        var rootModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs");
 
         AssertContains(rootModelText, "public sealed class PerformanceTimelineEntry");
         AssertContains(rootModelText, "public double PreviewCadenceSlowFramePercent { get; init; }");
@@ -163,6 +164,10 @@ static partial class Program
         AssertContains(rootModelText, "public double FlashbackExportThroughputBytesPerSec { get; init; }");
         AssertContains(rootModelText, "public double ProcessCpuPercent { get; init; }");
         AssertDoesNotContain(rootModelText, "partial class PerformanceTimelineEntry");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PerformanceTimelineEntry.cs")),
+            "performance timeline DTO folded into AutomationRuntimeModels.cs");
 
         var performanceTimelineEntryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
         foreach (var prop in new[]
