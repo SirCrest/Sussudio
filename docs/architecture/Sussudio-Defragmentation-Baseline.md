@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: MainWindow UI contract test locality
+Problem: `MainWindowUiContract.StatsSnapshot.Tests.cs` was a small xUnit shard for stats snapshot construction and builder behavior even though `MainWindowUiContract.Tests.cs` already owned MainWindow agent-facing UI contract checks. Reviewing MainWindow UI contract coverage required opening a second adjacent test file for another UI-surface source/behavior contract.
+Files consolidated: `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; MainWindow UI contract test file count 2 -> 1 while preserving the `MainWindowUiContractStatsSnapshotTests` xUnit class and `[Fact]` method names
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MainWindowUiContract|FullyQualifiedName~StatsSnapshot|FullyQualifiedName~StatsOverlay|FullyQualifiedName~StatsPresentation"` (14 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; test-owner consolidation only
+Behavior preserved: MainWindow automation ID, full-screen/window automation, UI-dispatching, stats snapshot construction, and stats snapshot builder metric mapping checks still execute.
+Notes for future agents: keep MainWindow UI contract source and stats snapshot checks in `MainWindowUiContract.Tests.cs`; add a separate test owner only when a check exercises a distinct runtime seam rather than another MainWindow UI contract shard.
+
+Date: 2026-05-27
 Area: Automation pipe protocol contract locality
 Problem: `AutomationPipeClientModels.cs` held the pipe command result DTO, pipe exception taxonomy, response-state reader, synthetic error-envelope factory, and unknown-command policy next to `AutomationPipeProtocol.cs`, which already owned pipe names, command resolution, timeouts, request envelopes, manifest revision, and security fallback policy. Reviewing the shared pipe contract required opening two small adjacent files for one wire/client protocol surface.
 Files consolidated: `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`

@@ -1188,10 +1188,8 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
   presentation and input-provider behavior checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
-  automation ID inventory, full-screen/window automation, and UI-dispatching
-  source contract checks.
-- `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs` owns
-  xUnit stats snapshot builder contract checks.
+  automation ID inventory, full-screen/window automation, UI-dispatching source
+  contract checks, and xUnit stats snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs` owns
   MainWindow shell chrome ownership assertions for the settings shelf, window
   title, live signal info, and status-strip presentation, plus window-title
