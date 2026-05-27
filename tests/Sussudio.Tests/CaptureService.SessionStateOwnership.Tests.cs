@@ -14,7 +14,7 @@ public sealed class CaptureServiceFailureOwnershipTests
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
+        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         var fieldNames = new[]
@@ -30,7 +30,7 @@ public sealed class CaptureServiceFailureOwnershipTests
 
         foreach (var fieldName in fieldNames)
         {
-            AssertDoesNotContain(rootText, fieldName);
+            AssertContains(rootText, fieldName);
             AssertContains(cleanupText, fieldName);
         }
 
@@ -51,13 +51,16 @@ public sealed class CaptureServiceFailureOwnershipTests
         AssertContains(cleanupText, "GetLastFailureTelemetry()");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Failures.cs")),
-            "fatal failure cleanup folded into CaptureService.Cleanup.cs");
+            "fatal failure cleanup folded into CaptureService.cs");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Cleanup.cs")),
+            "cleanup lifecycle folded into CaptureService.cs");
     }
 
     [Fact]
     public void CaptureService_FlashbackBackendFailureCleanup_LivesWithCleanupLifecycleWithoutSessionStateWrites()
     {
-        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
+        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(cleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
@@ -67,7 +70,7 @@ public sealed class CaptureServiceFailureOwnershipTests
         AssertDoesNotContain(cleanupText, "_sessionState =");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),
-            "Flashback backend failure cleanup folded into CaptureService.Cleanup.cs");
+            "Flashback backend failure cleanup folded into CaptureService.cs");
     }
 
     private static void AssertContains(string text, string expected)
@@ -164,7 +167,7 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var transitionExecutionText = rootText;
         var stateMachineText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs").Replace("\r\n", "\n");
-        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs").Replace("\r\n", "\n");
+        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var resourceReleaseText = cleanupText;
         var failureCleanupText = cleanupText;
 
@@ -210,11 +213,6 @@ static partial class Program
         AssertContains(stateMachineText, "=> _state = CaptureSessionTransitionPolicy.ResolveSteadyState(");
         AssertContains(stateMachineText, "public void ResetAfterCleanup(bool isDisposed)");
         AssertContains(stateMachineText, "=> _state = isDisposed ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;");
-        AssertDoesNotContain(transitionExecutionText, "CleanupForDisposalAsync");
-        AssertDoesNotContain(transitionExecutionText, "public void Dispose()");
-        AssertDoesNotContain(transitionExecutionText, "public async ValueTask DisposeAsync()");
-        AssertDoesNotContain(transitionExecutionText, "private static void ReleaseSemaphoreBestEffort(");
-        AssertDoesNotContain(transitionExecutionText, "private static void ResumeFlashbackEvictionBestEffort(");
         AssertOccursBefore(
             stateMachineText,
             "CaptureSessionTransitionPolicy.ThrowIfDisallowed(_state, transitionState);",
@@ -224,7 +222,7 @@ static partial class Program
         AssertContains(cleanupText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertContains(cleanupText, "public void Dispose()");
         AssertContains(cleanupText, "public async ValueTask DisposeAsync()");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ResourceRelease.cs")), "CaptureService resource-release helpers stay folded into Cleanup.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ResourceRelease.cs")), "CaptureService resource-release helpers stay folded into CaptureService.cs");
         AssertContains(resourceReleaseText, "private void DisposeCoordinationLocksBestEffort()");
         AssertContains(resourceReleaseText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
         AssertContains(resourceReleaseText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
@@ -253,7 +251,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Failures.cs")),
-            "CaptureService failure callbacks folded into Cleanup.cs");
+            "CaptureService failure callbacks folded into CaptureService.cs");
 
         return Task.CompletedTask;
     }
@@ -447,7 +445,7 @@ static partial class Program
         var lifecycleTransitionOwners = new[]
         {
             "Sussudio/Services/Capture/CaptureService.cs",
-            "Sussudio/Services/Capture/CaptureService.Cleanup.cs",
+            "Sussudio/Services/Capture/CaptureService.cs",
             "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"

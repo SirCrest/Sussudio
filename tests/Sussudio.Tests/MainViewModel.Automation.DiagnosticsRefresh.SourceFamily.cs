@@ -172,7 +172,7 @@ static partial class Program
     private static string ReadCaptureServiceDiagnosticsRefreshSource()
     {
         return ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Cleanup.cs")
+            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")

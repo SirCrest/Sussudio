@@ -973,7 +973,7 @@ switching, mic cleanup, post-recording mic monitor restart, and playback routing
 from collapsing back into a general audio partial.
 
 Explicit capture cleanup now lives in
-`Sussudio/Services/Capture/CaptureService.Cleanup.cs`. That file owns the
+`Sussudio/Services/Capture/CaptureService.cs`. That file owns the
 public cleanup transition, shutdown teardown order, failed Flashback recording
 segment preservation, deferred LibAv/unified-video cleanup handoff, WASAPI
 capture disposal, mic teardown, telemetry stop, the call to CaptureService's
@@ -993,15 +993,15 @@ session state and transition generation live with
 and fatal cleanup paths call those helpers while preserving their special
 teardown order.
 Best-effort resource release helpers are delegated to
-`Sussudio/Services/Capture/CaptureService.Cleanup.cs`.
+`Sussudio/Services/Capture/CaptureService.cs`.
 
 Disposal-triggered cleanup and dispose flow live with explicit cleanup in
-`Sussudio/Services/Capture/CaptureService.Cleanup.cs`; disposed-state writes
+`Sussudio/Services/Capture/CaptureService.cs`; disposed-state writes
 route through root CaptureService transition helpers. Coordination lock disposal is delegated to
-`Sussudio/Services/Capture/CaptureService.Cleanup.cs`.
+`Sussudio/Services/Capture/CaptureService.cs`.
 
 Capture resource release helpers now live in
-`Sussudio/Services/Capture/CaptureService.Cleanup.cs` alongside disposal and
+`Sussudio/Services/Capture/CaptureService.cs` alongside disposal and
 shutdown teardown. That file owns best-effort semaphore release/disposal,
 coordination-lock disposal, Flashback backend/export held-lock release helpers,
 and Flashback eviction resume warnings used by lifecycle/export/cleanup
