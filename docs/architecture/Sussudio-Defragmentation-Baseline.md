@@ -4868,3 +4868,15 @@ Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-res
 CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, recording format consumers, automation snapshot projections, tools, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
 Behavior preserved: `MediaFormat` display text, rational frame-rate handling, equality/hash policy, HDR and true-10-bit pixel-format detection, pixel-format priority, and NVENC codec mapping now live in `RecordingModels.cs` with encoder support, recording integrity, queue options, and byte stats.
 Notes for future agents: keep recording model leaf types together in `Sussudio/Models/Recording/RecordingModels.cs` while they remain DTO/policy helpers in the shared `Sussudio.Models` namespace; split only if a recording model becomes a separately owned collaborator with non-model behavior or external shared-source constraints.
+
+Date: 2026-05-27
+Area: Capture model locality
+Problem: `CaptureSettings.cs` was a small capture-model contract file beside `CaptureModels.cs`; the architecture map already treated both as one capture leaf model surface, but settings enums, bitrate/output-path policy, MJPEG high-frame-rate policy, capture device models, session-state policy, and frame-ledger DTOs still required opening two files.
+Files consolidated: `Sussudio/Models/Capture/CaptureSettings.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; capture model file count -1 while preserving public `CaptureSettings`, recording/preview/settings enum, parser, and support type names and namespace
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, capture settings consumers, recording/Flashback settings paths, automation snapshot projections, tools, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
+Behavior preserved: capture settings defaults, custom bitrate clamp, bitrate scaling, output filename/path generation, MJPEG high-frame-rate detection, NVENC preset parsing, split-encode parsing/wire formatting, and split-encode support DTOs now live in `CaptureModels.cs` with capture devices, options, session-state policy, and frame-ledger DTOs.
+Notes for future agents: keep capture leaf device/options/settings/session-state/frame-ledger models together in `Sussudio/Models/Capture/CaptureModels.cs` while they remain shared model contracts; split only for a real external shared-source constraint or a non-model collaborator with independent ownership.
