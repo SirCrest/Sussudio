@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Flashback playback positioning/file locality
+Problem: `FlashbackPlaybackController.DecoderFiles.cs` owned target-PTS file selection, decoder file identity, active fMP4 reopen, and adjacent-segment seek fallback while `FlashbackPlaybackController.Markers.cs` owned the marker state, file-PTS projection, scrub/seek clamping, saturating timestamp math, active fMP4 segment detection, and playback path comparison used by the same positioning and seek/reopen paths. Reviewing Flashback playback position-to-file behavior required opening two adjacent partials before returning to playback-frame and thread-command owners.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`; `Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`
+Files added: `Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackPlaybackController` production partial count 8 -> 7
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackPlaybackController|FullyQualifiedName~Flashback.Playback|FullyQualifiedName~FlashbackContracts"` (15 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` initially hit an unrelated parallel HDR environment-variable race, focused `FullyQualifiedName~HdrOutputPolicy` passed (3 passed), rerun full tests passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs or wire payloads changed
+Behavior preserved: decoder creation/open/close/cleanup, active file identity, active fMP4 reopen, adjacent-segment seek fallback, marker command API, in/out marker state, file-PTS restore, position clamping, saturating timestamp math, active fMP4 detection, and playback path comparison now live together in `FlashbackPlaybackController.Positioning.cs`.
+Notes for future agents: keep Flashback playback position-to-file mapping, marker range state, decoder file identity/opening, active fMP4 reopen, adjacent-segment fallback, and path comparison in `FlashbackPlaybackController.Positioning.cs`; keep playback-thread command execution in `ThreadCommands.cs` and decoded-frame submission/progression in `PlaybackFrames.cs`.
+
+Date: 2026-05-27
 Area: MainWindow UI contract test locality
 Problem: `MainWindowUiContract.StatsSnapshot.Tests.cs` was a small xUnit shard for stats snapshot construction and builder behavior even though `MainWindowUiContract.Tests.cs` already owned MainWindow agent-facing UI contract checks. Reviewing MainWindow UI contract coverage required opening a second adjacent test file for another UI-surface source/behavior contract.
 Files consolidated: `tests/Sussudio.Tests/MainWindowUiContract.StatsSnapshot.Tests.cs`

@@ -2226,12 +2226,12 @@ is the settings XAML-facing adapter.
 Flashback playback marker commands, in/out marker state, file-PTS restore,
 marker normalization, invalid-range clearing, and out-point pause checks now
 live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`; keep
-decode pacing, seek, and segment-opening flow in the playback controller
-core/thread partials.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`; keep
+decode pacing and command execution flow in the playback-frame and thread-command
+partials.
 
 Flashback playback position/file-PTS mapping now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`.
 It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
 math, active fMP4 segment detection, and playback path comparison.
 
@@ -2304,8 +2304,9 @@ Flashback playback component lifecycle now lives in
 construction, initialization, audio/preview component reference updates,
 lifecycle/dispose state, disposal, preview-detach cleanup, failed-stop detach
 timeout state, deferred preview reattach state, and deferred reattach retry
-scheduling there. Keep decoder file handling and playback pacing in the
-controller core/thread partials.
+scheduling there. Keep playback positioning/file handling in
+`FlashbackPlaybackController.Positioning.cs` and playback pacing in the
+playback-frame/thread-command partials.
 
 Flashback playback decoded-frame submission now lives with held playback frame
 ownership in
@@ -2321,7 +2322,7 @@ now live in
 keep seek commands in their named partial.
 
 Flashback playback decoder file handling now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`.
 Keep decoder creation, active segment file identity, file open checks, and
 decoder close/open identity transitions there, alongside best-effort decoder
 file close handling, held-frame release during teardown, decoder close/dispose

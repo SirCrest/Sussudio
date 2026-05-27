@@ -11,9 +11,9 @@ static partial class Program
         var segmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var segmentSwitchText = segmentEdgesText;
-        var decoderFilesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs")
+        var positioningText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs")
             .Replace("\r\n", "\n");
-        var decoderReopenText = decoderFilesText;
+        var decoderReopenText = positioningText;
         var decoderSegmentReopenText = segmentEdgesText;
         var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
@@ -83,14 +83,14 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL");
         AssertContains(sourceText, "if (decoder.SeekToKeyframe(seekTarget, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"keyframe_seek_failed\", seekTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL");
-        AssertContains(decoderFilesText, "private void ReopenDecoderPlaybackFile(");
+        AssertContains(positioningText, "private void ReopenDecoderPlaybackFile(");
         AssertContains(sourceText, "updateCurrentOpenPath: true,\n                closeOnlyWhenOpen: true);");
         AssertContains(sourceText, "updateCurrentOpenPath: false,\n                closeOnlyWhenOpen: false);");
-        AssertContains(decoderFilesText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
-        AssertContains(decoderFilesText, "_decoderHwAccel = \"N/A\";\n        fileOpen = false;\n        _currentOpenFilePath = null;");
-        AssertContains(decoderFilesText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)");
-        AssertContains(decoderFilesText, "private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)");
-        AssertContains(decoderFilesText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE");
+        AssertContains(positioningText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
+        AssertContains(positioningText, "_decoderHwAccel = \"N/A\";\n        fileOpen = false;\n        _currentOpenFilePath = null;");
+        AssertContains(positioningText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)");
+        AssertContains(positioningText, "private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)");
+        AssertContains(positioningText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE");
         AssertContains(decoderReopenText, "private void ReopenDecoderPlaybackFile(");
         AssertContains(decoderReopenText, "private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)");
         AssertEqual(
@@ -265,7 +265,7 @@ static partial class Program
     internal static Task FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
     {
         var sourceText = ReadFlashbackPlaybackControllerSource();
-        var markersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs");
+        var markersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs");
 
         AssertContains(markersText, "private long _inPointFilePtsTicks = long.MinValue;");
         AssertContains(markersText, "private long _outPointFilePtsTicks = long.MinValue;");
