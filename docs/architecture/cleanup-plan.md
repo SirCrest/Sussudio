@@ -2783,18 +2783,17 @@ The frame-pacing verdict MCP tool follows the same shape: keep MCP attributes,
 method signature, pipe command orchestration, response shaping, channel/timeline
 projection, readiness and verdict policy, operator-facing text, and private
 records together in `FramePacingVerdictTools.cs`.
-The Flashback MCP tool type keeps enable/apply commands, segment-list
-formatting, playback/scrub action validation, and export validation/payload/text
-in `FlashbackTools.cs`.
-The verification MCP tool follows the same ownership rule: keep public
-`verify_recording`, `assert_snapshot`, and `verify_file` methods, command
-names, payloads, 60s verification timeouts, assertion JSON parsing, clone
-lifetime safety, and `Data.Verification` / `Snapshot.LastVerification` lookup
-alongside recording/file/assertion result text in `VerificationTools.cs`.
-Window, UI settings, preview/recording control, and condition-wait MCP methods
-stay in `WindowTools.cs`; keep the public `WindowTools`, `UiSettingsTools`,
-`PreviewTools`, `RecordingTools`, and `WaitTools` type names stable while
-avoiding one-method tool files.
+MCP automation command-control wrappers stay in
+`AutomationControlTools.cs`: keep device/capture/pipeline settings,
+structured capture options, window/UI settings, preview/recording control,
+condition waits, Flashback enable/apply/segments/action/export, and
+verification methods together while preserving the public
+`CaptureSettingsTools`, `DeviceTools`, `CaptureOptionsTools`,
+`PipelineSettingsTools`, `WindowTools`, `UiSettingsTools`, `PreviewTools`,
+`RecordingTools`, `WaitTools`, `FlashbackTools`, and `VerificationTools` type
+names. Keep heavier readback or evidence surfaces separate in
+`AppStateTools.cs`, `PerformanceTools.cs`, `PreviewInspectionTools.cs`, and
+other files with independent policy.
 Preview visual inspection MCP methods stay in `PreviewInspectionTools.cs`; keep
 the public `PreviewColorProbeTools`, `VideoSourceProbeTools`,
 `PreviewFrameCaptureTools`, and `WindowScreenshotTools` type names stable while

@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: MCP automation command-control tool locality
+Problem: Device/capture/pipeline settings, window/UI/preview/recording/wait controls, Flashback commands, and verification commands lived in four adjacent MCP files even though they were all shallow command-control wrappers over the same pipe-client and formatter path. Reviewing automation command routing required opening `CaptureSettingsTools.cs`, `WindowTools.cs`, `FlashbackTools.cs`, and `VerificationTools.cs` to follow one public MCP control surface.
+Files consolidated: `tools/McpServer/Tools/CaptureSettingsTools.cs`; `tools/McpServer/Tools/WindowTools.cs`; `tools/McpServer/Tools/FlashbackTools.cs`; `tools/McpServer/Tools/VerificationTools.cs`
+Files added: `tools/McpServer/Tools/AutomationControlTools.cs`
+Net production .cs delta: -3
+Partial clusters reduced: n/a; MCP automation command-control wrapper file count 4 -> 1 while preserving the public `CaptureSettingsTools`, `DeviceTools`, `CaptureOptionsTools`, `PipelineSettingsTools`, `WindowTools`, `UiSettingsTools`, `PreviewTools`, `RecordingTools`, `WaitTools`, `FlashbackTools`, and `VerificationTools` type names
+Build/tests/runtime checks: `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~McpToolSurface|FullyQualifiedName~McpContracts|FullyQualifiedName~AutomationToolContracts"` (24 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: MCP tool-surface and automation contract tests cover command names, payload shaping, response formatting, and typed automation command routing; no public MCP tool names, public tool type names, automation command names/IDs, or wire payloads changed
+Behavior preserved: device/capture/pipeline config, structured capture options, window/UI/preview/recording/wait commands, Flashback enable/apply/segments/action/export, and verification/assertion routing and formatting remain unchanged.
+Notes for future agents: keep shallow MCP command-control wrappers in `AutomationControlTools.cs`; split only if a tool type gains independent helper state, transport policy, or evidence/readback behavior beyond command dispatch and response formatting.
+
+Date: 2026-05-27
 Area: MCP preview visual inspection tool locality
 Problem: Preview/source color probes and preview/window image captures were split between `PreviewColorProbeTools.cs` and `PreviewFrameCaptureTools.cs`, even though both files were shallow MCP visual-inspection surfaces over automation commands. Reviewing MCP visual evidence behavior required opening two adjacent files to see probe formatting, preview-frame report rendering, histogram/diagnosis policy, default output paths, and screenshot response shaping.
 Files consolidated: `tools/McpServer/Tools/PreviewColorProbeTools.cs`; `tools/McpServer/Tools/PreviewFrameCaptureTools.cs`
@@ -840,7 +852,7 @@ Partial clusters reduced: `FlashbackTools` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by MCP Flashback tool surface/pipe-route tests and runtime snapshot regression tests
 Behavior preserved: `flashback_segments` still sends `AutomationCommandKind.FlashbackGetSegments` and returns the same formatted response text.
-Notes for future agents: keep low-policy Flashback MCP root commands in `FlashbackTools.cs`; keep action and export files separate while they own validation and payload policy.
+Notes for future agents: keep low-policy Flashback MCP command-control wrappers in `AutomationControlTools.cs` while they remain shallow command dispatch, validation, payload, and response-formatting code.
 
 Date: 2026-05-24
 Area: MCP verification helper locality
@@ -852,7 +864,7 @@ Partial clusters reduced: `VerificationTools` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by MCP verification tool route/format tests and runtime snapshot regression tests
 Behavior preserved: `verify_recording`, `assert_snapshot`, and `verify_file` command routing, assertion JSON cloning, and verification lookup from `Data.Verification` / `Snapshot.LastVerification` are unchanged.
-Notes for future agents: keep small root-only verification parsing helpers in `VerificationTools.cs`; keep verification response text in `VerificationTools.Formatting.cs` while it remains a cohesive rendering surface.
+Notes for future agents: keep small root-only verification parsing helpers and response text with the verification MCP wrappers in `AutomationControlTools.cs` while they remain cohesive command-control formatting code.
 
 Date: 2026-05-24
 Area: ssctl command context locality
@@ -2372,7 +2384,7 @@ Partial clusters reduced: n/a; MCP window/preview tool file count -1
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: MCP tool routing tests cover preview, recording, wait-condition, window actions, and typed automation command routing; public MCP tool class names and method names remain unchanged
 Behavior preserved: `PreviewTools.control_preview`, `RecordingTools.control_recording`, `WaitTools.wait_for_condition`, response-timeout selection, formatted condition text, `WindowTools`, and `UiSettingsTools` remain on the same public MCP surface
-Notes for future agents: keep window, UI settings, preview/recording controls, and wait-condition MCP wrappers together in `WindowTools.cs` unless a tool type gains independent helper state or a separate transport seam
+Notes for future agents: keep window, UI settings, preview/recording controls, and wait-condition MCP wrappers together in `AutomationControlTools.cs` unless a tool type gains independent helper state or a separate transport seam
 
 Date: 2026-05-25
 Area: ssctl command-handler locality

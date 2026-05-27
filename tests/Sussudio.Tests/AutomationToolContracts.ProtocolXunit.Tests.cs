@@ -134,7 +134,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var formatterText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var uiSettingsToolsText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/WindowTools.cs")
+        var uiSettingsToolsText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", ssctlPipeText);

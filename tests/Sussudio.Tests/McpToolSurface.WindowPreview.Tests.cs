@@ -206,7 +206,7 @@ static partial class Program
 
     internal static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
     {
-        var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs");
         AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
         AssertContains(waitToolsSource, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
         AssertDoesNotContain(waitToolsSource, "WaitForConditionCommandName");
@@ -375,7 +375,7 @@ static partial class Program
         AssertCommandRequest(applyRequests[0], "RestartFlashback");
         AssertEqual("[OK] RestartFlashback: Flashback restarted.", result, "flashback_apply formatted success");
 
-        var flashbackToolsRootText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
+        var flashbackToolsRootText = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs")
             .Replace("\r\n", "\n");
         var flashbackToolsActionText = flashbackToolsRootText;
         var flashbackToolsExportText = flashbackToolsRootText;

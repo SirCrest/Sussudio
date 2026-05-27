@@ -9,10 +9,11 @@ static partial class Program
 {
     internal static Task McpToolSurface_KeepsCaptureOptionsSeparateFromRawState()
     {
-        var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
+        var automationControlToolsText = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs");
+        var captureSettingsToolsText = automationControlToolsText;
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         var captureOptionsToolText = captureSettingsToolsText;
-        var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var uiSettingsToolText = automationControlToolsText;
         var automationSnapshotText = ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs");
 
         AssertContains(captureSettingsToolsText, "string? preset = null");
@@ -40,11 +41,12 @@ static partial class Program
     {
         var formatterText = ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
-        var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
+        var automationControlToolsText = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs");
+        var captureSettingsToolsText = automationControlToolsText;
         var captureOptionsToolText = captureSettingsToolsText;
         var deviceToolsText = captureSettingsToolsText;
         var diagnosticsToolsText = appStateToolText;
-        var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs");
+        var flashbackToolsText = automationControlToolsText;
         var flashbackActionsText = flashbackToolsText;
         var flashbackExportText = flashbackToolsText;
         var framePacingVerdictToolsText = ReadRepoFile("tools/McpServer/Tools/FramePacingVerdictTools.cs");
@@ -52,15 +54,15 @@ static partial class Program
         var pipelineSettingsToolsText = captureSettingsToolsText;
         var performanceToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTools.cs");
         var performanceTimelineToolsText = performanceToolsText;
-        var previewToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var previewToolsText = automationControlToolsText;
         var previewInspectionToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewInspectionTools.cs");
         var previewColorProbeToolsText = previewInspectionToolsText;
         var recordingToolsText = previewToolsText;
         var presentMonToolsText = performanceToolsText;
         var previewFrameCaptureToolsText = previewInspectionToolsText;
-        var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
+        var verificationToolsText = automationControlToolsText;
         var videoSourceProbeToolsText = previewColorProbeToolsText;
-        var windowToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
+        var windowToolsText = automationControlToolsText;
         var windowScreenshotToolsText = previewFrameCaptureToolsText;
         var waitToolsText = previewToolsText;
 
@@ -875,7 +877,7 @@ static partial class Program
         AssertEqual("no verification data", missingRecordingResult, "verify_recording missing verification fallback");
         AssertEqual("file not found", missingFileResult, "verify_file missing verification fallback");
 
-        var verificationRootText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs")
+        var verificationRootText = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(verificationRootText, "[McpServerToolType]");

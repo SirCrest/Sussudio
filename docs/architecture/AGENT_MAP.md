@@ -2780,14 +2780,14 @@ Primary owners:
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,
   `MemoryDiagnosticsTools`, and `DiagnosticSessionTools` tool types.
-- `tools/McpServer/Tools/CaptureSettingsTools.cs` owns the public device,
-  capture settings, pipeline settings, and structured capture-options MCP entry
-  points.
-- `tools/McpServer/Tools/WindowTools.cs` owns the public window action,
-  full-screen, recordings-folder, UI visibility/settings, preview-toggle,
-  recording-toggle, and condition-wait MCP entry points while preserving the
-  `WindowTools`, `UiSettingsTools`, `PreviewTools`, `RecordingTools`, and
-  `WaitTools` tool types.
+- `tools/McpServer/Tools/AutomationControlTools.cs` owns the public device,
+  capture settings, pipeline settings, structured capture-options, window
+  action, full-screen, recordings-folder, UI visibility/settings,
+  preview-toggle, recording-toggle, condition-wait, Flashback control, and
+  verification MCP entry points while preserving the `CaptureSettingsTools`,
+  `DeviceTools`, `CaptureOptionsTools`, `PipelineSettingsTools`,
+  `WindowTools`, `UiSettingsTools`, `PreviewTools`, `RecordingTools`,
+  `WaitTools`, `FlashbackTools`, and `VerificationTools` tool types.
 - `tools/McpServer/Tools/PreviewInspectionTools.cs` owns the public preview
   color, video-source probe, preview-frame capture, and window-screenshot MCP
   entry points while preserving the `PreviewColorProbeTools`,
@@ -2810,17 +2810,6 @@ Primary owners:
   response shaping, performance-timeline projection, snapshot cadence channel
   projection, recent-interval parsing, readiness and verdict policy, private
   row/channel records, and the operator-facing verdict text.
-- `tools/McpServer/Tools/FlashbackTools.cs` owns the Flashback MCP tool type:
-  enable/apply commands, segment-list command routing/text, playback/scrub
-  action normalization, validation and payload shaping, plus export duration/path
-  validation, default path selection, export payload shaping, and export result
-  text.
-- `tools/McpServer/Tools/VerificationTools.cs` owns the public verification MCP
-  methods, command names, payload shaping, and verification response timeout
-  policy, assertion JSON parsing and `JsonElement.Clone()` lifetime safety,
-  and verification lookup from `Data.Verification` and
-  `Snapshot.LastVerification`, plus recording, file, assertion, mismatch, and
-  failure result text.
 - Shared PresentMon option precedence and preview-present field extraction live
   in `tools/Common/PresentMon/PresentMonProbe.cs`.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session run
