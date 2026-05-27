@@ -2089,10 +2089,11 @@ Primary current owners:
   scale/fade animation. `MainWindow.ShellChrome.Composition.cs` is the XAML-facing
   adapter. `Sussudio/ViewModels/ViewModelBuilders.cs` owns the
   view-model live-signal label formatting and pixel-format/codec suffix policy.
-- `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs` owns preview-volume
-  fade-in/fade-out state, saved target volume, storyboard lifetime, and volume
-  save suppression. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the
-  XAML-facing adapter.
+- `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-volume
+  fade-in/fade-out state, saved target volume, storyboard lifetime, volume
+  save suppression, preview start/stop/reinit event routing, and preview button
+  presentation/fade-in timing. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
+  is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the

@@ -2453,8 +2453,8 @@ auto-resolution display text live together in
 `Sussudio/ViewModels/MainViewModel.cs`.
 
 Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
-and volume save suppression now live in
-`Sussudio/Controllers/Preview/PreviewAudioFadeController.cs`.
+and volume save suppression now live with preview start/stop/reinit event
+routing in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML-facing adapter.
 Preview-audio volume transition mechanics now live in
 `Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs`, which owns
