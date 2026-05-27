@@ -51,12 +51,12 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial();
 
     [Fact]
-    public Task NativeXuAudioCommandSequencesLiveInFocusedPartials()
-        => global::Program.NativeXuAtCommandProvider_AudioCommandsLiveInFocusedPartial();
+    public Task NativeXuDeviceCommandsOwnPublicCommandSurface()
+        => global::Program.NativeXuAtCommandProvider_DeviceCommandsOwnPublicCommandSurface();
 
     [Fact]
-    public Task NativeXuPayloadDecodingLivesInFocusedPartial()
-        => global::Program.NativeXuAtCommandProvider_PayloadDecodingLivesInFocusedPartial();
+    public Task NativeXuProtocolOwnsPayloadDecoding()
+        => global::Program.NativeXuAtCommandProvider_ProtocolOwnsPayloadDecoding();
 
     [Fact]
     public Task NativeXuTelemetryDetailsLiveInFocusedPartials()
