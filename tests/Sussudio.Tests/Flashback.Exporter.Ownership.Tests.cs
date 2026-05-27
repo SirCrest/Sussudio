@@ -34,8 +34,7 @@ static partial class Program
         var segmentValidationText = validationText;
         var libAvErrorsText = lifecycleText;
         var packetTimingText = segmentPacketWritingText;
-        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
-            .Replace("\r\n", "\n");
+        var streamsText = lifecycleText;
         var streamTemplatesText = streamsText;
         var timeMathText = packetTimingText;
         var packetBuffersText = packetTimingText;
@@ -375,7 +374,7 @@ static partial class Program
     internal static Task FlashbackExporter_InputStreamCountsAreBounded()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
+        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
         var singleFileText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs")
@@ -397,6 +396,10 @@ static partial class Program
         AssertContains(singleFileText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount)");
         AssertContains(segmentTemplateText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount)");
         AssertContains(streamTemplatesText, "private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext, int inputStreamCount)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.Streams.cs")),
+            "FlashbackExporter.Streams.cs folded into FlashbackExporter.Lifecycle.cs");
         AssertDoesNotContain(sourceText, "checked((int)_activeInputContext->nb_streams)");
         AssertDoesNotContain(sourceText, "checked((int)inputContext->nb_streams)");
 

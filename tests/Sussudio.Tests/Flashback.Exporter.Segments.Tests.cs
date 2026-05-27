@@ -260,7 +260,7 @@ static partial class Program
     internal static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
         var sourceText = ReadFlashbackExporterSource();
-        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Streams.cs")
+        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
         var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")

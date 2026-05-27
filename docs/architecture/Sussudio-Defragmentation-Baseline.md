@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Flashback exporter native stream setup locality
+Problem: `FlashbackExporter.Streams.cs` owned FFmpeg input opening, output context/header setup, stream-count validation, stream-template copying, and segment stream-layout compatibility, but all of that state is `_activeInputContext`/`_activeOutputContext` native lifecycle state owned and cleaned up by `FlashbackExporter.Lifecycle.cs`. Reviewing native export setup and cleanup required opening a separate partial before following the same active context lifetime.
+Files consolidated: `Sussudio/Services/Flashback/FlashbackExporter.Streams.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `FlashbackExporter` production partial count 7 -> 6
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackExporter|FullyQualifiedName~Flashback.Exporter|FullyQualifiedName~FlashbackContracts"` (48 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs or wire payloads changed
+Behavior preserved: FFmpeg input open/probing, output context creation, stream-template copying, input stream count guard, stream layout compatibility, output header writing, and native input/output cleanup now live in `FlashbackExporter.Lifecycle.cs`.
+Notes for future agents: keep Flashback exporter native input/output context lifetime, stream setup, stream-template copying, stream-count validation, layout compatibility checks, output header writing, and cleanup in `FlashbackExporter.Lifecycle.cs`; keep request scheduling/output replacement in `Execution.cs` and packet copy/rebasing hot loops in packet-writing owners.
+
+Date: 2026-05-27
 Area: Flashback playback positioning/file locality
 Problem: `FlashbackPlaybackController.DecoderFiles.cs` owned target-PTS file selection, decoder file identity, active fMP4 reopen, and adjacent-segment seek fallback while `FlashbackPlaybackController.Markers.cs` owned the marker state, file-PTS projection, scrub/seek clamping, saturating timestamp math, active fMP4 segment detection, and playback path comparison used by the same positioning and seek/reopen paths. Reviewing Flashback playback position-to-file behavior required opening two adjacent partials before returning to playback-frame and thread-command owners.
 Files consolidated: `Sussudio/Services/Flashback/FlashbackPlaybackController.DecoderFiles.cs`; `Sussudio/Services/Flashback/FlashbackPlaybackController.Markers.cs`
@@ -420,7 +432,7 @@ Partial clusters reduced: `FlashbackExporter` partial cluster reduced from 9 fil
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML bindings, export request DTOs, or Flashback command surfaces changed
 Behavior preserved: stale temp cleanup, orphan `.mp4.tmp` cleanup, active output trailer write, IO close, temp-output validation, overwrite refusal, atomic final move, invalid final-output deletion, `_activeTempPath` clearing, and single-file/segment export failure shaping remain unchanged.
-Notes for future agents: keep Flashback export request scheduling, progress/pacing, temp output preparation, and final output replacement in `FlashbackExporter.Execution.cs`; keep native input/output context cleanup and dispose-time locking in `FlashbackExporter.Lifecycle.cs`, stream setup in `FlashbackExporter.Streams.cs`, and packet timing/buffer helpers with packet writing in `FlashbackExporter.SegmentPacketWriting.cs`.
+Notes for future agents: keep Flashback export request scheduling, progress/pacing, temp output preparation, and final output replacement in `FlashbackExporter.Execution.cs`; keep native input/output context cleanup and dispose-time locking in `FlashbackExporter.Lifecycle.cs`, stream setup in `FlashbackExporter.Lifecycle.cs`, and packet timing/buffer helpers with packet writing in `FlashbackExporter.SegmentPacketWriting.cs`.
 
 Date: 2026-05-26
 Area: MainViewModel automation test locality
