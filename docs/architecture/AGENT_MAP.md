@@ -1171,7 +1171,7 @@ Primary current owners:
   `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO plus
   capture-health, renderer, and shell view-state projection into that DTO after
   acquisition.
-- `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns pure resolution and
+- `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure resolution and
   video-format option construction, HDR mode enablement, and source aspect-ratio
   filtering. Shell files bind and display those options.
 - `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` owns
@@ -2458,7 +2458,7 @@ Primary current owners:
   collections, stable Source/Auto sentinel values, source telemetry,
   resolution/frame-rate selection state, automatic retarget flags,
   format-change suppression, and projected status text.
-  `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
@@ -2518,7 +2518,7 @@ Primary current owners:
   graph-built context ports.
   `MainViewModel.CaptureSelection.cs` owns effective Source resolution state
   and state-backed delegates to the pure selection policy.
-  `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs` owns automatic resolution
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns automatic resolution
   ranking and source-aware frame-rate selection.
   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns the pure
   resolution selection policy: source-telemetry-aware resolution matching, HDR

@@ -2139,7 +2139,7 @@ lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing provider
 composition adapter.
 Pure capture option construction lives in
-`Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs`.
+`Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
 
 Dynamic stats dock row chrome now lives in
 `Sussudio/Controllers/Stats/StatsDockRowsController.cs`. It owns decode/GPU row
@@ -3489,7 +3489,7 @@ owner, fold it back into that owner and update the source-shape tests and
    option collections, stable Source/Auto sentinel values, source telemetry,
    selection state, automatic retarget flags, format-change suppression, and
    projected status text.
-   `Sussudio/ViewModels/CaptureFormatSelectionPolicy.cs` owns the pure
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns the pure
    selected-format and mode-tuple video-format filtering policy.
    `MainViewModel.CaptureSelection.cs` owns HDR toggle side effects:
    recording-time revert/status, mode option rebuilds, immediate reinitialize
@@ -3527,7 +3527,7 @@ owner, fold it back into that owner and update the source-shape tests and
     state-backed delegates to the pure selection policy live in
     `MainViewModel.CaptureSelection.cs`.
     Automatic resolution ranking and source-aware frame-rate selection now
-    live in `Sussudio/ViewModels/AutoCaptureSelectionPolicy.cs`; auto-resolution
+    live in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
     `MainViewModel.cs`.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`

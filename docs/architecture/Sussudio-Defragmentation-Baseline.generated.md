@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-27T14:02:18Z
+Generated UTC: 2026-05-27T14:08:00Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 259 |
+| Production .cs files | 257 |
 | Test .cs files | 140 |
 | Production .cs files under 60 lines | 1 (0.4%) |
-| Production .cs files under 80 lines | 4 (1.5%) |
+| Production .cs files under 80 lines | 4 (1.6%) |
 
 ## Largest partial-type clusters
 
@@ -70,8 +70,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 840 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 833 | Sussudio/Models/Automation/AutomationSnapshot.cs |
 | 830 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
-| 823 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 823 | Sussudio/ViewModels/MainViewModel.cs |
+| 823 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 814 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs |
 | 790 | tools/NativeXuAudioProbe/Program.cs |
 | 781 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
