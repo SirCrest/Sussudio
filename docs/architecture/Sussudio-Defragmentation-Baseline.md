@@ -4640,3 +4640,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: service namespace folder rules, service/source ownership orchestration, automation contract project/source alignment, and the shared XML/source parsing helpers now live together in `ServiceNamespace.FolderRules.Tests.cs`.
 Notes for future agents: keep service namespace architecture helpers with `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` while they only serve that test family; create a separate helper only if it becomes an independent fixture or is reused outside service namespace ownership tests.
+
+Date: 2026-05-27
+Area: Automation dispatcher helper locality
+Problem: `AutomationCommandDispatcher.Helpers.cs` was a helper-only `Program` partial for the dispatcher source-family reader, dispatcher construction, proxy setup, request construction, response assertions, and task result helpers. These helpers mostly support the root dispatcher command-ownership tests and no independent test entry point or fixture state justified a separate file.
+Files consolidated: `tests/Sussudio.Tests/AutomationCommandDispatcher.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` automation dispatcher test partial-family file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationCommandDispatcher|FullyQualifiedName~AutomationToolContracts|FullyQualifiedName~AutomationViewModel|FullyQualifiedName~MainViewModelAutomation|FullyQualifiedName~GainAndMonitoring"` (31 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: shared dispatcher source-family and live-dispatch helpers now live with `AutomationCommandDispatcher.CommandOwnership.Tests.cs`, while existing dispatcher, automation tool contract, and MainViewModel automation tests continue to call the same `Program` helper methods.
+Notes for future agents: keep shared dispatcher/proxy helpers with `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs` while they serve dispatcher ownership and automation contract source checks; split only for a named reusable fixture or a non-`Program` harness type.

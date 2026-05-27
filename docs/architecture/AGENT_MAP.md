@@ -1625,9 +1625,9 @@ Primary current owners:
   reflection coverage, and shared source-reading helpers.
 - `tests/Sussudio.Tests/LibAvEncoder.SourceOwnership.Tests.cs` owns
   LibAvEncoder source-ownership and output lifecycle layout assertions.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.Helpers.cs` owns the live
-  dispatcher source-family reader; `AutomationCommandDispatcher.*.Tests.cs`
-  own consolidated root dispatcher authorization and manifest behavior,
+- `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs`
+  owns the live dispatcher source-family reader, shared dispatcher/proxy
+  helpers, consolidated root dispatcher authorization and manifest behavior,
   Flashback failure response, Flashback command placement, verification command
   placement, command-kind handling, and helper coverage.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
