@@ -26,8 +26,8 @@ add xUnit alongside, and port incrementally.
   presentation checks still migrate incrementally from the legacy catalog.
 - `XUnit.StatsPresentation.Formatting.Tests.cs` owns the former legacy
   detached-window, encoder formatting, expected-display-repeat, compact preview
-  summary, frame-time range, and frame-time geometry stats presentation behavior
-  checks.
+  summary, frame-time range, frame-time geometry, stats dock, row chrome,
+  builder ownership, and HDMI source telemetry panel checks.
 - `XUnit.StatsHardwareRowsTests.cs` owns the former legacy hardware decode/GPU
   row formatting behavior checks and hardware-row input sampling policy checks.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy HdrOutputPolicy
@@ -78,8 +78,6 @@ add xUnit alongside, and port incrementally.
 - `Flashback.Playback.Reopen.Tests.cs` owns the former legacy Flashback
   playback fMP4 reopen, seek recovery, in/out marker API, normalization,
   disposal, and marker clamp checks.
-- `StatsDockPresentation.Tests.cs` owns the former legacy stats dock, row
-  chrome, builder ownership, and HDMI source telemetry panel checks.
 - `MainWindowUiContract.StatsSnapshot.Tests.cs` owns the former legacy stats
   snapshot construction and health/renderer metric projection checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit

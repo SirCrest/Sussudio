@@ -48,6 +48,18 @@ Notes for future agents:
 
 ## Slice Evidence
 
+Date: 2026-05-27
+Area: Stats presentation contract test locality
+Problem: `StatsDockPresentation.Tests.cs` and `XUnit.StatsPresentation.Formatting.Tests.cs` still split the same `StatsPresentationTests` xUnit surface between source-shape/ownership checks and executable formatting checks. Reviewing stats presentation now required opening two files for one pure presentation builder/controller/DTO contract, even though both files shared the same reflection/file helpers and no independent fixture state.
+Files consolidated: `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `StatsPresentationTests` xUnit partial file count 2 -> 1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~StatsPresentation|FullyQualifiedName~StatsDock|FullyQualifiedName~StatsOverlay|FullyQualifiedName~ArchitectureDocs"` (28 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: stats presentation source-shape assertions, builder/controller/DTO ownership checks, stats dock refresh/application checks, row chrome pooling checks, HDMI source telemetry panel checks, detached-window formatting, encoder formatting, expected-display-repeat, compact preview summary, frame-time range, and frame-time graph geometry checks now live together in `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs`.
+Notes for future agents: keep stats presentation source-shape and executable formatting checks together in `XUnit.StatsPresentation.Formatting.Tests.cs`; keep hardware-row behavior in `XUnit.StatsHardwareRowsTests.cs` unless it gains a separate fixture.
+
 Date: 2026-05-26
 Area: Stats presentation test ownership locality
 Problem: `StatsPresentation.Ownership.Tests.cs` and `StatsDockPresentation.Tests.cs` were two small partial shards of the same `StatsPresentationTests` class protecting one stats presentation/dock review path: pure builder ownership, dock presentation application, row chrome, frame-time overlay, detached stats window projection, and HDMI source telemetry panel checks. Reviewing stats presentation ownership still required opening both files.
@@ -58,7 +70,7 @@ Partial clusters reduced: `StatsPresentationTests` xUnit partial file count -1
 Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~StatsPresentation|FullyQualifiedName~StatsDock|FullyQualifiedName~StatsOverlay"` (12 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ArchitectureDocsReferenceIntegrityTests|FullyQualifiedName~ArchitectureDocsAgentMapOwnershipTests"` (16 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: stats presentation builder ownership checks, stats DTO ownership checks, stats dock presentation application checks, row chrome pooling checks, frame-time overlay ownership checks, detached stats-window projection checks, and HDMI source telemetry panel checks remain under the same xUnit `StatsPresentationTests` surface.
-Notes for future agents: keep stats presentation/dock source-shape checks in `tests/Sussudio.Tests/StatsDockPresentation.Tests.cs`; keep executable formatting behavior in `XUnit.StatsPresentation.Formatting.Tests.cs` and hardware-row behavior in `XUnit.StatsHardwareRowsTests.cs`.
+Notes for future agents: superseded by the later stats presentation contract consolidation; keep stats presentation/dock source-shape checks and executable formatting behavior together in `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs`, and keep hardware-row behavior in `XUnit.StatsHardwareRowsTests.cs`.
 
 Date: 2026-05-26
 Area: ssctl CLI front-door locality

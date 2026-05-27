@@ -2127,9 +2127,10 @@ Stats overlay lifecycle, stats dock refresh, stats section chrome, and
 diagnostic row pooling contract checks now live in two focused owners:
 `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` covers overlay
 lifecycle and section chrome, while
-`tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` covers dock presentation
-application, diagnostic rows, hardware rows, row chrome pooling, stats
-presentation ownership, and source telemetry panel projection checks.
+`tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` covers dock
+presentation application, diagnostic rows, hardware rows, row chrome pooling,
+stats presentation ownership, source telemetry panel projection checks, and
+executable stats presentation formatting behavior.
 Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`, along with
 frame-time canvas sizing, sample projection, and expected-line geometry;
@@ -2152,11 +2153,10 @@ chrome, group-header chrome, diagnostic row pooling, and diagnostic row style
 application live in `Sussudio/Controllers/Stats/StatsDockRowsController.cs`;
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation contract checks now live in
-`tests/Sussudio.Tests/StatsDockPresentation.Tests.cs` for builder ownership,
-source telemetry, stats dock, row chrome, and frame-time overlay policy, plus
-`tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` for
-detached-window, encoder, expected-display-repeat, and compact preview summary
-behavior plus frame-time range and frame-time graph geometry behavior, and
+`tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` for builder
+ownership, source telemetry, stats dock, row chrome, frame-time overlay policy,
+detached-window, encoder, expected-display-repeat, compact preview summary,
+frame-time range, and frame-time graph geometry behavior, and
 `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` for hardware decode/GPU
 row and input-provider behavior instead of expanding the legacy harness body in
 `tests/Sussudio.Tests/Program.cs`.
