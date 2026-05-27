@@ -4592,3 +4592,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: the same xUnit wrappers still call `AutomationCaptureModeChanges_AwaitReinitialization`, `AutomationDeviceSelection_RoutesThroughApplyReinit`, and `MainViewModelAutomation_HdrEnablementLivesInCaptureSelection`; their assertions now live beside the automation UI/settings persistence tests.
 Notes for future agents: keep automation view-model UI/settings persistence, capture-mode automation routing, device selection routing, and HDR automation ownership checks together in `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` unless they need distinct fixture state or runtime harness setup.
+
+Date: 2026-05-27
+Area: Flashback buffer source-ownership test locality
+Problem: `Flashback.Buffer.SourceOwnership.Tests.cs` was a small source-shape shard for `FlashbackBufferManager` root, segments, lifecycle, purge, and eviction ownership. The segment validation test owner already exercises the same manager through reflection plus source reads for segment diagnostics, byte accounting, disposed-state, and recovery-preserve behavior, so reviewing buffer-manager layout still required opening a separate ownership-only file.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` Flashback buffer test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackBufferManager|FullyQualifiedName~FlashbackBuffer"` (44 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check` clean.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: the same xUnit wrappers still call the buffer-manager source-ownership methods; the assertions now live beside the segment validation, byte-accounting, disposed-state, and recovery-preserve checks in `Flashback.Buffer.Segments.Validation.Tests.cs`.
+Notes for future agents: keep Flashback buffer-manager root/segments/lifecycle/purge source-shape assertions with `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` while they guard the same manager behavior; split only if they gain a distinct fixture or replacement analyzer.

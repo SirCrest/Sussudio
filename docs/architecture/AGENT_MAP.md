@@ -1933,13 +1933,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
   source readers, helper methods, buffer test factories, completed-segment
   insertion, and sized-file helpers.
-- `tests/Sussudio.Tests/Flashback.Buffer.SourceOwnership.Tests.cs` owns
-  Flashback buffer-manager partial ownership assertions, including
-  eviction-pause ownership.
 - `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` owns
   Flashback buffer segment completion metadata, outside-path rejection,
   disposed-state no-op, recovery-preserve, segment diagnostics, PTS clamp, byte
-  accounting, and same-path extension tests.
+  accounting, same-path extension tests, and buffer-manager source ownership
+  assertions for root state, segment mutation/query, lifecycle, purge, and
+  eviction-pause placement.
 - `tests/Sussudio.Tests/Flashback.Buffer.SegmentLookups.Tests.cs` owns
   Flashback buffer segment position lookup, next-segment path lookup, path
   normalization, segment-start PTS, segment range query, active path,
