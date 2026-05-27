@@ -1815,12 +1815,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCore.cs` owns shared harness primitives:
   generic assertions, repo-root/file reads, automation snapshot source family
   readers, source-text extraction, reflection/private-field access,
-  enum/type lookup, synthetic capture/settings/recording-context factories,
-  capture-service initialization, async disposal, polling waits, and
-  field-value fixture helpers.
-- `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` owns shared
-  reflection helpers for remaining legacy capture configuration model
-  contract tests.
+  enum/type lookup, capture configuration reflection helpers, synthetic
+  capture/settings/recording-context factories, capture-service initialization,
+  async disposal, polling waits, and field-value fixture helpers.
 - `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns shared
   reflection helpers plus capture mode option display metadata, option-builder
   behavior, capture settings defaults, output path/file naming, bitrate policy,

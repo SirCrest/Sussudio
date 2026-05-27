@@ -600,8 +600,8 @@ Synthetic MJPEG timing metric factories now live with the only scenarios that
 use them in
 `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`.
 
-`tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs` now keeps only
-shared reflection helpers for remaining legacy capture model checks.
+Shared capture configuration reflection helpers for remaining legacy capture
+model checks now live in `tests/Sussudio.Tests/HarnessCore.cs`.
 `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns shared
 reflection helpers plus capture mode option, capture settings/MJPEG
 HFR/bitrate policy, MediaFormat equality/hash-code behavior, recording

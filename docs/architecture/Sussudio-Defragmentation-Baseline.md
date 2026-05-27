@@ -4604,3 +4604,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
 Behavior preserved: the same xUnit wrappers still call the buffer-manager source-ownership methods; the assertions now live beside the segment validation, byte-accounting, disposed-state, and recovery-preserve checks in `Flashback.Buffer.Segments.Validation.Tests.cs`.
 Notes for future agents: keep Flashback buffer-manager root/segments/lifecycle/purge source-shape assertions with `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` while they guard the same manager behavior; split only if they gain a distinct fixture or replacement analyzer.
+
+Date: 2026-05-27
+Area: Shared test harness helper locality
+Problem: `CaptureConfigurationModels.Tests.cs` no longer contained executable tests; it only carried shared `Program` helper methods for capture configuration reflection, media-format fixture creation, enum assertions, and sequence assertions. Its remaining consumers were spread across selection-policy, capture-settings projection, screenshot, and legacy contract tests, while `HarnessCore.cs` already owns shared test primitives and fixture helpers.
+Files consolidated: `tests/Sussudio.Tests/CaptureConfigurationModels.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` shared test helper partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~CaptureConfigurationModels|FullyQualifiedName~SelectionPolicy|FullyQualifiedName~SettingsProjection|FullyQualifiedName~Screenshot"` (42 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check` clean.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: shared config-property reflection assertions, media-format fixture helpers, enum-value checks, `CreateConfigInstance`, and `AssertSequenceEqual` now live in `HarnessCore.cs` with the other cross-cutting legacy `Program` test primitives.
+Notes for future agents: keep cross-cutting legacy `Program` test helpers in `tests/Sussudio.Tests/HarnessCore.cs`; create a new helper file only when a fixture family has distinct setup state or a named reusable harness type.
