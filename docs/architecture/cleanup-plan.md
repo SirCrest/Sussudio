@@ -60,7 +60,6 @@ Changed ownership:
 
 - `AutomationCommandKind.cs`
 - `AutomationCommandCatalog.cs`
-- `AutomationPipeClientModels.cs`
 - `AutomationPipeProtocol.cs`
 
 Diagnostic session scenario names, CLI help text, MCP-compatible description
@@ -3055,13 +3054,13 @@ classification with exact CLI/MCP diagnostic error codes, write/read framing,
 response timeout, command-specific timeout selection for string and typed
 commands, shared response-element validation, synthetic error shaping, and
 handoff to
-`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`.
+`Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`.
 `AutomationPipeClient.cs` owns tolerant response-state parsing handoff to
-`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`,
-`Sussudio.Automation.Contracts/AutomationPipeClientModels.cs` owns the command
-result handoff, pipe client exception taxonomy, response-state parsing,
-unknown-command handling, structured error-envelope creation, and common
-transport/protocol exception mapping for the shared command transport.
+`Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`; that contract file
+also owns the command result handoff, pipe client exception taxonomy,
+response-state parsing, unknown-command handling, structured error-envelope
+creation, and common transport/protocol exception mapping for the shared command
+transport.
 
 PresentMon public DTOs and runner behavior live together in
 `tools/Common/PresentMon/PresentMonProbe.cs`: options, result, summary,

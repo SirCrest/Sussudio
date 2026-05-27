@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Automation pipe protocol contract locality
+Problem: `AutomationPipeClientModels.cs` held the pipe command result DTO, pipe exception taxonomy, response-state reader, synthetic error-envelope factory, and unknown-command policy next to `AutomationPipeProtocol.cs`, which already owned pipe names, command resolution, timeouts, request envelopes, manifest revision, and security fallback policy. Reviewing the shared pipe contract required opening two small adjacent files for one wire/client protocol surface.
+Files consolidated: `Sussudio.Automation.Contracts/AutomationPipeClientModels.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: n/a; automation pipe contract file count 2 -> 1 while preserving all public `Sussudio.Tools` protocol/model/error types
+Build/tests/runtime checks: `dotnet build Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj -c Debug --no-restore` (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationToolContracts|FullyQualifiedName~AutomationContracts|FullyQualifiedName~ServiceNamespace|FullyQualifiedName~NamedPipeAutomationServer"` (13 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: automation protocol/folder-rule tests cover shared protocol ownership, response parsing, synthetic error shape, command timeout policy, and CLI/MCP unknown-command behavior; no public type names, command names/IDs, manifest revision, or wire payloads changed
+Behavior preserved: command result handoff, pipe connect/timeout/protocol exception types, retry/state parsing, synthetic error envelopes, security fallback predicate, command resolution, timeout policy, and request-envelope shape remain unchanged.
+Notes for future agents: keep pipe constants, request envelopes, security fallback, response parsing, pipe exception taxonomy, unknown-command policy, and synthetic error-envelope creation in `AutomationPipeProtocol.cs` unless a separate public package boundary appears.
+
+Date: 2026-05-27
 Area: Diagnostic-session Flashback helper locality
 Problem: Small internal Flashback diagnostic-session helper surfaces for export payload/cleanup, segment polling/parsing, and warning validation lived in three files even though scenario review usually needs all three together. The split preserved type names but forced file hopping across adjacent support-only helpers with no separate transport or runtime boundary.
 Files consolidated: `tools/Common/DiagnosticSessionFlashbackExports.cs`; `tools/Common/DiagnosticSessionFlashbackSegments.cs`; `tools/Common/DiagnosticSessionFlashbackValidation.cs`

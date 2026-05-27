@@ -135,8 +135,7 @@ static partial class Program
         {
             "AutomationCommandKind.cs",
             "AutomationCommandCatalog.cs",
-            "AutomationPipeProtocol.cs",
-            "AutomationPipeClientModels.cs"
+            "AutomationPipeProtocol.cs"
         })
         {
             var contractPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", contractFile);
@@ -183,6 +182,13 @@ static partial class Program
             "app project must not link AutomationPipeSecurityPolicy from tools/Common");
         var protocolText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationPipeProtocol.cs"));
         AssertContains(protocolText, "public static class AutomationPipeSecurityPolicy");
+        AssertContains(protocolText, "public readonly record struct AutomationPipeCommandResult");
+        AssertContains(protocolText, "public static class AutomationResponseState");
+        AssertContains(protocolText, "public static class AutomationSyntheticErrorResponse");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationPipeClientModels.cs")),
+            "pipe client handoff/error models stay folded into AutomationPipeProtocol.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.Models.cs")),
