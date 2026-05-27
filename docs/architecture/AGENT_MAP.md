@@ -1296,11 +1296,10 @@ Primary current owners:
   suppression, preview-volume persistence, automation options surface, and
   capture audio-monitoring coordinator surface and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
-  automation UI-setting persistence and frame-time/stat visibility contracts.
-- `tests/Sussudio.Tests/MainViewModel.Automation.CaptureMode.Tests.cs` owns
-  automation capture-mode reinitialization, device refresh, and
-  device/audio-input selection routing contracts, plus HDR/true-HDR preview
-  enablement guards and HDR mode change side-effect ownership assertions.
+  automation UI-setting persistence, frame-time/stat visibility contracts,
+  capture-mode reinitialization, device refresh, device/audio-input selection
+  routing contracts, HDR/true-HDR preview enablement guards, and HDR mode
+  change side-effect ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,

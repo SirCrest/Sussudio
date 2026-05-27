@@ -4580,3 +4580,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: solution build refreshed `ssctl`, MCP, automation contracts, and shared tools; no public automation command names, IDs, wire payloads, MCP tool schemas, app runtime code, or XAML bindings changed.
 Behavior preserved: the same xUnit wrappers still call `MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator` and `CaptureDiscoverySourceOwnership_LivesInFocusedPartials`; their source-shape and MF symbolic-link assertions now live in `ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`.
 Notes for future agents: keep DeviceService discovery scoring, MF device enumerator cohesion, source-reader negotiation/interop source-shape, and MF symbolic-link matching checks with the service-layer source-ownership tests unless capture discovery gains a separate fixture or runtime harness.
+
+Date: 2026-05-27
+Area: Automation view-model settings test locality
+Problem: `MainViewModel.Automation.CaptureMode.Tests.cs` was a small `Program` partial for automation capture-mode reinitialization, device refresh/selection routing, and HDR enablement ownership. The same xUnit wrapper already grouped those facts with automation UI/settings contracts, so reviewing automation view-model settings and selection routing still required opening a second tiny source-ownership shard.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.CaptureMode.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` automation view-model test partial-family file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationViewModelFlashbackUiContractsTests"` (22 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check` clean.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, runtime code, or helper method names changed.
+Behavior preserved: the same xUnit wrappers still call `AutomationCaptureModeChanges_AwaitReinitialization`, `AutomationDeviceSelection_RoutesThroughApplyReinit`, and `MainViewModelAutomation_HdrEnablementLivesInCaptureSelection`; their assertions now live beside the automation UI/settings persistence tests.
+Notes for future agents: keep automation view-model UI/settings persistence, capture-mode automation routing, device selection routing, and HDR automation ownership checks together in `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` unless they need distinct fixture state or runtime harness setup.
