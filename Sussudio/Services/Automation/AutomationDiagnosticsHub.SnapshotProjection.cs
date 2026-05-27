@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Sussudio.Models;
 using Sussudio.Services.Runtime;
@@ -685,6 +686,434 @@ public sealed partial class AutomationDiagnosticsHub
         public double? CaptureDriftRateMsPerSec { get; init; }
         public double? EncoderDriftMs { get; init; }
         public long? EncoderCorrectionSamples { get; init; }
+    }
+
+    private static CaptureCadenceProjection BuildCaptureCadenceProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            ExpectedFrameRate = health.ExpectedFrameRate,
+            SampleCount = health.CaptureCadenceSampleCount,
+            ObservedFps = health.CaptureCadenceObservedFps,
+            ExpectedIntervalMs = health.CaptureCadenceExpectedIntervalMs,
+            AverageIntervalMs = health.CaptureCadenceAverageIntervalMs,
+            P95IntervalMs = health.CaptureCadenceP95IntervalMs,
+            P99IntervalMs = health.CaptureCadenceP99IntervalMs,
+            MaxIntervalMs = health.CaptureCadenceMaxIntervalMs,
+            OnePercentLowFps = health.CaptureCadenceOnePercentLowFps,
+            FivePercentLowFps = health.CaptureCadenceFivePercentLowFps,
+            SampleDurationMs = health.CaptureCadenceSampleDurationMs,
+            RecentIntervalsMs = health.CaptureCadenceRecentIntervalsMs,
+            JitterStdDevMs = health.CaptureCadenceJitterStdDevMs,
+            SevereGapCount = health.CaptureCadenceSevereGapCount,
+            EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,
+            EstimatedDropPercent = health.CaptureCadenceEstimatedDropPercent
+        };
+
+    private readonly record struct CaptureCadenceProjection
+    {
+        public double ExpectedFrameRate { get; init; }
+        public int SampleCount { get; init; }
+        public double ObservedFps { get; init; }
+        public double ExpectedIntervalMs { get; init; }
+        public double AverageIntervalMs { get; init; }
+        public double P95IntervalMs { get; init; }
+        public double P99IntervalMs { get; init; }
+        public double MaxIntervalMs { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentIntervalsMs { get; init; }
+        public double JitterStdDevMs { get; init; }
+        public long SevereGapCount { get; init; }
+        public long EstimatedDroppedFrames { get; init; }
+        public double EstimatedDropPercent { get; init; }
+    }
+
+    private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(
+        CaptureCadenceProjection captureCadence)
+        => new()
+        {
+            ExpectedFrameRate = captureCadence.ExpectedFrameRate,
+            SampleCount = captureCadence.SampleCount,
+            ObservedFps = captureCadence.ObservedFps,
+            ExpectedIntervalMs = captureCadence.ExpectedIntervalMs,
+            AverageIntervalMs = captureCadence.AverageIntervalMs,
+            P95IntervalMs = captureCadence.P95IntervalMs,
+            P99IntervalMs = captureCadence.P99IntervalMs,
+            MaxIntervalMs = captureCadence.MaxIntervalMs,
+            OnePercentLowFps = captureCadence.OnePercentLowFps,
+            FivePercentLowFps = captureCadence.FivePercentLowFps,
+            SampleDurationMs = captureCadence.SampleDurationMs,
+            RecentIntervalsMs = captureCadence.RecentIntervalsMs,
+            JitterStdDevMs = captureCadence.JitterStdDevMs,
+            SevereGapCount = captureCadence.SevereGapCount,
+            EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,
+            EstimatedDropPercent = captureCadence.EstimatedDropPercent
+        };
+
+    private readonly record struct CaptureCadenceFlattenedProjection
+    {
+        public double ExpectedFrameRate { get; init; }
+        public int SampleCount { get; init; }
+        public double ObservedFps { get; init; }
+        public double ExpectedIntervalMs { get; init; }
+        public double AverageIntervalMs { get; init; }
+        public double P95IntervalMs { get; init; }
+        public double P99IntervalMs { get; init; }
+        public double MaxIntervalMs { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentIntervalsMs { get; init; }
+        public double JitterStdDevMs { get; init; }
+        public long SevereGapCount { get; init; }
+        public long EstimatedDroppedFrames { get; init; }
+        public double EstimatedDropPercent { get; init; }
+    }
+
+    private static VisualCadenceProjection BuildVisualCadenceProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            SampleCount = health.VisualCadenceSampleCount,
+            ChangedFrameCount = health.VisualCadenceChangedFrameCount,
+            RepeatFrameCount = health.VisualCadenceRepeatFrameCount,
+            LongestRepeatRun = health.VisualCadenceLongestRepeatRun,
+            OutputObservedFps = health.VisualCadenceOutputObservedFps,
+            ChangeObservedFps = health.VisualCadenceChangeObservedFps,
+            RepeatFramePercent = health.VisualCadenceRepeatFramePercent,
+            LastDelta = health.VisualCadenceLastDelta,
+            AverageDelta = health.VisualCadenceAverageDelta,
+            P95Delta = health.VisualCadenceP95Delta,
+            MotionScore = health.VisualCadenceMotionScore,
+            MotionConfidence = health.VisualCadenceMotionConfidence,
+            RecentOutputIntervalsMs = health.VisualCadenceRecentOutputIntervalsMs,
+            RecentChangeIntervalsMs = health.VisualCadenceRecentChangeIntervalsMs,
+            CenterSampleCount = health.VisualCenterCadenceSampleCount,
+            CenterChangedFrameCount = health.VisualCenterCadenceChangedFrameCount,
+            CenterRepeatFrameCount = health.VisualCenterCadenceRepeatFrameCount,
+            CenterLongestRepeatRun = health.VisualCenterCadenceLongestRepeatRun,
+            CenterOutputObservedFps = health.VisualCenterCadenceOutputObservedFps,
+            CenterChangeObservedFps = health.VisualCenterCadenceChangeObservedFps,
+            CenterRepeatFramePercent = health.VisualCenterCadenceRepeatFramePercent,
+            CenterLastDelta = health.VisualCenterCadenceLastDelta,
+            CenterAverageDelta = health.VisualCenterCadenceAverageDelta,
+            CenterP95Delta = health.VisualCenterCadenceP95Delta,
+            CenterMotionScore = health.VisualCenterCadenceMotionScore,
+            CenterMotionConfidence = health.VisualCenterCadenceMotionConfidence,
+            CenterRecentOutputIntervalsMs = health.VisualCenterCadenceRecentOutputIntervalsMs,
+            CenterRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs
+        };
+
+    private readonly record struct VisualCadenceProjection
+    {
+        public int SampleCount { get; init; }
+        public long ChangedFrameCount { get; init; }
+        public long RepeatFrameCount { get; init; }
+        public long LongestRepeatRun { get; init; }
+        public double OutputObservedFps { get; init; }
+        public double ChangeObservedFps { get; init; }
+        public double RepeatFramePercent { get; init; }
+        public double LastDelta { get; init; }
+        public double AverageDelta { get; init; }
+        public double P95Delta { get; init; }
+        public double MotionScore { get; init; }
+        public string MotionConfidence { get; init; }
+        public double[] RecentOutputIntervalsMs { get; init; }
+        public double[] RecentChangeIntervalsMs { get; init; }
+        public int CenterSampleCount { get; init; }
+        public long CenterChangedFrameCount { get; init; }
+        public long CenterRepeatFrameCount { get; init; }
+        public long CenterLongestRepeatRun { get; init; }
+        public double CenterOutputObservedFps { get; init; }
+        public double CenterChangeObservedFps { get; init; }
+        public double CenterRepeatFramePercent { get; init; }
+        public double CenterLastDelta { get; init; }
+        public double CenterAverageDelta { get; init; }
+        public double CenterP95Delta { get; init; }
+        public double CenterMotionScore { get; init; }
+        public string CenterMotionConfidence { get; init; }
+        public double[] CenterRecentOutputIntervalsMs { get; init; }
+        public double[] CenterRecentChangeIntervalsMs { get; init; }
+    }
+
+    private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(
+        VisualCadenceProjection visualCadence)
+        => new()
+        {
+            SampleCount = visualCadence.SampleCount,
+            ChangedFrameCount = visualCadence.ChangedFrameCount,
+            RepeatFrameCount = visualCadence.RepeatFrameCount,
+            LongestRepeatRun = visualCadence.LongestRepeatRun,
+            OutputObservedFps = visualCadence.OutputObservedFps,
+            ChangeObservedFps = visualCadence.ChangeObservedFps,
+            RepeatFramePercent = visualCadence.RepeatFramePercent,
+            LastDelta = visualCadence.LastDelta,
+            AverageDelta = visualCadence.AverageDelta,
+            P95Delta = visualCadence.P95Delta,
+            MotionScore = visualCadence.MotionScore,
+            MotionConfidence = visualCadence.MotionConfidence,
+            RecentOutputIntervalsMs = visualCadence.RecentOutputIntervalsMs,
+            RecentChangeIntervalsMs = visualCadence.RecentChangeIntervalsMs,
+            CenterSampleCount = visualCadence.CenterSampleCount,
+            CenterChangedFrameCount = visualCadence.CenterChangedFrameCount,
+            CenterRepeatFrameCount = visualCadence.CenterRepeatFrameCount,
+            CenterLongestRepeatRun = visualCadence.CenterLongestRepeatRun,
+            CenterOutputObservedFps = visualCadence.CenterOutputObservedFps,
+            CenterChangeObservedFps = visualCadence.CenterChangeObservedFps,
+            CenterRepeatFramePercent = visualCadence.CenterRepeatFramePercent,
+            CenterLastDelta = visualCadence.CenterLastDelta,
+            CenterAverageDelta = visualCadence.CenterAverageDelta,
+            CenterP95Delta = visualCadence.CenterP95Delta,
+            CenterMotionScore = visualCadence.CenterMotionScore,
+            CenterMotionConfidence = visualCadence.CenterMotionConfidence,
+            CenterRecentOutputIntervalsMs = visualCadence.CenterRecentOutputIntervalsMs,
+            CenterRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs
+        };
+
+    private readonly record struct VisualCadenceFlattenedProjection
+    {
+        public int SampleCount { get; init; }
+        public long ChangedFrameCount { get; init; }
+        public long RepeatFrameCount { get; init; }
+        public long LongestRepeatRun { get; init; }
+        public double OutputObservedFps { get; init; }
+        public double ChangeObservedFps { get; init; }
+        public double RepeatFramePercent { get; init; }
+        public double LastDelta { get; init; }
+        public double AverageDelta { get; init; }
+        public double P95Delta { get; init; }
+        public double MotionScore { get; init; }
+        public string MotionConfidence { get; init; }
+        public double[] RecentOutputIntervalsMs { get; init; }
+        public double[] RecentChangeIntervalsMs { get; init; }
+        public int CenterSampleCount { get; init; }
+        public long CenterChangedFrameCount { get; init; }
+        public long CenterRepeatFrameCount { get; init; }
+        public long CenterLongestRepeatRun { get; init; }
+        public double CenterOutputObservedFps { get; init; }
+        public double CenterChangeObservedFps { get; init; }
+        public double CenterRepeatFramePercent { get; init; }
+        public double CenterLastDelta { get; init; }
+        public double CenterAverageDelta { get; init; }
+        public double CenterP95Delta { get; init; }
+        public double CenterMotionScore { get; init; }
+        public string CenterMotionConfidence { get; init; }
+        public double[] CenterRecentOutputIntervalsMs { get; init; }
+        public double[] CenterRecentChangeIntervalsMs { get; init; }
+    }
+
+    private static SourceSignalProjection BuildSourceSignalProjection(
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            DetectedFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,
+            DetectedFrameRateArg = viewModelSnapshot.DetectedSourceFrameRateArg ?? captureRuntime.DetectedSourceFrameRateArg,
+            FrameRateOrigin = ResolveSourceFrameRateOrigin(viewModelSnapshot.SourceFrameRateOrigin, captureRuntime.SourceFrameRateOrigin),
+            Width = viewModelSnapshot.SourceWidth ?? captureRuntime.SourceWidth,
+            Height = viewModelSnapshot.SourceHeight ?? captureRuntime.SourceHeight,
+            IsHdr = viewModelSnapshot.SourceIsHdr ?? captureRuntime.SourceIsHdr,
+            VideoFormat = captureRuntime.SourceVideoFormat,
+            Colorimetry = captureRuntime.SourceColorimetry,
+            Quantization = captureRuntime.SourceQuantization,
+            HdrTransferFunction = captureRuntime.SourceHdrTransferFunction,
+            HdrTransferCode = captureRuntime.SourceHdrTransferCode,
+            Firmware = captureRuntime.SourceFirmware,
+            AudioFormat = captureRuntime.SourceAudioFormat,
+            AudioSampleRate = captureRuntime.SourceAudioSampleRate,
+            InputSource = captureRuntime.SourceInputSource,
+            UsbHostProtocol = captureRuntime.SourceUsbHostProtocol,
+            HdcpMode = captureRuntime.SourceHdcpMode,
+            HdcpVersion = captureRuntime.SourceHdcpVersion,
+            RxTxHdcpVersion = captureRuntime.SourceRxTxHdcpVersion,
+            RawTimingHex = captureRuntime.SourceRawTimingHex
+        };
+
+    private static string ResolveSourceFrameRateOrigin(string viewModelOrigin, string runtimeOrigin)
+        => !string.IsNullOrWhiteSpace(viewModelOrigin) &&
+           !string.Equals(viewModelOrigin, "Unknown", StringComparison.OrdinalIgnoreCase)
+            ? viewModelOrigin
+            : runtimeOrigin;
+
+    private readonly record struct SourceSignalProjection
+    {
+        public double? DetectedFrameRate { get; init; }
+        public string? DetectedFrameRateArg { get; init; }
+        public string FrameRateOrigin { get; init; }
+        public int? Width { get; init; }
+        public int? Height { get; init; }
+        public bool? IsHdr { get; init; }
+        public string? VideoFormat { get; init; }
+        public string? Colorimetry { get; init; }
+        public string? Quantization { get; init; }
+        public string? HdrTransferFunction { get; init; }
+        public int? HdrTransferCode { get; init; }
+        public string? Firmware { get; init; }
+        public string? AudioFormat { get; init; }
+        public string? AudioSampleRate { get; init; }
+        public string? InputSource { get; init; }
+        public string? UsbHostProtocol { get; init; }
+        public string? HdcpMode { get; init; }
+        public string? HdcpVersion { get; init; }
+        public string? RxTxHdcpVersion { get; init; }
+        public string? RawTimingHex { get; init; }
+    }
+
+    private static SourceTelemetryProjection BuildSourceTelemetryProjection(
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        CaptureRuntimeSnapshot captureRuntime)
+    {
+        var telemetryTimestampUtc = viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc;
+
+        return new()
+        {
+            SourceTelemetryAvailability = PreferKnownTelemetryValue(
+                viewModelSnapshot.SourceTelemetryAvailability,
+                captureRuntime.SourceTelemetryAvailability),
+            SourceTelemetryOriginDetail = PreferKnownTelemetryValue(
+                viewModelSnapshot.SourceTelemetryOriginDetail,
+                captureRuntime.SourceTelemetryOriginDetail),
+            SourceTelemetryConfidence = PreferKnownTelemetryValue(
+                viewModelSnapshot.SourceTelemetryConfidence,
+                captureRuntime.SourceTelemetryConfidence),
+            SourceTelemetryDiagnosticSummary = viewModelSnapshot.SourceTelemetryDiagnosticSummary ?? captureRuntime.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,
+            SourceTelemetryTimestampUtc = telemetryTimestampUtc,
+            SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(
+                viewModelSnapshot.SourceTelemetryAgeSeconds,
+                telemetryTimestampUtc,
+                DateTimeOffset.UtcNow),
+            SourceTelemetryBackend = captureRuntime.SourceTelemetryBackend,
+            SourceTelemetrySuppressed = captureRuntime.SourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = captureRuntime.SourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = captureRuntime.SourceTelemetryCircuitState,
+            SourceTelemetrySummaryText = viewModelSnapshot.SourceTelemetrySummaryText,
+            SourceTargetSummaryText = viewModelSnapshot.SourceTargetSummaryText
+        };
+    }
+
+    private static string PreferKnownTelemetryValue(string viewModelValue, string runtimeValue)
+        => !string.IsNullOrWhiteSpace(viewModelValue) &&
+           !string.Equals(viewModelValue, "Unknown", StringComparison.OrdinalIgnoreCase)
+            ? viewModelValue
+            : runtimeValue;
+
+    private readonly record struct SourceTelemetryProjection
+    {
+        public string SourceTelemetryAvailability { get; init; }
+        public string SourceTelemetryOriginDetail { get; init; }
+        public string SourceTelemetryConfidence { get; init; }
+        public string? SourceTelemetryDiagnosticSummary { get; init; }
+        public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; }
+        public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+        public int? SourceTelemetryAgeSeconds { get; init; }
+        public string SourceTelemetryBackend { get; init; }
+        public bool SourceTelemetrySuppressed { get; init; }
+        public string? SourceTelemetrySuppressedReason { get; init; }
+        public string SourceTelemetryCircuitState { get; init; }
+        public string SourceTelemetrySummaryText { get; init; }
+        public string SourceTargetSummaryText { get; init; }
+    }
+
+    private static SourceFlattenedProjection BuildSourceFlattenedProjection(
+        SourceSignalProjection sourceSignal,
+        SourceTelemetryProjection sourceTelemetry)
+        => new()
+        {
+            Signal = BuildSourceSignalFlattenedProjection(sourceSignal),
+            Telemetry = BuildSourceTelemetryFlattenedProjection(sourceTelemetry)
+        };
+
+    private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(
+        SourceSignalProjection sourceSignal)
+        => new()
+        {
+            DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,
+            DetectedSourceFrameRateArg = sourceSignal.DetectedFrameRateArg,
+            SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,
+            SourceWidth = sourceSignal.Width,
+            SourceHeight = sourceSignal.Height,
+            SourceIsHdr = sourceSignal.IsHdr,
+            SourceVideoFormat = sourceSignal.VideoFormat,
+            SourceColorimetry = sourceSignal.Colorimetry,
+            SourceQuantization = sourceSignal.Quantization,
+            SourceHdrTransferFunction = sourceSignal.HdrTransferFunction,
+            SourceHdrTransferCode = sourceSignal.HdrTransferCode,
+            SourceFirmware = sourceSignal.Firmware,
+            SourceAudioFormat = sourceSignal.AudioFormat,
+            SourceAudioSampleRate = sourceSignal.AudioSampleRate,
+            SourceInputSource = sourceSignal.InputSource,
+            SourceUsbHostProtocol = sourceSignal.UsbHostProtocol,
+            SourceHdcpMode = sourceSignal.HdcpMode,
+            SourceHdcpVersion = sourceSignal.HdcpVersion,
+            SourceRxTxHdcpVersion = sourceSignal.RxTxHdcpVersion,
+            SourceRawTimingHex = sourceSignal.RawTimingHex
+        };
+
+    private readonly record struct SourceSignalFlattenedProjection
+    {
+        public double? DetectedSourceFrameRate { get; init; }
+        public string? DetectedSourceFrameRateArg { get; init; }
+        public string SourceFrameRateOrigin { get; init; }
+        public int? SourceWidth { get; init; }
+        public int? SourceHeight { get; init; }
+        public bool? SourceIsHdr { get; init; }
+        public string? SourceVideoFormat { get; init; }
+        public string? SourceColorimetry { get; init; }
+        public string? SourceQuantization { get; init; }
+        public string? SourceHdrTransferFunction { get; init; }
+        public int? SourceHdrTransferCode { get; init; }
+        public string? SourceFirmware { get; init; }
+        public string? SourceAudioFormat { get; init; }
+        public string? SourceAudioSampleRate { get; init; }
+        public string? SourceInputSource { get; init; }
+        public string? SourceUsbHostProtocol { get; init; }
+        public string? SourceHdcpMode { get; init; }
+        public string? SourceHdcpVersion { get; init; }
+        public string? SourceRxTxHdcpVersion { get; init; }
+        public string? SourceRawTimingHex { get; init; }
+    }
+
+    private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(
+        SourceTelemetryProjection sourceTelemetry)
+        => new()
+        {
+            SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,
+            SourceTelemetryOriginDetail = sourceTelemetry.SourceTelemetryOriginDetail,
+            SourceTelemetryConfidence = sourceTelemetry.SourceTelemetryConfidence,
+            SourceTelemetryDiagnosticSummary = sourceTelemetry.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,
+            SourceTelemetryTimestampUtc = sourceTelemetry.SourceTelemetryTimestampUtc,
+            SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,
+            SourceTelemetryBackend = sourceTelemetry.SourceTelemetryBackend,
+            SourceTelemetrySuppressed = sourceTelemetry.SourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = sourceTelemetry.SourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = sourceTelemetry.SourceTelemetryCircuitState,
+            SourceTelemetrySummaryText = sourceTelemetry.SourceTelemetrySummaryText,
+            SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText
+        };
+
+    private readonly record struct SourceTelemetryFlattenedProjection
+    {
+        public string SourceTelemetryAvailability { get; init; }
+        public string SourceTelemetryOriginDetail { get; init; }
+        public string SourceTelemetryConfidence { get; init; }
+        public string? SourceTelemetryDiagnosticSummary { get; init; }
+        public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; }
+        public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+        public int? SourceTelemetryAgeSeconds { get; init; }
+        public string SourceTelemetryBackend { get; init; }
+        public bool SourceTelemetrySuppressed { get; init; }
+        public string? SourceTelemetrySuppressedReason { get; init; }
+        public string SourceTelemetryCircuitState { get; init; }
+        public string SourceTelemetrySummaryText { get; init; }
+        public string SourceTargetSummaryText { get; init; }
+    }
+
+    private readonly record struct SourceFlattenedProjection
+    {
+        public SourceSignalFlattenedProjection Signal { get; init; }
+        public SourceTelemetryFlattenedProjection Telemetry { get; init; }
     }
 
     private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)

@@ -16,7 +16,7 @@ public partial class SnapshotModelsTests
     public void AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
         var contractsText = ReadAutomationSnapshotFamilyText();
-        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs");
+        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsHubText = string.Join(
             "\n",
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"),

@@ -490,7 +490,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")
+        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var sourceTelemetryProjectionText = sourceSignalProjectionText;
 
@@ -527,6 +527,10 @@ static partial class Program
         AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
         AssertContains(sourceTelemetryProjectionText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText");
         AssertContains(sourceTelemetryProjectionText, "private readonly record struct SourceTelemetryFlattenedProjection");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")),
+            "source signal and telemetry projection folded into root snapshot projection owner");
 
         return Task.CompletedTask;
     }
@@ -536,7 +540,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")
+        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
@@ -563,6 +567,10 @@ static partial class Program
         AssertContains(sourceSignalProjectionText, "RawTimingHex = captureRuntime.SourceRawTimingHex");
         AssertContains(sourceSignalProjectionText, "private static string ResolveSourceFrameRateOrigin(string viewModelOrigin, string runtimeOrigin)");
         AssertContains(sourceSignalProjectionText, "private readonly record struct SourceSignalProjection");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")),
+            "source signal projection folded into root snapshot projection owner");
 
         return Task.CompletedTask;
     }
@@ -572,7 +580,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")
+        var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var captureCadenceOnlyText = captureCadenceProjectionText[..captureCadenceProjectionText.IndexOf("private static VisualCadenceProjection", System.StringComparison.Ordinal)];
 
@@ -595,6 +603,10 @@ static partial class Program
         AssertContains(captureCadenceProjectionText, "private readonly record struct CaptureCadenceFlattenedProjection");
         AssertDoesNotContain(captureCadenceOnlyText, "VisualMotionConfidence");
         AssertDoesNotContain(captureCadenceOnlyText, "VisualCenterRecentChangeIntervalsMs");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")),
+            "capture and visual cadence projections folded into root snapshot projection owner");
 
         return Task.CompletedTask;
     }
@@ -604,7 +616,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var visualCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")
+        var visualCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var captureCadenceOnlyText = visualCadenceProjectionText[..visualCadenceProjectionText.IndexOf("private static VisualCadenceProjection", System.StringComparison.Ordinal)];
 
@@ -629,6 +641,10 @@ static partial class Program
         AssertContains(visualCadenceProjectionText, "private readonly record struct VisualCadenceProjection");
         AssertDoesNotContain(captureCadenceOnlyText, "VisualCadenceMotionConfidence");
         AssertDoesNotContain(captureCadenceOnlyText, "VisualCenterCadenceRecentChangeIntervalsMs");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")),
+            "visual cadence projection folded into root snapshot projection owner");
 
         return Task.CompletedTask;
     }

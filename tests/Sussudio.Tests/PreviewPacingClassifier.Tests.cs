@@ -63,7 +63,7 @@ public sealed class PreviewPacingClassifierTests
             diagnosticsSnapshotProjectionText,
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"));
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        var diagnosticsSnapshotProjectionCaptureCadenceText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs");
+        var diagnosticsSnapshotProjectionCaptureCadenceText = diagnosticsSnapshotProjectionText;
         var diagnosticsPreviewPacingText = diagnosticsSnapshotsText;
         var diagnosticsRealtimePreviewCountersText = diagnosticsSnapshotsText;
         var diagnosticsCountersText = diagnosticsRealtimePreviewCountersText;

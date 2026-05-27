@@ -166,11 +166,11 @@ encoder format/codec/profile/ten-bit confirmation projection, capture memory
 preference, requested/negotiated video subtype, frame-ledger projection, final
 capture-format flattening, and final capture-transport projection-to-
 `AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs` owns preview
-source capture cadence, visual cadence, and center-crop visual cadence
-projection inputs consumed by the automation snapshot DTO, plus final source
-capture cadence, visual cadence, and center-crop visual cadence projection-to-
-`AutomationSnapshot` field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns preview source capture
+cadence, visual cadence, and center-crop visual cadence projection inputs
+consumed by the automation snapshot DTO, plus final source capture cadence,
+visual cadence, and center-crop visual cadence projection-to-`AutomationSnapshot`
+field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
 compressed queue, failure, decode/interop-copy/callback/reorder/pipeline
 timing, decoder count, per-decoder, and packet duplicate-run / unique-frame
@@ -225,14 +225,13 @@ backend/audio-path/mux-result projection, UI output text, accumulated recording
 bytes, file-growth state, last finalized output metadata, last verification
 result projection consumed by the automation snapshot DTO, and final recording
 pipeline/backend/output projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs` owns detected
-source frame-rate fallback, source dimensions/HDR, raw source signal metadata
-projection, source telemetry fallback policy, age calculation, source-target
-summary inputs, final source projection flattening orchestration, source
-dimensions, frame-rate, HDR, video/audio format, firmware, input, USB, HDCP, raw
-timing field flattening, and final source telemetry availability, confidence,
-detail, age, backend, suppression, circuit-state, summary, and target-summary
-field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns detected source frame-rate
+fallback, source dimensions/HDR, raw source signal metadata projection, source
+telemetry fallback policy, age calculation, source-target summary inputs, final
+source projection flattening orchestration, source dimensions, frame-rate, HDR,
+video/audio format, firmware, input, USB, HDCP, raw timing field flattening, and
+final source telemetry availability, confidence, detail, age, backend,
+suppression, circuit-state, summary, and target-summary field flattening.
 `AutomationDiagnosticsHub.Hdr.cs` owns HDR truth classification from capture
 runtime, UI state, and recording verification plus HDR availability/request
 state, runtime/readiness fallback, HDR warmup/downgrade, pipeline parity,
