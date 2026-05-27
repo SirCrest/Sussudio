@@ -212,18 +212,16 @@ renderer mode projection inputs, and final preview runtime flattening.
 and thread-pool projection consumed by the automation snapshot DTO, plus final
 process resource projection-to-`AutomationSnapshot` field flattening alongside
 the core snapshot status/evaluation projections.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingIntegrity.cs` owns
-recording-integrity projection routing, status/reason, video-frame counters,
-queue/backpressure, audio integrity, A/V sync projection inputs, and final
-flattening consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.RecordingPipeline.cs` owns
-recording-pipeline projection routing, encoder queue age/count/failure health,
-conversion/ffmpeg/video ingest queue health, recording video queue latency,
-backpressure, encoder-output health, GPU/CUDA queue health, recording
-backend/audio-path/mux-result projection, UI output text, accumulated recording
-bytes, file-growth state, last finalized output metadata, last verification
-result projection consumed by the automation snapshot DTO, and final recording
-pipeline/backend/output projection-to-`AutomationSnapshot` field flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.Recording.cs` owns recording-
+integrity projection routing, status/reason, video-frame counters, queue/
+backpressure, audio integrity, A/V sync projection inputs, recording-pipeline
+projection routing, encoder queue age/count/failure health, conversion/ffmpeg/
+video ingest queue health, recording video queue latency, backpressure,
+encoder-output health, GPU/CUDA queue health, recording backend/audio-path/
+mux-result projection, UI output text, accumulated recording bytes, file-growth
+state, last finalized output metadata, last verification result projection
+consumed by the automation snapshot DTO, and final recording integrity/pipeline/
+backend/output projection-to-`AutomationSnapshot` field flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns detected source frame-rate
 fallback, source dimensions/HDR, raw source signal metadata projection, source
 telemetry fallback policy, age calculation, source-target summary inputs, final
