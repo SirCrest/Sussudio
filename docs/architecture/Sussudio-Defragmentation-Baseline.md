@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Flashback encoder sink test locality
+Problem: `Flashback.EncoderSink.ForceRotate.Tests.cs` was a small `Program` partial for force-rotate rejection, drain/commit, cancellation, rotation-failure recovery, and segment-registration failure assertions while `Flashback.EncoderSink.Tests.cs` already owned the encoder sink runtime counter, startup rollback, PTS guard, queue rejection, lifecycle cleanup, packet-validation, and drain-loop behavior. Reviewing encoder sink behavior still required opening a separate force-rotate shard even though it shares the same source readers and xUnit forwarding surface.
+Files consolidated: `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs`
+Files added: none
+Net production .cs delta: 0
+Partial clusters reduced: `Program` Flashback encoder sink test partial-family file count -1; test `.cs` count 143 -> 142
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackEncoderSink|FullyQualifiedName~FlashbackContracts|FullyQualifiedName~Flashback"` (260 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no production automation behavior changed; full build still rebuilt `ssctl`, `McpServer`, `AutomationClient`, and automation contracts
+Behavior preserved: same `Program` method names and xUnit forwarding methods now live in `Flashback.EncoderSink.Tests.cs`; force-rotate rejection, cancellation/timeout, committed-pending, segment-registration recovery, and fatal registration failure assertions are unchanged.
+Notes for future agents: keep Flashback encoder sink frame-rate, startup, queue, lifecycle, drain-loop, force-rotate, and segment-registration checks together in `Flashback.EncoderSink.Tests.cs`; keep broad source-shape ownership assertions in `Flashback.EncoderSink.SourceOwnership.Tests.cs`.
+
+Date: 2026-05-27
 Area: MainWindow controller ownership test locality
 Problem: `MainWindow.ControllerOwnership.Layout.Tests.cs`, `MainWindow.ControllerOwnership.Output.Tests.cs`, and `MainWindow.ControllerOwnership.Screenshot.Tests.cs` were small source-shape shards for the same MainWindow controller ownership review surface already rooted in `MainWindow.ControllerOwnership.Tests.cs`. Reviewing MainWindow controller boundaries still required hopping through separate layout, output, and screenshot files even though the xUnit forwarding surface and helper inputs were shared.
 Files consolidated: `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`, `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs`, `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
@@ -323,7 +335,7 @@ Partial clusters reduced: legacy `Program` Flashback encoder sink test partial f
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback encoder sink frame-rate parsing, codec mapping, counters, queue capacity, startup rollback, PTS guards, queue rejection, lifecycle cleanup, packet validation, and drain-loop ordering checks remain unchanged.
-Notes for future agents: keep core Flashback encoder sink guard, queue, cleanup, packet-validation, and drain-loop checks in `Flashback.EncoderSink.Tests.cs`; keep force-rotate recovery in `Flashback.EncoderSink.ForceRotate.Tests.cs` and broad source-shape assertions in `Flashback.EncoderSink.SourceOwnership.Tests.cs`.
+Notes for future agents: keep core Flashback encoder sink guard, queue, cleanup, packet-validation, drain-loop, force-rotate recovery, and segment-registration checks in `Flashback.EncoderSink.Tests.cs`; keep broad source-shape assertions in `Flashback.EncoderSink.SourceOwnership.Tests.cs`.
 
 Date: 2026-05-26
 Area: ssctl command-handler source contract test locality

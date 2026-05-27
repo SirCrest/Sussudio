@@ -1913,10 +1913,8 @@ Primary current owners:
   segment-extension validation tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
   sink frame-rate, option, startup rollback, runtime counter, PTS guard, queue
-  rejection, lifecycle cleanup, packet-validation, and drain-loop ordering
-  tests.
-- `tests/Sussudio.Tests/Flashback.EncoderSink.ForceRotate.Tests.cs` owns
-  Flashback encoder sink force-rotate and segment-registration recovery tests.
+  rejection, lifecycle cleanup, packet-validation, drain-loop ordering,
+  force-rotate, and segment-registration recovery tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for the former legacy Flashback encoder sink frame-rate,
   codec, counter, queue, force-rotate, packet-drain, startup, and
