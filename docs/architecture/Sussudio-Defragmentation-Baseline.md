@@ -1188,7 +1188,19 @@ Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by automation diagnostics counter ownership tests, preview pacing ownership tests, and runtime snapshot regression tests
 Behavior preserved: MJPEG recent dropped, decode failure, emit failure, and compressed queue drop deltas still use the same interlocked baselines and reset semantics
-Notes for future agents: keep realtime snapshot-loop counter baselines with `Counters.RealtimePreview.cs` unless a counter family grows independent lifecycle policy
+Notes for future agents: realtime snapshot-loop counter baselines now live with `AutomationDiagnosticsHub.Snapshots.cs`; extract a separate counter owner only if a counter family grows independent lifecycle policy
+
+Date: 2026-05-26
+Area: Automation diagnostics snapshot-loop counters
+Problem: Realtime preview counter baselines lived in a small partial even though every baseline is sampled only by `RefreshSnapshotCoreAsync`.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.Counters.RealtimePreview.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: `AutomationDiagnosticsHub` -1 file
+Build/tests/runtime checks: pending in current slice
+CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source ownership tests, preview pacing ownership tests, and runtime snapshot regression tests
+Behavior preserved: preview jitter, MJPEG, D3D, frame-latency wait, and Flashback recording recent deltas still use the same interlocked baselines and first-sample reset semantics from the snapshot refresh loop
+Notes for future agents: keep realtime snapshot-loop counter baselines with `AutomationDiagnosticsHub.Snapshots.cs` unless a counter family grows independent lifecycle policy
 
 Date: 2026-05-21
 Area: Automation diagnostics realtime evaluation
