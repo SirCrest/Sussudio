@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-27T06:45:13Z
+Generated UTC: 2026-05-27T06:53:18Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 291 |
+| Production .cs files | 290 |
 | Test .cs files | 148 |
 | Production .cs files under 60 lines | 1 (0.3%) |
 | Production .cs files under 80 lines | 4 (1.4%) |
@@ -51,16 +51,16 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1193 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
 | 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
-| 1054 | tools/ssctl/CommandHandlers.cs |
 | 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
+| 1054 | tools/ssctl/CommandHandlers.cs |
 | 1034 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
 | 1033 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 981 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs |
 | 965 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 950 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 912 | Sussudio/Services/Flashback/FlashbackBackendResources.cs |
-| 904 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | 904 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
+| 904 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | 884 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 876 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs |
 | 868 | Sussudio/Services/Audio/WasapiComInterop.cs |

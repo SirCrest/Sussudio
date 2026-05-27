@@ -53,10 +53,11 @@ static partial class Program
         var performanceToolsText = ReadRepoFile("tools/McpServer/Tools/PerformanceTools.cs");
         var performanceTimelineToolsText = performanceToolsText;
         var previewToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");
-        var previewColorProbeToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewColorProbeTools.cs");
+        var previewInspectionToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewInspectionTools.cs");
+        var previewColorProbeToolsText = previewInspectionToolsText;
         var recordingToolsText = previewToolsText;
         var presentMonToolsText = performanceToolsText;
-        var previewFrameCaptureToolsText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs");
+        var previewFrameCaptureToolsText = previewInspectionToolsText;
         var verificationToolsText = ReadRepoFile("tools/McpServer/Tools/VerificationTools.cs");
         var videoSourceProbeToolsText = previewColorProbeToolsText;
         var windowToolsText = ReadRepoFile("tools/McpServer/Tools/WindowTools.cs");

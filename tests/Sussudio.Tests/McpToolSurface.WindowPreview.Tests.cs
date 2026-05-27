@@ -810,7 +810,7 @@ static partial class Program
             CultureInfo.CurrentUICulture = previousUiCulture;
         }
 
-        var rootText = ReadRepoFile("tools/McpServer/Tools/PreviewFrameCaptureTools.cs")
+        var rootText = ReadRepoFile("tools/McpServer/Tools/PreviewInspectionTools.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "[McpServerToolType]");

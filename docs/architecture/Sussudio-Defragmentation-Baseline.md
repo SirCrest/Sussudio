@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: MCP preview visual inspection tool locality
+Problem: Preview/source color probes and preview/window image captures were split between `PreviewColorProbeTools.cs` and `PreviewFrameCaptureTools.cs`, even though both files were shallow MCP visual-inspection surfaces over automation commands. Reviewing MCP visual evidence behavior required opening two adjacent files to see probe formatting, preview-frame report rendering, histogram/diagnosis policy, default output paths, and screenshot response shaping.
+Files consolidated: `tools/McpServer/Tools/PreviewColorProbeTools.cs`; `tools/McpServer/Tools/PreviewFrameCaptureTools.cs`
+Files added: `tools/McpServer/Tools/PreviewInspectionTools.cs`
+Net production .cs delta: -1
+Partial clusters reduced: n/a; MCP visual inspection entry-point file count 2 -> 1 while preserving the public `PreviewColorProbeTools`, `VideoSourceProbeTools`, `PreviewFrameCaptureTools`, and `WindowScreenshotTools` type names
+Build/tests/runtime checks: `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~McpToolSurface|FullyQualifiedName~McpContracts|FullyQualifiedName~WindowPreview"` (23 passed after rebuilding stale MCP assembly); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: MCP tool-surface tests cover preview color probe, video source probe, preview frame capture, and window screenshot routing/formatting; no public MCP tool names, public tool type names, automation command names, IDs, or wire payloads changed
+Behavior preserved: probe response formatting, active/inactive session text, D3D/color metadata display, source format table rendering, preview-frame output path defaulting, enum-backed `CapturePreviewFrame` and `CaptureWindowScreenshot` routing, luminance histogram rendering, diagnosis policy, aspect-ratio formatting, and screenshot summary text remain unchanged.
+Notes for future agents: keep MCP visual inspection probes and captures in `PreviewInspectionTools.cs` while they remain shallow automation-command wrappers; split only if one gains independent policy beyond response formatting or shared visual-evidence helpers.
+
+Date: 2026-05-27
 Area: ssctl timeline formatter locality
 Problem: `Formatters.Timeline.cs` was the last small ssctl formatter partial outside the bulky snapshot renderer. Reviewing non-snapshot console projection behavior still required opening a second helper file for performance timeline response validation, JSON row projection, table output, and trend summaries, even though it used the same `TryGetData`, `AutomationSnapshotFormatter`, and projection-only `Formatters` facade as the general result/diagnostic/memory/options formatters.
 Files consolidated: `tools/ssctl/Formatters.Timeline.cs`

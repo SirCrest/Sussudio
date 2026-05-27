@@ -2788,9 +2788,11 @@ Primary owners:
   recording-toggle, and condition-wait MCP entry points while preserving the
   `WindowTools`, `UiSettingsTools`, `PreviewTools`, `RecordingTools`, and
   `WaitTools` tool types.
-- `tools/McpServer/Tools/PreviewColorProbeTools.cs` owns the public preview
-  color and video-source probe MCP entry points while preserving the
-  `PreviewColorProbeTools` and `VideoSourceProbeTools` tool types.
+- `tools/McpServer/Tools/PreviewInspectionTools.cs` owns the public preview
+  color, video-source probe, preview-frame capture, and window-screenshot MCP
+  entry points while preserving the `PreviewColorProbeTools`,
+  `VideoSourceProbeTools`, `PreviewFrameCaptureTools`, and
+  `WindowScreenshotTools` tool types.
 - `tools/McpServer/Tools/PerformanceTools.cs` owns the public performance MCP
   tool entry points, including timeline command response handling, timeline
   JSON row projection orchestration, root cadence, preview/MJPEG/D3D, Flashback
@@ -2819,11 +2821,6 @@ Primary owners:
   and verification lookup from `Data.Verification` and
   `Snapshot.LastVerification`, plus recording, file, assertion, mismatch, and
   failure result text.
-- `tools/McpServer/Tools/PreviewFrameCaptureTools.cs` owns the public preview
-  frame-capture and window-screenshot MCP entry points, default output paths,
-  payload shaping, enum command routing, failure/missing-data response handling, operator-facing
-  report layout, 16-bin histogram projection, and blank/dark/bright/framing
-  diagnosis policy.
 - Shared PresentMon option precedence and preview-present field extraction live
   in `tools/Common/PresentMon/PresentMonProbe.cs`.
 - `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session run

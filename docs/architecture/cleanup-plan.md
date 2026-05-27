@@ -2795,14 +2795,14 @@ Window, UI settings, preview/recording control, and condition-wait MCP methods
 stay in `WindowTools.cs`; keep the public `WindowTools`, `UiSettingsTools`,
 `PreviewTools`, `RecordingTools`, and `WaitTools` type names stable while
 avoiding one-method tool files.
-Preview color/source probe MCP methods stay in `PreviewColorProbeTools.cs`;
-keep the public `PreviewColorProbeTools` and `VideoSourceProbeTools` type names
-stable while avoiding one-method probe files.
-Preview frame capture MCP reporting stays together without changing visible
-text: keep the public `capture_preview_frame` entry point, default output path,
-payload, enum-backed `CapturePreviewFrame` routing, report layout, 16-bin
-histogram math/rendering, anomaly diagnosis policy, aspect checks, and the
-whole-window screenshot MCP response formatting in `PreviewFrameCaptureTools.cs`.
+Preview visual inspection MCP methods stay in `PreviewInspectionTools.cs`; keep
+the public `PreviewColorProbeTools`, `VideoSourceProbeTools`,
+`PreviewFrameCaptureTools`, and `WindowScreenshotTools` type names stable while
+avoiding one-method probe/capture files. Keep preview color/source probe text,
+the public `capture_preview_frame` entry point, default output path, payload,
+enum-backed `CapturePreviewFrame` routing, report layout, 16-bin histogram
+math/rendering, anomaly diagnosis policy, aspect checks, and whole-window
+screenshot response formatting together there.
 PresentMon MCP stays intentionally shallow: keep `capture_presentmon`,
 `capture_presentmon_raw`, structured-content shape, and `PresentMonProbe.RunAsync`
 invocation in `PerformanceTools.cs`; keep the app-snapshot request and malformed
