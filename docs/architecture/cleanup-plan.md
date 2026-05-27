@@ -1169,7 +1169,8 @@ classification, and the structured `RECORDING_INTEGRITY` log line together.
 Snapshot partials consume that policy instead of containing it.
 
 LibAv encoder initialization now lives in
-`Sussudio/Services/Recording/LibAvEncoder.Initialization.cs`. Keep FFmpeg
+`Sussudio/Services/Recording/LibAvEncoder.cs` with the core encoder state it
+mutates. Keep FFmpeg
 runtime initialization forwarding and the public encoder open/setup sequence
 there, including native allocation order, hardware-frame fallback behavior,
 muxer-option lifetime, open-state timing, startup failure cleanup, required
@@ -1188,7 +1189,8 @@ and interleaved video packet writes there.
 LibAv encoder core state now lives in
 `Sussudio/Services/Recording/LibAvEncoder.cs`. Keep encoder fields, stable
 public state, open-state guards, FFmpeg error string conversion, structured
-libav exceptions, and D3D11 device-removed checks there.
+libav exceptions, D3D11 device-removed checks, open/setup orchestration, and
+private setup policy there.
 
 LibAv encoder audio stream handling now lives in
 `Sussudio/Services/Recording/LibAvEncoder.Audio.cs`. Keep audio/microphone

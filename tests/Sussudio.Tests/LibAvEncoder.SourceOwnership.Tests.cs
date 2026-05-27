@@ -80,16 +80,17 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var initializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Initialization.cs")
-            .Replace("\r\n", "\n");
+        var initializationText = rootText;
 
         AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
         AssertContains(initializationText, "public void Initialize(LibAvEncoderOptions options)");
         AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
         AssertContains(initializationText, "ApplyMp4MuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
         AssertContains(initializationText, "CleanupResources(writeTrailer: false);");
-        AssertDoesNotContain(rootText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
-        AssertDoesNotContain(rootText, "public void Initialize(LibAvEncoderOptions options)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Initialization.cs")),
+            "LibAvEncoder initialization folded into the encoder root");
 
         return Task.CompletedTask;
     }
@@ -98,8 +99,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var initializationText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Initialization.cs")
-            .Replace("\r\n", "\n");
+        var initializationText = rootText;
         var audioText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs")
             .Replace("\r\n", "\n");
         var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
@@ -174,6 +174,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.CodecPolicy.cs")),
             "LibAvEncoder codec/filter/rational policy lives with encoder initialization");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.Initialization.cs")),
+            "LibAvEncoder initialization lives with the encoder root");
         AssertContains(hardwareFramesText, "private static IntPtr CreateSingleTexture2D(IntPtr d3d11Device, int width, int height, bool isP010, uint bindFlags)");
         AssertContains(hardwareFramesText, "private void InitializeHardwareFramesIfNeeded(LibAvEncoderOptions options)");
         AssertContains(hardwareFramesText, "framesCtx->initial_pool_size = 0;");
