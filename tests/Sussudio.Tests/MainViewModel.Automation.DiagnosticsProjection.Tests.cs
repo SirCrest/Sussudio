@@ -657,8 +657,7 @@ static partial class Program
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
         var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")
             .Replace("\r\n", "\n");
-        var mjpegPreviewJitterProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs")
-            .Replace("\r\n", "\n");
+        var mjpegPreviewJitterProjectionText = mjpegProjectionText;
 
         AssertContains(snapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
         AssertContains(snapshotFlatteningText, "var mjpegFlattening = BuildMjpegFlattenedProjection(mjpeg);");
@@ -746,6 +745,10 @@ static partial class Program
         AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
         AssertContains(mjpegPreviewJitterProjectionText, "LastDropReason = events.LastDropReason,");
         AssertContains(mjpegPreviewJitterProjectionText, "ScheduleLateCount = events.ScheduleLateCount");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs")),
+            "MJPEG preview jitter projection folded into MJPEG projection owner");
 
         AssertContains(mjpegProjectionText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
         AssertContains(mjpegProjectionText, "SampleCount = health.MjpegPacketHashSampleCount,");

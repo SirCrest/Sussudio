@@ -175,10 +175,9 @@ field flattening.
 compressed queue, failure, decode/interop-copy/callback/reorder/pipeline
 timing, decoder count, per-decoder, and packet duplicate-run / unique-frame
 projection inputs consumed by the automation snapshot DTO, plus final CPU MJPEG
-totals, compressed queue, timing, and packet-hash field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` owns MJPEG
-preview jitter projection routing, queue counters, timing samples, adaptive
-drop/depth counters, last scheduler event projection, and final
+totals, compressed queue, timing, packet-hash field flattening, MJPEG preview
+jitter projection routing, queue counters, timing samples, adaptive drop/depth
+counters, last scheduler event projection, and final preview-jitter
 projection-to-`AutomationSnapshot` flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs` owns active
 Flashback export progress, failure, force-rotate fallback, last-result

@@ -4748,3 +4748,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
 Behavior preserved: source signal/telemetry fallback projection, telemetry age calculation, capture cadence projection, visual cadence projection, center-crop visual cadence projection, and the final automation snapshot flattening now live in `AutomationDiagnosticsHub.SnapshotProjection.cs` beside the projection-set assembly and dispatch that exclusively consume them.
 Notes for future agents: keep small source/cadence projection record groups in `AutomationDiagnosticsHub.SnapshotProjection.cs` while they remain private DTO plumbing for the root snapshot construction pipeline; split again only if a reusable snapshot projection collaborator replaces the current private-record pattern.
+
+Date: 2026-05-27
+Area: Automation MJPEG projection locality
+Problem: `AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs` was a dependent sub-projection of `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`: the MJPEG projection builder created `MjpegPreviewJitterProjection`, stored it inside `MjpegProjection`, and the root snapshot flattening consumed it as `mjpeg.PreviewJitter`. Reviewing MJPEG automation snapshot fields still required opening a second partial for queue/timing/adaptive/event jitter fields that are only meaningful as part of the MJPEG projection owner.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `AutomationDiagnosticsHub` production partial count 21 -> 20
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationDiagnostics|FullyQualifiedName~Mjpeg|FullyQualifiedName~PreviewPacingClassifier|FullyQualifiedName~SnapshotModels"` (94 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, runtime behavior, XAML bindings, or tool sources changed.
+Behavior preserved: MJPEG preview-jitter queue, timing, adaptive-drop, and scheduler-event projection/flattening now live in `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` with MJPEG totals, timing, packet-hash projection, and the `MjpegProjection.PreviewJitter` parent record that consumes them.
+Notes for future agents: keep MJPEG preview-jitter projection with `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` while it remains nested under `MjpegProjection`; split again only if preview jitter becomes a standalone automation projection owner with callers outside MJPEG snapshot composition.
