@@ -1833,7 +1833,7 @@ callbacks, raw preview submission, and visual-cadence reset/recording helpers
 there; keep public control/configuration methods in `UnifiedVideoCapture.cs`.
 
 Unified capture source-session lifecycle now lives in
-`Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs`. Keep
+`Sussudio/Services/Capture/UnifiedVideoCapture.cs`. Keep
 source-reader/D3D/MJPEG initialization, committed runtime state reset, read-loop
 start/stop, preview-reinit disposal, CPU MJPEG pipeline construction and stop
 retention, preview jitter buffer setup/teardown, and capture/MJPEG fatal-error

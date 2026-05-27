@@ -62,8 +62,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.UnifiedVideoCapture_FrameIngressLivesInFocusedPartial();
 
     [Fact]
-    public Task UnifiedVideoCaptureLifecycleLivesInFocusedPartial()
-        => global::Program.UnifiedVideoCapture_LifecycleLivesInFocusedPartial();
+    public Task UnifiedVideoCaptureLifecycleLivesWithRootState()
+        => global::Program.UnifiedVideoCapture_LifecycleLivesWithRootState();
 
     [Fact]
     public Task WasapiAudioCaptureRejectsIncompleteHotAudioWrites()

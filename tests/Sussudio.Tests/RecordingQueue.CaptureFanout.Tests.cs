@@ -97,12 +97,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task UnifiedVideoCapture_LifecycleLivesInFocusedPartial()
+    internal static Task UnifiedVideoCapture_LifecycleLivesWithRootState()
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
-        var lifecycleSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.Lifecycle.cs")
-            .Replace("\r\n", "\n");
+        var lifecycleSource = rootSource;
         var initializationSource = lifecycleSource;
         var mjpegStartupSource = lifecycleSource;
         var mjpegLifecycleSource = lifecycleSource;
@@ -115,7 +114,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Initialization.cs")),
-            "UnifiedVideoCapture initialization folded into lifecycle owner");
+            "UnifiedVideoCapture initialization folded into root source-session owner");
         AssertContains(lifecycleSource, "public void Start()");
         AssertContains(lifecycleSource, "public async Task StopAsync()");
         AssertContains(lifecycleSource, "public async ValueTask DisposeAsync()");
@@ -132,10 +131,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.MjpegPipelineLifecycle.cs")),
-            "UnifiedVideoCapture MJPEG startup helpers folded into initialization and stop/dispose helpers into lifecycle");
-        AssertDoesNotContain(rootSource, "public async Task InitializeAsync(");
-        AssertDoesNotContain(rootSource, "public async Task StopAsync()");
-        AssertDoesNotContain(rootSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");
+            "UnifiedVideoCapture MJPEG startup helpers folded into root source-session owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Lifecycle.cs")),
+            "UnifiedVideoCapture lifecycle folded into root source-session owner");
 
         return Task.CompletedTask;
     }
