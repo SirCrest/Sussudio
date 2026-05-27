@@ -1524,7 +1524,7 @@ rescue now live in
 `Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs`.
 
 Flashback exporter multi-segment packet-copy/remux behavior now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Segments.cs`. Keep segment
+`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`. Keep segment
 validation dispatch, temp-output preparation, output-template selection,
 template-skip diagnostics, per-segment input open, stream-info lookup,
 stream-count checks, layout-mismatch skip tracking, final output replacement,

@@ -113,7 +113,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var singleFilePacketWritingText = singleFilePacketReadLoopText;
         var singleFilePacketWriteStateText = singleFilePacketReadLoopText;
-        var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+        var segmentsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
@@ -139,7 +139,8 @@ static partial class Program
         AssertContains(singleFilePacketReadLoopText, "FreeBufferedPackets(packetState.BufferedPackets, packetState.BufferedStreamIndices);");
         AssertContains(singleFilePacketWriteStateText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
         AssertContains(segmentsText, "WriteSegmentPacketsToActiveOutput(");
-        AssertDoesNotContain(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
+        AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
+        AssertContains(segmentsText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
         AssertContains(segmentPacketWritingText, "private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
         AssertContains(segmentPacketWritingText, "WriteSegmentPacketReadLoop(");
         AssertContains(segmentPacketReadLoopText, "private void WriteSegmentPacketReadLoop(");
@@ -263,7 +264,7 @@ static partial class Program
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
             .Replace("\r\n", "\n");
         var streamTemplatesText = streamsText;
-        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var segmentInputPreflightText = segmentTemplateText;
 
@@ -302,17 +303,16 @@ static partial class Program
 
     internal static Task FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped()
     {
-        var segmentExportCore = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+        var segmentExportCore = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var segmentPacketWritingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var skipTrackingText = segmentPacketWritingText;
-        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Segments.cs")
+        var segmentTemplateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs")
             .Replace("\r\n", "\n");
         var segmentInputPreflightText = segmentTemplateText;
 
         AssertContains(segmentExportCore, "WriteSegmentPacketsToActiveOutput(");
-        AssertDoesNotContain(segmentExportCore, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
         AssertContains(segmentPacketWritingText, "var requestedSegmentSkips = new RequestedSegmentSkipTracker(inPoint, outPoint);");
         AssertDoesNotContain(segmentPacketWritingText, "void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)");
         AssertContains(skipTrackingText, "private struct RequestedSegmentSkipTracker");
