@@ -1418,9 +1418,10 @@ Primary current owners:
   owns Flashback lifecycle outcome log-token, codec no-downgrade, export
   force-rotate, buffer-cycle, delivered-cadence rational, and enable/disable
   preview-state assertions.
-- `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs` owns ported audio input,
-  audio level event, capture device metadata/default collection, and automation
-  window action enum contract checks.
+- `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
+  runtime xUnit execution surface, including the `SmallContractsTests` wrapper
+  for ported audio input, audio level event, capture device metadata/default
+  collection, and automation window action enum contract checks.
 - `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns
   MediaFormat equality/hash-code checks alongside the broader capture
   configuration model contract surface.
@@ -1456,7 +1457,8 @@ Primary current owners:
   assertions with the broader service-layer source-ownership checks.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface plus the ported HdrOutputPolicy, HDR output
-  environment-switch, and disabled source-telemetry-provider behavior checks.
+  environment-switch, disabled source-telemetry-provider behavior checks, and
+  small no-hardware model/protocol contract wrappers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
   shared recording queue source readers, source-block extraction helpers,
   recording/Flashback queue overload, fatal-failure, lifecycle, recording

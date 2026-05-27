@@ -45,8 +45,9 @@ add xUnit alongside, and port incrementally.
   `SnapshotModels.Automation.Tests.cs` owns the focused AutomationSnapshot and
   AutomationOptions metric-shape checks plus shared AutomationSnapshot property
   assertions.
-- `XUnit.SmallContractsTests.cs` owns the former legacy audio input, audio
-  level event, capture device, and automation window action small contracts.
+- `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy audio input, audio
+  level event, capture device, and automation window action small contracts
+  through the `SmallContractsTests` wrapper.
 - `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers,
   capture mode option display metadata, option-builder behavior, capture
   settings defaults, output path/file naming, bitrate policy, MJPEG HFR policy,

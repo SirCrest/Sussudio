@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-27
+Area: Small no-hardware xUnit contract locality
+Problem: `XUnit.SmallContractsTests.cs` was a standalone catch-all wrapper for small no-hardware model, logging, diagnostic-threshold, automation-window-action, and pipe-security facts while `XUnit.CoreRuntimeContractsTests.cs` already owned the core runtime xUnit execution surface. Reviewing these small compatibility xUnit facts required opening a separate tiny file even though the `SmallContractsTests` class and `[Fact]` method identities can live with the existing runtime xUnit owner.
+Files consolidated: `tests/Sussudio.Tests/XUnit.SmallContractsTests.cs`
+Files added: none
+Net production .cs delta: 0
+Partial clusters reduced: n/a; xUnit small-contract wrapper file count 1 -> 0 while preserving the `SmallContractsTests` class and method names
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SmallContractsTests|FullyQualifiedName~CoreRuntimeContractsTests|FullyQualifiedName~CapturePoliciesTests|FullyQualifiedName~AutomationAppSurfaceContractsTests|FullyQualifiedName~AutomationContractsProtocolXunitTests"` (72 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
+CLI/MCP/pipe checks, if applicable: no production automation behavior changed; the pipe-security policy fact still references `Sussudio.Tools.AutomationPipeSecurityPolicy`
+Behavior preserved: same xUnit facts for audio input display fallback, audio level event args, capture device metadata/default collections, automation window action enum values, `LoggingJsonContext` type-info exposure, `DiagnosticThresholds` percent math, and `AutomationPipeSecurityPolicy` fallback gating now live in `XUnit.CoreRuntimeContractsTests.cs`.
+Notes for future agents: keep small no-hardware compatibility facts inside the core runtime xUnit surface while they remain wrappers around legacy/reflection runner coverage; move only if a subsystem gets its own cohesive xUnit owner.
+
+Date: 2026-05-27
 Area: Automation support model protocol locality
 Problem: `AutomationCommandProtocol.cs` was a 135-line model island for automation response status/lifecycle converters, Flashback/window/wait enums, command request/response DTOs, and snapshot assertions while `AutomationSupportModels.cs` already owned the small automation support DTO surface used by diagnostics events, options, visual probes, verification, and runtime snapshots. Reviewing automation wire/support model types required opening a separate tiny file before returning to the support model owner.
 Files consolidated: `Sussudio/Models/Automation/AutomationCommandProtocol.cs`
