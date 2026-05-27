@@ -1426,18 +1426,18 @@ classification, final stop result reporting, `Dispose`/`DisposeAsync`,
 deferred cleanup, final dispose reset, cancellation/disposal helpers, and
 best-effort encoder/buffer manager disposal there.
 
-Flashback decoder audio output now lives in
-`Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs`. Keep audio packet
+Flashback decoder audio output now lives with the playback packet feed in
+`Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`. Keep audio packet
 delivery, audio codec/resampler initialization, audio callback failure handling,
-resampler output conversion, and bounded audio sample/byte sizing there. Decoded video frame
+resampler output conversion, bounded audio sample/byte sizing, inline audio
+interleave during video reads, and decode phase timing there. Decoded video frame
 output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs` with software
 plane copies and YUV-to-NV12/P010 conversion kernels. Keep file
   open/close and disposal lifecycle in the root decoder. Keyframe/exact seek
   control flow, pending-frame transfer, seek-cap diagnostics, seek-buffer
   flushing, seek timestamp conversion helpers, video frame receive, packet
-  feeding, inline audio interleave during video reads, recoverable seek log
-  suppression, and decode phase timing state now live in
+  feeding, recoverable seek log suppression, and decode phase timing state now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`.
 Decoded frame-size calculation, video-dimension validation, D3D11/software
 decoded-frame validation, input stream-count bounds, and stream-index bounds now live in

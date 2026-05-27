@@ -75,8 +75,8 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_AudioOutputBuffersAreBounded();
 
     [Fact]
-    public Task FlashbackDecoderAudioSetupLivesInAudioOutputPartial()
-        => global::Program.FlashbackDecoder_AudioSetupLivesInAudioOutputPartial();
+    public Task FlashbackDecoderAudioSetupLivesWithPlaybackPacketFeed()
+        => global::Program.FlashbackDecoder_AudioSetupLivesWithPlaybackPacketFeed();
 
     [Fact]
     public Task FlashbackDecoderSoftwareFramePlanesAreValidated()

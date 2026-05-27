@@ -129,19 +129,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_AudioSetupLivesInAudioOutputPartial()
+    internal static Task FlashbackDecoder_AudioSetupLivesWithPlaybackPacketFeed()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var audioOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.AudioOutput.cs")
+        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "private void InitializeAudioDecoder()");
         AssertDoesNotContain(rootText, "private void InitializeAudioResampler()");
-        AssertContains(audioOutputText, "private void InitializeAudioDecoder()");
-        AssertContains(audioOutputText, "private void InitializeAudioResampler()");
-        AssertContains(audioOutputText, "FLASHBACK_DECODER_AUDIO codec=");
-        AssertContains(audioOutputText, "swr_alloc_set_opts2");
+        AssertContains(playbackText, "private void InitializeAudioDecoder()");
+        AssertContains(playbackText, "private void InitializeAudioResampler()");
+        AssertContains(playbackText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
+        AssertContains(playbackText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
+        AssertContains(playbackText, "FLASHBACK_DECODER_AUDIO codec=");
+        AssertContains(playbackText, "swr_alloc_set_opts2");
+        AssertContains(playbackText, "DecodeAndDeliverAudioPacket(_packet);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.AudioOutput.cs")),
+            "Flashback decoder audio output folded into playback packet feed owner");
 
         return Task.CompletedTask;
     }
@@ -537,6 +544,9 @@ static partial class Program
         AssertContains(playbackText, "public readonly record struct PlaybackDecodePhaseTimings(");
         AssertContains(playbackText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
         AssertContains(playbackText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(playbackText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
+        AssertContains(playbackText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
+        AssertContains(playbackText, "private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)");
         AssertContains(playbackText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
         AssertContains(playbackText, "DecodeAndDeliverAudioPacket(_packet);");
         AssertDoesNotContain(rootText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
@@ -544,6 +554,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "public readonly record struct PlaybackDecodePhaseTimings(");
         AssertDoesNotContain(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
         AssertDoesNotContain(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertDoesNotContain(rootText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
 
         return Task.CompletedTask;
     }
