@@ -47,9 +47,9 @@ static partial class Program
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
-        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
-        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
+        var flashbackExportText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var flashbackBufferStatusText = viewModelFlashbackStateText;
         var flashbackPlaybackCommandsText = viewModelFlashbackStateText;
         var flashbackPlaybackText = flashbackPlaybackCommandsText;

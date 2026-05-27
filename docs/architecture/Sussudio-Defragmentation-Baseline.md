@@ -2232,7 +2232,7 @@ Partial clusters reduced: `MainViewModel` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: automation surface tests cover Flashback action dispatch and async view-model ports; no automation command names/IDs changed
 Behavior preserved: Flashback segment snapshot access, playback snapshot access, rejection status text/logging, scrub/seek/play/pause/go-live/nudge routing, in/out marker routing, clear-marker routing, automation Flashback action dispatch, UI-thread invocation, and buffer/status projection remain unchanged
-Notes for future agents: keep Flashback playback state projection and the thin ViewModel playback command facade together in `MainViewModel.FlashbackState.cs`; keep export/save-picker behavior in `MainViewModel.FlashbackExport.cs`
+Notes for future agents: keep Flashback playback state projection, export/save-picker behavior, and the thin ViewModel playback/export command facade together in `MainViewModel.FlashbackState.cs`
 
 Date: 2026-05-25
 Area: Recording sink HDR validation locality

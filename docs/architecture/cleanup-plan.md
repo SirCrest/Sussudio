@@ -3444,7 +3444,7 @@ owner, fold it back into that owner and update the source-shape tests and
    lifecycle, progress handoff, stale-result classification,
    current-operation checks, CTS cancellation/disposal cleanup, and
    automation-facing export execution with linked cancellation and dispatcher
-   cleanup now live in `MainViewModel.FlashbackExport.cs`.
+   cleanup now live in `MainViewModel.FlashbackState.cs`.
    Capture-device selection,
    effective resolution helpers, frame-rate selection reactions, and
    auto-selection entry points now live in `MainViewModel.CaptureSelection.cs`.

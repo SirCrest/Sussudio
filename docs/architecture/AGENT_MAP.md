@@ -2434,7 +2434,7 @@ Primary current owners:
   snapshot and segment access, rejection status projection for UI, CLI, and
   MCP callers, scrub, nudge, in/out marker command routing, and
   automation-facing Flashback playback action dispatch.
-  `MainViewModel.FlashbackExport.cs` owns Flashback UI export commands,
+  `MainViewModel.FlashbackState.cs` owns Flashback UI export commands,
   save-picker flow, active-export guard, user-facing export result/status
   handling, shared export operation lifecycle, progress handoff, stale-result
   classification, current-operation checks, CTS cancellation/disposal cleanup,

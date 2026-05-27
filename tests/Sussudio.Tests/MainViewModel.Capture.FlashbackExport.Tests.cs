@@ -159,21 +159,25 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var disposalText = viewModelFiles["MainViewModel.cs"];
-        var flashbackExportText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
-        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
-        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackExport.cs"];
+        var flashbackExportText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var flashbackExportOperationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var flashbackExportAutomationText = viewModelFiles["MainViewModel.FlashbackState.cs"];
         var rawDisposalText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var disposalControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
-        var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
+        var rawFlashbackExportText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
-        var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
+        var rawFlashbackExportOperationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
-        var rawFlashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackExport.cs")
+        var rawFlashbackExportAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
 
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackExport.cs")),
+            "MainViewModel.FlashbackExport.cs folded into MainViewModel.FlashbackState.cs");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "playback.InPointFilePts");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "playback.OutPointFilePts");
