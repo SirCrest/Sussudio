@@ -45,9 +45,8 @@ fallback policy, guarded directory creation, and trace fallback diagnostics.
 FFmpeg runtime location lives with capability probing without changing the
 public locator surface. `Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs` owns
 app-local, Program Files, and PATH-based runtime/tool resolution, cached encoder
-and split-encode capability probes, and the bounded `ProcessSupervisor` calls
-and timeout policy used by startup recording capability checks.
-`Sussudio/Services/Runtime/FfmpegRuntimeInit.cs` owns one-time native
+and split-encode capability probes, the bounded `ProcessSupervisor` calls and
+timeout policy used by startup recording capability checks, one-time native
 initialization, FFmpeg log callback routing, and recoverable seek-log
 suppression.
 

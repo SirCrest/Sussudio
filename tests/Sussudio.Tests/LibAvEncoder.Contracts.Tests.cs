@@ -129,8 +129,8 @@ static partial class Program
         AssertContains(sourceText, "internal static IDisposable SuppressRecoverableSeekFfmpegLogs()");
         AssertContains(sourceText, "FfmpegLogSuppressionScope.SuppressRecoverableSeekFfmpegLogs()");
 
-        // Suppression implementation lives with FFmpeg log callback routing.
-        var suppressionText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeInit.cs")
+        // Suppression implementation lives with FFmpeg runtime resolution and log callback routing.
+        var suppressionText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
         AssertContains(suppressionText, "internal static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
         AssertContains(suppressionText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");

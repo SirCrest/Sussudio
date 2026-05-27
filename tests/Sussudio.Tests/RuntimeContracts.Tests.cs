@@ -111,6 +111,8 @@ public sealed class RuntimeContractsTests
         Assert.Contains("internal static class FfmpegRuntimeLocator", ffmpegText);
         Assert.DoesNotContain("partial class FfmpegRuntimeLocator", ffmpegText);
         Assert.Contains("internal static bool TryResolveNativeRuntimeRoot", ffmpegText);
+        Assert.Contains("internal static unsafe class FfmpegRuntimeInit", ffmpegText);
+        Assert.Contains("internal static class FfmpegLogSuppressionScope", ffmpegText);
         Assert.Contains("internal static string FindToolPath", ffmpegText);
         Assert.Contains("private const int ProbeTimeoutMs = 10_000;", ffmpegText);
         Assert.Contains("new ProcessSupervisor().RunAsync", ffmpegText);

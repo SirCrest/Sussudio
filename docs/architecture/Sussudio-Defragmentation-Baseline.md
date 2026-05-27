@@ -1202,6 +1202,18 @@ CLI/MCP/pipe checks, if applicable: covered by automation diagnostics source own
 Behavior preserved: preview jitter, MJPEG, D3D, frame-latency wait, and Flashback recording recent deltas still use the same interlocked baselines and first-sample reset semantics from the snapshot refresh loop
 Notes for future agents: keep realtime snapshot-loop counter baselines with `AutomationDiagnosticsHub.Snapshots.cs` unless a counter family grows independent lifecycle policy
 
+Date: 2026-05-26
+Area: FFmpeg runtime
+Problem: One-time native FFmpeg initialization and recoverable seek-log suppression lived in a small sibling file even though runtime root resolution and capability probing already own FFmpeg runtime setup policy.
+Files consolidated: `Sussudio/Services/Runtime/FfmpegRuntimeInit.cs`
+Files added: none
+Net production .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: pending in current slice
+CLI/MCP/pipe checks, if applicable: not applicable
+Behavior preserved: `FfmpegRuntimeInit` and `FfmpegLogSuppressionScope` type names and call sites are unchanged; only their file owner changed to `FfmpegRuntimeLocator.cs`
+Notes for future agents: keep FFmpeg runtime root resolution, capability probes, native initialization, and log callback/suppression policy together unless native initialization needs a distinct lifecycle owner
+
 Date: 2026-05-21
 Area: Automation diagnostics realtime evaluation
 Problem: Idle and warmup diagnostic verdicts lived in a tiny partial separate from the realtime diagnostic verdict ordering that always evaluates them first.
