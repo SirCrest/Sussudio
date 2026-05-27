@@ -4,15 +4,18 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_PanelBindingLivesWithRendererFacade()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var panelBindingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs")
-            .Replace("\r\n", "\n");
+        var panelBindingText = rootText;
 
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PanelBinding.cs")),
+            "D3D11 preview panel binding folded into renderer facade");
         AssertContains(panelBindingText, "private int _swapChainBound;");
         AssertContains(panelBindingText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
         AssertContains(panelBindingText, "private void UnbindSwapChainFromPanel()");
@@ -24,8 +27,8 @@ static partial class Program
         AssertContains(panelBindingText, "public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)");
         AssertContains(panelBindingText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");
         AssertContains(panelBindingText, "swapChain2.MatrixTransform");
-        AssertDoesNotContain(rootText, "private int _swapChainBound;");
-        AssertDoesNotContain(rootText, "private int _compositionTransformDirty;");
+        AssertContains(rootText, "private int _swapChainBound;");
+        AssertContains(rootText, "private int _compositionTransformDirty;");
         AssertDoesNotContain(resourcesText, "private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)");
         AssertDoesNotContain(resourcesText, "private void UnbindSwapChainFromPanel()");
         AssertDoesNotContain(resourcesText, "private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)");

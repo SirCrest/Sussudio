@@ -296,7 +296,7 @@ public sealed class PresentationPreviewD3DRenderSetupOwnershipTests
 
     [Fact]
     public Task PanelBindingLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_PanelBindingLivesInFocusedPartial();
+        => global::Program.D3D11PreviewRenderer_PanelBindingLivesWithRendererFacade();
 
     [Fact]
     public Task SharedDeviceLivesInFocusedPartial()

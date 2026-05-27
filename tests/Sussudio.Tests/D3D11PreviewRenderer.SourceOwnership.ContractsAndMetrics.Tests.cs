@@ -29,8 +29,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var panelBindingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs")
-            .Replace("\r\n", "\n");
+        var panelBindingText = rootText;
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
@@ -48,7 +47,7 @@ static partial class Program
         AssertContains(shaderRenderingText, "private static string ReadBlobString(IntPtr blobPtr)");
         AssertContains(metricsText, "private static extern int DwmFlush()");
         AssertContains(metricsText, "_ = DwmFlush();");
-        AssertDoesNotContain(rootText, "private interface ISwapChainPanelNative");
+        AssertContains(rootText, "private interface ISwapChainPanelNative");
         AssertDoesNotContain(rootText, "private interface ID3DBlob");
         AssertDoesNotContain(rootText, "D3DCompileNative(");
         AssertDoesNotContain(rootText, "private static extern int DwmFlush()");

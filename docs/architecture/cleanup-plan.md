@@ -1598,15 +1598,15 @@ pending-frame render dispatch, final render-thread drain, and renderer-mode
 reset in `D3D11PreviewRenderer.RenderThread.cs`,
 queue state and signaling in `D3D11PreviewRenderer.Submission.cs`, D3D device/swap-chain, input texture, and HDR shader input resources in
 `D3D11PreviewRenderer.Resources.cs`, swap-chain panel binding state in
-`D3D11PreviewRenderer.PanelBinding.cs`, render-thread waitable frame-latency
+`D3D11PreviewRenderer.cs`, render-thread waitable frame-latency
 pacing in `D3D11PreviewRenderer.RenderThread.cs`, render-pass selection plus
 VideoProcessor, NV12 shader, and HDR shader execution plus shared present
 accounting in `D3D11PreviewRenderer.RenderPasses.cs`, and shader
 resource/cache state in
 `D3D11PreviewRenderer.ShaderRendering.cs`. Do not re-centralize renderer
 implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
-public facade, construction references, constants, user-facing accessors, and
-public state toggles.
+public facade, construction references, constants, panel binding, user-facing
+accessors, and public state toggles.
 
 D3D preview renderer queue-owned frame lifetime and metrics model types now live
 with their caller owners. Keep the `PendingFrame` lifetime wrapper in
@@ -1623,7 +1623,7 @@ D3D preview renderer runtime knobs live in
 Keep the measured 4K120 cadence defaults, swap-chain queue/latency env
 overrides, DXGI statistics toggles, MMCSS settings, and stop-fence timeouts there. Native
 interop declarations now live with their behavior owners: keep
-`ISwapChainPanelNative` in `D3D11PreviewRenderer.PanelBinding.cs`,
+`ISwapChainPanelNative` in `D3D11PreviewRenderer.cs`,
 `ID3DBlob` and `D3DCompileNative` in `D3D11PreviewRenderer.ShaderRendering.cs`,
 and `DwmFlush` in `D3D11PreviewRenderer.Metrics.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
 `D3D11PreviewRenderer.RenderThread.cs`.
@@ -1752,7 +1752,7 @@ Device-lost recovery has its own focused owner; keep render loop consumption in
 completion and shader draw paths in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.PanelBinding.cs`. Keep
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
 UI-thread `SetSwapChain` bind/unbind marshaling and composition scale
 transforms there; keep device and view allocation in
 `D3D11PreviewRenderer.Resources.cs`.
