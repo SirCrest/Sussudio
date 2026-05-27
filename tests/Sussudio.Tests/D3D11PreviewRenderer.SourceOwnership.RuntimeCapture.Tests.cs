@@ -9,19 +9,17 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var pendingFramesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs")
-            .Replace("\r\n", "\n");
         var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             .Replace("\r\n", "\n");
         var nv12SubmissionText = submissionText;
 
         AssertContains(nv12SubmissionText, "private bool _loggedNv12ShaderMissing;");
         AssertContains(nv12SubmissionText, "private int _lastNv12IsHdr = -1;");
-        AssertContains(pendingFramesText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
-        AssertContains(pendingFramesText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
-        AssertContains(pendingFramesText, "private sealed class PendingFrame : IDisposable");
-        AssertContains(pendingFramesText, "FrameLease?.Dispose();");
-        AssertContains(pendingFramesText, "private int _pendingFrameCount;");
+        AssertContains(submissionText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
+        AssertContains(submissionText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
+        AssertContains(submissionText, "private sealed class PendingFrame : IDisposable");
+        AssertContains(submissionText, "FrameLease?.Dispose();");
+        AssertContains(submissionText, "private int _pendingFrameCount;");
         AssertContains(submissionText, "public void SubmitRawFrame(");
         AssertContains(submissionText, "public void SubmitRawFrameLease(");
         AssertContains(submissionText, "public void SubmitTexture(");
@@ -32,6 +30,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Nv12Submission.cs")),
             "NV12 texture submission folded into the D3D11 preview submission owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrames.cs")),
+            "pending-frame queue folded into the D3D11 preview submission owner");
         AssertDoesNotContain(rootText, "public void SubmitRawFrame(");
         AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
         AssertDoesNotContain(rootText, "public void SubmitTexture(");

@@ -60,16 +60,17 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var pendingFramesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.PendingFrames.cs")
+        var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             .Replace("\r\n", "\n");
         var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
 
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrame.cs")), "pending-frame lifetime model stays folded into PendingFrames.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrame.cs")), "pending-frame lifetime model stays folded into Submission.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrames.cs")), "pending-frame queue folded into Submission.cs");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")), "renderer metric model types folded into Metrics.cs");
-        AssertContains(pendingFramesText, "private sealed class PendingFrame : IDisposable");
-        AssertContains(pendingFramesText, "ArrayPool<byte>.Shared.Return(RawData);");
-        AssertContains(pendingFramesText, "FrameLease?.Dispose();");
+        AssertContains(submissionText, "private sealed class PendingFrame : IDisposable");
+        AssertContains(submissionText, "ArrayPool<byte>.Shared.Return(RawData);");
+        AssertContains(submissionText, "FrameLease?.Dispose();");
         AssertContains(metricsText, "public readonly record struct PresentCadenceMetrics(");
         AssertContains(metricsText, "public readonly record struct CpuStageTimingMetrics(");
         AssertContains(metricsText, "public readonly record struct RenderCpuTimingMetrics(");
@@ -84,7 +85,7 @@ static partial class Program
         AssertDoesNotContain(rootText, "private sealed class PendingFrame : IDisposable");
         AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertDoesNotContain(pendingFramesText, "public readonly record struct PresentCadenceMetrics(");
+        AssertDoesNotContain(submissionText, "public readonly record struct PresentCadenceMetrics(");
         AssertDoesNotContain(metricsText, "private sealed class PendingFrame : IDisposable");
 
         return Task.CompletedTask;
