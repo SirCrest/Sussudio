@@ -4544,3 +4544,15 @@ Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csp
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
 Behavior preserved: UI-dispatch sampling, D3D projection, health policy, surface/startup/GPU playback projection, and final preview runtime snapshot DTO flattening now live together in `PreviewRuntimeSnapshotController.cs`.
 Notes for future agents: keep sampled-input assembly, health policy, elapsed timing, final snapshot flattening, and surface/startup/GPU playback projection policy in `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`; keep D3D-specific renderer projection in `PreviewRuntimeD3DProjection.cs`.
+
+Date: 2026-05-26
+Area: Test source-reader helper locality
+Problem: `RecordingQueue.Tests.cs` and `DiagnosticSession.SourceReaders.cs` were helper-only `Program` partials with no executable test entry points. Reviewing recording queue overload-policy assertions and diagnostic-session ownership assertions required opening separate source-reader shards before returning to the owning test files.
+Files consolidated: `tests/Sussudio.Tests/RecordingQueue.Tests.cs`, `tests/Sussudio.Tests/DiagnosticSession.SourceReaders.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: `Program` test partial-family file count -2
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RecordingQueue|FullyQualifiedName~RecordingIntegrity|FullyQualifiedName~D3D11PreviewRenderer|FullyQualifiedName~MjpegPipeline|FullyQualifiedName~PooledVideoFrame"` (40 passed); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface|FullyQualifiedName~AutomationToolContracts"` (75 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: focused diagnostic-session and automation tool contract coverage passed; no public automation command names, IDs, wire payloads, tool behavior, app runtime code, or XAML bindings changed.
+Behavior preserved: shared recording queue source readers and source-block extraction helpers now live in `RecordingQueue.OverloadPolicy.Tests.cs`; shared diagnostic-session source-family readers now live in `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`.
+Notes for future agents: keep recording queue source readers with the overload-policy owner unless they become a real fixture; keep diagnostic-session source readers with the broad diagnostic-session ownership tests unless a dedicated reusable fixture type replaces the `Program` partial helpers.

@@ -1323,9 +1323,10 @@ Primary current owners:
   capture service, source reader, and tool-surface source text used by refresh
   ownership assertions, including diagnostic-evaluation, alerts,
   snapshot-projection, and aggregate `SourceFamilyText` composition.
-  `tests/Sussudio.Tests/DiagnosticSession.SourceReaders.cs` owns shared
-  diagnostic-session source-family readers used by refresh, MCP, and tool
-  ownership assertions.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
+  owns shared diagnostic-session source-family readers used by refresh, MCP,
+  and tool ownership assertions alongside the broad diagnostic-session
+  ownership checks.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs`
   owns automation async surface and automation snapshot/options source-shape
   assertions, including the diagnostics-loop contract that keeps options
@@ -1488,9 +1489,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface plus the ported HdrOutputPolicy, HDR output
   environment-switch, and disabled source-telemetry-provider behavior checks.
-- `tests/Sussudio.Tests/RecordingQueue.Tests.cs` owns shared recording queue
-  source readers and source-block extraction helpers.
 - `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
+  shared recording queue source readers, source-block extraction helpers,
   recording/Flashback queue overload, fatal-failure, lifecycle, recording
   backend start-policy, source-loading, buffer-cycle, LibAv/Flashback overload,
   buffer recovery, and health/automation telemetry assertions.

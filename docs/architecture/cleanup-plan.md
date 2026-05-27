@@ -508,11 +508,13 @@ Flashback queue, MJPEG, and visual-cadence diagnostics properties. Keep this as
 a single cohesive DTO surface unless a future change introduces a real named
 collaborator instead of another partial fragment.
 
-`tests/Sussudio.Tests/RecordingQueue.Tests.cs` is now the shared recording
-queue source-reader helper shell. Capture health snapshot ownership coverage is
-split into assembly/sampler, Flashback, and recording/source-telemetry files.
-Recording queue coverage is split into queue overload policy, LibAv sink,
-WASAPI, and capture fan-out / Flashback backend owner files.
+`tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` now owns the
+shared recording queue source readers and source-block extraction helpers
+beside the core overload-policy checks. Capture health snapshot ownership
+coverage is split into assembly/sampler, Flashback, and
+recording/source-telemetry files. Recording queue coverage is split into queue
+overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
+owner files.
 
 D3D preview renderer coverage is
 split into geometry/screenshot helper and preview PNG encoder contracts, cadence contracts, the large
