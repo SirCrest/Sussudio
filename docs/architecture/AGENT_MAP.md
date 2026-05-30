@@ -1354,9 +1354,10 @@ Primary current owners:
   capture format and recording settings selection-policy ownership checks plus
   the shared reflection, option-list, and capture-mode model construction
   helpers for the selection-policy test family.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`
-  owns preview startup watchdog controller/adapter ownership, timeout, and
-  failure-stop contract assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
+  preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
+  audio-ramp, device-discovery-before-recording-capability, UI/audio preview
+  reveal ordering, timeout, failure-stop, and formatter assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
   owns the source-shape ownership assertion that wires preview startup session
   and reinit adapters to focused controllers, MainViewModel preview
@@ -1364,13 +1365,6 @@ Primary current owners:
   controller attempt-state and orchestration behavior, preview reinit transition
   controller presentation and animation-state behavior, plus pending Flashback
   encoder settings cycle waits during preview reinitialization.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`
-  owns preview startup signal controller/adapter ownership, readiness-signal
-  controller, and startup/failure formatter assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
-  owns preview lifecycle-event, fade-in, preview-stop audio-ramp,
-  device-discovery-before-recording-capability, and UI/audio preview reveal
-  ordering source-shape ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
   xUnit execution for the former legacy presentation-preview preview-startup
   source-shape ownership, controller behavior, signal/failure text, and

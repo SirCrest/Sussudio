@@ -5488,7 +5488,19 @@ Files consolidated: `tests/Sussudio.Tests/AppSurface.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` app-surface partial file count -1
-Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~AutomationAppSurfaceContractsTests` passed (14 passed); full validation pending in this slice.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~AutomationAppSurfaceContractsTests` passed (14 passed); full solution build passed (0 warnings); full test suite passed (883 passed); runtime harness passed; regenerated baseline; architecture-doc tests passed; diff checks passed.
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
 Behavior preserved: app unhandled-exception policy checks, bool converter behavior matrix, source HDR formatter behavior, project-file publish/staging policy assertions, private helper method names, and all `AutomationAppSurfaceContractsTests` `[Fact]` method names remain unchanged while living in `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`.
 Notes for future agents: keep legacy app-surface `Program` checks with `XUnit.AutomationContractsTests.cs` while they are only invoked by the app-surface xUnit wrapper; split only if a check gains a distinct fixture or runtime seam.
+
+Date: 2026-05-30
+Area: Preview-startup legacy contract locality
+Problem: `MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`, `MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`, and `MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs` were adjacent legacy `Program` partial shards for the same preview-startup contract surface. The xUnit adapter already executes them as one presentation-preview startup group, but reviewing startup signals, watchdog timeout/failure-stop behavior, lifecycle-event ownership, preview-stop audio ramping, startup discovery ordering, and UI/audio reveal ordering still required opening three small sidecars.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Signals.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Watchdog.Tests.cs`; `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.StartupStopOrdering.Tests.cs`
+Files added: `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` preview-startup contract partial file count -2
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~PresentationPreviewStartup` passed (15 passed); full solution build passed (0 warnings); full test suite passed (883 passed); runtime harness passed; regenerated baseline.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
+Behavior preserved: all legacy `Program` preview-startup method names, all `XUnit.PresentationPreviewContractsTests.cs` `[Fact]` method names, signal/readiness/formatter assertions, watchdog timeout and failure-stop assertions, lifecycle-event ownership checks, preview-stop audio-ramp ordering, device-discovery-before-recording-capability ordering, and UI/audio preview reveal ordering remain unchanged while living in `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs`.
+Notes for future agents: keep preview-startup source-shape and behavior contract assertions in `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` while they remain fixture-free legacy `Program` methods invoked by the presentation-preview startup xUnit adapter; split only if a distinct fixture or runtime seam appears.
