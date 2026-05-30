@@ -3617,7 +3617,7 @@ Partial clusters reduced: legacy `Program` Flashback exporter request/failure te
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback exporter request validation, missing input/output failure results, null request failure, empty segment failure, cancellation precedence, cancelled lock-wait behavior, and export throttle assertions remain registered through `XUnit.FlashbackContractsTests`.
-Notes for future agents: keep top-level Flashback exporter request validation and cancellation-precedence checks in `Flashback.Exporter.Basic.Tests.cs`; keep temp-output replacement and orphan cleanup checks in `Flashback.Exporter.OutputFinalization.Tests.cs`.
+Notes for future agents: superseded by the later Flashback exporter output-safety test consolidation; keep top-level Flashback exporter request validation and cancellation-precedence checks in `Flashback.Exporter.Basic.Tests.cs`; keep output path, temp-output replacement, and orphan cleanup checks in `Flashback.Exporter.OutputPaths.Tests.cs`.
 
 Date: 2026-05-26
 Area: MainWindow layout policy test locality
@@ -5456,3 +5456,15 @@ Build/tests/runtime checks: focused broad-caller/helper tests (362 passed), full
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test helper members.
 Behavior preserved: `ReadMainViewModelCodeFiles`, `ReadRepoCodeWithoutCommentsOrStrings`, `ExtractMemberCode`, `ExtractTextBetween`, `AssertRegex`, `AssertNoRegex`, `AssertOccursBefore`, and `StripCSharpCommentsAndStringContents` keep their private names and callers while living in `tests/Sussudio.Tests/HarnessCore.cs`.
 Notes for future agents: keep generic legacy-harness source-inspection helpers in `HarnessCore.cs`; create a separate helper file only for a named fixture boundary or a behavior-specific source-family reader.
+
+Date: 2026-05-30
+Area: Flashback exporter output-safety test consolidation
+Problem: `Flashback.Exporter.OutputFinalization.Tests.cs` and `Flashback.Exporter.OutputPaths.Tests.cs` protected the same Flashback exporter output-safety review surface: segment/output path validation, source-overwrite guards, blocked temp-output paths, orphan temp cleanup, final-output replacement, overwrite refusal/force behavior, and final validation cleanup. Reviewing export destination safety required opening two adjacent legacy `Program` partial files while the checks share the same exporter reflection helpers and xUnit contract group.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback exporter output-safety test partial file count -1
+Build/tests/runtime checks: focused Flashback exporter/contract tests (48 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests (16 passed), and diff checks.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
+Behavior preserved: Flashback exporter output path validation, empty/duplicate/missing segment-path checks, source-overwrite rejection, blocked temp-output rejection, orphan temp-file cleanup, final-output replacement, overwrite refusal/force behavior, invalid-temp preservation, final validation cleanup, and output-directory scan guard checks keep their existing `Program` method names and remain registered through `XUnit.FlashbackContractsTests`.
+Notes for future agents: keep Flashback exporter output path and final-output safety tests in `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs`; split only if a production output-safety collaborator gets an independent executable fixture.

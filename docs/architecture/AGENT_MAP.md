@@ -1929,11 +1929,9 @@ Primary current owners:
   stream-layout validation, and requested-segment skip policy tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs` owns Flashback
   exporter segment path, duplicate path, missing segment, output path
-  validation, source-overwrite guard, and blocked temp-path tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.OutputFinalization.Tests.cs` owns
-  Flashback exporter final-output replacement, overwrite refusal/force
-  behavior, final validation cleanup, orphan temp-file cleanup, and
-  output-directory scan guard tests.
+  validation, source-overwrite guard, blocked temp-path tests, final-output
+  replacement, overwrite refusal/force behavior, final validation cleanup,
+  orphan temp-file cleanup, and output-directory scan guard tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for the former legacy Flashback exporter cleanup, request
   validation, failure classification, segment, cancellation, output
