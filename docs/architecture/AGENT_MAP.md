@@ -1416,7 +1416,7 @@ Primary current owners:
   configuration model contract surface.
 - `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its
   `SnapshotModels.*` partials own the xUnit snapshot-model contract suite.
-  `SnapshotModels.Tests.cs` owns shared snapshot-model spec DTOs and
+  `XUnit.SnapshotModelsTests.cs` owns shared snapshot-model spec DTOs and
   registration state, reflection JSON round-trip, registered-property coverage,
   property-list, nullability, and helper assertion methods.
 - `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns xUnit

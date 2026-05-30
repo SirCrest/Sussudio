@@ -3209,7 +3209,7 @@ Partial clusters reduced: `SnapshotModelsTests` helper partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; xUnit helper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: snapshot DTO property-list assertions, nullability checks, registered property specs, generic-list/single-item helpers, non-null string helper, and reflection JSON registered-property coverage remain unchanged.
-Notes for future agents: keep snapshot model reflection/nullability helper methods with `SnapshotModels.Tests.cs` while they are used only by that contract suite.
+Notes for future agents: later consolidation moved snapshot model reflection/nullability helper methods into `XUnit.SnapshotModelsTests.cs`; keep them with the snapshot-model contract suite root while they are used only by that suite.
 
 Date: 2026-05-26
 Area: xUnit app-surface and bootstrap helper locality
@@ -5432,3 +5432,15 @@ Build/tests/runtime checks: focused MainWindow/stats/presentation tests (200 pas
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test source-reader helpers.
 Behavior preserved: legacy `Program` MainWindow source-reader helpers and `Sussudio.Tests.MainWindowCompositionSource`/`MainWindowStatsOverlaySource` keep their names, return values, and callers while living in `tests/Sussudio.Tests/HarnessCore.cs`.
 Notes for future agents: keep shared source-inspection helpers that are just thin `ReadRepoFile` wrappers in `HarnessCore.cs`; create a separate file only when the helper family grows executable assertions or a named reusable fixture.
+
+Date: 2026-05-30
+Area: Snapshot model test helper consolidation
+Problem: `SnapshotModels.Tests.cs` only carried private helper enums, property-spec records, reflection JSON helpers, nullability assertions, and small collection helpers for the single `SnapshotModelsTests` partial xUnit suite. Reviewing snapshot-model contracts still required opening a helper-only partial before the actual xUnit root and focused automation/capture snapshot files.
+Files consolidated: `tests/Sussudio.Tests/SnapshotModels.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `SnapshotModelsTests` test partial count -1
+Build/tests/runtime checks: focused SnapshotModels tests (18 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests, and diff checks.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test helper members.
+Behavior preserved: `SnapshotSetterExpectation`, `SnapshotNullability`, `SnapshotPropertySpec`, registered property specs, reflection JSON validation, nullability/property assertions, and helper collection methods keep the same private names and callers while living in `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs`.
+Notes for future agents: keep snapshot-model contract helper methods with `XUnit.SnapshotModelsTests.cs` while they are shared by the automation, capture diagnostics, and capture health snapshot partials; split only for a distinct snapshot DTO family with its own fixture boundary.
