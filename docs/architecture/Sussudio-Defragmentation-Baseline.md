@@ -5516,3 +5516,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
 Behavior preserved: all legacy `Program` method names, all `AutomationCaptureFlashbackRoutingContractsTests` `[Fact]` method names, Flashback coordinator-routing assertions, negative `_captureService` access guards, Flashback settings owner checks, export backend-lease/export-operation lock checks, ViewModel export routing, and export CTS lifecycle assertions remain unchanged while living in `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`.
 Notes for future agents: keep fixture-free MainViewModel/CaptureSessionCoordinator Flashback routing and export-routing checks in `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`; keep UI interaction/scrub/timeline checks and retained backend lifecycle checks in their focused files unless they gain a shared fixture boundary.
+
+Date: 2026-05-30
+Area: Tool and MCP xUnit wrapper locality
+Problem: `tests/Sussudio.Tests/XUnit.McpContractsTests.cs` and `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` were both fixture-free xUnit adapter shells for tool-facing contract wrappers. Reviewing CLI, MCP, and diagnostic-session wrapper registration required opening two shell files while behavior and source-ownership tests already remain in focused owner files.
+Files consolidated: `tests/Sussudio.Tests/XUnit.McpContractsTests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: no-fixture tool/MCP xUnit wrapper file count -1
+Build/tests/runtime checks: focused MCP tool-surface wrapper tests (15 passed), focused MCP diagnostic-session wrapper tests (51 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests (16 passed), and diff checks.
+CLI/MCP/pipe checks, if applicable: no public command names, command IDs, wire payloads, or automation protocol behavior changed; this slice only moves xUnit wrapper classes.
+Behavior preserved: public MCP wrapper class names and `[Fact]` method names from `XUnit.McpContractsTests.cs` remain unchanged while living in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`.
+Notes for future agents: keep fixture-free tool, MCP, and diagnostic-session wrapper classes in `XUnit.ToolContractsTests.cs`; split only if a wrapper group needs independent fixture, collection, or executable helper state.
