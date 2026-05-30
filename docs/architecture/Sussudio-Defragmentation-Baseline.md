@@ -5504,3 +5504,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
 Behavior preserved: all legacy `Program` preview-startup method names, all `XUnit.PresentationPreviewContractsTests.cs` `[Fact]` method names, signal/readiness/formatter assertions, watchdog timeout and failure-stop assertions, lifecycle-event ownership checks, preview-stop audio-ramp ordering, device-discovery-before-recording-capability ordering, and UI/audio preview reveal ordering remain unchanged while living in `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs`.
 Notes for future agents: keep preview-startup source-shape and behavior contract assertions in `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` while they remain fixture-free legacy `Program` methods invoked by the presentation-preview startup xUnit adapter; split only if a distinct fixture or runtime seam appears.
+
+Date: 2026-05-30
+Area: MainViewModel Flashback routing test locality
+Problem: `MainViewModel.Capture.FlashbackExport.Tests.cs` and `MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs` were adjacent legacy `Program` partial shards executed by the same `AutomationCaptureFlashbackRoutingContractsTests` xUnit class. Reviewing MainViewModel/CaptureSessionCoordinator Flashback routing still required opening a separate export sidecar for backend-lease/export-lock and export CTS lifecycle checks even though those assertions depend on the same Flashback coordinator-routing surface and ViewModel state owner.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback routing/export test partial file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~AutomationCaptureFlashbackRoutingContractsTests` passed (36 passed); full validation pending in this slice.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
+Behavior preserved: all legacy `Program` method names, all `AutomationCaptureFlashbackRoutingContractsTests` `[Fact]` method names, Flashback coordinator-routing assertions, negative `_captureService` access guards, Flashback settings owner checks, export backend-lease/export-operation lock checks, ViewModel export routing, and export CTS lifecycle assertions remain unchanged while living in `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`.
+Notes for future agents: keep fixture-free MainViewModel/CaptureSessionCoordinator Flashback routing and export-routing checks in `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`; keep UI interaction/scrub/timeline checks and retained backend lifecycle checks in their focused files unless they gain a shared fixture boundary.
