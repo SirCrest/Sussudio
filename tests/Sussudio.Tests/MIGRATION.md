@@ -161,9 +161,9 @@ add xUnit alongside, and port incrementally.
   Flashback buffer startup/recovery checks.
 - Preview-startup ordering checks also live in
   `XUnit.PresentationPreviewContractsTests.cs`.
-- `AppSurface.Tests.cs` and `XUnit.AutomationContractsTests.cs` own the former
-  legacy project-file build/publish policy implementation and xUnit execution
-  check after its removal from the presentation-preview capture catalog.
+- `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface and
+  project-file build/publish policy implementation plus xUnit execution checks
+  after their removal from the presentation-preview capture catalog.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview D3D registration groups: pacing, geometry/screenshot,
   present cadence, device-lost, diagnostics, contracts/metrics ownership,

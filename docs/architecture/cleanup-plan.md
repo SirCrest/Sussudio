@@ -670,10 +670,9 @@ Presentation-preview capture Flashback buffer checks now execute through
 keeping stale session cleanup and recovery-preserve contracts in xUnit after
 their removal from the legacy harness catalog.
 Project build/publish policy checks now execute through the app-surface test
-cluster in `tests/Sussudio.Tests/AppSurface.Tests.cs` and
-`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, keeping the
-English-only publish locale and latest-build staging contracts in xUnit after
-their removal from the presentation-preview capture catalog.
+cluster in `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, keeping
+the English-only publish locale and latest-build staging contracts in xUnit
+after their removal from the presentation-preview capture catalog.
 Presentation-preview D3D checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, keeping
 the former D3D pacing, geometry/screenshot, present-cadence, device-lost,

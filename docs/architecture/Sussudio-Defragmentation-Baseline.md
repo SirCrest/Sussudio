@@ -2687,7 +2687,7 @@ Partial clusters reduced: small test dispatcher/wrapper file count -3
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test wrapper/dispatcher consolidation only
 Behavior preserved: the same public xUnit class/fact names and `Program` helper names remain available from neighboring owner files, and the presentation-preview harness inventory now points at the consolidated selection-binding owner file
-Notes for future agents: project-build xUnit execution later folded into `XUnit.AutomationContractsTests.cs` with implementation checks in `AppSurface.Tests.cs`; keep diagnostics-refresh root orchestration with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`, and capture selection-binding device-audio projection checks with `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
+Notes for future agents: project-build xUnit execution and implementation checks later folded into `XUnit.AutomationContractsTests.cs`; keep diagnostics-refresh root orchestration with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`, and capture selection-binding device-audio projection checks with `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
 
 Date: 2026-05-25
 Area: RecordingVerifier integration test locality
@@ -3257,7 +3257,7 @@ Partial clusters reduced: legacy `Program` app-surface partial file count -2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: App unhandled-exception/recoverability assertions, single-instance/startup source assertions, bool/inverse/visibility converter behavior checks, and `DisplayFormatters.FormatSourceHdr` mapping checks remain unchanged.
-Notes for future agents: keep legacy app-surface checks in `AppSurface.Tests.cs` while `XUnit.AutomationContractsTests.cs` remains their xUnit execution surface; move only checks that guard a different runtime seam into a separate owner.
+Notes for future agents: legacy app-surface checks later folded into `XUnit.AutomationContractsTests.cs`; move only checks that guard a different runtime seam into a separate owner.
 
 Date: 2026-05-26
 Area: MainWindow shell title test locality
@@ -4362,7 +4362,7 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: n/a; app-surface test shard count -1 while preserving the project-build `[Fact]`
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: not applicable; test locality only. Full solution build still rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, build targets, publish locale policy, or latest-build staging behavior changed.
-Behavior preserved: the project-file English-only publish locale and latest-build staging assertions now execute through `AutomationAppSurfaceContractsTests` in `XUnit.AutomationContractsTests.cs`, with implementation checks kept in `AppSurface.Tests.cs`.
+Behavior preserved: the project-file English-only publish locale and latest-build staging assertions now execute through `AutomationAppSurfaceContractsTests` in `XUnit.AutomationContractsTests.cs`, with implementation checks kept in the same file.
 Notes for future agents: keep app project/build surface checks with the app-surface contract cluster unless they gain an independent fixture, MSBuild execution harness, or reusable build-policy helper.
 
 Date: 2026-05-26
@@ -4487,7 +4487,7 @@ Notes for future agents: keep MainWindow launch entrance, first-load startup hos
 
 Date: 2026-05-26
 Area: app-surface production helper locality
-Problem: `Sussudio/DisplayFormatters.cs` and `Sussudio/Converters/BoolConverters.cs` were two sub-80-line production helper files for one app-facing UI surface. Their tests had already been consolidated into `AppSurface.Tests.cs`, but changing compact display labels or hand-bound XAML bool converters still required opening two tiny production files with no independent runtime owner.
+Problem: `Sussudio/DisplayFormatters.cs` and `Sussudio/Converters/BoolConverters.cs` were two sub-80-line production helper files for one app-facing UI surface. Their tests had already been consolidated into the app-surface legacy test cluster, but changing compact display labels or hand-bound XAML bool converters still required opening two tiny production files with no independent runtime owner.
 Files consolidated: `Sussudio/DisplayFormatters.cs`; `Sussudio/Converters/BoolConverters.cs`
 Files added: `Sussudio/AppSurface.cs`
 Net production .cs delta: -1; net test .cs delta: 0
@@ -5480,3 +5480,15 @@ Build/tests/runtime checks: focused `dotnet build tests\Sussudio.FfmpegEncodeLab
 CLI/MCP/pipe checks, if applicable: not applicable; this slice only moves a standalone test/lab console harness helper.
 Behavior preserved: HDR encode-lab argument parsing, default width/height/FPS/frame count, repo-root lookup, FFmpeg/PowerShell resolution, child-process stdout/stderr log capture, usage text, HEVC/AV1 argument construction, AV1 encoder selection, metadata fixup, validation script invocation, artifact layout, and exit-code behavior keep their names and call sites while living in `tests/Sussudio.FfmpegEncodeLab/Program.cs`.
 Notes for future agents: keep standalone HDR encode-lab CLI parsing, tool resolution, child-process logging, FFmpeg argument construction, validation orchestration, and summary output in `tests/Sussudio.FfmpegEncodeLab/Program.cs` while this remains a single-purpose exploratory harness; split only if support code becomes shared by another tool.
+
+Date: 2026-05-30
+Area: App-surface legacy test locality
+Problem: `AppSurface.Tests.cs` was a legacy `Program` partial whose methods were executed only by `AutomationAppSurfaceContractsTests` in `XUnit.AutomationContractsTests.cs`. Reviewing app startup exception policy, XAML converter behavior, display formatter behavior, and project build/publish policy still required opening a sidecar even though the xUnit wrapper and implementation checks are one app-surface contract group.
+Files consolidated: `tests/Sussudio.Tests/AppSurface.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` app-surface partial file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~AutomationAppSurfaceContractsTests` passed (14 passed); full validation pending in this slice.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
+Behavior preserved: app unhandled-exception policy checks, bool converter behavior matrix, source HDR formatter behavior, project-file publish/staging policy assertions, private helper method names, and all `AutomationAppSurfaceContractsTests` `[Fact]` method names remain unchanged while living in `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`.
+Notes for future agents: keep legacy app-surface `Program` checks with `XUnit.AutomationContractsTests.cs` while they are only invoked by the app-surface xUnit wrapper; split only if a check gains a distinct fixture or runtime seam.

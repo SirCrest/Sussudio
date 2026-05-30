@@ -1566,11 +1566,10 @@ Primary current owners:
   cached FFmpeg encoder/split-encode capability probes through bounded
   `ProcessSupervisor` calls, one-time native initialization, FFmpeg log callback
   routing, and recoverable seek-log suppression.
-- `tests/Sussudio.Tests/AppSurface.Tests.cs` and
-  `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` own project-file
-  build and publish policy contract helpers plus xUnit execution for those
-  checks alongside app-surface contracts after their removal from the legacy
-  offline harness catalog.
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns app-surface
+  legacy `Program` helpers plus project-file build/publish policy contract
+  helpers and xUnit execution for those checks after their removal from the
+  legacy offline harness catalog.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, FinalizeResult, and RecordingStats, plus the
