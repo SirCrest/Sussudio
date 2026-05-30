@@ -5444,3 +5444,15 @@ Build/tests/runtime checks: focused SnapshotModels tests (18 passed), full solut
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test helper members.
 Behavior preserved: `SnapshotSetterExpectation`, `SnapshotNullability`, `SnapshotPropertySpec`, registered property specs, reflection JSON validation, nullability/property assertions, and helper collection methods keep the same private names and callers while living in `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs`.
 Notes for future agents: keep snapshot-model contract helper methods with `XUnit.SnapshotModelsTests.cs` while they are shared by the automation, capture diagnostics, and capture health snapshot partials; split only for a distinct snapshot DTO family with its own fixture boundary.
+
+Date: 2026-05-30
+Area: Legacy harness source-inspection helper consolidation
+Problem: `MainViewModel.Capture.TestHelpers.cs` was named as a capture-specific helper shard, but it actually carried generic source-inspection utilities used by capture, Flashback, automation, MCP, recording, stats, and architecture-doc tests: member extraction, source slicing, comment/string stripping, regex assertions, and token-order assertions. Keeping it separate made the shared harness surface misleading and added one more helper-only `Program` partial.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` shared helper partial count -1
+Build/tests/runtime checks: focused broad-caller/helper tests (362 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests, and diff checks.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test helper members.
+Behavior preserved: `ReadMainViewModelCodeFiles`, `ReadRepoCodeWithoutCommentsOrStrings`, `ExtractMemberCode`, `ExtractTextBetween`, `AssertRegex`, `AssertNoRegex`, `AssertOccursBefore`, and `StripCSharpCommentsAndStringContents` keep their private names and callers while living in `tests/Sussudio.Tests/HarnessCore.cs`.
+Notes for future agents: keep generic legacy-harness source-inspection helpers in `HarnessCore.cs`; create a separate helper file only for a named fixture boundary or a behavior-specific source-family reader.

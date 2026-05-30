@@ -1317,8 +1317,10 @@ Primary current owners:
   lifecycle/reinitialize/state/automation, capture/device, source-telemetry,
   runtime lifecycle/event ingress/subscription/disposal dependency contexts,
   state partial ownership, and default dependency factory wiring.
-- `tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
-  MainViewModel source-inspection helpers for capture-facing tests.
+- `tests/Sussudio.Tests/HarnessCore.cs` owns shared source-inspection helpers,
+  including MainViewModel source readers, member extraction, comment/string
+  stripping, regex assertions, and token-order assertions used by capture,
+  Flashback, automation, MCP, recording, stats, and docs tests.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
   owns frame-rate source-filter, automatic-selection, always-on capture-option,
   timing-policy ownership assertions, automatic frame-rate choice, and pure

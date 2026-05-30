@@ -461,13 +461,15 @@ grouped diagnostic evaluation, alert, snapshot-projection, and aggregate text
 helpers live in focused SourceFamily partials so source-shape assertions do
 not regrow one catch-all helper.
 
-`tests/Sussudio.Tests/MainViewModel.Capture.TestHelpers.cs` owns shared
-capture-facing MainViewModel source-inspection helpers. Capture regression
-coverage is split across the `tests/Sussudio.Tests/MainViewModel.Capture.*.cs`
-family, including preview startup, Flashback export locking, Flashback
-coordinator/UI routing, Flashback backend lifecycle, capture selection policy,
-output path, audio monitoring, reinitialization, and Flashback
-frame-rate/enable-disable owner files.
+`tests/Sussudio.Tests/HarnessCore.cs` owns shared source-inspection helpers,
+including MainViewModel source readers, member extraction, comment/string
+stripping, regex assertions, and token-order assertions used across capture,
+Flashback, automation, MCP, recording, stats, and docs tests. Capture
+regression coverage is split across the
+`tests/Sussudio.Tests/MainViewModel.Capture.*.cs` family, including preview
+startup, Flashback export locking, Flashback coordinator/UI routing, Flashback
+backend lifecycle, capture selection policy, output path, audio monitoring,
+reinitialization, and Flashback frame-rate/enable-disable owner files.
 
 `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*`
 partials now own the snapshot-model xUnit contract suite. Snapshot model
