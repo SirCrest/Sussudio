@@ -70,8 +70,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.WasapiAudioCapture_HotAudioWritesRejectIncompleteTasks();
 
     [Fact]
-    public Task WasapiAudioCaptureConversionLivesWithCaptureLoop()
-        => global::Program.WasapiAudioCapture_ConversionLivesWithCaptureLoop();
+    public Task WasapiAudioCaptureConversionLivesWithLifecycleRoot()
+        => global::Program.WasapiAudioCapture_ConversionLivesWithLifecycleRoot();
 
     [Fact]
     public Task WasapiAudioCaptureInitializationLivesWithLifecycleRoot()

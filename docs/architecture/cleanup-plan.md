@@ -120,11 +120,10 @@ flattening.
 mix-format negotiation, AudioClient startup, capture event/client acquisition,
 initialization-time metric resets, start/stop/dispose, capture-thread
 lifecycle, audio-level event projection, callback interval, discontinuity,
-timestamp-error, glitch, and audio-level event counters. `WasapiAudioCapture.CaptureLoop.cs`
-owns the capture thread, packet drain, WASAPI sample decode, f32le 48 kHz
-stereo conversion, resampling, pooled converted packet buffers,
-recording/Flashback/playback attachment points, converted-packet dispatch, and
-hot writer task-completion enforcement.
+timestamp-error, glitch, audio-level event counters, packet drain, WASAPI
+sample decode, f32le 48 kHz stereo conversion, resampling, pooled converted
+packet buffers, recording/Flashback/playback attachment points,
+converted-packet dispatch, and hot writer task-completion enforcement.
 `WasapiAudioPlayback.cs` owns playback state, WASAPI render endpoint binding,
 format validation, AudioClient startup, render event/client acquisition,
 initialization-time metric resets, start/stop/pause/resume/flush/dispose
