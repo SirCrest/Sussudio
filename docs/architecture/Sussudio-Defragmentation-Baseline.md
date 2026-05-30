@@ -2427,7 +2427,7 @@ Partial clusters reduced: n/a; MainWindow test helper file count -1
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
 Behavior preserved: legacy `Program`-partial ownership tests and namespaced xUnit helper callers still read normalized `Sussudio/MainWindow.xaml.cs` text through their existing APIs
-Notes for future agents: keep both MainWindow root source-reader APIs together in `MainWindow.CompositionSource.cs` unless one harness is retired
+Notes for future agents: later consolidation moved both MainWindow root source-reader APIs into `HarnessCore.cs`; keep those wrappers with the shared test file-reader unless one harness is retired.
 
 Date: 2026-05-25
 Area: Legacy runtime harness shim locality
@@ -2453,7 +2453,7 @@ Partial clusters reduced: `Program` test harness -7 files; namespaced MainWindow
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
 Behavior preserved: all legacy `Program`-partial MainWindow adapter reader APIs and the namespaced `MainWindowStatsOverlaySource.Read()` API still read the same normalized source files
-Notes for future agents: keep MainWindow root and adapter source readers in `MainWindow.CompositionSource.cs`; do not add another one-method `MainWindow.*Ownership.Helpers.cs` file for an adapter source unless it gains executable assertions
+Notes for future agents: later consolidation moved MainWindow root and adapter source readers into `HarnessCore.cs`; do not add another one-method `MainWindow.*Ownership.Helpers.cs` file for an adapter source unless it gains executable assertions.
 
 Date: 2026-05-25
 Area: D3D preview xUnit execution-surface locality
@@ -5420,3 +5420,15 @@ Build/tests/runtime checks: focused WASAPI/recording contract tests (23 passed),
 CLI/MCP/pipe checks, if applicable: no live WASAPI device session was run; full solution build rebuilds app, audio capture/playback callers, recording/Flashback sinks, automation projections, tools, and console harnesses. No public automation command names, IDs, wire payloads, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, or HDR semantics changed.
 Behavior preserved: endpoint binding, format negotiation, AudioClient startup, capture event/client acquisition, start/stop/dispose, initialization metric resets, capture-thread wait loop, packet drain, packet flag tracking, silent-buffer handling, fast-path f32 copy, mix-format decode, resampling remainder accounting, linear stereo resampling, pooled byte/float buffer lifetime, recording/Flashback/playback attachment points, converted-packet dispatch, hot writer task-completion enforcement, audio-level and callback/glitch diagnostics, and capture-failure fan-out now live together in `WasapiAudioCapture.cs`.
 Notes for future agents: keep WASAPI capture lifecycle, diagnostics, capture-thread packet drain, sample decode/conversion/resampling, converted packet DTO, pooled-buffer return, sink/playback attachment points, fan-out, and hot writer task-completion enforcement together in `Sussudio/Services/Audio/WasapiAudioCapture.cs`; extract only if the capture loop becomes an injected collaborator with its own lifecycle or test seam.
+
+Date: 2026-05-30
+Area: MainWindow test source-reader helper consolidation
+Problem: `MainWindow.CompositionSource.cs` was a helper-only test shard containing only `ReadRepoFile` wrappers for MainWindow root, adapter, and stats-overlay source text. Reviewing shared test infrastructure required opening a separate tiny file even though these helpers had no executable assertions and depended directly on the core test harness file reader.
+Files consolidated: `tests/Sussudio.Tests/MainWindow.CompositionSource.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: none
+Build/tests/runtime checks: focused MainWindow/stats/presentation tests (200 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests, and diff checks.
+CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test source-reader helpers.
+Behavior preserved: legacy `Program` MainWindow source-reader helpers and `Sussudio.Tests.MainWindowCompositionSource`/`MainWindowStatsOverlaySource` keep their names, return values, and callers while living in `tests/Sussudio.Tests/HarnessCore.cs`.
+Notes for future agents: keep shared source-inspection helpers that are just thin `ReadRepoFile` wrappers in `HarnessCore.cs`; create a separate file only when the helper family grows executable assertions or a named reusable fixture.

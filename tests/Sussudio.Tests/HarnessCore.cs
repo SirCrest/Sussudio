@@ -297,6 +297,35 @@ static partial class Program
     private static string ReadRepoFile(string relativePath)
         => File.ReadAllText(Path.Combine(GetRepoRoot(), relativePath));
 
+    private static string ReadMainWindowCompositionSource()
+        => ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+
+    private static string ReadMainWindowCaptureSelectionBindingsAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.ControlBindings.cs");
+
+    private static string ReadMainWindowFlashbackAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Flashback.Interactions.cs");
+
+    private static string ReadMainWindowPreviewRendererAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
+
+    private static string ReadMainWindowPreviewStartupAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
+
+    private static string ReadMainWindowPreviewTransitionsAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
+
+    private static string ReadMainWindowPropertyChangedPreviewAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");
+
+    private static string ReadMainWindowShellChromeAdapterSource()
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.ShellChrome.Composition.cs");
+
+    private static string ReadMainWindowAdapterSource(params string[] files)
+        => string.Join(
+            "\n",
+            files.Select(file => ReadRepoFile(file).Replace("\r\n", "\n")));
+
     private static string ReadAutomationSnapshotFamilyText()
     {
         return ReadRepoFile("Sussudio/Models/Automation/AutomationSnapshot.cs")
@@ -758,5 +787,20 @@ static partial class Program
         }
 
         return property.GetValue(instance);
+    }
+}
+
+namespace Sussudio.Tests
+{
+    internal static class MainWindowCompositionSource
+    {
+        public static string Read()
+            => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+    }
+
+    internal static class MainWindowStatsOverlaySource
+    {
+        public static string Read()
+            => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
     }
 }

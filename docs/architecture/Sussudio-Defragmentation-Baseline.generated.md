@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-30T20:38:50Z
+Generated UTC: 2026-05-30T20:50:22Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
@@ -8,7 +8,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Metric | Value |
 | --- | ---: |
 | Production .cs files | 252 |
-| Test .cs files | 140 |
+| Test .cs files | 139 |
 | Production .cs files under 60 lines | 1 (0.4%) |
 | Production .cs files under 80 lines | 4 (1.6%) |
 
@@ -61,7 +61,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 965 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 954 | Sussudio/Services/Flashback/FlashbackExporter.Execution.cs |
 | 950 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
-| 938 | Sussudio/Services/Audio/WasapiAudioCapture.cs |
+| 937 | Sussudio/Services/Audio/WasapiAudioCapture.cs |
 | 912 | Sussudio/Services/Flashback/FlashbackBackendResources.cs |
 | 905 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
 | 904 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |

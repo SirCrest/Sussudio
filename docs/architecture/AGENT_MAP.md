@@ -1237,7 +1237,7 @@ Primary current owners:
   status/playback polling, timeline track layout, marker/export presentation,
   playhead/CTI motion, playback presentation/coordinator, settings binding, and
   command controller ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
+- `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
   MainWindow source readers used by root, Flashback, preview, shell-chrome,
   capture-binding, and stats-overlay ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
@@ -1378,14 +1378,14 @@ Primary current owners:
   preview-lifecycle/audio-fallback catalog group.
 - Preview-startup ordering xUnit execution also lives in
   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
-- `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` owns the shared
+- `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
   source readers for the consolidated `MainWindow.PreviewLifecycle.Composition.cs`
   adapter family, shell-chrome, stats-overlay, capture-binding,
   Flashback, and preview-renderer adapters.
 - Fullscreen tests use the shared shell-chrome helper for
   `MainWindow.ShellChrome.Composition.cs`; shutdown cleanup tests use the shared
   MainWindow root helper for `MainWindow.xaml.cs`.
-- `tests/Sussudio.Tests/MainWindow.CompositionSource.cs` also owns the source
+- `tests/Sussudio.Tests/HarnessCore.cs` also owns the source
   reader for property-changed preview assertions over
   `MainWindow.PreviewLifecycle.Composition.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackExport.Tests.cs` owns
