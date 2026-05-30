@@ -5468,3 +5468,15 @@ Build/tests/runtime checks: focused Flashback exporter/contract tests (48 passed
 CLI/MCP/pipe checks, if applicable: no live app session required; this slice only moves test methods.
 Behavior preserved: Flashback exporter output path validation, empty/duplicate/missing segment-path checks, source-overwrite rejection, blocked temp-output rejection, orphan temp-file cleanup, final-output replacement, overwrite refusal/force behavior, invalid-temp preservation, final validation cleanup, and output-directory scan guard checks keep their existing `Program` method names and remain registered through `XUnit.FlashbackContractsTests`.
 Notes for future agents: keep Flashback exporter output path and final-output safety tests in `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs`; split only if a production output-safety collaborator gets an independent executable fixture.
+
+Date: 2026-05-30
+Area: HDR encode-lab entry-point locality
+Problem: `tests/Sussudio.FfmpegEncodeLab/Program.Support.cs` carried CLI parsing, tool-path resolution, child-process execution, and usage text used only by the standalone HDR encode-lab entry point. Reviewing or changing this exploratory lab still required opening a small sidecar before returning to the process flow, even though the combined file remains a cohesive single-purpose console harness.
+Files consolidated: `tests/Sussudio.FfmpegEncodeLab/Program.Support.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Sussudio.FfmpegEncodeLab` `Program` partial count 2 -> 1
+Build/tests/runtime checks: focused `dotnet build tests\Sussudio.FfmpegEncodeLab\Sussudio.FfmpegEncodeLab.csproj --no-restore` passed (0 warnings); full solution build passed (0 warnings); architecture-doc tests passed (16 passed); full test suite passed (883 passed); runtime harness passed; regenerated baseline; diff checks passed.
+CLI/MCP/pipe checks, if applicable: not applicable; this slice only moves a standalone test/lab console harness helper.
+Behavior preserved: HDR encode-lab argument parsing, default width/height/FPS/frame count, repo-root lookup, FFmpeg/PowerShell resolution, child-process stdout/stderr log capture, usage text, HEVC/AV1 argument construction, AV1 encoder selection, metadata fixup, validation script invocation, artifact layout, and exit-code behavior keep their names and call sites while living in `tests/Sussudio.FfmpegEncodeLab/Program.cs`.
+Notes for future agents: keep standalone HDR encode-lab CLI parsing, tool resolution, child-process logging, FFmpeg argument construction, validation orchestration, and summary output in `tests/Sussudio.FfmpegEncodeLab/Program.cs` while this remains a single-purpose exploratory harness; split only if support code becomes shared by another tool.
