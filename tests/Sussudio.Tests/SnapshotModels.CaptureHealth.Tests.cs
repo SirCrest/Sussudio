@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -445,7 +446,7 @@ public partial class SnapshotModelsTests
         var diagnosticsType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
         var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
-        var healthRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureHealthSnapshot.cs");
+        var healthRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureSnapshotModels.cs");
 
         AssertCaptureHealthSnapshotDefaultsAndInheritance(diagnosticsType, healthType);
         RegisterCaptureDiagnosticsSnapshotProperties(diagnosticsType);
@@ -460,6 +461,10 @@ public partial class SnapshotModelsTests
         AssertContains(healthRootText, "public string FlashbackExportStatus { get; init; } = \"NotStarted\";");
         AssertContains(healthRootText, "public string? FlashbackExportVerificationFormat { get; init; }");
         AssertDoesNotContain(healthRootText, "partial class CaptureHealthSnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureHealthSnapshot.cs")),
+            "CaptureHealthSnapshot.cs folded into CaptureSnapshotModels.cs");
 
         var detailEntry = CreateSourceTelemetryDetailEntry(detailType);
         AssertSourceTelemetryDetailEntryValues(detailEntry);

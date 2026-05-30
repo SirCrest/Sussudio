@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -13,7 +14,7 @@ public partial class SnapshotModelsTests
     [Fact]
     public void CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
-        var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureDiagnosticsSnapshot.cs");
+        var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureSnapshotModels.cs");
         AssertContains(diagnosticsRootText, "public class CaptureDiagnosticsSnapshot");
         AssertContains(diagnosticsRootText, "public SourceTelemetryAvailability SourceTelemetryAvailability { get; init; } = SourceTelemetryAvailability.Unknown;");
         AssertContains(diagnosticsRootText, "public bool? SourceIsHdr { get; init; }");
@@ -27,6 +28,10 @@ public partial class SnapshotModelsTests
         AssertContains(diagnosticsRootText, "public int MjpegDecodeSampleCount { get; init; }");
         AssertContains(diagnosticsRootText, "public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();");
         AssertDoesNotContain(diagnosticsRootText, "partial class CaptureDiagnosticsSnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureDiagnosticsSnapshot.cs")),
+            "CaptureDiagnosticsSnapshot.cs folded into CaptureSnapshotModels.cs");
 
         var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");

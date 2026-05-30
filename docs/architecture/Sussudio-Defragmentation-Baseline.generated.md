@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-27T14:39:06Z
+Generated UTC: 2026-05-30T20:23:55Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 254 |
+| Production .cs files | 253 |
 | Test .cs files | 140 |
 | Production .cs files under 60 lines | 1 (0.4%) |
 | Production .cs files under 80 lines | 4 (1.6%) |
@@ -53,8 +53,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1144 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
 | 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 1055 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
-| 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 1054 | tools/ssctl/CommandHandlers.cs |
+| 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 1034 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
 | 1033 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 981 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs |
@@ -72,8 +72,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 840 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 833 | Sussudio/Models/Automation/AutomationSnapshot.cs |
 | 830 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
-| 823 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 823 | Sussudio/ViewModels/MainViewModel.cs |
+| 823 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 814 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs |
 | 790 | tools/NativeXuAudioProbe/Program.cs |
 | 781 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
