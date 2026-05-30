@@ -3533,7 +3533,7 @@ Partial clusters reduced: legacy `Program` automation dispatcher payload test pa
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: dispatcher payload extraction helpers, missing/default window and wait payload behavior, one-field handler/catalog parity, and `GetAudioRampTrace.maxEntries` metadata checks remain registered through `XUnit.AutomationContractsTests`.
-Notes for future agents: keep dispatcher payload extraction and catalog metadata parity checks in `AutomationCommandDispatcher.Payload.Tests.cs`; do not recreate separate payload extraction/catalog shards.
+Notes for future agents: this slice created `AutomationCommandDispatcher.Payload.Tests.cs` as a consolidated payload owner; the later automation dispatcher payload contract locality slice folded those checks into `AutomationCommandDispatcher.CommandOwnership.Tests.cs`.
 
 Date: 2026-05-26
 Area: diagnostic-session result formatter test locality
@@ -5528,3 +5528,15 @@ Build/tests/runtime checks: focused MCP tool-surface wrapper tests (15 passed), 
 CLI/MCP/pipe checks, if applicable: no public command names, command IDs, wire payloads, or automation protocol behavior changed; this slice only moves xUnit wrapper classes.
 Behavior preserved: public MCP wrapper class names and `[Fact]` method names from `XUnit.McpContractsTests.cs` remain unchanged while living in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`.
 Notes for future agents: keep fixture-free tool, MCP, and diagnostic-session wrapper classes in `XUnit.ToolContractsTests.cs`; split only if a wrapper group needs independent fixture, collection, or executable helper state.
+
+Date: 2026-05-30
+Area: Automation dispatcher payload contract locality
+Problem: `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` was a small dispatcher-contract sidecar for JSON extraction helpers, default payload parsing, one-field handler metadata parity, and the `GetAudioRampTrace.maxEntries` guardrail. Those checks depend on the same dispatcher source-family reader, reflection helpers, and proxy fixtures already owned by `AutomationCommandDispatcher.CommandOwnership.Tests.cs`, so reviewing dispatcher routing and payload contracts still required opening a separate adjacent file.
+Files consolidated: `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` automation dispatcher contract partial file count -1
+Build/tests/runtime checks: focused automation dispatcher tests (29 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests (16 passed), and diff checks.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, or MCP/ssctl routing behavior changed; this slice only moves dispatcher contract tests.
+Behavior preserved: dispatcher JSON payload helper checks, missing/default window and wait payload behavior, one-field handler/catalog parity, and `GetAudioRampTrace.maxEntries` metadata checks keep their existing `Program` method names and remain registered through `XUnit.AutomationContractsTests`.
+Notes for future agents: keep automation dispatcher routing, payload helper, metadata parity, and shared dispatcher/proxy contract helpers in `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs`; split only for a distinct fixture or non-dispatcher contract family.

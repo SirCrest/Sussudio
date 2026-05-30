@@ -1582,12 +1582,10 @@ Primary current owners:
   owns the live dispatcher source-family reader, shared dispatcher/proxy
   helpers, consolidated root dispatcher authorization and manifest behavior,
   Flashback failure response, Flashback command placement, verification command
-  placement, command-kind handling, and helper coverage.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.Payload.Tests.cs` owns
-  dispatcher JSON payload extraction helper coverage, payload defaults,
-  trivial-handler payload-field parity checks against
-  `AutomationCommandCatalog`, and the custom `GetAudioRampTrace.maxEntries`
-  metadata guardrail.
+  placement, command-kind handling, dispatcher JSON payload extraction helper
+  coverage, payload defaults, trivial-handler payload-field parity checks
+  against `AutomationCommandCatalog`, and the custom
+  `GetAudioRampTrace.maxEntries` metadata guardrail.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.ReadyIndependent.Tests.cs`
   owns dispatcher readiness gating, ready-independent no-hardware command
   coverage, window close, preview health, stale wait-refresh cadence guards,
