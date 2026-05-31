@@ -8,8 +8,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs")
             .Replace("\r\n", "\n");
-        var singleFilePacketReadLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SingleFilePacketReadLoop.cs")
-            .Replace("\r\n", "\n");
+        var singleFilePacketReadLoopText = requestsText;
         var singleFilePacketWritingText = singleFilePacketReadLoopText;
         var singleFilePacketWriteStateText = singleFilePacketReadLoopText;
         var singleFilePacketRebasingText = singleFilePacketReadLoopText;
@@ -66,11 +65,12 @@ static partial class Program
         AssertContains(singleFilePacketRebasingText, "private void WriteSingleFilePacket(");
         AssertContains(singleFilePacketRebasingText, "private static bool PacketPtsExceedsSingleFileOutPoint(");
         AssertContains(singleFilePacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\");");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SingleFilePacketReadLoop.cs")),
+            "single-file packet pump folded into FlashbackExporter.Execution.cs");
         AssertDoesNotContain(singleFileText, "var timestampBasesUs = new long[streamCount];");
-        AssertDoesNotContain(singleFileText, "var packet = ffmpeg.av_packet_alloc();");
-        AssertDoesNotContain(singleFileText, "var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);");
         AssertDoesNotContain(singleFileText, "LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);");
-        AssertDoesNotContain(singleFileText, "private void WriteSingleFilePacket(");
         AssertContains(segmentsText, "private FinalizeResult ExportSegmentsCore(");
         AssertContains(segmentsText, "TryValidateSegmentExportInputs(");
         AssertContains(segmentsText, "TryEstimateSegmentExportReadableBytes(");
