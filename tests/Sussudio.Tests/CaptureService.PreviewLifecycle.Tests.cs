@@ -116,7 +116,7 @@ static partial class Program
         var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var libAvFinalizeText = (
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"))
             .Replace("\r\n", "\n");
         var recordingRollbackText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs").Replace("\r\n", "\n");
 
@@ -310,10 +310,16 @@ static partial class Program
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs").Replace("\r\n", "\n"),
             "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(",
             "private async Task<OperationCanceledException?> ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
+        var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
+            .Replace("\r\n", "\n");
+        var libAvFinalizationText = ExtractTextBetween(
+            recordingLifecycleText,
+            "private async Task<OperationCanceledException?> RestoreLibAvPreviewFeaturesAfterRecordingAsync(",
+            "private readonly record struct LibAvFinalizeStepResult(");
         var finalizationText = string.Join(
             "\n",
             flashbackFinalizationText,
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
+            libAvFinalizationText)
             .Replace("\r\n", "\n");
         var microphoneRootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
             .Replace("\r\n", "\n");

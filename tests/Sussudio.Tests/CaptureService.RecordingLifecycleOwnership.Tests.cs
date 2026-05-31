@@ -5,7 +5,7 @@ static partial class Program
     internal static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
     {
         var captureServiceText = (
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"))
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
@@ -38,7 +38,7 @@ static partial class Program
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
         var libAvFinalizeText = (
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"))
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"))
             .Replace("\r\n", "\n");
         var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
             .Replace("\r\n", "\n");
@@ -228,7 +228,7 @@ static partial class Program
             new[]
             {
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"),
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             }).Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
@@ -243,7 +243,6 @@ static partial class Program
         AssertContains(rollbackText, "Recording start rollback cleanup failed");
         AssertContains(rollbackText, "Transient recording backend cleanup failed during start rollback");
         AssertContains(rollbackText, "_recordingStopwatch.Reset();");
-        AssertDoesNotContain(finalizationCallSiteText, "private async Task DisposeTransientRecordingBackendAsync(");
         AssertContains(rollbackText, "private async Task DisposeTransientRecordingBackendAsync(");
         AssertContains(rollbackText, "Transient recording sink stop failed during rollback");
         AssertContains(rollbackText, "Transient unified video dispose failed during rollback");
@@ -267,13 +266,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
-        var finalizationCallSiteText = string.Join(
-            "\n",
-            new[]
-            {
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"),
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs")
-            }).Replace("\r\n", "\n");
+        var flashbackFinalizeText = ExtractMemberCode(
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs").Replace("\r\n", "\n"),
+            "StopAndDisposeFlashbackRecordingBackendAsync");
+        var libAvFinalizeText = ExtractMemberCode(
+            lifecycleText,
+            "StopAndDisposeLibAvRecordingBackendAsync");
         var routerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
 
@@ -306,16 +304,16 @@ static partial class Program
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = fbRecordingContext.FinalOutputPath;");
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = recordingContext.FinalOutputPath;");
 
-        AssertContains(finalizationCallSiteText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
-        AssertContains(finalizationCallSiteText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
-        AssertDoesNotContain(routerText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
-        AssertDoesNotContain(routerText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
-        AssertDoesNotContain(finalizationCallSiteText, "_lastOutputPath = result.OutputPath;");
-        AssertDoesNotContain(finalizationCallSiteText, "_lastFinalizeStatus = fbResult.StatusMessage;");
-        AssertDoesNotContain(finalizationCallSiteText, "_lastFinalizeStatus = result.StatusMessage;");
-        AssertDoesNotContain(finalizationCallSiteText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
-        AssertDoesNotContain(finalizationCallSiteText, "_lastPreservedArtifacts = fbResult.PreservedArtifacts;");
-        AssertDoesNotContain(finalizationCallSiteText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
+        AssertContains(flashbackFinalizeText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
+        AssertContains(libAvFinalizeText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
+        AssertDoesNotContain(routerText, "_lastFinalizeStatus = fbResult.StatusMessage;");
+        AssertDoesNotContain(flashbackFinalizeText, "_lastOutputPath = result.OutputPath;");
+        AssertDoesNotContain(flashbackFinalizeText, "_lastFinalizeStatus = fbResult.StatusMessage;");
+        AssertDoesNotContain(libAvFinalizeText, "_lastFinalizeStatus = result.StatusMessage;");
+        AssertDoesNotContain(flashbackFinalizeText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
+        AssertDoesNotContain(libAvFinalizeText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
+        AssertDoesNotContain(flashbackFinalizeText, "_lastPreservedArtifacts = fbResult.PreservedArtifacts;");
+        AssertDoesNotContain(libAvFinalizeText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingOutcomeState.cs")),

@@ -1069,15 +1069,15 @@ Recording
 stop lifecycle now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, including
 normal stop routing, the emergency stop overload that feeds finalization, and
-the stop/finalize dispatcher for active Flashback and LibAv backends.
-`Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs`
-owns standard LibAv recording finalization sequencing: unified-video recording
-stop, source-reader boundary diagnostics, WASAPI recording sink detach,
-microphone capture disposal before sink stop, LibAv sink normal/emergency stop,
-sink disposal, LibAv drain task tracking, inactive-preview teardown after
-recording, audio-fault folding, encoder/runtime and recording-integrity
-summaries, final state completion, pending Flashback enable-after-recording
-detection, guarded Flashback preview backend restore, failed-restore rollback
+the stop/finalize dispatcher for active Flashback and LibAv backends. The same
+file owns standard LibAv recording finalization sequencing: unified-video
+recording stop, source-reader boundary diagnostics, WASAPI recording sink
+detach, microphone capture disposal before sink stop, LibAv sink
+normal/emergency stop, sink disposal, LibAv drain task tracking,
+inactive-preview teardown after recording, audio-fault folding,
+encoder/runtime and recording-integrity summaries, final state completion,
+pending Flashback enable-after-recording detection, guarded Flashback preview
+backend restore, failed-restore rollback
 and purge, standard post-recording microphone monitor restart,
 `FLASHBACK_ENABLE_AFTER_RECORDING_*` breadcrumbs, preview-restore ordering, and
 the visible final outcome publication before delayed cancellation throws.

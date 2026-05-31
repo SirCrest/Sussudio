@@ -12,7 +12,7 @@ static partial class Program
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
-        "Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs"
+        "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"
     };
 
     private static readonly string[] CaptureServicePreviewLifecycleFiles =
@@ -169,7 +169,7 @@ static partial class Program
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
         var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
         var libAvBackendFinalizationText =
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingFinalizeLibAvBackend.cs");
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
         var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
 
         AssertContains(stopLifecycleText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
@@ -258,7 +258,6 @@ static partial class Program
             "old recording outcome-state partial removed");
         AssertDoesNotContain(stopLifecycleText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertDoesNotContain(stopLifecycleText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
-        AssertDoesNotContain(stopLifecycleText, "Unified video recording stop failed:");
         AssertDoesNotContain(stopLifecycleText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
 
         return Task.CompletedTask;
