@@ -185,11 +185,10 @@ downgrade, encoder identity/bitrate/dimensions/frame-rate, focused projection
 routing, and final projection-to-`AutomationSnapshot` flattening.
 It also owns Flashback video, GPU, and audio queue/backpressure projection plus
 flattened queue/backpressure fields consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs` owns
-Flashback playback state/frame summary, audio-master delay/fallback projection,
-playback event/cadence/PTS-cadence/A/V drift projection, seek-cap/decode timing
-projection, playback command queue projection, and final flattened playback
-fields consumed by the automation snapshot DTO.
+It also owns Flashback playback state/frame summary, audio-master delay/fallback
+projection, playback event/cadence/PTS-cadence/A/V drift projection,
+seek-cap/decode timing projection, playback command queue projection, and final
+flattened playback fields consumed by the automation snapshot DTO.
 `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` owns preview runtime
 projection routing, preview frame counters, estimated pipeline latency, preview
 surface visibility, renderer attachment, GPU playback state/position, preview

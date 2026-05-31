@@ -1090,7 +1090,7 @@ static partial class Program
             SnapshotProjectionMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs"),
             SnapshotProjectionMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs"),
             SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
-            SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubFlashbackPlaybackProjectionSource(),
+            SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
             SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
             SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
             SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Preview.cs"),
@@ -1114,16 +1114,6 @@ static partial class Program
     {
         return ReadRepoFile("Sussudio/Services/Automation/" + fileName)
             .Replace("\r\n", "\n");
-    }
-
-    private static string ReadAutomationDiagnosticsHubFlashbackPlaybackProjectionSource()
-    {
-        return string.Join(
-            "\n",
-            new[]
-            {
-                ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs"),
-            });
     }
 
     private static string ReadAutomationDiagnosticsHubSnapshotsSource()

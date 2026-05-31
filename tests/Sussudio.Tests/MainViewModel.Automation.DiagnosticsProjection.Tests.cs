@@ -1323,7 +1323,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")
+        var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
@@ -1405,6 +1405,10 @@ static partial class Program
         AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackCommandFlattenedProjection BuildFlashbackPlaybackCommandFlattenedProjection(");
         AssertContains(flashbackPlaybackProjectionText, "LastFailure = commands.LastFailure");
         AssertContains(flashbackPlaybackProjectionText, "private readonly record struct FlashbackPlaybackCommandFlattenedProjection");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")),
+            "Flashback playback projection folded into Flashback projection owner");
 
         return Task.CompletedTask;
     }
