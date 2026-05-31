@@ -12,7 +12,7 @@ static partial class Program
         var audioDecodeBlock = ExtractTextBetween(
             sourceText,
             "private void DecodeAndDeliverAudioPacket",
-            "// ── Private: Frame Conversion");
+            "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
         AssertContains(audioDecodeBlock, "if (callback == null)\n            {\n                ffmpeg.av_frame_unref(_audioFrame);\n                continue; // Codec advanced, but no delivery during seek/scrub\n            }");
 
         return Task.CompletedTask;
@@ -401,7 +401,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var videoOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs")
+        var videoOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
@@ -421,7 +421,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoConversion.cs")),
-            "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.VideoOutput.cs");
+            "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.VideoSetup.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoOutput.cs")),
+            "FlashbackDecoder.VideoOutput.cs folded into FlashbackDecoder.VideoSetup.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Validation.cs")),
@@ -496,6 +500,10 @@ static partial class Program
         AssertContains(videoSetupText, "private bool TryInitializeD3D11VADecoder(AVCodecParameters* codecPar)");
         AssertContains(videoSetupText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
         AssertContains(videoSetupText, "private void AllocateVideoOutputBuffers()");
+        AssertContains(videoSetupText, "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
+        AssertContains(videoSetupText, "private void CopyFramePlanesToBuffer(");
+        AssertContains(videoSetupText, "private void ConvertYuv420pToNv12(");
+        AssertContains(videoSetupText, "private void ConvertYuv420p10leToP010(");
         AssertDoesNotContain(rootText, "private void InitializeVideoDecoder()");
         AssertDoesNotContain(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
         AssertDoesNotContain(rootText, "private void AllocateVideoOutputBuffers()");

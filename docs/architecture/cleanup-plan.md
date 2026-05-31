@@ -1422,7 +1422,7 @@ delivery, audio codec/resampler initialization, audio callback failure handling,
 resampler output conversion, bounded audio sample/byte sizing, inline audio
 interleave during video reads, and decode phase timing there. Decoded video frame
 output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs` with software
+`Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs` with software
 plane copies and YUV-to-NV12/P010 conversion kernels. Keep file
   open/close and disposal lifecycle in the root decoder. Keyframe/exact seek
   control flow, pending-frame transfer, seek-cap diagnostics, seek-buffer
@@ -1443,7 +1443,7 @@ Video codec setup, D3D11 device-context initialization, get-format callback
 behavior, hardware decoder context setup, D3D11VA/software fallback selection,
 D3D11VA decoder selection, hardware-configuration diagnostics, frame-rate
 metadata initialization, MJPEG single-thread decode policy, and software
-output-buffer allocation now live in
+output-buffer allocation, decoded video output, and software conversion kernels now live in
 `Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs`.
 
 Flashback buffer retention now lives in

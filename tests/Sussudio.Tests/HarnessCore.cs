@@ -343,11 +343,10 @@ static partial class Program
     {
         var parts = new[]
         {
-            // Keep playback before video output so source-shape checks still see
-            // inline audio delivery before the frame-conversion section marker.
+            // Keep playback before video setup/output so source-shape checks still see
+            // inline audio delivery before decoded video frame output.
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoOutput.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs").Replace("\r\n", "\n")
         };
 
