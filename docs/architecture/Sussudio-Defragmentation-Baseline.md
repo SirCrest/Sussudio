@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: Media Foundation interop helper locality
+Problem: `MfInteropHelpers.cs` was a small shared helper file for MFStartup/MFShutdown ref-counting, typed `IMFAttributes` reads, and symbolic-link matching, while `MfSourceReaderVideoCapture.ComContracts.cs` held the adjacent shared MF COM interfaces, P/Invokes, constants, HRESULTs, and GUIDs used by the source reader and device enumerator. Reviewing Media Foundation interop still required two files before reaching either caller, even though the helper type was not an independent behavior boundary.
+Files consolidated: `Sussudio/Services/Capture/MfInteropHelpers.cs`; `Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`
+Files added: `Sussudio/Services/Capture/MfInterop.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: none; shared MF interop owner count 2 -> 1; generated baseline production `.cs` count 195 -> 194
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ServiceNamespace|FullyQualifiedName~CaptureDiscovery"` passed (2 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture/preview/recording/Flashback/HDR behavior, or hot-path runtime code changed.
+Behavior preserved: `MfInteropHelpers` remains in the same namespace with the same public static methods/constants and reflection-visible type name; MFStartup/MFShutdown ref-counting, hresult throwing, typed `IMFAttributes` reads, allocated-string cleanup, symbolic-link matching, flattened `IMFSample` vtable placeholder order, MF buffer/DXGI contracts, source-reader nested `MfInterop` P/Invokes, constants, HRESULTs, and GUIDs now live together in `Sussudio/Services/Capture/MfInterop.cs`.
+Notes for future agents: keep shared Media Foundation ABI declarations and helper primitives in `Sussudio/Services/Capture/MfInterop.cs` while source-reader behavior remains in `MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, and `MfSourceReaderVideoCapture.FrameDelivery.cs`, and device enumeration behavior remains in `DeviceDiscovery/MfDeviceEnumerator.cs`. Split the interop file only for a distinct ABI family or generated interop surface, not because the helper block is small.
+Current file/LoC checkpoint: core app `.cs`: 144 / 89,736 nonblank LoC; tests `.cs`: 100 / 56,109 nonblank LoC.
+
+Date: 2026-05-31
 Area: LibAv encoder output-lifecycle root locality
 Problem: `LibAvEncoder.OutputLifecycle.cs` owned output rotation, muxer option policy, final close/trailer/logging, dispose, and native resource release while `LibAvEncoder.cs` owned the encoder fields, open/setup state, option/result DTOs, open-state guards, and startup muxer option caller those paths mutate. Reviewing one encoder open/rotate/close lifecycle still required a sidecar file after the core initialization slice had moved setup into the root owner.
 Files consolidated: `Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs`

@@ -1724,13 +1724,13 @@ CPU frame delivery, 2D buffer handling, packed-stride CPU copies, dual GPU/CPU
 delivery orchestration, dual-frame CPU payload extraction, readback fallback
 selection, and GPU texture release there.
 
-Media Foundation interop declarations now live in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`.
-Keep general Media Foundation COM interfaces, flattened `IMFSample` vtable
-layout, MF buffer interfaces, MF P/Invoke declarations, constants/HRESULTs,
-and GUIDs in the COM contracts file. Preserve interface method order and
-placeholder slots exactly; keep behavioral source-reader logic in the root and
-negotiation partials.
+Media Foundation interop declarations and shared helpers now live in
+`Sussudio/Services/Capture/MfInterop.cs`. Keep general Media Foundation COM
+interfaces, flattened `IMFSample` vtable layout, MF buffer interfaces,
+MFStartup/MFShutdown ref-counting, typed `IMFAttributes` accessors, symbolic-link
+matching, MF P/Invoke declarations, constants/HRESULTs, and GUIDs together
+there. Preserve interface method order and placeholder slots exactly; keep
+behavioral source-reader logic in the root and negotiation partials.
 
 Media Foundation source cadence metrics now live with active source-reader
 lifetime in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`.
