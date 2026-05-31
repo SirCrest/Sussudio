@@ -3797,7 +3797,7 @@ Notes for future agents: keep recording lifecycle, rollback, and outcome-state o
 
 Date: 2026-05-26
 Area: Flashback exporter request failure test locality
-Problem: `Flashback.Exporter.Cancellation.Tests.cs` split cancellation precedence and cancelled lock-wait assertions away from `Flashback.Exporter.Basic.Tests.cs`, even though both protect the same Flashback exporter top-level request/failure surface before native export work: request validation, missing/invalid inputs, empty segment lists, cancellation precedence, and export throttle policy.
+Problem: `Flashback.Exporter.Cancellation.Tests.cs` split cancellation precedence and cancelled lock-wait assertions away from the Flashback exporter request/failure behavior test owner, even though both protect the same top-level surface before native export work: request validation, missing/invalid inputs, empty segment lists, cancellation precedence, and export throttle policy.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Exporter.Cancellation.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
@@ -3805,7 +3805,7 @@ Partial clusters reduced: legacy `Program` Flashback exporter request/failure te
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback exporter request validation, missing input/output failure results, null request failure, empty segment failure, cancellation precedence, cancelled lock-wait behavior, and export throttle assertions remain registered through `XUnit.FlashbackContractsTests`.
-Notes for future agents: superseded by the later Flashback exporter output-safety test consolidation; keep top-level Flashback exporter request validation and cancellation-precedence checks in `Flashback.Exporter.Basic.Tests.cs`; keep output path, temp-output replacement, and orphan cleanup checks in `Flashback.Exporter.OutputPaths.Tests.cs`.
+Notes for future agents: superseded by the later Flashback exporter behavior and output-safety test consolidations; keep top-level Flashback exporter request validation, cancellation-precedence checks, segment behavior, progress, and timestamp checks in `Flashback.Exporter.Behavior.Tests.cs`; keep output path, temp-output replacement, and orphan cleanup checks in `Flashback.Exporter.OutputPaths.Tests.cs`.
 
 Date: 2026-05-26
 Area: MainWindow layout policy test locality
@@ -3941,7 +3941,7 @@ Notes for future agents: superseded by the 2026-05-31 architecture-doc reference
 
 Date: 2026-05-26
 Area: Flashback test locality
-Problem: `Flashback.Buffer.Segments.DisposalRecovery.Tests.cs` split disposed-state and recovery-preserve segment safety checks away from the same Flashback buffer segment validation owner. `Flashback.Exporter.FailureClassifier.Tests.cs` also split top-level Flashback export failure mapping away from the request/failure surface already covered by `Flashback.Exporter.Basic.Tests.cs`.
+Problem: `Flashback.Buffer.Segments.DisposalRecovery.Tests.cs` split disposed-state and recovery-preserve segment safety checks away from the same Flashback buffer segment validation owner. `Flashback.Exporter.FailureClassifier.Tests.cs` also split top-level Flashback export failure mapping away from the request/failure behavior owner.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Segments.DisposalRecovery.Tests.cs`; `tests/Sussudio.Tests/Flashback.Exporter.FailureClassifier.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -2
@@ -3949,7 +3949,7 @@ Partial clusters reduced: legacy `Program` Flashback buffer/exporter test partia
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback buffer segment metadata, outside-path, disposed no-op, and recovery-preserve tests remain registered through `XUnit.RecordingContractsTests` and `XUnit.PresentationPreviewStartupContractsTests`; Flashback export failure-classifier mapping remains registered through `XUnit.RecordingContractsTests`.
-Notes for future agents: keep Flashback buffer segment safety checks in `Flashback.Buffer.Segments.Validation.Tests.cs`; keep top-level Flashback exporter request/failure classification checks in `Flashback.Exporter.Basic.Tests.cs` unless either surface gains a separate named collaborator with its own test seam.
+Notes for future agents: keep Flashback buffer segment safety checks in `Flashback.Buffer.Segments.Validation.Tests.cs`; keep top-level Flashback exporter request/failure classification checks in `Flashback.Exporter.Behavior.Tests.cs` unless either surface gains a separate named collaborator with its own test seam.
 
 Date: 2026-05-26
 Area: test harness core locality
@@ -6641,3 +6641,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed; this slice only moves test method bodies and updates ownership docs.
 Behavior preserved: `RecordingPipelineContractsTests` keeps the same xUnit wrapper methods for WASAPI hot-write, capture conversion, initialization, playback initialization, diagnostics, COM interop, and bounded stop assertions. The underlying `Program.Wasapi*` method names and assertion text now live in `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` beside the adjacent recording queue/capture fan-out source-shape checks.
 Notes for future agents: keep WASAPI capture-loop/hot-write/conversion/diagnostics/interop ownership checks with `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` while they share the same recording fan-out and audio producer/consumer review surface. Split again only if WASAPI audio tests gain an independent fixture or behavior harness separate from the recording pipeline contract surface.
+
+Date: 2026-05-31
+Area: Flashback exporter behavior test locality
+Problem: `Flashback.Exporter.Segments.Tests.cs` was a legacy `Program` partial for Flashback exporter segment behavior, buffered-packet cleanup, progress/finalization, timestamp saturation, template selection, stream-layout validation, and requested-segment skip policy while adjacent request validation, cancellation, export throttle, and failure-classifier checks lived in `Flashback.Exporter.Basic.Tests.cs`. Both shards run through the same `XUnit.FlashbackContractsTests` facade and shared the same reflection/source-shape helpers, so reviewing exporter behavior still required opening two test files before reaching the separate output-safety and ownership test owners.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs`; `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs`
+Files added: `tests/Sussudio.Tests/Flashback.Exporter.Behavior.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback exporter behavior test partial count 2 -> 1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackExporter|FullyQualifiedName~Flashback.Exporter|FullyQualifiedName~FlashbackContracts"` passed (48 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); diff checks passed; current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 91 / 56,091.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only renames and merges test method bodies and updates architecture ownership docs.
+Behavior preserved: `XUnit.FlashbackContractsTests` keeps the same wrapper methods and the underlying `Program.FlashbackExporter*`/`Program.FlashbackExportRejectedDiagnostics*` method names for request validation, cancellation, failure-classifier mapping, range validation, segment template validation, requested-segment skip handling, buffered-packet cleanup, progress/finalization assertions, and timestamp saturation. Output path/finalization checks stay in `Flashback.Exporter.OutputPaths.Tests.cs`; exporter source-shape/ownership checks stay in `Flashback.Exporter.Ownership.Tests.cs`.
+Notes for future agents: keep Flashback exporter request/failure, cancellation, throttle, segment behavior, progress, timestamp, template, stream-layout, and requested-segment skip tests in `tests/Sussudio.Tests/Flashback.Exporter.Behavior.Tests.cs` while they share the same exporter reflection/source-shape helpers and xUnit facade. Keep output safety and source-ownership tests in their existing files unless those surfaces gain an independent executable fixture.

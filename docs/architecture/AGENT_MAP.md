@@ -1823,19 +1823,17 @@ Primary current owners:
   execution surface for the former legacy Flashback encoder sink frame-rate,
   codec, counter, queue, force-rotate, packet-drain, startup, and
   source-ownership checks after their removal from the legacy harness catalog.
-- `tests/Sussudio.Tests/Flashback.Exporter.Basic.Tests.cs` owns Flashback
+- `tests/Sussudio.Tests/Flashback.Exporter.Behavior.Tests.cs` owns Flashback
   exporter request-surface smoke tests, path/request validation, cancellation
-  precedence, cancelled lock-wait behavior, export throttle tests, and
-  failure-classifier status-message mapping tests.
+  precedence, cancelled lock-wait behavior, export throttle tests,
+  failure-classifier status-message mapping, range validation, buffered-packet
+  failure cleanup, progress/finalization assertions, timestamp saturation,
+  segment template selection, stream-layout validation, and requested-segment
+  skip policy tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.Ownership.Tests.cs` owns
   Flashback exporter source-ownership tests, task-wrapper infrastructure,
   disposal timeout/native-state lifetime guards, and stream-count/template
   stream-copy owner/call-site tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.Segments.Tests.cs` owns Flashback
-  exporter range validation, buffered-packet owner assertions, buffered-packet
-  failure cleanup, progress/finalization source assertions, timestamp
-  saturation, packet timestamp normalization, segment template selection,
-  stream-layout validation, and requested-segment skip policy tests.
 - `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs` owns Flashback
   exporter segment path, duplicate path, missing segment, output path
   validation, source-overwrite guard, blocked temp-path tests, final-output
