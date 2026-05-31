@@ -1146,12 +1146,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
   owns MainWindow preview resize telemetry, preview renderer startup-plan
   fallback policy, preview surface/shadow, renderer host lifecycle, D3D
-  startup/reinit, stats adapter, preview runtime snapshot mapping, and D3D
-  projection ownership assertions.
-- `tests/Sussudio.Tests/PreviewRuntimeSnapshotController.Tests.cs` owns preview
-  runtime snapshot controller Build integration, D3D policy null-renderer
-  defaults, health policy/input factory, and surface/startup/GPU playback
-  projection policy regression checks.
+  startup/reinit, stats adapter, preview runtime snapshot mapping, D3D
+  projection ownership assertions, preview runtime snapshot controller Build
+  integration, D3D policy null-renderer defaults, health policy/input factory,
+  and surface/startup/GPU playback projection policy regression checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
   owns MainWindow startup/launch ownership, launch entrance animation,
   first-load hosting, splash loading phrases, splash pacing policy, native
