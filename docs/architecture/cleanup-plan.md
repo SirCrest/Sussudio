@@ -2408,8 +2408,8 @@ capture-device, and output-path button workflows.
 
 Live-signal pill text application, visibility state, show/hide debounce timers,
 and the small scale/fade animation now live in
-`Sussudio/Controllers/Shell/LiveSignalInfoController.cs`. `MainWindow.ShellChrome.Composition.cs`
-is the XAML-facing adapter, while
+`Sussudio/Controllers/Shell/ShellChromeController.cs` beside the rest of shell
+chrome. `MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter, while
 `Sussudio/ViewModels/ViewModelBuilders.cs` owns label formatting.
 Source telemetry summary, telemetry age, and target-summary display text
 formatting now live in `Sussudio/ViewModels/ViewModelBuilders.cs`.
@@ -2520,7 +2520,7 @@ lives in `OutputPathController` inside `RecordingControlsControllers.cs`, shell 
 `ShellChromeController` over `StatsOverlayCompositionController` and
 `SettingsShelfController` through
 `Sussudio/MainWindow.ShellChrome.Composition.cs`, and live
-source-signal routing lives in `LiveSignalInfoController`. Keep the root dispatcher limited to route order,
+source-signal routing lives in `ShellChromeController`. Keep the root dispatcher limited to route order,
 and add new property-name cases to the nearest focused owner.
 
 Flashback-specific ViewModel property adapter dispatch now lives in
@@ -2540,11 +2540,11 @@ controller also owns the audio property-change router;
 presentation adapter.
 
 Responsive shell layout is owned by
-`Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`, which keeps the
+`Sussudio/Controllers/Shell/ShellChromeController.cs`, which keeps the
 control-bar label breakpoint, capture-settings narrow/wide grid-slot policy,
 responsive visibility for the complete control-bar label set, and
-capture-settings grid placement together. `MainWindow.ShellChrome.Composition.cs`
-remains the XAML-facing adapter.
+capture-settings grid placement together with the rest of shell chrome.
+`MainWindow.ShellChrome.Composition.cs` remains the XAML-facing adapter.
 Responsive layout ownership checks live in
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs`.
 

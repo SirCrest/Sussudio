@@ -2035,11 +2035,12 @@ Primary current owners:
   button command workflow and preview-state logging after a start.
   `MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording and
   capture-device button workflows.
-- `Sussudio/Controllers/Shell/LiveSignalInfoController.cs` owns live-signal pill
+- `Sussudio/Controllers/Shell/ShellChromeController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
-  scale/fade animation. `MainWindow.ShellChrome.Composition.cs` is the XAML-facing
-  adapter. `Sussudio/ViewModels/ViewModelBuilders.cs` owns the
-  view-model live-signal label formatting and pixel-format/codec suffix policy.
+  scale/fade animation beside the rest of shell chrome. `MainWindow.ShellChrome.Composition.cs`
+  is the XAML-facing adapter. `Sussudio/ViewModels/ViewModelBuilders.cs` owns
+  the view-model live-signal label formatting and pixel-format/codec suffix
+  policy.
 - `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, volume
   save suppression, preview start/stop/reinit event routing, and preview button
@@ -2128,7 +2129,7 @@ Primary current owners:
   composition controller, while settings visibility behavior lives with shell
   chrome in `ShellChromeController`.
 - `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing live signal
-  adapter. `LiveSignalInfoController` owns live source-signal property-change
+  adapter. `ShellChromeController.cs` owns live source-signal property-change
   routing and pill presentation.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
   Flashback-specific property-change routing for timeline lockout, markers,
@@ -2144,10 +2145,10 @@ Primary current owners:
   mic-meter row animation state.
   `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio/microphone
   presentation adapter.
-- `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs` owns the
+- `Sussudio/Controllers/Shell/ShellChromeController.cs` owns the responsive
   control-bar label breakpoint, narrow/wide placement policy, responsive
   visibility for the complete control-bar label set, and capture-settings grid
-  placement to XAML elements.
+  placement to XAML elements beside shell chrome animation/status/title owners.
   `MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns
   the capture-selection binding controller shell, context lifetime, XAML

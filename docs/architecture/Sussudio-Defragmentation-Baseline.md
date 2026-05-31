@@ -672,7 +672,7 @@ Partial clusters reduced: `MainWindow` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: covered by responsive layout ownership tests and runtime snapshot regression checks
 Behavior preserved: control-bar label set, responsive layout controller wiring, setup binding call, and layout breakpoints remain unchanged
-Notes for future agents: keep shell layout XAML adapters with `MainWindow.ShellChrome.Composition.cs`; layout decisions remain in the `ResponsiveShellLayoutPolicy` type inside `ResponsiveShellLayoutController.cs`
+Notes for future agents: keep shell layout XAML adapters with `MainWindow.ShellChrome.Composition.cs`; layout decisions now remain in the `ResponsiveShellLayoutPolicy` type inside `ShellChromeController.cs`
 
 Date: 2026-05-24
 Area: MainWindow screenshot adapters
@@ -4013,7 +4013,7 @@ Partial clusters reduced: shell chrome production owner count -2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, control names, status text, or title text changed
 Behavior preserved: settings shelf toggle/visibility animation gate, show/hide storyboard, shell property-change handling, status text, recording time title refresh, disk warning/text fields, recording bitrate, and Flashback bitrate idle fallback now live in `ShellChromeController.cs` with the existing shell chrome animation/elevation/property/title owners.
-Notes for future agents: keep shell chrome animation, settings shelf, status strip, property routing, and title formatting in `Sussudio/Controllers/Shell/ShellChromeController.cs`; keep live signal pill behavior in `LiveSignalInfoController.cs` and responsive layout policy in `ResponsiveShellLayoutController.cs`.
+Notes for future agents: keep shell chrome animation, settings shelf, status strip, property routing, title formatting, live signal pill behavior, and responsive layout policy in `Sussudio/Controllers/Shell/ShellChromeController.cs`.
 
 Date: 2026-05-26
 Area: stats frame-time overlay composition locality
@@ -5985,3 +5985,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private runtime snapshot construction while preserving DTO field assignments.
 Behavior preserved: runtime sampler field groups, private assembly handoff, `CaptureRuntimeSnapshotAssembler.Build`, final `CaptureRuntimeSnapshot` assignments, HDR/source telemetry/recording integrity/AV sync field mapping, and runtime snapshot public shape keep the same method/type names and values while living in `CaptureService.RuntimeSnapshots.cs`.
 Notes for future agents: keep runtime sampling and pure final DTO construction together while they remain one read-only runtime snapshot evidence path; split only if a named standalone snapshot construction collaborator replaces the private map.
+
+Date: 2026-05-31
+Area: MainWindow shell chrome controller locality
+Problem: `LiveSignalInfoController.cs` and `ResponsiveShellLayoutController.cs` were adjacent shell-chrome controller fragments composed only by `MainWindow.ShellChrome.Composition.cs`, while `ShellChromeController.cs` already owned shell chrome animation, settings shelf, status strip, property routing, and window title behavior. Reviewing shell chrome UI routing still required three production controller files for one MainWindow chrome surface.
+Files consolidated: `Sussudio/Controllers/Shell/LiveSignalInfoController.cs`; `Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs`
+Files added: none
+Net production .cs delta: -2; net test .cs delta: 0
+Partial clusters reduced: shell chrome controller file count -2
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~ResponsiveShellLayout` passed (2 passed); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~LiveSignalInfo` passed (1 passed); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~PropertyChangedRoutingDelegatesToFocusedControllers` passed (1 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; current core app `.cs` count/LoC: 176 / 89,968; current test `.cs` count/LoC: 111 / 56,072.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves internal shell chrome controller types without changing type names or MainWindow adapter calls.
+Behavior preserved: `LiveSignalInfoController`, `ResponsiveShellLayoutController`, `ControlBarLabelVisibilityController`, `ResponsiveShellLayoutPolicy`, context records, debounce timers, animations, label breakpoints, capture-settings grid-slot policy, and property-change routing keep the same type/member names and behavior while living in `Sussudio/Controllers/Shell/ShellChromeController.cs`.
+Notes for future agents: keep shell chrome animation, settings shelf, status strip, title formatting, live signal pill presentation, control-bar label visibility, and responsive capture-settings layout policy together in `ShellChromeController.cs` while they remain one MainWindow shell chrome surface composed by `MainWindow.ShellChrome.Composition.cs`.

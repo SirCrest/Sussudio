@@ -31,7 +31,7 @@ static partial class Program
         var shellChromeControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var settingsShelfControllerText = shellChromeControllerText;
         var liveSignalText = shellText;
-        var liveSignalControllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
+        var liveSignalControllerText = shellChromeControllerText;
         var flashbackText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var flashbackControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
 
@@ -649,7 +649,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ResponsiveShellLayoutController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -716,6 +716,10 @@ internal static Task ResponsiveShellLayout_LivesInController()
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ResponsiveShellLayoutPolicy.cs")),
             "responsive shell layout policy lives with responsive shell layout application");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "ResponsiveShellLayoutController.cs")),
+            "responsive shell layout application lives with shell chrome");
 
         return Task.CompletedTask;
     }
@@ -1355,7 +1359,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var liveSignalAdapterText = ReadMainWindowShellChromeAdapterSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/LiveSignalInfoController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(liveSignalAdapterText, "private LiveSignalInfoController _liveSignalInfoController = null!;");
         AssertContains(liveSignalAdapterText, "private void InitializeLiveSignalInfoController()");
@@ -1392,6 +1396,10 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(propertyChangedText, "LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;");
         AssertDoesNotContain(mainWindowText, "private bool _liveSignalInfoVisible;");
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _liveSignalDebounceTimer;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "LiveSignalInfoController.cs")),
+            "live signal info presentation lives with shell chrome");
 
         return Task.CompletedTask;
     }
