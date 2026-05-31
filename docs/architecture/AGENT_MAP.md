@@ -1558,9 +1558,8 @@ Primary current owners:
   artifact finalize/rollback behavior for recording output cleanup.
 - `tests/Sussudio.Tests/LibAvEncoder.Contracts.Tests.cs` owns LibAvEncoder
   codec policy, diagnostics/frame-size helpers, HDR metadata, ValidateOptions
-  reflection coverage, and shared source-reading helpers.
-- `tests/Sussudio.Tests/LibAvEncoder.SourceOwnership.Tests.cs` owns
-  LibAvEncoder source-ownership and output lifecycle layout assertions.
+  reflection coverage, source-ownership and output lifecycle layout
+  assertions, and shared source-reading helpers.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs`
   owns the live dispatcher source-family reader, shared dispatcher/proxy
   helpers, consolidated root dispatcher authorization and manifest behavior,
