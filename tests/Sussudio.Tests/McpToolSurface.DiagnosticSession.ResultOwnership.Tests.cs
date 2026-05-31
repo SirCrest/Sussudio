@@ -2,6 +2,16 @@
 
 static partial class Program
 {
+    private static string ReadDiagnosticSessionResultBuilderAnalysisSource()
+    {
+        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+            .Replace("\r\n", "\n");
+        return ExtractTextBetween(
+            builderText,
+            "private sealed record DiagnosticSessionResultAnalysis(",
+            "internal sealed record DiagnosticSessionResultBuildRequest(");
+    }
+
     internal static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
@@ -258,15 +268,14 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = builderText;
+        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
-        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
-            .Replace("\r\n", "\n");
+        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
 
         AssertContains(builderText, "return FlattenResultProjectionSet(");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
@@ -307,8 +316,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     private static void AssertDiagnosticSessionResultBuilderAnalysisWarningsOwnership()
     {
-        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
-            .Replace("\r\n", "\n");
+        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
 
         AssertContains(analysisText, "AddFlashbackPlaybackAnalysisWarnings(playbackResultMetrics, warnings);");
         AssertContains(analysisText, "AddFlashbackExportAnalysisWarnings(");
@@ -337,8 +345,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesWithAnalysis()
     {
-        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
-            .Replace("\r\n", "\n");
+        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var healthText = analysisText;
 
         AssertContains(analysisText, "var validationOutcome = ValidateAnalysis(");
@@ -407,13 +414,12 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = builderText;
+        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
-            .Replace("\r\n", "\n");
+        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var diagnosticHealthText = analysisText;
 
         AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
@@ -460,8 +466,12 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
         AssertEqual(
             false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Analysis.cs")),
+            "diagnostic-session analysis folded into DiagnosticSessionResultBuilder.cs");
+        AssertEqual(
+            false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
-            "diagnostic health verdict helpers folded into DiagnosticSessionResultBuilder.Analysis.cs");
+            "diagnostic health verdict helpers folded into DiagnosticSessionResultBuilder.cs");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
@@ -479,8 +489,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     private static void AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership()
     {
-        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
-            .Replace("\r\n", "\n");
+        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
 
@@ -522,18 +531,17 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.PreviewScheduler.cs")),
-            "preview scheduler analysis folded into DiagnosticSessionResultBuilder.Analysis.cs");
+            "preview scheduler analysis folded into DiagnosticSessionResultBuilder.cs");
     }
 
     private static void AssertDiagnosticSessionResultBuilderOverviewAndCaptureProjectionOwnership()
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = builderText;
+        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
-        var analysisText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
-            .Replace("\r\n", "\n");
+        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
@@ -586,7 +594,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = builderText;
+        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
         var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = projectionSetText;

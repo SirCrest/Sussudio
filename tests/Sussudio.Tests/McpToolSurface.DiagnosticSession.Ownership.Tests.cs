@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -60,8 +60,7 @@ static partial class Program
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionResultBuilder.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Projections.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Analysis.cs");
+            "tools/Common/DiagnosticSessionResultBuilder.Projections.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(
@@ -398,7 +397,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
-        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Analysis.cs")
+        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");

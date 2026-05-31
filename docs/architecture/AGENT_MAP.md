@@ -1,4 +1,4 @@
-# Sussudio Agent Map
+﻿# Sussudio Agent Map
 
 Last reviewed: 2026-05-21.
 
@@ -2698,8 +2698,25 @@ Primary owners:
   shared JSON object creation / artifact serialization helpers, Flashback
   playback projection composition from focused playback projection owners, plus
   the result-build request handoff created by `DiagnosticSessionRunner.cs` and
-  consumed by the result builder. Keep `summary.json` field shape stable in the
-  builder family.
+  consumed by the result builder. It also owns diagnostic-session metric
+  preparation for validation/result projections, analysis warning emission,
+  Flashback playback/export analysis warning text, threshold guards, tolerated
+  Flashback scenario warning classification, diagnostic-session validation
+  handoff order for Flashback playback, cleanup lifecycle restore, preview
+  scheduler analysis, and diagnostic health. It also owns cleanup restore
+  warnings after diagnostic sessions stop recording, preview, Flashback, or
+  playback state, plus the private analysis handoff record, including the single
+  `PreviewScheduler` record property used by preview-scheduler result
+  projection. Preview-scheduler analysis includes MJPEG jitter-buffer counters,
+  deltas, last drop/underflow reasons, underflow ages, max schedule-late
+  aggregation, target-FPS fallback, visual-cadence tolerance checks, sparse
+  deadline/drop tolerance selection, and the call into shared Flashback preview
+  validation. Diagnostic-health analysis includes health summary snapshot
+  selection, health verdict composition, source-reader/ingest warning deltas for
+  sparse source-capture tolerance, sparse preview-scheduler warning tolerance,
+  tolerated-warning reason selection, and health warning text emitted during
+  result construction. Keep `summary.json` field shape stable in the builder
+  family.
 - `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` owns the
   private projection-set handoff record, projection-set assembly, and the
   result projection records/builders for overview, capture, Flashback
@@ -2707,24 +2724,6 @@ Primary owners:
   visual cadence. Flashback playback projection includes command, cadence,
   1% low, decode, audio-master, and stage DTO value maps consumed by the final
   result initializer.
-- `tools/Common/DiagnosticSessionResultBuilder.Analysis.cs` owns
-  diagnostic-session metric preparation for validation/result projections,
-  analysis warning emission, Flashback playback/export analysis warning text,
-  threshold guards, tolerated Flashback scenario warning classification,
-  diagnostic-session validation handoff order for Flashback playback, cleanup
-  lifecycle restore, preview scheduler analysis, and diagnostic health. It also
-  owns cleanup restore warnings after diagnostic sessions stop recording,
-  preview, Flashback, or playback state, plus the private analysis handoff
-  record, including the single `PreviewScheduler` record property used by
-  preview-scheduler result projection. Preview-scheduler analysis includes MJPEG
-  jitter-buffer counters, deltas, last drop/underflow reasons, underflow ages,
-  max schedule-late aggregation, target-FPS fallback, visual-cadence tolerance
-  checks, sparse deadline/drop tolerance selection, and the call into shared
-  Flashback preview validation. Diagnostic-health analysis includes health
-  summary snapshot selection, health verdict composition, source-reader/ingest
-  warning deltas for sparse source-capture tolerance, sparse preview-scheduler
-  warning tolerance, tolerated-warning reason selection, and health warning text
-  emitted during result construction.
 - `tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
   bootstrap, scenario normalization, scenario-plan selection, duration/sample
   clamping, session identity, output-directory creation, runner process

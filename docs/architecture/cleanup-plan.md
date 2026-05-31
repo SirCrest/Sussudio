@@ -1,4 +1,4 @@
-# Architecture Cleanup Plan
+﻿# Architecture Cleanup Plan
 
 Last reviewed: 2026-05-16.
 
@@ -2621,7 +2621,7 @@ Flashback playback command queue, cadence/slow-frame/dropped-frame, 1% low,
 audio-master, decode timing, and stage DTO value maps live with that projection
 owner. Diagnostic metric gathering for validation/result projections and
 analysis warning emission live in
-`DiagnosticSessionResultBuilder.Analysis.cs`, which also owns the private
+`DiagnosticSessionResultBuilder.cs`, which also owns the private
 analysis handoff record plus Flashback playback/export warning text, threshold
 guards, tolerated Flashback scenario warning classification, and the named
 validation handoff order for Flashback playback, cleanup lifecycle restore,
@@ -2637,7 +2637,7 @@ consumes it. Diagnostic health summary snapshot selection, health summary text
 projection, verdict composition, diagnostic-health warning tolerance, sparse
 source-cadence warning tolerance, sparse preview-scheduler warning tolerance,
 source-reader/ingest warning deltas, tolerated-warning reason selection, and
-emitted health warning text live in `DiagnosticSessionResultBuilder.Analysis.cs`.
+emitted health warning text live in `DiagnosticSessionResultBuilder.cs`.
 `DiagnosticSessionResultAnalysis.PreviewScheduler` is the single record
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Preview cadence, visual cadence,
@@ -2815,7 +2815,7 @@ including the preview-cycle grouped predicate, so the runner does not grow
 direct scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
-`tools/Common/DiagnosticSessionResultBuilder.Analysis.cs`. It owns warnings
+`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns warnings
 for preview, Flashback, and playback state that remain active after the runner
 attempts cleanup.
 
@@ -3002,7 +3002,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionResultBuilder.Projections.cs`
-- `DiagnosticSessionResultBuilder.Analysis.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`

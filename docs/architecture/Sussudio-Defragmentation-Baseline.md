@@ -1,4 +1,4 @@
-# Sussudio Defragmentation Baseline
+﻿# Sussudio Defragmentation Baseline
 
 This file should be filled or regenerated before the next architecture slice. It exists so the active goal can measure defragmentation against concrete data instead of vibes.
 
@@ -3373,7 +3373,7 @@ Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: diagnostic-session result ownership tests cover the moved health verdict and Flashback playback projection maps; no CLI/MCP command names, automation command IDs, or wire payloads changed
 Behavior preserved: diagnostic health snapshot selection, verdict/tolerance warnings, sparse source and preview-scheduler warning tolerance, Flashback playback projection composition, command/cadence/1% low/decode/audio-master/stage result maps, and `summary.json` field shape remain unchanged
-Notes for future agents: keep diagnostic health verdict helpers with `DiagnosticSessionResultBuilder.Analysis.cs`; keep Flashback playback result projection maps with `DiagnosticSessionResultBuilder.Projections.cs` unless they become a reusable result-projection collaborator outside diagnostic-session summary construction.
+Notes for future agents: keep diagnostic health verdict helpers with `DiagnosticSessionResultBuilder.cs`; keep Flashback playback result projection maps with `DiagnosticSessionResultBuilder.Projections.cs` unless they become a reusable result-projection collaborator outside diagnostic-session summary construction.
 
 Date: 2026-05-26
 Area: Flashback xUnit wrapper locality
@@ -5019,7 +5019,7 @@ Partial clusters reduced: `DiagnosticSessionResultBuilder` partial file count 4 
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings) and refreshed stale `ssctl` and MCP assemblies; focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionResultBuilder|FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface"` (66 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
 CLI/MCP/pipe checks, if applicable: solution build refreshed `ssctl`, MCP, automation contracts, and shared tools; focused MCP/diagnostic-session coverage passed; no public automation command names, IDs, wire payloads, MCP tool schemas, app runtime code, or XAML bindings changed.
 Behavior preserved: result phase orchestration, pre-summary artifact writes, summary-write failure repair, projection-set construction, and final `DiagnosticSessionResult` field assignment are unchanged; the final initializer now lives in `DiagnosticSessionResultBuilder.cs`.
-Notes for future agents: keep final `DiagnosticSessionResult` DTO assignment with `tools/Common/DiagnosticSessionResultBuilder.cs`; keep domain projection composition in `DiagnosticSessionResultBuilder.Projections.cs` and metric/health analysis in `DiagnosticSessionResultBuilder.Analysis.cs`.
+Notes for future agents: keep final `DiagnosticSessionResult` DTO assignment with `tools/Common/DiagnosticSessionResultBuilder.cs`; keep domain projection composition in `DiagnosticSessionResultBuilder.Projections.cs` and metric/health analysis in `DiagnosticSessionResultBuilder.cs`.
 
 Date: 2026-05-27
 Area: Capture discovery source-ownership test locality
