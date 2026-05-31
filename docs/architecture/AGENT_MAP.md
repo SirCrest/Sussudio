@@ -965,10 +965,11 @@ Primary current owners:
   attachment, D3D renderer startup and event/failure handling, cleanup, D3D reinit renderer-stop/timeout policy,
   disposal, unsafe-window telemetry, stop tick accounting, and fresh
   SwapChainPanel replacement.
-  `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns preview
+  `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   surface content-fit sizing, GPU panel visibility, video/control-bar
-  composition shadow visuals, bounds alignment, clear behavior, and compositor
-  opacity fade routing. `MainWindow.PreviewLifecycle.Composition.cs`
+  composition shadow visuals, bounds alignment, clear behavior, compositor
+  opacity fade routing, preview shell/content transitions, startup overlay,
+  and reinit transition state. `MainWindow.PreviewLifecycle.Composition.cs`
   is the XAML-facing adapter for preview renderer and surface wiring.
 - `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` owns the stable
   automation preview snapshot adapter and context wiring alongside preview
@@ -1053,7 +1054,7 @@ Primary current owners:
   `Sussudio/MainWindow.ControlBindings.cs` adapter and
   `MainWindow.ShellChrome.Composition.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
-- `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs` owns shared
+- `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns shared
   compositor opacity fade helpers for preview shadow visuals without adding
   dispatcher hops.
 - `Sussudio/Controllers/Audio/Meter/AudioMeterController.cs` owns audio/microphone meter
@@ -1985,7 +1986,7 @@ Primary current owners:
   into shell entrance, shell chrome/button/stats entrance choreography, deferred
   preview reveal logging, active-storyboard cleanup, and the delayed control-bar
   shadow fade routed through the shadow controller in
-  `PreviewSurfacePresentationController`. `Sussudio/MainWindow.ShellChrome.Composition.cs`
+  `PreviewTransitionAnimationController.cs`. `Sussudio/MainWindow.ShellChrome.Composition.cs`
   is the XAML-facing Loaded and launch entrance adapter.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns control-bar
   button entrance/hover/press/release animation, static shell ThemeShadow and
@@ -2001,7 +2002,7 @@ Primary current owners:
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
-  through the shadow controller in `PreviewSurfacePresentationController`.
+  through the preview surface shadow controller in this owner.
 - `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview
   button glyph/tooltip presentation for Start Preview and Stop Preview plus
   preview button command choreography: pending-reinit cancel, user stop intent,
@@ -2099,7 +2100,7 @@ Primary current owners:
   handoff, renderer start/stop/shutdown, and reinit-unsafe-window adapters;
   reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.cs`;
   preview surface presentation and preview shadow visuals live in
-  `PreviewSurfacePresentationController`.
+  `PreviewTransitionAnimationController.cs`.
 - `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing recording
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in

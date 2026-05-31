@@ -270,7 +270,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
-        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
+        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");
@@ -309,6 +309,10 @@ static partial class Program
         AssertContains(previewSurfaceControllerText, "compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f))");
         AssertContains(previewSurfaceControllerText, "animation.DelayTime = TimeSpan.FromMilliseconds(delayMs);");
         AssertContains(previewSurfaceControllerText, "visual.StartAnimation(\"Opacity\", animation);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfacePresentationController.cs")),
+            "preview surface presentation folded into PreviewTransitionAnimationController.cs");
         AssertDoesNotContain(controllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(previewSurfaceControllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(adapterText, "FadeOutVideoFrameShadow(durationMs: 150);");

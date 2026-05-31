@@ -764,9 +764,10 @@ now lives in `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostControlle
 wires renderer-host context callbacks, the `SizeChanged` adapter, renderer-host
 reset handoff, and stable start/stop/shutdown/reinit-unsafe-window automation
 adapters. Preview surface sizing, GPU panel visibility, video/control-bar
-composition shadow visuals, bounds alignment, clear behavior, and compositor
-opacity fade routing now live together in
-`Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`.
+composition shadow visuals, bounds alignment, clear behavior, compositor
+opacity fade routing, preview shell/content transitions, startup overlay, and
+reinit transition state now live together in
+`Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML-facing adapter
 for preview renderer and surface wiring.
 `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns renderer
@@ -2378,7 +2379,7 @@ unavailable-placeholder presentation, and preview reinit transition state now li
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires preview-transition
 animation callbacks; video-shadow fade callbacks and shared compositor shadow
 opacity fades route through the preview surface shadow controller kept in
-`PreviewSurfacePresentationController.cs`.
+`PreviewTransitionAnimationController.cs`.
 
 Preview button glyph/tooltip presentation for Start Preview and Stop Preview
 now lives with preview lifecycle events in
@@ -2482,7 +2483,7 @@ Top-level preview resize telemetry throttling now lives in
 callbacks, the `SizeChanged` adapter, renderer-host reset handoff, renderer
 start/stop/shutdown, and reinit-unsafe-window adapters; reinit renderer-stop/timeout policy lives with
 `PreviewRendererHostController.cs`; preview surface presentation and shadow
-visuals live together with `PreviewSurfacePresentationController`.
+visuals live together with `PreviewTransitionAnimationController.cs`.
 
 Preview-specific ViewModel event lifecycle and preview property-change routing
 now live in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.

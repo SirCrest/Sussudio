@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -122,7 +122,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
-        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs").Replace("\r\n", "\n");
+        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
 
         AssertEqual(
             false,
@@ -132,6 +132,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfaceShadowController.cs")),
             "preview surface shadow controller lives with preview surface presentation owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfacePresentationController.cs")),
+            "preview surface presentation folded into PreviewTransitionAnimationController.cs");
         AssertContains(previewRendererText, "XAML-facing preview surface adapter");
         AssertContains(previewRendererText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
         AssertContains(previewRendererText, "private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;");
