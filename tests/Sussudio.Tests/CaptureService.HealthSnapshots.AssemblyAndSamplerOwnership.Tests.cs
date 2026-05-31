@@ -6,25 +6,22 @@ using Xunit;
 public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
 {
     [Fact]
-    public void CaptureService_HealthSnapshotAssemblyFields_LiveWithAssembler()
+    public void CaptureService_HealthSnapshotAssemblyFields_LiveWithHealthSampler()
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var getHealthSnapshotText = ExtractMemberCode(healthSnapshotText, "GetHealthSnapshot");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields");
         AssertContains(healthSnapshotText, "SessionState = CurrentSessionState,");
         AssertContains(healthSnapshotText, "FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(currentSettings, unifiedVideoCapture),");
         AssertContains(healthSnapshotText, "LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),");
-        AssertContains(healthSnapshotAssemblerText, "private static class CaptureHealthSnapshotAssembler");
+        AssertContains(healthSnapshotText, "private static class CaptureHealthSnapshotAssembler");
         AssertContains(healthSnapshotAssemblerText, "public static CaptureHealthSnapshot Build(");
-        AssertContains(healthSnapshotAssemblerText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertContains(healthSnapshotAssemblerText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
-        AssertContains(healthSnapshotAssemblerText, "public FlashbackPlaybackHealthSnapshotFields FlashbackPlayback { get; init; }");
-        AssertDoesNotContain(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
-        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct CaptureCadenceHealthSnapshotFields");
-        AssertDoesNotContain(healthSnapshotAssemblerText, "private readonly record struct MjpegHealthSnapshotFields");
+        AssertContains(healthSnapshotText, "private readonly record struct CaptureHealthSnapshotAssemblyFields");
+        AssertContains(healthSnapshotText, "public CaptureCadenceHealthSnapshotFields CaptureCadence { get; init; }");
+        AssertContains(healthSnapshotText, "public FlashbackPlaybackHealthSnapshotFields FlashbackPlayback { get; init; }");
         AssertDoesNotContain(healthSnapshotAssemblerText, "LibAvRecordingSink? Sink");
         AssertDoesNotContain(healthSnapshotAssemblerText, "var sink = fields.Sink;");
         AssertDoesNotContain(healthSnapshotAssemblerText, "UnifiedVideoCapture? UnifiedVideoCapture");
@@ -33,7 +30,13 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
         AssertDoesNotContain(healthSnapshotAssemblerText, "_currentSettings");
         AssertDoesNotContain(healthSnapshotAssemblerText, "ComputeTickAge(");
         AssertContains(healthSnapshotAssemblerText, "TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),");
-        AssertDoesNotContain(healthSnapshotText, "return new CaptureHealthSnapshot");
+        AssertDoesNotContain(getHealthSnapshotText, "return new CaptureHealthSnapshot");
+        Assert.False(File.Exists(Path.Combine(
+            FindRepoRoot(),
+            "Sussudio",
+            "Services",
+            "Capture",
+            "CaptureService.HealthSnapshotAssembler.cs")));
         Assert.False(File.Exists(Path.Combine(
             FindRepoRoot(),
             "Sussudio",
@@ -48,8 +51,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "var captureCadence = BuildCaptureCadenceHealthSnapshotFields(unifiedVideoCapture);");
         AssertContains(healthSnapshotAssemblerText, "CaptureCadenceSampleCount = captureCadence.SampleCount,");
@@ -72,8 +74,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs")
             .Replace("\r\n", "\n");
 
@@ -106,8 +107,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
             .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
         var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
 
@@ -151,8 +151,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
         var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
 
@@ -189,8 +188,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(");
         AssertContains(healthSnapshotAssemblerText, "FlashbackBufferedDurationMs = flashbackBuffer.BufferedDurationMs,");
@@ -216,8 +214,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "var flashbackQueues = CaptureFlashbackQueueHealthSnapshotFields(");
         AssertContains(healthSnapshotAssemblerText, "FlashbackVideoQueueDepth = flashbackQueues.VideoQueueDepth,");
@@ -243,8 +240,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "var flashbackPlayback = CaptureFlashbackPlaybackHealthSnapshotFields(fbPlayback);");
         AssertContains(healthSnapshotAssemblerText, "FlashbackPlaybackState = flashbackPlayback.State,");
@@ -297,8 +293,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "var recordingHealth = CaptureRecordingHealthSnapshotFields(sink, fbSink);");
         AssertContains(healthSnapshotAssemblerText, "RecordingEncodingFailed = recordingHealth.EncodingFailed,");
@@ -349,8 +344,7 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
     {
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var healthSnapshotAssemblerText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs")
-            .Replace("\r\n", "\n");
+        var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
 
         AssertContains(healthSnapshotText, "var sourceTelemetry = CaptureSourceTelemetryHealthSnapshotFields(_latestSourceTelemetry);");
         AssertContains(healthSnapshotAssemblerText, "SourceTelemetryAvailability = sourceTelemetry.Availability,");
@@ -375,6 +369,42 @@ public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
 
     private static void AssertDoesNotContain(string text, string expected)
         => Assert.DoesNotContain(expected, text);
+
+    private static string ExtractMemberCode(string source, string memberName)
+    {
+        var signatureIndex = source.IndexOf($" {memberName}(", StringComparison.Ordinal);
+        if (signatureIndex < 0)
+        {
+            throw new InvalidOperationException($"Member '{memberName}' was not found.");
+        }
+
+        var lineStart = source.LastIndexOf('\n', signatureIndex);
+        var start = lineStart < 0 ? 0 : lineStart + 1;
+        var braceStart = source.IndexOf('{', signatureIndex);
+        if (braceStart < 0)
+        {
+            throw new InvalidOperationException($"Member '{memberName}' did not have a body.");
+        }
+
+        var depth = 0;
+        for (var i = braceStart; i < source.Length; i++)
+        {
+            if (source[i] == '{')
+            {
+                depth++;
+            }
+            else if (source[i] == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return source[start..(i + 1)];
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"Member '{memberName}' body was not closed.");
+    }
 
     private static string ReadRepoFile(string relativePath)
     {

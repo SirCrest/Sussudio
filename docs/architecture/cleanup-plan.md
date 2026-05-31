@@ -1944,17 +1944,15 @@ partials.
 Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
 captures current service references, owns the private field builders, and
-populates the final service-state/scalar handoff passed to the assembler.
+populates the final service-state/scalar handoff used by the health DTO map.
 Source-cadence metric projection, MJPEG timing, preview jitter, visual cadence,
 packet hash, per-decoder projection, and their health field records live with
 the read-only sampler in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`; pure
-diagnostics/automation DTO construction lives in
-`Sussudio/Services/Capture/CaptureService.HealthSnapshotAssembler.cs`.
-The private assembler field handoff contract lives with the assembler, while
-health field records live beside their samplers. The assembler remains
-intentionally allocation-neutral final DTO construction from captured fields; do not split it
-into post-construction mutators or shallow fragment records just to reduce line
+diagnostics/automation DTO construction and the private assembler field handoff
+contract live there too. The assembler remains intentionally allocation-neutral
+final DTO construction from captured fields; do not split it into
+post-construction mutators or shallow fragment records just to reduce line
 count.
 source telemetry, backend, suppression, and circuit-state projection lives with
 the health snapshot sampler in
