@@ -772,7 +772,7 @@ public class RecordingArtifactManagerTests
         => Assert.Equal(expected, actual);
 }
 
-// Representative xUnit slice ported from the legacy Program.cs runner.
+// Representative xUnit slice ported from the legacy Program runner.
 //
 // The test project targets net8.0 while Sussudio targets
 // net8.0-windows10.0.19041.0, so a ProjectReference would force a Windows

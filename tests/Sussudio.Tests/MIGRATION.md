@@ -1,7 +1,7 @@
 # Sussudio.Tests Migration Plan
 
 The test project runs a large legacy check catalog through a hand-rolled
-`Program.cs` runner that loads `Sussudio.dll` via reflection. Cluster
+`Program` runner in `HarnessCore.cs` that loads `Sussudio.dll` via reflection. Cluster
 `test-framework-migration` opens the dual-stack path: keep the legacy runner,
 add xUnit alongside, and port incrementally.
 
@@ -99,9 +99,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
-- `Program.cs` owns the legacy runner entry point and the xUnit bootstrap helper
-  that initializes the staged app assembly before wrappers call legacy reflection
-  helpers.
+- `HarnessCore.cs` owns the legacy runner entry point and the xUnit bootstrap
+  helper that initializes the staged app assembly before wrappers call legacy
+  reflection helpers.
 - `XUnit.ToolContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,
@@ -115,7 +115,7 @@ add xUnit alongside, and port incrementally.
   core sampler/metric/health checks, and runner behavior checks. The public
   wrapper classes remain separate inside this file so existing test identities
   stay stable while the execution surface is easier to scan.
-- `Program.cs` keeps the legacy runner entry point, but the
+- `HarnessCore.cs` keeps the legacy runner entry point, but the
   diagnostic-session catalog has no remaining legacy registrations.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview harness registration guard.
@@ -202,7 +202,7 @@ currently empty, but the executable runner still provides the offline
 
 ## Migration order
 
-Port in roughly this order, then retire the legacy `Program.cs` runner once
+Port in roughly this order, then retire the legacy `Program` runner once
 every check has a `[Fact]`/`[Theory]` equivalent:
 
 1. **Pure-data Model tests** (`CaptureSettings`, `MediaFormat`,
@@ -237,7 +237,7 @@ every check has a `[Fact]`/`[Theory]` equivalent:
 - For HDR/P010 paths, prefer behavioural tests that drive the encoder against a
   small fixture buffer. Source-grep contract assertions stay only when the
   public API shape is the contract.
-- Keep the legacy `Program.cs` runner available while the repo still requires
+- Keep the legacy `Program` runner available while the repo still requires
   the offline `dotnet exec` validation shim; add new coverage to xUnit instead
   of restoring a harness catalog.
 

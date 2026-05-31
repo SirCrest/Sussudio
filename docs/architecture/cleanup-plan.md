@@ -2037,7 +2037,7 @@ ownership, source telemetry, stats dock, row chrome, frame-time overlay policy,
 detached-window, encoder, expected-display-repeat, compact preview summary,
 frame-time range, frame-time graph geometry behavior, hardware decode/GPU row,
 and input-provider behavior instead of expanding the legacy harness body in
-`tests/Sussudio.Tests/Program.cs`.
+`tests/Sussudio.Tests/HarnessCore.cs`.
 Stats presentation text projection is now consolidated in
 `Sussudio/ViewModels/StatsPresentationBuilder.cs`: diagnostic row construction,
 source-summary parsing, frame-lane diagnostic health summary classification,
@@ -3048,7 +3048,7 @@ owner, fold it back into that owner and update the source-shape tests and
 
 2. Reduce custom regression harness size.
 
-   `tests/Sussudio.Tests/Program.cs` keeps the legacy runner entry point and
+   `tests/Sussudio.Tests/HarnessCore.cs` keeps the legacy runner entry point and
    no-op `RunAllChecksAsync` compatibility shim. Keep the executable runner as
    the offline `dotnet exec` validation shim until the
    repo deliberately retires that workflow; new checks should live in focused

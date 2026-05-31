@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <!--
-      Dual-stack test runner. The legacy custom Program.cs Main runs the
+      Dual-stack test runner. The legacy custom Program Main in HarnessCore.cs runs the
       remaining HarnessCheckCatalog checks via reflection ('dotnet run' with the Sussudio.dll path); xUnit
       cases land via 'dotnet test' once VSTest discovers the Fact/Theory
       members. Migration is incremental, see tests/Sussudio.Tests/MIGRATION.md.
