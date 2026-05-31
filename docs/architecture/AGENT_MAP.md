@@ -1655,9 +1655,9 @@ Primary current owners:
   CaptureSessionSnapshot tool-model checks after their removal from the legacy
   offline harness catalog. Keep the public wrapper classes in this file unless
   a group needs an independent fixture or executable helper state.
-- `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` owns shared tool
-  assembly loading, isolated load contexts, freshness checks, and tool build
-  command mapping used by the legacy harness and xUnit slices.
+- `tests/Sussudio.Tests/HarnessCore.cs` owns shared tool assembly loading,
+  isolated load contexts, freshness checks, and tool build command mapping used
+  by the legacy harness and xUnit slices.
 - `tests/Sussudio.Tests/Program.cs` owns the offline compatibility runner and
   its no-op `RunAllChecksAsync` shim; executable checks now live in focused
   xUnit slices and contract files rather than a harness catalog.

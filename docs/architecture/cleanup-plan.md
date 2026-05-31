@@ -573,13 +573,11 @@ channel intentionally remaining string-based.
 Markdown code-span path-token extraction and resolution helpers, AGENT_MAP
 consumer coverage, ownership-file discovery, exact code-span policy, and xUnit
 inventory discovery.
-Shared tool assembly loading and stale-build detection now live in
-`tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` so the legacy harness body
-no longer owns tool DLL resolution or freshness policy.
 Shared harness helpers now live in one support boundary,
 `tests/Sussudio.Tests/HarnessCore.cs`: generic assertions, repo-file/source
 text helpers, reflection/property access, wait helpers, and synthetic
-capture/recording object factories.
+capture/recording object factories, tool assembly loading, isolated load
+contexts, and stale-build detection.
 Synthetic MJPEG timing metric factories now live with the only scenarios that
 use them in
 `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`.

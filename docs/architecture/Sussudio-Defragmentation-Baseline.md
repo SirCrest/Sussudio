@@ -5648,3 +5648,15 @@ Build/tests/runtime checks: focused settings/runtime tests passed (89 passed); `
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public runtime type names and namespace remain unchanged.
 Behavior preserved: `UserSettings`, `SettingsJsonContext`, and `SettingsService` keep the same members/defaults, forgiving load behavior, serialized save lock, temp-file write, LocalAppData path policy, and diagnostic log events while living in `Sussudio/Services/Runtime/RuntimeHelpers.cs`.
 Notes for future agents: keep small shared runtime helper families and LocalAppData user-settings persistence in `RuntimeHelpers.cs`; split settings again only if it grows an injected persistence provider, testable alternate store, or external settings package boundary.
+
+Date: 2026-05-31
+Area: Test harness tool assembly loading locality
+Problem: `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs` only carried private shared tool-assembly loader helpers for the legacy `Program` harness and xUnit slices. `HarnessCore.cs` already owns the shared harness assertions, repo-file readers, reflection/property helpers, wait helpers, and synthetic test factories, so reviewing tool-test setup still required opening a separate helper-only shard for one support boundary.
+Files consolidated: `tests/Sussudio.Tests/ToolAssemblyLoading.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` legacy harness helper partial file count -1
+Build/tests/runtime checks: focused tool/MCP/architecture tests passed (70 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); runtime harness passed; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); regenerated baseline.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private test helper code.
+Behavior preserved: shared tool assembly loading, isolated load contexts, stale-build detection, project input scanning, explicit compile include scanning, common-tool source detection, and tool build command mapping keep the same helper names and behavior while living in `tests/Sussudio.Tests/HarnessCore.cs`.
+Notes for future agents: keep shared legacy harness support helpers in `HarnessCore.cs` when they are used broadly by xUnit and `Program`-partial tests; create a separate helper file only for an independent fixture family with its own setup state.
