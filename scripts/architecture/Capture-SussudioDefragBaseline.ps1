@@ -35,6 +35,13 @@ function Get-LineCount {
     return @($content).Count
 }
 
+function Get-NonBlankLineCount {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return 0 }
+    $content = Get-Content -LiteralPath $Path -ErrorAction Stop
+    return @($content | Where-Object { $_.Trim().Length -gt 0 }).Count
+}
+
 function Convert-ToRepoPath {
     param([string]$Path)
     $rootPath = (Resolve-Path -LiteralPath $Root).Path.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
@@ -56,6 +63,7 @@ $entries = foreach ($file in $allCs) {
     [pscustomobject]@{
         Path = $repoPath
         Lines = Get-LineCount $file.FullName
+        NonBlankLines = Get-NonBlankLineCount $file.FullName
         IsTest = $isTest
         IsGenerated = $isGenerated
         PartialTypes = @($partialMatches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
@@ -64,6 +72,12 @@ $entries = foreach ($file in $allCs) {
 
 $production = @($entries | Where-Object { -not $_.IsTest -and -not $_.IsGenerated })
 $tests = @($entries | Where-Object { $_.IsTest })
+$coreApp = @($entries | Where-Object { -not $_.IsGenerated -and $_.Path -like 'Sussudio/*' })
+$sussudioTests = @($entries | Where-Object { -not $_.IsGenerated -and $_.Path -like 'tests/Sussudio.Tests/*' })
+$coreAppNonBlank = ($coreApp | Measure-Object NonBlankLines -Sum).Sum
+$sussudioTestsNonBlank = ($sussudioTests | Measure-Object NonBlankLines -Sum).Sum
+if ($null -eq $coreAppNonBlank) { $coreAppNonBlank = 0 }
+if ($null -eq $sussudioTestsNonBlank) { $sussudioTestsNonBlank = 0 }
 $under60 = @($production | Where-Object { $_.Lines -lt 60 })
 $under80 = @($production | Where-Object { $_.Lines -lt 80 })
 
@@ -113,6 +127,10 @@ $lines.Add("| Metric | Value |")
 $lines.Add("| --- | ---: |")
 $lines.Add("| Production .cs files | $($production.Count) |")
 $lines.Add("| Test .cs files | $($tests.Count) |")
+$lines.Add("| Core app .cs files (Sussudio/) | $($coreApp.Count) |")
+$lines.Add("| Core app nonblank LoC (Sussudio/) | $coreAppNonBlank |")
+$lines.Add("| Sussudio.Tests .cs files | $($sussudioTests.Count) |")
+$lines.Add("| Sussudio.Tests nonblank LoC | $sussudioTestsNonBlank |")
 $lines.Add("| Production .cs files under 60 lines | $($under60.Count) ($(Format-Percent $under60.Count $production.Count)) |")
 $lines.Add("| Production .cs files under 80 lines | $($under80.Count) ($(Format-Percent $under80.Count $production.Count)) |")
 $lines.Add("")

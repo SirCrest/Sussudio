@@ -373,6 +373,33 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task ArchitectureDefragBaseline_TracksCheckpointCountsAndLoc()
+    {
+        var repoRoot = GetRepoRoot();
+        var scriptText = ReadRepoFile("scripts/architecture/Capture-SussudioDefragBaseline.ps1");
+        var baselineText = ReadRepoFile("docs/architecture/Sussudio-Defragmentation-Baseline.generated.md");
+        var coreFiles = EnumerateSourceFiles(
+                Path.Combine(repoRoot, "Sussudio"),
+                SearchOption.AllDirectories)
+            .ToArray();
+        var sussudioTestFiles = EnumerateSourceFiles(
+                Path.Combine(repoRoot, "tests", "Sussudio.Tests"),
+                SearchOption.AllDirectories)
+            .ToArray();
+        var coreNonBlankLines = coreFiles.Sum(CountNonBlankSourceLines);
+        var sussudioTestNonBlankLines = sussudioTestFiles.Sum(CountNonBlankSourceLines);
+
+        AssertContains(scriptText, "Get-NonBlankLineCount");
+        AssertContains(scriptText, "Core app .cs files (Sussudio/)");
+        AssertContains(scriptText, "Sussudio.Tests nonblank LoC");
+        AssertContains(baselineText, $"| Core app .cs files (Sussudio/) | {coreFiles.Length} |");
+        AssertContains(baselineText, $"| Core app nonblank LoC (Sussudio/) | {coreNonBlankLines} |");
+        AssertContains(baselineText, $"| Sussudio.Tests .cs files | {sussudioTestFiles.Length} |");
+        AssertContains(baselineText, $"| Sussudio.Tests nonblank LoC | {sussudioTestNonBlankLines} |");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands()
     {
         var repoRoot = GetRepoRoot();
@@ -439,6 +466,9 @@ static partial class Program
     private static readonly Regex MarkdownCodeSpanRegex = new(
         "`([^`]+)`",
         RegexOptions.CultureInvariant);
+
+    private static int CountNonBlankSourceLines(string path)
+        => File.ReadLines(path).Count(line => line.Trim().Length > 0);
 
     private static IEnumerable<string> ExtractReadmeAutomationConsumers(string readmeText)
     {
@@ -847,6 +877,10 @@ namespace Sussudio.Tests
         [Fact]
         public Task CleanupPlanDefinesSmallFileHygiene()
             => global::Program.ArchitectureCleanupPlan_DefinesSmallFileHygiene();
+
+        [Fact]
+        public Task DefragBaselineTracksCheckpointCountsAndLoc()
+            => global::Program.ArchitectureDefragBaseline_TracksCheckpointCountsAndLoc();
 
         [Fact]
         public Task TestMigrationPlanFileReferencesResolveAndNamesValidationCommands()
