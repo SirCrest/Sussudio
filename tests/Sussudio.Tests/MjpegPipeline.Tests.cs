@@ -38,8 +38,8 @@ namespace Sussudio.Tests
             => global::Program.ParallelMjpegDecodePipeline_WorkersLiveWithRoot();
 
         [Fact]
-        public Task ParallelMjpegDecodePipelineReorderLivesInFocusedPartial()
-            => global::Program.ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial();
+        public Task ParallelMjpegDecodePipelineReorderLivesWithRoot()
+            => global::Program.ParallelMjpegDecodePipeline_ReorderLivesWithRoot();
 
         [Fact]
         public Task PooledVideoFrameLeaseLifecycleReturnsBufferAfterLastRelease()
@@ -266,8 +266,7 @@ static partial class Program
 {
     internal static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
-        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
+        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
@@ -468,12 +467,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ParallelMjpegDecodePipeline_ReorderLivesInFocusedPartial()
+    internal static Task ParallelMjpegDecodePipeline_ReorderLivesWithRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
-        var reorderText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs")
-            .Replace("\r\n", "\n");
+        var reorderText = rootText;
 
         AssertContains(reorderText, "private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;");
         AssertContains(reorderText, "private readonly record struct DecodedFrame(");
@@ -495,10 +493,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.ReorderEmission.cs")),
             "MJPEG reorder emission stays folded into decoded-frame ordering owner");
-        AssertDoesNotContain(rootText, "private void EmitLoop()");
-        AssertDoesNotContain(rootText, "private bool DrainReadyFrames()");
-        AssertDoesNotContain(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
-        AssertDoesNotContain(rootText, "private readonly record struct DecodedFrame(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Reorder.cs")),
+            "MJPEG decoded-frame ordering folded into the pipeline root");
+        AssertContains(rootText, "private void EmitLoop()");
+        AssertContains(rootText, "private bool DrainReadyFrames()");
+        AssertContains(rootText, "private bool TryAddDecodedFrame(long seqNo, PooledVideoFrame frame, long decodedTick)");
+        AssertContains(rootText, "private readonly record struct DecodedFrame(");
 
         return Task.CompletedTask;
     }
