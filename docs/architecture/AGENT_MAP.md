@@ -1142,9 +1142,6 @@ Primary current owners:
   HDMI source telemetry panel projection checks, hardware row presentation and
   input-provider behavior checks, and shared StatsPresentation/StatsHardwareRows
   xUnit reflection/file helpers.
-- `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
-  automation ID inventory, full-screen/window automation, UI-dispatching source
-  contract checks, and xUnit stats snapshot builder contract checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
   owns MainWindow preview resize telemetry, preview renderer startup-plan
   fallback policy, preview surface/shadow, renderer host lifecycle, D3D
@@ -1163,13 +1160,15 @@ Primary current owners:
   MainWindow property-change routing ownership assertions across focused
   controller adapters, visual shell/preview controller-adapter ownership for
   control bar, shell elevation, shell chrome settings shelf/title/live signal
-  info/status-strip presentation, preview-transition, preview startup overlay,
+  info/status-strip presentation, agent-facing automation ID inventory,
+  full-screen/window automation, UI dispatching, preview-transition, preview startup overlay,
   and preview fade-in controllers, plus window-title formatting,
   recording-button chrome, responsive shell layout adapter/controller ownership,
   responsive breakpoint/placement and snap-region rectangle policy checks,
   output path display/action ownership, output picker and output drive
   free-space presentation bridge checks, preview screenshot workflow/text-policy,
-  whole-window screenshot ownership checks, recording-state presentation, and
+  whole-window screenshot ownership checks, stats snapshot builder/provider
+  contract checks, recording-state presentation, and
   recording-state presentation policy assertions, plus recording action,
   preview audio fade, preview button presentation, audio control presentation,
   and microphone control ownership assertions.

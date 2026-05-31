@@ -79,8 +79,9 @@ add xUnit alongside, and port incrementally.
 - `Flashback.Playback.SourceShape.Tests.cs` owns the former legacy Flashback
   playback fMP4 reopen, seek recovery, in/out marker API, normalization,
   disposal, marker clamp, root state, transition, and audio guard checks.
-- `MainWindowUiContract.Tests.cs` owns the former legacy stats
-  snapshot construction and health/renderer metric projection checks.
+- `MainWindow.ControllerOwnership.Tests.cs` owns the former legacy MainWindow
+  UI contract and stats snapshot construction/health/renderer metric projection
+  checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit
   execution groups: catalog, manifest, path-policy, reliability-gates,
   app-surface, ViewModel/Flashback UI, dispatcher, capture/Flashback routing,
