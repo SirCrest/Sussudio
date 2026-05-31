@@ -1452,17 +1452,16 @@ Primary current owners:
   metrics, preview tracking, slow-frame diagnostic reflection contracts, and
   `AutomationRuntimeModels.cs` preview, Flashback playback, Flashback export,
   and process diagnostics reflection contracts.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs` owns
+- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
+  renderer core and render-pipeline source-ownership assertions:
   configuration, native interop, frame type/ownership state, DXGI frame-stat
   state, slow-frame state, metric-window lifecycle, metric-tracking method/state,
   panel binding, shared-device, device initialization, input-resource,
   input-view, raw-upload, frame-latency, viewport, letterbox, render-pass,
-  shader-rendering, and shader-source assertions for the renderer core and
-  render-pipeline source-ownership surface.
-  `D3D11PreviewRenderer.SourceOwnership.RuntimeCapture.Tests.cs` owns public
-  submission state, lifecycle/stop-lifecycle state, pending-frame state and
-  draining, render-thread loop, device-lost classification/recovery,
-  first-frame notification, failure telemetry method/state, Present shared
+  shader-rendering, shader-source, public submission state,
+  lifecycle/stop-lifecycle state, pending-frame state and draining,
+  render-thread loop, device-lost classification/recovery, first-frame
+  notification, failure telemetry method/state, Present shared
   present-accounting source-ownership, screenshot and frame-capture
   cancellation, shared D3D device reference lifecycle, black-edge counting,
   preview PNG encoder CRC, and preview PNG capture assertions.
