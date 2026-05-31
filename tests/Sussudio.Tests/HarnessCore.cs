@@ -688,7 +688,7 @@ static partial class Program
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.ControlBindings.cs");
 
     private static string ReadMainWindowFlashbackAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Flashback.Interactions.cs");
+        => ReadMainWindowCompositionSource();
 
     private static string ReadMainWindowPreviewRendererAdapterSource()
         => ReadMainWindowAdapterSource("Sussudio/MainWindow.PreviewLifecycle.Composition.cs");

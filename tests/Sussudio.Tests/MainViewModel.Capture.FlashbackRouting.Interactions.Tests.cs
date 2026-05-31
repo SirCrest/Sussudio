@@ -129,9 +129,9 @@ static partial class Program
         AssertDoesNotContain(flashbackScrubText, "private long _lastScrubUpdateTick;");
         AssertDoesNotContain(flashbackScrubControllerText, "var carriedPosition = _isScrubbing ? _context.ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback scrub adapter lives in the consolidated Flashback interaction adapter");
+            "Flashback scrub adapter folded into the MainWindow root composition adapter");
         AssertDoesNotContain(mainWindowText, "private bool _isFlashbackScrubbing;");
         AssertDoesNotContain(mainWindowText, "private TimeSpan? _lastScrubPointerPosition;");
 

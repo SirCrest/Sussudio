@@ -2129,7 +2129,7 @@ Flashback timeline visibility, lockout, toggle synchronization, track layout
 sizing, show/hide storyboard state, immediate collapse, and fullscreen animation
 reset now live in
 `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`.
-`Sussudio/MainWindow.Flashback.Interactions.cs` owns the consolidated
+`Sussudio/MainWindow.xaml.cs` owns the consolidated
 XAML-facing adapter surface for commands, polling, playhead motion, scrub
 input, settings, timeline visibility, and presentation. Command semantics live
 with the Flashback UI controllers in
@@ -2139,7 +2139,7 @@ Active Flashback pointer-scrub state now lives in
 `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs`. It owns scrub
 throttling, release/cancel/capture-lost cleanup, fullscreen scrub termination,
 lockout clearing, scrub visual updates, and pointer lifecycle around scrub
-commands. `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing
+commands. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
 scrub adapter.
 Timeline fraction/duration math used by scrub and playhead presentation now lives
 beside scrub interaction in
@@ -2152,14 +2152,14 @@ sampling, scrub/window gating, live right-edge pinning, long-horizon
 extrapolation scheduling, CTI anchor timing, compositor visual setup, snap
 placement, magnetic scrub movement, linear keyframe animation, and label
 clamp/positioning.
-`Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing playhead
+`Sussudio/MainWindow.xaml.cs` is the XAML-facing playhead
 adapter; command handling and toggle/apply workflows now live in the command
 controller.
 
 Flashback marker placement and compact duration text now live in
 `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`, including
 in/out marker visibility, selection-region layout, and `m:ss` formatting.
-`Sussudio/MainWindow.Flashback.Interactions.cs`
+`Sussudio/MainWindow.xaml.cs`
 wires marker presentation callbacks.
 
 Flashback playback UI sequencing now lives in
@@ -2172,14 +2172,14 @@ position-label updates with CTI re-anchor gating.
 Flashback export progress presentation now lives in
 `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`:
 progress-bar value, visibility, and reset-on-complete semantics.
-`Sussudio/MainWindow.Flashback.Interactions.cs` wires the export progress
+`Sussudio/MainWindow.xaml.cs` wires the export progress
 presentation controller.
 
 Flashback command semantics now live in
 `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`: in/out point commands,
 clear, play/pause, Go Live, fullscreen keyboard shortcuts including left/right
 nudge rejection logging, export, save-last-5m, enable-toggle rollback, and
-apply/restart. `Sussudio/MainWindow.Flashback.Interactions.cs` preserves the
+apply/restart. `Sussudio/MainWindow.xaml.cs` preserves the
 existing XAML event-handler names for command buttons and toggles.
 
 Flashback settings bindings now live in
@@ -2187,7 +2187,7 @@ Flashback settings bindings now live in
 projection, GPU decode toggle binding and reverse-sync, buffer duration combo
 selection, and `FLASHBACK_UI_BUFFER_DURATION_CHANGED` logging. The async
 Flashback enable/disable rollback path and apply/restart command also live in
-`FlashbackUiControllers.cs`; `Sussudio/MainWindow.Flashback.Interactions.cs`
+`FlashbackUiControllers.cs`; `Sussudio/MainWindow.xaml.cs`
 is the settings XAML-facing adapter.
 
 Flashback playback marker commands, in/out marker state, file-PTS restore,
@@ -2332,7 +2332,7 @@ in `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`.
 
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
-`Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing polling
+`Sussudio/MainWindow.xaml.cs` is the XAML-facing polling
 adapter; CTI anchor timing lives in
 `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
 
@@ -3206,9 +3206,10 @@ owner, fold it back into that owner and update the source-shape tests and
    runtime snapshot dispatch/sampling, audio meter rendering, preview startup,
    Flashback playback/export presentation, and stats overlay/row/snapshot
    projection are extracted behind named controllers or builders. The
-   Flashback XAML-facing adapter family is now split into focused
-   `MainWindow.Flashback.*.cs` partials so command, polling, playhead, scrub,
-   settings, timeline, and presentation wrappers can be audited independently.
+   Flashback XAML-facing adapter family is now folded into
+   `MainWindow.xaml.cs` so command, polling, playhead, scrub, settings,
+   timeline, and presentation wrappers stay with MainWindow construction and
+   controller initialization order while behavior remains in named controllers.
    The preview-startup XAML-facing adapter family is now consolidated in
    `MainWindow.PreviewLifecycle.Composition.cs` with the preview transition
    adapter so session, signal, watchdog, fade, button, and transition callback

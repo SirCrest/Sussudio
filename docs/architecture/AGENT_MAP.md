@@ -1947,13 +1947,13 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, timeline track layout
   sizing, show/hide storyboard state, immediate collapse, and fullscreen
-  animation reset. `Sussudio/MainWindow.Flashback.Interactions.cs` owns the XAML-facing
+  animation reset. `Sussudio/MainWindow.xaml.cs` owns the XAML-facing
   command, polling, playhead, scrub, settings, timeline, and presentation
   adapter surface. Command semantics live in `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` owns active
   Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
   cleanup, fullscreen scrub termination, lockout clearing, and scrub visual
-  updates. `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing
+  updates. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
   adapter.
   `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` also
   owns pure timeline fraction/duration math used by scrub and playhead
@@ -1964,10 +1964,10 @@ Primary current owners:
   long-horizon extrapolation scheduling, CTI anchor timing, compositor visual
   setup, snap placement, magnetic pointer-scrub movement, linear keyframe
   animation, and label clamp/positioning.
-  `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing adapter.
+  `Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
-  text formatting. `Sussudio/MainWindow.Flashback.Interactions.cs` wires marker
+  text formatting. `Sussudio/MainWindow.xaml.cs` wires marker
   presentation callbacks.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback playback UI sequencing: track-resize snap/position/marker/CTI
@@ -1981,16 +1981,16 @@ Primary current owners:
   command event-handler surface adapter.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` also owns
   Flashback export progress-bar value, visibility, and reset-on-complete
-  semantics. `Sussudio/MainWindow.Flashback.Interactions.cs` wires the
+  semantics. `Sussudio/MainWindow.xaml.cs` wires the
   export progress presentation controller.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   settings-control initialization, GPU decode toggle binding/sync, buffer
   duration combo selection/sync, and buffer-duration change logging.
-  `Sussudio/MainWindow.Flashback.Interactions.cs` is the XAML-facing settings
+  `Sussudio/MainWindow.xaml.cs` is the XAML-facing settings
   adapter; enable toggle rollback and apply/restart command behavior live in
   `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
-  and playback-position polling timers. `Sussudio/MainWindow.Flashback.Interactions.cs`
+  and playback-position polling timers. `Sussudio/MainWindow.xaml.cs`
   is the XAML-facing adapter; CTI anchor timing lives in
   `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns settings shelf
@@ -2580,8 +2580,9 @@ Refactor direction:
 - Keep `MainWindow.*` partials thin as XAML adapters over named controllers.
   Preview startup, preview runtime snapshot dispatch/sampling, MainWindow UI
   dispatching, stats projection, and Flashback playback/export presentation
-  already have named owners. The Flashback adapter family is split across
-  focused `MainWindow.Flashback.*.cs` partials. The preview-startup and
+  already have named owners. The thin Flashback XAML-facing adapter methods
+  live in `MainWindow.xaml.cs` with construction and controller initialization
+  order, while behavior remains in named Flashback controllers. The preview-startup and
   preview-transition adapter family is consolidated in
   `MainWindow.PreviewLifecycle.Composition.cs`; start the next UI cleanup from
   remaining broad adapters not covered by controller ownership tests.

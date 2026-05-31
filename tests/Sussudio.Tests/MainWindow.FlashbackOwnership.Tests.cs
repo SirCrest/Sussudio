@@ -25,9 +25,9 @@ static partial class Program
         AssertContains(pollingAdapterText, "=> _flashbackPollingController.StopPlaybackPolling();");
         AssertContains(mainWindowText, "InitializeFlashbackPollingController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback polling adapter lives in the consolidated Flashback interaction adapter");
+            "Flashback polling adapter folded into the MainWindow root composition adapter");
         AssertContains(timelineAdapterText, "StartStatusPolling = StartFlashbackStatusPolling,");
         AssertContains(shutdownCleanupText, "StopFlashbackStatusPolling();");
         AssertContains(shutdownCleanupControllerText, "_context.StopTimers();");
@@ -77,9 +77,9 @@ static partial class Program
         AssertContains(playheadText, "=> _flashbackPlayheadMotionController.StopCtiAnchorTimer();");
         AssertContains(mainWindowText, "InitializeFlashbackPlayheadMotionController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback playhead adapter lives in the consolidated Flashback interaction adapter");
+            "Flashback playhead adapter folded into the MainWindow root composition adapter");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackScrubInteractionController();", "InitializeFlashbackPlayheadMotionController();");
         AssertOccursBefore(mainWindowText, "InitializeFlashbackPlayheadMotionController();", "InitializeFlashbackTimelineController();");
         AssertContains(controllerRootText, "internal sealed class FlashbackPlayheadMotionControllerContext");
@@ -256,9 +256,9 @@ static partial class Program
         AssertContains(adapterText, "_flashbackSettingsBindingController.HandleBufferDurationSelectionChanged();");
         AssertContains(mainWindowText, "InitializeFlashbackSettingsBindingController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback settings adapter lives in the consolidated Flashback interaction adapter");
+            "Flashback settings adapter folded into the MainWindow root composition adapter");
         AssertContains(bindingsText, "ApplyInitialFlashbackSettings();");
         AssertContains(bindingsText, "AttachFlashbackSettingsBindings();");
 
@@ -302,9 +302,9 @@ static partial class Program
         AssertContains(commandControllerText, "NudgePlayback(TimeSpan.FromSeconds(1), \"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
         AssertContains(mainWindowText, "InitializeFlashbackCommandController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback command adapter lives in the consolidated Flashback interaction adapter");
+            "Flashback command adapter folded into the MainWindow root composition adapter");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackCommandController.cs")),
@@ -332,9 +332,9 @@ static partial class Program
 
         AssertContains(timelineAdapterText, "FlashbackTrackBackground = FlashbackTrackBackground,");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Flashback.Interactions.cs")),
-            "Flashback timeline adapter lives in the consolidated Flashback interaction adapter");
+            "Flashback timeline adapter folded into the MainWindow root composition adapter");
         AssertContains(timelineAdapterText, "FlashbackScrubArea = FlashbackScrubArea,");
         AssertContains(timelineAdapterText, "FlashbackPlayhead = FlashbackPlayhead,");
         AssertContains(timelineAdapterText, "FlashbackLiveEdge = FlashbackLiveEdge,");
