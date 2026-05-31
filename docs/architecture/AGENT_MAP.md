@@ -2312,15 +2312,15 @@ Primary current owners:
   async/sync disposal fallback, plus the bounded wait helper port that keeps
   timeout behavior explicit. `MainViewModel.cs` is the public refresh/dispose
   adapter and owns active Flashback export cancellation during teardown.
-  `MainViewModel.AutomationCommands.cs` owns automation-facing command,
+  `MainViewModel.cs` owns automation-facing command,
   capture runtime, health, and recording snapshot projection.
-  `MainViewModel.AutomationCommands.cs` also owns automation-facing source/preview probes and preview frame capture.
-  `MainViewModel.AutomationCommands.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
+  `MainViewModel.cs` also owns automation-facing source/preview probes and preview frame capture.
+  `MainViewModel.cs` owns automation-facing view-model runtime snapshot UI-thread capture.
   `ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.
   `tests/Sussudio.Tests/ViewModelBuilders.Tests.cs` owns executable coverage for
   those pure view-model DTO builders plus source telemetry and live-signal text
   presentation helpers.
-  `MainViewModel.AutomationCommands.cs` owns automation-facing options
+  `MainViewModel.cs` owns automation-facing options
   UI-thread snapshot capture for CLI/MCP clients, while
   `ViewModelBuilders.cs` owns the pure selected-control-state DTO
   construction.
@@ -2461,7 +2461,7 @@ Primary current owners:
   `MainViewModel.cs` owns UI-only automation mutators
   for settings visibility, Flashback timeline visibility, show-all capture
   options, stats dock/section visibility, and frame-time overlay display.
-  `MainViewModel.AutomationCommands.cs` owns automation command entry points for
+  `MainViewModel.cs` owns automation command entry points for
   app audio enablement, audio-preview enablement, preview-volume
   clamp/persist, device-native mode/gain application, and microphone
   enablement with recording-time refusal and idempotent handling.
@@ -2474,10 +2474,10 @@ Primary current owners:
   `MainViewModel.FlashbackState.cs` owns automation Flashback
   enable/restart routing through the capture session coordinator alongside
   buffer/GPU setting reactions.
-  `MainViewModel.AutomationCommands.cs` owns automation device refresh,
+  `MainViewModel.cs` owns automation device refresh,
   capture-device selection, audio-input selection, and custom audio-input
   enablement.
-  `MainViewModel.AutomationCommands.cs` keeps the stable public automation
+  `MainViewModel.cs` keeps the stable public automation
   facade for capture resolution, frame-rate, video-format, MJPEG decoder
   worker-count, recording format, encoder, and output-path settings.
   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`

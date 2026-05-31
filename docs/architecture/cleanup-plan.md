@@ -3340,13 +3340,13 @@ owner, fold it back into that owner and update the source-shape tests and
    Flashback export cancellation owner. Automation-facing command entry points,
    capture runtime, health, recording snapshot projection, source/preview
    probes, and preview frame capture now live in
-   `MainViewModel.AutomationCommands.cs`; automation-facing view-model runtime snapshot UI-thread capture now lives in
-   `MainViewModel.AutomationCommands.cs`; pure view-model runtime snapshot DTO
+   `MainViewModel.cs`; automation-facing view-model runtime snapshot UI-thread capture now lives in
+   `MainViewModel.cs`; pure view-model runtime snapshot DTO
    construction lives in `ViewModelBuilders.cs`, with executable builder,
    source telemetry, and live-signal text coverage in
    `tests/Sussudio.Tests/ViewModelBuilders.Tests.cs`;
    automation options UI-thread snapshot capture now lives in
-   `MainViewModel.AutomationCommands.cs`; pure selected-control-state DTO
+   `MainViewModel.cs`; pure selected-control-state DTO
    construction lives in `ViewModelBuilders.cs`.
    `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
    owns xUnit execution for the diagnostics-loop polling check after its removal
@@ -3524,7 +3524,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Automation command entry points for app audio enablement, audio-preview
    enablement, preview-volume clamp/persist, device-native mode/gain
    application, and microphone enablement with recording-time
-   refusal/idempotent handling now live in `MainViewModel.AutomationCommands.cs`.
+   refusal/idempotent handling now live in `MainViewModel.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
    top-level `MainViewModelPreviewLifecycleController.cs` plus graph-built
@@ -3538,9 +3538,9 @@ owner, fold it back into that owner and update the source-shape tests and
    buffer/GPU setting reactions.
    Automation device refresh, capture-device selection, audio-input selection,
    and custom audio-input enablement now live in
-   `MainViewModel.AutomationCommands.cs`.
+   `MainViewModel.cs`.
    Recording format, encoder, and output-path automation entry points now stay
-   in the `MainViewModel.AutomationCommands.cs` compatibility facade,
+   in the `MainViewModel.cs` compatibility facade,
    while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
    suppression, coordinator side effects, custom bitrate clamping, encoder
    preset, and output-path directory creation live in
@@ -3561,7 +3561,7 @@ owner, fold it back into that owner and update the source-shape tests and
    so it keeps bypassing UI-thread dispatch and normal transition gates.
    Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
    automation entry points now stay in the
-   `MainViewModel.AutomationCommands.cs` compatibility facade, while
+   `MainViewModel.cs` compatibility facade, while
    UI-thread mutations, validation, MJPEG decoder clamping, and active
    capture-mode reinitialization routing live in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.

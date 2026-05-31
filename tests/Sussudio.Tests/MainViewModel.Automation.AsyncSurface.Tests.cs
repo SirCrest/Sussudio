@@ -86,7 +86,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackPlaybackCommandsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
-        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
+        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var automationText = string.Join(
             "\n",
@@ -114,6 +114,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationFlashback.cs")),
             "MainViewModel automation Flashback partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationCommands.cs")),
+            "MainViewModel automation commands facade folded into MainViewModel.cs");
 
         AssertDoesNotContain(interfaceText, "bool FlashbackPlay();");
         AssertDoesNotContain(interfaceText, "bool FlashbackPause();");
@@ -215,7 +219,7 @@ static partial class Program
 
     internal static Task MainViewModelAutomation_ViewModelRuntimeSnapshotLivesInFocusedPartial()
     {
-        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
+        var automationFacadeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var viewModelRuntimeSnapshotText = automationFacadeText;
         var viewModelRuntimeSnapshotBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
@@ -247,19 +251,19 @@ static partial class Program
         AssertContains(automationFacadeText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
         AssertContains(automationFacadeText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
         AssertContains(automationFacadeText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
-        AssertContains(agentMapText, "`MainViewModel.AutomationCommands.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
+        AssertContains(agentMapText, "`MainViewModel.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
         AssertContains(agentMapText, "`ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.");
         AssertContains(agentMapText, "also owns automation-facing source/preview probes and preview frame capture.");
-        AssertContains(cleanupPlanText, "`MainViewModel.AutomationCommands.cs`; pure view-model runtime snapshot DTO");
+        AssertContains(cleanupPlanText, "`MainViewModel.cs`; pure view-model runtime snapshot DTO");
         AssertContains(cleanupPlanText, "construction lives in `ViewModelBuilders.cs`");
-        AssertContains(cleanupPlanText, "probes, and preview frame capture now live in\n   `MainViewModel.AutomationCommands.cs`");
+        AssertContains(cleanupPlanText, "probes, and preview frame capture now live in\n   `MainViewModel.cs`");
 
         return Task.CompletedTask;
     }
 
     internal static Task AutomationAudioCommands_PreserveRuntimeGuards()
     {
-        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs")
+        var automationAudioText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
@@ -294,7 +298,7 @@ static partial class Program
         AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
         AssertContains(automationAudioText, "cancellationToken).ConfigureAwait(false);");
         AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
-        AssertDoesNotContain(automationUiText, "public Task SetPreviewVolumeAsync");
+        AssertContains(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
         AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
         AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);\n\n                _micMonitorEnabled = enabled;");
@@ -380,7 +384,7 @@ static partial class Program
     {
         var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
-        var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AutomationCommands.cs");
+        var automationSnapshotText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
         var automationOptionsText = automationSnapshotText;
         var automationOptionsBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
 
@@ -405,11 +409,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationOptionsSnapshot.cs")),
-            "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.AutomationCommands.cs");
+            "MainViewModel.AutomationOptionsSnapshot.cs folded into MainViewModel.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationSnapshots.cs")),
-            "MainViewModel.AutomationSnapshots.cs folded into MainViewModel.AutomationCommands.cs");
+            "MainViewModel.AutomationSnapshots.cs folded into MainViewModel.cs");
 
         return Task.CompletedTask;
     }
