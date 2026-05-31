@@ -1175,11 +1175,9 @@ Primary current owners:
   output path display/action ownership, output picker and output drive
   free-space presentation bridge checks, preview screenshot workflow/text-policy,
   whole-window screenshot ownership checks, recording-state presentation, and
-  recording-state presentation policy assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
-  owns MainWindow controller-adapter ownership assertions for recording action,
+  recording-state presentation policy assertions, plus recording action,
   preview audio fade, preview button presentation, audio control presentation,
-  and microphone controls.
+  and microphone control ownership assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
   owns capture selection binding XAML-adapter, controller shell,
   `PropertyChanged` routing, collection sync, queued sync, available-option
