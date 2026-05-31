@@ -76,9 +76,9 @@ add xUnit alongside, and port incrementally.
   startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
   timestamp, audio, in/out marker, request validation, segment, cancellation,
   output path/finalization, and source-ownership checks.
-- `Flashback.Playback.Reopen.Tests.cs` owns the former legacy Flashback
+- `Flashback.Playback.SourceShape.Tests.cs` owns the former legacy Flashback
   playback fMP4 reopen, seek recovery, in/out marker API, normalization,
-  disposal, and marker clamp checks.
+  disposal, marker clamp, root state, transition, and audio guard checks.
 - `MainWindowUiContract.Tests.cs` owns the former legacy stats
   snapshot construction and health/renderer metric projection checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit

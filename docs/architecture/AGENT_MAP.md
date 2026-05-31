@@ -1843,10 +1843,8 @@ Primary current owners:
   command state, command-position clamping, saturating timestamp arithmetic,
   segment-open recovery, near-live snap, snap-live identity cleanup,
   pause-from-live display, paused nudge, live-preview transition, audio guard,
-  and audio-master projection/source ownership tests.
-- `tests/Sussudio.Tests/Flashback.Playback.Reopen.Tests.cs` owns Flashback
-  playback fMP4 reopen, seek-display, seek recovery, in/out marker API,
-  normalization, disposal, and marker clamp tests.
+  audio-master projection/source ownership, fMP4 reopen, seek-display, seek
+  recovery, in/out marker API, normalization, disposal, and marker clamp tests.
 - `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns
   Flashback playback command queue capacity/drop-oldest, scrub-coalescing
   source ownership, seek-slot barrier/failure behavior, playback thread
