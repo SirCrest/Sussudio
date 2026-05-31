@@ -5612,3 +5612,15 @@ Build/tests/runtime checks: focused audio model/ramp trace tests (4 passed), ful
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public model type names and namespace remain unchanged.
 Behavior preserved: `AudioInputDevice`, `AudioLevelEventArgs`, `AudioPathMode`, `AudioRampTraceSnapshot`, and `AudioRampTraceEntry` keep the same members and defaults while living in `Sussudio/Models/Capture/CaptureModels.cs` with the capture settings/device model surface.
 Notes for future agents: keep capture device/settings/audio endpoint/event/path/trace leaf models in `CaptureModels.cs` while they remain shared `Sussudio.Models` contracts; split audio models again only for a real external shared-source or non-capture model boundary.
+
+Date: 2026-05-31
+Area: Source telemetry model locality
+Problem: `Sussudio/Models/Telemetry/SourceSignalTelemetrySnapshot.cs` was the only file in `Models/Telemetry` and carried source signal telemetry DTOs already consumed by capture diagnostics, runtime snapshots, health snapshots, automation projection, view-model source-aware selection, and the NativeXuAudioProbe shared-source build. Reviewing source telemetry model shape still required opening a one-file model folder beside the provider contract that already defines the read-only telemetry seam linked by probe tools.
+Files consolidated: `Sussudio/Models/Telemetry/SourceSignalTelemetrySnapshot.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; small model leaf file count -1
+Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore` passed after moving the shared DTOs beside the provider contract; focused source telemetry/model/service-namespace tests passed (46 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full test suite passed (883 passed); runtime harness passed; regenerated baseline; architecture-doc tests passed (16 passed); diff checks passed.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public model type names and namespace remain unchanged.
+Behavior preserved: `SourceTelemetryAvailability`, `SourceTelemetryOrigin`, `SourceTelemetryConfidence`, `SourceAudioInputAvailability`, `SourceAudioInputMode`, `DeviceAudioMode`, `TelemetryLabels`, `SourceTelemetryDetailEntry`, and `SourceSignalTelemetrySnapshot` keep the same members/defaults while living in `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` with the probe-linked source telemetry provider contract.
+Notes for future agents: keep source signal telemetry DTOs with `ISourceSignalTelemetryProvider.cs` while they remain shared `Sussudio.Models` capture/diagnostics contracts linked by probe tools; split them again only for a real external shared-source package or non-capture model boundary.

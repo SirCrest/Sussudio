@@ -36,9 +36,9 @@ static partial class Program
                 throw new InvalidOperationException($"Service file must live in a domain folder: {relative}");
             }
 
-            var expectedNamespace = $"namespace Sussudio.Services.{parts[0]};";
+            var expectedNamespace = $"namespace Sussudio.Services.{parts[0]}";
             var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
-            if (!code.Contains(expectedNamespace, StringComparison.Ordinal))
+            if (!ContainsNamespaceDeclaration(code, expectedNamespace))
             {
                 throw new InvalidOperationException($"{relative} must declare {expectedNamespace}");
             }
@@ -69,7 +69,10 @@ static partial class Program
         foreach (var relativePath in serviceContractFiles)
         {
             var source = ReadRepoFile(relativePath);
-            AssertContains(source, "namespace Sussudio.Services.Contracts;");
+            AssertEqual(
+                true,
+                ContainsNamespaceDeclaration(source, "namespace Sussudio.Services.Contracts"),
+                $"{relativePath} declares service contract namespace");
             AssertDoesNotContain(source, "namespace Sussudio.Tools;");
             AssertDoesNotContain(source, "Sussudio.Automation.Contracts");
         }
@@ -113,6 +116,12 @@ static partial class Program
         AssertContains(serviceInterfacesText, "internal interface IPreviewFrameSink");
         var sourceTelemetryProviderText = ReadRepoFile("Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs");
         AssertContains(sourceTelemetryProviderText, "public interface ISourceSignalTelemetryProvider");
+        AssertContains(sourceTelemetryProviderText, "namespace Sussudio.Models");
+        AssertContains(sourceTelemetryProviderText, "public sealed record SourceSignalTelemetrySnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Telemetry", "SourceSignalTelemetrySnapshot.cs")),
+            "source telemetry DTOs live with the probe-linked telemetry provider contract");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "AutomationInterfaces.cs")),
@@ -124,6 +133,11 @@ static partial class Program
 
         AssertContains(agentMapText, "separate from `Sussudio.Automation.Contracts` wire/protocol contracts");
     }
+
+    private static bool ContainsNamespaceDeclaration(string source, string namespacePrefix)
+        => source.Contains(namespacePrefix + ";", StringComparison.Ordinal) ||
+           source.Contains(namespacePrefix + "\n{", StringComparison.Ordinal) ||
+           source.Contains(namespacePrefix + "\r\n{", StringComparison.Ordinal);
 
     internal static Task AutomationContracts_SourceOwnership_IsModelAligned()
     {
