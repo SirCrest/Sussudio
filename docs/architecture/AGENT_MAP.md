@@ -2788,15 +2788,14 @@ Primary owners:
   validation, export-while-preview-off verification, playback-under-preview-stop
   validation, recording-backed readiness/counter validation, and restart
   frame-flow validation.
-- `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
-  owns deferred recording-settings preset state, during-recording preset
-  mutation, restart/disable rejection-message policy, active-recording
-  backend/file/counter stability checks, post-stop preset verification,
-  encoder-frame checks, and original-preset restore verification.
-- `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` owns the
-  Flashback completed-segment playback scenario: task registration, target
-  acquisition, boundary-crossing playback, go-live restore, snapshot/FPS/
-  command-health validation, and recording-assisted segment rotation fallback.
+- `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs` owns deferred
+  recording-settings preset state, during-recording preset mutation,
+  restart/disable rejection-message policy, active-recording backend/file/
+  counter stability checks, post-stop preset verification, encoder-frame
+  checks, original-preset restore verification, and the Flashback
+  completed-segment playback scenario: task registration, target acquisition,
+  boundary-crossing playback, go-live restore, snapshot/FPS/command-health
+  validation, and recording-assisted segment rotation fallback.
 - `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds, stress/scrub-stress task registration, main stress and
   scrub-stress command choreography, stress export verification, warmed-playback

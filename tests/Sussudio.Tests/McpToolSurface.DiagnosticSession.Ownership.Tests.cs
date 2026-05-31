@@ -33,11 +33,11 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs");
+            "tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs");
 
     private static string ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs");
+            "tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs");
 
     private static string ReadDiagnosticSessionFlashbackSegmentsSource()
         => ReadNormalizedSourceFiles(

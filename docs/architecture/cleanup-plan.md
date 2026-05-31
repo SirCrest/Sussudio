@@ -2884,19 +2884,17 @@ owner covers selected rejected-export dispatch, inactive-buffer failure-kind and
 last-result assertions, and active-Flashback-recording failure-kind and
 backend-stability assertions.
 
-Diagnostic-session Flashback recording-settings deferral now lives in
-`DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`, which owns deferred
-preset state, during-recording command choreography, restart/disable rejection
-policy, active recording backend/file/counter stability checks, post-stop preset
-verification, encoder-frame checks, and original-preset restore verification.
-
-Diagnostic-session Flashback segment playback now lives in
-`tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`, which owns
-task registration, completed-segment boundary-crossing choreography, playback
-target acquisition, recording-assisted retry routing, go-live restore,
-post-boundary snapshot/FPS/command-health warning policy, and best-effort
-recording cleanup. `DiagnosticSessionFlashbackSupport.cs` stays the read-only
-segment parsing and wait-policy helper.
+Diagnostic-session Flashback recording-settings deferral and segment playback
+now live in `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs`, which
+owns deferred preset state, during-recording command choreography,
+restart/disable rejection policy, active recording backend/file/counter
+stability checks, post-stop preset verification, encoder-frame checks,
+original-preset restore verification, task registration, completed-segment
+boundary-crossing choreography, playback target acquisition,
+recording-assisted retry routing, go-live restore, post-boundary
+snapshot/FPS/command-health warning policy, and best-effort recording cleanup.
+`DiagnosticSessionFlashbackSupport.cs` stays the read-only segment parsing and
+wait-policy helper.
 
 Diagnostic-session Flashback segment handling is a section of
 `DiagnosticSessionFlashbackSupport.cs`. It owns `FlashbackGetSegments` response
@@ -2989,8 +2987,7 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackExportScenarios.cs`
 - `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-- `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
-- `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
+- `DiagnosticSessionFlashbackScenarioTasks.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionMetrics.cs`
