@@ -189,8 +189,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs")
             .Replace("\r\n", "\n");
-        var stopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.StopLifecycle.cs")
-            .Replace("\r\n", "\n");
+        var stopText = rootText;
 
         AssertContains(rootText, "public long DroppedVideoFrames =>");
         AssertContains(rootText, "public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)");
@@ -241,15 +240,15 @@ static partial class Program
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
         AssertDoesNotContain(queueText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
-        AssertDoesNotContain(rootText, "public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
-        AssertDoesNotContain(rootText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.StopLifecycle.cs")),
+            "LibAvRecordingSink stop/finalize lifecycle lives with the sink root lifecycle");
 
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.OutputValidation.cs")),
-            "LibAvRecordingSink.OutputValidation.cs folded into LibAvRecordingSink.StopLifecycle.cs");
+            "LibAvRecordingSink.OutputValidation.cs folded into the sink root lifecycle");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Options.cs")),
