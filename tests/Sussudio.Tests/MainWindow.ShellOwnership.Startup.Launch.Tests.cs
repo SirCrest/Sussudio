@@ -11,7 +11,7 @@ static partial class Program
         var launchEntranceText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var launchAdapterText = ReadMainWindowShellChromeAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
         var catalogText = controllerText;
         var pacingPolicyText = controllerText;
 
@@ -50,11 +50,15 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhraseCatalog.cs")),
-            "splash phrase catalog folded into SplashLoadingPhraseController.cs");
+            "splash phrase catalog folded into LaunchFlowController.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhrasePacingPolicy.cs")),
-            "splash phrase pacing policy folded into SplashLoadingPhraseController.cs");
+            "splash phrase pacing policy folded into LaunchFlowController.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Splash", "SplashLoadingPhraseController.cs")),
+            "splash phrase controller folded into LaunchFlowController.cs");
 
         return Task.CompletedTask;
     }

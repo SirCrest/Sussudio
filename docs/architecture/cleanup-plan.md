@@ -2323,14 +2323,6 @@ construction now live with shell chrome in
 `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing settings
 shelf adapter.
 
-`Sussudio/Controllers/Launch/Splash/SplashLoadingPhraseController.cs` owns
-Splash phrase file lookup, Markdown-ish parsing, cached defaults, exception
-fallback, randomized interval/mode selection, DispatcherTimer lifecycle, and
-the two-line splash text animation.
-Its MainWindow wiring lives in `Sussudio/MainWindow.ShellChrome.Composition.cs`
-because launch entrance owns the only phrase start/stop choreography and shares
-the shell launch adapter family.
-
 Loaded-time startup ordering now lives in
 `Sussudio/Controllers/Launch/LaunchFlowController.cs`: native shell reveal
 scheduling, initial ViewModel settings load, preview audio fade priming before
@@ -2342,9 +2334,12 @@ handler and shell launch context wiring.
 Launch entrance ownership lives with loaded-time startup in the same launch-flow owner:
 `Sussudio/Controllers/Launch/LaunchFlowController.cs` owns context,
 initial hidden/scaled shell state, splash fade, loading-phrase start/stop
-ordering, one-shot splash playback state, handoff into shell entrance, shell
-chrome/button/stats entrance choreography, deferred preview reveal logging,
-active-storyboard cleanup, and control-bar shadow fade.
+ordering, splash phrase file lookup, Markdown-ish parsing, cached defaults,
+exception fallback, randomized interval/mode selection, DispatcherTimer
+lifecycle, two-line splash text animation, one-shot splash playback state,
+handoff into shell entrance, shell chrome/button/stats entrance choreography,
+deferred preview reveal logging, active-storyboard cleanup, and control-bar
+shadow fade.
 `Sussudio/MainWindow.ShellChrome.Composition.cs`
 is the XAML-facing adapter for launch entrance wiring.
 
