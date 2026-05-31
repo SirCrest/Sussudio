@@ -1143,10 +1143,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
   automation ID inventory, full-screen/window automation, UI-dispatching source
   contract checks, and xUnit stats snapshot builder contract checks.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.Startup.Launch.Tests.cs`
-  owns MainWindow startup/launch ownership assertions for launch entrance
-  animation, first-load hosting, splash loading phrases, and splash pacing
-  policy.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
   owns MainWindow preview resize telemetry, preview renderer startup-plan
   fallback policy, preview surface/shadow, renderer host lifecycle, D3D
@@ -1157,11 +1153,12 @@ Primary current owners:
   defaults, health policy/input factory, and surface/startup/GPU playback
   projection policy regression checks.
 - `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
-  owns MainWindow native bootstrap, adapter, first-frame reveal, window-lifecycle
-  composition, close lifecycle state, close request/app-closing controllers,
-  recording-stop close protection, recording-finalization stop-wait policy,
-  post-close shutdown cleanup, automation-host disposal, and ownership
-  documentation assertions.
+  owns MainWindow startup/launch ownership, launch entrance animation,
+  first-load hosting, splash loading phrases, splash pacing policy, native
+  bootstrap, adapter, first-frame reveal, window-lifecycle composition, close
+  lifecycle state, close request/app-closing controllers, recording-stop close
+  protection, recording-finalization stop-wait policy, post-close shutdown
+  cleanup, automation-host disposal, and ownership documentation assertions.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns
   MainWindow property-change routing ownership assertions across focused
   controller adapters, visual shell/preview controller-adapter ownership for
