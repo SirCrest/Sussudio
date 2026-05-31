@@ -1053,19 +1053,17 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns shared
   compositor opacity fade helpers for preview shadow visuals without adding
   dispatcher hops.
-- `Sussudio/Controllers/Audio/Meter/AudioMeterController.cs` owns audio/microphone meter
-  setup, the XAML/view-model dependency bag, runtime fields, smoothing,
-  peak/range markers, microphone meter clipping, reset behavior, timer lifetime,
-  `TranslateMarker`, monitoring/disabled animations, and rounded content clips.
-  `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
-  `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
+- `Sussudio/Controllers/Audio/AudioControlBindingController.cs` owns the audio-control
   binding context, initial audio/microphone projection, preview-volume binding and priming,
   audio/microphone/device-audio selection handlers,
   record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
   initial meter presentation, device-audio gain/meter resize hooks, and
   audio/microphone property-change projections for audio toggles, monitoring
-  meter state, preview-volume slider sync, microphone enablement, and
-  microphone volume sync.
+  meter state, preview-volume slider sync, microphone enablement, microphone
+  volume sync, audio/microphone meter setup, the XAML/view-model meter
+  dependency bag, runtime meter fields, smoothing, peak/range markers,
+  microphone meter clipping, reset behavior, timer lifetime, `TranslateMarker`,
+  monitoring/disabled animations, and rounded content clips.
   `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Stats/StatsOverlayController.cs` owns stats dock visibility
   orchestration, stats/frame-time toggle event hookup and checked/unchecked

@@ -176,7 +176,7 @@ static partial class Program
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioMeterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var audioMeterControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/Meter/AudioMeterController.cs").Replace("\r\n", "\n");
+        var audioMeterControllerRootText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
 
         AssertContains(mainViewModelStateText, "IsAudioPreviewActive");
@@ -206,9 +206,18 @@ static partial class Program
                 "Sussudio",
                 "Controllers",
                 "Audio",
-                "Meter",
                 "AudioMeterController.Context.cs")),
             "AudioMeterController context partial");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(
+                GetRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "Audio",
+                "Meter",
+                "AudioMeterController.cs")),
+            "audio meter controller folded into AudioControlBindingController.cs");
         AssertContains(audioMeterControllerRootText, "public void AnimateTick()");
         AssertContains(audioMeterControllerRootText, "public void ResetVisuals()");
         AssertContains(audioMeterControllerRootText, "public void ResetMicrophoneVisuals()");

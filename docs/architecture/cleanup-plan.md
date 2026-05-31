@@ -841,20 +841,18 @@ presentation, playhead/CTI motion, playback presentation/coordinator behavior,
 and settings/command binding remain named test methods in one Flashback
 ownership spec.
 
-Audio and microphone meter rendering now lives in the
-`Sussudio/Controllers/Audio/Meter/AudioMeterController.cs`: the controller owns
-setup, XAML/view-model dependencies, smoothing, markers, resets, timer lifetime,
-`TranslateMarker`, monitoring/disabled animations, and rounded clips. Audio/microphone initial control projection and
-event hookup now live in
+Audio and microphone meter rendering, initial audio/microphone control
+projection, and event hookup now live in
 `Sussudio/Controllers/Audio/AudioControlBindingController.cs`: the controller
 owns the audio-control binding context, initial audio/microphone projection,
-preview-volume binding and priming,
-audio/microphone/device-audio selection handlers,
-record/preview/custom-audio/microphone toggle handlers, audio-meter activation,
-initial meter presentation, device-audio gain/meter resize hooks, and
+preview-volume binding and priming, audio/microphone/device-audio selection
+handlers, record/preview/custom-audio/microphone toggle handlers, audio-meter
+activation, initial meter presentation, device-audio gain/meter resize hooks,
 audio/microphone property-change projections for audio toggles, monitoring
-meter state, preview-volume slider sync, microphone enablement, and microphone
-volume sync.
+meter state, preview-volume slider sync, microphone enablement, microphone
+volume sync, meter setup, XAML/view-model meter dependencies, smoothing,
+markers, resets, timer lifetime, `TranslateMarker`, monitoring/disabled
+animations, and rounded clips.
 `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio, microphone,
 and audio-meter adapter;
 video-format collection setup, initial capture/recording option projection, and
