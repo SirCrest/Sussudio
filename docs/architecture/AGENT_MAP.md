@@ -1089,7 +1089,7 @@ Primary current owners:
   overlay adapter surface: composition controller instantiation, shell-control
   wiring, snapshot sources, dock targets, MJPEG/NVML sources, compact frame-time
   targets, lifecycle/polling commands, and section chrome event adapters.
-  `Sussudio/Controllers/Stats/StatsDockControllerGraph.cs` owns stats dock
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats dock
   presentation, diagnostic row, hardware row, and refresh-controller graph
   construction plus the dock graph context contract because the dock is only
   driven by the overlay controller.

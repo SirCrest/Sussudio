@@ -10,7 +10,7 @@ public class StatsOverlayLifecycleTests
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var frameTimeOverlayText = statsOverlayCompositionText;
-        var statsDockGraphText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs");
+        var statsDockGraphText = statsOverlayCompositionText;
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs");
@@ -63,6 +63,9 @@ public class StatsOverlayLifecycleTests
             "stats overlay composition context DTOs stay with the stats overlay composition owner");
         AssertContains(statsDockGraphText, "internal sealed class StatsDockControllerGraph");
         AssertContains(statsDockGraphText, "public void RefreshDock()");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.cs")),
+            "stats dock graph folded into stats overlay composition owner");
         AssertContains(bindingsText, "AttachStatsOverlayToggleBindings();");
         AssertContains(bindingsText, "ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);");
         AssertDoesNotContain(bindingsText, "_statsOverlayController.SyncStatsVisibility(ViewModel.IsStatsVisible");

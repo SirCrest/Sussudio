@@ -412,7 +412,7 @@ public partial class StatsPresentationTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
-        var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
+        var statsDockCompositionText = statsOverlayCompositionText;
         var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var controllerText = refreshControllerText;
 
@@ -467,14 +467,17 @@ public partial class StatsPresentationTests
         AssertDoesNotContain(statsOverlayText, "private void UpdateDiagnosticsSection(");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.Contexts.cs")),
-            "stats dock graph context folded into StatsDockControllerGraph.cs");
+            "stats dock graph context folded into StatsOverlayCompositionController.cs");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.cs")),
+            "stats dock graph folded into StatsOverlayCompositionController.cs");
     }
 
     [Fact]
     public void StatsDockRowChrome_LivesInFocusedController()
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
-        var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockControllerGraph.cs").Replace("\r\n", "\n");
+        var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var mainWindowText = MainWindowCompositionSource.Read();
         var statsDockRowsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowsController.cs").Replace("\r\n", "\n");
         var controllerText = statsDockRowsText;

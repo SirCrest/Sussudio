@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-31T01:57:26Z
+Generated UTC: 2026-05-31T02:02:33Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 241 |
+| Production .cs files | 240 |
 | Test .cs files | 128 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (0.8%) |
@@ -76,7 +76,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 833 | Sussudio/Models/Automation/AutomationSnapshot.cs |
 | 831 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs |
 | 830 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
-| 823 | Sussudio/ViewModels/MainViewModel.cs |
+| 823 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 
 ## Sample production files under 60 lines
 

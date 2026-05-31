@@ -2043,7 +2043,7 @@ grouped composition context DTOs for shell controls, snapshot sources, dock
 targets, hardware sources, and frame-time targets;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 and the dock graph context contract now live in
-`Sussudio/Controllers/Stats/StatsDockControllerGraph.cs`;
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing stats
 overlay adapter surface: binding setup, stats dock visibility, refresh hooks,
 snapshot inputs, frame-time targets, section commands, and polling commands.
