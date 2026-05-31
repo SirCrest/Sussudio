@@ -1379,10 +1379,9 @@ Primary current owners:
   queue-cleanup, output validation, video-session setup, drain-loop,
   encoding-loop, startup sequencing, stop-lifecycle, and lifetime-helper
   ownership assertions.
-  `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
-  recording lifecycle, recording-stop finalization failure propagation, active
-  recording backend resource aggregate, recording start rollback, and recording
-  outcome-state file-ownership assertions.
+  It also owns CaptureService recording lifecycle, recording-stop finalization
+  failure propagation, active recording backend resource aggregate, recording
+  start rollback, and recording outcome-state file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
   WASAPI capture-loop, hot-write, conversion, root diagnostics, COM contract,
   bounded stop assertions, UnifiedVideoCapture frame-ingress, CPU-MJPEG format
