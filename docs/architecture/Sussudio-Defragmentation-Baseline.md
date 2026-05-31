@@ -5600,3 +5600,15 @@ Build/tests/runtime checks: focused Flashback export and capture snapshot tests 
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private CaptureService Flashback export helpers.
 Behavior preserved: Flashback export rejection/result recording, begin/progress/completion diagnostics, force-rotate fallback counters, health snapshot projection fields, elapsed/progress-age/output-length/throughput helpers, failure-kind taxonomy, range/last-N entry points, backend snapshot locking, export-operation locking, eviction pause/resume, request assembly, live-export throttle, segment metadata mapping, and force-rotate preparation keep the same method names and call order while living in `Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
 Notes for future agents: keep CaptureService Flashback export diagnostics, failure taxonomy, progress/health projection, range resolution, request assembly, and force-rotate export preparation together in `CaptureService.FlashbackExportCore.cs`; split only if a real export diagnostics collaborator replaces the private helper group.
+
+Date: 2026-05-31
+Area: Capture audio model locality
+Problem: `Sussudio/Models/Audio/AudioModels.cs` was a 67-line leaf model file for audio endpoint options, capture audio level events, diagnostic audio path mode, and audio ramp trace DTOs. Those types share the same `Sussudio.Models` namespace and are consumed by capture settings, device discovery, capture audio events, and monitoring/automation trace surfaces, so reviewing capture model contracts still required opening a tiny sibling model file.
+Files consolidated: `Sussudio/Models/Audio/AudioModels.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; small model leaf file count -1
+Build/tests/runtime checks: focused audio model/ramp trace tests (4 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public model type names and namespace remain unchanged.
+Behavior preserved: `AudioInputDevice`, `AudioLevelEventArgs`, `AudioPathMode`, `AudioRampTraceSnapshot`, and `AudioRampTraceEntry` keep the same members and defaults while living in `Sussudio/Models/Capture/CaptureModels.cs` with the capture settings/device model surface.
+Notes for future agents: keep capture device/settings/audio endpoint/event/path/trace leaf models in `CaptureModels.cs` while they remain shared `Sussudio.Models` contracts; split audio models again only for a real external shared-source or non-capture model boundary.
