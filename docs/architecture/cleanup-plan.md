@@ -1950,14 +1950,12 @@ active read path, and keep shared source snapshot assembly in
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
-read-only runtime inputs consumed by UI, automation, and verification, then
-delegates final DTO construction.
+read-only runtime inputs consumed by UI, automation, and verification, and owns
+final `CaptureRuntimeSnapshot` DTO construction.
 Runtime snapshot behavior and source projection ownership coverage live together
 in `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`.
-`Sussudio/Services/Capture/CaptureService.RuntimeSnapshotAssembler.cs` owns final
-`CaptureRuntimeSnapshot` DTO construction from already-sampled field groups.
-The private runtime snapshot assembly handoff contract lives with the assembler
-that consumes it.
+The private runtime snapshot assembly handoff contract lives with the runtime
+snapshot sampler that consumes it.
 The automation runtime model surface lives in `AutomationRuntimeModels.cs`, with
 sectioned runtime fields grouped by the same domain as the sampled field groups.
 Video ingest, source-reader health, WASAPI capture, playback output counter,
