@@ -5624,3 +5624,15 @@ Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudio
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public model type names and namespace remain unchanged.
 Behavior preserved: `SourceTelemetryAvailability`, `SourceTelemetryOrigin`, `SourceTelemetryConfidence`, `SourceAudioInputAvailability`, `SourceAudioInputMode`, `DeviceAudioMode`, `TelemetryLabels`, `SourceTelemetryDetailEntry`, and `SourceSignalTelemetrySnapshot` keep the same members/defaults while living in `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` with the probe-linked source telemetry provider contract.
 Notes for future agents: keep source signal telemetry DTOs with `ISourceSignalTelemetryProvider.cs` while they remain shared `Sussudio.Models` capture/diagnostics contracts linked by probe tools; split them again only for a real external shared-source package or non-capture model boundary.
+
+Date: 2026-05-31
+Area: Runtime process supervision locality
+Problem: `Sussudio/Services/Runtime/ProcessSupervisor.cs` was a small runtime helper file carrying bounded external process DTOs, the `IProcessSupervisor` seam, and the conservative no-shell process runner. `RuntimeHelpers.cs` already owns shared runtime helper contracts and low-level native/runtime wrappers used across capture, recording, diagnostics, and UI shell, so auditing no-hardware runtime helpers still required opening a second small runtime file for one helper family.
+Files consolidated: `Sussudio/Services/Runtime/ProcessSupervisor.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; small runtime helper file count -1
+Build/tests/runtime checks: focused runtime/process-supervisor and recording verifier tests passed (90 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full test suite passed (883 passed); runtime harness passed; regenerated baseline; architecture-doc tests passed (16 passed); diff checks passed.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public runtime type names and namespace remain unchanged.
+Behavior preserved: `ProcessSpec`, `ProcessRunResult`, `IProcessSupervisor`, and `ProcessSupervisor` keep the same members/defaults, timeout behavior, no-shell process start policy, priority assignment, cancellation/timeout termination, bounded output read, and diagnostic log events while living in `Sussudio/Services/Runtime/RuntimeHelpers.cs`.
+Notes for future agents: keep small shared runtime helper families in `RuntimeHelpers.cs`; split process supervision again only if it grows an independent policy object, alternate runner strategy, or external package boundary.

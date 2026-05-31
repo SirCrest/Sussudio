@@ -1673,7 +1673,8 @@ Primary current owners:
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, TelemetryAgeHelper,
   EnvironmentHelpers, RingBufferHelpers, shared minimum-window-size Win32
-  subclassing, and best-effort MMCSS worker registration.
+  subclassing, bounded external process supervision contracts and runner, and
+  best-effort MMCSS worker registration.
   `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns their behavior
   and native-entry-point contracts.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the former

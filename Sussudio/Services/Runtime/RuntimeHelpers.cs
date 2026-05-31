@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sussudio.Services.Runtime;
 
@@ -268,6 +270,236 @@ internal static class MinSizeWindowSubclass
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
     private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+}
+
+// Process execution contract used by verifiers and tooling wrappers. It keeps
+// timeout, stdout/stderr capture, start failure, and priority behavior uniform.
+public sealed class ProcessSpec
+{
+    public required string FileName { get; init; }
+    public string Arguments { get; init; } = string.Empty;
+    public string? WorkingDirectory { get; init; }
+    public int TimeoutMs { get; init; } = 30_000;
+    public ProcessPriorityClass? PriorityClass { get; init; }
+}
+
+public sealed class ProcessRunResult
+{
+    public bool Started { get; init; }
+    public bool TimedOut { get; init; }
+    public bool ExitConfirmed { get; init; }
+    public int? ProcessId { get; init; }
+    public int? ExitCode { get; init; }
+    public string StdOut { get; init; } = string.Empty;
+    public string StdErr { get; init; } = string.Empty;
+    public Exception? StartException { get; init; }
+}
+
+public interface IProcessSupervisor
+{
+    Task<ProcessRunResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default);
+}
+
+// Small supervised process runner. It is deliberately conservative: no shell,
+// bounded waits, and explicit timeout reporting for diagnostics.
+public sealed class ProcessSupervisor : IProcessSupervisor
+{
+    public async Task<ProcessRunResult> RunAsync(ProcessSpec spec, CancellationToken cancellationToken = default)
+    {
+        if (spec.TimeoutMs <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(spec.TimeoutMs), "Timeout must be greater than zero.");
+        }
+
+        Logger.LogEvent("CAP-PROC-START", $"{spec.FileName} timeoutMs={spec.TimeoutMs}");
+
+        Process? process;
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = spec.FileName,
+                Arguments = spec.Arguments,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            if (!string.IsNullOrWhiteSpace(spec.WorkingDirectory))
+            {
+                startInfo.WorkingDirectory = spec.WorkingDirectory;
+            }
+
+            process = Process.Start(startInfo);
+            if (process != null && spec.PriorityClass.HasValue)
+            {
+                TrySetPriorityClass(process, spec.FileName, spec.PriorityClass.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogEvent("CAP-PROC-START-FAIL", $"{spec.FileName} error={ex.Message}");
+            return new ProcessRunResult
+            {
+                Started = false,
+                StartException = ex
+            };
+        }
+
+        if (process == null)
+        {
+            Logger.LogEvent("CAP-PROC-START-FAIL", $"{spec.FileName} process=null");
+            return new ProcessRunResult
+            {
+                Started = false
+            };
+        }
+
+        using (process)
+        {
+            var processId = process.Id;
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+            var timedOut = false;
+            var outputReadTimeoutMs = Math.Clamp(spec.TimeoutMs, 1000, 5000);
+
+            try
+            {
+                var exitTask = process.WaitForExitAsync(cancellationToken);
+                try
+                {
+                    await exitTask.WaitAsync(TimeSpan.FromMilliseconds(spec.TimeoutMs), cancellationToken);
+                }
+                catch (TimeoutException)
+                {
+                    timedOut = true;
+                    Logger.LogEvent("CAP-PROC-TIMEOUT", $"{spec.FileName} timeoutMs={spec.TimeoutMs}");
+                    var killWaitMs = Math.Clamp(spec.TimeoutMs / 2, 250, 5000);
+                    var exited = await TryTerminateAsync(process, spec.FileName, killWaitMs, "timeout");
+                    if (!exited)
+                    {
+                        Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=timeout pid={processId}");
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.LogEvent("CAP-PROC-CANCEL", $"{spec.FileName}");
+                var cancelKillWaitMs = Math.Clamp(spec.TimeoutMs, 1000, 10000);
+                var exited = await TryTerminateAsync(process, spec.FileName, cancelKillWaitMs, "canceled");
+                if (!exited)
+                {
+                    Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=canceled pid={processId}");
+                }
+                throw;
+            }
+
+            var canReadOutputs = process.HasExited;
+            var stdout = canReadOutputs
+                ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs)
+                : string.Empty;
+            var stderr = canReadOutputs
+                ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs)
+                : string.Empty;
+
+            if (!canReadOutputs)
+            {
+                Logger.LogEvent("CAP-PROC-READ-SKIP", $"{spec.FileName} output skipped because process remained alive");
+            }
+
+            Logger.LogEvent("CAP-PROC-EXIT", $"{spec.FileName} exitCode={(process.HasExited ? process.ExitCode : -1)} timedOut={timedOut}");
+
+            return new ProcessRunResult
+            {
+                Started = true,
+                TimedOut = timedOut,
+                ExitConfirmed = process.HasExited,
+                ProcessId = processId,
+                ExitCode = process.HasExited ? process.ExitCode : null,
+                StdOut = stdout,
+                StdErr = stderr
+            };
+        }
+    }
+
+    private static void TryKill(Process process)
+    {
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch
+        {
+            // Best-effort - process may have already exited.
+        }
+    }
+
+    private static void TrySetPriorityClass(Process process, string fileName, ProcessPriorityClass priorityClass)
+    {
+        try
+        {
+            process.PriorityClass = priorityClass;
+            Logger.LogEvent("CAP-PROC-PRIORITY", $"{fileName} priority={priorityClass}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogEvent("CAP-PROC-PRIORITY-FAIL", $"{fileName} priority={priorityClass} error={ex.GetType().Name}:{ex.Message}");
+        }
+    }
+
+    private static async Task<bool> TryTerminateAsync(Process process, string fileName, int killWaitMs, string reason)
+    {
+        TryKill(process);
+
+        if (await WaitForExitWithTimeoutAsync(process, killWaitMs))
+        {
+            return true;
+        }
+
+        Logger.LogEvent("CAP-PROC-KILL-TIMEOUT", $"{fileName} reason={reason} killWaitMs={killWaitMs}");
+
+        // Retry once with an additional bounded wait window.
+        TryKill(process);
+        var recoveryWaitMs = Math.Clamp(killWaitMs / 2, 250, 5000);
+        if (await WaitForExitWithTimeoutAsync(process, recoveryWaitMs))
+        {
+            Logger.LogEvent("CAP-PROC-KILL-RECOVERED", $"{fileName} reason={reason} recoveryWaitMs={recoveryWaitMs}");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static async Task<bool> WaitForExitWithTimeoutAsync(Process process, int timeoutMs)
+    {
+        if (process.HasExited)
+        {
+            return true;
+        }
+
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string> TryReadWithTimeoutAsync(Task<string> readTask, int timeoutMs)
+    {
+        try
+        {
+            return await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+        }
+        catch
+        {
+            return string.Empty;
+        }
+    }
 }
 
 // Best-effort MMCSS registration wrapper for timing-sensitive worker threads.

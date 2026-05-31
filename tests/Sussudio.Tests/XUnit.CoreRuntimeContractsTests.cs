@@ -280,8 +280,11 @@ public sealed class RuntimeContractsTests
         Assert.Equal(string.Empty, resultType.GetProperty("StdOut")!.GetValue(Activator.CreateInstance(resultType)!));
         Assert.Equal(string.Empty, resultType.GetProperty("StdErr")!.GetValue(Activator.CreateInstance(resultType)!));
 
-        var sourceText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/ProcessSupervisor.cs");
+        var sourceText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs");
         Assert.Contains("process.PriorityClass = priorityClass;", sourceText);
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Runtime", "ProcessSupervisor.cs")),
+            "bounded process supervision lives with shared runtime helpers");
     }
 
     [Fact]
