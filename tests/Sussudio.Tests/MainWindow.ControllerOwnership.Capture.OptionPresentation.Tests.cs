@@ -204,7 +204,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
         var captureDeviceActionInit = ExtractMemberCode(adapterText, "InitializeCaptureDeviceActionController");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureDeviceActionController _captureDeviceActionController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureDeviceActionController()");
@@ -245,13 +245,13 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var policyText = controllerText;
         const string tooltipFormatterMarker = "internal static class CaptureOptionTooltipFormatter";
         var tooltipFormatterStart = controllerText.IndexOf(tooltipFormatterMarker, System.StringComparison.Ordinal);
         if (tooltipFormatterStart < 0)
         {
-            throw new System.InvalidOperationException("CaptureOptionTooltipFormatter was not found in CaptureOptionPresentationController.cs.");
+            throw new System.InvalidOperationException("CaptureOptionTooltipFormatter was not found in CaptureOptionBindingController.cs.");
         }
 
         var tooltipFormatterText = controllerText[tooltipFormatterStart..];
@@ -316,6 +316,10 @@ static partial class Program
         AssertContains(controllerText, "_context.ViewModel.SourceTelemetrySummaryText");
         AssertContains(controllerText, "_context.ViewModel.SourceTargetSummaryText");
         AssertContains(mainWindowText, "InitializeCaptureOptionPresentationController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureOptionPresentationController.cs")),
+            "capture option presentation policy and controller folded into CaptureOptionBindingController.cs");
         AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
         AssertContains(propertyChangedText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
         AssertContains(outputPathDisplayText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");

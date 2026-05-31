@@ -2202,15 +2202,11 @@ Primary current owners:
   Device-audio mode/gain control projection stays in
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
   `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
-- `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs` owns the capture-
+- `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
-  path. `MainWindow.ControlBindings.cs` is the XAML-facing adapter for
-  recording, capture-device, and output-path button/display bridges.
-- `Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs` owns pure
-  capture-option presentation decisions, XAML control application,
-  decoder-count selection handling, and HDR hint/FPS telemetry tooltip text
-  policy.
-  `MainWindow.ControlBindings.cs` is the XAML-facing adapter.
+  path alongside capture-device selection synchronization.
+  `MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording,
+  capture-device, and output-path button/display bridges.
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
   capture option binding adapter context, setup, UI event attachment,
   initialization, resolution/frame-rate selection, recording option event
@@ -2218,7 +2214,9 @@ Primary current owners:
   `CaptureComboBoxSelectionNormalizer` use for shared frame-rate auto/exact
   matching, capture-option/source-signal property-change routing,
   custom-bitrate control sync, HDR/true-HDR ViewModel-to-control sync, preview
-  HDR passthrough forwarding, and delegated presentation callbacks for option
+  HDR passthrough forwarding, pure capture-option presentation decisions, XAML
+  control application, decoder-count selection handling, HDR hint/FPS telemetry
+  tooltip text policy, and delegated presentation callbacks for option
   affordances, telemetry tooltips, and source overlay refreshes.
   `MainWindow.ControlBindings.cs` is the XAML-facing capture and
   recording option adapter, including the small property-change forwarding

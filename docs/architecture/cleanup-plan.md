@@ -2580,17 +2580,17 @@ capture-mode, and recording option selection while preserving the old
 method names for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in
-`Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
+`Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
 `MainWindow.ControlBindings.cs` is the XAML-facing adapter and keeps the explicit
-apply/reinit path separate from selection synchronization.
+apply/reinit path beside selection synchronization.
 
 Pure capture-option presentation decisions now live in
-`Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`: HDR toggle
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`: HDR toggle
 enablement, MJPEG decoder count visibility, bitrate/preset visibility, audio
 clipping visibility, and initial decoder-count clamping. XAML control
 application, decoder-count selection handling, delegation to policy helpers,
 and pure HDR readiness hint/FPS telemetry tooltip text policy live in
-`Sussudio/Controllers/Capture/CaptureOptionPresentationController.cs`.
+`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`.
 `MainWindow.ControlBindings.cs` is the XAML-facing adapter and keeps
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
@@ -2603,8 +2603,9 @@ handlers, recording option event bindings for format, quality, preset,
 split-encode, video format, and custom bitrate, HDR/true-HDR click binding,
 `ShowAllCaptureOptionsToggle` click binding, capture-option/source-signal
 property-change routing, custom-bitrate property-change value projection,
-HDR/true-HDR ViewModel-to-control sync, preview HDR passthrough forwarding, and
-presentation callback routing for option affordances, telemetry tooltips, and
+HDR/true-HDR ViewModel-to-control sync, preview HDR passthrough forwarding,
+option affordance application, telemetry tooltip policy, decoder-count
+presentation, and presentation callback routing for option affordances, telemetry tooltips, and
 source overlay refreshes.
 `Sussudio/MainWindow.ControlBindings.cs` now owns the XAML-facing
 binding setup methods and the small property-change forwarding method, so
