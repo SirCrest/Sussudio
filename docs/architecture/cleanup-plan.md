@@ -2127,25 +2127,25 @@ presentation building, and minimum pool sizing.
 Flashback timeline visibility, lockout, toggle synchronization, track layout
 sizing, show/hide storyboard state, immediate collapse, and fullscreen animation
 reset now live in
-`Sussudio/Controllers/Flashback/FlashbackTimelineController.cs`.
+`Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
 `Sussudio/MainWindow.xaml.cs` owns the consolidated
 XAML-facing adapter surface for commands, polling, playhead motion, scrub
-input, settings, timeline visibility, and presentation. Command semantics live
+input, settings, timeline visibility, and presentation. Command semantics also live
 with the Flashback UI controllers in
 `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
 
 Active Flashback pointer-scrub state now lives in
-`Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs`. It owns scrub
+`Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`. It owns scrub
 throttling, release/cancel/capture-lost cleanup, fullscreen scrub termination,
 lockout clearing, scrub visual updates, and pointer lifecycle around scrub
 commands. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
 scrub adapter.
 Timeline fraction/duration math used by scrub and playhead presentation now lives
 beside scrub interaction in
-`Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs`.
+`Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
 
 Flashback CTI/playhead compositor motion now lives in
-`Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`. The
+`Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`. The
 controller owns context, public entry points, shared state, playback-state
 sampling, scrub/window gating, live right-edge pinning, long-horizon
 extrapolation scheduling, CTI anchor timing, compositor visual setup, snap
@@ -2332,8 +2332,7 @@ in `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`.
 Flashback status and playback-position polling timers now live in
 `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
 `Sussudio/MainWindow.xaml.cs` is the XAML-facing polling
-adapter; CTI anchor timing lives in
-`Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
+adapter; CTI anchor timing lives with the Flashback UI playhead motion owner.
 
 Settings shelf visibility, the animation gate, and show/hide storyboard
 construction now live with shell chrome in

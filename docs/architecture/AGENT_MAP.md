@@ -1927,27 +1927,18 @@ Primary current owners:
   execution surface for the former legacy Flashback decoder frame-buffer,
   source-ownership, state/lifetime, timestamp, audio, frame-validation, and
   cancellation checks after their removal from the legacy harness catalog.
-- `Sussudio/Controllers/Flashback/FlashbackTimelineController.cs` owns Flashback
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback
   timeline visibility, lockout, toggle synchronization, timeline track layout
-  sizing, show/hide storyboard state, immediate collapse, and fullscreen
-  animation reset. `Sussudio/MainWindow.xaml.cs` owns the XAML-facing
+  sizing, show/hide storyboard state, immediate collapse, fullscreen animation
+  reset, active pointer-scrub state, scrub throttling, release/cancel/capture-lost
+  cleanup, fullscreen scrub termination, lockout clearing, scrub visual updates,
+  pure timeline fraction/duration math, playhead motion context, playback-state
+  sampling, scrub/window gating, live right-edge pinning, long-horizon
+  extrapolation scheduling, CTI anchor timing, compositor visual setup, snap
+  placement, magnetic pointer-scrub movement, linear keyframe animation, and
+  label clamp/positioning. `Sussudio/MainWindow.xaml.cs` owns the XAML-facing
   command, polling, playhead, scrub, settings, timeline, and presentation
-  adapter surface. Command semantics live in `FlashbackUiControllers.cs`.
-- `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` owns active
-  Flashback pointer-scrub state, scrub throttling, release/cancel/capture-lost
-  cleanup, fullscreen scrub termination, lockout clearing, and scrub visual
-  updates. `Sussudio/MainWindow.xaml.cs` is the XAML-facing
-  adapter.
-  `Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs` also
-  owns pure timeline fraction/duration math used by scrub and playhead
-  presentation.
-- `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs` owns the
-  Flashback playhead motion context, public entry points, shared state,
-  playback-state sampling, scrub/window gating, live right-edge pinning,
-  long-horizon extrapolation scheduling, CTI anchor timing, compositor visual
-  setup, snap placement, magnetic pointer-scrub movement, linear keyframe
-  animation, and label clamp/positioning.
-  `Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter.
+  adapter surface.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
   Flashback marker placement, selection-region layout, and compact duration
   text formatting. `Sussudio/MainWindow.xaml.cs` wires marker
@@ -1974,8 +1965,8 @@ Primary current owners:
   `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.xaml.cs`
-  is the XAML-facing adapter; CTI anchor timing lives in
-  `Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs`.
+  is the XAML-facing adapter; CTI anchor timing lives with Flashback UI
+  playhead motion in `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.

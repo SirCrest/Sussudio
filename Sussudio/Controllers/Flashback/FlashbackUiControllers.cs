@@ -1,8 +1,14 @@
 using System;
+using System.Numerics;
 using System.Threading.Tasks;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Models;
 using Sussudio.ViewModels;
 using VirtualKey = Windows.System.VirtualKey;
@@ -716,5 +722,751 @@ internal sealed class FlashbackPropertyChangedController
             default:
                 return false;
         }
+    }
+}
+
+internal sealed class FlashbackTimelineControllerContext
+{
+    public required MainViewModel ViewModel { get; init; }
+    public required ToggleButton FlashbackToggle { get; init; }
+    public required FrameworkElement FlashbackTimelinePanel { get; init; }
+    public required FrameworkElement FlashbackTrackBackground { get; init; }
+    public required FrameworkElement FlashbackScrubArea { get; init; }
+    public required FrameworkElement FlashbackPlayhead { get; init; }
+    public required FrameworkElement FlashbackLiveEdge { get; init; }
+    public required Action SnapPlayheadOnNextOpen { get; init; }
+    public required Action StartStatusPolling { get; init; }
+    public required Action StopStatusPolling { get; init; }
+    public required Action ClearScrubInteraction { get; init; }
+}
+
+internal sealed class FlashbackTimelineController
+{
+    private readonly FlashbackTimelineControllerContext _context;
+    private readonly FlashbackTimelineAnimationController _animationController;
+    private bool _suppressToggle;
+
+    public FlashbackTimelineController(FlashbackTimelineControllerContext context)
+    {
+        _context = context;
+        _animationController = new FlashbackTimelineAnimationController(
+            context.FlashbackTimelinePanel,
+            context.SnapPlayheadOnNextOpen,
+            ShouldKeepTimelineVisibleAfterAnimation);
+    }
+
+    public void OnToggleChecked()
+    {
+        if (_suppressToggle)
+        {
+            return;
+        }
+
+        if (!_context.ViewModel.IsFlashbackEnabled)
+        {
+            ApplyLockout();
+            return;
+        }
+
+        _context.ViewModel.IsFlashbackTimelineVisible = true;
+    }
+
+    public void OnToggleUnchecked()
+    {
+        if (_suppressToggle)
+        {
+            return;
+        }
+
+        _context.ViewModel.IsFlashbackTimelineVisible = false;
+    }
+
+    public void ApplyVisibility(bool show)
+    {
+        if (show && !_context.ViewModel.IsFlashbackEnabled)
+        {
+            _context.ViewModel.IsFlashbackTimelineVisible = false;
+            show = false;
+        }
+
+        SyncToggle(show);
+        _context.FlashbackToggle.IsEnabled = _context.ViewModel.IsFlashbackEnabled;
+        _context.FlashbackTimelinePanel.IsHitTestVisible = _context.ViewModel.IsFlashbackEnabled;
+
+        if (show)
+        {
+            if (!_animationController.IsAnimating && _context.FlashbackTimelinePanel.Visibility != Visibility.Visible)
+            {
+                _animationController.Animate(show: true);
+            }
+
+            _context.StartStatusPolling();
+            return;
+        }
+
+        _context.StopStatusPolling();
+        if (!_animationController.IsAnimating && _context.FlashbackTimelinePanel.Visibility != Visibility.Collapsed)
+        {
+            _animationController.Animate(show: false);
+        }
+    }
+
+    public void ApplyTrackSize(double width, double height)
+    {
+        _context.FlashbackTrackBackground.Width = width;
+        _context.FlashbackTrackBackground.Height = height;
+        _context.FlashbackScrubArea.Width = width;
+        _context.FlashbackScrubArea.Height = height;
+        _context.FlashbackPlayhead.Height = height;
+        _context.FlashbackLiveEdge.Height = height;
+
+        Canvas.SetLeft(_context.FlashbackLiveEdge, width - 2);
+    }
+
+    public void ApplyLockout()
+    {
+        var flashbackEnabled = _context.ViewModel.IsFlashbackEnabled;
+        _context.FlashbackToggle.IsEnabled = flashbackEnabled;
+        _context.FlashbackTimelinePanel.IsHitTestVisible = flashbackEnabled;
+        if (flashbackEnabled)
+        {
+            return;
+        }
+
+        if (_context.ViewModel.IsFlashbackTimelineVisible)
+        {
+            _context.ViewModel.IsFlashbackTimelineVisible = false;
+        }
+
+        SyncToggle(isVisible: false);
+        _context.StopStatusPolling();
+        _context.ClearScrubInteraction();
+        CollapseImmediately();
+    }
+
+    public void SyncToggle(bool isVisible)
+    {
+        if (_context.FlashbackToggle.IsChecked == isVisible)
+        {
+            return;
+        }
+
+        _suppressToggle = true;
+        try
+        {
+            _context.FlashbackToggle.IsChecked = isVisible;
+        }
+        finally
+        {
+            _suppressToggle = false;
+        }
+    }
+
+    public void CollapseImmediately()
+        => _animationController.CollapseImmediately();
+
+    public void ResetAnimationForFullScreen()
+        => _animationController.ResetForFullScreen();
+
+    private bool ShouldKeepTimelineVisibleAfterAnimation()
+        => _context.ViewModel.IsFlashbackEnabled &&
+           _context.ViewModel.IsFlashbackTimelineVisible;
+}
+
+internal sealed class FlashbackTimelineAnimationController
+{
+    private readonly FrameworkElement _timelinePanel;
+    private readonly Action _snapPlayheadOnNextOpen;
+    private readonly Func<bool> _shouldRemainVisible;
+    private Storyboard? _timelineStoryboard;
+
+    public FlashbackTimelineAnimationController(
+        FrameworkElement timelinePanel,
+        Action snapPlayheadOnNextOpen,
+        Func<bool> shouldRemainVisible)
+    {
+        _timelinePanel = timelinePanel;
+        _snapPlayheadOnNextOpen = snapPlayheadOnNextOpen;
+        _shouldRemainVisible = shouldRemainVisible;
+    }
+
+    public bool IsAnimating { get; private set; }
+
+    public void Animate(bool show)
+    {
+        _timelineStoryboard?.Stop();
+        _timelineStoryboard = null;
+        IsAnimating = true;
+        if (show)
+        {
+            _snapPlayheadOnNextOpen();
+        }
+
+        var durationMs = show ? 400 : 300;
+        var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+
+        double targetHeight;
+        if (show)
+        {
+            _timelinePanel.Opacity = 0;
+            _timelinePanel.Height = double.NaN;
+            _timelinePanel.Visibility = Visibility.Visible;
+            _timelinePanel.UpdateLayout();
+            targetHeight = _timelinePanel.ActualHeight;
+            _timelinePanel.Height = 0;
+        }
+        else
+        {
+            targetHeight = _timelinePanel.ActualHeight;
+            _timelinePanel.Height = targetHeight;
+        }
+
+        var heightAnimation = new DoubleAnimation
+        {
+            To = show ? targetHeight : 0,
+            Duration = duration,
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(heightAnimation, _timelinePanel);
+        Storyboard.SetTargetProperty(heightAnimation, "Height");
+
+        var fadeAnimation = new DoubleAnimation
+        {
+            From = show ? 0 : 1,
+            To = show ? 1 : 0,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fadeAnimation, _timelinePanel);
+        Storyboard.SetTargetProperty(fadeAnimation, "Opacity");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(heightAnimation);
+        storyboard.Children.Add(fadeAnimation);
+        storyboard.Completed += (_, _) => CompleteAnimation(storyboard);
+
+        _timelineStoryboard = storyboard;
+        storyboard.Begin();
+    }
+
+    public void CollapseImmediately()
+    {
+        StopCurrentAnimation();
+        _timelinePanel.Visibility = Visibility.Collapsed;
+        _timelinePanel.Height = double.NaN;
+        _timelinePanel.Opacity = 1;
+    }
+
+    public void ResetForFullScreen()
+    {
+        StopCurrentAnimation();
+    }
+
+    private void CompleteAnimation(Storyboard storyboard)
+    {
+        if (!ReferenceEquals(_timelineStoryboard, storyboard))
+        {
+            return;
+        }
+
+        if (_shouldRemainVisible())
+        {
+            _timelinePanel.Height = double.NaN;
+            _timelinePanel.Opacity = 1;
+        }
+        else
+        {
+            _timelinePanel.Visibility = Visibility.Collapsed;
+            _timelinePanel.Height = double.NaN;
+            _timelinePanel.Opacity = 1;
+        }
+
+        _timelineStoryboard = null;
+        IsAnimating = false;
+    }
+
+    private void StopCurrentAnimation()
+    {
+        _timelineStoryboard?.Stop();
+        _timelineStoryboard = null;
+        IsAnimating = false;
+    }
+}
+
+internal sealed class FlashbackScrubInteractionControllerContext
+{
+    public required MainViewModel ViewModel { get; init; }
+    public required FrameworkElement ScrubArea { get; init; }
+    public required Action<double, double> PositionMagneticPlayhead { get; init; }
+    public required Action<string> RefreshCtiMotion { get; init; }
+    public required Func<long> GetTickCount64 { get; init; }
+}
+
+internal sealed class FlashbackScrubInteractionController
+{
+    private readonly FlashbackScrubInteractionControllerContext _context;
+    private bool _isScrubbing;
+    private TimeSpan? _lastPointerPosition;
+    private long _lastUpdateTick;
+
+    public FlashbackScrubInteractionController(FlashbackScrubInteractionControllerContext context)
+    {
+        _context = context;
+    }
+
+    public bool IsScrubbing => _isScrubbing;
+
+    public void PointerPressed(UIElement? element, PointerRoutedEventArgs e)
+    {
+        var targetPosition = ComputeScrubPosition(e);
+        if (!_context.ViewModel.FlashbackBeginScrub(targetPosition))
+        {
+            _lastPointerPosition = null;
+            _context.ViewModel.ReportFlashbackPlaybackRejection("scrub begin", "FLASHBACK_UI_SCRUB_BEGIN_REJECTED");
+            return;
+        }
+
+        _isScrubbing = true;
+        _lastPointerPosition = targetPosition;
+        _lastUpdateTick = 0;
+        element?.CapturePointer(e.Pointer);
+        UpdateVisual(e);
+    }
+
+    public void PointerMoved(UIElement? element, PointerRoutedEventArgs e)
+    {
+        if (!_isScrubbing) return;
+
+        // Throttle scrub updates to ~60fps to avoid flooding the decoder.
+        var now = _context.GetTickCount64();
+        if (now - _lastUpdateTick < 16) return;
+        _lastUpdateTick = now;
+
+        var targetPosition = ComputeScrubPosition(e);
+        if (!_context.ViewModel.FlashbackUpdateScrub(targetPosition))
+        {
+            _context.ViewModel.ReportFlashbackPlaybackRejection("scrub update", "FLASHBACK_UI_SCRUB_UPDATE_REJECTED");
+            End(element, e.Pointer, "update_rejected");
+            return;
+        }
+
+        _lastPointerPosition = targetPosition;
+        UpdateVisual(e);
+    }
+
+    public void PointerReleased(UIElement? element, PointerRoutedEventArgs e)
+    {
+        TimeSpan? releasePosition = null;
+        if (_isScrubbing)
+        {
+            var targetPosition = ComputeScrubPosition(e);
+            releasePosition = targetPosition;
+            _lastPointerPosition = targetPosition;
+            if (!_context.ViewModel.FlashbackUpdateScrub(targetPosition))
+            {
+                _context.ViewModel.ReportFlashbackPlaybackRejection("scrub release update", "FLASHBACK_UI_SCRUB_RELEASE_UPDATE_REJECTED");
+            }
+            else
+            {
+                UpdateVisual(e);
+            }
+        }
+
+        End(element, e.Pointer, "released", releasePosition);
+    }
+
+    public void PointerCanceled(UIElement? element, PointerRoutedEventArgs e)
+    {
+        var carriedPosition = _isScrubbing ? _lastPointerPosition : null;
+        Logger.Log($"FLASHBACK_SCRUB_END_CANCELED carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
+        End(element, e.Pointer, "cancelled", carriedPosition);
+    }
+
+    public void PointerCaptureLost(UIElement? element, PointerRoutedEventArgs e)
+    {
+        var carriedPosition = _isScrubbing ? _lastPointerPosition : null;
+        Logger.Log($"FLASHBACK_SCRUB_END_CAPTURE_LOST carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
+        End(element, e.Pointer, "capture_lost", carriedPosition);
+    }
+
+    public void EndForFullScreen()
+    {
+        if (!_isScrubbing)
+        {
+            return;
+        }
+
+        var carriedPosition = _lastPointerPosition;
+        Logger.Log($"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
+        ClearLocalState();
+        var ended = carriedPosition.HasValue
+            ? _context.ViewModel.FlashbackEndScrubAt(carriedPosition.Value)
+            : _context.ViewModel.FlashbackEndScrub();
+        if (!ended)
+        {
+            _context.ViewModel.ReportFlashbackPlaybackRejection("scrub end (fullscreen_enter)", "FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
+        }
+    }
+
+    public void ClearForLockout()
+    {
+        ClearLocalState();
+    }
+
+    private void End(UIElement? element, Pointer pointer, string reason, TimeSpan? releasePosition = null)
+    {
+        if (!_isScrubbing)
+        {
+            return;
+        }
+
+        ClearLocalState();
+        element?.ReleasePointerCapture(pointer);
+        var ended = releasePosition.HasValue
+            ? _context.ViewModel.FlashbackEndScrubAt(releasePosition.Value)
+            : _context.ViewModel.FlashbackEndScrub();
+        if (!ended)
+        {
+            _context.ViewModel.ReportFlashbackPlaybackRejection($"scrub end ({reason})", $"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}");
+        }
+
+        Logger.Log($"FLASHBACK_UI_SCRUB_END reason={reason}");
+        // Hand the visual back to the extrapolation driver from wherever the
+        // pointer left it.
+        _context.RefreshCtiMotion("scrub_end");
+    }
+
+    private void ClearLocalState()
+    {
+        _isScrubbing = false;
+        _lastUpdateTick = 0;
+        _lastPointerPosition = null;
+    }
+
+    private void UpdateVisual(PointerRoutedEventArgs e)
+    {
+        var pos = e.GetCurrentPoint(_context.ScrubArea).Position;
+        var width = _context.ScrubArea.ActualWidth;
+        if (!FlashbackTimelineGeometry.TryComputeFraction(pos.X, width, out var fraction)) return;
+
+        var x = Math.Clamp(fraction * width, 0, width);
+        // Magnetic = ease-out toward the pointer; longer than the 16ms pointer
+        // throttle so successive events overlap into a single smooth trail
+        // rather than 16ms-stepped jitter.
+        _context.PositionMagneticPlayhead(x, width);
+
+        var bufferDuration = _context.ViewModel.FlashbackBufferFilledDuration;
+        if (FlashbackTimelineGeometry.IsUsableDuration(bufferDuration))
+        {
+            _context.ViewModel.FlashbackPlaybackPosition = FlashbackTimelineGeometry.ComputePosition(fraction, bufferDuration);
+        }
+    }
+
+    private TimeSpan ComputeScrubPosition(PointerRoutedEventArgs e)
+    {
+        var pos = e.GetCurrentPoint(_context.ScrubArea).Position;
+        var width = _context.ScrubArea.ActualWidth;
+        return FlashbackTimelineGeometry.TryComputePosition(
+            pos.X,
+            width,
+            _context.ViewModel.FlashbackBufferFilledDuration,
+            out var position)
+            ? position
+            : TimeSpan.Zero;
+    }
+}
+
+internal static class FlashbackTimelineGeometry
+{
+    public static bool TryComputeFraction(double x, double width, out double fraction)
+    {
+        fraction = 0;
+        if (!IsUsableTrackDimension(width) || !double.IsFinite(x))
+        {
+            return false;
+        }
+
+        fraction = Math.Clamp(x / width, 0, 1);
+        return true;
+    }
+
+    public static bool TryComputePosition(double x, double width, TimeSpan bufferDuration, out TimeSpan position)
+    {
+        position = TimeSpan.Zero;
+        if (!TryComputeFraction(x, width, out var fraction) || !IsUsableDuration(bufferDuration))
+        {
+            return false;
+        }
+
+        position = ComputePosition(fraction, bufferDuration);
+        return true;
+    }
+
+    public static TimeSpan ComputePosition(double fraction, TimeSpan bufferDuration)
+        => IsUsableDuration(bufferDuration)
+            ? TimeSpan.FromSeconds(Math.Clamp(fraction, 0, 1) * bufferDuration.TotalSeconds)
+            : TimeSpan.Zero;
+
+    public static bool IsUsableTrackDimension(double value)
+        => double.IsFinite(value) && value > 0;
+
+    public static bool IsUsableDuration(TimeSpan value)
+        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;
+}
+
+internal sealed class FlashbackPlayheadMotionControllerContext
+{
+    public required MainViewModel ViewModel { get; init; }
+    public required DispatcherQueue DispatcherQueue { get; init; }
+    public required Func<bool> IsWindowClosing { get; init; }
+    public required Func<bool> IsScrubbing { get; init; }
+    public required FrameworkElement ScrubArea { get; init; }
+    public required FrameworkElement Playhead { get; init; }
+    public required FrameworkElement PlayheadHandle { get; init; }
+    public required FrameworkElement PlayheadTimeBorder { get; init; }
+}
+
+internal sealed class FlashbackPlayheadMotionController
+{
+    private enum FlashbackPlayheadMotion
+    {
+        Snap,
+        Magnetic,
+    }
+
+    private readonly FlashbackPlayheadMotionControllerContext _context;
+    private Visual? _flashbackPlayheadVisual;
+    private Visual? _flashbackPlayheadHandleVisual;
+    private Visual? _flashbackPlayheadLabelVisual;
+    private Compositor? _flashbackPlayheadCompositor;
+    private CompositionEasingFunction? _flashbackPlayheadEaseWeighted;
+    private bool _flashbackPlayheadVisualsReady;
+    private bool _snapFlashbackPlayheadOnNextUpdate;
+    private FlashbackPlaybackState? _flashbackLastCtiState;
+    private DispatcherQueueTimer? _flashbackCtiAnchorTimer;
+    private CompositionEasingFunction? _flashbackPlayheadEaseLinear;
+    private bool _flashbackCtiAnchorRunning;
+    private static readonly TimeSpan FlashbackPlayheadDurationMagnetic = TimeSpan.FromMilliseconds(60);
+    private static readonly TimeSpan FlashbackCtiExtrapolationHorizon = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan FlashbackCtiAnchorDriftCorrection = TimeSpan.FromMilliseconds(1000);
+
+    public FlashbackPlayheadMotionController(FlashbackPlayheadMotionControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void RequestSnapOnNextUpdate()
+    {
+        _snapFlashbackPlayheadOnNextUpdate = true;
+    }
+
+    public void PositionMagneticPlayhead(double x, double trackWidth)
+    {
+        PositionFlashbackPlayhead(x, trackWidth, FlashbackPlayheadMotion.Magnetic);
+    }
+
+    public void RefreshCtiMotion(string reason)
+    {
+        if (_context.IsScrubbing()) return;
+        if (_context.IsWindowClosing()) return;
+
+        EnsureFlashbackPlayheadVisuals();
+
+        var trackW = _context.ScrubArea.ActualWidth;
+        if (!FlashbackTimelineGeometry.IsUsableTrackDimension(trackW)) return;
+
+        var state = _context.ViewModel.FlashbackState;
+
+        // Anchor-timer lifecycle: only run during steady states with motion.
+        if (state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Paused)
+            StartFlashbackCtiAnchorTimer();
+        else
+            StopCtiAnchorTimer();
+
+        var stateChanged = state != _flashbackLastCtiState;
+        _flashbackLastCtiState = state;
+
+        var explicitStart = stateChanged
+                          || _snapFlashbackPlayheadOnNextUpdate
+                          || reason == "size_changed"
+                          || reason == "panel_show"
+                          || reason == "scrub_end"
+                          || reason == "seek";
+        if (_snapFlashbackPlayheadOnNextUpdate) _snapFlashbackPlayheadOnNextUpdate = false;
+
+        if (state == FlashbackPlaybackState.Live)
+        {
+            // Right-edge pin. No motion to extrapolate.
+            SnapPlayheadVisualsToFraction(1.0, trackW);
+            return;
+        }
+
+        var bufferDurMs = _context.ViewModel.FlashbackBufferFilledDuration.TotalMilliseconds;
+        if (bufferDurMs <= 0) return;
+
+        var posMs = _context.ViewModel.FlashbackPlaybackPosition.TotalMilliseconds;
+
+        var posRate = state == FlashbackPlaybackState.Playing ? 1.0 : 0.0;
+        var bufRate = _context.ViewModel.IsFlashbackEnabled ? 1.0 : 0.0;
+        var horizonMs = FlashbackCtiExtrapolationHorizon.TotalMilliseconds;
+
+        var posHorizon = Math.Max(0.0, posMs + posRate * horizonMs);
+        var bufHorizon = Math.Max(1.0, bufferDurMs + bufRate * horizonMs);
+
+        var fracNow = Math.Clamp(posMs / bufferDurMs, 0.0, 1.0);
+        var fracHorizon = Math.Clamp(posHorizon / bufHorizon, 0.0, 1.0);
+
+        StartLinearPlayheadExtrapolation(fracNow, fracHorizon, trackW, FlashbackCtiExtrapolationHorizon, explicitStart);
+    }
+
+    public void StopCtiAnchorTimer()
+    {
+        if (_flashbackCtiAnchorTimer == null || !_flashbackCtiAnchorRunning) return;
+        _flashbackCtiAnchorTimer.Stop();
+        _flashbackCtiAnchorTimer.Tick -= FlashbackCtiAnchorTimer_Tick;
+        _flashbackCtiAnchorRunning = false;
+    }
+
+    private void StartFlashbackCtiAnchorTimer()
+    {
+        _flashbackCtiAnchorTimer ??= _context.DispatcherQueue.CreateTimer();
+        if (_flashbackCtiAnchorRunning) return;
+        _flashbackCtiAnchorTimer.Interval = FlashbackCtiAnchorDriftCorrection;
+        _flashbackCtiAnchorTimer.IsRepeating = true;
+        _flashbackCtiAnchorTimer.Tick -= FlashbackCtiAnchorTimer_Tick;
+        _flashbackCtiAnchorTimer.Tick += FlashbackCtiAnchorTimer_Tick;
+        _flashbackCtiAnchorTimer.Start();
+        _flashbackCtiAnchorRunning = true;
+    }
+
+    private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        try
+        {
+            if (_context.IsWindowClosing()) return;
+            RefreshCtiMotion("anchor_tick");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_CTI_ANCHOR_TICK_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void EnsureFlashbackPlayheadVisuals()
+    {
+        if (_flashbackPlayheadVisualsReady) return;
+
+        _flashbackPlayheadVisual = ElementCompositionPreview.GetElementVisual(_context.Playhead);
+        _flashbackPlayheadHandleVisual = ElementCompositionPreview.GetElementVisual(_context.PlayheadHandle);
+        _flashbackPlayheadLabelVisual = ElementCompositionPreview.GetElementVisual(_context.PlayheadTimeBorder);
+        _flashbackPlayheadCompositor = _flashbackPlayheadVisual.Compositor;
+        _flashbackPlayheadEaseLinear = _flashbackPlayheadCompositor.CreateLinearEasingFunction();
+        _flashbackPlayheadEaseWeighted = _flashbackPlayheadCompositor.CreateCubicBezierEasingFunction(
+            new Vector2(0.2f, 0.7f), new Vector2(0.1f, 1.0f));
+
+        ElementCompositionPreview.SetIsTranslationEnabled(_context.Playhead, true);
+        ElementCompositionPreview.SetIsTranslationEnabled(_context.PlayheadHandle, true);
+        ElementCompositionPreview.SetIsTranslationEnabled(_context.PlayheadTimeBorder, true);
+
+        // Anchor Canvas.Left at 0; from now on Translation.X carries the position.
+        Canvas.SetLeft(_context.Playhead, 0);
+        Canvas.SetLeft(_context.PlayheadHandle, 0);
+        Canvas.SetLeft(_context.PlayheadTimeBorder, 0);
+
+        _flashbackPlayheadVisualsReady = true;
+        // First placement after init must snap; otherwise the playhead would
+        // sweep from x=0 when the timeline opens.
+        _snapFlashbackPlayheadOnNextUpdate = true;
+    }
+
+    private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)
+    {
+        EnsureFlashbackPlayheadVisuals();
+
+        _context.PlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelW = _context.PlayheadTimeBorder.DesiredSize.Width;
+        var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));
+
+        var lineX = (float)(x - 1);
+        var handleX = (float)(x - 5);
+        var labelTargetX = (float)labelX;
+
+        if (_snapFlashbackPlayheadOnNextUpdate)
+        {
+            _snapFlashbackPlayheadOnNextUpdate = false;
+            motion = FlashbackPlayheadMotion.Snap;
+        }
+
+        if (motion == FlashbackPlayheadMotion.Snap)
+        {
+            SnapFlashbackPlayheadX(_flashbackPlayheadVisual, lineX);
+            SnapFlashbackPlayheadX(_flashbackPlayheadHandleVisual, handleX);
+            SnapFlashbackPlayheadX(_flashbackPlayheadLabelVisual, labelTargetX);
+            return;
+        }
+
+        // Magnetic ease toward pointer.
+        AnimateFlashbackPlayheadX(_flashbackPlayheadVisual, lineX, _flashbackPlayheadEaseWeighted, FlashbackPlayheadDurationMagnetic);
+        AnimateFlashbackPlayheadX(_flashbackPlayheadHandleVisual, handleX, _flashbackPlayheadEaseWeighted, FlashbackPlayheadDurationMagnetic);
+        AnimateFlashbackPlayheadX(_flashbackPlayheadLabelVisual, labelTargetX, _flashbackPlayheadEaseWeighted, FlashbackPlayheadDurationMagnetic);
+    }
+
+    private void StartLinearPlayheadExtrapolation(double fracStart, double fracEnd, double trackW, TimeSpan duration, bool explicitStart)
+    {
+        if (_flashbackPlayheadCompositor == null) return;
+        var linear = _flashbackPlayheadEaseLinear;
+        if (linear == null) return;
+
+        var startX = fracStart * trackW;
+        var endX = fracEnd * trackW;
+
+        _context.PlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelW = _context.PlayheadTimeBorder.DesiredSize.Width;
+        var labelStart = (float)Math.Clamp(startX - labelW / 2, 0, Math.Max(0, trackW - labelW));
+        var labelEnd = (float)Math.Clamp(endX - labelW / 2, 0, Math.Max(0, trackW - labelW));
+
+        StartLinearKeyframe(_flashbackPlayheadVisual, (float)(startX - 1), (float)(endX - 1), duration, linear, explicitStart);
+        StartLinearKeyframe(_flashbackPlayheadHandleVisual, (float)(startX - 5), (float)(endX - 5), duration, linear, explicitStart);
+        StartLinearKeyframe(_flashbackPlayheadLabelVisual, labelStart, labelEnd, duration, linear, explicitStart);
+    }
+
+    private static void StartLinearKeyframe(Visual? v, float startX, float endX, TimeSpan duration, CompositionEasingFunction linear, bool explicitStart)
+    {
+        if (v == null) return;
+        var anim = v.Compositor.CreateScalarKeyFrameAnimation();
+        if (explicitStart) anim.InsertKeyFrame(0f, startX);
+        anim.InsertKeyFrame(1f, endX, linear);
+        anim.Duration = duration;
+        v.StartAnimation("Translation.X", anim);
+    }
+
+    private void SnapPlayheadVisualsToFraction(double frac, double trackW)
+    {
+        var x = frac * trackW;
+        SnapFlashbackPlayheadX(_flashbackPlayheadVisual, (float)(x - 1));
+        SnapFlashbackPlayheadX(_flashbackPlayheadHandleVisual, (float)(x - 5));
+
+        _context.PlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelW = _context.PlayheadTimeBorder.DesiredSize.Width;
+        var labelX = (float)Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackW - labelW));
+        SnapFlashbackPlayheadX(_flashbackPlayheadLabelVisual, labelX);
+    }
+
+    private void AnimateFlashbackPlayheadX(Visual? visual, float targetX, CompositionEasingFunction? easing, TimeSpan duration)
+    {
+        if (visual == null || _flashbackPlayheadCompositor == null || easing == null) return;
+        var anim = _flashbackPlayheadCompositor.CreateScalarKeyFrameAnimation();
+        anim.InsertKeyFrame(1f, targetX, easing);
+        anim.Duration = duration;
+        visual.StartAnimation("Translation.X", anim);
+    }
+
+    private static void SnapFlashbackPlayheadX(Visual? visual, float targetX)
+    {
+        if (visual == null) return;
+        visual.StopAnimation("Translation.X");
+        visual.Properties.InsertVector3("Translation", new Vector3(targetX, 0f, 0f));
     }
 }

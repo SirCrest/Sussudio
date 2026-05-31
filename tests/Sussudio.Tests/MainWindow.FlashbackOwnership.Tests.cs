@@ -58,10 +58,10 @@ static partial class Program
         var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var mainWindowText = ReadMainWindowCompositionSource();
         var scrubText = ReadMainWindowFlashbackAdapterSource();
-        var scrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackScrubInteractionController.cs").Replace("\r\n", "\n");
+        var scrubControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var playheadText = ReadMainWindowFlashbackAdapterSource();
         var pollingAdapterText = ReadMainWindowFlashbackAdapterSource();
-        var controllerRootText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackPlayheadMotionController.cs").Replace("\r\n", "\n");
+        var controllerRootText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var controllerText = controllerRootText;
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
 
@@ -121,6 +121,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.Visuals.cs")),
             "Flashback playhead visuals partial is consolidated into the motion controller root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackPlayheadMotionController.cs")),
+            "Flashback playhead motion folded into Flashback UI controllers");
         AssertContains(scrubText, "PositionMagneticPlayhead = PositionFlashbackMagneticPlayhead,");
         AssertContains(scrubControllerText, "_context.PositionMagneticPlayhead(x, width);");
         AssertContains(playbackCoordinatorText, "_context.RefreshCtiMotion(\"state_change\");");
@@ -325,8 +329,8 @@ static partial class Program
     {
         var flashbackText = ReadMainWindowFlashbackAdapterSource();
         var timelineAdapterText = ReadMainWindowFlashbackAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs").Replace("\r\n", "\n");
-        var animationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackTimelineController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
+        var animationControllerText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var playbackCoordinatorText = ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
 
@@ -364,7 +368,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Flashback", "FlashbackTimelineAnimationController.cs")),
-            "timeline animation folded into FlashbackTimelineController.cs");
+            "timeline animation folded into Flashback UI controllers");
         AssertContains(flashbackText, "private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)");
         AssertContains(flashbackText, "=> _flashbackPlaybackUiCoordinator.HandleTrackSizeChanged(e.NewSize.Width, e.NewSize.Height);");
         AssertContains(playbackCoordinatorText, "public void HandleTrackSizeChanged(double width, double height)");
