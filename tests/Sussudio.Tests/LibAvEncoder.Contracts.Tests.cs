@@ -11,8 +11,7 @@ static partial class Program
         {
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs").Replace("\r\n", "\n")
         };
 
@@ -389,7 +388,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
             .Replace("\r\n", "\n");
 
         AssertEqual(
@@ -412,7 +411,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
             .Replace("\r\n", "\n");
 
         AssertEqual(
@@ -432,26 +431,33 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
             .Replace("\r\n", "\n");
-        var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
-            .Replace("\r\n", "\n");
+        var hardwareFramesText = videoSubmissionText;
 
         AssertContains(videoSubmissionText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
         AssertContains(videoSubmissionText, "CopyPackedFrameToVideoFrame(frameData[..expectedSize], options);");
         AssertContains(videoSubmissionText, "private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)");
         AssertContains(videoSubmissionText, "private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)");
         AssertContains(videoSubmissionText, "private bool AttachHdrFrameSideDataToHwFrame(LibAvEncoderOptions options)");
-        AssertDoesNotContain(videoSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
-        AssertDoesNotContain(videoSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
+        AssertContains(videoSubmissionText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
+        AssertContains(videoSubmissionText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
         AssertContains(hardwareFramesText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertContains(hardwareFramesText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
         AssertContains(hardwareFramesText, "CopySubresourceRegion");
         AssertContains(hardwareFramesText, "AttachHdrFrameSideDataToHwFrame(options)");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.VideoSubmission.cs")),
+            "CPU video submission folded into LibAvEncoder.VideoFrames.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.cs")),
+            "hardware frame setup/submission folded into LibAvEncoder.VideoFrames.cs");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareSubmission.cs")),
-            "hardware frame submission lives with LibAvEncoder.HardwareFrames.cs");
+            "hardware frame submission lives with LibAvEncoder.VideoFrames.cs");
         AssertDoesNotContain(rootText, "public void SendVideoFrame(ReadOnlySpan<byte> frameData, int width, int height)");
         AssertDoesNotContain(rootText, "public void SendGpuVideoFrame(IntPtr d3d11Texture, int subresourceIndex)");
         AssertDoesNotContain(rootText, "public void SendCudaVideoFrame(AVFrame* decodedFrame)");
@@ -485,11 +491,10 @@ static partial class Program
         var initializationText = rootText;
         var audioText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs")
             .Replace("\r\n", "\n");
-        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs")
+        var videoSubmissionText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs")
             .Replace("\r\n", "\n");
         var modelsText = rootText;
-        var hardwareFramesText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs")
-            .Replace("\r\n", "\n");
+        var hardwareFramesText = videoSubmissionText;
 
         AssertContains(audioText, "public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)");
         AssertContains(audioText, "public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)");
@@ -534,7 +539,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HdrSideData.cs")),
-            "HDR side-data helpers live with LibAvEncoder.VideoSubmission.cs");
+            "HDR side-data helpers live with LibAvEncoder.VideoFrames.cs");
         AssertContains(modelsText, "internal sealed record LibAvEncoderOptions");
         AssertContains(modelsText, "internal readonly record struct RotateOutputResult");
         AssertEqual(
@@ -578,7 +583,15 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareSubmission.cs")),
-            "hardware frame submission lives with LibAvEncoder.HardwareFrames.cs");
+            "hardware frame submission lives with LibAvEncoder.VideoFrames.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.VideoSubmission.cs")),
+            "CPU video submission folded into LibAvEncoder.VideoFrames.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.HardwareFrames.cs")),
+            "hardware frame setup/submission folded into LibAvEncoder.VideoFrames.cs");
         AssertContains(initializationText, "private static void ValidateOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateRequiredVideoOptions(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static void ValidateAudioOptions(LibAvEncoderOptions options)");

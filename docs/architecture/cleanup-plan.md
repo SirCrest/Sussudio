@@ -1173,7 +1173,7 @@ conversion helpers, NVENC private option application, and video
 bitstream-filter initialization.
 
 LibAv encoder packet writing now lives in
-`Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs` beside CPU video
+`Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs` beside CPU/GPU video
 submission. Keep video encoder packet drains, bitstream-filter packet drains,
 timestamp rescaling, packet stream-index assignment, packet write accounting,
 and interleaved video packet writes there.
@@ -1198,8 +1198,8 @@ sample-queue allocation there. Do not re-split `LibAvEncoder.AudioQueue.cs` or
 `LibAvEncoder.AudioInitialization.cs` unless audio becomes a named collaborator
 instead of another encoder partial.
 
-LibAv encoder HDR frame side-data helpers now live with video submission in
-`Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep software-frame
+LibAv encoder HDR frame side-data helpers now live with video frame submission in
+`Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs`. Keep software-frame
 and hardware-frame HDR mastering display and content-light metadata attachment
 there, including parsing/applying mastering-display metadata strings.
 
@@ -1208,21 +1208,23 @@ LibAv encoder option/result models now live with the core encoder state in
 `RotateOutputResult` there unless they become a shared contract outside the
 encoder family.
 
-LibAv encoder D3D11 hardware frames setup, CUDA hardware frame context
+LibAv encoder CPU, D3D11, and CUDA video frame submission now lives in
+`Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs`: CPU packed-frame
+submission/copy, D3D11 hardware frames setup, CUDA hardware frame context
 adoption, ArraySize=1 texture-pool creation, D3D11/CUDA hardware-frame
 submission, texture-pool copy/reference setup, GPU device-removed checks,
-hardware-frame PTS/keyframe assignment, HDR side-data attachment, EAGAIN
-packet drains, and hardware-frame unref cleanup now live in
-`Sussudio/Services/Recording/LibAvEncoder.HardwareFrames.cs`.
+software/hardware-frame PTS/keyframe assignment, HDR side-data attachment,
+EAGAIN packet drains, and hardware-frame unref cleanup.
 Output rotation, final close, trailer/logging, native frame/context/buffer
 release, and encoder state reset now live together in
 `LibAvEncoder.OutputLifecycle.cs`.
 
 LibAv encoder video submission now lives in
-`Sussudio/Services/Recording/LibAvEncoder.VideoSubmission.cs`. Keep CPU packed
+`Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs`. Keep CPU packed
 frame submission, packed NV12/P010 plane sizing, source-buffer validation,
-stride-aware plane copies, forced keyframe handling, per-frame HDR side-data
-attachment/removal, and video packet drains there.
+stride-aware plane copies, forced keyframe handling, D3D11/CUDA hardware
+submission, per-frame HDR side-data attachment/removal, and video packet
+drains there.
 
 LibAv encoder output lifecycle lives in
 `Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs`. Keep rotation IO
