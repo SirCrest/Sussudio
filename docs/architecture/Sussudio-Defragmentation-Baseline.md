@@ -48,6 +48,18 @@ Notes for future agents:
 
 ## Slice Evidence
 
+Date: 2026-05-31
+Area: Diagnostic-session MCP tool test locality
+Problem: `McpToolSurface.DiagnosticSession.Tool.Tests.cs` was a small legacy `Program` partial for `run_diagnostic_session` success/failure artifact contracts, while `McpToolSurface.DiagnosticSession.Runner.Tests.cs` already owned diagnostic-session artifact lifecycle and runner behavior checks. Reviewing the MCP tool artifact path still required opening a sidecar before returning to the runner-owned diagnostic-session behavior surface.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostic-session MCP test partial-family file count -1; test `.cs` count 111 -> 110
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionTool|FullyQualifiedName~McpDiagnosticSessionRunnerBehaviorContractsTests"` passed (8 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
+CLI/MCP/pipe checks, if applicable: MCP tool contract tests still capture the same `GetSnapshot`/`GetPerformanceTimeline` pipe requests and validate the same success/failure `CallToolResult` error state plus summary/live/samples/frame-ledger artifacts; no tool name, command name, wire payload, or artifact schema changed.
+Behavior preserved: same `McpDiagnosticSessionTool_RecordsSnapshotArtifacts` and `McpDiagnosticSessionTool_SurfacesDiagnosticFailureAsToolError` method names still execute through `McpToolSurfaceContractsTests`; assertions and synthetic pipe responses are unchanged while living beside the runner behavior tests.
+Notes for future agents: keep MCP `run_diagnostic_session` success/failure artifact contracts with `McpToolSurface.DiagnosticSession.Runner.Tests.cs` while they exercise the same diagnostic-session artifact lifecycle; split only if MCP transport behavior grows independently from runner artifact behavior.
+
 Date: 2026-05-27
 Area: Flashback encoder sink test locality
 Problem: `Flashback.EncoderSink.ForceRotate.Tests.cs` was a small `Program` partial for force-rotate rejection, drain/commit, cancellation, rotation-failure recovery, and segment-registration failure assertions while `Flashback.EncoderSink.Tests.cs` already owned the encoder sink runtime counter, startup rollback, PTS guard, queue rejection, lifecycle cleanup, packet-validation, and drain-loop behavior. Reviewing encoder sink behavior still required opening a separate force-rotate shard even though it shares the same source readers and xUnit forwarding surface.
