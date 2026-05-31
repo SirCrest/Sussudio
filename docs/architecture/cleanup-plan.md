@@ -352,23 +352,21 @@ family becomes a real independently tested collaborator.
 parsing, exit-code shaping, the help facade, operator-facing help section text,
 and catalog-backed help lines.
 
-The `tools/ssctl/Formatters.*.cs` partial family is only the projection facade
-for console output. Keep app snapshot orchestration, section ordering, and
-simple state/capture-command, audio, recording, diagnostics, legacy
-performance, process CPU, Memory/GC, thread-pool, capture settings,
-friendly/exact frame-rate, capture cadence, embedded AV-sync drift,
-source-signal, video-pipeline, thread-health section order and
-source-reader/WASAPI row text, preview renderer-mode routing, non-D3D
-fallback text, D3D preview snapshot text, Flashback snapshot gating/order,
-encoding status/health text, export progress/result text, playback command
-text, playback cadence/decode/frame/stage/A/V drift text, MJPEG
-activation/header/order, decode/copy/callback/per-decoder timing,
-compressed-queue, drop-reason, reorder, pipeline timing, preview-jitter queue,
-latency, ownership, and underflow text in `Formatters.Snapshot.cs`,
-diagnostic-event text, capture option/device text, standalone memory/GC
-summaries, performance timeline response validation, JSON row projection,
-private row model, table output, trend summaries, and shared JSON/result
-helpers in `Formatters.Common.cs`, and
+`tools/ssctl/Formatters.cs` is the unified projection facade for console
+output. Keep app snapshot orchestration, section ordering, and simple state/
+capture-command, audio, recording, diagnostics, legacy performance, process
+CPU, Memory/GC, thread-pool, capture settings, friendly/exact frame-rate,
+capture cadence, embedded AV-sync drift, source-signal, video-pipeline,
+thread-health section order and source-reader/WASAPI row text, preview
+renderer-mode routing, non-D3D fallback text, D3D preview snapshot text,
+Flashback snapshot gating/order, encoding status/health text, export progress/
+result text, playback command text, playback cadence/decode/frame/stage/A/V
+drift text, MJPEG activation/header/order, decode/copy/callback/per-decoder
+timing, compressed-queue, drop-reason, reorder, pipeline timing,
+preview-jitter queue, latency, ownership, and underflow text, diagnostic-event
+text, capture option/device text, standalone memory/GC summaries, performance
+timeline response validation, JSON row projection, private row model, table
+output, trend summaries, and shared JSON/result helpers together there, with
 shared CLI formatter contracts in the command-handler tests.
 
 `tools/Common/AutomationSnapshotFormatter.cs` is now the shared automation
@@ -514,7 +512,7 @@ keeps the PresentMon parser, ssctl pipe transport, KS audio-node, and EGAVDS
 probe checks together unless one gains an independent fixture or executable
 helper state. The legacy `HarnessCheckCatalog.ToolContracts.cs` registration
 file has been retired.
-Shared formatter tests now mirror the formatter partials: the root
+Shared formatter tests now mirror the formatter owners: the root
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback
 output, Preview D3D output, and source ownership live in the focused

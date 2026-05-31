@@ -279,14 +279,22 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-internal static Task SsctlFormatters_SnapshotSourceOwnership_IsSplit()
+    internal static Task SsctlFormatters_SourceOwnership_IsUnified()
     {
-        var ssctlFormatterCommonSource = ReadRepoFile("tools/ssctl/Formatters.Common.cs");
         var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
-        var ssctlSnapshotRootSource = ReadRepoFile("tools/ssctl/Formatters.Snapshot.cs");
+        var ssctlSnapshotRootSource = ssctlFormatterSource;
         var ssctlSnapshotFlashbackSource = ssctlSnapshotRootSource;
         var ssctlSnapshotMjpegSource = ssctlSnapshotRootSource;
-        AssertDoesNotContain(ssctlFormatterCommonSource, "public static string FormatSnapshot");
+        AssertContains(ssctlFormatterSource, "internal static class Formatters");
+        AssertDoesNotContain(ssctlFormatterSource, "partial class Formatters");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Common.cs")),
+            "ssctl shared result helpers live with the unified formatter owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.cs")),
+            "ssctl snapshot text lives with the unified formatter owner");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotStateSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotCaptureSettingsSection(builder, snapshot);");
         AssertContains(ssctlSnapshotRootSource, "AppendSnapshotAudioSection(builder, snapshot);");
@@ -421,29 +429,29 @@ internal static Task SsctlFormatters_SnapshotSourceOwnership_IsSplit()
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.ThreadHealth.cs")),
             "ssctl thread-health snapshot text lives with the root formatter flow");
-        AssertContains(ssctlFormatterCommonSource, "public static string FormatDiagnostics");
-        AssertContains(ssctlFormatterCommonSource, "public static string FormatOptions");
-        AssertContains(ssctlFormatterCommonSource, "public static string FormatDeviceList");
+        AssertContains(ssctlFormatterSource, "public static string FormatDiagnostics");
+        AssertContains(ssctlFormatterSource, "public static string FormatOptions");
+        AssertContains(ssctlFormatterSource, "public static string FormatDeviceList");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Options.cs")),
             "ssctl capture option and device-list output lives with the root formatter helpers");
-        AssertContains(ssctlFormatterCommonSource, "public static string FormatTimeline");
-        AssertContains(ssctlFormatterCommonSource, "var entries = ReadTimelineRows(data);");
-        AssertContains(ssctlFormatterCommonSource, "return RenderTimeline(entries);");
-        AssertContains(ssctlFormatterCommonSource, "private sealed class TimelineRow");
-        AssertContains(ssctlFormatterCommonSource, "AutomationSnapshotFormatter.GetDouble(item, \"CaptureFps\")");
-        AssertContains(ssctlFormatterCommonSource, "private static string RenderTimeline(IReadOnlyList<TimelineRow> entries)");
-        AssertContains(ssctlFormatterCommonSource, "Performance Timeline ({entries.Count} samples)");
-        AssertContains(ssctlFormatterCommonSource, "AppendTimelineTrendSummary(builder, entries);");
-        AssertContains(ssctlFormatterCommonSource, "private static void AppendTimelineTrendSummary(StringBuilder builder, IReadOnlyList<TimelineRow> entries)");
-        AssertContains(ssctlFormatterCommonSource, "== Trend Summary (first vs last sample) ==");
+        AssertContains(ssctlFormatterSource, "public static string FormatTimeline");
+        AssertContains(ssctlFormatterSource, "var entries = ReadTimelineRows(data);");
+        AssertContains(ssctlFormatterSource, "return RenderTimeline(entries);");
+        AssertContains(ssctlFormatterSource, "private sealed class TimelineRow");
+        AssertContains(ssctlFormatterSource, "AutomationSnapshotFormatter.GetDouble(item, \"CaptureFps\")");
+        AssertContains(ssctlFormatterSource, "private static string RenderTimeline(IReadOnlyList<TimelineRow> entries)");
+        AssertContains(ssctlFormatterSource, "Performance Timeline ({entries.Count} samples)");
+        AssertContains(ssctlFormatterSource, "AppendTimelineTrendSummary(builder, entries);");
+        AssertContains(ssctlFormatterSource, "private static void AppendTimelineTrendSummary(StringBuilder builder, IReadOnlyList<TimelineRow> entries)");
+        AssertContains(ssctlFormatterSource, "== Trend Summary (first vs last sample) ==");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Timeline.cs")),
             "ssctl timeline table and trend output lives with the root formatter helpers");
-        AssertContains(ssctlFormatterCommonSource, "public static string FormatMemory");
-        AssertContains(ssctlFormatterCommonSource, "public static string FormatResult");
+        AssertContains(ssctlFormatterSource, "public static string FormatMemory");
+        AssertContains(ssctlFormatterSource, "public static string FormatResult");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "ssctl", "Formatters.Diagnostics.cs")),

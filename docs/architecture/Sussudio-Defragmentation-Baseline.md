@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: ssctl formatter projection facade locality
+Problem: `tools/ssctl/Formatters.Common.cs` and `tools/ssctl/Formatters.Snapshot.cs` were the last two partial files for one console projection facade, together under 1,000 lines. Reviewing ssctl output behavior still required splitting attention between general result/diagnostic/options/timeline projections and the snapshot renderer even though they share `AutomationSnapshotFormatter`, `TryGetData`, command-handler routing, and the same public `Formatters` type.
+Files consolidated: `tools/ssctl/Formatters.Common.cs`; `tools/ssctl/Formatters.Snapshot.cs`
+Files added: `tools/ssctl/Formatters.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `Formatters` tool partial count 2 -> 1; `Formatters` is no longer a partial type; generated baseline production `.cs` count 189 -> 188
+Build/tests/runtime checks: rebuilt ssctl with `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~SsctlFormatter` passed (4 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 95 / 56,089.
+CLI/MCP/pipe checks, if applicable: no live automation pipe session was run; full solution build rebuilt ssctl, MCP, AutomationClient, the app, and tests. No public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: `Formatters` namespace/type name, public formatting method names, command-handler routing, JSON pretty-printing, result/data formatting, diagnostics, memory, capture options, device list, timeline table/trend output, snapshot section order, D3D preview text, Flashback text, MJPEG text, thread-health rows, source text, and invariant numeric formatting keep the same method bodies while living in `tools/ssctl/Formatters.cs`.
+Notes for future agents: keep the unified ssctl console projection facade in `tools/ssctl/Formatters.cs` while it remains under the large-file review threshold and has one command-handler consumer. Split again only if a formatter subsection grows an independently named policy/collaborator or a reusable test fixture beyond console projection text.
+
+Date: 2026-05-31
 Area: D3D preview renderer shader-resource locality
 Problem: `D3D11PreviewRenderer.ShaderRendering.cs` owned HLSL sources, renderer mode labels, D3DCompiler interop, shader bytecode compilation, shader/sampler/viewport constant-buffer creation, NV12 SRV caching, and shader pipeline cleanup while `D3D11PreviewRenderer.Resources.cs` owned device/swap-chain initialization, called shader compilation during `InitializeD3D`, and executed top-level resource cleanup. Reviewing one D3D resource lifetime transaction still required a separate shader-resource partial before returning to the resource owner.
 Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`

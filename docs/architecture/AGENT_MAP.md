@@ -2621,31 +2621,26 @@ Primary owners:
   detection/pretty-printing, primitive parsing, Flashback export numeric
   validation, on/off and show/hide parsing, recording format normalization,
   snap action mapping, and assertion value parsing.
-- The `tools/ssctl/Formatters.*.cs` partial family is the console projection
-  facade only. Keep the general result, diagnostics, memory, options, device,
-  and timeline projections together in `Formatters.Common.cs`; keep the bulky
-  app snapshot renderer in `Formatters.Snapshot.cs`.
-- `tools/ssctl/Formatters.Snapshot.cs` owns app snapshot orchestration, section
-  ordering, and simple row sections for Sussudio state/capture-command summary,
-  audio, capture settings, friendly/exact frame-rate summary formatting,
-  runtime video-pipeline text, thread-health section order plus source-reader
-  and WASAPI row text, recording, diagnostics, legacy performance, process CPU,
-  Memory/GC, thread-pool, capture cadence, low-FPS, jitter/drop, MJPEG packet
-  fingerprint, sampled visual cadence, AV-sync drift, encoder correction,
-  preview renderer-mode routing, GPU playback summary, non-D3D
-  fallback frame/cadence, D3D renderer section text, D3D CPU timing,
+- `tools/ssctl/Formatters.cs` is the unified console projection facade. It owns
+  shared result/JSON helpers, recent diagnostic-event output, standalone
+  memory/GC summaries, capture option summaries, device-list output,
+  performance timeline response validation, JSON row projection, private row
+  model, table output, first-vs-last trend summary text, app snapshot
+  orchestration, section ordering, and simple row sections for Sussudio state/
+  capture-command summary, audio, capture settings, friendly/exact frame-rate
+  summary formatting, runtime video-pipeline text, thread-health section order
+  plus source-reader and WASAPI row text, recording, diagnostics, legacy
+  performance, process CPU, Memory/GC, thread-pool, capture cadence, low-FPS,
+  jitter/drop, MJPEG packet fingerprint, sampled visual cadence, AV-sync drift,
+  encoder correction, preview renderer-mode routing, GPU playback summary,
+  non-D3D fallback frame/cadence, D3D renderer section text, D3D CPU timing,
   pipeline-latency, frame-latency wait, frame ownership, DXGI frame-stat text,
   slow-frame formatter delegation, source dimensions, source frame-rate
   summary, HDR, source telemetry, Flashback active/failure gating, Flashback
   section and encoding subsection ordering, Flashback encoder/buffer/cache/
-  cleanup text, Flashback export/playback text, MJPEG timing activation, decode/
-  copy/callback/per-decoder timing, compressed queue/drop/reorder/pipeline
-  timing, and preview-jitter snapshot text.
-- `tools/ssctl/Formatters.Common.cs` owns shared result/JSON helpers, recent
-  diagnostic-event output, standalone memory/GC summaries, capture option
-  summaries, device-list output, performance timeline response validation,
-  JSON row projection, private row model, table output, and first-vs-last trend
-  summary text.
+  cleanup text, Flashback export/playback text, MJPEG timing activation,
+  decode/copy/callback/per-decoder timing, compressed queue/drop/reorder/
+  pipeline timing, and preview-jitter snapshot text.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,

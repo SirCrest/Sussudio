@@ -35,8 +35,8 @@ public sealed class SsctlFormatterContractsTests
         => global::Program.SsctlFormatters_EmitCoreSnapshotSections();
 
     [Fact]
-    public Task SnapshotSourceOwnershipIsSplit()
-        => global::Program.SsctlFormatters_SnapshotSourceOwnership_IsSplit();
+    public Task SourceOwnershipIsUnified()
+        => global::Program.SsctlFormatters_SourceOwnership_IsUnified();
 
     [Fact]
     public Task TimelineOutputPreservesTableAndSummary()

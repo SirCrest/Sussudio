@@ -392,7 +392,7 @@ internal static class RuntimeContractSource
     public static string ReadSsctlSnapshotFormatterSource()
         => ReadSourceFamily(new[]
         {
-            "tools/ssctl/Formatters.Snapshot.cs",
+            "tools/ssctl/Formatters.cs",
         });
 
     public static string ReadSourceFamily(IReadOnlyList<string> files)
