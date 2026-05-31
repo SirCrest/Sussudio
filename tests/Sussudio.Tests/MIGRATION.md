@@ -63,8 +63,9 @@ add xUnit alongside, and port incrementally.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy core runtime
   subgroup: runtime telemetry, capture-service snapshot, NativeXu, frame ledger,
   recording-integrity, and basic app contract checks.
-- `RecordingArtifactManager.Tests.cs` owns the former legacy temp artifact
-  finalization and rollback behavior checks for recording output cleanup.
+- `XUnit.RecordingContractsTests.cs` owns recording contract DTO checks plus
+  the former legacy temp artifact finalization and rollback behavior checks
+  for recording output cleanup.
 - `MjpegPipeline.Tests.cs` owns the former legacy CPU MJPEG pipeline,
   timing metric, stopwatch timeout, software decoder shape, pooled-frame
   lease/fan-out, preview jitter, cadence, queued lease-release, and xUnit
