@@ -1305,10 +1305,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
   preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
   audio-ramp, device-discovery-before-recording-capability, UI/audio preview
-  reveal ordering, timeout, failure-stop, and formatter assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.SessionReinit.Tests.cs`
-  owns the source-shape ownership assertion that wires preview startup session
-  and reinit adapters to focused controllers, MainViewModel preview
+  reveal ordering, timeout, failure-stop, formatter assertions, preview startup
+  session/reinit adapter source-shape ownership, MainViewModel preview
   lifecycle/reinitialize controller placement, preview startup session
   controller attempt-state and orchestration behavior, preview reinit transition
   controller presentation and animation-state behavior, plus pending Flashback
