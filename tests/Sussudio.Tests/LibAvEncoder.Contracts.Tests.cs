@@ -11,8 +11,7 @@ static partial class Program
         {
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs").Replace("\r\n", "\n"),
             ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.Audio.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs").Replace("\r\n", "\n")
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs").Replace("\r\n", "\n")
         };
 
         return string.Join("\n", parts);
@@ -613,12 +612,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task LibAvEncoder_OutputLifecycleLivesInFocusedOwner()
+    internal static Task LibAvEncoder_OutputLifecycleLivesWithEncoderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
-        var outputLifecycleText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.OutputLifecycle.cs")
-            .Replace("\r\n", "\n");
+        var outputLifecycleText = rootText;
 
         AssertContains(outputLifecycleText, "public RotateOutputResult RotateOutput(string newPath)");
         AssertContains(outputLifecycleText, "private void CloseCurrentOutputIo()");
@@ -639,20 +637,20 @@ static partial class Program
         AssertContains(outputLifecycleText, "_isOpen = false;");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputLifecycle.cs")),
+            "output lifecycle folded into LibAvEncoder.cs");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.OutputRotation.cs")),
-            "output rotation folded into LibAvEncoder.OutputLifecycle.cs");
+            "output rotation folded into LibAvEncoder.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.ResourceCleanup.cs")),
-            "resource cleanup folded into LibAvEncoder.OutputLifecycle.cs");
+            "resource cleanup folded into LibAvEncoder.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvEncoder.NativeResourceRelease.cs")),
-            "Native resource release folded into LibAvEncoder.OutputLifecycle.cs");
-        AssertDoesNotContain(rootText, "public RotateOutputResult RotateOutput(string newPath)");
-        AssertDoesNotContain(rootText, "public void FlushAndClose()");
-        AssertDoesNotContain(rootText, "public void Dispose()");
-
+            "Native resource release folded into LibAvEncoder.cs");
         return Task.CompletedTask;
     }
 
