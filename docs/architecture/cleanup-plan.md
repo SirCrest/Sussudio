@@ -2456,17 +2456,17 @@ callbacks into the session, watchdog, and signal controllers, stable state
 projections, startup state, renderer-attached, first-visual, begin-attempt,
 reset adapters, raw timeout diagnostic snapshots, live preview signal state,
 renderer visibility details, logging, and confirmation callbacks.
-Watchdog/telemetry timers, timeout configuration, timeout recovery, and failure-stop scheduling live in
-`Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs`;
-the MainWindow/XAML-facing adapter stays in
-`Sussudio/MainWindow.PreviewLifecycle.Composition.cs`. Readiness-signal coordination now lives
-in `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs`: missing-signal
-updates, readiness-signal required/received state, missing-signal calculation,
+Watchdog/telemetry timers, timeout configuration, timeout recovery, failure-stop
+scheduling, readiness-signal coordination, missing-signal updates,
+readiness-signal required/received state, missing-signal calculation,
 playback-progress diagnostics, startup signal log strings, GPU position counter
 state, first-visual confirmation decisions, playback-advance threshold checks,
 readiness result snapshots, signal-list formatting, and timeout diagnostic
-payload formatting. Timeout reason,
-timeout status, and failure-stop status text live inside
+payload formatting live in
+`Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs`;
+the MainWindow/XAML-facing adapter stays in
+`Sussudio/MainWindow.PreviewLifecycle.Composition.cs`. Timeout reason,
+timeout status, and failure-stop status text also live inside
 `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs`, where the timeout
 and failure-stop decisions are made. This keeps the root shell focused on wiring
 while leaving the existing startup state machine behavior unchanged.

@@ -13,18 +13,22 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupSignalsText = ReadMainWindowPreviewStartupAdapterSource();
-        var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs")
+        var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
             .Replace("\r\n", "\n");
-        var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs")
+        var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
             .Replace("\r\n", "\n");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupSignalCoordinator.cs")),
-            "preview startup signal coordinator folded into PreviewStartupSignalsController.cs");
+            "preview startup signal coordinator folded into PreviewStartupControllers.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupReadinessSignalController.cs")),
-            "preview startup readiness controller folded into PreviewStartupSignalsController.cs");
+            "preview startup readiness controller folded into PreviewStartupControllers.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupSignalsController.cs")),
+            "preview startup signals controller folded into PreviewStartupControllers.cs");
 
         AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
         AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
@@ -240,7 +244,7 @@ static partial class Program
         var previewStartupWatchdogText = ReadMainWindowPreviewStartupAdapterSource();
         var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
             .Replace("\r\n", "\n");
-        var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs")
+        var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");

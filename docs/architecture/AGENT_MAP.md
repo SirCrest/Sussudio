@@ -2044,28 +2044,21 @@ Primary current owners:
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs` owns preview
   startup attempt/state bookkeeping, timestamps, cached failure/missing-signal
   details, state/log transitions, first-visual confirmation sequencing,
-  signal-window predicates, snapshot missing-signal refresh gates, and reset
-  orchestration.
+  signal-window predicates, snapshot missing-signal refresh gates, reset
+  orchestration, watchdog/telemetry timers, timeout configuration, timeout
+  recovery, failure-stop scheduling, readiness-signal state handoff,
+  required/received state, missing-signal calculation and updates,
+  playback-progress diagnostics, startup signal log strings, GPU position
+  counter state, first-visual confirmation decisions, signal-list formatting,
+  timeout diagnostic payload formatting, playback-advance threshold checks, and
+  readiness result snapshots.
   `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires UI/runtime
   callbacks into the session, watchdog, and signal controllers, stable state
   projections, startup state, renderer-attached, first-visual, begin-attempt,
   reset adapters, raw timeout diagnostic snapshots, live preview signal state,
   renderer visibility details, logging, and confirmation callbacks.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs` also owns
-  watchdog/telemetry timers, timeout configuration, timeout recovery, and
-  failure-stop scheduling. The MainWindow/XAML-facing adapter stays in
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`.
-  `Sussudio/Controllers/Preview/Startup/PreviewStartupSignalsController.cs` owns readiness-
-  signal coordination: readiness-signal state handoff, required/received state,
-  missing-signal calculation and updates, playback-progress diagnostics, startup
-  signal log strings, GPU position counter state, first-visual confirmation
-  decisions, signal-list formatting, timeout diagnostic payload formatting,
-  playback-advance threshold checks, and readiness result snapshots.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the
-  coordinator context, stable signal snapshot properties used by automation,
-  GPU signal, missing-signal, playback-snapshot, and first-visual adapter callbacks.
-  `PreviewStartupControllers.cs`
-  owns preview startup timeout reason, timeout status, and failure-stop status text.
+  `PreviewStartupControllers.cs` also owns preview startup timeout reason,
+  timeout status, and failure-stop status text.
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state.
