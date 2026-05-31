@@ -339,8 +339,8 @@ public sealed class PresentationPreviewD3DRenderPipelineOwnershipTests
         => global::Program.D3D11PreviewRenderer_FrameLatencyLivesWithRenderThread();
 
     [Fact]
-    public Task RenderThreadLivesInFocusedPartial()
-        => global::Program.D3D11PreviewRenderer_RenderThreadLivesInFocusedPartial();
+    public Task RenderThreadLivesInRendererRoot()
+        => global::Program.D3D11PreviewRenderer_RenderThreadLivesInRendererRoot();
 
     [Fact]
     public Task PresentAccountingLivesWithRenderPasses()

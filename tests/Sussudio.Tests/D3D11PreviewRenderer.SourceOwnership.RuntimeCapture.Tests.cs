@@ -50,32 +50,29 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
-            .Replace("\r\n", "\n");
 
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Lifecycle.cs")),
             "D3D11 preview public lifecycle is consolidated into the renderer root facade");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
+            "D3D11 preview render thread lifecycle is consolidated into the renderer root facade");
         AssertContains(rootText, "private readonly object _lifecycleLock = new();");
         AssertContains(rootText, "private Thread? _renderThread;");
         AssertContains(rootText, "private int _disposed;");
         AssertContains(rootText, "private double _startupFps = 60.0;");
         AssertContains(rootText, "public void Start(int width, int height, double fps, bool isHdr)");
         AssertContains(rootText, "public void Dispose()");
-        AssertContains(renderThreadText, "private int _stopRequested;");
-        AssertContains(renderThreadText, "private int _inNativeCall;");
-        AssertContains(renderThreadText, "public void StopRenderThread()");
-        AssertContains(renderThreadText, "public void Stop()");
-        AssertContains(renderThreadText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
-        AssertContains(renderThreadText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
-        AssertContains(renderThreadText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
-        AssertContains(renderThreadText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
-        AssertDoesNotContain(rootText, "public void StopRenderThread()");
-        AssertDoesNotContain(rootText, "public void Stop()");
-        AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
-        AssertDoesNotContain(rootText, "public void StopRenderThread()");
-        AssertDoesNotContain(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+        AssertContains(rootText, "private int _stopRequested;");
+        AssertContains(rootText, "private int _inNativeCall;");
+        AssertContains(rootText, "public void StopRenderThread()");
+        AssertContains(rootText, "public void Stop()");
+        AssertContains(rootText, "private void WaitForNativeCallToDrainOrThrow(string operation)");
+        AssertContains(rootText, "WaitForNativeCallToDrainOrThrow(\"stop\");");
+        AssertContains(rootText, "FailPendingFrameCapture(\"Preview renderer stopped before frame capture completed.\");");
+        AssertContains(rootText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
 
         return Task.CompletedTask;
     }
@@ -271,13 +268,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task D3D11PreviewRenderer_RenderThreadLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_RenderThreadLivesInRendererRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
-            .Replace("\r\n", "\n");
-        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
         var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             .Replace("\r\n", "\n");
@@ -286,36 +281,42 @@ static partial class Program
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n");
 
-        AssertContains(renderThreadText, "private void RenderThreadMain()");
-        AssertContains(renderThreadText, "MmcssThreadRegistration.TryRegister");
-        AssertContains(renderThreadText, "_frameReadyEvent.Wait");
-        AssertContains(renderThreadText, "HandlePendingSharedDeviceResetOnRenderThread();");
-        AssertContains(renderThreadText, "TryApplyPendingCompositionTransformOnRenderThread(out var skipFrameDispatch)");
-        AssertContains(renderThreadText, "if (skipFrameDispatch)");
-        AssertContains(renderThreadText, "ProcessRenderThreadFrameOrIdle()");
-        AssertContains(renderThreadText, "CleanupRenderThreadExit();");
-        AssertContains(renderThreadText, "NotifyRenderThreadFailed(ex);");
-        AssertContains(renderThreadText, "private void HandlePendingSharedDeviceResetOnRenderThread()");
-        AssertContains(renderThreadText, "TrackFrameDropped(stale, \"shared-device-reset\");");
-        AssertContains(renderThreadText, "UnbindSwapChainFromPanel();");
-        AssertContains(renderThreadText, "InitializeD3D();");
-        AssertContains(renderThreadText, "private bool TryApplyPendingCompositionTransformOnRenderThread(out bool skipFrameDispatch)");
-        AssertContains(renderThreadText, "skipFrameDispatch = true;");
-        AssertContains(renderThreadText, "if (Volatile.Read(ref _stopRequested) != 0)");
-        AssertContains(renderThreadText, "ApplyCompositionScaleTransform(swapChain);");
-        AssertContains(renderThreadText, "HandleDeviceLost(ex);");
-        AssertContains(renderThreadText, "private bool ProcessRenderThreadFrameOrIdle()");
-        AssertContains(renderThreadText, "WaitForFrameLatencySignal();");
-        AssertContains(renderThreadText, "RenderFrame(frame);");
-        AssertContains(renderThreadText, "TrackFrameDropped(frame, \"render-failed\");");
-        AssertContains(renderThreadText, "SignalFrameReady(\"render_loop_drain\");");
-        AssertContains(renderThreadText, "private void CleanupRenderThreadExit()");
-        AssertContains(renderThreadText, "TrackFrameDropped(stale, \"renderer-exit\");");
-        AssertContains(renderThreadText, "FailPendingFrameCapture(\"Render thread exited before frame capture completed.\");");
-        AssertContains(agentMapText, "D3D11PreviewRenderer.RenderThread.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
+            "D3D11 preview render-thread orchestration is folded into the renderer root");
+        AssertContains(rootText, "private void RenderThreadMain()");
+        AssertContains(rootText, "MmcssThreadRegistration.TryRegister");
+        AssertContains(rootText, "_frameReadyEvent.Wait");
+        AssertContains(rootText, "HandlePendingSharedDeviceResetOnRenderThread();");
+        AssertContains(rootText, "TryApplyPendingCompositionTransformOnRenderThread(out var skipFrameDispatch)");
+        AssertContains(rootText, "if (skipFrameDispatch)");
+        AssertContains(rootText, "ProcessRenderThreadFrameOrIdle()");
+        AssertContains(rootText, "CleanupRenderThreadExit();");
+        AssertContains(rootText, "NotifyRenderThreadFailed(ex);");
+        AssertContains(rootText, "private void HandlePendingSharedDeviceResetOnRenderThread()");
+        AssertContains(rootText, "TrackFrameDropped(stale, \"shared-device-reset\");");
+        AssertContains(rootText, "UnbindSwapChainFromPanel();");
+        AssertContains(rootText, "InitializeD3D();");
+        AssertContains(rootText, "private bool TryApplyPendingCompositionTransformOnRenderThread(out bool skipFrameDispatch)");
+        AssertContains(rootText, "skipFrameDispatch = true;");
+        AssertContains(rootText, "if (Volatile.Read(ref _stopRequested) != 0)");
+        AssertContains(rootText, "ApplyCompositionScaleTransform(swapChain);");
+        AssertContains(rootText, "HandleDeviceLost(ex);");
+        AssertContains(rootText, "private bool ProcessRenderThreadFrameOrIdle()");
+        AssertContains(rootText, "WaitForFrameLatencySignal();");
+        AssertContains(rootText, "RenderFrame(frame);");
+        AssertContains(rootText, "TrackFrameDropped(frame, \"render-failed\");");
+        AssertContains(rootText, "SignalFrameReady(\"render_loop_drain\");");
+        AssertContains(rootText, "private void CleanupRenderThreadExit()");
+        AssertContains(rootText, "TrackFrameDropped(stale, \"renderer-exit\");");
+        AssertContains(rootText, "FailPendingFrameCapture(\"Render thread exited before frame capture completed.\");");
+        AssertDoesNotContain(agentMapText, "D3D11PreviewRenderer.RenderThread.cs");
+        AssertContains(agentMapText, "D3D11PreviewRenderer.cs");
         AssertContains(agentMapText, "shared-device reset consumption/rebind");
         AssertContains(agentMapText, "queued-frame render dispatch");
-        AssertContains(cleanupPlanText, "D3D11PreviewRenderer.RenderThread.cs");
+        AssertDoesNotContain(cleanupPlanText, "D3D11PreviewRenderer.RenderThread.cs");
+        AssertContains(cleanupPlanText, "D3D11PreviewRenderer.cs");
         AssertContains(cleanupPlanText, "shared-device reset/rebind consumption");
         AssertContains(cleanupPlanText, "pending-frame render dispatch");
         AssertContains(diagnosticsText, "private string _lastRenderThreadFailureType = string.Empty;");
@@ -328,8 +329,8 @@ static partial class Program
         AssertContains(diagnosticsText, "FirstFrameRendered?.Invoke()");
         AssertContains(rootText, "ResetFirstFrameNotification();");
         AssertContains(renderPassesText, "NotifyFirstFrameRendered(firstFrameMessage);");
-        var waitIndex = renderThreadText.IndexOf("WaitForFrameLatencySignal();", StringComparison.Ordinal);
-        var renderIndex = renderThreadText.IndexOf("RenderFrame(frame);", StringComparison.Ordinal);
+        var waitIndex = rootText.IndexOf("WaitForFrameLatencySignal();", StringComparison.Ordinal);
+        var renderIndex = rootText.IndexOf("RenderFrame(frame);", StringComparison.Ordinal);
         if (waitIndex < 0 || renderIndex < 0 || waitIndex > renderIndex)
         {
             throw new InvalidOperationException("Render thread must wait for frame-latency signal before rendering the frame.");
@@ -337,8 +338,6 @@ static partial class Program
 
         AssertDoesNotContain(rootText, "private int _firstFrameRaised;");
         AssertDoesNotContain(rootText, "private string _lastRenderThreadFailureType = string.Empty;");
-        AssertDoesNotContain(renderThreadText, "private int _firstFrameRaised;");
-        AssertDoesNotContain(renderThreadText, "private string _lastRenderThreadFailureType = string.Empty;");
         AssertDoesNotContain(renderPassesText, "private void RenderThreadMain()");
         AssertDoesNotContain(renderPassesText, "private void NotifyRenderThreadFailed(Exception ex)");
         AssertDoesNotContain(renderPassesText, "FirstFrameRendered?.Invoke()");

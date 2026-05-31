@@ -1572,23 +1572,22 @@ metric record structs live there too. Renderer implementation fields should
 live with the partial that mutates or projects them: keep
 renderer diagnostic ring/write state, render-thread failure state, first-frame
 notification state, and slow-frame reason classification in
-`D3D11PreviewRenderer.Metrics.cs`, startup/disposal lifecycle state in the
-renderer root facade, stop/unbind/native-call fence state in
-render-loop shell orchestration,
+`D3D11PreviewRenderer.Metrics.cs`; startup/disposal lifecycle state,
+stop/unbind/native-call fence state, render-loop shell orchestration,
 shared-device reset/rebind consumption, composition-transform wake handling,
 pending-frame render dispatch, final render-thread drain, and renderer-mode
-reset in `D3D11PreviewRenderer.RenderThread.cs`,
+reset in the renderer root facade,
 queue state and signaling in `D3D11PreviewRenderer.Submission.cs`, D3D device/swap-chain, input texture, and HDR shader input resources in
 `D3D11PreviewRenderer.Resources.cs`, swap-chain panel binding state in
 `D3D11PreviewRenderer.cs`, render-thread waitable frame-latency
-pacing in `D3D11PreviewRenderer.RenderThread.cs`, render-pass selection plus
+pacing in `D3D11PreviewRenderer.cs`, render-pass selection plus
 VideoProcessor, NV12 shader, and HDR shader execution plus shared present
 accounting in `D3D11PreviewRenderer.RenderPasses.cs`, and shader
-resource/cache state in
-`D3D11PreviewRenderer.ShaderRendering.cs`. Do not re-centralize renderer
-implementation state in `D3D11PreviewRenderer.cs`; the root should keep the
-public facade, construction references, constants, panel binding, user-facing
-accessors, and public state toggles.
+resource/cache state in `D3D11PreviewRenderer.ShaderRendering.cs`. Keep the
+renderer root limited to facade/lifecycle/render-loop orchestration, panel
+binding, composition transforms, frame-latency pacing, user-facing accessors,
+and public state toggles; leave resource, submission, render-pass, shader, and
+metrics implementation state in their focused owners.
 
 D3D preview renderer queue-owned frame lifetime and metrics model types now live
 with their caller owners. Keep the `PendingFrame` lifetime wrapper in
@@ -1608,7 +1607,7 @@ interop declarations now live with their behavior owners: keep
 `ISwapChainPanelNative` in `D3D11PreviewRenderer.cs`,
 `ID3DBlob` and `D3DCompileNative` in `D3D11PreviewRenderer.ShaderRendering.cs`,
 and `DwmFlush` in `D3D11PreviewRenderer.Metrics.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
-`D3D11PreviewRenderer.RenderThread.cs`.
+`D3D11PreviewRenderer.cs`.
 
 D3D preview renderer shader compilation now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep
@@ -1623,19 +1622,17 @@ frame, lease, single shared-texture, and dual-plane NV12 submission entry
 points there, including NV12 shader guard, HDR transition logging, COM
 AddRef/release, pending-frame adapters, pending-frame queue state, signaling,
 and explicit pending-frame drain control. Keep render-thread start/disposal
-and panel sizing in the root renderer, with stop and reinit stop in
-`D3D11PreviewRenderer.RenderThread.cs`.
+and panel sizing in the root renderer, with stop and reinit stop in the same
+root lifecycle owner.
 
 D3D preview renderer public lifecycle now lives in the root
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` facade. Keep render-thread
-startup state, startup reset, and renderer disposal there.
-`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs` owns public
-stop, reinit stop, unbind-before-join ordering, native-call drain fencing,
-pending-frame shutdown cleanup, and render-pass native-call entry/exit guard
-helpers.
+startup state, startup reset, renderer disposal, public stop/reinit stop,
+unbind-before-join ordering, native-call drain fencing, pending-frame shutdown
+cleanup, and render-pass native-call entry/exit guard helpers there.
 
-D3D preview renderer render-thread orchestration now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep MMCSS
+D3D preview renderer render-thread orchestration now lives in the root
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs` facade. Keep MMCSS
 registration, frame-ready wait-loop ordering, shared-device reset
 consumption/rebind, composition-transform wake handling, pending-frame
 consumption, stale-generation drops, frame-latency wait, render dispatch,
@@ -1657,7 +1654,7 @@ frame byte/lease upload, direct texture update fallback, and staging copy
 mechanics there. Shader resource/cache state now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
 fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep
-render-thread orchestration in `D3D11PreviewRenderer.RenderThread.cs`, and keep
+render-thread orchestration in `D3D11PreviewRenderer.cs`, and keep
 present accounting and slow-frame diagnostic call sites with render-pass
 completion in `D3D11PreviewRenderer.RenderPasses.cs`.
 
@@ -1692,7 +1689,7 @@ slow-frame diagnostic consumption of the latest DXGI counters in the same metric
 owner.
 
 D3D preview renderer frame-latency waitable swap-chain setup and waits now live
-in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep
+in `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
 `ConfigureFrameLatencyWaitableObject`, `WaitForFrameLatencySignal`, the native
 `WaitForSingleObject` import, and wait-result constants with render-thread
 pacing so frame dequeue, wait, render dispatch, and wait metrics are reviewed
@@ -1718,7 +1715,7 @@ Shader/SRV teardown stays with
 teardown stays with `D3D11PreviewRenderer.RenderPasses.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
-Keep render loop consumption in `D3D11PreviewRenderer.RenderThread.cs`,
+Keep render loop consumption in `D3D11PreviewRenderer.cs`,
 present paths with render-pass completion and shader draw paths in
 `D3D11PreviewRenderer.RenderPasses.cs`.
 
@@ -1732,7 +1729,7 @@ D3D preview pending-frame queue ownership now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs`. Keep
 enqueue, backlog trimming, frame-ready signal/reset wrappers, explicit pending
 drains, and pending-count accounting there; keep render-loop consumption in
-`D3D11PreviewRenderer.RenderThread.cs` and frame ownership metrics in
+`D3D11PreviewRenderer.cs` and frame ownership metrics in
 `D3D11PreviewRenderer.Metrics.cs`.
 
 Media Foundation source-reader negotiation now lives in

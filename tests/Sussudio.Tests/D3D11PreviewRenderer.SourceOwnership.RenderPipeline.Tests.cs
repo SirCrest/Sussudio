@@ -105,8 +105,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
-            .Replace("\r\n", "\n");
+        var renderLifecycleText = rootText;
         var sharedDeviceText = deviceInitializationText;
 
         AssertContains(sharedDeviceText, "private ID3D11Device? _sharedDevice;");
@@ -120,12 +119,12 @@ static partial class Program
         AssertContains(sharedDeviceText, "SignalFrameReady(\"shared_device_reset\");");
         AssertContains(sharedDeviceText, "AccessViolationException");
         AssertContains(deviceInitializationText, "var sharedDeviceActive = TryInitializeWithSharedDevice(out var featureLevel);");
-        AssertContains(renderThreadText, "Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1)");
-        AssertContains(renderThreadText, "HandlePendingSharedDeviceResetOnRenderThread();");
-        AssertContains(renderThreadText, "private void HandlePendingSharedDeviceResetOnRenderThread()");
-        AssertContains(renderThreadText, "TrackFrameDropped(stale, \"shared-device-reset\");");
-        AssertContains(renderThreadText, "CleanupD3DResources();");
-        AssertContains(renderThreadText, "InitializeD3D();");
+        AssertContains(renderLifecycleText, "Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1)");
+        AssertContains(renderLifecycleText, "HandlePendingSharedDeviceResetOnRenderThread();");
+        AssertContains(renderLifecycleText, "private void HandlePendingSharedDeviceResetOnRenderThread()");
+        AssertContains(renderLifecycleText, "TrackFrameDropped(stale, \"shared-device-reset\");");
+        AssertContains(renderLifecycleText, "CleanupD3DResources();");
+        AssertContains(renderLifecycleText, "InitializeD3D();");
         AssertDoesNotContain(rootText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
         AssertDoesNotContain(rootText, "public void RetireSharedDeviceReferenceForReinit()");
         AssertEqual(
@@ -202,19 +201,20 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
-        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
-            .Replace("\r\n", "\n");
 
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.FrameLatency.cs")),
             "D3D11 waitable frame-latency pacing lives with render-thread execution");
-        AssertContains(renderThreadText, "private IntPtr _frameLatencyWaitHandle;");
-        AssertContains(renderThreadText, "private void ConfigureFrameLatencyWaitableObject()");
-        AssertContains(renderThreadText, "private void WaitForFrameLatencySignal()");
-        AssertContains(renderThreadText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
-        AssertContains(renderThreadText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
-        AssertDoesNotContain(rootText, "private IntPtr _frameLatencyWaitHandle;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
+            "D3D11 render-thread execution and frame-latency pacing are folded into the renderer root");
+        AssertContains(rootText, "private IntPtr _frameLatencyWaitHandle;");
+        AssertContains(rootText, "private void ConfigureFrameLatencyWaitableObject()");
+        AssertContains(rootText, "private void WaitForFrameLatencySignal()");
+        AssertContains(rootText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
+        AssertContains(rootText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
         AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
         AssertDoesNotContain(renderPassesText, "private static extern uint WaitForSingleObject");
 
@@ -275,8 +275,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
-            .Replace("\r\n", "\n");
+        var renderLifecycleText = rootText;
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var shaderRenderingText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
@@ -311,14 +310,12 @@ static partial class Program
         AssertContains(renderPassesText, "EnsureHdrInputResources(frame.Width, frame.Height)");
         AssertContains(renderPassesText, "TryResolveInputView(frame, out var inputView, out var disposeInputView)");
         AssertContains(renderPassesText, "D3D11_PREVIEW_HDR_SHADER_FALLBACK");
-        AssertContains(renderThreadText, "private bool TryEnterNativeRenderCall()");
-        AssertContains(renderThreadText, "private void ExitNativeRenderCall()");
-        AssertContains(renderThreadText, "Interlocked.Exchange(ref _inNativeCall, 1);");
-        AssertContains(renderThreadText, "Interlocked.Exchange(ref _inNativeCall, 0);");
-        AssertDoesNotContain(rootText, "private bool TryEnterNativeRenderCall()");
-        AssertDoesNotContain(rootText, "private void ExitNativeRenderCall()");
-        AssertContains(renderThreadText, "ProcessRenderThreadFrameOrIdle()");
-        AssertContains(renderThreadText, "RenderFrame(frame);");
+        AssertContains(renderLifecycleText, "private bool TryEnterNativeRenderCall()");
+        AssertContains(renderLifecycleText, "private void ExitNativeRenderCall()");
+        AssertContains(renderLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 1);");
+        AssertContains(renderLifecycleText, "Interlocked.Exchange(ref _inNativeCall, 0);");
+        AssertContains(renderLifecycleText, "ProcessRenderThreadFrameOrIdle()");
+        AssertContains(renderLifecycleText, "RenderFrame(frame);");
         AssertDoesNotContain(rootText, "private void RenderFrame(PendingFrame frame)");
         AssertDoesNotContain(shaderRenderingText, "private void RenderNv12WithShader(PendingFrame frame)");
         AssertDoesNotContain(shaderRenderingText, "private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)");
