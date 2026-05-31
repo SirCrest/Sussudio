@@ -5,14 +5,17 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task D3D11PreviewRenderer_SubmissionLivesInFocusedPartial()
+    internal static Task D3D11PreviewRenderer_SubmissionLivesWithRendererRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var submissionText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
-            .Replace("\r\n", "\n");
-        var nv12SubmissionText = submissionText;
+        var submissionText = rootText;
+        var nv12SubmissionText = rootText;
 
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Submission.cs")),
+            "D3D11 preview submission folded into the renderer root lifecycle owner");
         AssertContains(nv12SubmissionText, "private bool _loggedNv12ShaderMissing;");
         AssertContains(nv12SubmissionText, "private int _lastNv12IsHdr = -1;");
         AssertContains(submissionText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
@@ -29,19 +32,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Nv12Submission.cs")),
-            "NV12 texture submission folded into the D3D11 preview submission owner");
+            "NV12 texture submission folded into the D3D11 preview renderer root");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrames.cs")),
-            "pending-frame queue folded into the D3D11 preview submission owner");
-        AssertDoesNotContain(rootText, "public void SubmitRawFrame(");
-        AssertDoesNotContain(rootText, "public void SubmitRawFrameLease(");
-        AssertDoesNotContain(rootText, "public void SubmitTexture(");
-        AssertDoesNotContain(rootText, "public void SubmitNv12PlaneTextures(");
-        AssertDoesNotContain(rootText, "private readonly ManualResetEventSlim _frameReadyEvent = new(false);");
-        AssertDoesNotContain(rootText, "private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();");
-        AssertDoesNotContain(rootText, "private bool _loggedNv12ShaderMissing;");
-        AssertDoesNotContain(rootText, "private int _lastNv12IsHdr = -1;");
+            "pending-frame queue folded into the D3D11 preview renderer root");
 
         return Task.CompletedTask;
     }

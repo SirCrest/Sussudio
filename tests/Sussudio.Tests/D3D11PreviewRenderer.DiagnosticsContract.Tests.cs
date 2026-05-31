@@ -16,6 +16,10 @@ static partial class Program
         var source = sources.Source;
         var renderSource = sources.RenderSource;
         var captureSource = sources.CaptureSource;
+        var allRendererSource = source
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs");
         AssertContains(source, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(source, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
         AssertContains(source, "private long _dxgiFrameStatisticsFrameCounter;");
@@ -50,8 +54,8 @@ static partial class Program
         AssertContains(source, "D3D11_PREVIEW_FRAME_RESET_SKIPPED");
         AssertContains(source, "SignalFrameReady(\"pending_frame\");");
         AssertContains(renderSource, "SignalFrameReady(\"render_loop_drain\");");
-        AssertEqual(1, (source + renderSource).Split("_frameReadyEvent.Set();", StringSplitOptions.None).Length - 1, "All D3D frame-ready signals go through SignalFrameReady");
-        AssertEqual(1, (source + renderSource).Split("_frameReadyEvent.Reset();", StringSplitOptions.None).Length - 1, "All D3D frame-ready resets go through ResetFrameReady");
+        AssertEqual(1, allRendererSource.Split("_frameReadyEvent.Set();", StringSplitOptions.None).Length - 1, "All D3D frame-ready signals go through SignalFrameReady");
+        AssertEqual(1, allRendererSource.Split("_frameReadyEvent.Reset();", StringSplitOptions.None).Length - 1, "All D3D frame-ready resets go through ResetFrameReady");
         AssertContains(source, "private bool TryDequeuePendingFrame(out PendingFrame frame)");
         AssertContains(source, "DecrementPendingFrameCount();");
         AssertDoesNotContain(source, "_pendingFrames.Count");
@@ -62,7 +66,8 @@ static partial class Program
         AssertContains(source, "Interlocked.Exchange(ref _lastDroppedSourcePtsTicks, frame.SourcePtsTicks);");
         AssertDoesNotContain(source, "TrackFrameDropped(frame, \"renderer-stopped\");\n                frame.Dispose();\n                Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(source, "TrackFrameDropped(oldest, \"renderer-backlog\");\n                    oldest.Dispose();\n                    Interlocked.Increment(ref _framesDropped);");
-        AssertDoesNotContain(renderSource, "_pendingFrames.TryDequeue");
+        AssertContains(source, "_pendingFrames.TryDequeue(out var dequeued)");
+        AssertDoesNotContain(renderSource, "_pendingFrames.TryDequeue(out var frame)");
         AssertContains(renderSource, "var framesRenderedBefore = Interlocked.Read(ref _framesRendered);");
         AssertContains(renderSource, "frame.SubmissionGeneration != Interlocked.Read(ref _submissionGeneration)");
         AssertContains(renderSource, "if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)\n            {\n                TrackFrameDropped(frame, \"render-skipped\");\n            }");
@@ -537,7 +542,6 @@ static partial class Program
     private static D3D11PreviewRendererDiagnosticsContractSources ReadD3D11PreviewRendererDiagnosticsContractSources()
     {
         var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Submission.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
