@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: diagnostic-session result builder projection locality
+Problem: `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` was the last private partial for `DiagnosticSessionResultBuilder`, holding projection records/builders called only by `CreateResult`/`FlattenResultProjectionSet`. Reviewing diagnostic-session summary construction still required opening a second builder file even though projection composition, final DTO assignment, analysis, artifact writes, and summary-write repair are one result-construction owner.
+Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.Projections.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `DiagnosticSessionResultBuilder` partial file count 2 -> 1; generated baseline production `.cs` count 181 -> 180
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionResultBuilder|FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface"` passed (66 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); diff checks passed; current core app `.cs` count/LoC: 137 / 89,690; current test `.cs` count/LoC: 81 / 56,098.
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: result stage transitions, pre-summary artifact writes, summary-write failure repair, `summary.json` field shape, projection record names/builders, Flashback playback/recording/export value maps, preview scheduler/D3D/visual-cadence projections, diagnostic health/analysis flow, and formatter/tool consumers remain unchanged while living in `DiagnosticSessionResultBuilder.cs`.
+Notes for future agents: keep diagnostic-session result analysis, projection-set assembly, final summary DTO assignment, artifact-write handoff, and summary-write repair in `tools/Common/DiagnosticSessionResultBuilder.cs` unless a real reusable result-projection collaborator emerges outside diagnostic-session summary construction.
+
+Date: 2026-05-31
 Area: shared D3D device resource locality
 Problem: `Sussudio/Services/Preview/SharedD3DDeviceManager.cs` was a small sidecar for the same D3D resource ownership surface already in `D3D11PreviewRenderer.Resources.cs`: source-reader DXGI device-manager creation, shared preview-device reference duplication, COM reset/disposal ordering, and the `ILiveVideoSource` handoff contract all feed the renderer resource setup/reinit path.
 Files consolidated: `Sussudio/Services/Preview/SharedD3DDeviceManager.cs`

@@ -2610,19 +2610,18 @@ Diagnostic-session result construction now lives in
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission plus summary-write failure repair while the runner keeps the
 phase sequence. It also owns final-result orchestration from analysis and
-artifact paths into the named projection-set owner, plus final
+artifact paths into the named projection set, plus final
 `DiagnosticSessionResult` DTO assignment from the projection set. Keep domain
-projection composition in the projection owner rather than in the initializer.
-`DiagnosticSessionResultBuilder.Projections.cs` owns projection-set assembly,
-the private projection-set handoff record, and the result projection
-records/builders for overview, capture, Flashback playback/recording/export,
-preview cadence/scheduler, preview D3D, and visual cadence. The detailed
-Flashback playback command queue, cadence/slow-frame/dropped-frame, 1% low,
-audio-master, decode timing, and stage DTO value maps live with that projection
-owner. Diagnostic metric gathering for validation/result projections and
-analysis warning emission live in
-`DiagnosticSessionResultBuilder.cs`, which also owns the private
-analysis handoff record plus Flashback playback/export warning text, threshold
+projection composition in the builder projection section rather than in the
+initializer. The builder owns projection-set assembly, the private
+projection-set handoff record, and the result projection records/builders for
+overview, capture, Flashback playback/recording/export, preview
+cadence/scheduler, preview D3D, and visual cadence. The detailed Flashback
+playback command queue, cadence/slow-frame/dropped-frame, 1% low, audio-master,
+decode timing, and stage DTO value maps live with that projection section.
+Diagnostic metric gathering for validation/result projections and analysis
+warning emission live in the same builder, which also owns the private analysis
+handoff record plus Flashback playback/export warning text, threshold
 guards, tolerated Flashback scenario warning classification, and the named
 validation handoff order for Flashback playback, cleanup lifecycle restore,
 preview scheduler analysis, and diagnostic health. Preview-scheduler analysis
@@ -2642,20 +2641,20 @@ emitted health warning text live in `DiagnosticSessionResultBuilder.cs`.
 property that carries those values into the scheduler result projection without
 rereading MJPEG jitter-buffer snapshot keys. Preview cadence, visual cadence,
 and D3D frame-stats/slow-frame/
-CPU-timing result projection values live with the other small projection
-builders in `DiagnosticSessionResultBuilder.Projections.cs`. The D3D fields
+CPU-timing result projection values live with the other projection builders in
+`DiagnosticSessionResultBuilder.cs`. The D3D fields
 still travel through a distinct `PreviewD3D` projection set member so renderer
 timing semantics stay separate from scheduler/jitter policy.
 Flashback recording backend/growth/integrity DTO projection values and export
 status/progress DTO projection values live in
-`DiagnosticSessionResultBuilder.Projections.cs`; result construction
+`DiagnosticSessionResultBuilder.cs`; result construction
 still consumes named Flashback projections while preserving the existing
 `summary.json` field shape.
 Export force-rotate fallback counters now travel with
 `FlashbackExportSessionMetrics` instead of loose analysis record fields.
 Capture selection, negotiated format, source geometry, detected cadence, HDR,
 and source-telemetry DTO projection values live in
-`DiagnosticSessionResultBuilder.Projections.cs`.
+`DiagnosticSessionResultBuilder.cs`.
 
 Diagnostic-session result artifact setup now lives in
 `tools/Common/DiagnosticSessionResultBuilder.cs` beside summary writing. It owns
@@ -3001,7 +3000,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
-- `DiagnosticSessionResultBuilder.Projections.cs`
 - `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`

@@ -2693,11 +2693,13 @@ Primary owners:
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
   orchestration from analysis and artifact paths into the named projection set,
-  plus final `DiagnosticSessionResult` DTO assignment from the projection set.
+  the private projection-set handoff record, projection-set assembly, result
+  projection records/builders, and final `DiagnosticSessionResult` DTO assignment.
   It also owns result artifact path construction, pre-summary sample,
   frame-ledger, and timeline artifact writes, frame-ledger trace shaping,
-  shared JSON object creation / artifact serialization helpers, Flashback
-  playback projection composition from focused playback projection owners, plus
+  shared JSON object creation / artifact serialization helpers, overview,
+  capture, Flashback playback/recording/export, preview cadence/scheduler,
+  preview D3D, and visual-cadence projection composition, plus
   the result-build request handoff created by `DiagnosticSessionRunner.cs` and
   consumed by the result builder. It also owns diagnostic-session metric
   preparation for validation/result projections, analysis warning emission,
@@ -2712,19 +2714,14 @@ Primary owners:
   deltas, last drop/underflow reasons, underflow ages, max schedule-late
   aggregation, target-FPS fallback, visual-cadence tolerance checks, sparse
   deadline/drop tolerance selection, and the call into shared Flashback preview
-  validation. Diagnostic-health analysis includes health summary snapshot
+  validation. Flashback playback projection includes command, cadence, 1% low,
+  decode, audio-master, and stage DTO value maps consumed by the final result
+  initializer. Diagnostic-health analysis includes health summary snapshot
   selection, health verdict composition, source-reader/ingest warning deltas for
   sparse source-capture tolerance, sparse preview-scheduler warning tolerance,
   tolerated-warning reason selection, and health warning text emitted during
   result construction. Keep `summary.json` field shape stable in the builder
   family.
-- `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` owns the
-  private projection-set handoff record, projection-set assembly, and the
-  result projection records/builders for overview, capture, Flashback
-  playback/recording/export, preview cadence/scheduler, preview D3D, and
-  visual cadence. Flashback playback projection includes command, cadence,
-  1% low, decode, audio-master, and stage DTO value maps consumed by the final
-  result initializer.
 - `tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
   bootstrap, scenario normalization, scenario-plan selection, duration/sample
   clamping, session identity, output-directory creation, runner process

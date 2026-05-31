@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -59,8 +59,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionResultBuilder.cs",
-            "tools/Common/DiagnosticSessionResultBuilder.Projections.cs");
+            "tools/Common/DiagnosticSessionResultBuilder.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadNormalizedSourceFiles(
@@ -423,7 +422,7 @@ static partial class Program
         AssertContains(cleanupActionsText, "AutomationCommandKind.SetPreviewEnabled,");
         AssertContains(cleanupActionsText, "AutomationCommandKind.SetFlashbackEnabled,");
         AssertContains(cleanupActionsText, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.SetFlashbackEnabled)");
-        AssertContains(cleanupText, "internal static partial class DiagnosticSessionResultBuilder");
+        AssertContains(cleanupText, "internal static class DiagnosticSessionResultBuilder");
         AssertContains(cleanupText, "private static void ValidateCleanupLifecycleRestored(");
         AssertContains(cleanupText, "cleanup: preview remained active after restore");
         AssertContains(cleanupText, "cleanup: Flashback remained active after restore");

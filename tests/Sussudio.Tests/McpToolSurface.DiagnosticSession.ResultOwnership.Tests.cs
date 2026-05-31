@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 
 static partial class Program
 {
@@ -9,7 +9,7 @@ static partial class Program
         return ExtractTextBetween(
             builderText,
             "private sealed record DiagnosticSessionResultAnalysis(",
-            "internal sealed record DiagnosticSessionResultBuildRequest(");
+            "private readonly record struct DiagnosticSessionOverviewResultProjection(");
     }
 
     internal static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
@@ -269,11 +269,11 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
 
@@ -415,14 +415,14 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var diagnosticHealthText = analysisText;
 
-        AssertContains(builderText, "internal static partial class DiagnosticSessionResultBuilder");
+        AssertContains(builderText, "internal static class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
         AssertContains(builderText, "private static DiagnosticSessionResult CreateResult(");
         AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
@@ -475,14 +475,18 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
-            "Flashback playback result projection folded into DiagnosticSessionResultBuilder.Projections.cs");
+            "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Flattening.cs")),
             "final result DTO flattening folded into DiagnosticSessionResultBuilder.cs");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertDoesNotContain(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
+        AssertContains(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
+        AssertContains(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Projections.cs")),
+            "result projection set folded into DiagnosticSessionResultBuilder.cs");
         AssertContains(builderText, "return new DiagnosticSessionResult\n        {");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
     }
@@ -490,7 +494,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     private static void AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership()
     {
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
-        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "previewScheduler,");
@@ -539,12 +543,12 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
-        var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
@@ -595,12 +599,12 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = projectionSetText;
-        var flashbackRecordingResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var flashbackRecordingResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.Projections.cs")
+        var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(builderText, "return FlattenResultProjectionSet(");
@@ -649,22 +653,22 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackSubmitFailuresDelta: playbackSessionMetrics.SubmitFailuresDelta");
         AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
         AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd: playbackResultMetrics.LastSeekHitForwardDecodeCapAtEnd");
-        AssertDoesNotContain(builderText, "private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(");
+        AssertContains(builderText, "private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(");
         AssertContains(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = flashbackPlaybackCommandsResult.FlashbackPlaybackPendingCommandsAtEnd,");
         AssertContains(flatteningText, "FlashbackPlaybackDroppedFramesDelta = flashbackPlaybackCadenceResult.FlashbackPlaybackDroppedFramesDelta,");
         AssertContains(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = flashbackPlaybackOnePercentLowResult.FlashbackPlaybackMinOnePercentLowFpsObserved,");
         AssertContains(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = flashbackPlaybackDecodeResult.FlashbackPlaybackMaxDecodePhaseAtEnd,");
         AssertContains(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = flashbackPlaybackAudioMasterResult.FlashbackPlaybackAudioMasterFallbacksAtEnd,");
         AssertContains(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsDelta,");
-        AssertDoesNotContain(builderText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
-        AssertDoesNotContain(builderText, "FlashbackPlaybackMinOnePercentLowFpsObserved: playbackSessionMetrics.MinOnePercentLowFpsObserved");
-        AssertDoesNotContain(builderText, "FlashbackPlaybackMaxDecodePhaseAtEnd: playbackResultMetrics.MaxDecodePhaseAtEnd");
-        AssertDoesNotContain(builderText, "FlashbackPlaybackAudioMasterFallbacksAtEnd: playbackResultMetrics.AudioMasterFallbacksAtEnd");
-        AssertDoesNotContain(builderText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved: playbackSessionMetrics.MinOnePercentLowFpsObserved");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd: playbackResultMetrics.MaxDecodePhaseAtEnd");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd: playbackResultMetrics.AudioMasterFallbacksAtEnd");
+        AssertDoesNotContain(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
-            "Flashback playback result projection folded into projection-set owner");
+            "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = flashbackPlaybackCadenceResult");
