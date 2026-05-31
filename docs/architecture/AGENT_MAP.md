@@ -1260,11 +1260,12 @@ Primary current owners:
   dispatcher Flashback export operation ownership assertions, and
   diagnostic-session Flashback playback metrics/result, scenario,
   health-policy, stress, and warning-tolerance assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns diagnostics refresh source/fixture readers for the diagnostics hub,
   capture service, source reader, and tool-surface source text used by refresh
   ownership assertions, including diagnostic-evaluation, alerts,
-  snapshot-projection, and aggregate `SourceFamilyText` composition.
+  snapshot-projection, aggregate `SourceFamilyText` composition, and the
+  corresponding diagnostics-refresh ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
   owns shared diagnostic-session source-family readers used by refresh, MCP,
   and tool ownership assertions alongside the broad diagnostic-session

@@ -2426,7 +2426,7 @@ Partial clusters reduced: `Program` test harness -4 files
 Build/tests/runtime checks: pending in current checkpoint
 CLI/MCP/pipe checks, if applicable: not applicable; test source readers only
 Behavior preserved: diagnostics-refresh tests still read the same AutomationDiagnosticsHub source files, source-family fields, snapshot-projection fields, diagnostic-evaluation fields, alert fields, and aggregate `SourceFamilyText`
-Notes for future agents: keep the diagnostics source-family reader, field list, and aggregate text in `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`; add a new helper file only for executable assertions or a genuinely reusable reader
+Notes for future agents: superseded by the 2026-05-30 diagnostics-refresh helper locality slice; keep the diagnostics source-family reader, field list, and aggregate text with the owning assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`; add a new helper file only for executable assertions or a genuinely reusable reader
 
 Date: 2026-05-25
 Area: MainWindow test source reader locality
@@ -3365,7 +3365,7 @@ Partial clusters reduced: legacy `Program` diagnostics-refresh source-reader hel
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: source-reader cadence coherence guards, vtable/DXGI/frame-layout/read-loop/initialization/frame-delivery source ownership checks, and deleted legacy source-reader partial guards remain unchanged.
-Notes for future agents: keep diagnostics refresh source-reader ownership assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` with the orchestration entry point; keep reusable source-family readers with the rest of the refresh source-family helpers in `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`.
+Notes for future agents: superseded by the 2026-05-30 diagnostics-refresh helper locality slice; keep diagnostics refresh source-reader ownership assertions, source readers, and source-family helpers in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` with the orchestration entry point.
 
 Date: 2026-05-26
 Area: diagnostics refresh snapshot-projection helper locality
@@ -3809,7 +3809,19 @@ Partial clusters reduced: legacy `Program` diagnostics refresh source-helper par
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: diagnostics hub, capture service, MF source reader, diagnostic-session, and diagnostic-session tool-surface source readers still feed the same refresh ownership assertions.
-Notes for future agents: keep diagnostics refresh source-family and source-reader helpers together in `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`; only extract a new helper file for executable assertions or a source family reused outside diagnostics-refresh ownership tests.
+Notes for future agents: superseded by the 2026-05-30 diagnostics-refresh helper locality slice; keep diagnostics refresh source-family and source-reader helpers with their owning assertions in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`; only extract a new helper file for executable assertions or a source family reused outside diagnostics-refresh ownership tests.
+
+Date: 2026-05-30
+Area: diagnostics refresh test helper locality
+Problem: `MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs` was a helper-only legacy `Program` partial after earlier source-reader consolidations. It held the diagnostics hub, capture service, MF source reader, diagnostic-session, and tool-surface source family readers consumed by `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` and the adjacent Flashback diagnostics-refresh assertions, so reviewing diagnostics-refresh ownership still required opening a sidecar before the assertions.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.SourceFamily.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` diagnostics-refresh helper partial file count -1
+Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticsSnapshotRefreshIsSerializedForRecordingResponses"` (1 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~ArchitectureDocs` (16 passed)
+CLI/MCP/pipe checks, if applicable: n/a; test-helper consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
+Behavior preserved: diagnostics-refresh tests still read the same automation diagnostics hub, capture service, MF source reader, diagnostic-session, and tool-surface source text; source-family DTOs and aggregate `SourceFamilyText` remain private methods/types on the same `Program` harness surface, now in the owning diagnostics-refresh test file.
+Notes for future agents: keep diagnostics-refresh source-family readers with `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs` unless a separate reusable fixture replaces the legacy `Program` partial helpers.
 
 Date: 2026-05-26
 Area: Flashback decoder test locality
