@@ -1778,30 +1778,23 @@ public start/stop/dispose, reader/source COM release, lifecycle logging, and
 fatal-error callback dispatch there; keep initialization and frame delivery in
 their named source-reader partials.
 
-Unified capture diagnostic metric projection now lives in
-`Sussudio/Services/Capture/UnifiedVideoCapture.cs` with the root counters and
-pipeline fields it samples. Keep MJPEG timing records, source-reader cadence
-forwarding, MJPEG jitter/hash metrics, preview visual cadence metrics, and
-frame-ledger summary projection there; keep top-level frame arrival routing in
-`UnifiedVideoCapture.FrameIngress.cs`.
-
-Unified capture frame ingress and sink fan-out now live in
-`Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs`. Keep source
-frame arrival callbacks, MJPEG pipeline frame emission, capture-arrival ledger
-records, pixel-format observer dispatch, fatal-error signaling, preview sink
-assignment, live-preview suppression/resume drains, MJPEG preview-frame decoded
-callbacks, raw preview submission, visual-cadence reset/recording helpers,
-recording enqueue helpers, Flashback enqueue helpers, queue rejection
-accounting, legacy encoder fallback enqueue adapters, and Flashback recording
-sequence-gap accounting
-there; keep public control/configuration methods in `UnifiedVideoCapture.cs`.
-
-Unified capture source-session lifecycle now lives in
-`Sussudio/Services/Capture/UnifiedVideoCapture.cs`. Keep
-source-reader/D3D/MJPEG initialization, committed runtime state reset, read-loop
-start/stop, preview-reinit disposal, CPU MJPEG pipeline construction and stop
-retention, preview jitter buffer setup/teardown, and capture/MJPEG fatal-error
-callbacks there.
+Unified capture source-session lifecycle, frame ingress, sink fan-out, and
+diagnostic metric projection now live in
+`Sussudio/Services/Capture/UnifiedVideoCapture.cs`. The file is intentionally
+larger than the usual review target because one live source-reader session owns
+the capture fields, public control/configuration methods, source-reader/D3D/MJPEG
+initialization, committed runtime state reset, read-loop start/stop,
+preview-reinit disposal, CPU MJPEG pipeline construction and stop retention,
+preview jitter buffer setup/teardown, capture/MJPEG fatal-error callbacks,
+source-frame arrival callbacks, MJPEG pipeline frame emission,
+capture-arrival ledger records, pixel-format observer dispatch, fatal-error
+signaling, preview sink assignment, live-preview suppression/resume drains,
+MJPEG preview-frame decoded callbacks, raw preview submission,
+visual-cadence reset/recording helpers, recording enqueue helpers, Flashback
+enqueue helpers, queue rejection accounting, legacy encoder fallback enqueue
+adapters, Flashback recording sequence-gap accounting, source-reader cadence
+forwarding, MJPEG timing records, MJPEG jitter/hash metrics, preview visual
+cadence metrics, and frame-ledger summary projection.
 
 Capture cadence tracker ingestion now lives in
 `Sussudio/Services/Capture/CaptureCadenceTrackers.cs`. Keep

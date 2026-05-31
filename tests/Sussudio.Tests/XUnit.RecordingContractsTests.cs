@@ -62,8 +62,8 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.UnifiedVideoCapture_SinkFanoutOwnsRecordingAndFlashbackFanout();
 
     [Fact]
-    public Task UnifiedVideoCaptureFrameIngressLivesInFocusedPartial()
-        => global::Program.UnifiedVideoCapture_FrameIngressLivesInFocusedPartial();
+    public Task UnifiedVideoCaptureFrameIngressLivesWithSourceSessionRoot()
+        => global::Program.UnifiedVideoCapture_FrameIngressLivesWithSourceSessionRoot();
 
     [Fact]
     public Task UnifiedVideoCaptureLifecycleLivesWithRootState()

@@ -10,9 +10,7 @@ static partial class Program
 {
     internal static Task UnifiedVideoCapture_SinkFanoutOwnsRecordingAndFlashbackFanout()
     {
-        var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
-            .Replace("\r\n", "\n");
-        var fanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs")
+        var fanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(fanoutSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
@@ -25,23 +23,23 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.Flashback.cs")),
-            "UnifiedVideoCapture Flashback fanout folded into the fanout owner");
+            "UnifiedVideoCapture Flashback fanout folded into the source-session owner");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.cs")),
-            "UnifiedVideoCapture recording/Flashback fanout folded into the frame ingress owner");
-        AssertDoesNotContain(rootSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
-        AssertDoesNotContain(rootSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
-        AssertDoesNotContain(rootSource, "private static bool TryLegacyRawVideoEnqueue(");
+            "UnifiedVideoCapture recording/Flashback fanout folded into the source-session owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.FrameIngress.cs")),
+            "UnifiedVideoCapture frame ingress folded into the source-session owner");
+        AssertDoesNotContain(fanoutSource, "partial class UnifiedVideoCapture");
 
         return Task.CompletedTask;
     }
 
-    internal static Task UnifiedVideoCapture_FrameIngressLivesInFocusedPartial()
+    internal static Task UnifiedVideoCapture_FrameIngressLivesWithSourceSessionRoot()
     {
-        var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
-            .Replace("\r\n", "\n");
-        var frameIngressSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs")
+        var frameIngressSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(frameIngressSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
@@ -60,14 +58,13 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Preview.cs")),
-            "UnifiedVideoCapture preview submission folded into frame ingress owner");
-
-        AssertDoesNotContain(rootSource, "private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)");
-        AssertDoesNotContain(rootSource, "private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)");
-        AssertDoesNotContain(rootSource, "private void OnDualFrameArrived(");
-        AssertDoesNotContain(rootSource, "private void RecordCaptureArrived(long sourceSequence, long arrivalTick, int width, int height, int compressedByteLength)");
-        AssertDoesNotContain(rootSource, "private void FirePixelFormatObserverOnce(string format)");
-        AssertDoesNotContain(rootSource, "private void SignalFatalError(Exception ex, string logMessage)");
+            "UnifiedVideoCapture preview submission folded into the source-session owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.FrameIngress.cs")),
+            "UnifiedVideoCapture frame ingress folded into the source-session owner");
+        AssertContains(frameIngressSource, "internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource");
+        AssertDoesNotContain(frameIngressSource, "partial class UnifiedVideoCapture");
 
         var rawIngress = ExtractSourceBlock(
             frameIngressSource,

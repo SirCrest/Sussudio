@@ -16,15 +16,8 @@ static partial class Program
     }
 
     private static string ReadUnifiedVideoCaptureSource()
-    {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
+        => ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            .Replace("\r\n", "\n");
 
     private static string ExtractSourceBlock(string source, string startToken, string endToken)
     {
