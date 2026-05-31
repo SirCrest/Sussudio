@@ -107,7 +107,7 @@ score, diagnostic lane, preview pacing classifier, performance threshold
 projection, selected device/capture/recording settings, preview volume/stats
 visibility projection, AV-sync projection, capture command projection, and final
 status/evaluation/settings/AV-sync/capture-command flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Audio.cs` owns audio/ingest
+`AutomationDiagnosticsHub.SnapshotProjection.Media.cs` owns audio/ingest
 projection routing, view-model audio peak/clipping and detected audio-signal
 projection inputs, capture-ingest and WASAPI projection groups, capture
 audio/video reader, source-reader and ingest counters, WASAPI capture/playback
@@ -204,7 +204,7 @@ projection-to-`AutomationSnapshot` flattening.
 and thread-pool projection consumed by the automation snapshot DTO, plus final
 process resource projection-to-`AutomationSnapshot` field flattening alongside
 the core snapshot status/evaluation projections.
-`AutomationDiagnosticsHub.SnapshotProjection.Recording.cs` owns recording-
+`AutomationDiagnosticsHub.SnapshotProjection.Media.cs` owns recording-
 integrity projection routing, status/reason, video-frame counters, queue/
 backpressure, audio integrity, A/V sync projection inputs, recording-pipeline
 projection routing, encoder queue age/count/failure health, conversion/ffmpeg/

@@ -152,10 +152,13 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs")
+        var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
             .Replace("\r\n", "\n");
         var captureIngestProjectionText = audioProjectionText;
         var wasapiAudioProjectionText = audioProjectionText;
+        var obsoleteAudioProjectionPath = System.IO.Path.Combine(
+            GetRepoRoot(),
+            "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs");
 
         AssertContains(snapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
         AssertContains(snapshotFlatteningText, "var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);");
@@ -226,6 +229,10 @@ static partial class Program
         AssertContains(wasapiAudioProjectionText, "AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,");
         AssertContains(wasapiAudioProjectionText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
         AssertContains(wasapiAudioProjectionText, "BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,");
+        if (System.IO.File.Exists(obsoleteAudioProjectionPath))
+        {
+            throw new System.InvalidOperationException("Audio projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.Media.cs.");
+        }
 
         return Task.CompletedTask;
     }
@@ -774,8 +781,11 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Recording.cs")
+        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
             .Replace("\r\n", "\n");
+        var obsoleteRecordingProjectionPath = System.IO.Path.Combine(
+            GetRepoRoot(),
+            "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Recording.cs");
 
         AssertContains(snapshotProjectionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
         AssertContains(snapshotFlatteningText, "var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);");
@@ -834,6 +844,10 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "HardwareQueues = BuildRecordingPipelineHardwareQueuesProjection(health)");
         AssertContains(recordingPipelineProjectionText, "public RecordingPipelineEncoderProjection Encoder { get; init; }");
         AssertContains(recordingPipelineProjectionText, "public RecordingPipelineHardwareQueuesProjection HardwareQueues { get; init; }");
+        if (System.IO.File.Exists(obsoleteRecordingProjectionPath))
+        {
+            throw new System.InvalidOperationException("Recording projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.Media.cs.");
+        }
 
         return Task.CompletedTask;
     }
@@ -843,7 +857,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Recording.cs")
+        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
@@ -876,7 +890,7 @@ static partial class Program
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Recording.cs")
+        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
             .Replace("\r\n", "\n");
         var obsoleteRecordingOutputPath = System.IO.Path.Combine(
             GetRepoRoot(),
@@ -909,7 +923,7 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "LastVerification = recordingOutput.LastVerification");
         if (System.IO.File.Exists(obsoleteRecordingOutputPath))
         {
-            throw new System.InvalidOperationException("Recording output projection should stay consolidated into RecordingPipeline.cs.");
+            throw new System.InvalidOperationException("Recording output projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.Media.cs.");
         }
 
         return Task.CompletedTask;
