@@ -38,7 +38,7 @@ mentions the moved files.
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | construction, suppression/reprime and disposal lifecycle, paced emit loop control flow, display-clock alignment, renderer submission, tick waits, deadline drops, adaptive target-depth policy, jitter-buffer metric records, timing sample projection, decoded preview-frame ingress, pooled payload ownership, queue ordering/dequeue selection, and reprime recovery |
 | MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `SoftwareMjpegDecoder.cs`, `NvdecMjpegDecoder.cs`, `CudaD3D11InteropBridge.cs` | pipeline construction/startup sequencing, bounded work-channel construction, compressed input admission/byte budget/depth accounting, CPU MJPEG worker decode-loop execution and decoder ownership, pipeline timing and packet-hash metrics, stop/dispose/shutdown joins/fatal callback signaling, decoder/work-item/reorder-frame resource cleanup, decoded-frame ordering, missing-sequence state, decoded-frame emission and preview notification, software MJPEG decoder initialization/lifetime, decode/copy hot path, NVDEC decoder state, standalone CUDA device/frame-pool initialization, shared CUDA device/frame-pool adoption, decode/context access, CPU download/copy helpers, disposal, and error text, CUDA-to-D3D11 bridge state, public texture handles, bridge setup/zero-copy registration, bridge disposal/resource unregister, CUDA native constants/P/Invoke declarations, and zero-copy/staging copy behavior |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | optional NVML telemetry snapshot/polling lifecycle, graceful unavailable behavior, raw NVML constants, structs, library loading, device-name helper, and P/Invoke declarations |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.DiagnosticEvaluation.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationRuntimeModels.cs`, `AutomationSupportModels.cs` | consolidated automation evidence DTO for app/capture/audio/preview/recording/Flashback diagnostics; `AutomationRuntimeModels.cs` owns capture runtime, preview runtime, and performance timeline DTO surfaces; `AutomationSupportModels.cs` owns command protocol DTOs/converters, automation options DTOs, support DTOs/enums for diagnostics events, Flashback segments, preview startup, screenshot/window capture, recording verification, video source/color probe, and view-model runtime snapshot DTOs |
 | Capture snapshot models | `Sussudio/Models/Capture/CaptureSnapshotModels.cs` | consolidated diagnostics core/format/HDR, source telemetry, capture cadence, recording/audio queue, Flashback queue, MJPEG, and visual-cadence fields plus inherited health source/queue/AV-sync and Flashback backend/playback/export health fields |
 | Capture leaf models | `Sussudio/Models/Capture/CaptureModels.cs` | device/options/settings/session-state leaf types, audio endpoint/event/path/trace DTOs used by capture and monitoring, explicit transition legality policy, mutable capture session state machine, and frame-ledger event DTOs kept together as the capture model surface |
@@ -237,26 +237,21 @@ Automation diagnostics ownership:
   verification profile shaping, event publication for explicit verification,
   last-verification snapshot state, post-recording auto-verification gating, and
   background scheduling.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs`
-  owns Flashback-specific diagnostic verdict ordering plus Flashback storage
-  pressure, recording encoder failure, export-rotation gap, backend staleness,
-  recording degradation, Flashback recording diagnostic condition assembly,
-  active/stalled export, playback command, playback performance, frametime, and
-  submission diagnostic verdicts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.DiagnosticEvaluation.cs`
-  owns realtime diagnostic verdict ordering plus idle, warmup, recording
-  integrity, audio integrity, source/capture cadence, duplicate source-signal,
-  MJPEG decode/reorder diagnostic verdicts, realtime preview scheduler,
-  renderer pacing, present/display cadence, and preview display 1% low
-  diagnostic verdicts, plus the shared renderer-drop threshold constants.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   performance scoring, root diagnostic verdict orchestration, final
-  healthy/mixed diagnostic fallback, diagnostic lane text orchestration, MJPEG
-  decode lane formatting, source cadence/source-signal lane formatting,
-  recording/audio lane formatting, preview scheduler/renderer/present/display/
-  visual-cadence lane formatting, Flashback recording/export/playback lane
-  formatting, lane DTOs used by diagnostic verdicts, shared alert-detail
-  formatting, and health classifiers used by alerts and diagnostic evaluation.
+  healthy/mixed diagnostic fallback, Flashback-specific diagnostic verdict
+  ordering, Flashback storage pressure, recording encoder failure,
+  export-rotation gap, backend staleness, recording degradation, Flashback
+  recording diagnostic condition assembly, active/stalled export, playback
+  command, playback performance, frametime, and submission diagnostic verdicts,
+  realtime diagnostic verdict ordering, idle/warmup/recording/audio/source/MJPEG
+  and preview verdicts, shared renderer-drop threshold constants, diagnostic
+  lane text orchestration, MJPEG decode lane formatting, source
+  cadence/source-signal lane formatting, recording/audio lane formatting,
+  preview scheduler/renderer/present/display/visual-cadence lane formatting,
+  Flashback recording/export/playback lane formatting, lane DTOs used by
+  diagnostic verdicts, shared alert-detail formatting, and health classifiers
+  used by alerts and diagnostic evaluation.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
   owns HDR truth classification from capture pipeline, source-HDR, and
   verification metadata evidence, plus preview HDR input detection, HDR

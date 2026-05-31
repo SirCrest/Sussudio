@@ -116,8 +116,6 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.Preview.cs")),
             "Realtime preview diagnostic evaluation helpers folded into realtime evaluation owner");
-        AssertDoesNotContain(diagnostics.EvaluationText, "\"flashback_storage\"");
-        AssertDoesNotContain(diagnostics.EvaluationText, "\"source_capture\"");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static DiagnosticEvaluationLanes BuildDiagnosticEvaluationLanes(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildSourceLane(health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "BuildPreviewLane(");
@@ -148,12 +146,16 @@ static partial class Program
             "Diagnostic lane text builders folded into Evaluation owner");
         AssertEqual(
             false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluation.cs")),
+            "Diagnostic verdict branch policies folded into Evaluation owner");
+        AssertEqual(
+            false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationFlashback.cs")),
-            "Flashback diagnostic evaluation folded into DiagnosticEvaluation owner");
+            "Flashback diagnostic evaluation folded into Evaluation owner");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationRealtime.cs")),
-            "Realtime diagnostic evaluation folded into DiagnosticEvaluation owner");
+            "Realtime diagnostic evaluation folded into Evaluation owner");
         AssertDoesNotContain(diagnostics.HubText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertDoesNotContain(diagnostics.HubText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
     }
@@ -1070,8 +1072,8 @@ static partial class Program
         {
             HubText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
             EvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluation.cs"),
-            DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.DiagnosticEvaluation.cs"),
+            DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
+            DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),

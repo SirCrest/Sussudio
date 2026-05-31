@@ -243,29 +243,15 @@ throttling, Flashback export completion events, and recent event storage.
 verification entry points, flashback-export verification profile shaping, event
 publication for explicit verification, last-verification snapshot state,
 post-recording auto-verification gating, and background scheduling.
-`AutomationDiagnosticsHub.Evaluation.cs` owns performance scoring, diagnostic
-verdict orchestration, and the final healthy/mixed fallback.
-`AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns Flashback-specific
-diagnostic verdict ordering plus Flashback storage pressure, recording encoder
-failure, export-rotation gap, backend staleness, recording degradation,
-Flashback recording diagnostic condition assembly, active/stalled export,
-playback command, playback performance, frametime, and submission diagnostic
-verdicts.
-`AutomationDiagnosticsHub.DiagnosticEvaluation.cs` owns realtime
-diagnostic verdict ordering plus idle, warmup, recording integrity, audio
-integrity, source/capture cadence, duplicate source-signal, and MJPEG
-decode/reorder diagnostic verdicts, plus realtime preview scheduler, renderer
-pacing, present/display cadence, and preview display 1% low diagnostic
-verdicts. It also owns the shared renderer-drop diagnostic threshold constants
-used by the realtime evaluation and stats presentation.
 `AutomationDiagnosticsHub.Evaluation.cs` owns diagnostic scoring, root
-diagnostic verdict orchestration, final healthy/mixed diagnostic fallback,
-diagnostic lane text orchestration, MJPEG decode lane formatting,
-recording/audio lane formatting, source cadence/source-signal lane formatting,
-preview scheduler/renderer/present/display/visual-cadence lane formatting,
-Flashback recording/export/playback lane formatting, lane DTOs used by
-diagnostic verdicts, shared alert-detail formatting, and health classifiers
-used by alerts and diagnostic evaluation.
+diagnostic verdict orchestration, Flashback-specific and realtime diagnostic
+verdict ordering, final healthy/mixed diagnostic fallback, diagnostic lane text
+orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
+source cadence/source-signal lane formatting, preview
+scheduler/renderer/present/display/visual-cadence lane formatting, Flashback
+recording/export/playback lane formatting, lane DTOs used by diagnostic
+verdicts, shared renderer-drop threshold constants, shared alert-detail
+formatting, and health classifiers used by alerts and diagnostic evaluation.
 `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns HDR truth
 classification from capture pipeline, source-HDR, and verification metadata
 evidence, plus preview HDR input detection, HDR pixel-format helpers used by
