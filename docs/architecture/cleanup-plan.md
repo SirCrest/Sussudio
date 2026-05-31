@@ -577,8 +577,9 @@ classes in this file unless a group needs independent fixture state.
 
 `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` now keeps only shared
 pooled-frame and jitter-buffer helpers. Pooled-frame coverage is split into
-lease lifecycle/fan-out/queued-release contracts, MJPEG jitter
-frame-ingress/adaptive policy, and MJPEG jitter queue/drop/reprime behavior.
+lease lifecycle/fan-out/queued-release contracts, while MJPEG jitter
+frame-ingress/adaptive policy and queue/drop/reprime behavior now live with the
+MJPEG pipeline execution surface.
 CPU MJPEG pipeline runtime checks now execute through
 `tests/Sussudio.Tests/MjpegPipeline.Tests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, and queued lease-release contracts in

@@ -1404,7 +1404,9 @@ Primary current owners:
   packet-hash duplicate cadence, visual-cadence crop sampling, shared-reorder
   behavior checks, and the xUnit execution surface for CPU MJPEG runtime,
   timing metric math, stopwatch timeout helper, software decoder shape,
-  cadence, pooled-frame, preview-jitter, and queued lease-release contracts
+  cadence, pooled-frame, preview-jitter, queued lease-release contracts,
+  preview-jitter frame-ingress, emit-loop, adaptive deadline policy, queue,
+  metrics source-ownership assertions, and queue/drop/reprime behavior tests
   after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
   owns runtime projection ownership and behavior scenarios for ingest/audio,
@@ -1702,10 +1704,6 @@ Primary current owners:
   pooled video frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and
   queued lease return coverage for D3D pending-frame, recording, and Flashback
   paths.
-- `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterQueue.Tests.cs` owns
-  MJPEG preview jitter frame-ingress, emit-loop, adaptive deadline policy,
-  queue, metrics source-ownership assertions, and queue/drop/reprime behavior
-  tests.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing route/formatter assertions plus surface compatibility checks
   that span raw app state, capture options, capture settings, and UI settings
