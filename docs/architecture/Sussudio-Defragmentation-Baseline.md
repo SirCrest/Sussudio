@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: PresentMon probe parser locality
+Problem: `tools/Common/PresentMon/PresentMonProbe.Csv.cs` was the last partial file for `PresentMonProbe`, holding private CSV parse, row projection, swap-chain selection, app correlation, warning, and percentile helpers that are only called by the same probe runner. Reviewing one PresentMon capture/report path still required opening a partial parser shard plus the root runner/formatter/DTO owner, even though the combined file stays under the large-file guardrail and preserves the private parser seam.
+Files consolidated: `tools/Common/PresentMon/PresentMonProbe.Csv.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `PresentMonProbe` tool partial count 2 -> 1; `PresentMonProbe` is no longer a partial type; generated baseline production `.cs` count 188 -> 187
+Build/tests/runtime checks: rebuilt affected tools with `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` and `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~PresentMon` passed (4 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 95 / 56,092.
+CLI/MCP/pipe checks, if applicable: no live PresentMon capture was run; full solution build rebuilt ssctl, MCP, AutomationClient, app, and tests. No public MCP tool names, public tool type names, automation command names, command IDs, wire payloads, PresentMon option/result DTO names, CLI flags, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: PresentMon run orchestration, path/process/output resolution, process supervision, temp CSV cleanup, result message shaping, public DTO surfaces, result formatting, private `ParseCsv` overloads, selected swap-chain filtering, CSV header/row parsing, app-present correlation, warning text, metric aggregation, percentile calculation, and parser reflection tests keep the same method bodies while living in `tools/Common/PresentMon/PresentMonProbe.cs`.
+Notes for future agents: keep PresentMon runner, DTOs, formatter, and private CSV parser/aggregation helpers in `tools/Common/PresentMon/PresentMonProbe.cs` while the file remains cohesive and under the large-file guardrail. Extract a separate named parser only if it becomes independently reusable or needs an injected fixture beyond the current private reflection tests.
+
+Date: 2026-05-31
 Area: ssctl formatter projection facade locality
 Problem: `tools/ssctl/Formatters.Common.cs` and `tools/ssctl/Formatters.Snapshot.cs` were the last two partial files for one console projection facade, together under 1,000 lines. Reviewing ssctl output behavior still required splitting attention between general result/diagnostic/options/timeline projections and the snapshot renderer even though they share `AutomationSnapshotFormatter`, `TryGetData`, command-handler routing, and the same public `Formatters` type.
 Files consolidated: `tools/ssctl/Formatters.Common.cs`; `tools/ssctl/Formatters.Snapshot.cs`

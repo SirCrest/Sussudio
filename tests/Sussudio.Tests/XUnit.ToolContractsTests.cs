@@ -284,8 +284,8 @@ public sealed class ToolProbeContractsTests
         => global::Program.PresentMonParser_SelectsDominantNonArtifactSwapChain();
 
     [Fact]
-    public Task PresentMonProbeSourceOwnershipIsSplit()
-        => global::Program.PresentMonProbe_SourceOwnership_IsSplit();
+    public Task PresentMonProbeSourceOwnershipIsUnified()
+        => global::Program.PresentMonProbe_SourceOwnership_IsUnified();
 
     [Fact]
     public Task SsctlPipeTransportExposesAdvancedAutomationCommandIds()

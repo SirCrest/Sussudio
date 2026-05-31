@@ -4,15 +4,17 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    internal static Task PresentMonProbe_SourceOwnership_IsSplit()
+    internal static Task PresentMonProbe_SourceOwnership_IsUnified()
     {
         static string ReadPresentMonProbeFile(string fileName)
             => ReadRepoFile($"tools/Common/PresentMon/{fileName}").Replace("\r\n", "\n");
 
         var rootText = ReadPresentMonProbeFile("PresentMonProbe.cs");
         var formatText = rootText;
-        var csvText = ReadPresentMonProbeFile("PresentMonProbe.Csv.cs");
+        var csvText = rootText;
 
+        AssertContains(rootText, "public static class PresentMonProbe");
+        AssertDoesNotContain(rootText, "partial class PresentMonProbe");
         AssertContains(rootText, "public static async Task<PresentMonProbeResult> RunAsync(");
         AssertContains(rootText, "var targetProcess = ResolveTargetProcess(options);");
         AssertContains(rootText, "var presentMonPath = ResolvePresentMonPath(options.PresentMonPath);");
@@ -60,6 +62,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Format.cs")),
             "PresentMon result formatting lives with PresentMonProbe.RunAsync");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.cs")),
+            "PresentMon CSV parsing and aggregation live with PresentMonProbe.RunAsync");
 
         AssertContains(csvText, "private static PresentMonCaptureSummary ParseCsv(");
         AssertContains(csvText, "var csvRows = ReadCsvRows(path);");
@@ -103,21 +109,18 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Process.cs")),
             "PresentMon process supervision lives with PresentMonProbe.RunAsync");
 
-        AssertDoesNotContain(rootText, "private static PresentMonCaptureSummary ParseCsv(");
-        AssertDoesNotContain(rootText, "private static IReadOnlyList<PresentMonSwapChainSummary> BuildSwapChainSummaries(");
-        AssertDoesNotContain(rootText, "private static PresentMonMetricSummary Summarize(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Rows.cs")),
-            "PresentMon CSV row ingestion lives with PresentMonProbe.Csv.cs");
+            "PresentMon CSV row ingestion lives with PresentMonProbe.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Correlation.cs")),
-            "PresentMon CSV app correlation lives with PresentMonProbe.Csv.cs");
+            "PresentMon CSV app correlation lives with PresentMonProbe.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "PresentMon", "PresentMonProbe.Csv.Summary.cs")),
-            "PresentMon CSV warnings and percentile summaries live with PresentMonProbe.Csv.cs");
+            "PresentMon CSV warnings and percentile summaries live with PresentMonProbe.cs");
 
         return Task.CompletedTask;
     }

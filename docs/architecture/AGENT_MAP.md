@@ -2889,20 +2889,19 @@ Primary owners:
   `DiagnosticSessionScenarioPlan` in
   `tools/Common/DiagnosticSessionScenarioCatalog.cs` instead of adding string
   comparisons in `DiagnosticSessionRunner`.
-- `tools/Common/PresentMon/PresentMonProbe.Csv.cs` owns PresentMon CSV parse overloads,
-  selected-row filtering, summary assembly, swap-chain normalization/selection,
-  header/field parsing, scalar metric reads, CSV line tokenization, row
-  ingestion, header index construction, schema-presence detection, private
-  parsed CSV row shapes, app-present correlation, displayed/not-displayed
-  outcome classification, warnings, counted text fields, and percentile metric
-  aggregation.
-- `tools/Common/PresentMon/PresentMonProbe.cs` owns PresentMon option/result,
-  summary, swap-chain, app-correlation summary, and metric DTOs, public option
-  construction, preview snapshot correlation extraction, run orchestration,
-  target process/PresentMon executable/output-path resolution, command-line
-  construction, argument quoting, process supervision, stdout/stderr drain,
-  timeout kill, temp CSV cleanup, probe-result message shaping, and result text
-  rendering used by diagnostic-session output surfaces.
+- `tools/Common/PresentMon/PresentMonProbe.cs` owns the complete PresentMon
+  probe: option/result, summary, swap-chain, app-correlation summary, and metric
+  DTOs; public option construction; preview snapshot correlation extraction;
+  run orchestration; target process/PresentMon executable/output-path
+  resolution; command-line construction; argument quoting; process supervision;
+  stdout/stderr drain; timeout kill; temp CSV cleanup; probe-result message
+  shaping; result text rendering used by diagnostic-session output surfaces;
+  CSV parse overloads; selected-row filtering; summary assembly; swap-chain
+  normalization/selection; header/field parsing; scalar metric reads; CSV line
+  tokenization; row ingestion; header index construction; schema-presence
+  detection; private parsed CSV row shapes; app-present correlation; displayed/
+  not-displayed outcome classification; warnings; counted text fields; and
+  percentile metric aggregation.
 
 Invariants:
 
