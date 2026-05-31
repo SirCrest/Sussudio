@@ -1720,13 +1720,13 @@ Primary current owners:
   pipe retry/command-channel, run-state/live-state/context/bootstrap/output-lock,
   and scenario/completion phase checks after the infrastructure sidecar was
   folded into the broader diagnostic-session ownership spec.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
-  owns diagnostic-session model ownership assertions, formatter ownership,
-  builder summary-write failure, artifact, JSON/shared-text checks, core
-  result-builder construction, preview scheduler, overview/capture checks,
-  Flashback playback, recording, and export result projections, preview result
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns diagnostic-session
+  model ownership assertions, formatter ownership, builder summary-write
+  failure, artifact, JSON/shared-text checks, core result-builder
+  construction, preview scheduler, overview/capture checks, Flashback
+  playback, recording, and export result projections, preview result
   projections, analysis-warning, diagnostic-health, and artifact-handoff
-  ownership.
+  ownership through the diagnostic-session result-surface wrapper class.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
   owns diagnostic-session Flashback warmup health-policy, warning-policy,
   snapshot polling wait, cycle, preview-cycle, rejected-export,
