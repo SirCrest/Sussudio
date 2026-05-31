@@ -488,8 +488,8 @@ owner files.
 D3D preview renderer coverage is
 split into geometry/screenshot helper and preview PNG encoder contracts, cadence contracts, the large
 diagnostics contract, device-lost behavior, and frame-flow/shared-device
-assertions. Source ownership coverage lives in focused ContractsAndMetrics,
-RenderPipeline, RenderThread, RuntimeCapture owner files.
+assertions. Source ownership coverage lives in focused RenderPipeline,
+RenderThread, and RuntimeCapture owner files.
 
 `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` keeps shared reflection
 helpers plus automation command kind, catalog metadata, manifest/path-policy,
@@ -3137,8 +3137,8 @@ owner, fold it back into that owner and update the source-shape tests and
    through `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their
    removal from the legacy harness catalog. D3D preview renderer tests are split
    into geometry, cadence, diagnostics-contract, source-ownership marker plus
-   ContractsAndMetrics/RenderPipeline/RuntimeCapture owners, device-lost, and
-   frame-flow owners. Automation tool contract tests are split into
+   RenderPipeline/RuntimeCapture owners, device-lost, and frame-flow owners.
+   Automation tool contract tests are split into
    protocol, catalog/manifest, reliability-gates, and snapshot formatter
    owners. Capture configuration model tests have consolidated xUnit coverage
    for options/settings/encoder support, recording pipeline contracts, and

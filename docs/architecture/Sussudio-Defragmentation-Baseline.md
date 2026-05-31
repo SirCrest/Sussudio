@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: D3D11 preview renderer source-ownership test locality
+Problem: `D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs` was a small legacy `Program` partial for renderer configuration, native interop, frame/metric type placement, frame ownership, DXGI frame stats, slow-frame diagnostics, and metric-window lifecycle checks. Those assertions are part of the same D3D11 renderer source-ownership review surface as the existing render-pipeline/resource/shader ownership checks, so reviewing renderer core layout still required opening a sidecar before returning to the same xUnit D3D ownership group.
+Files consolidated: `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.ContractsAndMetrics.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` D3D11 preview renderer source-ownership test partial-family file count -1; test `.cs` count 110 -> 109
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PresentationPreviewD3DContractsAndMetricsOwnershipTests|FullyQualifiedName~PresentationPreviewD3DRenderPipelineOwnershipTests|FullyQualifiedName~PresentationPreviewD3DRenderSetupOwnershipTests"` passed (20 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
+CLI/MCP/pipe checks, if applicable: not applicable; test-owner consolidation only. D3D diagnostics-contract, runtime snapshot, and source-ownership coverage still protect the public preview renderer diagnostics surface.
+Behavior preserved: same `Program` method names and the same `PresentationPreviewD3DContractsAndMetricsOwnershipTests`, `PresentationPreviewD3DRenderPipelineOwnershipTests`, and `PresentationPreviewD3DRenderSetupOwnershipTests` xUnit facts still execute; assertions moved unchanged into `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs`.
+Notes for future agents: keep D3D11 renderer core source-shape checks for configuration, native interop, metric ownership, resource setup, render passes, shader rendering, and frame-latency with `D3D11PreviewRenderer.SourceOwnership.RenderPipeline.Tests.cs`; keep public diagnostics-contract and runtime-capture behavior in their existing focused owners.
+
+Date: 2026-05-31
 Area: Diagnostic-session MCP tool test locality
 Problem: `McpToolSurface.DiagnosticSession.Tool.Tests.cs` was a small legacy `Program` partial for `run_diagnostic_session` success/failure artifact contracts, while `McpToolSurface.DiagnosticSession.Runner.Tests.cs` already owned diagnostic-session artifact lifecycle and runner behavior checks. Reviewing the MCP tool artifact path still required opening a sidecar before returning to the runner-owned diagnostic-session behavior surface.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tool.Tests.cs`
