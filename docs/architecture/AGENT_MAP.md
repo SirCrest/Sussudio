@@ -2177,10 +2177,10 @@ Primary current owners:
   points, preview-sink handoff, preview lifecycle flags,
   preview reinitialize coordination, and preview request events; `MainViewModel.cs` owns capture-selection
   state, option collections, HDR capture/runtime presentation state, and
-  source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio and
-  microphone state, live meter callback state, custom audio-input retargeting,
-  preview-monitoring ramp handoff, and audio-preview property-change routing; `MainViewModel.DeviceAudioState.cs` owns device-native
-  audio/XU UI state; `MainViewModel.FlashbackState.cs` owns Flashback
+  source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio,
+  microphone, device-native audio/XU UI state, live meter callback state,
+  custom audio-input retargeting, preview-monitoring ramp handoff, and
+  audio-preview property-change routing; `MainViewModel.FlashbackState.cs` owns Flashback
   timeline/export state plus buffer, bitrate, playback-state, in/out marker,
   and gap-from-live UI projection. Keep callback-thread meter targets
   in `MainViewModel.AudioState.cs` and out of the root facade file.
@@ -2209,8 +2209,8 @@ Primary current owners:
   analog-gain property-change scheduling, UI/XU request debounce,
   flash-persist debounce, and cancellation cleanup. The compatibility
   property-change adapters stay with the observable device-audio state in
-  `MainViewModel.DeviceAudioState.cs`.
-  `MainViewModel.DeviceAudioState.cs` owns device-native audio-control support
+  `MainViewModel.AudioState.cs`.
+  `MainViewModel.AudioState.cs` owns device-native audio-control support
   probing, readback, pending saved-state reconciliation, mode switching, and
   failure readback through the supported native-XU switch command surface,
   not the legacy AT input-source fallback path. It also owns shared

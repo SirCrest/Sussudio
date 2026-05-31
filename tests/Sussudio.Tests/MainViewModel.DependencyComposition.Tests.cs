@@ -368,7 +368,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
     {
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
-        var deviceAudioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceAudioState.cs").Replace("\r\n", "\n");
+        var deviceAudioStateText = audioStateText;
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
@@ -383,8 +383,10 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
         AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
         AssertContains(deviceAudioStateText, "public partial double AnalogAudioGainPercent");
-        AssertDoesNotContain(audioStateText, "SelectedDeviceAudioMode");
-        AssertDoesNotContain(audioStateText, "AnalogAudioGainPercent");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
+            "MainViewModel device-audio state folded into MainViewModel.AudioState.cs");
 
         AssertContains(controllerGraphText, "var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");

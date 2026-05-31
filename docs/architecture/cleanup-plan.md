@@ -3224,8 +3224,8 @@ owner, fold it back into that owner and update the source-shape tests and
    device-native
    audio-control support probing, readback, pending saved-state reconciliation,
    mode switching, failure readback, shared audio-control guards, and analog
-   gain writes now live with device-native UI state in
-   `MainViewModel.DeviceAudioState.cs`. UI-facing state is
+   gain writes now live with audio/microphone UI state in
+   `MainViewModel.AudioState.cs`. UI-facing state is
    split by owner: `MainViewModel.cs` owns shared shell/status/live-info flags,
    native window handle state, UI collection replacement, and non-preview
    coordination gates, `MainViewModel.cs`
@@ -3233,10 +3233,9 @@ owner, fold it back into that owner and update the source-shape tests and
    preview lifecycle flags, preview reinitialize coordination, and preview
    request events, `MainViewModel.cs` owns capture-selection
    state, option collections, HDR capture/runtime presentation state, and
-   source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone
-   state plus audio-preview property-change routing,
-   `MainViewModel.DeviceAudioState.cs` owns device-native audio/XU UI
-   state, and `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
+   source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone,
+   device-native audio/XU UI state, and audio-preview property-change routing,
+   while `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
    state plus buffer, bitrate, playback-state, in/out marker, and gap-from-live
    UI projection. Keep `MainViewModel.cs` focused on the public compatibility-facade
    shell, construction seam, dependency assignment, collaborator fields,
@@ -3506,7 +3505,7 @@ owner, fold it back into that owner and update the source-shape tests and
    encoder quality/preset/split/bitrate, buffer duration, and GPU decode now
    live in `MainViewModel.FlashbackState.cs`.
    Pure analog audio gain percent/XU-byte curve mapping now lives in
-   `MainViewModel.DeviceAudioState.cs` with the shared audio-control guards;
+   `MainViewModel.AudioState.cs` with the shared audio-control guards;
    device-native audio request lifetime, including mode property-change adapters, UI enqueue lifetime,
    shared debounce CTS fields, graph-port context contract, cancellation
    cleanup, gain property-change adapters, XU debounce, and flash-persist
@@ -3515,7 +3514,7 @@ owner, fold it back into that owner and update the source-shape tests and
    async native-XU
    device audio-control refresh/readback, mode switching, failure readback,
    shared audio-control guards, analog gain XU writes, and settings
-   persistence stay with `MainViewModel.DeviceAudioState.cs`. Use
+   persistence stay with `MainViewModel.AudioState.cs`. Use
    the supported native-XU switch/gain command surface rather than the legacy
    AT input-source fallback path.
    UI-only automation mutators for settings visibility, Flashback timeline

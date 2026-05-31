@@ -17,10 +17,14 @@ static partial class Program
     private static void AssertServiceNamespaceMainViewModelDeviceAudioSourceOwnership(string repoRoot)
     {
         var audioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
-        var deviceAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs"));
-        var deviceAudioModeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs"));
-        var deviceAudioRefreshText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs"));
+        var deviceAudioStateText = audioStateText;
+        var deviceAudioModeText = audioStateText;
+        var deviceAudioRefreshText = audioStateText;
         var deviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceAudioRequestController.cs"));
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
+            "MainViewModel device-audio state folded into MainViewModel.AudioState.cs");
         AssertContains(deviceAudioStateText, "public partial ObservableCollection<string> AvailableDeviceAudioModes");
         AssertContains(deviceAudioStateText, "public partial bool IsDeviceAudioControlSupported");
         AssertContains(deviceAudioStateText, "public partial string SelectedDeviceAudioMode");
@@ -28,8 +32,8 @@ static partial class Program
         AssertContains(deviceAudioStateText, "partial void OnSelectedDeviceAudioModeChanged(string value)");
         AssertContains(deviceAudioStateText, "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertContains(deviceAudioStateText, "private void RequestAnalogGainFlashPersist(CaptureDevice device, byte gainByte)");
-        AssertDoesNotContain(audioStateText, "SelectedDeviceAudioMode");
-        AssertDoesNotContain(audioStateText, "AnalogAudioGainPercent");
+        AssertContains(audioStateText, "SelectedDeviceAudioMode");
+        AssertContains(audioStateText, "AnalogAudioGainPercent");
         AssertContains(deviceAudioRefreshText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(deviceAudioRefreshText, "ReadStateAsync(device, cancellationToken)");
         AssertContains(deviceAudioRefreshText, "NATIVEXU_AUDIO_RESTORE_READ_ONLY");
@@ -67,7 +71,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioMode.cs")),
-            "MainViewModel device-audio mode folded into device audio state");
+            "MainViewModel device-audio mode folded into audio state");
     }
 
     private static void AssertServiceNamespaceMainViewModelRuntimeSourceOwnership(string repoRoot)
@@ -156,10 +160,10 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioRequests.cs")),
             "MainViewModel device audio request adapter partial");
         AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
+            mainViewModelAudioStateText,
             "partial void OnSelectedDeviceAudioModeChanged(string value)");
         AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceAudioState.cs")),
+            mainViewModelAudioStateText,
             "partial void OnAnalogAudioGainPercentChanged(double value)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "public void RequestDeviceAudioControlsRefresh(CaptureDevice? targetDevice)");
         AssertContains(mainViewModelDeviceAudioRequestControllerText, "\"device audio controls refresh\", true");
@@ -179,8 +183,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs")),
             "MainViewModel.CaptureModePropertyChanges.cs folded into MainViewModel.CaptureSelection.cs");
-        AssertDoesNotContain(mainViewModelAudioCapturePropertyChangesText, "OnSelectedDeviceAudioModeChanged");
-        AssertDoesNotContain(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
+        AssertContains(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
         AssertContains(mainViewModelAudioStateText, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         AssertEqual(
             false,
