@@ -15,7 +15,7 @@ public class StatsOverlayLifecycleTests
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs");
         var mainWindowText = MainWindowCompositionSource.Read();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayController.cs");
+        var controllerText = statsOverlayCompositionText;
         var frameTimeControllerText = statsOverlayCompositionText;
         var frameTimeGeometryText = frameTimeControllerText;
 
@@ -92,6 +92,9 @@ public class StatsOverlayLifecycleTests
         AssertDoesNotContain(mainWindowText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _statsDockStoryboard;");
         AssertContains(controllerText, "internal sealed class StatsOverlayController");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsOverlayController.cs")),
+            "stats overlay shell controller folded into StatsOverlayCompositionController.cs");
         AssertContains(controllerText, "private DispatcherQueueTimer? _statsPollTimer;");
         AssertContains(controllerText, "public required ToggleButton StatsToggle { get; init; }");
         AssertContains(controllerText, "public required Func<bool> IsWindowClosing { get; init; }");

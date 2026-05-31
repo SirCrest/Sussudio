@@ -1065,12 +1065,11 @@ Primary current owners:
   microphone meter clipping, reset behavior, timer lifetime, `TranslateMarker`,
   monitoring/disabled animations, and rounded content clips.
   `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
-- `Sussudio/Controllers/Stats/StatsOverlayController.cs` owns stats dock visibility
-  orchestration, stats/frame-time toggle event hookup and checked/unchecked
-  handling, stats toggle-to-view model sync, frame-time overlay visibility,
-  polling lifetime, stats dock show/hide storyboard construction, dock
-  visibility mutations, and animation completion state.
-  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns the
+- `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats
+  dock visibility orchestration, stats/frame-time toggle event hookup and
+  checked/unchecked handling, stats toggle-to-view model sync, frame-time
+  overlay visibility, polling lifetime, stats dock show/hide storyboard
+  construction, dock visibility mutations, animation completion state, the
   stats overlay runtime facade, construction-order entry point, and graph
   factory wiring: snapshot provider, frame-time presentation, dock graph,
   overlay controller, and section chrome controller.

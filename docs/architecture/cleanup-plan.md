@@ -2024,13 +2024,15 @@ request/telemetry alignment, HDR warmup state classification, and HDR pipeline
 parity projection live with
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`.
 
-Stats dock, stats toggle, and frame-time overlay lifecycle now live in
-`Sussudio/Controllers/Stats/StatsOverlayController.cs`. Stats overlay controller
-composition stays split by role: `StatsOverlayCompositionController.cs` owns the
+Stats dock, stats toggle, frame-time overlay lifecycle, and stats overlay
+controller composition now live in
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`. It owns the
 runtime facade, construction-order entry point, snapshot provider, frame-time
-presentation, dock graph, overlay controller, section chrome factory wiring, and
-grouped composition context DTOs for shell controls, snapshot sources, dock
-targets, hardware sources, and frame-time targets;
+presentation, dock graph, overlay controller, section chrome factory wiring,
+stats/frame-time toggle event hookup, visibility sync, polling lifetime, dock
+show/hide storyboard mechanics, and grouped composition context DTOs for shell
+controls, snapshot sources, dock targets, hardware sources, and frame-time
+targets;
 stats dock presentation/diagnostic/hardware/refresh controller graph wiring
 and the dock graph context contract now live in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
@@ -2041,7 +2043,7 @@ Stats toggle event hookup and checked/unchecked behavior, initial/property-chang
 visibility sync, polling, visibility state, dock refresh ordering, dynamic
 diagnostic row pools, dock metric value/brush application, and dock animations
 are out of the event adapter. Stats dock show/hide animation mechanics now live
-in `Sussudio/Controllers/Stats/StatsOverlayController.cs` with the
+in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` with the
 polling/visibility orchestration they mutate.
 Stats dock refresh orchestration now lives in
 `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`: snapshot acquisition,
