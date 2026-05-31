@@ -1419,17 +1419,18 @@ Primary current owners:
   projection ownership checks, summary policy, Flashback recording scoped
   sequence gaps, CaptureService focused-partial ownership, and shared formatter
   rendering checks after their removal from the legacy `Program` sidecar.
-- `tests/Sussudio.Tests/CaptureService.PreviewLifecycle.Tests.cs` owns
-  video-only preview fallback, missing audio endpoint, preview-stop API surface,
-  preview backend log contracts, CaptureService audio source-family helpers,
-  audio focused-partial ownership, PreviewAudioGraphResources ownership, and
-  post-recording microphone monitor restart assertions.
-- `tests/Sussudio.Tests/CaptureService.SessionStateOwnership.Tests.cs` owns
+- `tests/Sussudio.Tests/CaptureService.LifecycleOwnership.Tests.cs` owns
   CaptureService initialization, session-state-machine and transition-policy
   ownership, asserts that lifecycle partials route state changes through
   transition/state-machine helpers, owns last-failure telemetry and Flashback
-  backend failure cleanup source placement, and keeps the
-  no-direct-session-state-write/faulted-session guards for failure cleanup.
+  backend failure cleanup source placement, keeps the
+  no-direct-session-state-write/faulted-session guards for failure cleanup, and
+  owns video-only preview fallback, missing audio endpoint, preview-stop API
+  surface, preview backend log contracts, CaptureService audio source-family
+  helpers, audio focused-partial ownership, PreviewAudioGraphResources
+  ownership, and post-recording microphone monitor restart assertions after the
+  preview lifecycle sidecar was folded into the broader CaptureService
+  lifecycle owner.
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   owns CaptureService health snapshot assembly, capture-cadence, MJPEG,
   AV-sync, Flashback export/buffer/queue/playback, recording, and
