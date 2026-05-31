@@ -1811,12 +1811,15 @@ forwarding, MJPEG jitter/hash metrics, preview visual cadence metrics, and
 frame-ledger summary projection there; keep top-level frame arrival routing in
 `UnifiedVideoCapture.FrameIngress.cs`.
 
-Unified capture frame ingress now lives in
+Unified capture frame ingress and sink fan-out now live in
 `Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs`. Keep source
 frame arrival callbacks, MJPEG pipeline frame emission, capture-arrival ledger
 records, pixel-format observer dispatch, fatal-error signaling, preview sink
 assignment, live-preview suppression/resume drains, MJPEG preview-frame decoded
-callbacks, raw preview submission, and visual-cadence reset/recording helpers
+callbacks, raw preview submission, visual-cadence reset/recording helpers,
+recording enqueue helpers, Flashback enqueue helpers, queue rejection
+accounting, legacy encoder fallback enqueue adapters, and Flashback recording
+sequence-gap accounting
 there; keep public control/configuration methods in `UnifiedVideoCapture.cs`.
 
 Unified capture source-session lifecycle now lives in
@@ -1825,13 +1828,6 @@ source-reader/D3D/MJPEG initialization, committed runtime state reset, read-loop
 start/stop, preview-reinit disposal, CPU MJPEG pipeline construction and stop
 retention, preview jitter buffer setup/teardown, and capture/MJPEG fatal-error
 callbacks there.
-
-Unified capture recording and Flashback sink fan-out now live in
-`Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs`. Keep recording
-enqueue helpers, Flashback enqueue helpers, queue rejection accounting, legacy
-encoder fallback enqueue adapters, and Flashback recording sequence-gap
-accounting there; keep frame arrival callbacks in
-`UnifiedVideoCapture.FrameIngress.cs`.
 
 Decoded visual-cadence frame ingestion now lives in
 `Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep state, reset, frame

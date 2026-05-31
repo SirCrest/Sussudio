@@ -10,7 +10,7 @@ static partial class Program
     {
         var rootSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
-        var fanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.SinkFanout.cs")
+        var fanoutSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.FrameIngress.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(fanoutSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
@@ -24,6 +24,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.Flashback.cs")),
             "UnifiedVideoCapture Flashback fanout folded into the fanout owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.SinkFanout.cs")),
+            "UnifiedVideoCapture recording/Flashback fanout folded into the frame ingress owner");
         AssertDoesNotContain(rootSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertDoesNotContain(rootSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertDoesNotContain(rootSource, "private static bool TryLegacyRawVideoEnqueue(");
@@ -48,6 +52,9 @@ static partial class Program
         AssertContains(frameIngressSource, "private unsafe void SubmitPreviewRawFrame(");
         AssertContains(frameIngressSource, "private void TrackPreviewVisualFrame(");
         AssertContains(frameIngressSource, "private void MarkPreviewVisualCadenceUnavailable(string reason)");
+        AssertContains(frameIngressSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertContains(frameIngressSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
+        AssertContains(frameIngressSource, "private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "UnifiedVideoCapture.Preview.cs")),
