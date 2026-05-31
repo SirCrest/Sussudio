@@ -473,11 +473,11 @@ another partial fragment.
 
 `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` now owns the
 shared recording queue source readers and source-block extraction helpers
-beside the core overload-policy checks. Capture health snapshot ownership
-coverage is split into assembly/sampler, Flashback, and
-recording/source-telemetry files. Recording queue coverage is split into queue
-overload policy, LibAv sink, WASAPI, and capture fan-out / Flashback backend
-owner files.
+beside the core overload-policy checks and LibAv sink queue/lifecycle ownership
+assertions. Capture health snapshot ownership coverage is split into
+assembly/sampler, Flashback, and recording/source-telemetry files. Recording
+queue coverage is split into queue overload/LibAv sink policy, WASAPI, and
+capture fan-out / Flashback backend owner files.
 
 D3D preview renderer coverage is
 split into geometry/screenshot helper and preview PNG encoder contracts, cadence contracts, the large
@@ -1219,8 +1219,8 @@ video/GPU/CUDA enqueue entry points, hot audio/microphone WASAPI write adapters,
 caller-side validation, audio queue eviction, audio remaining-buffer cleanup,
 the audio packet DTO, shared video queue latency/backpressure tracker, and
 shared work-signal/fatal-failure/queue-depth-underflow helpers there.
-`tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs` owns the
-queue, submission, and cleanup assertions for this family alongside LibAv sink
+`tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the queue,
+submission, and cleanup assertions for this family alongside LibAv sink
 lifecycle checks.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
 fatal signaling, queue cleanup, pooled video buffer leasing, pooled packet
@@ -1244,7 +1244,7 @@ background loop ordering, second audio/microphone drain pass, cancellation
 cleanup, fatal encoder failure handling, bounded video/GPU/CUDA drain batches,
 unbounded LibAv audio/microphone drains, frame-encoded event dispatch, GPU
 texture release, CUDA frame free, and pooled buffer returns there.
-`tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs`
+`tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs`
 owns the LibAv sink queue, lifecycle, output-validation, drain-loop, and
 packet-drain assertions.
 

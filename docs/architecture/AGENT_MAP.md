@@ -1382,17 +1382,15 @@ Primary current owners:
   recording/Flashback queue overload, fatal-failure, lifecycle, recording
   backend start-policy, source-loading, buffer-cycle, LibAv/Flashback overload,
   buffer recovery, recording backend finalization, Flashback cleanup,
-  microphone restart, post-finalize telemetry, and health/automation telemetry
-  assertions.
-  `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
-  recording lifecycle, recording-stop finalization failure propagation, active
-  recording backend resource aggregate, recording start rollback, and recording
-  outcome-state file-ownership assertions.
-- `tests/Sussudio.Tests/RecordingQueue.LibAvSink.Lifecycle.Tests.cs` owns
+  microphone restart, post-finalize telemetry, health/automation telemetry,
   LibAv recording sink try-enqueue, video-queue submission, audio queue,
   queue-cleanup, output validation, video-session setup, drain-loop,
   encoding-loop, startup sequencing, stop-lifecycle, and lifetime-helper
   ownership assertions.
+  `CaptureService.RecordingLifecycleOwnership.Tests.cs` owns CaptureService
+  recording lifecycle, recording-stop finalization failure propagation, active
+  recording backend resource aggregate, recording start rollback, and recording
+  outcome-state file-ownership assertions.
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
   WASAPI capture-loop, hot-write, conversion, root diagnostics, COM contract,
   bounded stop assertions, UnifiedVideoCapture frame-ingress, CPU-MJPEG format
