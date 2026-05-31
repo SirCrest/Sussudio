@@ -1298,9 +1298,6 @@ Primary current owners:
   owns xUnit execution for the former legacy presentation-preview MainWindow
   and adjacent selection/runtime guard catalog groups after their removal from
   the legacy offline harness catalog.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.DeviceFormatProbeRetarget.Tests.cs`
-  owns late device-format probe retarget policy behavior and application
-  ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview late
   device-format probe retarget catalog group.
@@ -1308,9 +1305,10 @@ Primary current owners:
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
-  capture format and recording settings selection-policy ownership checks plus
-  the shared reflection, option-list, and capture-mode model construction
-  helpers for the selection-policy test family.
+  capture format, recording settings, and late device-format probe retarget
+  selection-policy ownership/behavior checks plus the shared reflection,
+  option-list, and capture-mode model construction helpers for the
+  selection-policy test family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
   preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
   audio-ramp, device-discovery-before-recording-capability, UI/audio preview
@@ -1780,10 +1778,8 @@ Primary current owners:
   owns diagnostic-session Flashback warmup health-policy, warning-policy,
   snapshot polling wait, cycle, preview-cycle, rejected-export,
   segment-playback, export, recording-settings, lifecycle, stress,
-  audio-master fallback classification, export-helper, and segment wait/parsing
-  ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Metrics.Tests.cs`
-  owns diagnostic-session Flashback metric projection ownership assertions.
+  audio-master fallback classification, export-helper, segment wait/parsing,
+  and Flashback metric projection ownership assertions.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` owns
   focused diagnostic-session runner behavior coverage: reflective runner
   setup, artifacts, health policy, Flashback playback, initial snapshot,
