@@ -5636,3 +5636,15 @@ Build/tests/runtime checks: focused runtime/process-supervisor and recording ver
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public runtime type names and namespace remain unchanged.
 Behavior preserved: `ProcessSpec`, `ProcessRunResult`, `IProcessSupervisor`, and `ProcessSupervisor` keep the same members/defaults, timeout behavior, no-shell process start policy, priority assignment, cancellation/timeout termination, bounded output read, and diagnostic log events while living in `Sussudio/Services/Runtime/RuntimeHelpers.cs`.
 Notes for future agents: keep small shared runtime helper families in `RuntimeHelpers.cs`; split process supervision again only if it grows an independent policy object, alternate runner strategy, or external package boundary.
+
+Date: 2026-05-31
+Area: Runtime settings persistence locality
+Problem: `Sussudio/Services/Runtime/SettingsService.cs` was the smallest remaining core app source file and carried only the persisted user-settings DTO, source-generated JSON context, and forgiving LocalAppData load/save adapter. `RuntimeHelpers.cs` already owns shared runtime helper contracts and low-level app runtime utilities, so auditing no-hardware runtime behavior still required opening a tiny standalone settings leaf.
+Files consolidated: `Sussudio/Services/Runtime/SettingsService.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; small runtime helper file count -1
+Build/tests/runtime checks: focused settings/runtime tests passed (89 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full test suite passed (883 passed); runtime harness passed; regenerated baseline.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; public runtime type names and namespace remain unchanged.
+Behavior preserved: `UserSettings`, `SettingsJsonContext`, and `SettingsService` keep the same members/defaults, forgiving load behavior, serialized save lock, temp-file write, LocalAppData path policy, and diagnostic log events while living in `Sussudio/Services/Runtime/RuntimeHelpers.cs`.
+Notes for future agents: keep small shared runtime helper families and LocalAppData user-settings persistence in `RuntimeHelpers.cs`; split settings again only if it grows an injected persistence provider, testable alternate store, or external settings package boundary.

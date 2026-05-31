@@ -36,9 +36,13 @@ static partial class Program
         var settingsLoadApplicationText = settingsPersistenceText;
         var settingsProjectionText = settingsPersistenceText[..settingsPersistenceText.IndexOf("public partial class MainViewModel", StringComparison.Ordinal)];
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
-        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/SettingsService.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Runtime", "SettingsService.cs")),
+            "SettingsService.cs folded into RuntimeHelpers.cs");
         AssertContains(settingsPersistenceText, "private void LoadSettings()");
         AssertContains(settingsPersistenceText, "private void SaveSettings()");
         AssertContains(settingsPersistenceText, "SettingsService.Load()");
