@@ -902,7 +902,7 @@ Primary current owners:
   chrome/material state, overlay pointer/auto-hide behavior, and full-screen key
   routing behind the shared full-screen context.
   behavior plus full-screen key routing and timeline eligibility.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` wires the controller context,
+  `Sussudio/MainWindow.Composition.cs` wires the controller context,
   button/menu/double-tap and automation command adapters, key routing, pointer,
   and auto-hide adapters. Flashback command execution lives in
   `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs`.
@@ -913,7 +913,7 @@ Primary current owners:
   PNG/BMP byte-stream encoding helpers, pure preview-frame screenshot output-directory fallback,
   file naming, status/log text policy, preview-frame capture, logging side
   effects, and button enable/disable state. Keep whole-window screenshot
-  automation on `MainWindow.ShellChrome.Composition.cs` with the rest of the
+  automation on `MainWindow.Composition.cs` with the rest of the
   `IAutomationWindowControl` adapter; `MainWindow.xaml.cs` is the
   XAML-facing adapter for preview-frame screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
@@ -922,22 +922,22 @@ Primary current owners:
   presenter restore, side effects, pure snap-region rectangle math, automation
   token/pipe-name resolution, diagnostics hub construction, command dispatcher
   construction, named-pipe server construction, once-only startup, ready/disabled
-  logging, and pipe-before-hub shutdown disposal. `MainWindow.ShellChrome.Composition.cs`
+  logging, and pipe-before-hub shutdown disposal. `MainWindow.Composition.cs`
   is the `IAutomationWindowControl` adapter and starts the host controller after
   initial device refresh; `Sussudio/MainWindow.xaml.cs` passes the host dispose
   delegate into the shutdown cleanup controller. Recording-aware close handling
   stays with the close lifecycle/finalization owners.
-- `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing shell
+- `Sussudio/MainWindow.Composition.cs` owns the XAML-facing shell
   launch/chrome adapter surface: native shell bootstrap callbacks, control-bar
   animation callbacks, launch entrance/startup callbacks, settings shelf
   callbacks, static shell elevation, shell property-change routing callbacks,
   and splash phrase start/stop callbacks. Window close routing/finalization ownership is detailed in the
   window close section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
-  `Sussudio/MainWindow.ShellChrome.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
+  `Sussudio/MainWindow.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
-  transforms. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the
+  transforms. `Sussudio/MainWindow.Composition.cs` wires the
   renderer host context, `SizeChanged` adapter, renderer-host reset handoff,
   stable start/stop, shutdown, and reinit-unsafe-window automation adapters.
   `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns hosted preview
@@ -950,9 +950,9 @@ Primary current owners:
   surface content-fit sizing, GPU panel visibility, video/control-bar
   composition shadow visuals, bounds alignment, clear behavior, compositor
   opacity fade routing, preview shell/content transitions, startup overlay,
-  and reinit transition state. `MainWindow.PreviewLifecycle.Composition.cs`
+  and reinit transition state. `MainWindow.Composition.cs`
   is the XAML-facing adapter for preview renderer and surface wiring.
-- `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` owns the stable
+- `Sussudio/MainWindow.Composition.cs` owns the stable
   automation preview snapshot adapter and context wiring alongside preview
   renderer host composition.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
@@ -973,15 +973,15 @@ Primary current owners:
   Window close routing/finalization ownership is detailed in the window close
   section below:
   `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
-  `Sussudio/MainWindow.ShellChrome.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
-- `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the XAML-facing title
+  `Sussudio/MainWindow.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
+- `Sussudio/MainWindow.Composition.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
   base/build-stamp formatting and the recording-time suffix used by property
   changes, plus bottom status-strip projection: status text, recording time, disk warning,
   disk-space text, recording size, recording bitrate, the status-strip
   `PropertyChanged` router, the recording-only title-refresh callback, and the
   Flashback bitrate fallback used while Flashback is enabled and recording is
-  idle. `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
+  idle. `Sussudio/MainWindow.Composition.cs` is the XAML-facing
   adapter and builds the ViewModel snapshot passed into the controller.
 - `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
@@ -995,7 +995,7 @@ Primary current owners:
   status text, shutdown-content dim/restore policy, timer stops, event detaches,
   preview shutdown, post-close recording finalization handoff, automation
   disposal, NVML disposal, and ViewModel disposal.
-- `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML/AppWindow close adapter:
+- `Sussudio/MainWindow.Composition.cs` owns the XAML/AppWindow close adapter:
   `RegisterCloseLifecycle`, `CloseAsync`, and the stable
   `RequestWindowClose()` adapter.
 - `Sussudio/MainWindow.xaml.cs` wires MainWindow cleanup
@@ -1008,21 +1008,21 @@ Primary current owners:
   minimum-size subclassing, DWM cloak/dark-mode setup, first-composed-frame
   shell reveal scheduling/cancellation, initial shell size, icon, and native
   helpers used by shell startup and automation controllers.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing shell
+  `Sussudio/MainWindow.Composition.cs` is the XAML-facing shell
   launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
   automation paths.
 - `Sussudio/Controllers/UiDispatchControllers.cs` owns MainWindow
   UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
   preview-snapshot-style result dispatch with three-attempt enqueue retry, and
   guarded async event-handler status updates used by automation adapters and
-  XAML event handlers. `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the stable
+  XAML event handlers. `Sussudio/MainWindow.Composition.cs` keeps the stable
   private MainWindow adapter names for callers.
 - `Sussudio/MainWindow.xaml.cs` owns the root `SetupBindings()`
   startup binding sequence and leaves feature-specific binding clusters in
   focused partials or controllers, including initial recording lockout,
   device-selection change hooks, stats visibility sync, and status-strip
   projection.
-- `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
+- `Sussudio/MainWindow.Composition.cs`
   owns the preview-transition XAML command and callback adapter surface.
   `PreviewButtonActionController` owns the preview
   fade/reinit/start/stop command behavior. One-line XAML command bridges for
@@ -1033,7 +1033,7 @@ Primary current owners:
   Capture-selection and
   status-strip adapters are still considered first through the
   `Sussudio/MainWindow.xaml.cs` adapter and
-  `MainWindow.ShellChrome.Composition.cs`; broad domain property-name switches
+  `MainWindow.Composition.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns shared
   compositor opacity fade helpers for preview shadow visuals without adding
@@ -1061,7 +1061,7 @@ Primary current owners:
   The grouped stats composition context contracts for shell controls, snapshot
   sources, dock targets, hardware sources, and frame-time targets live with
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing stats
+  `Sussudio/MainWindow.Composition.cs` owns the XAML-facing stats
   overlay adapter surface: composition controller instantiation, shell-control
   wiring, snapshot sources, dock targets, MJPEG/NVML sources, compact frame-time
   targets, lifecycle/polling commands, and section chrome event adapters.
@@ -1076,14 +1076,14 @@ Primary current owners:
   model is built. `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`
   keeps the local section chrome controller that owns stats dock section
   expand/collapse chrome and automation-visible section visibility application;
-  `Sussudio/MainWindow.ShellChrome.Composition.cs`
+  `Sussudio/MainWindow.Composition.cs`
   owns the XAML/automation adapter for that stats shell wiring.
   `Sussudio/StatsWindow.xaml.cs` also owns detached stats-window metric text and
   dynamic telemetry detail rendering.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
   renderer cadence/recent-sample acquisition and null fallback policy.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
+  `Sussudio/MainWindow.Composition.cs` is the XAML-facing
   surface for stats visibility, polling, snapshot source wiring, frame-time
   targets, and section chrome commands; stats provider/controller context
   contracts and provider/controller composition live in
@@ -1113,7 +1113,7 @@ Primary current owners:
   frame-time overlay text application, graph-line mutation, canvas sizing,
   sample projection, and expected-line geometry alongside the stats overlay
   composition graph that routes polling snapshots into it.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` owns the XAML-facing
+  `Sussudio/MainWindow.Composition.cs` owns the XAML-facing
   compact overlay adapter beside the stats overlay visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns the cohesive pure stats
   presentation projection surface: shared formatting helpers, stats dock summary
@@ -1328,15 +1328,15 @@ Primary current owners:
 - Preview-startup ordering xUnit execution also lives in
   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
-  source readers for the consolidated `MainWindow.PreviewLifecycle.Composition.cs`
+  source readers for the consolidated `MainWindow.Composition.cs`
   adapter family, shell-chrome, stats-overlay, capture-binding,
   Flashback, and preview-renderer adapters.
 - Fullscreen tests use the shared shell-chrome helper for
-  `MainWindow.ShellChrome.Composition.cs`; shutdown cleanup tests use the shared
+  `MainWindow.Composition.cs`; shutdown cleanup tests use the shared
   MainWindow root helper for `MainWindow.xaml.cs`.
 - `tests/Sussudio.Tests/HarnessCore.cs` also owns the source
   reader for property-changed preview assertions over
-  `MainWindow.PreviewLifecycle.Composition.cs`.
+  `MainWindow.Composition.cs`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
   owns MainViewModel Flashback coordinator-routing assertions, negative
   `_captureService` access guards, Flashback settings owner checks for
@@ -1938,7 +1938,7 @@ Primary current owners:
   playhead motion in `FlashbackUiControllers.cs`.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
+  `Sussudio/MainWindow.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Launch/LaunchFlowController.cs` owns loaded-time
   startup ordering and launch entrance choreography: native shell reveal
   scheduling, initial ViewModel settings load, preview audio fade priming before
@@ -1950,21 +1950,21 @@ Primary current owners:
   animation, handoff into shell entrance, shell chrome/button/stats entrance
   choreography, deferred preview reveal logging, active-storyboard cleanup, and
   the delayed control-bar shadow fade routed through the shadow controller in
-  `PreviewTransitionAnimationController.cs`. `Sussudio/MainWindow.ShellChrome.Composition.cs`
+  `PreviewTransitionAnimationController.cs`. `Sussudio/MainWindow.Composition.cs`
   is the XAML-facing Loaded, phrase start/stop, and launch entrance adapter.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns control-bar
   button entrance/hover/press/release animation, static shell ThemeShadow and
   translation setup for the control bar and record button, plus shell
   property-change routing across stats overlay and settings shelf controllers,
   settings shelf animation, status-strip projection, and window title formatting.
-  `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
+  `Sussudio/MainWindow.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   shell/content fade and scale transitions, video-shadow fade timing,
   unavailable-placeholder fades, startup/unavailable presentation prep, preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires
+  `Sussudio/MainWindow.Composition.cs` wires
   preview-transition animation callbacks; video-shadow fade callbacks route
   through the preview surface shadow controller in this owner.
 - `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview
@@ -1974,9 +1974,9 @@ Primary current owners:
   reset, unavailable-placeholder reveal, and delayed preview reveal after first
   visual while preserving the `PreviewButtonActionController`,
   `PreviewButtonPresentationController`, and `PreviewFadeInController` types.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires preview button presentation callbacks and preview
+  `Sussudio/MainWindow.Composition.cs` wires preview button presentation callbacks and preview
   lifecycle property/event routing.
-- `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
+- `Sussudio/MainWindow.Composition.cs`
   keeps the XAML event name stable as part of the preview transition/presentation
   adapter.
 - `Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns
@@ -1993,20 +1993,20 @@ Primary current owners:
   capture-device button workflows.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
-  scale/fade animation beside the rest of shell chrome. `MainWindow.ShellChrome.Composition.cs`
+  scale/fade animation beside the rest of shell chrome. `MainWindow.Composition.cs`
   is the XAML-facing adapter. `Sussudio/ViewModels/ViewModelBuilders.cs` owns
   the view-model live-signal label formatting and pixel-format/codec suffix
   policy.
 - `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-volume
   fade-in/fade-out state, saved target volume, storyboard lifetime, volume
   save suppression, preview start/stop/reinit event routing, and preview button
-  presentation/fade-in timing. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
+  presentation/fade-in timing. `Sussudio/MainWindow.Composition.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and the
   `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` logs.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML/MainWindow
+  `Sussudio/MainWindow.Composition.cs` is the XAML/MainWindow
   adapter that supplies renderer-stop-before-teardown and UI callback endpoints
   for reinit completion.
 - `Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs` owns preview
@@ -2020,7 +2020,7 @@ Primary current owners:
   counter state, first-visual confirmation decisions, signal-list formatting,
   timeout diagnostic payload formatting, playback-advance threshold checks, and
   readiness result snapshots.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires UI/runtime
+  `Sussudio/MainWindow.Composition.cs` wires UI/runtime
   callbacks into the session, watchdog, and signal controllers, stable state
   projections, startup state, renderer-attached, first-visual, begin-attempt,
   reset adapters, raw timeout diagnostic snapshots, live preview signal state,
@@ -2030,29 +2030,29 @@ Primary current owners:
   `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns preview-
   specific ViewModel event lifecycle and the preview property-change router for
   preview start/stop/reinit state.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires preview button
+  `Sussudio/MainWindow.Composition.cs` wires preview button
   presentation callbacks and
   preserves preview event-handler signatures and delegates into the controller.
   `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview
   reinit animation active state, first-visual transition clears, startup-reset
   preservation, completion presentation decisions, and reinit transition logs.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` keeps the renderer-stop-before-teardown
+  `Sussudio/MainWindow.Composition.cs` keeps the renderer-stop-before-teardown
   handoff and XAML callback endpoints for completion presentation.
   Keep preview startup fields out of the composition root.
 - `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs` owns delayed
   preview reveal after first visual: rendered-frame threshold, fade-in timer,
   renderer replacement fallback, and preview-audio fade start ordering.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires the XAML-facing adapter. Keep
+  `Sussudio/MainWindow.Composition.cs` wires the XAML-facing adapter. Keep
   timeout/watchdog recovery in `PreviewStartupWatchdogController`.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns preview-
   startup loading overlay presentation while the app waits for visual
   confirmation: ProgressRing activation, fade-in/fade-out routing, and the
   reinit-collapse opacity reset. It also owns preview reinit animation state and
-  completion presentation decisions. `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
+  completion presentation decisions. `Sussudio/MainWindow.Composition.cs`
   is the XAML-facing adapter.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize log throttling and reset state.
-  `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` wires renderer-host
+  `Sussudio/MainWindow.Composition.cs` wires renderer-host
   context callbacks, the XAML-facing `SizeChanged` adapter, renderer-host reset
   handoff, renderer start/stop/shutdown, and reinit-unsafe-window adapters;
   reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.cs`;
@@ -2070,14 +2070,14 @@ Primary current owners:
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in
   `CaptureOptionBindingController`.
-- `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing
+- `Sussudio/MainWindow.Composition.cs` is the XAML-facing
   shell property-change adapter.
   `Sussudio/Controllers/Shell/ShellChromeController.cs` owns the shell
   property-change route order across `StatsOverlayCompositionController` and
   `SettingsShelfController`; stats visibility behavior still lives in the stats
   composition controller, while settings visibility behavior lives with shell
   chrome in `ShellChromeController`.
-- `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing live signal
+- `Sussudio/MainWindow.Composition.cs` is the XAML-facing live signal
   adapter. `ShellChromeController.cs` owns live source-signal property-change
   routing and pill presentation.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns
@@ -2098,7 +2098,7 @@ Primary current owners:
   control-bar label breakpoint, narrow/wide placement policy, responsive
   visibility for the complete control-bar label set, and capture-settings grid
   placement to XAML elements beside shell chrome animation/status/title owners.
-  `MainWindow.ShellChrome.Composition.cs` is the XAML-facing adapter.
+  `MainWindow.Composition.cs` is the XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns
   the capture-selection binding controller shell, context lifetime, XAML
   control dependency bag, capture/audio/microphone/encoder collection source
@@ -2514,7 +2514,7 @@ Refactor direction:
   live in `MainWindow.xaml.cs` with construction and controller initialization
   order, while behavior remains in named Flashback controllers. The preview-startup and
   preview-transition adapter family is consolidated in
-  `MainWindow.PreviewLifecycle.Composition.cs`; start the next UI cleanup from
+  `MainWindow.Composition.cs`; start the next UI cleanup from
   remaining broad adapters not covered by controller ownership tests.
 - Keep `MainViewModel` as a compatibility facade while moving feature state to
   capture, recording, audio, Flashback, diagnostics, and automation adapters.

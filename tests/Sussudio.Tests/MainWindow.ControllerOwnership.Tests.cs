@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -125,7 +125,7 @@ static partial class Program
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewLifecycle.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
             "preview reinit adapter lives in the preview transitions composition partial");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
@@ -856,7 +856,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
         var mainWindowText = ReadMainWindowCompositionSource();
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -1346,7 +1346,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
     internal static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
     {
-        var windowText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
+        var windowText = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
             .Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
             .Replace("\r\n", "\n");
@@ -1457,7 +1457,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
             "settings shelf adapter lives in the shell chrome composition partial");
         AssertEqual(
             false,
@@ -1783,7 +1783,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewLifecycle.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
             "preview audio fade adapter lives in the preview transitions composition partial");
         AssertContains(mainWindowText, "InitializeAudioControlBindingController();");
         AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
@@ -1868,7 +1868,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(mainWindowText, "InitializePreviewButtonActionController();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewLifecycle.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
             "preview button action adapter lives in the preview transitions composition partial");
         AssertContains(actionControllerText, "internal sealed class PreviewButtonActionController");
         AssertEqual(

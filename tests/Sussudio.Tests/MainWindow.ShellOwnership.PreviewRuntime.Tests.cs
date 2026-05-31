@@ -7,7 +7,6 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadMainWindowCompositionSource();
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
@@ -41,8 +40,8 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
         AssertDoesNotContain(previewRendererText, "Interlocked.Read(ref _previewLastResizeLogTick)");
         AssertDoesNotContain(previewRendererText, "Logger.Log(\"Preview resize active.");
-        AssertDoesNotContain(closeLifecycleText, "private void MainWindow_SizeChanged(");
-        AssertDoesNotContain(closeLifecycleText, "_previewLastResizeLogTick");
+        AssertDoesNotContain(shutdownCleanupControllerText, "private void MainWindow_SizeChanged(");
+        AssertDoesNotContain(shutdownCleanupControllerText, "_previewLastResizeLogTick");
 
         return Task.CompletedTask;
     }
@@ -539,12 +538,12 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
             "preview runtime DTO folded into AutomationRuntimeModels.cs");
-        AssertContains(agentMapText, "MainWindow.PreviewLifecycle.Composition.cs");
+        AssertContains(agentMapText, "MainWindow.Composition.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
         AssertContains(agentMapText, "health input factory");
-        AssertContains(cleanupPlanText, "MainWindow.PreviewLifecycle.Composition.cs");
+        AssertContains(cleanupPlanText, "MainWindow.Composition.cs");
         AssertContains(cleanupPlanText, "surface/frame");
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");

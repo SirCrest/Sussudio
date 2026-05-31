@@ -8,15 +8,15 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var nativeWindowText = ReadMainWindowShellChromeAdapterSource();
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
         var nativeBootstrapOwner = "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs";
 
         AssertContains(agentMapText, nativeBootstrapOwner);
         AssertContains(cleanupPlanText, nativeBootstrapOwner);
-        AssertContains(agentMapText, "Sussudio/MainWindow.ShellChrome.Composition.cs");
-        AssertContains(cleanupPlanText, "Sussudio/MainWindow.ShellChrome.Composition.cs");
+        AssertContains(agentMapText, "Sussudio/MainWindow.Composition.cs");
+        AssertContains(cleanupPlanText, "Sussudio/MainWindow.Composition.cs");
         AssertContains(agentMapText, "owns native window");
         AssertContains(cleanupPlanText, "DWM cloak/dark-mode setup");
         AssertContains(agentMapText, "first-composed-frame");
@@ -47,7 +47,7 @@ static partial class Program
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();");
         AssertEqual(
             true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ShellChrome.Composition.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
             "native window adapter lives in the shell chrome composition partial");
         AssertEqual(
             false,
@@ -120,7 +120,7 @@ static partial class Program
         {
             "Sussudio/Controllers/Window/WindowCloseLifecycleController.cs",
             "Sussudio/Controllers/Window/WindowAutomationController.cs",
-            "Sussudio/MainWindow.ShellChrome.Composition.cs",
+            "Sussudio/MainWindow.Composition.cs",
             "Sussudio/MainWindow.xaml.cs",
         };
 
@@ -163,7 +163,7 @@ static partial class Program
 
     internal static Task MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing()
     {
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var appClosingControllerText = closeLifecycleControllerText;
         var closeRequestControllerText = closeLifecycleControllerText;
@@ -268,7 +268,7 @@ static partial class Program
     {
         var windowCtorText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
             .Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs")
             .Replace("\r\n", "\n");
@@ -310,7 +310,7 @@ static partial class Program
 
     internal static Task MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy()
     {
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadMainWindowCompositionSource();
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");

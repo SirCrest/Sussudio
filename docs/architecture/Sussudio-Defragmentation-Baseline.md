@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: MainWindow composition adapter locality
+Problem: `MainWindow.ShellChrome.Composition.cs` and `MainWindow.PreviewLifecycle.Composition.cs` were the two remaining XAML-facing MainWindow controller-adapter partials after shell, window, preview, fullscreen, stats, launch, and close behavior had already moved into named controllers. The adapters cross-called during launch entrance, preview renderer/startup/reinit, fullscreen, stats snapshots, screenshots, automation, and shutdown, so reviewing one MainWindow composition surface still required two partial files before reaching the real behavior owners.
+Files consolidated: `Sussudio/MainWindow.ShellChrome.Composition.cs`; `Sussudio/MainWindow.PreviewLifecycle.Composition.cs`
+Files added: `Sussudio/MainWindow.Composition.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `MainWindow` production partial count 3 -> 2; generated baseline production `.cs` count 197 -> 196
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MainWindow"` passed (23 passed); stale combined-adapter ownership assertion was adjusted and focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PreviewResizeTelemetry|FullyQualifiedName~MainWindow"` passed (24 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture/preview/recording/Flashback/HDR behavior, or hot-path runtime code changed.
+Behavior preserved: native shell bootstrap, `_hwnd` handoff, window automation/screenshot adapters, launch entrance and loaded adapters, settings shelf/status/title/live-signal/stats shell adapters, fullscreen adapters, preview renderer host start/stop/shutdown/reinit adapters, preview resize telemetry, preview surface/shadow callbacks, preview runtime snapshot sampling, preview startup/session/signal/watchdog projections, preview audio fade, preview button action/presentation, transition/reinit callbacks, and close lifecycle adapters keep the same method names and controller delegation while living in `Sussudio/MainWindow.Composition.cs`.
+Notes for future agents: keep MainWindow's XAML-facing controller-adapter glue in `Sussudio/MainWindow.Composition.cs` while the actual shell, window, preview, fullscreen, stats, launch, recording, capture, audio, and Flashback behavior remains in named controllers and `MainWindow.xaml.cs` owns the root event/property-change envelope. Split the composition file again only if a new adapter surface gains an independent controller lifecycle or test fixture rather than because of line count alone.
+Current file/LoC checkpoint: core app `.cs`: 146 / 89,745 nonblank LoC; tests `.cs`: 100 / 56,103 nonblank LoC.
+
+Date: 2026-05-31
 Area: architecture-doc reference helper locality
 Problem: `ArchitectureDocs.MarkdownReferenceHelpers.cs` was a helper-only `Program` partial with no xUnit entry points, used only by `ArchitectureDocs.ReferenceIntegrity.Tests.cs` for AGENT_MAP, cleanup-plan, migration-plan, and literal path reference checks. Reviewing docs-reference validation still required opening a separate support shard before returning to the executable owner, even though the merged owner remains under the large-file review threshold.
 Files consolidated: `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs`
