@@ -881,6 +881,14 @@ public sealed class PresentationPreviewMainWindowInitialContractsTests
     [Fact]
     public Task PropertyChangedRoutingDelegatesToFocusedControllers()
         => global::Program.MainWindowPropertyChangedRouting_DelegatesToFocusedControllers();
+
+    [Fact]
+    public Task StatsOverlayLifecycleLivesInController()
+        => global::Program.StatsOverlayLifecycle_LivesInController();
+
+    [Fact]
+    public Task StatsSectionChromeLivesInFocusedPartial()
+        => global::Program.StatsSectionChrome_LivesInFocusedPartial();
 }
 
 public sealed class PresentationPreviewRuntimeShellContractsTests

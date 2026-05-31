@@ -21,8 +21,9 @@ add xUnit alongside, and port incrementally.
   ported RecordingStats value-contract check.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface
   checks, including the bool/visibility converter wrapper class.
-- `StatsOverlay.Lifecycle.Tests.cs` now owns xUnit source-contract checks for
-  stats overlay lifecycle and section chrome wiring. The remaining stats
+- `MainWindow.ControllerOwnership.Tests.cs` owns source-contract checks for
+  stats overlay lifecycle and section chrome wiring, with xUnit wrappers in
+  `XUnit.PresentationPreviewContractsTests.cs`. The remaining stats
   presentation checks still migrate incrementally from the legacy catalog.
 - `XUnit.StatsPresentation.Formatting.Tests.cs` owns the former legacy
   detached-window, encoder formatting, expected-display-repeat, compact preview

@@ -2014,8 +2014,9 @@ empty state, group headers, row rendering, lifecycle, sizing, polling,
 controller composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
 diagnostic row pooling contract checks now live in two focused owners:
-`tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` covers overlay
-lifecycle and section chrome, while
+`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` covers overlay
+lifecycle and section chrome through the MainWindow controller ownership
+surface, while
 `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` covers dock
 presentation application, diagnostic rows, hardware rows, row chrome pooling,
 stats presentation ownership, source telemetry panel projection checks, and

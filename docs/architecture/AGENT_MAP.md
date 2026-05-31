@@ -1088,8 +1088,10 @@ Primary current owners:
   targets, and section chrome commands; stats provider/controller context
   contracts and provider/controller composition live in
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
-- `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs` owns xUnit contract
-  checks for stats overlay lifecycle wiring and stats section chrome.
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns contract
+  checks for stats overlay lifecycle wiring and stats section chrome through
+  the MainWindow controller ownership surface; xUnit wrappers for those facts
+  live in `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
 - `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` owns xUnit
   contract checks for stats presentation formatting plus stats dock refresh
   orchestration, diagnostic row update delegation, hardware row projection,

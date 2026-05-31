@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: Stats overlay lifecycle test locality
+Problem: `StatsOverlay.Lifecycle.Tests.cs` was a small direct xUnit shard for stats overlay lifecycle and section chrome wiring, while the adjacent `MainWindow.ControllerOwnership.Tests.cs` parent already owned MainWindow controller adapter/source-shape contracts and `XUnit.PresentationPreviewContractsTests.cs` already exposed that contract surface to xUnit. Reviewing MainWindow stats overlay ownership still required opening a separate small test file with duplicated source-reader/assert helper plumbing.
+Files consolidated: `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; test `.cs` count 103 -> 102
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~StatsOverlay|FullyQualifiedName~PresentationPreviewMainWindowInitialContractsTests|FullyQualifiedName~MainWindowPropertyChangedRouting"` passed (7 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
+CLI/MCP/pipe checks, if applicable: not applicable; no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed.
+Behavior preserved: `StatsOverlayLifecycle_LivesInController` and `StatsSectionChrome_LivesInFocusedPartial` still assert the same MainWindow stats overlay adapter/controller ownership and section chrome wiring; they now live in `MainWindow.ControllerOwnership.Tests.cs` and are exposed through `XUnit.PresentationPreviewContractsTests.cs`.
+Notes for future agents: keep MainWindow stats overlay lifecycle and section chrome source-shape checks with the broader MainWindow controller ownership test parent unless the stats overlay gains an independent fixture or runtime seam; keep stats presentation/dock formatting behavior in `XUnit.StatsPresentation.Formatting.Tests.cs`.
+Current file/LoC checkpoint: core app `.cs`: 147 / 89,754 nonblank LoC; tests `.cs`: 102 / 56,114 nonblank LoC.
+
+Date: 2026-05-31
 Area: Unified capture frame-ledger locality
 Problem: `FrameLedger.cs` was a 215-line capture helper used by the single live source-session owner, while `UnifiedVideoCapture.cs` already owned frame arrival, preview/recording/Flashback fan-out, frame-ledger recording calls, and frame-ledger summary projection. Reviewing frame routing evidence still required opening a tiny sidecar even though the helper had no independent production collaborator boundary.
 Files consolidated: `Sussudio/Services/Capture/FrameLedger.cs`
