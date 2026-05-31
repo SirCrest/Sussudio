@@ -1834,16 +1834,15 @@ Primary current owners:
   segment-open recovery, near-live snap, snap-live identity cleanup,
   pause-from-live display, paused nudge, live-preview transition, audio guard,
   audio-master projection/source ownership, fMP4 reopen, seek-display, seek
-  recovery, in/out marker API, normalization, disposal, and marker clamp tests.
+  recovery, in/out marker API, normalization, disposal, marker clamp,
+  frame-duration, decoded-PTS cadence projection/telemetry, decode metrics
+  reset/projection, decoded-frame submit-failure, preview frame submission,
+  held-frame ownership, and live-recovery ownership tests.
 - `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns
   Flashback playback command queue capacity/drop-oldest, scrub-coalescing
   source ownership, seek-slot barrier/failure behavior, playback thread
   recovery, command dispatch, thread lifecycle, and command telemetry
   coverage.
-- `tests/Sussudio.Tests/Flashback.Playback.Frames.Tests.cs` owns Flashback
-  playback frame-duration, decoded-PTS cadence projection/telemetry, decode
-  metrics reset/projection, decoded-frame submit-failure, preview frame
-  submission, held-frame ownership, and live-recovery ownership tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for the former legacy Flashback playback startup,
   command-queue, source-shape, cadence, submission, reopen, transition-guard,
