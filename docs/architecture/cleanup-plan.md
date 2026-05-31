@@ -3428,7 +3428,7 @@ owner, fold it back into that owner and update the source-shape tests and
     resolution dropdown mutation through graph-built context ports. Effective Source resolution state and
     state-backed delegates to the pure selection policy live in
     `MainViewModel.CaptureSelection.cs`.
-    Automatic resolution ranking and source-aware frame-rate selection now
+   Automatic resolution ranking and source-aware frame-rate selection now
     live in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`; auto-resolution
     display text used by status and telemetry presentation lives in
     `MainViewModel.cs`.
@@ -3436,11 +3436,10 @@ owner, fold it back into that owner and update the source-shape tests and
    owns xUnit execution for the resolution-selection ownership and behavior
    checks after their removal from the legacy presentation-preview capture catalog.
    Pure resolution selection policy now lives in
-   `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs`: source-aware
-   matching, HDR retarget/support-hint selection, SDR auto/fallback selection,
-   parsing, frame-rate support checks, nearest-resolution ranking, and the
-   request/result records stay together because callers need that cohesive
-   policy to understand resolution retargeting behavior.
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`: source-aware matching,
+   HDR retarget/support-hint selection, SDR auto/fallback selection, parsing,
+   frame-rate support checks, nearest-resolution ranking, and the request/result
+   records stay together with the broader pure ViewModel selection-policy owner.
    Resolution and frame-rate selection harness coverage lives in
    `MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`, which
    owns source-shape placement assertions plus HDR, SDR, auto-capture,

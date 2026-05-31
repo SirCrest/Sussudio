@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-31T17:10:03Z
+Generated UTC: 2026-05-31T17:32:45Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 184 |
+| Production .cs files | 183 |
 | Test .cs files | 83 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (1.1%) |
@@ -62,17 +62,17 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1193 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 1186 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
+| 1166 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1144 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
 | 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 1086 | Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs |
 | 1065 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
-| 1055 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
 | 1055 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
-| 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
+| 1055 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
 | 1054 | tools/ssctl/CommandHandlers.cs |
+| 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 1053 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
 | 1042 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
-| 1034 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
 
 ## Sample production files under 60 lines
 

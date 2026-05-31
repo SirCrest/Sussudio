@@ -14,7 +14,7 @@ static partial class Program
         var resolutionOptionRebuildControllerText = captureModeOptionsControllerText;
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var autoCaptureSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
-        var helperText = ReadRepoFile("Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs").Replace("\r\n", "\n");
+        var helperText = autoCaptureSelectionPolicyText;
 
         AssertContains(captureModeTransactionsText, "private void RebuildResolutionOptions()");
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildResolutionOptions();");
@@ -50,6 +50,8 @@ static partial class Program
             "MainViewModel auto resolution selection adapter partial");
         AssertContains(autoCaptureSelectionPolicyText, "internal sealed record AutoCaptureSelection(");
         AssertContains(autoCaptureSelectionPolicyText, "internal sealed record AutoCaptureSelectionRequest(");
+        AssertContains(autoCaptureSelectionPolicyText, "internal static class CaptureModeOptionsBuilder");
+        AssertContains(autoCaptureSelectionPolicyText, "internal static class CaptureFormatSelectionPolicy");
         AssertContains(autoCaptureSelectionPolicyText, "internal static class AutoCaptureSelectionPolicy");
         AssertContains(autoCaptureSelectionPolicyText, "internal static AutoCaptureSelection? Select(AutoCaptureSelectionRequest request)");
         AssertContains(autoCaptureSelectionPolicyText, "private static ResolutionOption? SelectBestResolutionCandidate(");
@@ -110,6 +112,10 @@ static partial class Program
         AssertDoesNotContain(helperText, "AvailableResolutions.Clear();");
         AssertDoesNotContain(helperText, "OnPropertyChanged(");
         AssertDoesNotContain(helperText, "SelectedResolution =");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.cs")),
+            "resolution selection policy folded into ViewModelSelectionPolicies.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureResolutionSelectionPolicy.Source.cs")),

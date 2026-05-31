@@ -1130,9 +1130,13 @@ Primary current owners:
   `Sussudio/ViewModels/StatsSnapshot.cs` owns the UI stats snapshot DTO plus
   capture-health, renderer, and shell view-state projection into that DTO after
   acquisition.
-- `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure resolution and
-  video-format option construction, HDR mode enablement, and source aspect-ratio
-  filtering. Shell files bind and display those options.
+- `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure capture option
+  construction and ViewModel selection policies: resolution/video-format option
+  construction, HDR mode enablement, source aspect-ratio filtering,
+  source-aware resolution matching, HDR support hints, SDR auto/fallback,
+  selected-format choice, audio endpoint fallback, and late device-format
+  retarget decisions. Shell/controller files bind, mutate, or apply those
+  policy results.
 - `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` owns
   detached-window, dock encoder, display-repeat visual-cadence, compact preview
   summary, frame-time range, frame-time graph geometry behavior checks, stats
@@ -2395,12 +2399,11 @@ Primary current owners:
   `MainViewModel.CaptureSelection.cs` owns effective Source resolution state
   and state-backed delegates to the pure selection policy.
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns automatic resolution
-  ranking and source-aware frame-rate selection.
-  `Sussudio/ViewModels/CaptureResolutionSelectionPolicy.cs` owns the pure
-  resolution selection policy: source-telemetry-aware resolution matching, HDR
-  frame-rate-preserving retarget and support-hint selection, SDR auto/fallback
-  resolution selection, parsing, frame-rate support checks, nearest-resolution
-  ranking, and the policy request/result records.
+  ranking, source-aware frame-rate selection, and the pure resolution selection
+  policy: source-telemetry-aware resolution matching, HDR frame-rate-preserving
+  retarget and support-hint selection, SDR auto/fallback resolution selection,
+  parsing, frame-rate support checks, nearest-resolution ranking, and the
+  policy request/result records.
   State-backed capability queries for callers that live across the ViewModel
   partial family stay in `MainViewModel.CaptureSelection.cs`; observable
   resolution dropdown mutation routes through the top-level
