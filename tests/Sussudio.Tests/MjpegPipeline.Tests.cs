@@ -336,7 +336,7 @@ static partial class Program
 
     internal static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
     {
-        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
+        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/CaptureCadenceTrackers.cs").Replace("\r\n", "\n");
         var tracker = CreateInstance("Sussudio.Services.Capture.FrameFingerprintCadenceTracker");
         var trackerType = tracker.GetType();
         var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
@@ -387,13 +387,17 @@ static partial class Program
         AssertContains(trackerSource, "public Metrics GetMetrics(int maxRecentSamples = 180)");
         AssertContains(trackerSource, "private static double[] BuildRecentUniqueIntervals(");
         AssertContains(trackerSource, "private static string ResolvePattern(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "FrameFingerprintCadenceTracker.cs")),
+            "packet hash cadence tracker folded into CaptureCadenceTrackers.cs");
 
         return Task.CompletedTask;
     }
 
     internal static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
-        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
+        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/CaptureCadenceTrackers.cs").Replace("\r\n", "\n");
         var captureSource = ReadUnifiedVideoCaptureSource();
 
         AssertContains(trackerSource, "internal sealed class VisualCadenceTracker");
@@ -434,6 +438,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "VisualCadenceTracker.Metrics.cs")),
             "old visual cadence metrics partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "VisualCadenceTracker.cs")),
+            "visual cadence tracker folded into CaptureCadenceTrackers.cs");
 
         AssertContains(captureSource, "previewFrameProbe: null");
         AssertContains(captureSource, "frame.ArrivalTick");

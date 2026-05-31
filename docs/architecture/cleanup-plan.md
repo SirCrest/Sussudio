@@ -1833,19 +1833,17 @@ start/stop, preview-reinit disposal, CPU MJPEG pipeline construction and stop
 retention, preview jitter buffer setup/teardown, and capture/MJPEG fatal-error
 callbacks there.
 
-Decoded visual-cadence frame ingestion now lives in
-`Sussudio/Services/Capture/VisualCadenceTracker.cs`. Keep state, reset, frame
-validation, output/change ingestion, repeat-run bookkeeping, luma sampling,
-crop selection, one-pass current-vs-previous comparison, sample-buffer
-promotion, rolling sample writes, elapsed-time conversion, metrics DTO
-construction, ring-buffer snapshot copying, delta/output/change statistics, and
-motion-confidence labels there.
-
-Source-packet fingerprint cadence ingestion now lives in
-`Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs`. Keep frame
-recording, duplicate-run counters, fast packet hashing, metrics DTO
-construction, ring-buffer snapshot copying, unique-interval projection,
-duplicate-percent statistics, and pattern labels there.
+Capture cadence tracker ingestion now lives in
+`Sussudio/Services/Capture/CaptureCadenceTrackers.cs`. Keep
+`VisualCadenceTracker` state, reset, frame validation, output/change ingestion,
+repeat-run bookkeeping, luma sampling, crop selection, one-pass
+current-vs-previous comparison, sample-buffer promotion, rolling sample writes,
+elapsed-time conversion, metrics DTO construction, ring-buffer snapshot copying,
+delta/output/change statistics, and motion-confidence labels there. Keep
+`FrameFingerprintCadenceTracker` frame recording, duplicate-run counters, fast
+packet hashing, metrics DTO construction, ring-buffer snapshot copying,
+unique-interval projection, duplicate-percent statistics, and pattern labels in
+the same cadence tracker owner.
 
 MJPEG preview jitter-buffer metrics, decoded-frame queue ingress, and frame pacing now live in
 `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` with the root lifecycle

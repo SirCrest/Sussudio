@@ -31,7 +31,7 @@ mentions the moved files.
 | Native XU KS bridge | `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` | KS category constants and DTOs, SetupAPI interface enumeration, file-handle open policy, topology node parsing, XU GET/SET transfer helpers, P/Invoke declarations and structs; shared 4K X identity/selected-interface/transport-gate support |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.Initialization.cs`, `MfSourceReaderVideoCapture.FrameDelivery.cs`, `MfSourceReaderVideoCapture.Negotiation.cs`, `MfSourceReaderVideoCapture.ComContracts.cs` | source-reader state, public counters, shared packed-frame sizing/stride/subtype helpers, active reader start/stop/dispose plus Media Foundation read loop and source cadence metrics, initialization orchestration, reader construction, actual-output reconciliation, initialized runtime-state commit, sample-to-frame dispatch, compressed MJPG extraction, raw CPU frame extraction, 2D buffer handling, packed-stride CPU copies, DXGI texture extraction, dual GPU/CPU delivery orchestration, and debug-only COM diagnostics, direct device opening, device-enumeration open fallback and candidate reporting, native media-type selection, and converted output media-type construction, general Media Foundation COM interface definitions plus MF P/Invoke/constants/GUIDs, and flattened sample/buffer COM interface definitions |
 | Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs`, `UnifiedVideoCapture.FrameIngress.cs` | public control/config surface, source-reader/D3D/MJPEG initialization and state commit, shared source-reader start/stop/dispose lifecycle plus CPU MJPEG stop/dispose/fatal handling, source-reader frame ingress, preview submission, visual-cadence handling, fatal-error signaling, recording and Flashback sink queue fan-out, and diagnostic metric/snapshot projection |
-| Capture cadence trackers | `Sussudio/Services/Capture/FrameFingerprintCadenceTracker.cs`, `Sussudio/Services/Capture/VisualCadenceTracker.cs` | source-packet hash cadence ingestion and duplicate-pattern metrics/statistics; visual-cadence state, frame-ingest orchestration, decoded-frame luma sampling/crop comparison, and metrics DTO construction/statistics/motion-confidence projection |
+| Capture cadence trackers | `Sussudio/Services/Capture/CaptureCadenceTrackers.cs` | source-packet hash cadence ingestion and duplicate-pattern metrics/statistics; visual-cadence state, frame-ingest orchestration, decoded-frame luma sampling/crop comparison, and metrics DTO construction/statistics/motion-confidence projection |
 | Audio capture | `Sussudio/Services/Audio/WasapiAudioCapture.cs` | WASAPI state, endpoint binding/format negotiation/AudioClient startup, start/stop/dispose lifecycle, initialization-time metric resets, callback/glitch metric projection, capture thread/packet drain, WASAPI sample decode, f32le 48 kHz stereo conversion/resampling, pooled converted-packet buffers, converted-packet sink/playback/hot writer fan-out, and hot writer task-completion enforcement |
 | Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | playback state, render endpoint binding/format validation/AudioClient startup, start/stop/pause/resume/flush/dispose lifecycle, chunk queue, pooled-sample ingress, buffered-duration accounting, render-thread callback/prebuffer/buffer-fill execution, render-side PTS advancement, volume ramps, and output-level telemetry |
 | WASAPI interop | `Sussudio/Services/Audio/WasapiComInterop.cs` | native constants/P/Invokes, COM release helpers, format allocation/parsing, device enumerator and endpoint volume helpers, debounced endpoint-change watcher, AudioClient activation/AudioClient3 initialization, shared audio format/PROPVARIANT structs, Core Audio device/property contracts, and AudioClient/capture/render/endpoint-volume contracts |
@@ -644,14 +644,14 @@ Important entry points:
 - `UnifiedVideoCapture.cs` also owns source-reader cadence forwarding, MJPEG
   pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
   summary projection over the root capture fan-out state.
-- `FrameFingerprintCadenceTracker.cs` owns source-packet hash cadence ingestion,
+- `CaptureCadenceTrackers.cs` owns the two capture cadence tracker types:
+  `FrameFingerprintCadenceTracker` for source-packet hash cadence ingestion,
   duplicate-run counters, fast packet hashing, duplicate-pattern metrics DTO
   construction, interval statistics, unique-interval projection, and pattern
-  labels.
-- `VisualCadenceTracker.cs` owns visual-cadence state, reset, frame validation,
-  output/change ingestion, repeat-run bookkeeping, decoded-frame luma sampling,
-  crop selection, sample-buffer promotion, rolling sample writes, stopwatch
-  elapsed-time conversion, metrics DTOs, snapshot construction,
+  labels; and `VisualCadenceTracker` for visual-cadence state, reset, frame
+  validation, output/change ingestion, repeat-run bookkeeping, decoded-frame
+  luma sampling, crop selection, sample-buffer promotion, rolling sample writes,
+  stopwatch elapsed-time conversion, metrics DTOs, snapshot construction,
   delta/output/change statistics, and motion-confidence labels.
 - `ParallelMjpegDecodePipeline.cs` owns construction, callback storage, channel
   creation, compressed input admission, startup invalid-MJPG drops, byte-budget
