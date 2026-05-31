@@ -1269,13 +1269,15 @@ Primary current owners:
   including MainViewModel source readers, member extraction, comment/string
   stripping, regex assertions, and token-order assertions used by capture,
   Flashback, automation, MCP, recording, stats, and docs tests.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.FrameRates.PolicyBehavior.Tests.cs`
-  owns frame-rate source-filter, automatic-selection, always-on capture-option,
-  timing-policy ownership assertions, automatic frame-rate choice, and pure
-  timing-policy behavior assertions.
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`
+  owns resolution-selection source-shape assertions for option rebuild,
+  auto-selection state, pure policy placement, and policy behavior assertions
+  including HDR and SDR source retarget behavior, plus frame-rate source-filter,
+  automatic-selection, always-on capture-option, timing-policy ownership,
+  automatic frame-rate choice, and pure timing-policy behavior assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
-  selection/timing catalog group.
+  selection/timing and resolution-selection catalog groups.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions plus compact selection-policy ownership assertions for
@@ -1283,10 +1285,6 @@ Primary current owners:
   recording format selection policy ownership. It also owns capture settings
   projection ownership assertions, including the focused frame-rate request
   projector used by `BuildCaptureSettings`.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
-  owns resolution-selection source-shape assertions for option rebuild,
-  auto-selection state, pure policy placement, and policy behavior assertions
-  including HDR and SDR source retarget behavior.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview MainWindow
   and adjacent selection/runtime guard catalog groups after their removal from
