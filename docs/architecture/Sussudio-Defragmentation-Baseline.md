@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: Flashback decoder xUnit test locality
+Problem: `Flashback.Decoder.Tests.cs` was the remaining legacy `Program` sidecar for Flashback decoder audio, timestamp, stream-bound, validation, lifetime, callback, source-shape, D3D11VA setup, support/logging, frame-buffer, source-ownership, frame-validation, and cancellation checks, while every executable fact already ran through `FlashbackDecoderContractsTests` in `XUnit.FlashbackContractsTests.cs`. Reviewing the decoder contracts still required opening a sidecar beside the xUnit parent.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Decoder.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` Flashback decoder test sidecar count -1; `Sussudio.Tests` `.cs` count 58 -> 57
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackDecoder|FullyQualifiedName~FlashbackContracts"` passed (38 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); current core app `.cs` count/LoC: 135 / 89,674; current test `.cs` count/LoC: 57 / 55,995.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves test method bodies and updates architecture ownership docs.
+Behavior preserved: `FlashbackDecoderContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.FlashbackDecoder_*` and `Program.FlashbackSuppressedExceptionsUseAppLogs` method names. Decoder audio unref behavior, MJPEG decode threading, timestamp helper locality, stream-bound guards, validation helpers, lifetime defaults, callback failure handling, D3D11VA source-shape assertions, support/logging checks, frame-buffer guards, cancellation behavior, and output DTO ownership assertions now live in `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs`.
+Notes for future agents: keep Flashback decoder xUnit wrappers and legacy helper methods in `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` while they share the Flashback decoder contract execution surface. Keep `Flashback.Tests.cs` as shared source-reader/helper support only; split again only if decoder checks gain an independent runtime fixture separate from xUnit contracts.
+
+Date: 2026-05-31
 Area: automation dispatcher root locality
 Problem: `AutomationCommandDispatcher.CustomCommands.cs` was the only remaining sidecar in the dispatcher partial family. It owned the downstream custom-command switch and multi-field command bodies that are entered directly from `AutomationCommandDispatcher.ExecuteAsync`, while the root file owned preflight, auth, payload helpers, response shaping, port-mapped dispatch, and the target-typed trivial-handler wrapper used by the same command pipeline. Reviewing automation command routing still required opening both files for one dispatcher owner.
 Files consolidated: `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
@@ -4129,7 +4141,7 @@ Partial clusters reduced: legacy `Program` Flashback decoder/support test partia
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: Flashback decoder open/close warning logs, D3D11VA discovery/setup fallback logs, and removed legacy D3D11 shard guards remain registered through `XUnit.FlashbackContractsTests`.
-Notes for future agents: keep Flashback decoder support/logging and D3D11VA source-shape contracts with `Flashback.Decoder.Tests.cs`; keep `Flashback.Tests.cs` as shared source-reader/helper support only.
+Notes for future agents: keep Flashback decoder support/logging and D3D11VA source-shape contracts with `XUnit.FlashbackContractsTests.cs`; keep `Flashback.Tests.cs` as shared source-reader/helper support only.
 
 Date: 2026-05-26
 Area: diagnostics refresh Flashback alert test locality
