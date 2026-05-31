@@ -1557,13 +1557,11 @@ Primary current owners:
   Flashback failure response, Flashback command placement, verification command
   placement, command-kind handling, dispatcher JSON payload extraction helper
   coverage, payload defaults, trivial-handler payload-field parity checks
-  against `AutomationCommandCatalog`, and the custom
-  `GetAudioRampTrace.maxEntries` metadata guardrail.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.ReadyIndependent.Tests.cs`
-  owns dispatcher readiness gating, ready-independent no-hardware command
-  coverage, window close, preview health, stale wait-refresh cadence guards,
-  UI automation readiness-independent coverage, and harness payload/fake device
-  support.
+  against `AutomationCommandCatalog`, the custom
+  `GetAudioRampTrace.maxEntries` metadata guardrail, dispatcher readiness
+  gating, ready-independent no-hardware command coverage, window close, preview
+  health, stale wait-refresh cadence guards, UI automation
+  readiness-independent coverage, and harness payload/fake device support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers plus automation command kind, catalog metadata, manifest,
   path-policy, reliability-gates contract checks, and the expected command-ID
