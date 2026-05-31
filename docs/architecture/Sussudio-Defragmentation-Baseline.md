@@ -3353,7 +3353,7 @@ Notes for future agents: superseded by the 2026-05-31 stats hardware row test lo
 
 Date: 2026-05-26
 Area: Flashback model xUnit helper locality
-Problem: `XUnit.FlashbackModels.PropertyAssertions.cs` only provided reflection/nullability helpers for `XUnit.FlashbackModelsTests.cs`. Reviewing the Flashback model contract suite still required opening a helper partial even though it was not shared outside that test class.
+Problem: `XUnit.FlashbackModels.PropertyAssertions.cs` only provided reflection/nullability helpers for the Flashback model xUnit contract suite. Reviewing the Flashback model contract suite still required opening a helper partial even though it was not shared outside that test class.
 Files consolidated: `tests/Sussudio.Tests/XUnit.FlashbackModels.PropertyAssertions.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
@@ -3361,7 +3361,7 @@ Partial clusters reduced: `FlashbackModelsTests` xUnit partial file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; xUnit helper consolidation only, no automation command names, IDs, or wire payloads changed
 Behavior preserved: Flashback buffer option sizing, session/playback/export DTO reflection checks, required/init-only/nullability assertions, property setters/backing-field helpers, enum-value assertions, and collection count helpers remain unchanged.
-Notes for future agents: keep Flashback model reflection helpers with `XUnit.FlashbackModelsTests.cs` while they are used only by that contract suite.
+Notes for future agents: keep Flashback model reflection helpers with the Flashback xUnit contract suite while they are used only by that contract surface.
 
 Date: 2026-05-26
 Area: snapshot model helper locality
@@ -6521,3 +6521,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, or HDR semantics intentionally changed; this slice only moves the internal shared queue telemetry helper.
 Behavior preserved: `VideoQueueLatencyTracker` keeps the same namespace, constructor, metric properties, enqueue/dequeue tracking, backpressure accounting, latency percentile calculation, sequence-gap counting, and reset behavior while living in `Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs`. LibAv and Flashback sink call sites remain unchanged.
 Notes for future agents: keep recording-style video queue admission, packet DTOs, queue cleanup, depth accounting, and shared queue latency/backpressure tracking in `LibAvRecordingSink.Queueing.cs` while the tracker depends on the same caller-held queue lock and queue-depth transition semantics. Split again only if it becomes a separately injected telemetry collaborator with its own fixture or non-recording consumer.
+
+Date: 2026-05-31
+Area: Flashback xUnit contract facade locality
+Problem: `XUnit.FlashbackModelsTests.cs` was the last separate Flashback xUnit facade outside `XUnit.FlashbackContractsTests.cs`. It owned model/DTO shape checks and private reflection/nullability helpers for the same Flashback contract review surface that already registered decoder, encoder sink, exporter, and playback contract wrappers. Reviewing Flashback xUnit coverage still required opening two facade files before reaching the focused behavior/source-shape owners.
+Files consolidated: `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; Flashback xUnit facade sidecar count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackModelsTests|FullyQualifiedName~FlashbackDecoderContractsTests|FullyQualifiedName~FlashbackEncoderSinkContractsTests|FullyQualifiedName~FlashbackExporterContractsTests|FullyQualifiedName~FlashbackPlaybackContractsTests"` passed (112 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 99 / 56,108.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed; this slice only moves xUnit test facade code and updates ownership docs.
+Behavior preserved: `FlashbackModelsTests` keeps the same xUnit class and `[Fact]` method names for buffer option sizing, playback state, session context, export progress, export segment, and export request DTO checks. The private reflection/nullability helpers now live in `XUnit.FlashbackContractsTests.cs` beside the other Flashback xUnit facade classes.
+Notes for future agents: keep Flashback model DTO xUnit checks, decoder contracts, encoder sink contracts, exporter contracts, and playback contracts in `XUnit.FlashbackContractsTests.cs` while they remain one registration facade over focused Flashback test owners. Add new detailed behavior coverage to the focused Flashback test files, not to a new one-purpose xUnit facade.

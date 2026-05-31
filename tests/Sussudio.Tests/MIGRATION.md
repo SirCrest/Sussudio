@@ -71,16 +71,13 @@ add xUnit alongside, and port incrementally.
   timing metric, stopwatch timeout, software decoder shape, pooled-frame
   lease/fan-out, preview jitter, cadence, queued lease-release, and xUnit
   execution-surface checks.
-- `XUnit.FlashbackModelsTests.cs` owns the former legacy Flashback buffer option
-  sizing, session, playback-state, export progress, export segment, and export
-  request model contract checks plus the shared reflection/nullability assertion
-  helpers for that suite.
 - `XUnit.FlashbackContractsTests.cs` owns the former legacy Flashback encoder
-  sink, playback, decoder, and exporter xUnit wrapper classes while preserving
-  their frame-rate, codec, queue, force-rotate, startup, command-queue,
-  source-shape, cadence, frame-buffer, state/lifetime, timestamp, audio,
-  in/out marker, request validation, segment, cancellation, output
-  path/finalization, and source-ownership checks.
+  sink, playback, decoder, exporter, and Flashback model xUnit classes while
+  preserving their buffer option sizing, session/playback/export DTO,
+  reflection/nullability helper, frame-rate, codec, queue, force-rotate,
+  startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
+  timestamp, audio, in/out marker, request validation, segment, cancellation,
+  output path/finalization, and source-ownership checks.
 - `Flashback.Playback.Reopen.Tests.cs` owns the former legacy Flashback
   playback fMP4 reopen, seek recovery, in/out marker API, normalization,
   disposal, and marker clamp checks.

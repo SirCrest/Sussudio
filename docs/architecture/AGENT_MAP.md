@@ -1689,9 +1689,10 @@ Primary current owners:
   checks, capture runtime failure/runtime-flag checks, and the large Flashback
   buffer manager behavior/source-ownership group.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
-  execution surface for the former legacy Flashback exporter, decoder,
-  playback, and encoder sink registration groups while preserving the same
-  test classes and method names.
+  execution surface for Flashback buffer option sizing, session/playback/export
+  DTO contracts, and the former legacy Flashback exporter, decoder, playback,
+  and encoder sink registration groups while preserving the same test classes
+  and method names.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for the former legacy NVML snapshot, CaptureSessionSnapshot
   default-state, and RTK I2C unsafe-native-path tool-contract checks.
@@ -1709,10 +1710,6 @@ Primary current owners:
   behavior, capture settings defaults, output path/file naming, bitrate policy,
   MJPEG HFR policy, recording selection policy, encoder support, and recording
   pipeline option xUnit contract checks.
-- `tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns xUnit coverage for
-  Flashback buffer option sizing, session, playback-state, export progress,
-  segment, request DTO contract tests, and their shared reflection/nullability
-  assertion helpers.
 - Focused capture session coordinator coverage lives in
   `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs` and
   `CaptureModels` files; API/model/source ownership checks include the

@@ -573,9 +573,6 @@ reflection helpers plus capture mode option, capture settings/MJPEG
 HFR/bitrate policy, MediaFormat equality/hash-code behavior, recording
 selection, encoder support, and recording pipeline option xUnit contract checks
 without scattering one contract surface across several wrapper files.
-`tests/Sussudio.Tests/XUnit.FlashbackModelsTests.cs` owns Flashback buffer
-option sizing behavior, DTO contracts, and the reflection/nullability assertion
-helpers for that xUnit contract surface.
 `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording contract
 DTO checks plus the former recording pipeline, recording-model, and
 core-runtime recording xUnit execution surfaces: recording queue, LibAv sink,
@@ -595,12 +592,14 @@ CPU MJPEG pipeline runtime checks now execute through
 cadence, pooled-frame, preview-jitter, and queued lease-release contracts in
 xUnit after their removal from the legacy harness catalog.
 Flashback xUnit wrapper checks now execute through
-`tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs`, keeping encoder sink,
-playback, decoder, and exporter registration classes together while preserving
-their frame-rate, codec, counter, queue, force-rotate, startup, command-queue,
-source-shape, cadence, frame-buffer, state/lifetime, timestamp, audio,
-request-validation, segment, cancellation, output path/finalization, and
-source-ownership contracts after their removal from the legacy harness catalog.
+`tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs`, keeping Flashback
+buffer option sizing behavior, DTO contracts, reflection/nullability helpers,
+encoder sink, playback, decoder, and exporter registration classes together
+while preserving their frame-rate, codec, counter, queue, force-rotate,
+startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
+timestamp, audio, request-validation, segment, cancellation, output
+path/finalization, and source-ownership contracts after their removal from the
+legacy harness catalog.
 Core runtime recording checks now execute through
 `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`, keeping recording
 verifier, LibAv encoder, Flashback integrity, shared formatter, and dedicated
