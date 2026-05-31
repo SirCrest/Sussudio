@@ -1198,18 +1198,16 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
   MainWindow source readers used by root, Flashback, preview, shell-chrome,
   capture-binding, and stats-overlay ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
-  owns automation recording routing through the shared transition gate and
-  recording runtime ownership assertions, recording start/stop failure
-  propagation assertions, recording-setting automation routing for Flashback
-  encoder cycles, emergency recording-stop dispatcher/coordinator routing
-  assertions, and bounded bitrate sample-window behavior assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
   the `IAutomationViewModel` async surface contract plus Flashback/probe
   dispatcher routing, UI-dispatch cancellation disposal assertions,
   automation audio/microphone command entry points, microphone monitor
-  suppression, preview-volume persistence, automation options surface, and
-  capture audio-monitoring coordinator surface and runtime-guard assertions.
+  suppression, recording transition routing through the shared transition gate,
+  recording runtime ownership assertions, recording-setting automation routing
+  for Flashback encoder cycles, emergency recording-stop dispatcher/coordinator
+  routing assertions, bounded bitrate sample-window behavior assertions,
+  preview-volume persistence, automation options surface, and capture
+  audio-monitoring coordinator surface and runtime-guard assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
   automation UI-setting persistence, frame-time/stat visibility contracts,
   capture-mode reinitialization, device refresh, device/audio-input selection

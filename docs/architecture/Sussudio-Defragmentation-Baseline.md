@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: MainViewModel automation recording test locality
+Problem: `MainViewModel.Automation.RecordingTransition.Tests.cs` was a small legacy `Program` partial for automation recording routing, recording-setting automation, emergency stop routing, and bitrate-window checks. The adjacent `MainViewModel.Automation.AsyncSurface.Tests.cs` parent already owned the `IAutomationViewModel` async surface, preview/recording port routing, automation command dispatch, UI-dispatch cancellation, audio command guards, and automation options/runtime snapshot checks, so reviewing automation recording behavior still required opening a second small sidecar.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` MainViewModel automation test partial count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationContractsTests|FullyQualifiedName~PresentationPreviewMainViewModelInitialContractsTests|FullyQualifiedName~PresentationPreviewCaptureRuntimeGuardContractsTests"` passed (5 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
+CLI/MCP/pipe checks, if applicable: not applicable; no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed.
+Behavior preserved: xUnit wrappers keep calling the same `Program` method names for recording transition routing, bitrate sample-window behavior, recording-setting automation, recording failure propagation, and emergency recording stop routing; those assertions now live with the broader MainViewModel automation async-surface contract parent.
+Notes for future agents: keep MainViewModel automation async surface, preview/recording port routing, recording transition gate assertions, recording settings automation routing, emergency stop routing, audio command guards, automation runtime snapshots, and automation options checks together in `MainViewModel.Automation.AsyncSurface.Tests.cs` while they share the same root automation facade and controller graph source readers.
+Current file/LoC checkpoint: core app `.cs`: 147 / 89,754 nonblank LoC; tests `.cs`: 101 / 56,108 nonblank LoC.
+
+Date: 2026-05-31
 Area: Stats overlay lifecycle test locality
 Problem: `StatsOverlay.Lifecycle.Tests.cs` was a small direct xUnit shard for stats overlay lifecycle and section chrome wiring, while the adjacent `MainWindow.ControllerOwnership.Tests.cs` parent already owned MainWindow controller adapter/source-shape contracts and `XUnit.PresentationPreviewContractsTests.cs` already exposed that contract surface to xUnit. Reviewing MainWindow stats overlay ownership still required opening a separate small test file with duplicated source-reader/assert helper plumbing.
 Files consolidated: `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs`
