@@ -898,8 +898,8 @@ failure drain, pending-command counter decrement policy, and dispose/drain/cance
 lifecycle for the worker queue and cancellation token source.
 Capture session coordinator API/command/snapshot contracts, focused
 source-ownership contracts, queue behavior, Flashback/cancellation behavior,
-transition policy, and shared reflection harness helpers now live in separate
-named files.
+transition policy, and shared reflection harness helpers now live in the
+coordinator API test owner.
 
 Device discovery ownership lives in `DeviceService.cs`. Keep capture/audio
 enumeration orchestration, the combined discovery result, device

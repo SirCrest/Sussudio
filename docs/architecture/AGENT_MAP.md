@@ -1760,11 +1760,11 @@ Primary current owners:
   segment, request DTO contract tests, and their shared reflection/nullability
   assertion helpers.
 - Focused capture session coordinator coverage lives in
-  `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`,
-  `CaptureSessionCoordinator.Ownership`, and `CaptureModels` files; API/model/
-  source ownership checks include the consolidated coordinator root, focused
-  Flashback coordinator partials, coordinator queue/cancellation/rejection
-  contracts, and shared reflective harness helpers.
+  `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs` and
+  `CaptureModels` files; API/model/source ownership checks include the
+  consolidated coordinator root, focused Flashback coordinator partials,
+  coordinator queue/cancellation/rejection contracts, and shared reflective
+  harness helpers.
 - `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
   reflection, frame factory, jitter-buffer factory, tracking pool helpers,
   pooled video frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and
