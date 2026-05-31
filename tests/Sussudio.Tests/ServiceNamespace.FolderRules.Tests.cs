@@ -61,10 +61,8 @@ static partial class Program
     {
         var serviceContractFiles = new[]
         {
-            "Sussudio/Services/Contracts/ServiceInterfaces.cs",
-            "Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs",
-            "Sussudio/Services/Contracts/RecordingContracts.cs",
-            "Sussudio/Services/Contracts/PooledVideoFrame.cs"
+            "Sussudio/Services/Contracts/ServiceContracts.cs",
+            "Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs"
         };
 
         foreach (var relativePath in serviceContractFiles)
@@ -105,16 +103,19 @@ static partial class Program
             AssertContains(agentMapText, "`" + relativePath + "`");
         }
 
-        var pooledVideoFrameText = ReadRepoFile("Sussudio/Services/Contracts/PooledVideoFrame.cs");
-        AssertContains(pooledVideoFrameText, "internal sealed class PooledVideoFrameLease : IDisposable");
+        var serviceContractsText = ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs");
+        AssertContains(serviceContractsText, "internal sealed class PooledVideoFrameLease : IDisposable");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "PooledVideoFrameLease.cs")),
             "pooled-frame leases live with the pooled frame owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "PooledVideoFrame.cs")),
+            "pooled-frame ownership types live with ServiceContracts");
 
-        var serviceInterfacesText = ReadRepoFile("Sussudio/Services/Contracts/ServiceInterfaces.cs");
-        AssertContains(serviceInterfacesText, "public interface IAutomationWindowControl");
-        AssertContains(serviceInterfacesText, "internal interface IPreviewFrameSink");
+        AssertContains(serviceContractsText, "public interface IAutomationWindowControl");
+        AssertContains(serviceContractsText, "internal interface IPreviewFrameSink");
         var sourceTelemetryProviderText = ReadRepoFile("Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs");
         AssertContains(sourceTelemetryProviderText, "public interface ISourceSignalTelemetryProvider");
         AssertContains(sourceTelemetryProviderText, "namespace Sussudio.Models");
@@ -125,12 +126,20 @@ static partial class Program
             "source telemetry DTOs live with the probe-linked telemetry provider contract");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "RecordingContracts.cs")),
+            "recording service contracts live with ServiceContracts");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "AutomationInterfaces.cs")),
-            "automation service interfaces live with ServiceInterfaces");
+            "automation service interfaces live with ServiceContracts");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "IPreviewFrameSink.cs")),
-            "preview sink service interface lives with ServiceInterfaces");
+            "preview sink service interface lives with ServiceContracts");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Contracts", "ServiceInterfaces.cs")),
+            "app service contract interfaces live with ServiceContracts");
 
         AssertContains(agentMapText, "separate from `Sussudio.Automation.Contracts` wire/protocol contracts");
     }

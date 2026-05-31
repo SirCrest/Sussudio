@@ -150,7 +150,7 @@ static partial class Program
     {
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
-        var contractsSource = ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs")
+        var contractsSource = ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs")
             .Replace("\r\n", "\n");
         var libAvSource = ReadLibAvRecordingSinkSource();
         var flashbackSource = ReadFlashbackEncoderSinkSource();

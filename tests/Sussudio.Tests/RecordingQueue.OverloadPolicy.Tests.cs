@@ -511,7 +511,7 @@ static partial class Program
         var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
         var captureSnapshotsSource = captureHealthSnapshotRootSource;
         var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
-        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Contracts/RecordingContracts.cs");
+        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs");
 
         return new RecordingQueueOverloadPolicySources(
             libAvSource,

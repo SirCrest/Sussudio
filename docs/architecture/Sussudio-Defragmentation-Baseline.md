@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: app service contract locality
+Problem: `Sussudio/Services/Contracts/ServiceInterfaces.cs`, `Sussudio/Services/Contracts/RecordingContracts.cs`, and `Sussudio/Services/Contracts/PooledVideoFrame.cs` were three small in-process service-contract files under the same app-service boundary. Reviewing automation window/diagnostics/command dispatch interfaces, preview frame tracking/sinks, recording context/finalize DTOs, frame encoder contracts, and pooled-frame lease ownership still required bouncing across sibling files with no independent runtime owner.
+Files consolidated: `Sussudio/Services/Contracts/ServiceInterfaces.cs`; `Sussudio/Services/Contracts/RecordingContracts.cs`; `Sussudio/Services/Contracts/PooledVideoFrame.cs`
+Files added: `Sussudio/Services/Contracts/ServiceContracts.cs`
+Net production .cs delta: -2; net test .cs delta: 0
+Partial clusters reduced: n/a; app service contract source files 4 -> 2 while preserving the probe-linked `ISourceSignalTelemetryProvider.cs` shared-source seam
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationContractsTests|FullyQualifiedName~RecordingContractsTests"` passed (54 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); diff checks passed; current core app `.cs` count/LoC: 139 / 89,701; current test `.cs` count/LoC: 81 / 56,050.
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: `IAutomationWindowControl`, `IAutomationDiagnosticsHub`, `IAutomationCommandDispatcher`, `PreviewFrameTracking`, `IPreviewFrameSink`, recording context/finalize DTOs, GPU/raw/CUDA/lease encoder contracts, `IRecordingSink`, `IRecordingVerifier`, `PooledVideoFrame`, and `PooledVideoFrameLease` keep the same namespaces, type names, members, defaults, comments, and ownership semantics while living in `ServiceContracts.cs`.
+Notes for future agents: keep automation/preview/recording in-process service contracts and pooled-frame ownership in `ServiceContracts.cs` while they remain one app-internal boundary. Keep `ISourceSignalTelemetryProvider.cs` separate while `NativeXuAudioProbe` links it as a minimal shared-source probe contract; do not fold it into broader app contracts unless the probe gains those dependencies intentionally.
+
+Date: 2026-05-31
 Area: Capture settings projection test locality
 Problem: `MainViewModel.Capture.SettingsProjection.Tests.cs` was a small legacy `Program` shard for capture settings projection ownership and frame-rate request precedence. The checks already depended on the capture selection-policy helper surface in `MainViewModel.Capture.SelectionPolicy.Tests.cs`, and their xUnit wrappers already live with the presentation-preview MainViewModel runtime contract group, so reviewing capture selection/settings policy still required opening a redundant sibling file.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
