@@ -756,7 +756,7 @@ public class RuntimeHelpersTests
 }
 
 // xUnit slice for three small contract / policy types that the legacy
-// reflection runner already covers (LoggingJsonContext.Tests.cs,
+// reflection runner already covers (XUnit.AutomationContractsTests.cs,
 // AutomationPipeSecurityPolicy reachable via Sussudio.Automation.Contracts,
 // DiagnosticThresholds covered indirectly through snapshot tests).
 // Lives here so each file is reachable through the xUnit discovery path too.

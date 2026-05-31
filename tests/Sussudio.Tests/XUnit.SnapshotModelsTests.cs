@@ -392,7 +392,7 @@ public partial class SnapshotModelsTests
 
     private static readonly Dictionary<Type, SnapshotPropertySpec[]> SnapshotPropertySpecsByType = new();
 
-    // LoggingJsonContext.Tests covers the production source-generated routing; this harness
+    // XUnit.AutomationContractsTests covers the production source-generated routing; this harness
     // validates the DTO reflection JSON shape because it loads the app in an isolated context.
     private static object ReflectionJsonRoundTrip(Type type, object value)
     {

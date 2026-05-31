@@ -636,7 +636,8 @@ policy, converter/display formatting, LoggingJsonContext, MainWindow automation
 surface, pipe/auth, Stream Deck auth-envelope, ViewModel/Flashback UI,
 dispatcher, capture/Flashback routing, snapshot projection, catalog/manifest,
 and diagnostics-loop checks in xUnit after their removal from the legacy
-harness catalog.
+harness catalog. The LoggingJsonContext source-generation payload checks also
+live in this xUnit owner instead of a standalone legacy `Program` sidecar.
 Presentation-preview MainViewModel checks now execute through
 `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`,
 keeping initial recording transition failure propagation, audio controls and
