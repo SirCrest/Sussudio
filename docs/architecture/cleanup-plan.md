@@ -450,17 +450,13 @@ startup, Flashback export locking, Flashback coordinator/UI routing, Flashback
 backend lifecycle, capture selection policy, output path, audio monitoring,
 reinitialization, and Flashback frame-rate/enable-disable owner files.
 
-`tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its `SnapshotModels.*`
-partials now own the snapshot-model xUnit contract suite. Snapshot model
-coverage is split into CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
-SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source telemetry
-automation projection owner files. AutomationSnapshot CPU MJPEG and
-AutomationOptions DTO checks are ported into the same partial family, with
-shared reflection/spec helpers kept there. AutomationSnapshot metric-shape
-checks are split by DTO surface across capture cadence, CPU/MJPEG timing,
-MJPEG preview jitter, MJPEG packet hash, preview diagnostics, capture commands,
-recording, Flashback recording/backend, Flashback playback, Flashback export,
-and visual cadence owner files.
+`tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the snapshot-model
+xUnit contract suite. Snapshot model coverage for CaptureDiagnosticsSnapshot,
+CaptureHealthSnapshot, SourceSignalTelemetrySnapshot,
+SourceTelemetryDetailEntry, source telemetry automation projection,
+AutomationSnapshot metric-shape bands, and AutomationOptions DTO shape checks
+now lives in that single suite with shared reflection/spec helpers beside the
+facts that use them.
 
 `Sussudio/Models/Automation/AutomationSnapshot.cs` owns the flattened
 automation snapshot DTO properties for app, capture, audio, preview, recording,

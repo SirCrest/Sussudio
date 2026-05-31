@@ -1356,27 +1356,17 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns
   MediaFormat equality/hash-code checks alongside the broader capture
   configuration model contract surface.
-- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` and its
-  `SnapshotModels.*` partials own the xUnit snapshot-model contract suite.
-  `XUnit.SnapshotModelsTests.cs` owns shared snapshot-model spec DTOs and
+- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the xUnit
+  snapshot-model contract suite. It keeps shared snapshot-model spec DTOs,
   registration state, reflection JSON round-trip, registered-property coverage,
-  property-list, nullability, and helper assertion methods.
-- `tests/Sussudio.Tests/SnapshotModels.Automation.Tests.cs` owns xUnit
-  AutomationSnapshot and AutomationOptions DTO shape checks for CPU MJPEG,
-  MJPEG preview, preview diagnostics, capture-command/cadence, recording,
-  Flashback recording/playback/export, visual cadence, and advanced
-  control-state options.
-  It also owns the CPU MJPEG property-list contract plus shared
-  AutomationSnapshot property assertions used by the metric-shape checks.
-- `tests/Sussudio.Tests/SnapshotModels.CaptureDiagnostics.Tests.cs` owns xUnit
-  CaptureDiagnosticsSnapshot property spec, default, round-trip, reflection
-  JSON, and MJPEG source-ownership checks.
-- `tests/Sussudio.Tests/SnapshotModels.CaptureHealth.Tests.cs` owns xUnit
-  CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts: property
-  specs, defaults/inheritance, populated round-trip fixture, direct assertions,
-  reflection JSON assertions, and source-shape checks.
-- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the
-  SourceSignalTelemetrySnapshot and source telemetry automation projection
+  property-list, nullability, and helper assertion methods beside the facts
+  that use them. It also owns AutomationSnapshot and AutomationOptions DTO
+  shape checks for CPU MJPEG, MJPEG preview, preview diagnostics,
+  capture-command/cadence, recording, Flashback recording/playback/export,
+  visual cadence, and advanced control-state options; CaptureDiagnosticsSnapshot
+  property spec/default/round-trip/reflection JSON/source-ownership checks;
+  CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts; and
+  SourceSignalTelemetrySnapshot plus source telemetry automation projection
   contract checks.
 - `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
   telemetry provider ownership, root active-read/rolling-poll locality, shared snapshot
