@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: Unified capture frame-ledger locality
+Problem: `FrameLedger.cs` was a 215-line capture helper used by the single live source-session owner, while `UnifiedVideoCapture.cs` already owned frame arrival, preview/recording/Flashback fan-out, frame-ledger recording calls, and frame-ledger summary projection. Reviewing frame routing evidence still required opening a tiny sidecar even though the helper had no independent production collaborator boundary.
+Files consolidated: `Sussudio/Services/Capture/FrameLedger.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; core app `.cs` count 148 -> 147
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FrameLedger|FullyQualifiedName~CaptureFanout"` passed (2 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); `git diff --check`; `git diff --cached --check`
+CLI/MCP/pipe checks, if applicable: not applicable; this moves an internal capture helper without changing public automation command names, IDs, wire payloads, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, or HDR semantics.
+Behavior preserved: `Sussudio.Services.Capture.FrameLedger` remains the same top-level internal type with the same constructor, bounded ring-buffer retention, summary DTO projection, and frame identity/stage behavior; only the source owner changed to `UnifiedVideoCapture.cs`.
+Notes for future agents: keep the `FrameLedger` ring-buffer helper with `UnifiedVideoCapture.cs` while it is only used by the live source-session fan-out owner; keep `FrameLedgerStage`, `FrameIdentity`, `FrameLedgerEventSnapshot`, and `FrameLedgerSummary` in `CaptureModels.cs` as shared snapshot/model contracts.
+Current file/LoC checkpoint: core app `.cs`: 147 / 89,754 nonblank LoC; tests `.cs`: 103 / 56,136 nonblank LoC.
+
+Date: 2026-05-31
 Area: RecordingVerifier test locality
 Problem: `RecordingVerifier.Tests.cs` was a `Program` partial containing verifier early-failure, source-shape, result DTO, and dedicated LibAv verification-script checks, while `RecordingVerifier.Integration.Tests.cs` already owned verifier runtime-snapshot helpers, invocation helpers, and the fake process-supervisor seam used by the rest of the verifier scenarios. Reviewing recording verification behavior required opening two verifier `Program` partials plus the xUnit wrapper even though the smaller file had no independent fixture boundary.
 Files consolidated: `tests/Sussudio.Tests/RecordingVerifier.Tests.cs`

@@ -628,9 +628,9 @@ Important entry points:
   helpers, fatal-error dedupe/signaling, recording and Flashback sink enqueue
   helpers, recording and Flashback queue rejection accounting, legacy recording
   encoder fallback adapters, Flashback recording sequence-gap accounting,
-  source-reader cadence forwarding, MJPEG pipeline/jitter/hash metrics, preview
-  visual cadence metrics, and frame-ledger summary projection over the root
-  capture fan-out state.
+  the `FrameLedger` ring-buffer helper, source-reader cadence forwarding, MJPEG
+  pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
+  summary projection over the root capture fan-out state.
 - `CaptureCadenceTrackers.cs` owns the two capture cadence tracker types:
   `FrameFingerprintCadenceTracker` for source-packet hash cadence ingestion,
   duplicate-run counters, fast packet hashing, duplicate-pattern metrics DTO

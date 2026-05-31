@@ -1780,9 +1780,10 @@ signaling, preview sink assignment, live-preview suppression/resume drains,
 MJPEG preview-frame decoded callbacks, raw preview submission,
 visual-cadence reset/recording helpers, recording enqueue helpers, Flashback
 enqueue helpers, queue rejection accounting, legacy encoder fallback enqueue
-adapters, Flashback recording sequence-gap accounting, source-reader cadence
-forwarding, MJPEG timing records, MJPEG jitter/hash metrics, preview visual
-cadence metrics, and frame-ledger summary projection.
+adapters, Flashback recording sequence-gap accounting, the `FrameLedger`
+ring-buffer helper, source-reader cadence forwarding, MJPEG timing records,
+MJPEG jitter/hash metrics, preview visual cadence metrics, and frame-ledger
+summary projection.
 
 Capture cadence tracker ingestion now lives in
 `Sussudio/Services/Capture/CaptureCadenceTrackers.cs`. Keep

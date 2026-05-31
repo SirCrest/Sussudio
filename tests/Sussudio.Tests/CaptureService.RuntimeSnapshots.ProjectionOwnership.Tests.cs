@@ -254,6 +254,14 @@ static partial class Program
 
     internal static Task FrameLedger_RetainsBoundedRecentEvents()
     {
+        var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(unifiedVideoCaptureText, "internal sealed class FrameLedger");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "FrameLedger.cs")),
+            "frame ledger helper folded into UnifiedVideoCapture.cs");
+
         var ledgerType = RequireType("Sussudio.Services.Capture.FrameLedger");
         var identityType = RequireType("Sussudio.Models.FrameIdentity");
         var stageType = RequireType("Sussudio.Models.FrameLedgerStage");
