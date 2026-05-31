@@ -520,10 +520,10 @@ output, Preview D3D output, and source ownership live in the focused
 with `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owning their xUnit
 execution surface after removal from the legacy offline harness catalog. ssctl
 formatter output smoke checks, timeline output contracts, and ssctl formatter
-source ownership assertions stay in `Formatters.Tests.cs` through the shared
-`RuntimeContractSource` formatter source-family readers; `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
-owns their xUnit execution surface after removal from the legacy offline
-harness catalog.
+source ownership assertions live in
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` through the shared
+`RuntimeContractSource` formatter source-family readers after removal from the
+legacy offline harness catalog.
 ssctl command-handler routing coverage now lives in
 `CommandHandlers.Routing.Tests.cs` for device, capture controls, recordings,
 Flashback, window, manifest, observability, automation-flow, UI visibility, and
