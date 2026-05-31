@@ -170,17 +170,15 @@ Automation diagnostics ownership:
   enum payload parsing, shared response shaping, Flashback rejection
   diagnostics, UI/settings command application, the show-all compatibility
   no-op, stats-section expand/collapse response text, and port-typed
-  trivial-handler dispatch before the custom command router. Construct it with
-  `AutomationViewModelPorts`; this dispatcher root should not expose or store
-  the aggregate automation ViewModel dependency.
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
-  owns the custom automation command router for multi-field payloads, special
-  response shapes, capture routing, domain command handoff, read-only
-  snapshot/manifest/diagnostic/timeline/audio-ramp readback commands,
-  verification commands, visual probe/capture commands, and the small
+  trivial-handler dispatch plus the custom automation command router for
+  multi-field payloads, special response shapes, capture routing, domain command
+  handoff, read-only snapshot/manifest/diagnostic/timeline/audio-ramp readback
+  commands, verification commands, visual probe/capture commands, the small
   device-selection, audio-control, capture-control, output-path, and
   recording-enable command bodies it dispatches, plus Flashback action/export/
-  segment/restart/enable command bodies behind the custom command router.
+  segment/restart/enable command bodies. Construct it with
+  `AutomationViewModelPorts`; this dispatcher root should not expose or store
+  the aggregate automation ViewModel dependency.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,
@@ -193,7 +191,7 @@ Automation diagnostics ownership:
   ordered dispatch for UI/settings plus simple one-property commands, and the
   payload/path/enum helpers used by all dispatcher command bodies, plus the
   target-typed trivial-handler wrapper used by the one-property command tables.
-  `AutomationCommandDispatcher.CustomCommands.cs` consumes the
+  `AutomationCommandDispatcher.cs` consumes the
   device-selection, audio, capture-settings, preview/recording, snapshot-query,
   diagnostics, probe, and window-control ports for custom command bodies,
   including AssertSnapshot response shaping, assertion payload parsing, snapshot

@@ -272,10 +272,10 @@ envelope, correlation setup, manifest revision checks, auth command handling,
 unauthorized-command rejection, readiness gating, dispatch pipeline shell, and
 error shaping, plus payload extraction, path/catalog helpers, UI/settings
 pre-routing, and port-typed trivial-handler dispatch.
-`AutomationCommandDispatcher.CustomCommands.cs`
-owns the custom command switch/router for commands that need multi-field
-payloads, special response shapes, capture/Flashback routing, or domain command
-handoff. `IAutomationViewModel.cs` now keeps the aggregate automation ViewModel
+The same `AutomationCommandDispatcher.cs` owner also keeps the custom command
+switch/router for commands that need multi-field payloads, special response
+shapes, capture/Flashback routing, or domain command handoff.
+`IAutomationViewModel.cs` now keeps the aggregate automation ViewModel
 constructor contract while defining feature-shaped ports for readiness, snapshot
 queries, device selection, capture settings, audio, preview/recording, UI,
 Flashback, and probes in one file. It also owns `AutomationViewModelPorts`, the
@@ -298,27 +298,26 @@ port.
 runtime, health, and recording verification snapshots. Its constructor should
 take `IAutomationSnapshotQueryPort` directly instead of advertising the full
 aggregate automation surface.
-`AutomationCommandDispatcher.CustomCommands.cs` owns the custom command router
-plus read-only snapshot, manifest, diagnostic event, performance timeline,
+The dispatcher root owns the custom command router plus read-only snapshot,
+manifest, diagnostic event, performance timeline,
 audio ramp trace, verification, visual probe/capture, and the small
 device-selection, audio-control, capture-control, output-path, and
 recording-enable command bodies it dispatches, including the recording-response
 snapshot refresh, plus Flashback action, export, segment, restart, and enable
-command bodies behind the custom command router.
+command bodies.
 `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
 readiness gating beside shared response shaping and Flashback rejection
 diagnostics, UI/settings command application, the show-all compatibility no-op,
 stats-section response text, simple one-property capture and pipeline command
 tables, ordered dispatch through those tables, JSON payload extraction helpers,
 command metadata lookups, path-validation forwarding, and enum payload parsing.
-Named partials own support responsibilities:
-`AutomationCommandDispatcher.CustomCommands.cs`
-also owns AssertSnapshot response shaping, assertion payload parsing, snapshot
-comparison helpers, WaitForCondition response shaping, wait polling, and
-snapshot predicates, full-screen, recordings-folder, arm-close, close-arm gating,
-and low-level window automation action execution. The reusable target-typed
-trivial-handler wrapper lives with `AutomationCommandDispatcher.cs` because it
-only supports the dispatcher's port-grouped one-property command tables.
+The same file also owns AssertSnapshot response shaping, assertion payload
+parsing, snapshot comparison helpers, WaitForCondition response shaping, wait
+polling, and snapshot predicates, full-screen, recordings-folder, arm-close,
+close-arm gating, and low-level window automation action execution. The reusable
+target-typed trivial-handler wrapper lives with `AutomationCommandDispatcher.cs`
+because it only supports the dispatcher's port-grouped one-property command
+tables.
 
 Automation pipe hosting now lives in `NamedPipeAutomationServer.cs`. Keep
 constructor/configuration state, server start/stop and accept-loop behavior,

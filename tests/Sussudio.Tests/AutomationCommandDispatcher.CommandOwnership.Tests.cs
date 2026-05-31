@@ -38,7 +38,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.WaitForCondition:");
@@ -56,7 +56,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WaitConditions.cs")),
-            "wait-condition commands folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "wait-condition commands folded into AutomationCommandDispatcher.cs");
 
         AssertContains(customCommandsText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
         AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
@@ -68,14 +68,14 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.Assertions.cs")),
-            "assert-snapshot command body folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "assert-snapshot command body folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
 
     internal static Task AutomationCommandDispatcher_IntrospectionCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.GetSnapshot:");
@@ -92,14 +92,14 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.ReadbackCommands.cs")),
-            "readback commands folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "readback commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
 
     internal static Task AutomationCommandDispatcher_AudioControlCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var audioControlCommandsText = customCommandsText;
 
@@ -131,7 +131,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_CaptureControlCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var captureControlCommandsText = customCommandsText;
 
@@ -162,7 +162,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_UiSettingsCommands_LiveWithRootDispatch()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var portMappedDispatchText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
@@ -194,7 +194,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_DeviceCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var deviceCommandsText = customCommandsText;
 
@@ -264,6 +264,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.PortMappedDispatch.cs")),
             "port-mapped dispatch folded into AutomationCommandDispatcher.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.CustomCommands.cs")),
+            "custom command router folded into AutomationCommandDispatcher.cs");
 
         AssertContains(portMappedDispatchText, "private async Task<AutomationCommandResponse?> TryExecutePortMappedCommandAsync(");
         AssertContains(portMappedDispatchText, "private static readonly IReadOnlyDictionary<AutomationCommandKind, AutomationCommandHandler<IAutomationDeviceSelectionPort>> TrivialDeviceSelectionHandlers");
@@ -403,7 +407,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_WindowCommands_LiveInFocusedPartial()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var windowCommandsText = customCommandsText;
 
@@ -435,18 +439,18 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowActions.cs")),
-            "window action executor folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "window action executor folded into AutomationCommandDispatcher.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.WindowCommands.cs")),
-            "window command bodies folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "window command bodies folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
 
     internal static Task AutomationCommandDispatcher_VerificationCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.VerifyFile:");
@@ -463,14 +467,14 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VerificationCommands.cs")),
-            "verification commands folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "verification commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
 
     internal static Task AutomationCommandDispatcher_VisualCaptureCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(customCommandsText, "case AutomationCommandKind.ProbeVideoSource:");
@@ -500,7 +504,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VisualCaptureCommands.cs")),
-            "visual capture commands folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "visual capture commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -568,7 +572,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_FlashbackCommands_LiveWithCustomRouter()
     {
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var flashbackCommandsText = customCommandsText;
 
@@ -592,7 +596,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.FlashbackCommands.cs")),
-            "Flashback command bodies folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "Flashback command bodies folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
     }
@@ -995,9 +999,9 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload()
     {
-        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
-        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var customCommandsText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         AssertContains(dispatcherText, "case AutomationCommandKind.GetAudioRampTrace:");
         AssertContains(dispatcherText, "ExecuteGetDiagnosticsCommand(payload, correlationId)");
@@ -1012,7 +1016,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.DiagnosticCommands.cs")),
-            "diagnostic readback folded into AutomationCommandDispatcher.CustomCommands.cs");
+            "diagnostic readback folded into AutomationCommandDispatcher.cs");
 
         var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var kind = Enum.Parse(enumType, "GetAudioRampTrace");
@@ -1315,7 +1319,7 @@ static partial class Program
 
     internal static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
     {
-        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var windowActionBlock = ExtractTextBetween(
             sourceText,

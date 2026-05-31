@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: automation dispatcher root locality
+Problem: `AutomationCommandDispatcher.CustomCommands.cs` was the only remaining sidecar in the dispatcher partial family. It owned the downstream custom-command switch and multi-field command bodies that are entered directly from `AutomationCommandDispatcher.ExecuteAsync`, while the root file owned preflight, auth, payload helpers, response shaping, port-mapped dispatch, and the target-typed trivial-handler wrapper used by the same command pipeline. Reviewing automation command routing still required opening both files for one dispatcher owner.
+Files consolidated: `Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `AutomationCommandDispatcher` production partial file count 2 -> 1; generated baseline production `.cs` count 177 -> 176; core app `.cs` count 136 -> 135
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationCommandDispatcher|FullyQualifiedName~AutomationContractsTests|FullyQualifiedName~ArchitectureDocs"` passed (17 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check` passed; current core app `.cs` count/LoC: 135 / 89,674; current test `.cs` count/LoC: 58 / 55,996.
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, manifest revision, wire payloads, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: custom command switch cases, snapshot/manifest/diagnostic/timeline/audio-ramp readback, device/audio/capture/output/recording command bodies, Flashback action/export/segment/restart/enable command bodies, AssertSnapshot parsing/comparison, WaitForCondition polling, visual probe/capture commands, window actions, verification response shaping, path validation, and response messages keep the same method bodies and entry points while living in `Sussudio/Services/Automation/AutomationCommandDispatcher.cs`.
+Notes for future agents: keep automation dispatcher preflight/auth/payload helpers, port-mapped one-field command tables, shared response shaping, custom command switch/bodies, AssertSnapshot support, wait-condition support, verification/probe/window command bodies, and Flashback command bodies together in `AutomationCommandDispatcher.cs` unless a command group becomes a named injected collaborator.
+
+Date: 2026-05-31
 Area: capture selection-policy test locality
 Problem: `MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs` split resolution-selection and frame-rate timing/source-filter/auto-selection checks away from `MainViewModel.Capture.SelectionPolicy.Tests.cs`, even though both files use the same legacy `Program` helper surface, reflection fixtures, option-list constructors, `ViewModelSelectionPolicies.cs`, `FrameRateTimingPolicy.cs`, and xUnit presentation-preview wrapper group. Reviewing capture mode selection policy still required opening a redundant sibling file before reaching the shared helpers and capture-settings projection checks.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`
@@ -3193,7 +3205,7 @@ Partial clusters reduced: `AutomationCommandDispatcher` production partial-famil
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: automation command names/IDs and manifest metadata unchanged; coverage remains in automation command dispatcher tests
 Behavior preserved: AssertSnapshot response shaping, payload parsing, field lookup cache, numeric/boolean/string comparison behavior, error code, status, and refreshed snapshot inclusion moved unchanged beside the custom command router.
-Notes for future agents: keep custom command bodies and support helpers in `AutomationCommandDispatcher.CustomCommands.cs` unless a command grows an independent service/collaborator seam; keep manifest/auth/preflight/payload helpers and one-field handler tables in `AutomationCommandDispatcher.cs`.
+Notes for future agents: superseded by the 2026-05-31 automation dispatcher root locality slice; keep custom command bodies and support helpers in `AutomationCommandDispatcher.cs` unless a command grows an independent service/collaborator seam.
 
 Date: 2026-05-25
 Area: WASAPI capture diagnostics locality
