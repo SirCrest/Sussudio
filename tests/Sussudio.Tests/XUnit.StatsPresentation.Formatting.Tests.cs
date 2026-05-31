@@ -479,7 +479,7 @@ public partial class StatsPresentationTests
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var mainWindowText = MainWindowCompositionSource.Read();
-        var statsDockRowsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRowsController.cs").Replace("\r\n", "\n");
+        var statsDockRowsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
         var controllerText = statsDockRowsText;
         var rowChromePresenterText = statsDockRowsText;
         var rowChromeControllerText = statsDockRowsText;
@@ -586,7 +586,7 @@ public partial class StatsPresentationTests
         AssertDoesNotContain(controllerText, "_context.RowChromeController.UpdateDiagnosticsRows(presentation);");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDiagnosticRowsController.cs")),
-            "diagnostic stats rows folded into StatsDockRowsController.cs");
+            "diagnostic stats rows folded into StatsDockRefreshController.cs");
         AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeControllerContext");
         AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeController");
         AssertContains(rowChromeControllerText, "internal enum StatsDockSimpleRowPool");
@@ -607,7 +607,10 @@ public partial class StatsPresentationTests
         AssertContains(rowChromePresenterText, "public static void CollapseRows(IReadOnlyList<StatsDockRowChromeSlot> pool, int startIndex = 0)");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowChromePresenter.cs")),
-            "stats dock row chrome folded into StatsDockRowsController.cs");
+            "stats dock row chrome folded into StatsDockRefreshController.cs");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowsController.cs")),
+            "stats dock row chrome folded into StatsDockRefreshController.cs");
         AssertDoesNotContain(rowChromeControllerText, "public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)");
         AssertDoesNotContain(rowChromeControllerText, "private Border CreateRow(");
         AssertDoesNotContain(controllerText, "private Border CreateRow(");

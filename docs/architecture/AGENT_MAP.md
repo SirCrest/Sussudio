@@ -1118,22 +1118,19 @@ Primary current owners:
   contract checks for stats presentation formatting plus stats dock refresh
   orchestration, diagnostic row update delegation, hardware row projection,
   source-shape ownership, HDMI source telemetry panels, and row chrome pooling.
-- `Sussudio/Controllers/Stats/StatsDockRowsController.cs` owns stats dock row
-  chrome: shared row creation, label/value text mutation, visibility toggles,
-  dock row style application, dynamic decode/GPU simple row pools, diagnostic
-  row presentation, empty-state rows, group headers, and diagnostic row pooling.
-  `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` delegates diagnostic row
-  presentation to `StatsDiagnosticRowsController`, and owns hardware row
-  refresh, availability, and decode/GPU minimum pool sizing before delegating row
-  chrome. `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` also keeps
+- `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns stats dock row
+  chrome alongside refresh orchestration: shared row creation, label/value text
+  mutation, visibility toggles, dock row style application, dynamic decode/GPU
+  simple row pools, diagnostic row presentation, empty-state rows, group
+  headers, diagnostic row pooling, hardware row refresh, availability, and
+  decode/GPU minimum pool sizing. It also keeps
   the hardware input provider that owns live MJPEG/NVML input acquisition,
   decode availability policy, and pure telemetry projection into the hardware-row
   presentation input DTOs;
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns pure decode/GPU row
   text projection over presentation inputs, and
   `StatsDockRowChromePresenter` owns shared row chrome plus decode/GPU row
-  pooling while
-  `StatsDockRefreshController` owns when decode/GPU rows refresh.
+  pooling inside the refresh owner that decides when decode/GPU rows refresh.
 - `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns compact
   frame-time overlay text application, graph-line mutation, canvas sizing,
   sample projection, and expected-line geometry alongside the stats overlay
