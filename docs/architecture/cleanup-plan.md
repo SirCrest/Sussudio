@@ -429,7 +429,9 @@ host/pipe behavior, verification formatting, Flashback tool routing, and
 diagnostic-session tool entries in xUnit after their removal from the legacy
 harness catalog.
 
-`tests/Sussudio.Tests/Flashback.Tests.cs` is now only the shared helper shell.
+Shared Flashback source readers and buffer helper factories now live in
+`tests/Sussudio.Tests/HarnessCore.cs` with the rest of the legacy `Program`
+harness helpers.
 Flashback regression coverage is split into buffer, encoder-sink, exporter
 basic, exporter segment/range, exporter output-file, playback state, playback
 thread, playback command-queue, playback cadence, decoder, and support partial

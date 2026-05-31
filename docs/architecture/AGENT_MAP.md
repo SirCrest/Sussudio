@@ -1862,9 +1862,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` owns shared MCP
   process/JSON-RPC, reflection/tool-result, pipe-capture, and JSON assertion
   helpers.
-- `tests/Sussudio.Tests/Flashback.Tests.cs` owns shared Flashback test helper
+- `tests/Sussudio.Tests/HarnessCore.cs` owns shared Flashback test helper
   source readers, helper methods, buffer test factories, completed-segment
-  insertion, and sized-file helpers.
+  insertion, and sized-file helpers used across focused Flashback test files.
 - `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` owns
   Flashback buffer segment completion metadata, outside-path rejection,
   disposed-state no-op, recovery-preserve, segment diagnostics, PTS clamp, byte
