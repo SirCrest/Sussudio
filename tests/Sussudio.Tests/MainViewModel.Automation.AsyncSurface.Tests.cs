@@ -72,7 +72,7 @@ static partial class Program
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var viewModelDispatchText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
                 .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
@@ -269,7 +269,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
                 .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")

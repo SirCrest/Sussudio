@@ -2208,7 +2208,7 @@ Partial clusters reduced: `MainViewModel` -1 file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; offline runtime snapshot harness; `git diff --check`
 CLI/MCP/pipe checks, if applicable: not applicable; no automation command names/IDs changed
 Behavior preserved: UI operation enqueue/execute/invoke adapter names, disposal-aware enqueue policy delegation, preview reinitialize event fan-out, renderer-stop event fan-out, timeout helper semantics, and controller graph port wiring remain unchanged
-Notes for future agents: superseded on 2026-05-26 by the MainViewModel root/composition locality slice; keep stable MainViewModel UI-dispatch adapter names, preview event fan-out, and default service graph construction in `MainViewModel.cs`; keep actual dispatcher queue policy in `MainViewModelUiDispatchController.cs`
+Notes for future agents: superseded on 2026-05-26 by the MainViewModel root/composition locality slice; keep stable MainViewModel UI-dispatch adapter names, preview event fan-out, and default service graph construction in `MainViewModel.cs`; keep actual dispatcher queue policy in `UiDispatchControllers.cs`
 
 Date: 2026-05-24
 Area: NativeXuAudioProbe default experiment payload locality
@@ -4339,7 +4339,7 @@ Partial clusters reduced: `MainViewModel` partial count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, automation contracts, MCP, `ssctl`, and console harnesses; no public automation command names, IDs, XAML bindings, constructor behavior, preview event names, or runtime lifecycle behavior changed
 Behavior preserved: default service graph construction, dependency validation, controller graph assignment order, runtime lifecycle start/initial presentation timing, stable private UI-dispatch adapter names, preview reinit/renderer event fan-out, UI invocation adapters, and timeout helper now live in `MainViewModel.cs`.
-Notes for future agents: keep MainViewModel root compatibility surface, default service graph construction, stable dispatch adapter names, and preview event fan-out in `Sussudio/ViewModels/MainViewModel.cs`; keep feature behavior in focused feature partials/controllers and actual dispatcher policy in `MainViewModelUiDispatchController.cs`.
+Notes for future agents: keep MainViewModel root compatibility surface, default service graph construction, stable dispatch adapter names, and preview event fan-out in `Sussudio/ViewModels/MainViewModel.cs`; keep feature behavior in focused feature partials/controllers and actual dispatcher policy in `UiDispatchControllers.cs`.
 
 Date: 2026-05-26
 Area: Flashback startup recovery scanner locality
@@ -5949,3 +5949,15 @@ Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.T
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves shared model DTOs without changing namespaces or public names.
 Behavior preserved: `FlashbackBufferOptions`, `FlashbackSessionContext`, `FlashbackPlaybackState`, `ExportProgress`, `FlashbackExportSegment`, `FlashbackForceRotateStatus`, `FlashbackForceRotateResult`, and `FlashbackExportRequest` keep the same `Sussudio.Models` namespace, type names, property contracts, default values, and callers while living in `Sussudio/Models/Recording/RecordingModels.cs`.
 Notes for future agents: keep recording/Flashback DTO and small model policy types together in `Sussudio/Models/Recording/RecordingModels.cs` while they remain shared `Sussudio.Models` records/enums without independent runtime collaborators or external shared-source constraints.
+
+Date: 2026-05-31
+Area: UI dispatch controller locality
+Problem: `Sussudio/Controllers/Window/WindowUiDispatchController.cs` and `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` were parallel dispatcher-queue policy wrappers for MainWindow and MainViewModel. Reviewing UI-thread cancellation, enqueue failure, status-error projection, retry, and disposal-skip behavior required opening two small adjacent controller files even though both are the same UI-dispatch ownership surface.
+Files consolidated: `Sussudio/Controllers/Window/WindowUiDispatchController.cs`; `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`
+Files added: `Sussudio/Controllers/UiDispatchControllers.cs`
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: UI dispatch controller file count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~MainWindowFullScreenAutomationAwaitsTransitionTasks` passed (1 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); `git diff --check` passed; current core app `.cs` count/LoC: 180 / 89,990; current test `.cs` count/LoC: 111 / 56,044.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves internal UI dispatch controller types without changing type names or call sites.
+Behavior preserved: `WindowUiDispatchController`, `WindowUiDispatchControllerContext`, `MainViewModelUiDispatchController`, and `MainViewModelUiDispatchControllerContext` keep the same namespace, type names, methods, cancellation/error/status behavior, retry behavior, and callers while living in `Sussudio/Controllers/UiDispatchControllers.cs`.
+Notes for future agents: keep MainWindow and MainViewModel UI-dispatch wrappers together in `UiDispatchControllers.cs` while they remain small `DispatcherQueue` policy adapters; split only if either grows a distinct runtime collaborator beyond dispatch invocation/error handling.

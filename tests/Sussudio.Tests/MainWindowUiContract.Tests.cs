@@ -123,8 +123,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
+        var windowDispatchControllerSource = ExtractTypeBlock(dispatchControllerSource, "WindowUiDispatchController");
 
         AssertContains(fullScreenSource, "public Task SetFullScreenEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => InvokeOnUiThreadAsync(\n            () => _fullScreenController.SetEnabledAsync(enabled),");
         AssertContains(fullScreenSource, "private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)\n        => _fullScreenController.OnKeyDown(e);");
@@ -150,8 +151,8 @@ static partial class Program
         AssertDoesNotContain(fullScreenControllerRootSource, "async void");
         AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
         AssertContains(dispatchingSource, "=> WindowUiDispatchController.InvokeAsync(action, cancellationToken);");
-        AssertContains(dispatchControllerSource, "await action().ConfigureAwait(true);");
-        AssertDoesNotContain(dispatchControllerSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
+        AssertContains(windowDispatchControllerSource, "await action().ConfigureAwait(true);");
+        AssertDoesNotContain(windowDispatchControllerSource, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
         return Task.CompletedTask;
     }
 
@@ -160,7 +161,7 @@ static partial class Program
         var mainWindowSource = ReadMainWindowCompositionSource();
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
         var adapterSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
@@ -208,7 +209,7 @@ static partial class Program
     {
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.ShellChrome.Composition.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowUiDispatchController.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
         var previewActionsSource = ReadMainWindowPreviewTransitionsAdapterSource();
         var flashbackSource = ReadMainWindowFlashbackAdapterSource();
@@ -247,6 +248,41 @@ static partial class Program
         AssertDoesNotContain(dispatchingSource, "ViewModel.StatusText = $\"{operationName} failed: {ex.Message}\";");
 
         return Task.CompletedTask;
+    }
+
+    private static string ExtractTypeBlock(string source, string typeName)
+    {
+        var declaration = $"internal sealed class {typeName}\n";
+        var start = source.IndexOf(declaration, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            throw new InvalidOperationException($"{typeName} declaration not found.");
+        }
+
+        var openBrace = source.IndexOf('{', start);
+        if (openBrace < 0)
+        {
+            throw new InvalidOperationException($"{typeName} body start not found.");
+        }
+
+        var depth = 0;
+        for (var i = openBrace; i < source.Length; i++)
+        {
+            if (source[i] == '{')
+            {
+                depth++;
+            }
+            else if (source[i] == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    return source.Substring(start, i - start + 1);
+                }
+            }
+        }
+
+        throw new InvalidOperationException($"{typeName} body end not found.");
     }
 }
 

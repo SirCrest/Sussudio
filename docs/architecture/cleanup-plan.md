@@ -723,7 +723,7 @@ finalization owners.
 
 UI-thread dispatching helpers, preview-snapshot-style result dispatch with
 three-attempt enqueue retry, and guarded async event-handler execution now live
-in `Sussudio/Controllers/Window/WindowUiDispatchController.cs`.
+in `Sussudio/Controllers/UiDispatchControllers.cs`.
 `Sussudio/MainWindow.ShellChrome.Composition.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
@@ -3284,10 +3284,10 @@ owner, fold it back into that owner and update the source-shape tests and
    selection handlers also live in `MainViewModel.AudioState.cs`,
    capture-mode property handlers live in `MainViewModel.CaptureSelection.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
-   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`.
+   `Sussudio/Controllers/UiDispatchControllers.cs`.
    The UI dispatch graph-port contract for dispatcher access, disposal state,
    logging, exception logging, and status text projection lives with
-   `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`, while
+   `Sussudio/Controllers/UiDispatchControllers.cs`, while
    `MainViewModel.cs` keeps the stable private adapter names and
    preview event fan-out beside the controller graph handoff;
    periodic timer refresh orchestration and initial

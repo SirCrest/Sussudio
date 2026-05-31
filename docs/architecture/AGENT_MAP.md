@@ -1029,7 +1029,7 @@ Primary current owners:
   `Sussudio/MainWindow.ShellChrome.Composition.cs` is the XAML-facing shell
   launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
   automation paths.
-- `Sussudio/Controllers/Window/WindowUiDispatchController.cs` owns MainWindow
+- `Sussudio/Controllers/UiDispatchControllers.cs` owns MainWindow
   UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
   preview-snapshot-style result dispatch with three-attempt enqueue retry, and
   guarded async event-handler status updates used by automation adapters and
@@ -2263,7 +2263,7 @@ Primary current owners:
   `MainViewModel.CaptureSelection.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.
-  `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` owns
+  `Sussudio/Controllers/UiDispatchControllers.cs` owns
   shared view-model UI dispatcher enqueue/invoke policy, disposal skip logging,
   cancellation handoff, enqueue-failure logging, status projection, and the UI
   dispatch graph-port contract for dispatcher access, disposal state, logging,
