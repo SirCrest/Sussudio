@@ -139,7 +139,11 @@ Entry points:
   exception-to-error-code mapping, and throw-vs-synthetic unknown-command
   policy shared by command transports and retry policy.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns the golden
-  numeric command-ID adapter. Routing tests should assert captured
+  numeric command-ID adapter plus shared automation/tool contract legacy
+  `Program` implementations for catalog/manifest/path-policy reliability,
+  shared snapshot formatter behavior/source ownership, PresentMon parser and
+  source ownership, ssctl pipe transport, KS audio-node probe ownership, and
+  EGAVDS probe ownership. Routing tests should assert captured
   `request.command` values through `AssertAutomationCommandId`, not raw numbers
   or direct golden-table lookups.
 
@@ -1540,11 +1544,10 @@ Primary current owners:
   coverage, ownership-file discovery, exact code-span policy, xUnit inventory
   helpers, and the xUnit execution surface for those architecture-doc checks
   after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
-    owns the shared/ssctl snapshot formatter contract family: typed accessors,
-    core section formatting, section-order, Flashback opt-in smoke checks,
-    source ownership, Flashback output rendering, and Preview D3D output rendering stay in
-    `.Tests.cs`; shared formatter source ownership lives in `.Ownership.Tests.cs`.
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns the shared/ssctl
+  snapshot formatter contract family: typed accessors, core section formatting,
+  section-order, Flashback opt-in smoke checks, source ownership, Flashback
+  output rendering, and Preview D3D output rendering.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those shared snapshot formatter checks plus the focused formatter
   JSON parsing and shared snapshot-field alignment checks.
@@ -1566,11 +1569,11 @@ Primary current owners:
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for those command-handler routing, source ownership, and help checks
   after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/ToolProbeContracts.Tests.cs` owns tool-probe behavior
-  and source-ownership contracts for PresentMon parser swap-chain selection,
-  artifact filtering, CSV field versions, app-present correlation, ssctl pipe
-  transport command/retry/error shaping, KS audio-node probe ownership, and
-  EGAVDS probe ownership.
+- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns tool-probe
+  behavior and source-ownership contracts for PresentMon parser swap-chain
+  selection, artifact filtering, CSV field versions, app-present correlation,
+  ssctl pipe transport command/retry/error shaping, KS audio-node probe
+  ownership, and EGAVDS probe ownership.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for PresentMon parser/source-ownership, ssctl pipe transport, KS
   audio-node, EGAVDS probe, RTK I2C unsafe-native-path, NVML snapshot, and

@@ -94,8 +94,8 @@ add xUnit alongside, and port incrementally.
   NVML snapshot, CaptureSessionSnapshot default-state, and RTK I2C
   unsafe-native-path contract checks. The public wrapper classes remain
   separate inside this file so existing test identities stay stable while the
-  backing PresentMon, pipe transport, KS audio-node, and EGAVDS probe checks
-  live together in `ToolProbeContracts.Tests.cs`.
+  backing snapshot formatter, PresentMon, pipe transport, KS audio-node, and
+  EGAVDS probe checks live together in `AutomationToolContracts.Tests.cs`.
 - `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
