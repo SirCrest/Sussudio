@@ -1288,8 +1288,9 @@ runtime snapshot, verifier construction, verification invocation helpers, and
 the ffprobe failure, process-priority, codec, Flashback verification format,
 mismatch, HDR, and cadence scenarios that use that seam.
 
-Native XU source telemetry detail assembly now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs`.
+Native XU source telemetry detail assembly now lives with source snapshot
+assembly in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
 Keep detail row construction, flash-audio input interpretation, analog-gain
 detail row insertion, input-source display text, and AT detail
 byte/number/hex/ascii display formatters together there. Keep it linked from
@@ -1323,7 +1324,8 @@ command batch construction/refresh, and per-command cancellation checks there
 with the node-read path that calls them.
 
 Native XU source snapshot assembly now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`,
+including source telemetry detail row formatting and audio-origin projection.
 Keep the reference full-snapshot AT-command acquisition, full/rolling
 AT-command-result handoff contract, VIC/frame-rate lookup policy,
 AT-command-result decode into `SourceSignalTelemetrySnapshot`, diagnostic/detail

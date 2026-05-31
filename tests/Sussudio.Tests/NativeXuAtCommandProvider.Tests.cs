@@ -71,8 +71,7 @@ static partial class Program
         var rollingCommandGroupsText = rootText;
         var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
             .Replace("\r\n", "\n");
-        var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs")
-            .Replace("\r\n", "\n");
+        var telemetryDetailsText = snapshotAssemblyText;
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
@@ -136,7 +135,7 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
         AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
         AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
-        AssertDoesNotContain(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
+        AssertContains(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DiagnosticSummary.cs")),
@@ -155,8 +154,8 @@ static partial class Program
             "snapshot timing policy folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
         AssertContains(telemetryDetailsText, "private static string ResolveSnapshotAudioInputOrigin(");
         AssertContains(telemetryDetailsText, "\"nativexu-flash-audio\"");
-        AssertDoesNotContain(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
-        AssertDoesNotContain(snapshotAssemblyText, "Math.Exp(4.0 * y)");
+        AssertContains(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
+        AssertContains(snapshotAssemblyText, "Math.Exp(4.0 * y)");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
@@ -259,7 +258,7 @@ static partial class Program
 
     internal static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
     {
-        var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs")
+        var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
@@ -279,6 +278,10 @@ static partial class Program
         AssertDoesNotContain(telemetryDetailsText, "private static string? DecodeCString(byte[] buffer)");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.cs")),
+            "Native XU detail row assembly folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs")),
             "Native XU audio input detail helpers folded into the telemetry details owner");
         AssertEqual(
@@ -289,7 +292,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs")),
             "Native XU AT detail formatters folded into the telemetry details owner");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Build.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
