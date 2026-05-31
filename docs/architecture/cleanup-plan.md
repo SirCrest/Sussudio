@@ -493,8 +493,9 @@ command ID, manifest ID, protocol resolution, timeout/auth/envelope, and
 `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, backed by the
 expected command-ID table now owned by `AutomationToolContracts.Tests.cs`
 beside the legacy automation contract helpers. The legacy protocol
-harness file has been retired; `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs`
-owns automation client timeout policy, advanced command-map alignment,
+harness file has been retired; `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs`
+also owns the direct `AutomationToolContractsProtocolXunitTests` coverage for
+automation client timeout policy, advanced command-map alignment,
 pipe-failure contracts, tool delegation, script freshness, and response-state
 parsing, using `RuntimeContractSource.ReadAutomationPipeClientSource()` for
 the shared AutomationPipeClient source family. Automation tool contract coverage is

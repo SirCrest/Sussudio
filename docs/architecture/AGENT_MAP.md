@@ -1531,15 +1531,15 @@ Primary current owners:
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns legacy harness
   coverage for window action enum membership and keeps the
   `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.
-- `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs` owns
-  automation client timeout policy, advanced command-map alignment,
-  pipe-connect failure, tool delegation, script freshness, and response-state
-  contract tests. It uses `RuntimeContractSource.ReadAutomationPipeClientSource()`
-  for the shared AutomationPipeClient source family.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` also owns shared
   implementations for automation command catalog metadata, manifest projection,
-  path policy validation, manifest serialization, and reliability-gates script
-  contract tests.
+  path policy validation, manifest serialization, reliability-gates script
+  contract tests, and the direct `AutomationToolContractsProtocolXunitTests`
+  coverage for automation client timeout policy, advanced command-map
+  alignment, pipe-connect failure, tool delegation, script freshness, and
+  response-state contracts. It uses
+  `RuntimeContractSource.ReadAutomationPipeClientSource()` for the shared
+  AutomationPipeClient source family.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness

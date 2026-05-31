@@ -170,8 +170,9 @@ add xUnit alongside, and port incrementally.
   architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `XUnit.AutomationContractsTests.cs`,
-  `AutomationToolContracts.ProtocolXunit.Tests.cs` (automation client timeout
-  policy, advanced command-map alignment, and pipe/tool protocol contracts),
+  `AutomationToolContracts.Tests.cs` (automation client timeout policy,
+  advanced command-map alignment, and pipe/tool protocol contracts through
+  `AutomationToolContractsProtocolXunitTests`),
   `XUnit.CoreRuntimeContractsTests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
   and `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   already run through `dotnet test`.
