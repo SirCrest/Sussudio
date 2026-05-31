@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-31T12:48:30Z
+Generated UTC: 2026-05-31T13:09:10Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 192 |
+| Production .cs files | 191 |
 | Test .cs files | 102 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (1.0%) |
@@ -29,7 +29,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | DiagnosticSessionResultBuilder | 3 | 1469 | tools/Common/DiagnosticSessionResultBuilder.Analysis.cs, tools/Common/DiagnosticSessionResultBuilder.cs, tools/Common/DiagnosticSessionResultBuilder.Projections.cs |
 | FlashbackDecoder | 3 | 1953 | Sussudio/Services/Flashback/FlashbackDecoder.cs, Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs, Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs |
 | PresentMonProbe | 2 | 1204 | tools/Common/PresentMon/PresentMonProbe.cs, tools/Common/PresentMon/PresentMonProbe.Csv.cs |
-| LibAvRecordingSink | 2 | 1703 | Sussudio/Services/Recording/LibAvRecordingSink.cs, Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs |
+| LibAvRecordingSink | 2 | 1889 | Sussudio/Services/Recording/LibAvRecordingSink.cs, Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs |
 | AutomationCommandDispatcher | 2 | 1638 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | MainWindow | 2 | 2434 | Sussudio/MainWindow.Composition.cs, Sussudio/MainWindow.xaml.cs |
 | Formatters | 2 | 941 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Snapshot.cs |
@@ -69,8 +69,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1065 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1055 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 1055 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
-| 1054 | tools/ssctl/CommandHandlers.cs |
 | 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
+| 1054 | tools/ssctl/CommandHandlers.cs |
 | 1053 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
 | 1042 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 1034 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |

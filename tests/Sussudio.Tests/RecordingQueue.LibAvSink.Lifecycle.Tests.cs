@@ -91,6 +91,9 @@ static partial class Program
         AssertContains(videoSubmissionText, "private enum VideoEnqueueResult");
         AssertContains(videoSubmissionText, "private readonly record struct GpuFramePacket");
         AssertContains(videoSubmissionText, "private readonly record struct CudaFramePacket");
+        AssertContains(videoSubmissionText, "internal sealed class VideoQueueLatencyTracker");
+        AssertContains(videoSubmissionText, "public void TrackEnqueueUnderLock(long enqueueTick)");
+        AssertContains(videoSubmissionText, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) GetMetrics()");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Queues.cs")),
@@ -99,6 +102,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoQueueSubmission.cs")),
             "LibAvRecordingSink.VideoQueueSubmission.cs folded into LibAvRecordingSink.Queueing.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "VideoQueueLatencyTracker.cs")),
+            "shared video queue latency tracker folded into the recording queueing owner");
 
         return Task.CompletedTask;
     }
