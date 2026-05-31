@@ -1380,12 +1380,10 @@ Primary current owners:
   timeline visibility, and scrub-end handoff.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
   owns retained Flashback preview backend, audio restoration, preview stop
-  rollback assertions, and device-switch teardown ordering between video stop,
-  Flashback backend disposal, and preview reinit disposal.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.LifecycleLogs.Tests.cs`
-  owns Flashback lifecycle outcome log-token, codec no-downgrade, export
-  force-rotate, buffer-cycle, delivered-cadence rational, and enable/disable
-  preview-state assertions.
+  rollback assertions, device-switch teardown ordering between video stop,
+  Flashback backend disposal, preview reinit disposal, Flashback lifecycle
+  outcome log-token, codec no-downgrade, export force-rotate, buffer-cycle,
+  delivered-cadence rational, and enable/disable preview-state assertions.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface, including the `SmallContractsTests` wrapper
   for ported audio input, audio level event, capture device metadata/default
