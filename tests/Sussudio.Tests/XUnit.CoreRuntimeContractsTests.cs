@@ -47,8 +47,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge();
 
     [Fact]
-    public Task NativeXuTelemetryRollingPollLivesInFocusedPartial()
-        => global::Program.NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial();
+    public Task NativeXuTelemetryActiveReadAndRollingPollLiveInProviderRoot()
+        => global::Program.NativeXuAtCommandProvider_ActiveReadAndRollingPollLiveInProviderRoot();
 
     [Fact]
     public Task NativeXuDeviceCommandsOwnPublicCommandSurface()

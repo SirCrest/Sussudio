@@ -1311,18 +1311,15 @@ the root provider dispatches through that support into telemetry polling.
 Selector-4 I2C payload writes now live with the AT transport helpers in
 `NativeXuAtCommandProvider.AtProtocol.cs`.
 
-Native XU active rolling polling now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs`. Keep
-poll cadence gates, cached AT-command fields, incomplete-cache handling, and
-group advancement there, along with rolling command batch construction/refresh
-and per-command cancellation checks.
-
-Native XU selected-interface reading now lives in the root provider,
+Native XU selected-interface reading and active rolling polling now live in the root provider,
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, with public
 `ReadAsync` validation, transport gate ownership, and interface enumeration.
 Keep interface open failures, topology reads, dev-specific node selection,
 per-node rolling-read iteration, and node-read failure classification there so
-the public read path stays in one cohesive owner.
+the public read path stays in one cohesive owner. Keep poll cadence gates,
+cached AT-command fields, incomplete-cache handling, group advancement, rolling
+command batch construction/refresh, and per-command cancellation checks there
+with the node-read path that calls them.
 
 Native XU source snapshot assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
@@ -1953,9 +1950,9 @@ Native XU AT-command transport and payload parsing now live in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs`. Keep raw
 AT read/write frames, LRC/envelope handling, selector-4 I2C payload writes,
 device-ID parsing, payload decoders, scalar helpers, and command failure
-formatting there; keep rolling telemetry polling in
-`NativeXuAtCommandProvider.RollingPoll.cs`, and keep shared source snapshot
-assembly in `NativeXuAtCommandProvider.SnapshotAssembly.cs`.
+formatting there; keep rolling telemetry polling in the root provider with the
+active read path, and keep shared source snapshot assembly in
+`NativeXuAtCommandProvider.SnapshotAssembly.cs`.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the

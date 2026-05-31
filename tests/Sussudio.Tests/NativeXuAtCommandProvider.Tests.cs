@@ -63,13 +63,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task NativeXuAtCommandProvider_RollingPollLivesInFocusedPartial()
+    internal static Task NativeXuAtCommandProvider_ActiveReadAndRollingPollLiveInProviderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
-        var rollingPollText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.RollingPoll.cs")
-            .Replace("\r\n", "\n");
-        var rollingCommandGroupsText = rollingPollText;
+        var rollingPollText = rootText;
+        var rollingCommandGroupsText = rootText;
         var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
             .Replace("\r\n", "\n");
         var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.TelemetryDetails.cs")
@@ -88,14 +87,17 @@ static partial class Program
         AssertContains(rootText, "private static string DescribeCommandFailure(");
         AssertContains(rootText, "private static string DescribeWin32Detail(");
         AssertDoesNotContain(rootText, "private readonly record struct VicTiming(");
-        AssertDoesNotContain(rootText, "private NodeReadAttempt TryReadRolling(");
-        AssertDoesNotContain(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
+        AssertContains(rootText, "private NodeReadAttempt TryReadRolling(");
+        AssertContains(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
         AssertDoesNotContain(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.InterfaceRead.cs")),
             "selected-interface open/topology/node scanning folded into NativeXuAtCommandProvider.cs");
-        AssertContains(rollingPollText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs")),
+            "active rolling telemetry folded into the NativeXuAtCommandProvider root read owner");
         AssertContains(rollingPollText, "private int _rollingGroup;");
         AssertDoesNotContain(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertDoesNotContain(rollingPollText, "private static readonly double[] CanonicalFrameRates");
@@ -109,17 +111,16 @@ static partial class Program
         AssertContains(rollingPollText, "private AtCommandResult SendRollingCommand(");
         AssertContains(rollingPollText, "private void PopulateInitialRollingCache(");
         AssertContains(rollingPollText, "private void RefreshRollingGroup(");
-        AssertContains(rollingCommandGroupsText, "public sealed partial class NativeXuAtCommandProvider");
         AssertContains(rollingCommandGroupsText, "private AtCommandResult SendRollingCommand(");
         AssertContains(rollingCommandGroupsText, "cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
         AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
         AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
-        AssertDoesNotContain(rollingCommandGroupsText, "private static bool IsUnsupportedNodeFailure(");
+        AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingCommandGroups.cs")),
-            "rolling command batch dispatch folded into NativeXuAtCommandProvider.RollingPoll.cs");
+            "rolling command batch dispatch folded into the NativeXuAtCommandProvider root read owner");
         AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
@@ -157,7 +158,7 @@ static partial class Program
         AssertDoesNotContain(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
         AssertDoesNotContain(snapshotAssemblyText, "Math.Exp(4.0 * y)");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");

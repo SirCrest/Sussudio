@@ -484,7 +484,7 @@ static partial class Program
         AssertContains(deviceServiceRootText, "private static string? ResolveNativeXuInterfacePath(string deviceId)");
 
         var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
-        var nativeXuAtRollingPollText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs"));
+        var nativeXuAtRollingPollText = nativeXuAtProviderText;
         var nativeXuDeviceSupportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "NativeXu", "KsExtensionUnitNative.cs"));
         AssertContains(nativeXuAtProviderText, "device.NativeXuInterfacePath");
         AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
