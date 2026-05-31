@@ -9,7 +9,8 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var setupBindingsText = ExtractMemberCode(bindingsText, "SetupBindings");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerRootText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var controllerText = controllerRootText;
@@ -52,8 +53,8 @@ static partial class Program
         AssertContains(captureOptionBindingsText, "private void AttachRecordingOptionBindings()");
         AssertContains(captureOptionBindingsText, "=> _captureOptionBindingController.AttachRecordingOptionBindings();");
         AssertContains(mainWindowText, "InitializeCaptureOptionBindingController();");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureOptionBindings.cs")), "MainWindow capture option adapter folded into MainWindow.ControlBindings.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.ControlBindings.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureOptionBindings.cs")), "MainWindow capture option adapter folded into MainWindow.xaml.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.xaml.cs");
 
         AssertContains(controllerRootText, "internal sealed class CaptureOptionBindingControllerContext");
         AssertContains(controllerRootText, "internal sealed class CaptureOptionBindingController");
@@ -120,15 +121,15 @@ static partial class Program
         AssertDoesNotContain(controllerText, "private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)");
         AssertDoesNotContain(controllerText, "private static bool IsAutoFrameRateOption(FrameRateOption option)");
 
-        AssertContains(bindingsText, "InitializeCaptureOptionCollections();");
-        AssertContains(bindingsText, "ApplyInitialCaptureOptionSelections();");
-        AssertContains(bindingsText, "EnsureInitialCaptureOptionSelections();");
-        AssertContains(bindingsText, "AttachCaptureModeSelectionBindings();");
-        AssertContains(bindingsText, "AttachRecordingOptionBindings();");
-        AssertOccursBefore(bindingsText, "InitializeCaptureOptionCollections();", "ApplyInitialCaptureOptionSelections();");
-        AssertOccursBefore(bindingsText, "ApplyInitialCaptureOptionSelections();", "AttachRecordingOptionBindings();");
-        AssertOccursBefore(bindingsText, "EnsureInitialCaptureOptionSelections();", "AttachCaptureModeSelectionBindings();");
-        AssertOccursBefore(bindingsText, "AttachCaptureModeSelectionBindings();", "AttachRecordingOptionBindings();");
+        AssertContains(setupBindingsText, "InitializeCaptureOptionCollections();");
+        AssertContains(setupBindingsText, "ApplyInitialCaptureOptionSelections();");
+        AssertContains(setupBindingsText, "EnsureInitialCaptureOptionSelections();");
+        AssertContains(setupBindingsText, "AttachCaptureModeSelectionBindings();");
+        AssertContains(setupBindingsText, "AttachRecordingOptionBindings();");
+        AssertOccursBefore(setupBindingsText, "InitializeCaptureOptionCollections();", "ApplyInitialCaptureOptionSelections();");
+        AssertOccursBefore(setupBindingsText, "ApplyInitialCaptureOptionSelections();", "AttachRecordingOptionBindings();");
+        AssertOccursBefore(setupBindingsText, "EnsureInitialCaptureOptionSelections();", "AttachCaptureModeSelectionBindings();");
+        AssertOccursBefore(setupBindingsText, "AttachCaptureModeSelectionBindings();", "AttachRecordingOptionBindings();");
         AssertDoesNotContain(selectionBindingFamilyText, "public void AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(selectionBindingFamilyText, "AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);");
         AssertDoesNotContain(selectionBindingFamilyText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");
@@ -136,7 +137,7 @@ static partial class Program
         AssertContains(agentMapText, "`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the");
         AssertContains(agentMapText, "capture option binding adapter context, setup, UI event attachment");
         AssertContains(agentMapText, "capture-option/source-signal property-change routing");
-        AssertContains(agentMapText, "`Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing adapter");
+        AssertContains(agentMapText, "`Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter");
         AssertContains(agentMapText, "option binding adapter context");
         AssertContains(agentMapText, "recording option event");
         AssertContains(agentMapText, "HDR/true-HDR click binding");
@@ -159,7 +160,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "preview HDR passthrough forwarding");
         AssertContains(cleanupPlanText, "presentation callback routing for option affordances, telemetry tooltips, and");
         AssertContains(cleanupPlanText, "source overlay refreshes");
-        AssertContains(cleanupPlanText, "`Sussudio/MainWindow.ControlBindings.cs` now owns the XAML-facing");
+        AssertContains(cleanupPlanText, "`Sussudio/MainWindow.xaml.cs` now owns the XAML-facing");
         AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.Context.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.Bindings.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureOptionBindingController.PropertyChanges.cs");
@@ -202,7 +203,7 @@ static partial class Program
     internal static Task CaptureDeviceButtonActions_LiveInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var captureDeviceActionInit = ExtractMemberCode(adapterText, "InitializeCaptureDeviceActionController");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
 
@@ -235,7 +236,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureDeviceActions.cs")),
-            "capture-device button adapter folded into MainWindow.ControlBindings.cs");
+            "capture-device button adapter folded into MainWindow.xaml.cs");
 
         return Task.CompletedTask;
     }
@@ -244,7 +245,8 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var setupBindingsText = ExtractMemberCode(bindingsText, "SetupBindings");
+        var captureOptionText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
         var policyText = controllerText;
         const string tooltipFormatterMarker = "internal static class CaptureOptionTooltipFormatter";
@@ -256,9 +258,9 @@ static partial class Program
 
         var tooltipFormatterText = controllerText[tooltipFormatterStart..];
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
-        var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var outputPathDisplayText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(captureOptionText, "private CaptureOptionPresentationController _captureOptionPresentationController = null!;");
         AssertContains(captureOptionText, "private void InitializeCaptureOptionPresentationController()");
@@ -330,11 +332,11 @@ static partial class Program
         AssertDoesNotContain(captureOptionPropertyChangedMethod, "RefreshHdrHintText();");
         AssertDoesNotContain(captureOptionPropertyChangedMethod, "UpdateFpsTelemetryTooltip();");
         AssertDoesNotContain(captureOptionPropertyChangedMethod, "ApplyBitrateVisibility();");
-        AssertDoesNotContain(bindingsText, "private void UpdateDecoderCountVisibility()");
-        AssertDoesNotContain(bindingsText, "private void DecoderCountComboBox_SelectionChanged(");
-        AssertDoesNotContain(bindingsText, "private void RefreshHdrHintText()");
-        AssertDoesNotContain(bindingsText, "private void ApplyBitrateVisibility()");
-        AssertDoesNotContain(bindingsText, "VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;");
+        AssertDoesNotContain(setupBindingsText, "private void UpdateDecoderCountVisibility()");
+        AssertDoesNotContain(setupBindingsText, "private void DecoderCountComboBox_SelectionChanged(");
+        AssertDoesNotContain(setupBindingsText, "private void RefreshHdrHintText()");
+        AssertDoesNotContain(setupBindingsText, "private void ApplyBitrateVisibility()");
+        AssertDoesNotContain(setupBindingsText, "VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;");
         AssertDoesNotContain(ReadMainWindowCompositionSource(), "private int _selectedDecoderCount = 4;");
         AssertDoesNotContain(captureOptionText, "private int _selectedDecoderCount = 4;");
         AssertDoesNotContain(captureOptionText, "ViewModel.MjpegDecoderCount = count;");

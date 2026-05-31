@@ -682,7 +682,7 @@ static partial class Program
         => ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
     private static string ReadMainWindowCaptureSelectionBindingsAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.ControlBindings.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
 
     private static string ReadMainWindowFlashbackAdapterSource()
         => ReadMainWindowCompositionSource();

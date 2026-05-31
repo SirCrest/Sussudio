@@ -19,13 +19,13 @@ static partial class Program
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
         var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
-        var recordingText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var recordingText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var recordingStatePresentationControllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
-        var outputText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var outputText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var outputPathControllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
-        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var captureOptionBindingControllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
-        var audioText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var audioText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var shellText = ReadMainWindowShellChromeAdapterSource();
         var statsOverlayCompositionControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var shellChromeControllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
@@ -47,6 +47,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ControllerInitialization.cs")),
             "controller initialization partial folded into MainWindow root composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.ControlBindings.cs")),
+            "XAML control binding adapter folded into MainWindow root code-behind");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Shell", "MainWindowPropertyChangedRouter.cs")),
@@ -395,7 +399,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var recordingPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
         AssertEqual(
             false,
@@ -412,7 +416,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PropertyChangedRecording.cs")),
-            "recording property-changed adapter folded into MainWindow.ControlBindings.cs");
+            "recording property-changed adapter folded into MainWindow.xaml.cs");
         AssertContains(recordingPropertyChangedText, "private void InitializeRecordingButtonChromeController()");
         AssertContains(recordingPropertyChangedText, "RecordingGlowBorder = RecordingGlowBorder,");
         AssertContains(recordingPropertyChangedText, "RecordingGlowPulseStoryboard = RecordingGlowPulseStoryboard,");
@@ -489,7 +493,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Recording", "RecordingStatePresentationController.cs")),
@@ -784,8 +788,9 @@ internal static Task ResponsiveShellLayout_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var setupBindingsText = ExtractMemberCode(bindingsText, "SetupBindings");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
         AssertEqual(
             false,
@@ -830,9 +835,9 @@ internal static Task ResponsiveShellLayout_LivesInController()
         AssertDoesNotContain(adapterText, "var maxChars = (int)((availableWidth - 20) / 7);");
         AssertDoesNotContain(adapterText, "var parts = path.Split('\\\\', '/');");
         AssertDoesNotContain(adapterText, "var candidate = $\"{root}\\\\...\\\\{tail}\";");
-        AssertDoesNotContain(bindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
-        AssertDoesNotContain(bindingsText, "private void UpdateOutputPathDisplay()");
-        AssertDoesNotContain(bindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
+        AssertDoesNotContain(setupBindingsText, "OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();");
+        AssertDoesNotContain(setupBindingsText, "private void UpdateOutputPathDisplay()");
+        AssertDoesNotContain(setupBindingsText, "ToolTipService.SetToolTip(OutputPathTextBox, path);");
 
         return Task.CompletedTask;
     }
@@ -880,7 +885,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
     internal static Task OutputPathButtonActions_LiveInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
         AssertEqual(
             false,
@@ -1000,7 +1005,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
 internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs").Replace("\r\n", "\n");
         const string policyMarker = "internal static class PreviewScreenshotPlanPolicy";
         var policyStart = controllerText.IndexOf(policyMarker, StringComparison.Ordinal);

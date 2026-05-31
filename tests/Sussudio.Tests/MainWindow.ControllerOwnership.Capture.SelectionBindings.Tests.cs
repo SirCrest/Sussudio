@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Collections;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -34,7 +34,7 @@ static partial class Program
         AssertContains(adapterText, "private void UpdateDeviceApplyButtonState()");
         AssertContains(adapterText, "private bool TryHandleCaptureSelectionPropertyChanged(string? propertyName)");
         AssertContains(adapterText, "=> _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.ControlBindings.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.CaptureSelectionBindings.Composition.cs")), "MainWindow capture selection adapter folded into MainWindow.xaml.cs");
 
         AssertContains(mainWindowText, "InitializeCaptureSelectionBindingController();");
         AssertContains(bindingsText, "AttachCaptureSelectionBindings();");
@@ -119,7 +119,6 @@ static partial class Program
         AssertDoesNotContain(adapterText, "_captureSelectionBindingController.AttachRecordingStringSelectionBindings()");
         AssertDoesNotContain(bindingsText, "private void QueueSelectionSync(");
         AssertDoesNotContain(bindingsText, "private static void AttachCollectionSync(");
-        AssertDoesNotContain(bindingsText, "private void EnsureDeviceSelection()");
 
         return Task.CompletedTask;
     }
@@ -127,6 +126,7 @@ static partial class Program
     internal static Task CaptureSelectionBindingPropertyRouter_LivesInController()
     {
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedRouteText = ExtractMemberCode(propertyChangedText, "RouteAsync");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
         var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
 
@@ -178,12 +178,12 @@ static partial class Program
         AssertContains(propertyChangesText, "EnsureSplitEncodeModeSelection();");
 
         AssertContains(adapterText, "=> _captureSelectionBindingController.TryHandlePropertyChanged(propertyName);");
-        AssertDoesNotContain(propertyChangedText, "HandleSelectedDevicePropertyChanged();");
-        AssertDoesNotContain(propertyChangedText, "HandleAvailableResolutionsPropertyChanged();");
-        AssertDoesNotContain(propertyChangedText, "HandleAvailableFrameRatesPropertyChanged();");
-        AssertDoesNotContain(propertyChangedText, "ApplyDeviceAudioControlState();");
-        AssertDoesNotContain(propertyChangedText, "EnsureFormatSelection();");
-        AssertDoesNotContain(propertyChangedText, "HandleAvailableSplitEncodeModesPropertyChanged();");
+        AssertDoesNotContain(propertyChangedRouteText, "HandleSelectedDevicePropertyChanged();");
+        AssertDoesNotContain(propertyChangedRouteText, "HandleAvailableResolutionsPropertyChanged();");
+        AssertDoesNotContain(propertyChangedRouteText, "HandleAvailableFrameRatesPropertyChanged();");
+        AssertDoesNotContain(propertyChangedRouteText, "ApplyDeviceAudioControlState();");
+        AssertDoesNotContain(propertyChangedRouteText, "EnsureFormatSelection();");
+        AssertDoesNotContain(propertyChangedRouteText, "HandleAvailableSplitEncodeModesPropertyChanged();");
 
         return Task.CompletedTask;
     }

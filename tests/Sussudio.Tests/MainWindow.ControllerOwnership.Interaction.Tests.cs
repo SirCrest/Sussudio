@@ -6,7 +6,7 @@ static partial class Program
     internal static Task RecordingButtonAction_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private RecordingButtonActionController _recordingButtonActionController = null!;");
@@ -34,7 +34,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.RecordingActions.cs")),
-            "recording button adapter folded into MainWindow.ControlBindings.cs");
+            "recording button adapter folded into MainWindow.xaml.cs");
 
         return Task.CompletedTask;
     }
@@ -43,9 +43,9 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
@@ -190,7 +190,7 @@ static partial class Program
     internal static Task AudioControlPresentation_LivesInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
-        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
 
         AssertContains(audioPropertyChangedText, "private AudioControlPresentationController _audioControlPresentationController = null!;");
@@ -254,10 +254,11 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var setupBindingsText = ExtractMemberCode(bindingsText, "SetupBindings");
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.ControlBindings.cs").Replace("\r\n", "\n");
+        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
@@ -268,7 +269,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.MicrophoneControls.cs")),
-            "microphone controls adapter folded into MainWindow.ControlBindings.cs");
+            "microphone controls adapter folded into MainWindow.xaml.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Audio", "MicrophoneControlsController.cs")),
@@ -305,10 +306,9 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "private Storyboard? _micMeterRowStoryboard;");
         AssertDoesNotContain(mainWindowText, "private bool _syncingMicrophoneVolumeControls;");
         AssertDoesNotContain(mainWindowText, "private const double MicMeterRowHeight = 14;");
-        AssertDoesNotContain(bindingsText, "MicVolumeSlider.ValueChanged +=");
-        AssertDoesNotContain(bindingsText, "SetupMicrophoneVolumeBindings();");
-        AssertDoesNotContain(bindingsText, "private void SyncMicrophoneVolumeControls(double volumePercent)");
-        AssertDoesNotContain(bindingsText, "private Storyboard CreateMicMeterRowStoryboard(bool showing)");
+        AssertDoesNotContain(setupBindingsText, "MicVolumeSlider.ValueChanged +=");
+        AssertDoesNotContain(setupBindingsText, "SetupMicrophoneVolumeBindings();");
+        AssertDoesNotContain(setupBindingsText, "private Storyboard CreateMicMeterRowStoryboard(bool showing)");
 
         return Task.CompletedTask;
     }

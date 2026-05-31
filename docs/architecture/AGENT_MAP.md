@@ -918,7 +918,7 @@ Primary current owners:
   file naming, status/log text policy, preview-frame capture, logging side
   effects, and button enable/disable state. Keep whole-window screenshot
   automation on `MainWindow.ShellChrome.Composition.cs` with the rest of the
-  `IAutomationWindowControl` adapter; `MainWindow.ControlBindings.cs` is the
+  `IAutomationWindowControl` adapter; `MainWindow.xaml.cs` is the
   XAML-facing adapter for preview-frame screenshots.
 - `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
   automation plus the recordings-folder command and shell automation host
@@ -1036,7 +1036,7 @@ Primary current owners:
   PropertyChanged event envelope, property-name normalization, and route order.
   Capture-selection and
   status-strip adapters are still considered first through the
-  `Sussudio/MainWindow.ControlBindings.cs` adapter and
+  `Sussudio/MainWindow.xaml.cs` adapter and
   `MainWindow.ShellChrome.Composition.cs`; broad domain property-name switches
   and status-strip routing logic live in focused controllers/partials.
 - `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs` owns shared
@@ -1053,7 +1053,7 @@ Primary current owners:
   dependency bag, runtime meter fields, smoothing, peak/range markers,
   microphone meter clipping, reset behavior, timer lifetime, `TranslateMarker`,
   monitoring/disabled animations, and rounded content clips.
-  `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
+  `Sussudio/MainWindow.xaml.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats
   dock visibility orchestration, stats/frame-time toggle event hookup and
   checked/unchecked handling, stats toggle-to-view model sync, frame-time
@@ -1996,12 +1996,12 @@ Primary current owners:
   property-change routing, ViewModel-derived lockout/HDR/title/audio-meter
   policy application, delegated record-button chrome, recording glow, Rec pulse,
   starting spinner, normal/recording content, padding, enabled-state
-  application, and the circle/pill width morph. `MainWindow.ControlBindings.cs`
+  application, and the circle/pill width morph. `MainWindow.xaml.cs`
   wires the chrome controller, recording action adapter, and recording-state
   presentation adapter.
 - `Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns the recording
   button command workflow and preview-state logging after a start.
-  `MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording and
+  `MainWindow.xaml.cs` is the XAML-facing adapter for recording and
   capture-device button workflows.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns live-signal pill
   text application, visibility state, show/hide debounce timers, and the small
@@ -2070,15 +2070,15 @@ Primary current owners:
   reinit renderer-stop/timeout policy lives with `PreviewRendererHostController.cs`;
   preview surface presentation and preview shadow visuals live in
   `PreviewTransitionAnimationController.cs`.
-- `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing recording
+- `Sussudio/MainWindow.xaml.cs` is the XAML-facing recording
   adapter. Recording-specific property-name routing, record-button, glow, pulse,
   and recording-time lockout projection live in
   `RecordingStatePresentationController`.
-- `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing recording,
+- `Sussudio/MainWindow.xaml.cs` is the XAML-facing recording,
   device, and output-path button/display adapter. `OutputPathController` owns
   output-path property-change routing, textbox updates, and browse/open
   commands.
-- `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing adapter
+- `Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter
   for capture option setup, event binding, and capture-option/source-signal
   property-change routing; the property-name router lives in
   `CaptureOptionBindingController`.
@@ -2104,7 +2104,7 @@ Primary current owners:
   volume sync, alongside initial audio/microphone projection, event hookup,
   microphone volume slider synchronization, save triggers, shelf enablement, and
   mic-meter row animation state.
-  `Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio/microphone
+  `Sussudio/MainWindow.xaml.cs` is the XAML-facing audio/microphone
   presentation adapter.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns the responsive
   control-bar label breakpoint, narrow/wide placement policy, responsive
@@ -2126,7 +2126,7 @@ Primary current owners:
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns pure
   capture/audio/microphone/resolution/frame-rate/string ComboBox selection and
   fallback matching.
-  `Sussudio/MainWindow.ControlBindings.cs` owns controller
+  `Sussudio/MainWindow.xaml.cs` owns controller
   instantiation, XAML dependency wiring, collection/property-change adapters,
   and the thin XAML-facing selection bridges for device, audio, device-audio,
   capture-mode, and recording option selection.
@@ -2142,11 +2142,11 @@ Primary current owners:
   those are driven only by the audio-control binding/presentation flow.
   Device-audio mode/gain control projection stays in
   `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
-  `Sussudio/MainWindow.ControlBindings.cs` is its XAML-facing adapter.
+  `Sussudio/MainWindow.xaml.cs` is its XAML-facing adapter.
 - `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path alongside capture-device selection synchronization.
-  `MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording,
+  `MainWindow.xaml.cs` is the XAML-facing adapter for recording,
   capture-device, and output-path button/display bridges.
 - `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
   capture option binding adapter context, setup, UI event attachment,
@@ -2159,13 +2159,13 @@ Primary current owners:
   control application, decoder-count selection handling, HDR hint/FPS telemetry
   tooltip text policy, and delegated presentation callbacks for option
   affordances, telemetry tooltips, and source overlay refreshes.
-  `MainWindow.ControlBindings.cs` is the XAML-facing capture and
+  `MainWindow.xaml.cs` is the XAML-facing capture and
   recording option adapter, including the small property-change forwarding
   method that delegates to this controller.
 - `Sussudio/Controllers/Recording/RecordingControlsControllers.cs` owns recording output-
   path textbox, tooltip, resize-event updates, and browse/open-recordings button
   workflows plus pure output-path truncation text policy.
-  `MainWindow.ControlBindings.cs` is the XAML-facing adapter used by binding
+  `MainWindow.xaml.cs` is the XAML-facing adapter used by binding
   setup, property changes, and button events.
 - `Sussudio/ViewModels/MainViewModel.*.cs` for root presentation state and
   automation-facing compatibility. `MainViewModel.cs` owns the public

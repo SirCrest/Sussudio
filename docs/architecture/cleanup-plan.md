@@ -681,7 +681,7 @@ Preview-frame screenshot button behavior now lives in
 `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs`.
 `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs` owns the pure output
 directory fallback, file naming, status text, and log text policy.
-`MainWindow.ControlBindings.cs` is the XAML-facing adapter; the controller keeps
+`MainWindow.xaml.cs` is the XAML-facing adapter; the controller keeps
 directory creation, preview-frame capture, logging side effects, and button
 enable/disable state.
 Renderer-level preview frame capture request state, timeout/cancellation
@@ -838,12 +838,12 @@ meter state, preview-volume slider sync, microphone enablement, microphone
 volume sync, meter setup, XAML/view-model meter dependencies, smoothing,
 markers, resets, timer lifetime, `TranslateMarker`, monitoring/disabled
 animations, and rounded clips.
-`Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio, microphone,
+`Sussudio/MainWindow.xaml.cs` is the XAML-facing audio, microphone,
 and audio-meter adapter;
 video-format collection setup, initial capture/recording option projection, and
 code-attached resolution/frame-rate handlers now live in
 `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`, with
-`MainWindow.ControlBindings.cs` left as the XAML-facing capture and
+`MainWindow.xaml.cs` left as the XAML-facing capture and
 recording option adapter.
 Flashback settings-control initialization, GPU decode binding/sync, and buffer
 duration combo sync now live in
@@ -2365,12 +2365,12 @@ Rec pulse, starting spinner, normal/recording content, padding, enabled-state
 application, the circle/pill width morph, recording-state lockout decisions,
 recording property-change routing, ViewModel-derived HDR/title/audio-meter
 policy application, and the `RecordingStatePresentationController` facade.
-`MainWindow.ControlBindings.cs` wires the chrome controller with the
+`MainWindow.xaml.cs` wires the chrome controller with the
 recording action and recording-state presentation adapters.
 
 Recording button command execution and preview-state logging after a recording
 start now live in `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`.
-`MainWindow.ControlBindings.cs` is the XAML-facing adapter for recording,
+`MainWindow.xaml.cs` is the XAML-facing adapter for recording,
 capture-device, and output-path button workflows.
 
 Live-signal pill text application, visibility state, show/hide debounce timers,
@@ -2481,10 +2481,10 @@ capture/audio control enablement, analog gain enablement, transition button
 enablement, FFmpeg button enablement, settled record-button content visibility,
 ViewModel-derived property-name routing, lockout/HDR/title/audio-meter policy application, and record-button
 chrome.
-`MainWindow.ControlBindings.cs` is the XAML-facing recording adapter.
+`MainWindow.xaml.cs` is the XAML-facing recording adapter.
 
 Capture-option property-name routing still lives in the focused
-`Sussudio/MainWindow.ControlBindings.cs` adapter. Output-path routing
+`Sussudio/MainWindow.xaml.cs` adapter. Output-path routing
 lives in `OutputPathController` inside `RecordingControlsControllers.cs`, shell visibility route order lives in
 `ShellChromeController` over `StatsOverlayCompositionController` and
 `SettingsShelfController` through
@@ -2505,7 +2505,7 @@ audio toggles, monitoring meter state, preview volume slider sync, microphone
 enablement, microphone volume sync, microphone volume slider synchronization,
 save triggers, shelf enablement, and mic-meter row animation state. The
 controller also owns the audio property-change router;
-`Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio/microphone
+`Sussudio/MainWindow.xaml.cs` is the XAML-facing audio/microphone
 presentation adapter.
 
 Responsive shell layout is owned by
@@ -2530,7 +2530,7 @@ application, device-audio mode/gain projection, and the capture-selection
 `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns pure
 capture/audio/microphone/resolution/frame-rate/string ComboBox selection and
 fallback matching, while
-`Sussudio/MainWindow.ControlBindings.cs` keeps controller
+`Sussudio/MainWindow.xaml.cs` keeps controller
 instantiation, XAML dependency wiring, collection/property-change adapters, and
 the thin XAML-facing selection bridges for device, audio, device-audio,
 capture-mode, and recording option selection while preserving the old
@@ -2538,7 +2538,7 @@ method names for binding setup and cross-controller calls.
 
 Capture-device refresh/apply button workflows now live in
 `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
-`MainWindow.ControlBindings.cs` is the XAML-facing adapter and keeps the explicit
+`MainWindow.xaml.cs` is the XAML-facing adapter and keeps the explicit
 apply/reinit path beside selection synchronization.
 
 Pure capture-option presentation decisions now live in
@@ -2548,7 +2548,7 @@ clipping visibility, and initial decoder-count clamping. XAML control
 application, decoder-count selection handling, delegation to policy helpers,
 and pure HDR readiness hint/FPS telemetry tooltip text policy live in
 `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`.
-`MainWindow.ControlBindings.cs` is the XAML-facing adapter and keeps
+`MainWindow.xaml.cs` is the XAML-facing adapter and keeps
 the existing method names for binding setup, property-change projection, and
 the XAML decoder-count selection event.
 
@@ -2564,11 +2564,11 @@ HDR/true-HDR ViewModel-to-control sync, preview HDR passthrough forwarding,
 option affordance application, telemetry tooltip policy, decoder-count
 presentation, and presentation callback routing for option affordances, telemetry tooltips, and
 source overlay refreshes.
-`Sussudio/MainWindow.ControlBindings.cs` now owns the XAML-facing
+`Sussudio/MainWindow.xaml.cs` now owns the XAML-facing
 binding setup methods and the small property-change forwarding method, so
 there is no separate pass-through partial just for capture-option property
 changes.
-`MainWindow.ControlBindings.cs` keeps the old capture and recording option
+`MainWindow.xaml.cs` keeps the old capture and recording option
 method names used by `SetupBindings()`.
 
 MainWindow capture ownership tests now mirror these runtime owners instead of
@@ -2583,7 +2583,7 @@ open-recordings button workflows now live in
 `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`, along with
 pure truncation text policy.
 `OutputPathController` also owns the output-path property-change route;
-`MainWindow.ControlBindings.cs` is the XAML-facing adapter used by binding setup,
+`MainWindow.xaml.cs` is the XAML-facing adapter used by binding setup,
 property changes, and button events.
 
 Diagnostic session DTOs live in `tools/Common/DiagnosticSessionResult.cs`,
