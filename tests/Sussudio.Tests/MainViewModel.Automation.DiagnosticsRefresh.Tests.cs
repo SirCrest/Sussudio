@@ -302,8 +302,12 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.InitializedSession.cs")),
-            "source-reader initialized-session handoff folded into initialization owner");
-        AssertDoesNotContain(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+            "source-reader initialized-session handoff folded into active lifecycle owner");
+        AssertContains(sourceReaderRootText, "public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Initialization.cs")),
+            "source-reader initialization folded into active lifecycle owner");
         AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
         AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
@@ -1248,7 +1252,7 @@ static partial class Program
         var diagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
         var frameLayoutText = rootText;
         var lifecycleText = rootText;
-        var initializationText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs");
+        var initializationText = rootText;
         var initializedSessionText = initializationText;
         var readLoopText = lifecycleText;
         var frameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
@@ -1268,7 +1272,6 @@ static partial class Program
                 {
                     rootText,
                     lifecycleText,
-                    initializationText,
                     frameDeliveryText,
                 }));
     }

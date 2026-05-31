@@ -1718,16 +1718,13 @@ the selected native type and requested NV12/P010 output type can be reviewed
 together without changing negotiation semantics. Keep high-level source-reader
 state fields in the root source-reader file.
 
-Media Foundation source-reader initialization orchestration now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Initialization.cs`. Keep
-public initialization validation, startup-reference acquisition/release, reader
-attribute construction, source media-type selection, and initialization
-success/failure logging there. Actual-output reconciliation, strict
-negotiated-output validation, runtime field reset, and COM/startup ownership
-handoff after successful initialization also live in this initialization owner.
-
-Media Foundation source-reader active lifetime now lives in
+Media Foundation source-reader initialization orchestration and active lifetime
+now live together in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
+public initialization validation, startup-reference acquisition/release, reader
+attribute construction, source media-type selection, actual-output
+reconciliation, strict negotiated-output validation, runtime field reset,
+COM/startup ownership handoff, initialization success/failure logging,
 start/stop/dispose, read thread priority, `ReadSample` outstanding-state
 tracking, sample timestamp cadence handoff, frame-delivery invocation,
 frame-drop accounting, and fatal D3D output failure break behavior there.
