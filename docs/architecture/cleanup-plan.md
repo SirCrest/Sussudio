@@ -1365,22 +1365,18 @@ diagnostics, and throttled queue rejection logs there.
 Flashback encoder loop orchestration now lives in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the
 background encode loop, normal drain ordering, force-rotate dispatch,
-cancellation handling, fatal cleanup, final segment registration, bounded
-video/GPU/audio/microphone packet drains, frame-size defense, queue-depth
-accounting, encoder submission, GPU texture release, pooled buffer returns,
-encoder PTS resolution, latest-PTS and disk-byte refresh, frame-encoded event
-dispatch, segment-rotation triggering, active-segment completion/registration,
-and rotation-failure recovery there.
-
-Flashback encoder export force-rotation now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs`. Keep
 force-rotate state, status projections, idle waits, `ForceRotateForExport`,
 request publication, timeout/cancellation result classification,
 committed-pending grace handling, pending-request cancellation, empty completion
 on stop/dispose/failure, drain abort classification, the `ForceRotateRequest`
 state machine, encoding-thread request capture, queue drain-to-rotate ordering,
-commit/rotation execution, result completion, failure logging, and
-draining-gate cleanup there.
+commit/rotation execution, result completion, failure logging, draining-gate
+cleanup, cancellation handling, fatal cleanup, final segment registration,
+bounded video/GPU/audio/microphone packet drains, frame-size defense,
+queue-depth accounting, encoder submission, GPU texture release, pooled buffer
+returns, encoder PTS resolution, latest-PTS and disk-byte refresh,
+frame-encoded event dispatch, segment-rotation triggering, active-segment
+completion/registration, and rotation-failure recovery there.
 
 Flashback encoder producer entry points live with queueing in
 `Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`. Keep raw, lease,

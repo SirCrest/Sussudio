@@ -226,11 +226,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackEncoderSink_ForceRotateLivesInFocusedPartial()
+    internal static Task FlashbackEncoderSink_ForceRotateLivesWithEncodingLoop()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs")
+        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -274,7 +274,12 @@ static partial class Program
         AssertDoesNotContain(rootText, "private bool _forceRotateDraining;");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(docsText, "FlashbackEncoderSink.ForceRotate.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.EncodingLoop.cs");
+        AssertDoesNotContain(docsText, "FlashbackEncoderSink.ForceRotate.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
+            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.ForceRotateRequests.cs",
@@ -286,7 +291,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.ForceRotate.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.EncodingLoop.cs");
         }
 
         return Task.CompletedTask;

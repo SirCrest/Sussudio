@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -464,8 +465,8 @@ static partial class Program
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
-        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.ForceRotate.cs").Replace("\r\n", "\n");
         var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
+        var forceRotateText = loopText;
 
         var loopBlock = ExtractTextBetween(
             loopText,
@@ -474,7 +475,7 @@ static partial class Program
         var executionBlock = ExtractTextBetween(
             forceRotateText,
             "private bool ProcessPendingForceRotate(",
-            "    }\n}");
+            "    private bool TryCancelForceRotate");
 
         AssertContains(sourceText, "private sealed class ForceRotateRequest");
         AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
@@ -487,6 +488,10 @@ static partial class Program
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
         AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
         AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
+            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
         AssertContains(loopBlock, "if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
         AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
         AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
