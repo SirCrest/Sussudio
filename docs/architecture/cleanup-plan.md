@@ -812,9 +812,10 @@ snapshot, D3D-projection, and surface test owners so failures point at the
 runtime owner that actually drifted instead of one combined harness check.
 MainWindow Flashback ownership tests mirror the Flashback controller owners
 through `MainWindow.FlashbackOwnership.Tests.cs`: polling, timeline
-presentation, playhead/CTI motion, playback presentation/coordinator behavior,
-and settings/command binding remain named test methods in one Flashback
-ownership spec.
+presentation, scrub release/cancel/capture-lost behavior, fullscreen bridge
+hooks, timeline toggle rollback/lockout, timeline geometry, playhead/CTI
+motion, playback presentation/coordinator behavior, and settings/command
+binding remain named test methods in one Flashback ownership spec.
 
 Audio and microphone meter rendering, initial audio/microphone control
 projection, and event hookup now live in

@@ -1188,7 +1188,9 @@ Primary current owners:
   controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
   assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns Flashback
-  status/playback polling, timeline track layout, marker/export presentation,
+  status/playback polling, scrub release/cancel/capture-lost behavior,
+  fullscreen Flashback bridge hooks, timeline toggle rollback/lockout,
+  timeline geometry, timeline track layout, marker/export presentation,
   playhead/CTI motion, playback presentation/coordinator, settings binding, and
   command controller ownership assertions.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
@@ -1334,10 +1336,6 @@ Primary current owners:
   automation enable/restart entry points, Flashback export backend-lease and
   export-operation lock assertions, ViewModel export routing, and export CTS
   lifecycle assertions.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.Interactions.Tests.cs`
-  owns Flashback scrub, release/cancel/capture-lost, fullscreen Flashback
-  bridge, timeline toggle rollback, and lockout assertions: shortcut gating,
-  timeline visibility, and scrub-end handoff.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
   owns retained Flashback preview backend, audio restoration, preview stop
   rollback assertions, device-switch teardown ordering between video stop,
