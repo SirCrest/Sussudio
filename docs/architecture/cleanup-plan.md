@@ -579,9 +579,9 @@ Shared harness helpers now live in one support boundary,
 text helpers, reflection/property access, wait helpers, and synthetic
 capture/recording object factories, tool assembly loading, isolated load
 contexts, and stale-build detection.
-Synthetic MJPEG timing metric factories now live with the only scenarios that
-use them in
-`tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`.
+Synthetic MJPEG timing metric factories live with the health snapshot ownership
+and cached-metrics scenarios that use them in
+`tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`.
 
 Shared capture configuration reflection helpers for remaining legacy capture
 model checks now live in `tests/Sussudio.Tests/HarnessCore.cs`.

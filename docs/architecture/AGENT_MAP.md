@@ -1494,11 +1494,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
   owns CaptureService health snapshot assembly, capture-cadence, MJPEG,
   AV-sync, Flashback export/buffer/queue/playback, recording, and
-  source-telemetry ownership assertions plus the structured source telemetry
-  behavior scenario and shared health snapshot assertion helpers.
-- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.MjpegCachedMetrics.Tests.cs`
-  owns cached MJPEG timing propagation for health and diagnostics snapshots
-  plus the synthetic MJPEG timing metric factories used by those scenarios.
+  source-telemetry ownership assertions plus structured source telemetry,
+  cached MJPEG timing propagation for health and diagnostics snapshots, the
+  synthetic MJPEG timing metric factories used by those scenarios, and shared
+  health snapshot assertion helpers.
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns the
   recording verifier integration seam: fake process-supervisor,
   runtime-snapshot, verifier-construction, verification-invocation helpers,
