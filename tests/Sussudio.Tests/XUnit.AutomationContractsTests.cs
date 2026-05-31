@@ -744,8 +744,8 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.CaptureDiscoverySourceOwnership_LivesInFocusedPartials();
 
     [Fact]
-    public Task AutomationCommandKindSourceOwnershipIsContractAligned()
-        => global::Program.AutomationContracts_SourceOwnership_IsModelAligned();
+    public Task AutomationCommandCatalogSourceOwnershipIsContractAligned()
+        => global::Program.AutomationContracts_SourceOwnership_IsCatalogAligned();
 
     [Fact]
     public Task DiagnosticsSnapshotRefreshIsSerializedForRecordingResponses()

@@ -58,8 +58,7 @@ error shaping, unknown-command policy, and pipe security policy from
 
 Changed ownership:
 
-- `AutomationCommandKind.cs`
-- `AutomationCommandCatalog.cs`
+- `AutomationCommandCatalog.cs` (including `AutomationCommandKind` numeric IDs)
 - `AutomationPipeProtocol.cs`
 
 Diagnostic session scenario names, CLI help text, MCP-compatible description

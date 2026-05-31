@@ -124,15 +124,14 @@ Primary owner: `Sussudio.Automation.Contracts/`
 
 Entry points:
 
-- `AutomationCommandKind.cs` owns numeric command IDs. Append only; never
-  renumber or reuse values.
-- `AutomationCommandCatalog.cs` owns command lookup, canonical name resolution,
-  default metadata helpers, path-policy types/validation, manifest DTO
-  projection, stable manifest JSON serialization, and command metadata table
-  registration orchestration plus grouped core, capture, UI, Flashback, and
-  verification metadata rows; keep payload shape, readiness gating, timeout
-  policy, CLI help, MCP descriptions, and path-policy assignments beside the
-  command family they describe.
+- `AutomationCommandCatalog.cs` owns numeric command IDs, strict ID ordering
+  rules, command lookup, canonical name resolution, default metadata helpers,
+  path-policy types/validation, manifest DTO projection, stable manifest JSON
+  serialization, and command metadata table registration orchestration plus
+  grouped core, capture, UI, Flashback, and verification metadata rows; append
+  command IDs only and never renumber or reuse values. Keep payload shape,
+  readiness gating, timeout policy, CLI help, MCP descriptions, and path-policy
+  assignments beside the command family they describe.
 - `AutomationPipeProtocol.cs` owns pipe names, auth env var, manifest revision,
   command resolution, request envelope shape, the fallback-security predicate
   shared by app and tests, pipe command result handoff, pipe client exception

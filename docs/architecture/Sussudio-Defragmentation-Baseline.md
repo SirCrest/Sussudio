@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: automation command contract/catalog locality
+Problem: `Sussudio.Automation.Contracts/AutomationCommandKind.cs` was a 79-line wire-contract enum reviewed in lockstep with `AutomationCommandCatalog.cs`, `AutomationPipeProtocol.CommandManifestRevision`, CLI/MCP/AutomationClient metadata, and README/AGENT_MAP automation consumer checklists. Changing an automation command still required opening a separate tiny ID table plus the catalog owner that maps every ID to names, payloads, readiness gates, timeouts, path policy, CLI help, MCP descriptions, and manifest projection.
+Files consolidated: `Sussudio.Automation.Contracts/AutomationCommandKind.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; generated baseline production `.cs` count 179 -> 178; production `.cs` files under 80 lines 2 -> 1
+Build/tests/runtime checks: `dotnet build Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationContracts|FullyQualifiedName~AutomationToolContracts|FullyQualifiedName~ServiceNamespace|FullyQualifiedName~ArchitectureDocs"` passed (30 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); current core app `.cs` count/LoC: 136 / 89,684; current test `.cs` count/LoC: 81 / 56,118.
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, numeric enum values, wire payloads, manifest revision, pipe protocol constants, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: `Sussudio.Models.AutomationCommandKind` keeps the same namespace, public type name, explicit numeric values, strict ordering rules, and consumers; `AutomationCommandCatalog` keeps the same namespace, public metadata types, manifest projection, path validation, normalization, timeout/readiness metadata, and grouped command registrations while now owning the ID table in the same review surface.
+Notes for future agents: keep automation command IDs, append-only maintainer rules, command metadata rows, manifest DTO projection, path policy, CLI help, MCP descriptions, and timeout/readiness metadata together in `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs`. Bump `AutomationPipeProtocol.CommandManifestRevision` only when command membership changes, not for source movement.
+
+Date: 2026-05-31
 Area: automation diagnostics capture/MJPEG projection locality
 Problem: `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` split MJPEG capture-health, timing, preview-jitter, and packet-hash projection away from the adjacent capture-format/HDR/transport projection owner even though both feed the same private automation snapshot capture projection and flattening path.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`

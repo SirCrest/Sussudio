@@ -149,25 +149,27 @@ static partial class Program
            source.Contains(namespacePrefix + "\n{", StringComparison.Ordinal) ||
            source.Contains(namespacePrefix + "\r\n{", StringComparison.Ordinal);
 
-    internal static Task AutomationContracts_SourceOwnership_IsModelAligned()
+    internal static Task AutomationContracts_SourceOwnership_IsCatalogAligned()
     {
         var repoRoot = GetRepoRoot();
         var automationContractsProject = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "Sussudio.Automation.Contracts.csproj");
         AssertEqual(true, File.Exists(automationContractsProject), "Automation contracts project exists");
 
+        var commandKindPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationCommandKind.cs");
+        AssertEqual(
+            false,
+            File.Exists(commandKindPath),
+            "AutomationCommandKind numeric ID table lives with AutomationCommandCatalog");
+
         foreach (var contractFile in new[]
         {
-            "AutomationCommandKind.cs",
             "AutomationCommandCatalog.cs",
             "AutomationPipeProtocol.cs"
         })
         {
             var contractPath = Path.Combine(repoRoot, "Sussudio.Automation.Contracts", contractFile);
             AssertEqual(true, File.Exists(contractPath), $"{contractFile} contract source exists");
-            var expectedNamespace = string.Equals(contractFile, "AutomationCommandKind.cs", StringComparison.Ordinal)
-                ? "namespace Sussudio.Models;"
-                : "namespace Sussudio.Tools;";
-            AssertContains(File.ReadAllText(contractPath), expectedNamespace);
+            AssertContains(File.ReadAllText(contractPath), "namespace Sussudio.Tools");
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(repoRoot, "tools", "Common", contractFile)),
@@ -181,6 +183,24 @@ static partial class Program
                 File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", contractFile)),
                 $"app project must not own {contractFile}");
         }
+
+        var catalogText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationCommandCatalog.cs"));
+        AssertContains(catalogText, "namespace Sussudio.Models");
+        AssertContains(catalogText, "public enum AutomationCommandKind");
+        AssertContains(catalogText, "public static class AutomationCommandCatalog");
+        AssertContains(catalogText, "MAINTAINERS - STRICT ORDERING RULES");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationCommandKind.cs")),
+            "tools/Common must not own AutomationCommandKind");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationCommandKind.cs")),
+            "tools/Common/AutomationPipeClient must not own AutomationCommandKind");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Models", "Automation", "AutomationCommandKind.cs")),
+            "app project must not own AutomationCommandKind");
 
         var appIncludes = ReadCompileIncludes(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
         var appReferences = ReadProjectReferences(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));

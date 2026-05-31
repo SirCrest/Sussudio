@@ -154,7 +154,6 @@ shape, readiness gating, timeouts, path policy, CLI help, and MCP descriptions.
 Then keep these consumers in sync:
 
 - `Sussudio/Services/Automation/AutomationCommandDispatcher*.cs`
-- `Sussudio.Automation.Contracts/AutomationCommandKind.cs`
 - `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs`
 - `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`
 - `tools/ssctl/`

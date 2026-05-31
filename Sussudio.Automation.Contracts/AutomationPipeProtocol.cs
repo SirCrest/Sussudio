@@ -19,7 +19,8 @@ public static class AutomationPipeProtocol
     // Bump by +1 whenever AutomationCommandKind gains, loses, or renames a
     // member. The server uses this to reject clients that were built against
     // a different manifest revision before they can misroute a command. See
-    // Sussudio.Automation.Contracts/AutomationCommandKind.cs for the
+    // the AutomationCommandKind section in
+    // Sussudio.Automation.Contracts/AutomationCommandCatalog.cs for the
     // maintainer rules.
     public const int CommandManifestRevision = 1;
 

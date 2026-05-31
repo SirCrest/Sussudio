@@ -101,7 +101,7 @@ static partial class Program
         var consumers = ExtractReadmeAutomationConsumers(readmeText).ToArray();
         var missing = new List<string>();
 
-        AssertEqual(9, consumers.Length, "README automation consumer checklist count");
+        AssertEqual(8, consumers.Length, "README automation consumer checklist count");
 
         foreach (var consumer in consumers)
         {
@@ -508,12 +508,10 @@ static partial class Program
         {
             "Sussudio/Services/Automation/AutomationCommandDispatcher*.cs" =>
                 AgentMapCoversEveryAutomationCommandDispatcherFile(agentMapText),
-            "Sussudio.Automation.Contracts/AutomationCommandKind.cs" =>
-                agentMapText.Contains("Primary owner: `Sussudio.Automation.Contracts/`", StringComparison.Ordinal) &&
-                agentMapText.Contains("`AutomationCommandKind.cs` owns numeric command IDs.", StringComparison.Ordinal),
             "Sussudio.Automation.Contracts/AutomationCommandCatalog.cs" =>
                 agentMapText.Contains("Primary owner: `Sussudio.Automation.Contracts/`", StringComparison.Ordinal) &&
-                agentMapText.Contains("`AutomationCommandCatalog.cs` owns command lookup", StringComparison.Ordinal) &&
+                agentMapText.Contains("`AutomationCommandCatalog.cs` owns numeric command IDs", StringComparison.Ordinal) &&
+                agentMapText.Contains("command lookup", StringComparison.Ordinal) &&
                 agentMapText.Contains("command metadata table", StringComparison.Ordinal) &&
                 agentMapText.Contains("registration orchestration", StringComparison.Ordinal),
             "Sussudio.Automation.Contracts/AutomationPipeProtocol.cs" =>
