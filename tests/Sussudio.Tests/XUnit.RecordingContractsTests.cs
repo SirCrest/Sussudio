@@ -42,12 +42,12 @@ public sealed class RecordingPipelineContractsTests
         => global::Program.CaptureService_RecordingOutcomeStateLivesWithRecordingLifecycle();
 
     [Fact]
-    public Task CaptureServiceAudioOwnershipLivesInFocusedPartials()
-        => global::Program.CaptureService_AudioOwnershipLivesInFocusedPartials();
+    public Task CaptureServiceAudioOwnershipLivesWithPreviewLifecycleOwner()
+        => global::Program.CaptureService_AudioOwnershipLivesWithPreviewLifecycleOwner();
 
     [Fact]
-    public Task CaptureServiceMicrophoneRestartAfterRecordingLivesInAudioPreviewLifecyclePartial()
-        => global::Program.CaptureService_MicrophoneRestartAfterRecordingLivesInAudioPreviewLifecyclePartial();
+    public Task CaptureServiceMicrophoneRestartAfterRecordingLivesInPreviewLifecycleOwner()
+        => global::Program.CaptureService_MicrophoneRestartAfterRecordingLivesInPreviewLifecycleOwner();
 
     [Fact]
     public Task LibAvRecordingSinkStopValidatesFinalOutput()

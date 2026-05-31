@@ -432,7 +432,7 @@ static partial class Program
     {
         var currentStateTransitionOwners = new[]
         {
-            "Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs",
+            "Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs",
             "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs"
         };
 
@@ -446,7 +446,6 @@ static partial class Program
         {
             "Sussudio/Services/Capture/CaptureService.cs",
             "Sussudio/Services/Capture/CaptureService.cs",
-            "Sussudio/Services/Capture/CaptureService.PreviewStart.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs",
             "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"
         };

@@ -107,8 +107,8 @@ public sealed class PresentationPreviewCapturePreviewLifecycleContractsTests
         => global::Program.PreviewStartup_ToleratesMissingAudioCaptureDevices();
 
     [Fact]
-    public Task CaptureServicePreviewLifecycleLivesInFocusedPartials()
-        => global::Program.CaptureService_PreviewLifecycleLivesInFocusedPartials();
+    public Task CaptureServicePreviewLifecycleLivesInCohesiveOwner()
+        => global::Program.CaptureService_PreviewLifecycleLivesInCohesiveOwner();
 
     [Fact]
     public Task AudioPreviewRemainsInactiveWhenNoAudioCaptureDeviceExists()

@@ -641,7 +641,7 @@ static partial class Program
         var captureHealthSnapshotRootSource = sources.CaptureHealthSnapshotRootSource;
         var captureSnapshotsSource = sources.CaptureSnapshotsSource;
         var unifiedVideoCaptureSource = sources.UnifiedVideoCaptureSource;
-        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
+        var microphoneMonitorText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n");
         var stopRecordingBackendRouter = ExtractSourceBlock(
             captureServiceSource,

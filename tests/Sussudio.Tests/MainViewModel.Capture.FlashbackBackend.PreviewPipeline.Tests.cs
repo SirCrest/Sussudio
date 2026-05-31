@@ -9,7 +9,7 @@ static partial class Program
 {
     internal static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewStart.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n");
         var unifiedVideoCaptureText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
             .Replace("\r\n", "\n");
@@ -124,7 +124,7 @@ static partial class Program
             startVideoPreviewRaw,
             "await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken)",
             "// Start flashback AFTER");
-        var previewAudioGraphRaw = ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs")
+        var previewAudioGraphRaw = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n");
         var previewMicMonitorStart = ExtractTextBetween(
             previewAudioGraphRaw,
@@ -179,7 +179,7 @@ static partial class Program
             "newCapture.AttachRecordingSink(activeSink);",
             "await _previewAudioGraph.StartPlaybackAsync(");
         var updateMicrophoneMonitor = ExtractTextBetween(
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs").Replace("\r\n", "\n"),
             "public Task UpdateMicrophoneMonitorAsync",
             "        }, cancellationToken);");
         AssertContains(updateMicrophoneMonitor, "if (_isRecording)");

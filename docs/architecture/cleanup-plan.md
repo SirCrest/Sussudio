@@ -927,9 +927,9 @@ and initialized status event.
 
 WASAPI audio-level/failure event projection, audio-preview start/stop
 lifecycle, and live audio input switching now live in
-`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`. Preview-time
+`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`. Preview-time
 microphone monitoring lives in
-`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs` for shared
+`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs` for shared
 state, mic-level forwarding, writer-detach/disposal cleanup, the public update
 transaction, preview-time Flashback mic writer attachment, and post-recording
 restart/reattachment.
@@ -1061,7 +1061,7 @@ the visible final outcome publication before delayed cancellation throws.
 Recording outcome field publication now lives with
 `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`; post-recording
 microphone monitor restart mechanics live in
-`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs`.
+`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`.
 The live-edge boundary snapshot in
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`
 keeps idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
@@ -1108,7 +1108,7 @@ progress forwarding/normalization, force-rotate fallback counters, and
 failure-kind classification there.
 
 Shared video-pipeline lifecycle handoff now lives in
-`Sussudio/Services/Capture/CaptureService.PreviewStart.cs`, alongside preview
+`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, alongside preview
 reuse/fresh-start orchestration. That file owns preview-frame sink attachment,
 late Flashback playback preview wiring, shared D3D preview-device handoff, and
 fatal/pixel callback attach/detach.
@@ -1118,21 +1118,20 @@ cleanup after LibAv drains now live in
 `Sussudio/Services/Capture/CapturePipelineResources.cs`; CaptureService
 callers use that aggregate directly instead of private root resource shims.
 
-Preview lifecycle now lives in focused CaptureService partials:
-`Sussudio/Services/Capture/CaptureService.PreviewStart.cs` owns the
+Preview lifecycle now lives in one CaptureService owner:
+`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs` owns the
 video-preview start/stop transition entry points and sequencing, preview
 pipeline and Flashback backend recycle decisions before start, retained-backend
 fast-path reattachment, retained video/Flashback backend reuse checks,
 capture-settings cloning, fresh UVC startup, preview-start rollback, fresh
 preview backend startup ordering, keep-pipeline-alive detach semantics,
 stopped-state/telemetry commit, preview pipeline disposal ordering, Flashback
-backend disposal, WASAPI disposal, and microphone cleanup;
-`Sussudio/Services/Capture/CaptureService.AudioPreviewLifecycle.cs` owns preview
-WASAPI capture startup, video-only audio fallback logging, preview playback
-attach, preview-time microphone monitor startup, and partially-started audio
-rollback, plus committed live audio input switching and Flashback audio attach;
-shared unified-video cleanup mechanics still delegate to the video pipeline
-resource owner;
+backend disposal, WASAPI disposal, microphone cleanup, preview WASAPI capture
+startup, video-only audio fallback logging, preview playback attach,
+preview-time microphone monitor startup, partially-started audio rollback,
+committed live audio input switching, and Flashback audio attach. Shared
+unified-video cleanup mechanics still delegate to the video pipeline resource
+owner.
 
 Recording integrity policy now lives in
 `Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs`. That owner
