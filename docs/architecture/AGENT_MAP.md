@@ -1445,13 +1445,11 @@ Primary current owners:
   conversion, root diagnostics, COM contract, and bounded stop assertions.
 - `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
   UnifiedVideoCapture frame-ingress, CPU-MJPEG format reporting, stop-failure
-  MJPEG pipeline retention, sink fan-out, and CaptureService Flashback backend
-  aggregate ownership assertions.
-- `tests/Sussudio.Tests/CaptureService.FlashbackOrchestrationSource.Tests.cs`
-  owns the source family helper for Flashback backend orchestration partials
-  and recording finalization partials plus the focused-partial ownership
-  contracts, including LibAv live-preview restoration and recording
-  outcome-state ownership.
+  MJPEG pipeline retention, sink fan-out, CaptureService Flashback backend
+  aggregate ownership assertions, the shared source family helper for
+  Flashback backend orchestration/recording finalization partials, focused
+  Flashback orchestration partial ownership contracts, LibAv live-preview
+  restoration, and recording outcome-state ownership.
   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the
   xUnit execution surface for these recording queue, LibAv sink, WASAPI,
   capture fan-out, and CaptureService recording ownership contracts after their
