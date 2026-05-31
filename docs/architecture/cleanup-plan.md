@@ -1545,16 +1545,15 @@ stop/unbind/native-call fence state, render-loop shell orchestration,
 shared-device reset/rebind consumption, composition-transform wake handling,
 pending-frame render dispatch, final render-thread drain, and renderer-mode
 reset in the renderer root facade,
-queue state and signaling in the renderer root facade, D3D device/swap-chain, input texture, and HDR shader input resources in
+queue state and signaling in the renderer root facade, D3D device/swap-chain, input texture, HDR shader input resources, shader resource/cache state, and shader compilation in
 `D3D11PreviewRenderer.Resources.cs`, swap-chain panel binding state in
 `D3D11PreviewRenderer.cs`, render-thread waitable frame-latency
 pacing in `D3D11PreviewRenderer.cs`, render-pass selection plus
 VideoProcessor, NV12 shader, and HDR shader execution plus shared present
-accounting in `D3D11PreviewRenderer.RenderPasses.cs`, and shader
-resource/cache state in `D3D11PreviewRenderer.ShaderRendering.cs`. Keep the
+accounting in `D3D11PreviewRenderer.RenderPasses.cs`. Keep the
 renderer root limited to facade/lifecycle/render-loop orchestration, panel
 binding, composition transforms, frame-latency pacing, user-facing accessors,
-public frame submission, queue signaling, and public state toggles; leave resource, render-pass, shader, and
+public frame submission, queue signaling, and public state toggles; leave resource, render-pass, and
 metrics implementation state in their focused owners.
 
 D3D preview renderer queue-owned frame lifetime and metrics model types now live
@@ -1571,16 +1570,16 @@ Keep the measured 4K120 cadence defaults, swap-chain queue/latency env
 overrides, DXGI statistics toggles, MMCSS settings, and stop-fence timeouts there. Native
 interop declarations now live with their behavior owners: keep
 `ISwapChainPanelNative` in `D3D11PreviewRenderer.cs`,
-`ID3DBlob` and `D3DCompileNative` in `D3D11PreviewRenderer.ShaderRendering.cs`,
+`ID3DBlob` and `D3DCompileNative` in `D3D11PreviewRenderer.Resources.cs`,
 and `DwmFlush` in `D3D11PreviewRenderer.Metrics.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
 `D3D11PreviewRenderer.cs`.
 
 D3D preview renderer shader compilation now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
 shader bytecode creation, sampler creation, viewport constant-buffer creation,
 and compile-fallback logging with shader resource/cache state; keep
 `D3DCompileNative` invocation, `ID3DBlob` byte extraction, and compile-error
-string extraction, HLSL text, and renderer mode labels with shader rendering.
+string extraction, HLSL text, and renderer mode labels with D3D resources.
 
 D3D preview renderer frame submission now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep public raw
@@ -1607,7 +1606,7 @@ failure telemetry and first-frame notification reset/UI enqueue in
 `D3D11PreviewRenderer.Metrics.cs`, render-pass selection,
 VideoProcessor execution, shader draw execution, and shared present accounting in
 `D3D11PreviewRenderer.RenderPasses.cs`, and shader resource/cache state in
-`D3D11PreviewRenderer.ShaderRendering.cs`.
+`D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview renderer render-pass selection now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`. Keep
@@ -1617,7 +1616,7 @@ draw calls, passthrough/tonemap mode selection, shader-mode present messages,
 VideoProcessor input view resolution, external texture input-view creation, raw
 frame byte/lease upload, direct texture update fallback, and staging copy
 mechanics there. Shader resource/cache state now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`. Keep shader
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep shader
 fields, reusable shader class-instance arrays, and NV12 SRV caching there; keep
 render-thread orchestration in `D3D11PreviewRenderer.cs`, and keep
 present accounting and slow-frame diagnostic call sites with render-pass
@@ -1676,7 +1675,7 @@ SRV creation, Device3 fallback, input texture cleanup, video-processor creation
 orchestration, processor-resource teardown, swap-chain RTV/output view reuse,
 and VideoProcessor input/output color-space updates there.
 Shader/SRV teardown stays with
-`D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
+`D3D11PreviewRenderer.Resources.cs`, and preview-frame capture staging
 teardown stays with `D3D11PreviewRenderer.RenderPasses.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.

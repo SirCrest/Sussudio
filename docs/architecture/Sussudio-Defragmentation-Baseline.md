@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: D3D preview renderer shader-resource locality
+Problem: `D3D11PreviewRenderer.ShaderRendering.cs` owned HLSL sources, renderer mode labels, D3DCompiler interop, shader bytecode compilation, shader/sampler/viewport constant-buffer creation, NV12 SRV caching, and shader pipeline cleanup while `D3D11PreviewRenderer.Resources.cs` owned device/swap-chain initialization, called shader compilation during `InitializeD3D`, and executed top-level resource cleanup. Reviewing one D3D resource lifetime transaction still required a separate shader-resource partial before returning to the resource owner.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.ShaderRendering.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `D3D11PreviewRenderer` production partial count 5 -> 4; generated baseline production `.cs` count 194 -> 193
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~D3D11PreviewRenderer|FullyQualifiedName~PresentationPreviewD3D"` passed (36 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
+CLI/MCP/pipe checks, if applicable: not applicable; source consolidation only, no public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture/preview/recording/Flashback/HDR behavior, or hot-path runtime code changed.
+Behavior preserved: shader source strings, renderer mode labels, `D3DCompileNative`, `ID3DBlob`, shader byte/error extraction, HDR/NV12 shader compilation, sampler and viewport constant-buffer creation, NV12 SRV reuse/reset, shader pipeline disposal, top-level D3D cleanup call order, render-pass shader binding/draw calls, and shader-mode telemetry keep the same method bodies and call order while living in `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`.
+Notes for future agents: keep D3D device/swap-chain creation, shared-device handoff, VideoProcessor resource setup, HDR/input textures, shader source/compilation/cache resources, and top-level resource cleanup in `D3D11PreviewRenderer.Resources.cs`; keep render-thread orchestration and frame submission in `D3D11PreviewRenderer.cs`, shader draw execution and present accounting in `D3D11PreviewRenderer.RenderPasses.cs`, and diagnostics/metrics in `D3D11PreviewRenderer.Metrics.cs`.
+Current file/LoC checkpoint: core app `.cs`: 143 / 89,726 nonblank LoC; tests `.cs`: 100 / 56,113 nonblank LoC.
+
+Date: 2026-05-31
 Area: Media Foundation interop helper locality
 Problem: `MfInteropHelpers.cs` was a small shared helper file for MFStartup/MFShutdown ref-counting, typed `IMFAttributes` reads, and symbolic-link matching, while `MfSourceReaderVideoCapture.ComContracts.cs` held the adjacent shared MF COM interfaces, P/Invokes, constants, HRESULTs, and GUIDs used by the source reader and device enumerator. Reviewing Media Foundation interop still required two files before reaching either caller, even though the helper type was not an independent behavior boundary.
 Files consolidated: `Sussudio/Services/Capture/MfInteropHelpers.cs`; `Sussudio/Services/Capture/MfSourceReaderVideoCapture.ComContracts.cs`
