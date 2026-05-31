@@ -1094,7 +1094,7 @@ best-effort teardown for partially started sinks, WASAPI capture, unified-video
 capture, and deferred LibAv drain cleanup after a failed recording start.
 
 Flashback export failure classification now lives with export diagnostics in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
 Keep the export failure-kind taxonomy there because automation responses and
 capture diagnostics both consume the diagnostic result classification.
 
@@ -1119,7 +1119,7 @@ outcomes, timeout fallback segment discovery, and related diagnostics/logging
 with the request assembly path.
 
 Flashback export diagnostics now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
 Keep export attempt lifecycle, result, rejection, completion diagnostic state,
 progress forwarding/normalization, force-rotate fallback counters, and
 failure-kind classification there.
@@ -2009,7 +2009,7 @@ with active recording backend selection, LibAv-vs-Flashback fallback, and
 backend-specific queue/counter normalization;
 Flashback export diagnostics and derived health progress/throughput projection
 lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`.
+`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
 Flashback playback health snapshot orchestration now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`
 with the aggregate playback field record, state/frame/segment/PTS/seek-cap/

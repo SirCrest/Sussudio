@@ -11,7 +11,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");
@@ -74,7 +74,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── CaptureService.Snapshots: ResolveEncoderCodecName ──
+    // â”€â”€ CaptureService.Snapshots: ResolveEncoderCodecName â”€â”€
 
     internal static Task CaptureService_ResolveEncoderCodecName_MapsFormats()
     {
@@ -86,25 +86,25 @@ static partial class Program
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var formatType = RequireType("Sussudio.Models.RecordingFormat");
 
-        // HEVC → hevc_nvenc
+        // HEVC â†’ hevc_nvenc
         var hevcSettings = Activator.CreateInstance(settingsType)!;
         settingsType.GetProperty("Format")!.SetValue(hevcSettings, Enum.Parse(formatType, "HevcMp4"));
         var hevcResult = method.Invoke(null, new[] { hevcSettings })?.ToString();
         AssertContains(hevcResult ?? "", "hevc");
 
-        // H264 → h264_nvenc (default Format is H264Mp4)
+        // H264 â†’ h264_nvenc (default Format is H264Mp4)
         var h264Settings = Activator.CreateInstance(settingsType)!;
         var h264Result = method.Invoke(null, new[] { h264Settings })?.ToString();
         AssertContains(h264Result ?? "", "264");
 
-        // null → null
+        // null â†’ null
         var nullResult = method.Invoke(null, new object?[] { null });
-        AssertEqual(true, nullResult == null, "null settings → null codec");
+        AssertEqual(true, nullResult == null, "null settings â†’ null codec");
 
         return Task.CompletedTask;
     }
 
-    // ── CaptureService.Snapshots: ResolveEncoderOutputPixelFormat ──
+    // â”€â”€ CaptureService.Snapshots: ResolveEncoderOutputPixelFormat â”€â”€
 
     internal static Task CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr()
     {
@@ -116,25 +116,25 @@ static partial class Program
         var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
 
-        // HDR active context → yuv420p10le
+        // HDR active context â†’ yuv420p10le
         var hdrContext = RuntimeHelpers.GetUninitializedObject(contextType);
         SetPropertyBackingField(hdrContext, "HdrPipelineActive", true);
         var hdrSettings = RuntimeHelpers.GetUninitializedObject(settingsType);
         var hdrResult = method.Invoke(null, new[] { hdrContext, hdrSettings })?.ToString();
         AssertContains(hdrResult ?? "", "10");
 
-        // SDR context → yuv420p
+        // SDR context â†’ yuv420p
         var sdrContext = RuntimeHelpers.GetUninitializedObject(contextType);
         SetPropertyBackingField(sdrContext, "HdrPipelineActive", false);
         var sdrResult = method.Invoke(null, new[] { sdrContext, hdrSettings })?.ToString();
-        AssertEqual(true, sdrResult != null && !sdrResult.Contains("10"), "SDR → 8-bit pixel format");
+        AssertEqual(true, sdrResult != null && !sdrResult.Contains("10"), "SDR â†’ 8-bit pixel format");
 
         return Task.CompletedTask;
     }
 
-    // ── TelemetryAgeHelper: shared compute-age logic used by capture/automation/view-model ──
+    // â”€â”€ TelemetryAgeHelper: shared compute-age logic used by capture/automation/view-model â”€â”€
 
-    // ── CaptureService.Snapshots: ResolveHdrWarmupState ──
+    // â”€â”€ CaptureService.Snapshots: ResolveHdrWarmupState â”€â”€
 
     internal static Task CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates()
     {
@@ -149,18 +149,18 @@ static partial class Program
         AssertDoesNotContain(snapshotsText, "private static string ResolveHdrWarmupState(");
         AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");
 
-        // HDR not requested → NotRequested
+        // HDR not requested â†’ NotRequested
         var notRequested = method.Invoke(null, new object[] { false, false, false, 0L })?.ToString();
         AssertEqual("NotRequested", notRequested, "HDR not requested");
 
-        // HDR requested and active with P010 frames while recording → Satisfied
+        // HDR requested and active with P010 frames while recording â†’ Satisfied
         var satisfied = method.Invoke(null, new object[] { true, true, true, 100L })?.ToString();
         AssertEqual("Satisfied", satisfied, "HDR active with P010 frames");
 
-        // HDR requested but not active → Pending or Degraded
+        // HDR requested but not active â†’ Pending or Degraded
         var pending = method.Invoke(null, new object[] { true, false, false, 0L })?.ToString();
         AssertEqual(true, pending != "Satisfied" && pending != "NotRequested",
-            $"HDR requested but not active → {pending}");
+            $"HDR requested but not active â†’ {pending}");
 
         return Task.CompletedTask;
     }

@@ -5588,3 +5588,15 @@ Build/tests/runtime checks: focused automation diagnostics preview projection te
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private preview projection and flattening helpers.
 Behavior preserved: preview runtime frame/cadence/surface/startup/GPU-playback/color projection, D3D swap-chain/renderer-state/cpu-timing/pipeline-latency/frame-latency/frame-stat/frame-flow projection, and final preview runtime/D3D flattening keep the same method names and field mappings while living in `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs`.
 Notes for future agents: keep preview runtime and D3D automation snapshot projection together in `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` unless a true preview projection collaborator replaces the partial helper.
+
+Date: 2026-05-30
+Area: CaptureService Flashback export diagnostics locality
+Problem: `CaptureService.FlashbackExportDiagnostics.cs` held export attempt state, rejection/completion diagnostics, progress normalization, force-rotate fallback counters, health projection helpers, and failure classification while `CaptureService.FlashbackExportCore.cs` owned the export admission, range resolution, request assembly, force-rotate preparation, and exporter execution paths that call those helpers. Reviewing Flashback export behavior still required opening two adjacent CaptureService partials for one export transaction.
+Files consolidated: `Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `CaptureService` partial file count -1
+Build/tests/runtime checks: focused Flashback export and capture snapshot tests (44 passed), diagnostics snapshot refresh ownership test (1 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private CaptureService Flashback export helpers.
+Behavior preserved: Flashback export rejection/result recording, begin/progress/completion diagnostics, force-rotate fallback counters, health snapshot projection fields, elapsed/progress-age/output-length/throughput helpers, failure-kind taxonomy, range/last-N entry points, backend snapshot locking, export-operation locking, eviction pause/resume, request assembly, live-export throttle, segment metadata mapping, and force-rotate preparation keep the same method names and call order while living in `Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
+Notes for future agents: keep CaptureService Flashback export diagnostics, failure taxonomy, progress/health projection, range resolution, request assembly, and force-rotate export preparation together in `CaptureService.FlashbackExportCore.cs`; split only if a real export diagnostics collaborator replaces the private helper group.

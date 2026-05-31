@@ -317,10 +317,10 @@ static partial class Program
             ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
         var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportDiagnostics.cs")
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
             .Replace("\r\n", "\n");
 
-        AssertDoesNotContain(exportText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
+        AssertContains(exportText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
         AssertContains(diagnosticsText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
         AssertContains(diagnosticsText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
         AssertContains(diagnosticsText, "private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)");
