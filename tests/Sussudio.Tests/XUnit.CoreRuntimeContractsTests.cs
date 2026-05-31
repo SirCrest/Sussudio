@@ -55,8 +55,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.NativeXuAtCommandProvider_DeviceCommandsOwnPublicCommandSurface();
 
     [Fact]
-    public Task NativeXuProtocolOwnsPayloadDecoding()
-        => global::Program.NativeXuAtCommandProvider_ProtocolOwnsPayloadDecoding();
+    public Task NativeXuRootOwnsTransportAndPayloadDecoding()
+        => global::Program.NativeXuAtCommandProvider_RootOwnsTransportAndPayloadDecoding();
 
     [Fact]
     public Task NativeXuTelemetryDetailsLiveInFocusedPartials()

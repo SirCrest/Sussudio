@@ -85,6 +85,9 @@ static partial class Program
         AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
         AssertContains(rootText, "private static string DescribeCommandFailure(");
         AssertContains(rootText, "private static string DescribeWin32Detail(");
+        AssertContains(rootText, "private static AtCommandResult SendAtCommand(");
+        AssertContains(rootText, "private static bool SendAtSetCommand(");
+        AssertContains(rootText, "private static bool SendSelector4Command(");
         AssertDoesNotContain(rootText, "private readonly record struct VicTiming(");
         AssertContains(rootText, "private NodeReadAttempt TryReadRolling(");
         AssertContains(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
@@ -158,6 +161,7 @@ static partial class Program
         AssertContains(snapshotAssemblyText, "Math.Exp(4.0 * y)");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
         AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
@@ -175,7 +179,7 @@ static partial class Program
     {
         var deviceCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs")
             .Replace("\r\n", "\n");
-        var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
+        var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
         var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
@@ -215,9 +219,9 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AnalogGain.cs")),
             "analog gain execution folded into audio command owner");
-        AssertContains(atProtocolText, "private static bool SendSelector4Command(");
-        AssertContains(atProtocolText, "BuildAtWriteFrame(cmdCode, inputData)");
-        AssertContains(atProtocolText, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
+        AssertContains(providerRootText, "private static bool SendSelector4Command(");
+        AssertContains(providerRootText, "BuildAtWriteFrame(cmdCode, inputData)");
+        AssertContains(providerRootText, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
         AssertContains(deviceSupportText, "internal static class NativeXuDeviceSupport");
         AssertContains(deviceSupportText, "public static bool TryGetSupported4kXIds(");
         AssertContains(deviceSupportText, "public static bool IsSupported4kXDevice(");
@@ -226,31 +230,37 @@ static partial class Program
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuDeviceSupport.cs");
 
         return Task.CompletedTask;
     }
 
-    internal static Task NativeXuAtCommandProvider_ProtocolOwnsPayloadDecoding()
+    internal static Task NativeXuAtCommandProvider_RootOwnsTransportAndPayloadDecoding()
     {
-        var atProtocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.AtProtocol.cs")
+        var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
-        AssertContains(atProtocolText, "private static AtCommandResult SendAtCommand(");
-        AssertContains(atProtocolText, "private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
-        AssertContains(atProtocolText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
-        AssertContains(atProtocolText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
-        AssertContains(atProtocolText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
-        AssertContains(atProtocolText, "private static string? InferFrameRateRational(double? frameRate)");
-        AssertContains(atProtocolText, "private static SourceTelemetryConfidence ResolveConfidence(");
-        AssertContains(atProtocolText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
-        AssertContains(atProtocolText, "private static string? DecodeCString(byte[] buffer)");
-        AssertContains(atProtocolText, "private static string BoolToToken(bool? value)");
+        AssertContains(providerRootText, "private static AtCommandResult SendAtCommand(");
+        AssertContains(providerRootText, "private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
+        AssertContains(providerRootText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
+        AssertContains(providerRootText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
+        AssertContains(providerRootText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertContains(providerRootText, "private static string? InferFrameRateRational(double? frameRate)");
+        AssertContains(providerRootText, "private static SourceTelemetryConfidence ResolveConfidence(");
+        AssertContains(providerRootText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
+        AssertContains(providerRootText, "private static string? DecodeCString(byte[] buffer)");
+        AssertContains(providerRootText, "private static string BoolToToken(bool? value)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AtProtocol.cs")),
+            "AT transport and payload decoding folded into the NativeXuAtCommandProvider root read owner");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.PayloadDecoding.cs")),
-            "payload decoding folded into the AT protocol owner");
+            "payload decoding folded into the NativeXuAtCommandProvider root read owner");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
 
         return Task.CompletedTask;
