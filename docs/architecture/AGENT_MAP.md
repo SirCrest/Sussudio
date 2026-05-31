@@ -1342,7 +1342,10 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface, including the `SmallContractsTests` wrapper
   for ported audio input, audio level event, capture device metadata/default
-  collection, and automation window action enum contract checks.
+  collection, automation window action enum contract checks, Native XU
+  telemetry/provider ownership, root active-read/rolling-poll locality, shared
+  snapshot assembly ownership, cohesive KS bridge source/probe-link ownership,
+  and supported 4K X product-revision checks.
 - `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns
   MediaFormat equality/hash-code checks alongside the broader capture
   configuration model contract surface.
@@ -1358,10 +1361,6 @@ Primary current owners:
   CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts; and
   SourceSignalTelemetrySnapshot plus source telemetry automation projection
   contract checks.
-- `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs` owns Native XU
-  telemetry provider ownership, root active-read/rolling-poll locality, shared snapshot
-  assembly ownership, cohesive KS bridge source/probe-link ownership, and
-  supported 4K X product-revision checks.
 - `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
   owns DeviceService scoring, cohesive MF device enumerator ownership,
   source-reader negotiation/interop ownership, and MF symbolic-link matching

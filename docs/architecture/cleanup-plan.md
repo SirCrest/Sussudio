@@ -886,8 +886,9 @@ GET/SET transfer shapes, and P/Invoke struct declarations in
 `KsExtensionUnitNative.cs`. Keep shared 4K X identity, selected-interface
 projection, and native transport gate ownership in `KsExtensionUnitNative.cs`.
 `tools/NativeXuAudioProbe` links the bridge file explicitly, so update its
-project file when this bridge changes. `tests/Sussudio.Tests/NativeXuAtCommandProvider.Tests.cs`
-owns the cohesive KS bridge and probe-link ownership checks.
+project file when this bridge changes. `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs`
+owns the cohesive KS bridge and probe-link ownership checks beside the Native
+XU provider contract wrappers.
 
 Native device enumeration ownership is grouped under
 `Sussudio/Services/Capture/DeviceDiscovery/`. Keep Media Foundation constants,

@@ -9,7 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Sussudio.Tests;
+namespace Sussudio.Tests
+{
 
 public sealed class CoreRuntimeContractsTests
 {
@@ -972,5 +973,352 @@ public class SmallContractsTests
         Assert.Equal(expectedType, property!.PropertyType);
         Assert.Equal(canWrite, property.CanWrite);
         return property;
+    }
+}
+}
+
+static partial class Program
+{
+    internal static Task KsExtensionUnitNative_SourceOwnership_IsCohesiveNativeBridge()
+    {
+        var rootText = ReadKsExtensionUnitNativeFile("KsExtensionUnitNative.cs");
+
+        AssertContains(rootText, "internal static class KsExtensionUnitNative");
+        AssertDoesNotContain(rootText, "partial class KsExtensionUnitNative");
+        AssertContains(rootText, "internal readonly record struct KsInterfacePath");
+        AssertContains(rootText, "internal readonly record struct KsTopologyNode");
+        AssertContains(rootText, "internal static IReadOnlyList<KsInterfacePath> EnumerateKsInterfaces(");
+        AssertContains(rootText, "internal static SafeFileHandle? TryOpen(");
+        AssertContains(rootText, "internal static bool TryReadTopologyNodes(");
+        AssertContains(rootText, "internal static bool TryXuGetDirect(");
+        AssertContains(rootText, "internal static bool TryXuSetViaOutput(");
+        AssertContains(rootText, "internal static bool TryXuSetViaInput(");
+        AssertContains(rootText, "DeviceIoControl(");
+        AssertContains(rootText, "[DllImport(\"setupapi.dll\", SetLastError = true)]");
+        AssertContains(rootText, "[DllImport(\"kernel32.dll\", SetLastError = true)]");
+        AssertContains(rootText, "[StructLayout(LayoutKind.Sequential)]");
+
+        var probeIncludes = ReadCompileIncludes(Path.Combine(
+            GetRepoRoot(),
+            "tools",
+            "NativeXuAudioProbe",
+            "NativeXuAudioProbe.csproj"));
+        AssertEqual(
+            1,
+            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs"),
+            "NativeXuAudioProbe links the consolidated Native XU bridge");
+        AssertEqual(
+            0,
+            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs"),
+            "NativeXuDeviceSupport folded into the Native XU bridge linked source");
+        AssertContains(rootText, "internal static class NativeXuDeviceSupport");
+        AssertContains(rootText, "public static bool TryGetSupported4kXIds(");
+        AssertContains(rootText, "public static bool IsSupported4kXDevice(");
+
+        foreach (var removedFile in new[]
+        {
+            "KsExtensionUnitNative.Handles.cs",
+            "KsExtensionUnitNative.Interfaces.cs",
+            "KsExtensionUnitNative.Interop.cs",
+            "KsExtensionUnitNative.Topology.cs",
+            "KsExtensionUnitNative.Transfers.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "NativeXu", removedFile)),
+                $"{removedFile} removed");
+            AssertEqual(
+                0,
+                CountCompileInclude(probeIncludes, $@"..\..\Sussudio\Services\Capture\NativeXu\{removedFile}"),
+                $"NativeXuAudioProbe no longer links {removedFile}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task NativeXuAtCommandProvider_ActiveReadAndRollingPollLiveInProviderRoot()
+    {
+        var rootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
+            .Replace("\r\n", "\n");
+        var rollingPollText = rootText;
+        var rollingCommandGroupsText = rootText;
+        var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
+            .Replace("\r\n", "\n");
+        var telemetryDetailsText = snapshotAssemblyText;
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
+        AssertContains(rootText, "var attempt = TryReadInterface(ksInterface, cancellationToken);");
+        AssertContains(rootText, "private NodeReadAttempt TryReadInterface(");
+        AssertContains(rootText, "using var handle = KsExtensionUnitNative.TryOpen(");
+        AssertContains(rootText, "KsExtensionUnitNative.TryReadTopologyNodes(");
+        AssertContains(rootText, "var attempt = TryReadRolling(handle, node.NodeId, ksInterface.Path, cancellationToken);");
+        AssertContains(rootText, "private static NodeReadAttempt CreateUnavailableNodeResult(");
+        AssertContains(rootText, "private static NodeReadAttempt HandleFailedCommand(");
+        AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
+        AssertContains(rootText, "private static string DescribeCommandFailure(");
+        AssertContains(rootText, "private static string DescribeWin32Detail(");
+        AssertContains(rootText, "private static AtCommandResult SendAtCommand(");
+        AssertContains(rootText, "private static bool SendAtSetCommand(");
+        AssertContains(rootText, "private static bool SendSelector4Command(");
+        AssertDoesNotContain(rootText, "private readonly record struct VicTiming(");
+        AssertContains(rootText, "private NodeReadAttempt TryReadRolling(");
+        AssertContains(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
+        AssertDoesNotContain(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.InterfaceRead.cs")),
+            "selected-interface open/topology/node scanning folded into NativeXuAtCommandProvider.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs")),
+            "active rolling telemetry folded into the NativeXuAtCommandProvider root read owner");
+        AssertContains(rollingPollText, "private int _rollingGroup;");
+        AssertDoesNotContain(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertDoesNotContain(rollingPollText, "private static readonly double[] CanonicalFrameRates");
+        AssertContains(rollingPollText, "private NodeReadAttempt TryReadRolling(");
+        AssertContains(rollingPollText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
+        AssertContains(rollingPollText, "BuildSnapshotFromCommandResults(");
+        AssertDoesNotContain(rollingPollText, "BuildDetailEntries(");
+        AssertDoesNotContain(rollingPollText, "new SourceSignalTelemetrySnapshot");
+        AssertContains(rollingPollText, "PopulateInitialRollingCache(handle, nodeId, cancellationToken);");
+        AssertContains(rollingPollText, "RefreshRollingGroup(handle, nodeId, _rollingGroup, cancellationToken);");
+        AssertContains(rollingPollText, "private AtCommandResult SendRollingCommand(");
+        AssertContains(rollingPollText, "private void PopulateInitialRollingCache(");
+        AssertContains(rollingPollText, "private void RefreshRollingGroup(");
+        AssertContains(rollingCommandGroupsText, "private AtCommandResult SendRollingCommand(");
+        AssertContains(rollingCommandGroupsText, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(rollingCommandGroupsText, "private void PopulateInitialRollingCache(");
+        AssertContains(rollingCommandGroupsText, "private void RefreshRollingGroup(");
+        AssertContains(rollingCommandGroupsText, "case 5: // Diagnostics");
+        AssertContains(rootText, "private static bool IsUnsupportedNodeFailure(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingCommandGroups.cs")),
+            "rolling command batch dispatch folded into the NativeXuAtCommandProvider root read owner");
+        AssertContains(snapshotAssemblyText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertContains(snapshotAssemblyText, "private static readonly double[] CanonicalFrameRates");
+        AssertContains(snapshotAssemblyText, "private readonly record struct VicTiming(");
+        AssertContains(snapshotAssemblyText, "private readonly record struct NativeXuSnapshotCommandResults(");
+        AssertContains(snapshotAssemblyText, "AtCommandResult RawTiming");
+        AssertContains(snapshotAssemblyText, "private static NodeReadAttempt TryReadSnapshot(");
+        AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"CableConnect\", CmdCableConnect)");
+        AssertContains(snapshotAssemblyText, "SendAtCommand(handle, nodeId, \"RawTiming\", CmdRawTiming)");
+        AssertContains(snapshotAssemblyText, "private static NodeReadAttempt BuildSnapshotFromCommandResults(");
+        AssertContains(snapshotAssemblyText, "private static string BuildDiagnosticSummary(");
+        AssertContains(snapshotAssemblyText, "private static string AppendExtendedDiagnostics(");
+        AssertContains(snapshotAssemblyText, "private static void AppendResultField(");
+        AssertContains(snapshotAssemblyText, "BuildDetailEntries(");
+        AssertContains(snapshotAssemblyText, "AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio)");
+        AssertContains(snapshotAssemblyText, "new SourceSignalTelemetrySnapshot");
+        AssertContains(snapshotAssemblyText, "private static string ResolveSnapshotAudioInputOrigin(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DiagnosticSummary.cs")),
+            "diagnostic summary formatting folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.FullSnapshot.cs")),
+            "reference full-snapshot read folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs")),
+            "snapshot command result DTO folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs")),
+            "snapshot timing policy folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertContains(telemetryDetailsText, "private static string ResolveSnapshotAudioInputOrigin(");
+        AssertContains(telemetryDetailsText, "\"nativexu-flash-audio\"");
+        AssertContains(snapshotAssemblyText, "TelemetryLabels.AnalogGain");
+        AssertContains(snapshotAssemblyText, "Math.Exp(4.0 * y)");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
+        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.CommandResults.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.Timing.cs");
+
+        return Task.CompletedTask;
+    }
+
+    private static string ReadKsExtensionUnitNativeFile(string fileName) =>
+        ReadRepoFile($"Sussudio/Services/Capture/NativeXu/{fileName}");
+
+    internal static Task NativeXuAtCommandProvider_DeviceCommandsOwnPublicCommandSurface()
+    {
+        var deviceCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs")
+            .Replace("\r\n", "\n");
+        var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
+            .Replace("\r\n", "\n");
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
+            .Replace("\r\n", "\n");
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(deviceCommandsText, "public static async Task<bool> SendAtSetCommandAsync(");
+        AssertContains(deviceCommandsText, "public static Task<bool> SetInputSourceAsync(");
+        AssertContains(deviceCommandsText, "public static async Task<byte[]?> ReadAtCommandAsync(");
+        AssertContains(deviceCommandsText, "SendAtCommand(handle, node.NodeId, label, cmdCode)");
+        AssertContains(deviceCommandsText, "NATIVEXU_GET_EXCEPTION");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.DeviceCommandReads.cs")),
+            "Native XU public read commands stay folded into DeviceCommands.cs with the generic SET surface.");
+        AssertContains(deviceCommandsText, "public static async Task<bool> SwitchAudioInputAsync(");
+        AssertContains(deviceCommandsText, "public static async Task<bool> SetAnalogGainAsync(");
+        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
+        AssertContains(deviceCommandsText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");
+        AssertContains(deviceCommandsText, "ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel, ct)");
+        AssertContains(deviceCommandsText, "ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash, ct)");
+        AssertContains(deviceCommandsText, "private static bool ExecuteAudioSwitch(");
+        AssertContains(deviceCommandsText, "NATIVEXU_SWITCH_AUDIO FAILED stage=i2c_{i}");
+        AssertContains(deviceCommandsText, "commands=14");
+        AssertContains(deviceCommandsText, "private static bool ExecuteGainChange(");
+        AssertContains(deviceCommandsText, "internal static void ComputeGainRegisters(");
+        AssertDoesNotContain(deviceCommandsText, "private static bool SendSelector4Command(");
+        AssertContains(deviceCommandsText, "SendSelector4Command(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AudioCommands.cs")),
+            "audio command entry points folded into DeviceCommands.cs with the public command surface");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AudioSwitch.cs")),
+            "audio switch execution folded into audio command owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AnalogGain.cs")),
+            "analog gain execution folded into audio command owner");
+        AssertContains(providerRootText, "private static bool SendSelector4Command(");
+        AssertContains(providerRootText, "BuildAtWriteFrame(cmdCode, inputData)");
+        AssertContains(providerRootText, "TryXuSetViaOutput(handle, nodeId, XuGuid, I2cSelector, payload, out var win32)");
+        AssertContains(deviceSupportText, "internal static class NativeXuDeviceSupport");
+        AssertContains(deviceSupportText, "public static bool TryGetSupported4kXIds(");
+        AssertContains(deviceSupportText, "public static bool IsSupported4kXDevice(");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AudioCommands.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuDeviceSupport.cs");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task NativeXuAtCommandProvider_RootOwnsTransportAndPayloadDecoding()
+    {
+        var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
+            .Replace("\r\n", "\n");
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(providerRootText, "private static AtCommandResult SendAtCommand(");
+        AssertContains(providerRootText, "private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
+        AssertContains(providerRootText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
+        AssertContains(providerRootText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
+        AssertContains(providerRootText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertContains(providerRootText, "private static string? InferFrameRateRational(double? frameRate)");
+        AssertContains(providerRootText, "private static SourceTelemetryConfidence ResolveConfidence(");
+        AssertContains(providerRootText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
+        AssertContains(providerRootText, "private static string? DecodeCString(byte[] buffer)");
+        AssertContains(providerRootText, "private static string BoolToToken(bool? value)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AtProtocol.cs")),
+            "AT transport and payload decoding folded into the NativeXuAtCommandProvider root read owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.PayloadDecoding.cs")),
+            "payload decoding folded into the NativeXuAtCommandProvider root read owner");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
+    {
+        var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
+            .Replace("\r\n", "\n");
+        var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
+
+        AssertContains(telemetryDetailsText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertContains(telemetryDetailsText, "private static IReadOnlyList<SourceTelemetryDetailEntry> BuildDetailEntries(");
+        AssertContains(telemetryDetailsText, "private static void AddAtDetail(");
+        AssertContains(telemetryDetailsText, "private static string? TryFormatAtDetailValue(");
+        AssertContains(telemetryDetailsText, "private static bool IsValidFlashAudioData(AtCommandResult flashResult)");
+        AssertContains(telemetryDetailsText, "private static string? ResolveAudioInputSource(");
+        AssertContains(telemetryDetailsText, "private static SourceAudioInputMode? ResolveAudioInputMode(");
+        AssertContains(telemetryDetailsText, "private static int? ResolveAnalogGainByte(AtCommandResult flashResult)");
+        AssertContains(telemetryDetailsText, "private static IReadOnlyList<SourceTelemetryDetailEntry> AppendFlashAudioAnalogGainDetail(");
+        AssertContains(telemetryDetailsText, "TelemetryLabels.AnalogGain");
+        AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatInputSourceDetail(byte[] data)");
+        AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(byte[] data)");
+        AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatAsciiOrHexDetail(byte[] data)");
+        AssertDoesNotContain(telemetryDetailsText, "private static string? DecodeCString(byte[] buffer)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.cs")),
+            "Native XU detail row assembly folded into NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs")),
+            "Native XU audio input detail helpers folded into the telemetry details owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.Build.cs")),
+            "Native XU detail row assembly folded into the telemetry details owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs")),
+            "Native XU AT detail formatters folded into the telemetry details owner");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Build.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
+
+        return Task.CompletedTask;
+    }
+
+    internal static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()
+    {
+        var provider = CreateInstance("Sussudio.Services.Telemetry.NativeXuAtCommandProvider");
+
+        foreach (var productId in new[] { "009b", "009c", "009d" })
+        {
+            var device = BuildDevice($"\\\\?\\usb#vid_0fd9&pid_{productId}&mi_00#synthetic#{Guid.NewGuid():N}\\global");
+            var readAsync = provider.GetType().GetMethod(
+                "ReadAsync",
+                BindingFlags.Public | BindingFlags.Instance,
+                binder: null,
+                types: new[] { device.GetType(), typeof(CancellationToken) },
+                modifiers: null);
+            if (readAsync == null)
+            {
+                throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync method not found.");
+            }
+
+            if (readAsync.Invoke(provider, new[] { device, CancellationToken.None }) is not Task task)
+            {
+                throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync did not return a Task.");
+            }
+
+            await task.ConfigureAwait(false);
+
+            var resultProperty = task.GetType().GetProperty("Result", BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync task result not found.");
+            var snapshot = resultProperty.GetValue(task)
+                ?? throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync returned null snapshot.");
+            var diagnostic = GetStringProperty(snapshot, "DiagnosticSummary");
+            if (string.Equals(diagnostic, "nativexu-device-unsupported", StringComparison.Ordinal) ||
+                diagnostic.StartsWith("nativexu-device-unsupported:", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"NativeXu provider rejected 4K X product revision {productId} as unsupported.");
+            }
+        }
     }
 }
