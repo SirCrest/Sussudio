@@ -1488,9 +1488,10 @@ Primary current owners:
   `ProcessSupervisor` calls, one-time native initialization, FFmpeg log callback
   routing, and recoverable seek-log suppression.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns app-surface
-  legacy `Program` helpers plus project-file build/publish policy contract
-  helpers and xUnit execution for those checks after their removal from the
-  legacy offline harness catalog.
+  legacy `Program` helpers, named-pipe automation server framing/security/app
+  auth wiring checks, project-file build/publish policy contract helpers, and
+  xUnit execution for those checks after their removal from the legacy offline
+  harness catalog.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks such as GpuPipelineHandles,
   RecordingContextRequest, FinalizeResult, and RecordingStats, plus the
