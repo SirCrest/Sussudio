@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: shared D3D device resource locality
+Problem: `Sussudio/Services/Preview/SharedD3DDeviceManager.cs` was a small sidecar for the same D3D resource ownership surface already in `D3D11PreviewRenderer.Resources.cs`: source-reader DXGI device-manager creation, shared preview-device reference duplication, COM reset/disposal ordering, and the `ILiveVideoSource` handoff contract all feed the renderer resource setup/reinit path.
+Files consolidated: `Sussudio/Services/Preview/SharedD3DDeviceManager.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; core app `.cs` count 138 -> 137; production `.cs` count 182 -> 181
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~D3D11PreviewRenderer|FullyQualifiedName~PresentationPreviewD3D|FullyQualifiedName~RecordingQueue"` passed (37 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); diff checks passed; current core app `.cs` count/LoC: 137 / 89,690; current test `.cs` count/LoC: 81 / 56,095.
+CLI/MCP/pipe checks, if applicable: no live automation pipe session was run; full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: `ILiveVideoSource` and `SharedD3DDeviceManager` keep the same namespace, type names, members, locking, `Marshal.AddRef` reference-duplication policy, MF DXGI device-manager creation/reset, hardware-to-WARP fallback, dispose order, log tokens, and call sites while living in `D3D11PreviewRenderer.Resources.cs`.
+Notes for future agents: keep source-reader D3D manager creation/reset, `ILiveVideoSource`, shared preview-device COM reference duplication, and D3D renderer resource setup in `D3D11PreviewRenderer.Resources.cs` while they remain one preview/capture GPU-resource handoff surface.
+
+Date: 2026-05-31
 Area: app service contract locality
 Problem: `Sussudio/Services/Contracts/ServiceInterfaces.cs`, `Sussudio/Services/Contracts/RecordingContracts.cs`, and `Sussudio/Services/Contracts/PooledVideoFrame.cs` were three small in-process service-contract files under the same app-service boundary. Reviewing automation window/diagnostics/command dispatch interfaces, preview frame tracking/sinks, recording context/finalize DTOs, frame encoder contracts, and pooled-frame lease ownership still required bouncing across sibling files with no independent runtime owner.
 Files consolidated: `Sussudio/Services/Contracts/ServiceInterfaces.cs`; `Sussudio/Services/Contracts/RecordingContracts.cs`; `Sussudio/Services/Contracts/PooledVideoFrame.cs`

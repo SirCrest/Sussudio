@@ -549,7 +549,7 @@ static partial class Program
             managerType.GetMethod("TryCreateDeviceReference", BindingFlags.Public | BindingFlags.Instance),
             "SharedD3DDeviceManager.TryCreateDeviceReference");
 
-        var managerText = ReadRepoFile("Sussudio/Services/Preview/SharedD3DDeviceManager.cs")
+        var managerText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
             .Replace("\r\n", "\n")
@@ -578,6 +578,10 @@ static partial class Program
         AssertContains(duplicateMethod, "Marshal.AddRef(nativePointer);");
         AssertContains(duplicateMethod, "device = new ID3D11Device(nativePointer);");
         AssertContains(disposeMethod, "lock (_sync)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "SharedD3DDeviceManager.cs")),
+            "shared D3D device manager lives with D3D resource ownership");
         AssertContains(applyMethod, "d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason)");
         AssertContains(applyMethod, "UNIFIED_VIDEO_SHARED_DEVICE_APPLY_SKIP reason={reason}");
         AssertContains(applyMethod, "sharedDevice.Dispose();");
