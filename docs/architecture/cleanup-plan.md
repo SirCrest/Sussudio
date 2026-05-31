@@ -1269,8 +1269,9 @@ result shaping that consume them.
 `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` keeps the
 recording verifier integration seam together: shared fake process-supervisor,
 runtime snapshot, verifier construction, verification invocation helpers, and
-the ffprobe failure, process-priority, codec, Flashback verification format,
-mismatch, HDR, and cadence scenarios that use that seam.
+the early failure paths, source-shape/result DTO/script contracts, ffprobe
+failure, process-priority, codec, Flashback verification format, mismatch, HDR,
+and cadence scenarios that use that seam.
 
 Native XU source telemetry detail assembly now lives with source snapshot
 assembly in

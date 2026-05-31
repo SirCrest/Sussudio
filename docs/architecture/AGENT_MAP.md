@@ -1477,12 +1477,11 @@ Primary current owners:
 - `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns the
   recording verifier integration seam: fake process-supervisor,
   runtime-snapshot, verifier-construction, verification-invocation helpers,
-  ffprobe failure/priority scenarios, HEVC/H264 codec success and mismatch,
-  Flashback verification format, resolution/frame-rate mismatch, HDR
-  validation, and NTSC frame-rate tolerance scenarios.
-- `tests/Sussudio.Tests/RecordingVerifier.Tests.cs` owns RecordingVerifier
   early failure paths, verifier contract/source-shape assertions, result DTO
-  property coverage, and the dedicated LibAv verification script contract.
+  property coverage, dedicated LibAv verification script contract, ffprobe
+  failure/priority scenarios, HEVC/H264 codec success and mismatch, Flashback
+  verification format, resolution/frame-rate mismatch, HDR validation, and
+  NTSC frame-rate tolerance scenarios.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
   owns renderer diagnostics source-shape, frame queue, frame ownership, present
   cadence metric shape/suppression baseline, public renderer diagnostics API

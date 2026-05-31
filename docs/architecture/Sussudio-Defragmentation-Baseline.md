@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: RecordingVerifier test locality
+Problem: `RecordingVerifier.Tests.cs` was a `Program` partial containing verifier early-failure, source-shape, result DTO, and dedicated LibAv verification-script checks, while `RecordingVerifier.Integration.Tests.cs` already owned verifier runtime-snapshot helpers, invocation helpers, and the fake process-supervisor seam used by the rest of the verifier scenarios. Reviewing recording verification behavior required opening two verifier `Program` partials plus the xUnit wrapper even though the smaller file had no independent fixture boundary.
+Files consolidated: `tests/Sussudio.Tests/RecordingVerifier.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: RecordingVerifier legacy `Program` test partial-family file count -1; test `.cs` count 107 -> 106
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RecordingVerifier"` passed (19 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
+CLI/MCP/pipe checks, if applicable: not applicable; test-owner consolidation only. The dedicated LibAv script contract remains covered by the same `DedicatedLibAvVerificationScriptUsesFlashbackOffStrictWorkflow` xUnit wrapper.
+Behavior preserved: same internal `Program.RecordingVerifier_*`, `Program.RecordingVerificationResult_HasExpectedProperties`, and `Program.DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification` method names still execute through `XUnit.RecordingContractsTests.cs`; assertions and temp-file/fake-verifier paths are unchanged while living with the verifier integration owner.
+Notes for future agents: keep RecordingVerifier early failures, source-shape/result DTO/script contracts, and fake-ffprobe scenarios in `RecordingVerifier.Integration.Tests.cs` unless a scenario grows a distinct fixture or external process seam.
+
+Date: 2026-05-31
 Area: Recording artifact manager test locality
 Problem: `RecordingArtifactManager.Tests.cs` was a small standalone xUnit behavior file for recording temp/final artifact finalization and rollback, but it already depended on the shared staged-assembly helper owned by `XUnit.RecordingContractsTests.cs`. Reviewing recording output cleanup required opening a sidecar file before returning to the broader recording contracts/runtime xUnit owner, with no independent fixture boundary to justify the extra file.
 Files consolidated: `tests/Sussudio.Tests/RecordingArtifactManager.Tests.cs`
