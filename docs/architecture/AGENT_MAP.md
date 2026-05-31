@@ -1407,16 +1407,15 @@ Primary current owners:
   D3D pending-frame, recording, and Flashback queued lease return coverage,
   metrics source-ownership assertions, and queue/drop/reprime behavior tests
   after their removal from the legacy harness catalog.
-- `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
-  owns runtime projection ownership and behavior scenarios for ingest/audio,
-  reader transport, observed formats, HDR pipeline/parity, source telemetry/
-  alignment, inactive thread probes, frame-ledger recent-event contracts, and
-  recording integrity.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns recording
   integrity summary defaults, automation snapshot field contracts, automation
   projection ownership checks, summary policy, Flashback recording scoped
-  sequence gaps, CaptureService focused-partial ownership, and shared formatter
-  rendering checks after their removal from the legacy `Program` sidecar.
+  sequence gaps, CaptureService focused-partial ownership, runtime projection
+  ownership and behavior scenarios for ingest/audio, reader transport, observed
+  formats, HDR pipeline/parity, source telemetry/alignment, inactive thread
+  probes, frame-ledger recent-event contracts, recording integrity, and shared
+  formatter rendering checks after their removal from legacy `Program`
+  sidecars.
 - `tests/Sussudio.Tests/CaptureService.LifecycleOwnership.Tests.cs` owns
   CaptureService initialization, session-state-machine and transition-policy
   ownership, asserts that lifecycle partials route state changes through
