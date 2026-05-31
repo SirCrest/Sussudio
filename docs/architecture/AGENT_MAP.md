@@ -1,4 +1,4 @@
-﻿# Sussudio Agent Map
+# Sussudio Agent Map
 
 Last reviewed: 2026-05-21.
 
@@ -1402,7 +1402,10 @@ Primary current owners:
   behavior checks, and the xUnit execution surface for CPU MJPEG runtime,
   timing metric math, stopwatch timeout helper, software decoder shape,
   cadence, pooled-frame, preview-jitter, queued lease-release contracts,
+  shared pooled-frame reflection/frame/jitter-buffer/tracking-pool helpers,
+  pooled video frame lease lifecycle, MJPEG pooled-frame fan-out contracts,
   preview-jitter frame-ingress, emit-loop, adaptive deadline policy, queue,
+  D3D pending-frame, recording, and Flashback queued lease return coverage,
   metrics source-ownership assertions, and queue/drop/reprime behavior tests
   after their removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/CaptureService.RuntimeSnapshots.ProjectionOwnership.Tests.cs`
@@ -1696,11 +1699,6 @@ Primary current owners:
   consolidated coordinator root, focused Flashback coordinator partials,
   coordinator queue/cancellation/rejection contracts, and shared reflective
   harness helpers.
-- `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs` owns shared pooled-frame
-  reflection, frame factory, jitter-buffer factory, tracking pool helpers,
-  pooled video frame lease lifecycle, MJPEG pooled-frame fan-out contracts, and
-  queued lease return coverage for D3D pending-frame, recording, and Flashback
-  paths.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing route/formatter assertions plus surface compatibility checks
   that span raw app state, capture options, capture settings, and UI settings
