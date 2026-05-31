@@ -2538,12 +2538,12 @@ changes.
 `MainWindow.xaml.cs` keeps the old capture and recording option
 method names used by `SetupBindings()`.
 
-MainWindow capture ownership tests now mirror these runtime owners instead of
-living in one capture test grab-bag. Selection bindings, selection normalizer
-policy, device actions, option presentation, option affordance policy, option
-bindings, and option tooltip formatting each have a focused
-`MainWindow.ControllerOwnership.Capture.*.Tests.cs` file registered with the
-presentation-preview harness coverage check.
+MainWindow capture ownership tests now mirror these runtime owners in
+`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` instead
+of living in a broad shell test grab-bag. Selection bindings, selection
+normalizer policy, device actions, option presentation, option affordance
+policy, option bindings, and option tooltip formatting stay registered with
+the presentation-preview harness coverage check through that parent owner.
 
 Recording output-path textbox, tooltip, resize-event updates, browse, and
 open-recordings button workflows now live in

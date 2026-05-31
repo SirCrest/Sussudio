@@ -1173,15 +1173,14 @@ Primary current owners:
   recording-state presentation policy assertions, plus recording action,
   preview audio fade, preview button presentation, audio control presentation,
   and microphone control ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs`
-  owns capture selection binding XAML-adapter, controller shell,
-  `PropertyChanged` routing, collection sync, queued sync, available-option
-  rebinding, capture device/audio input/capture mode/recording selection,
-  selection-normalizer placement and fallback-policy behavior, and device-audio
-  projection ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.OptionPresentation.Tests.cs`
-  owns capture/recording option binding controller-adapter ownership,
-  capture option presentation controller-adapter, refresh/apply button
+- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs`
+  owns MainWindow capture-controller ownership assertions: capture selection
+  binding XAML-adapter, controller shell, `PropertyChanged` routing,
+  collection sync, queued sync, available-option rebinding, capture
+  device/audio input/capture mode/recording selection, selection-normalizer
+  placement and fallback-policy behavior, device-audio projection,
+  capture/recording option binding controller-adapter ownership, capture
+  option presentation controller-adapter, refresh/apply button
   controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
   assertions.
 - `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns Flashback
