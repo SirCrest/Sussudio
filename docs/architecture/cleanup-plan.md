@@ -190,22 +190,16 @@ Flashback playback state/frame summary, audio-master delay/fallback projection,
 playback event/cadence/PTS-cadence/A/V drift projection, seek-cap/decode timing
 projection, playback command queue projection, and final flattened playback
 fields consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs` owns D3D preview
-swap-chain and renderer-state projection plus composition of D3D leaf
-projections consumed by the automation snapshot DTO, plus final D3D
-projection-to-`AutomationSnapshot` flattening, renderer-state fields, and D3D
-pipeline-latency projection, waitable frame-latency projection, and DXGI
-frame-statistics projection including recent missed-refresh and stats failure
-deltas, D3D CPU upload/render/present/total-frame timing, and submitted/
-rendered/dropped frame ownership plus recent slow-frame projection consumed by
-the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs` owns preview
-runtime projection routing, preview frame counters, estimated pipeline latency,
-preview surface visibility, renderer attachment, GPU playback state/position,
-preview HDR/tone-map/color metadata, and the frame, cadence, surface, startup,
-GPU-playback, and color groups consumed by the automation snapshot DTO, plus
-preview display-cadence projection inputs, preview startup/readiness and
-renderer mode projection inputs, and final preview runtime flattening.
+`AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` owns preview runtime
+projection routing, preview frame counters, estimated pipeline latency, preview
+surface visibility, renderer attachment, GPU playback state/position, preview
+HDR/tone-map/color metadata, display-cadence/startup/readiness and renderer mode
+projection inputs, D3D preview swap-chain and renderer-state projection, D3D
+pipeline-latency projection, waitable frame-latency projection, DXGI frame
+statistics including recent missed-refresh and stats failure deltas, D3D CPU
+upload/render/present/total-frame timing, submitted/rendered/dropped frame
+ownership, recent slow-frame projection, and final preview runtime/D3D
+projection-to-`AutomationSnapshot` flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns process memory, CPU, GC,
 and thread-pool projection consumed by the automation snapshot DTO, plus final
 process resource projection-to-`AutomationSnapshot` field flattening alongside

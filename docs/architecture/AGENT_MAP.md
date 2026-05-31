@@ -39,7 +39,7 @@ mentions the moved files.
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs`, `MjpegPreviewJitterBuffer.FramePacing.cs` | construction, suppression/reprime and disposal lifecycle, paced emit loop control flow, jitter-buffer metric records, timing sample projection, decoded preview-frame ingress, pooled payload ownership, queue ordering/dequeue selection, and reprime recovery in the root; display-clock alignment, renderer submission, deadline drops, and adaptive target-depth policy in the pacing owner |
 | MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `ParallelMjpegDecodePipeline.Reorder.cs`, `SoftwareMjpegDecoder.cs`, `NvdecMjpegDecoder.cs`, `CudaD3D11InteropBridge.cs` | pipeline construction/startup sequencing, bounded work-channel construction, compressed input admission/byte budget/depth accounting, CPU MJPEG worker decode-loop execution and decoder ownership, pipeline timing and packet-hash metrics, stop/dispose/shutdown joins/fatal callback signaling, decoder/work-item/reorder-frame resource cleanup, decoded-frame ordering, missing-sequence state, decoded-frame emission and preview notification, software MJPEG decoder initialization/lifetime, decode/copy hot path, NVDEC decoder state, standalone CUDA device/frame-pool initialization, shared CUDA device/frame-pool adoption, decode/context access, CPU download/copy helpers, disposal, and error text, CUDA-to-D3D11 bridge state, public texture handles, bridge setup/zero-copy registration, bridge disposal/resource unregister, CUDA native constants/P/Invoke declarations, and zero-copy/staging copy behavior |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | optional NVML telemetry snapshot/polling lifecycle, graceful unavailable behavior, raw NVML constants, structs, library loading, device-name helper, and P/Invoke declarations |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.DiagnosticEvaluation.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs`, `AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Recording.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.DiagnosticEvaluation.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Audio.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Recording.cs` | additional collectors/controllers when hub orchestration grows |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationRuntimeModels.cs`, `AutomationSupportModels.cs` | consolidated automation evidence DTO for app/capture/audio/preview/recording/Flashback diagnostics; `AutomationRuntimeModels.cs` owns capture runtime, preview runtime, and performance timeline DTO surfaces; `AutomationSupportModels.cs` owns command protocol DTOs/converters, automation options DTOs, support DTOs/enums for diagnostics events, Flashback segments, preview startup, screenshot/window capture, recording verification, video source/color probe, and view-model runtime snapshot DTOs |
 | Capture snapshot models | `Sussudio/Models/Capture/CaptureSnapshotModels.cs` | consolidated diagnostics core/format/HDR, source telemetry, capture cadence, recording/audio queue, Flashback queue, MJPEG, and visual-cadence fields plus inherited health source/queue/AV-sync and Flashback backend/playback/export health fields |
 | Capture leaf models | `Sussudio/Models/Capture/CaptureModels.cs` | device/options/settings/session-state leaf types, explicit transition legality policy, mutable capture session state machine, and frame-ledger event DTOs kept together as the capture model surface |
@@ -355,23 +355,18 @@ Automation diagnostics ownership:
   projection, playback event/cadence/PTS-cadence/A/V drift projection,
   seek-cap/decode timing projection, playback command queue projection, and
   final flattened playback fields consumed by `AutomationSnapshot`.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewD3D.cs`
-  owns D3D preview swap-chain and renderer-state projection plus composition of
-  D3D leaf projections consumed by `AutomationSnapshot`, plus final D3D
-  projection-to-`AutomationSnapshot` flattening, renderer-state fields, and D3D
-  pipeline-latency projection, waitable frame-latency projection, and DXGI
-  frame-statistics projection including recent missed-refresh and stats failure
-  deltas, D3D CPU upload/render/present/total-frame timing, and submitted/
-  rendered/dropped frame ownership plus recent slow-frame projection consumed by
-  `AutomationSnapshot`.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.PreviewRuntime.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs`
   owns preview runtime projection routing, preview frame counters, estimated
   pipeline latency, preview surface visibility, renderer attachment, GPU
-  playback state/position, preview HDR/tone-map/color metadata, and the frame,
+  playback state/position, preview HDR/tone-map/color metadata, the frame,
   cadence, surface, startup, GPU-playback, and color groups consumed by
-  `AutomationSnapshot`, plus preview display-cadence projection inputs, preview
-  startup/readiness and renderer mode projection inputs, and final preview
-  runtime flattening.
+  `AutomationSnapshot`, preview display-cadence projection inputs, preview
+  startup/readiness and renderer mode projection inputs, D3D preview swap-chain
+  and renderer-state projection, D3D pipeline-latency projection, waitable frame-
+  latency projection, DXGI frame-statistics projection including recent missed-
+  refresh and stats failure deltas, D3D CPU upload/render/present/total-frame
+  timing, submitted/rendered/dropped frame ownership, recent slow-frame
+  projection, and final preview runtime/D3D flattening.
   It also owns process memory, CPU, GC, and thread-pool projection consumed by
   `AutomationSnapshot`, plus final process resource
   projection-to-`AutomationSnapshot` field flattening.
