@@ -101,8 +101,7 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var commandQueueText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs")
-            .Replace("\r\n", "\n");
+        var commandQueueText = rootText;
 
         var seekBlock = ExtractTextBetween(
             sourceText,
@@ -146,14 +145,7 @@ static partial class Program
         AssertContains(commandQueueText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
         AssertContains(commandQueueText, "private long _scrubUpdatesCoalesced;");
         AssertContains(commandQueueText, "private long _seekCommandsCoalesced;");
-        AssertDoesNotContain(rootText, "private sealed class SeekIntentSlot");
-        AssertDoesNotContain(rootText, "private sealed class ScrubUpdateIntentSlot");
-        AssertDoesNotContain(rootText, "private long _latestScrubUpdateTicks;");
-        AssertDoesNotContain(rootText, "private readonly object _seekSlotSync = new();");
-        AssertDoesNotContain(rootText, "private SeekIntentSlot? _queuedSeekSlot;");
-        AssertDoesNotContain(rootText, "private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;");
-        AssertDoesNotContain(rootText, "private long _scrubUpdatesCoalesced;");
-        AssertDoesNotContain(rootText, "private long _seekCommandsCoalesced;");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.CommandQueue.cs")), "Flashback playback command queue stays folded into the root controller");
         AssertContains(sourceText, "public long SeekCommandsCoalesced => Interlocked.Read(ref _seekCommandsCoalesced);");
         AssertContains(sourceText, "public bool HasPositionOverride { get; init; }");
         AssertContains(sourceText, "public bool EndScrub() => EndScrubAt(null);");
@@ -680,10 +672,9 @@ static partial class Program
         var threadPlayCommandText = threadCommandDispatchText;
         var threadPauseCommandText = threadCommandDispatchText;
         var threadNudgeCommandText = threadCommandDispatchText;
-        var commandQueueText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.CommandQueue.cs")
-            .Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
+        var commandQueueText = rootText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -694,8 +685,8 @@ static partial class Program
         AssertContains(commandQueueText, "private readonly struct PlaybackCommand");
         AssertContains(commandQueueText, "public SeekIntentSlot? SeekSlot { get; init; }");
         AssertContains(commandQueueText, "public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }");
-        AssertDoesNotContain(rootText, "private enum CommandKind");
-        AssertDoesNotContain(rootText, "private readonly struct PlaybackCommand");
+        AssertContains(rootText, "private enum CommandKind");
+        AssertContains(rootText, "private readonly struct PlaybackCommand");
         AssertContains(threadLifecycleText, "[DllImport(\"winmm.dll\", ExactSpelling = true)]");
         AssertContains(threadLifecycleText, "private static extern uint timeBeginPeriod(uint uMilliseconds);");
         AssertContains(threadLifecycleText, "private static extern uint timeEndPeriod(uint uMilliseconds);");
@@ -775,7 +766,7 @@ static partial class Program
         AssertContains(commandQueueText, "public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);");
         AssertContains(commandQueueText, "public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);");
         AssertContains(commandQueueText, "public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.CommandTelemetry.cs")), "Flashback playback command telemetry stays folded into CommandQueue.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.CommandTelemetry.cs")), "Flashback playback command telemetry stays folded into the root controller");
         AssertContains(commandQueueText, "private long _commandsEnqueued;");
         AssertContains(commandQueueText, "private long _commandsProcessed;");
         AssertContains(commandQueueText, "private long _commandsDropped;");
@@ -793,10 +784,10 @@ static partial class Program
         AssertContains(commandQueueText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
         AssertContains(commandQueueText, "private int _activeCommandKind = -1;");
         AssertContains(commandQueueText, "private long _activeCommandStartedTimestamp;");
-        AssertDoesNotContain(rootText, "private long _commandsEnqueued;");
-        AssertDoesNotContain(rootText, "private int _pendingCommands;");
-        AssertDoesNotContain(rootText, "private string _lastCommandFailure = string.Empty;");
-        AssertDoesNotContain(rootText, "private int _activeCommandKind = -1;");
+        AssertContains(rootText, "private long _commandsEnqueued;");
+        AssertContains(rootText, "private int _pendingCommands;");
+        AssertContains(rootText, "private string _lastCommandFailure = string.Empty;");
+        AssertContains(rootText, "private int _activeCommandKind = -1;");
         AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
