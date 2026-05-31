@@ -3331,7 +3331,7 @@ owner, fold it back into that owner and update the source-shape tests and
    frame-rate source filtering, automatic selection, always-on capture options,
    timing-policy placement, automatic-selection behavior, and pure timing-policy
    behavior checks live together in
-   `MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`.
+   `MainViewModel.Capture.SelectionPolicy.Tests.cs`.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
    owns xUnit execution for those frame-rate selection/timing checks after
    their removal from the legacy presentation-preview capture catalog.
@@ -3435,7 +3435,7 @@ owner, fold it back into that owner and update the source-shape tests and
    frame-rate support checks, nearest-resolution ranking, and the request/result
    records stay together with the broader pure ViewModel selection-policy owner.
    Resolution and frame-rate selection harness coverage lives in
-   `MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`, which
+   `MainViewModel.Capture.SelectionPolicy.Tests.cs`, which
    owns source-shape placement assertions plus HDR, SDR, auto-capture,
    source-filter, automatic frame-rate, and timing-policy behavior contracts.
    State-backed delegates for callers that still live across the partial family

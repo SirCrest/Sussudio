@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: capture selection-policy test locality
+Problem: `MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs` split resolution-selection and frame-rate timing/source-filter/auto-selection checks away from `MainViewModel.Capture.SelectionPolicy.Tests.cs`, even though both files use the same legacy `Program` helper surface, reflection fixtures, option-list constructors, `ViewModelSelectionPolicies.cs`, `FrameRateTimingPolicy.cs`, and xUnit presentation-preview wrapper group. Reviewing capture mode selection policy still required opening a redundant sibling file before reaching the shared helpers and capture-settings projection checks.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: generated baseline test `.cs` count 61 -> 60; `Sussudio.Tests` `.cs` count 59 -> 58
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PresentationPreviewResolutionSelectionContractsTests|FullyQualifiedName~PresentationPreviewFrameRateSelectionContractsTests|FullyQualifiedName~PresentationPreviewCaptureSelectionPolicyContractsTests"` passed (14 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; current core app `.cs` count/LoC: 136 / 89,684; current test `.cs` count/LoC: 58 / 55,992.
+CLI/MCP/pipe checks, if applicable: not applicable; test/docs-only consolidation with no production, automation command, CLI/MCP, XAML, capture, recording, Flashback, preview, or HDR runtime code changes.
+Behavior preserved: the same `Program` method names and `PresentationPreviewResolutionSelectionContractsTests`, `PresentationPreviewFrameRateSelectionContractsTests`, and `PresentationPreviewCaptureSelectionPolicyContractsTests` xUnit facts execute unchanged while resolution, frame-rate source filtering, frame-rate auto-selection, pure timing-policy, capture-format, recording-settings, capture-settings projection, and late device-format probe retarget checks now live in `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`.
+Notes for future agents: keep capture selection-policy behavior/source-shape tests and their shared reflection/model-construction helpers in `MainViewModel.Capture.SelectionPolicy.Tests.cs` while they cover the same `ViewModelSelectionPolicies.cs`, `FrameRateTimingPolicy.cs`, `CaptureSettingsProjectionBuilder.cs`, and capture-mode controller surface. Split only if a policy group gains an independent fixture or reusable test seam.
+
+Date: 2026-05-31
 Area: tool-contract test implementation locality
 Problem: `AutomationToolContracts.SnapshotFormatter.Tests.cs` and `ToolProbeContracts.Tests.cs` were small legacy `Program` partial sidecars whose xUnit execution already lived in `XUnit.ToolContractsTests.cs` and whose shared helpers came from the main automation/tool contract implementation owner. Reviewing shared snapshot formatter contracts, PresentMon parser behavior/source ownership, ssctl pipe transport, KS audio-node probe ownership, and EGAVDS probe ownership still required opening two extra implementation files beside `AutomationToolContracts.Tests.cs`.
 Files consolidated: `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`; `tests/Sussudio.Tests/ToolProbeContracts.Tests.cs`

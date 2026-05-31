@@ -1273,8 +1273,8 @@ Primary current owners:
   including MainViewModel source readers, member extraction, comment/string
   stripping, regex assertions, and token-order assertions used by capture,
   Flashback, automation, MCP, recording, stats, and docs tests.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.ResolutionFrameRate.Tests.cs`
-  owns resolution-selection source-shape assertions for option rebuild,
+- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
+  resolution-selection source-shape assertions for option rebuild,
   auto-selection state, pure policy placement, and policy behavior assertions
   including HDR and SDR source retarget behavior, plus frame-rate source-filter,
   automatic-selection, always-on capture-option, timing-policy ownership,
@@ -1300,10 +1300,11 @@ Primary current owners:
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
-  capture format, recording settings, capture settings projection, and late
-  device-format probe retarget selection-policy ownership/behavior checks plus
-  the shared reflection, option-list, and capture-mode model construction
-  helpers for the selection-policy test family.
+  capture format, resolution, frame-rate timing/auto/source-filtering,
+  recording settings, capture settings projection, and late device-format probe
+  retarget selection-policy ownership/behavior checks plus the shared
+  reflection, option-list, and capture-mode model construction helpers for the
+  selection-policy test family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
   preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
   audio-ramp, device-discovery-before-recording-capability, UI/audio preview
