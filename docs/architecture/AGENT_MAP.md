@@ -1200,18 +1200,17 @@ Primary current owners:
   recording runtime ownership assertions, recording-setting automation routing
   for Flashback encoder cycles, emergency recording-stop dispatcher/coordinator
   routing assertions, bounded bitrate sample-window behavior assertions,
-  preview-volume persistence, automation options surface, capture
+  preview-volume persistence, automation UI-setting persistence,
+  frame-time/stat visibility contracts, settings persistence projection
+  semantics, capture-mode reinitialization, device refresh, device/audio-input
+  selection routing contracts, HDR/true-HDR preview enablement guards, HDR mode
+  change side-effect ownership assertions, automation options surface, capture
   audio-monitoring coordinator surface and runtime-guard assertions,
   MainViewModel Flashback coordinator-routing assertions, negative
   `_captureService` access guards, Flashback settings owner checks for
   automation enable/restart entry points, Flashback export backend-lease and
   export-operation lock assertions, ViewModel export routing, and export CTS
   lifecycle assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
-  automation UI-setting persistence, frame-time/stat visibility contracts,
-  capture-mode reinitialization, device refresh, device/audio-input selection
-  routing contracts, HDR/true-HDR preview enablement guards, and HDR mode
-  change side-effect ownership assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
