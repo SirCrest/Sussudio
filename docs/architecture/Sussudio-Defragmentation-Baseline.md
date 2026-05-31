@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: automation diagnostics capture/MJPEG projection locality
+Problem: `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` split MJPEG capture-health, timing, preview-jitter, and packet-hash projection away from the adjacent capture-format/HDR/transport projection owner even though both feed the same private automation snapshot capture projection and flattening path.
+Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `AutomationDiagnosticsHub` production partial count 11 -> 10; generated baseline production `.cs` count 180 -> 179
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationDiagnostics|FullyQualifiedName~DiagnosticsRefresh|FullyQualifiedName~SnapshotModels|FullyQualifiedName~ArchitectureDocs"` passed (59 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); diff checks passed; current core app `.cs` count/LoC: 136 / 89,684; current test `.cs` count/LoC: 81 / 56,102.
+CLI/MCP/pipe checks, if applicable: full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: MJPEG field names, DTO names, projection methods, flattening methods, snapshot build/flatten call sites, and automation snapshot property mapping remain unchanged; only private projection members moved into the capture-format projection owner.
+Notes for future agents: keep capture-format, transport, HDR truth, MJPEG totals/timing/preview-jitter/packet-hash projection with `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` while they share the capture snapshot build/flattening path; split only for a real collaborator or separate reusable projection owner.
+
+Date: 2026-05-31
 Area: diagnostic-session result builder projection locality
 Problem: `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` was the last private partial for `DiagnosticSessionResultBuilder`, holding projection records/builders called only by `CreateResult`/`FlattenResultProjectionSet`. Reviewing diagnostic-session summary construction still required opening a second builder file even though projection composition, final DTO assignment, analysis, artifact writes, and summary-write repair are one result-construction owner.
 Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.Projections.cs`

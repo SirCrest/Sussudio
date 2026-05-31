@@ -162,21 +162,20 @@ toggle/audio toggle, negotiated capture dimensions/frame-rate/pixel format,
 source-reader subtype and observed pixel/surface format projection inputs,
 encoder format/codec/profile/ten-bit confirmation projection, capture memory
 preference, requested/negotiated video subtype, frame-ledger projection, final
-capture-format flattening, and final capture-transport projection-to-
-`AutomationSnapshot` field flattening.
+capture-format flattening, final capture-transport projection-to-
+`AutomationSnapshot` field flattening, CPU MJPEG totals, compressed queue,
+failure, decode/interop-copy/callback/reorder/pipeline timing, decoder count,
+per-decoder, and packet duplicate-run / unique-frame projection inputs consumed
+by the automation snapshot DTO, plus final CPU MJPEG totals, compressed queue,
+timing, packet-hash field flattening, MJPEG preview jitter projection routing,
+queue counters, timing samples, adaptive drop/depth counters, last scheduler
+event projection, and final preview-jitter projection-to-`AutomationSnapshot`
+flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns preview source capture
 cadence, visual cadence, and center-crop visual cadence projection inputs
 consumed by the automation snapshot DTO, plus final source capture cadence,
 visual cadence, and center-crop visual cadence projection-to-`AutomationSnapshot`
 field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs` owns CPU MJPEG totals,
-compressed queue, failure, decode/interop-copy/callback/reorder/pipeline
-timing, decoder count, per-decoder, and packet duplicate-run / unique-frame
-projection inputs consumed by the automation snapshot DTO, plus final CPU MJPEG
-totals, compressed queue, timing, packet-hash field flattening, MJPEG preview
-jitter projection routing, queue counters, timing samples, adaptive drop/depth
-counters, last scheduler event projection, and final preview-jitter
-projection-to-`AutomationSnapshot` flattening.
 `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs` owns active
 Flashback export progress, failure, force-rotate fallback, last-result
 projection, recording failure, cleanup, force-rotate, temp-drive/startup-cache,

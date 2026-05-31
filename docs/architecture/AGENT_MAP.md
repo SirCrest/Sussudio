@@ -38,7 +38,7 @@ mentions the moved files.
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | construction, suppression/reprime and disposal lifecycle, paced emit loop control flow, display-clock alignment, renderer submission, tick waits, deadline drops, adaptive target-depth policy, jitter-buffer metric records, timing sample projection, decoded preview-frame ingress, pooled payload ownership, queue ordering/dequeue selection, and reprime recovery |
 | MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `SoftwareMjpegDecoder.cs`, `NvdecMjpegDecoder.cs`, `CudaD3D11InteropBridge.cs` | pipeline construction/startup sequencing, bounded work-channel construction, compressed input admission/byte budget/depth accounting, CPU MJPEG worker decode-loop execution and decoder ownership, pipeline timing and packet-hash metrics, stop/dispose/shutdown joins/fatal callback signaling, decoder/work-item/reorder-frame resource cleanup, decoded-frame ordering, missing-sequence state, decoded-frame emission and preview notification, software MJPEG decoder initialization/lifetime, decode/copy hot path, NVDEC decoder state, standalone CUDA device/frame-pool initialization, shared CUDA device/frame-pool adoption, decode/context access, CPU download/copy helpers, disposal, and error text, CUDA-to-D3D11 bridge state, public texture handles, bridge setup/zero-copy registration, bridge disposal/resource unregister, CUDA native constants/P/Invoke declarations, and zero-copy/staging copy behavior |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | optional NVML telemetry snapshot/polling lifecycle, graceful unavailable behavior, raw NVML constants, structs, library loading, device-name helper, and P/Invoke declarations |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationRuntimeModels.cs`, `AutomationSupportModels.cs` | consolidated automation evidence DTO for app/capture/audio/preview/recording/Flashback diagnostics; `AutomationRuntimeModels.cs` owns capture runtime, preview runtime, and performance timeline DTO surfaces; `AutomationSupportModels.cs` owns command protocol DTOs/converters, automation options DTOs, support DTOs/enums for diagnostics events, Flashback segments, preview startup, screenshot/window capture, recording verification, video source/color probe, and view-model runtime snapshot DTOs |
 | Capture snapshot models | `Sussudio/Models/Capture/CaptureSnapshotModels.cs` | consolidated diagnostics core/format/HDR, source telemetry, capture cadence, recording/audio queue, Flashback queue, MJPEG, and visual-cadence fields plus inherited health source/queue/AV-sync and Flashback backend/playback/export health fields |
 | Capture leaf models | `Sussudio/Models/Capture/CaptureModels.cs` | device/options/settings/session-state leaf types, audio endpoint/event/path/trace DTOs used by capture and monitoring, explicit transition legality policy, mutable capture session state machine, and frame-ledger event DTOs kept together as the capture model surface |
@@ -318,18 +318,14 @@ Automation diagnostics ownership:
   runtime/readiness fallback, HDR warmup/downgrade, pipeline parity, telemetry
   alignment, HDR truth verdict projection, preview HDR input detection,
   tone-map state projection, capture memory preference, requested/negotiated
-  video subtype, frame-ledger projection, final capture-format flattening, and
-  final capture-transport/HDR-pipeline projection-to-`AutomationSnapshot` field
-  flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs`
-  owns CPU MJPEG totals, compressed queue, failure,
-  decode/interop-copy/callback/reorder/pipeline timing, decoder count,
-  per-decoder, and packet duplicate-run / unique-frame projection inputs
-  consumed by `AutomationSnapshot`, plus final CPU MJPEG totals, compressed
-  queue, timing, packet-hash field flattening, MJPEG preview jitter projection
-  routing, queue counters, timing samples, adaptive drop/depth counters, last
-  scheduler event projection, and final preview-jitter projection-to-
-  `AutomationSnapshot` flattening.
+  video subtype, frame-ledger projection, CPU MJPEG totals, compressed queue,
+  failure, decode/interop-copy/callback/reorder/pipeline timing, decoder count,
+  per-decoder, packet duplicate-run / unique-frame projection inputs, final
+  capture-format/capture-transport/HDR-pipeline flattening, final CPU MJPEG
+  totals, compressed queue, timing, packet-hash field flattening, MJPEG preview
+  jitter projection routing, queue counters, timing samples, adaptive drop/depth
+  counters, last scheduler event projection, and final preview-jitter
+  projection-to-`AutomationSnapshot` flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`
   owns active Flashback export progress, failure, force-rotate fallback, final
   Flashback export last-result projection, recording failure, cleanup,
