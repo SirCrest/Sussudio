@@ -1818,7 +1818,9 @@ Primary current owners:
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
   sink frame-rate, option, startup rollback, runtime counter, PTS guard, queue
   rejection, lifecycle cleanup, packet-validation, drain-loop ordering,
-  force-rotate, and segment-registration recovery tests.
+  force-rotate, segment-registration recovery, and broad source-ownership
+  assertions for root/startup, queueing, encoding-loop, force-rotate,
+  recording, runtime-state, and packet-buffer locality.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for the former legacy Flashback encoder sink frame-rate,
   codec, counter, queue, force-rotate, packet-drain, startup, and
