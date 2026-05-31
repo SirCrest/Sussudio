@@ -27,9 +27,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.StatsPresentation.Formatting.Tests.cs` owns the former legacy
   detached-window, encoder formatting, expected-display-repeat, compact preview
   summary, frame-time range, frame-time geometry, stats dock, row chrome,
-  builder ownership, and HDMI source telemetry panel checks.
-- `XUnit.StatsHardwareRowsTests.cs` owns the former legacy hardware decode/GPU
-  row formatting behavior checks and hardware-row input sampling policy checks.
+  builder ownership, HDMI source telemetry panel checks, hardware decode/GPU
+  row formatting behavior checks, and hardware-row input sampling policy checks.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy HdrOutputPolicy
   behavior, HDR output environment-switch, and disabled telemetry-provider
   checks.

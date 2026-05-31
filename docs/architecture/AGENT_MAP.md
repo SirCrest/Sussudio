@@ -1147,10 +1147,9 @@ Primary current owners:
   detached-window, dock encoder, display-repeat visual-cadence, compact preview
   summary, frame-time range, frame-time graph geometry behavior checks, stats
   dock source-shape assertions, builder/controller/DTO ownership assertions,
-  HDMI source telemetry panel projection checks, and shared StatsPresentation
+  HDMI source telemetry panel projection checks, hardware row presentation and
+  input-provider behavior checks, and shared StatsPresentation/StatsHardwareRows
   xUnit reflection/file helpers.
-  `tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` owns hardware row
-  presentation and input-provider behavior checks.
 - `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs` owns MainWindow
   automation ID inventory, full-screen/window automation, UI-dispatching source
   contract checks, and xUnit stats snapshot builder contract checks.

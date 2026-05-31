@@ -2073,9 +2073,8 @@ Stats presentation contract checks now live in
 `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` for builder
 ownership, source telemetry, stats dock, row chrome, frame-time overlay policy,
 detached-window, encoder, expected-display-repeat, compact preview summary,
-frame-time range, and frame-time graph geometry behavior, and
-`tests/Sussudio.Tests/XUnit.StatsHardwareRowsTests.cs` for hardware decode/GPU
-row and input-provider behavior instead of expanding the legacy harness body in
+frame-time range, frame-time graph geometry behavior, hardware decode/GPU row,
+and input-provider behavior instead of expanding the legacy harness body in
 `tests/Sussudio.Tests/Program.cs`.
 Stats presentation text projection is now consolidated in
 `Sussudio/ViewModels/StatsPresentationBuilder.cs`: diagnostic row construction,
