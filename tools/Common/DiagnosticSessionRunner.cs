@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using System.Linq;
 using System.Text.Json;
+using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;
 
 namespace Sussudio.Tools;
 
@@ -263,3 +266,384 @@ internal sealed class DiagnosticSessionCompletionContext
 internal readonly record struct DiagnosticSessionPostRunSnapshotResult(
     JsonElement HealthSnapshot,
     JsonElement? Timeline);
+
+internal static class DiagnosticSessionScenarioPhaseRunner
+{
+    internal static async Task<DiagnosticSessionScenarioPhaseResult> RunAsync(DiagnosticSessionScenarioPhaseContext context)
+    {
+        var backgroundTasks = new DiagnosticSessionBackgroundTasks();
+        var scenarioPhase = new DiagnosticSessionScenarioPhaseState();
+
+        try
+        {
+            context.SetStage("scenario-setup");
+            if (!context.InitialSnapshotKnown && context.Scenario != DiagnosticSessionScenarioCatalog.Observe)
+            {
+                context.CommandChannel.RecordFailure($"initial-snapshot: skipped state-mutating scenario '{context.Scenario}' because the initial app state is unknown");
+            }
+            else
+            {
+                var setupResult = await DiagnosticSessionScenarioSetup.RunAsync(
+                        context.Scenario,
+                        context.ScenarioPlan,
+                        context.InitialSnapshot,
+                        context.Actions,
+                        context.Warnings,
+                        context.CommandChannel,
+                        context.CommandChannel.TryWaitAsync,
+                        context.ScenarioCancellationToken)
+                    .ConfigureAwait(false);
+                scenarioPhase.StartedPreview = setupResult.StartedPreview;
+                scenarioPhase.StartedRecording = setupResult.StartedRecording;
+                scenarioPhase.EnabledFlashback = setupResult.EnabledFlashback;
+                scenarioPhase.DisabledFlashback = setupResult.DisabledFlashback;
+
+                var scenarioStartup = await DiagnosticSessionScenarioStartup.StartAsync(
+                        context.Options,
+                        context.ScenarioPlan,
+                        context.DurationSeconds,
+                        context.OutputDirectory,
+                        backgroundTasks,
+                        context.Actions,
+                        context.Warnings,
+                        context.CommandChannel.SendAsync,
+                        context.CommandChannel.SendRawWithConnectRetryAsync,
+                        context.CommandChannel.SendAsync,
+                        context.ScenarioCancellationToken)
+                    .ConfigureAwait(false);
+                scenarioPhase.StartedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;
+
+                await RunSamplingAndCompleteAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            context.RecordTerminalException(ex, context.GetLastStage());
+            context.ScenarioCancellationSource.Cancel();
+            await DrainAfterFaultAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);
+            await context.WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        }
+
+        return scenarioPhase.ToResult();
+    }
+
+    private static async Task RunSamplingAndCompleteAsync(
+        DiagnosticSessionScenarioPhaseContext context,
+        DiagnosticSessionBackgroundTasks backgroundTasks,
+        DiagnosticSessionScenarioPhaseState scenarioPhase)
+    {
+        context.SetStage("sampling");
+        await context.WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        await SampleLoopAsync(
+                context.DurationSeconds,
+                context.SampleIntervalMs,
+                context.Samples,
+                context.CommandChannel.SendAsync,
+                context.ScenarioCancellationToken,
+                context.WriteSamplingLiveStateBestEffortAsync)
+            .ConfigureAwait(false);
+
+        await CompleteAfterSamplingAsync(
+                context,
+                backgroundTasks,
+                scenarioPhase)
+            .ConfigureAwait(false);
+    }
+
+    private static async Task CompleteAfterSamplingAsync(
+        DiagnosticSessionScenarioPhaseContext context,
+        DiagnosticSessionBackgroundTasks backgroundTasks,
+        DiagnosticSessionScenarioPhaseState scenarioPhase)
+    {
+        scenarioPhase.FlashbackRecordingSettingsDeferredPresetState = await backgroundTasks
+            .CompleteRegisteredScenarioWorkAsync(scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
+            .ConfigureAwait(false);
+
+        await DiagnosticSessionFlashbackExportScenarios.RunSelectedRejectedExportScenariosAsync(
+                context.ScenarioPlan,
+                context.OutputDirectory,
+                context.Actions,
+                context.Warnings,
+                context.CommandChannel.SendAsync,
+                context.RunCancellationToken)
+            .ConfigureAwait(false);
+
+        scenarioPhase.PresentMon = await backgroundTasks.CompletePresentMonAsync(scenarioPhase.PresentMon, context.Warnings).ConfigureAwait(false);
+    }
+
+    private static async Task DrainAfterFaultAsync(
+        DiagnosticSessionScenarioPhaseContext context,
+        DiagnosticSessionBackgroundTasks backgroundTasks,
+        DiagnosticSessionScenarioPhaseState scenarioPhase)
+    {
+        var backgroundTaskDrain = await backgroundTasks.ObserveAfterFaultAsync(
+                context.Warnings,
+                context.SetStage,
+                context.RecordTerminalException,
+                context.WriteLiveStateBestEffortAsync,
+                scenarioPhase.PresentMon,
+                scenarioPhase.FlashbackRecordingSettingsDeferredPresetState)
+            .ConfigureAwait(false);
+        scenarioPhase.PresentMon = backgroundTaskDrain.PresentMon;
+        scenarioPhase.FlashbackRecordingSettingsDeferredPresetState = backgroundTaskDrain.RecordingSettingsDeferredPresetState;
+    }
+
+    private static async Task SampleLoopAsync(
+        int durationSeconds,
+        int sampleIntervalMs,
+        List<DiagnosticSessionSample> samples,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken,
+        Func<Task>? sampleCheckpointAsync = null)
+    {
+        var started = Stopwatch.GetTimestamp();
+        var duration = TimeSpan.FromSeconds(durationSeconds);
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot))
+            {
+                samples.Add(new DiagnosticSessionSample
+                {
+                    OffsetMs = (long)Stopwatch.GetElapsedTime(started).TotalMilliseconds,
+                    TimestampUtc = DateTimeOffset.UtcNow,
+                    Snapshot = snapshot.Clone()
+                });
+                if (sampleCheckpointAsync is not null)
+                {
+                    await sampleCheckpointAsync().ConfigureAwait(false);
+                }
+            }
+
+            var elapsed = Stopwatch.GetElapsedTime(started);
+            if (elapsed >= duration)
+            {
+                break;
+            }
+
+            var remaining = duration - elapsed;
+            var delay = TimeSpan.FromMilliseconds(Math.Min(sampleIntervalMs, Math.Max(1, remaining.TotalMilliseconds)));
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+        }
+    }
+}
+
+internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(
+    int AwaitOrder,
+    string Stage,
+    Task Task);
+
+internal readonly record struct DiagnosticSessionBackgroundTaskDrainResult(
+    PresentMonProbeResult? PresentMon,
+    FlashbackRecordingSettingsDeferredPresetState RecordingSettingsDeferredPresetState);
+
+internal sealed class DiagnosticSessionBackgroundTasks
+{
+    private readonly List<DiagnosticSessionBackgroundTaskRegistration> _scenarioTasks = [];
+    private Task<PresentMonProbeResult>? _presentMonTask;
+    private Task<FlashbackRecordingSettingsDeferredPresetState>? _recordingSettingsDeferredTask;
+
+    internal void AddScenario(int awaitOrder, string stage, Task task)
+    {
+        _scenarioTasks.Add(new DiagnosticSessionBackgroundTaskRegistration(awaitOrder, stage, task));
+    }
+
+    internal void SetPresentMon(Task<PresentMonProbeResult> task)
+    {
+        _presentMonTask = task;
+    }
+
+    internal void SetRecordingSettingsDeferred(Task<FlashbackRecordingSettingsDeferredPresetState> task)
+    {
+        _recordingSettingsDeferredTask = task;
+    }
+
+    internal async Task<FlashbackRecordingSettingsDeferredPresetState> CompleteRegisteredScenarioWorkAsync(
+        FlashbackRecordingSettingsDeferredPresetState recordingSettingsDeferredPresetState)
+    {
+        await AwaitScenarioTasksAsync().ConfigureAwait(false);
+        return await AwaitRecordingSettingsDeferredAsync(recordingSettingsDeferredPresetState).ConfigureAwait(false);
+    }
+
+    internal async Task<PresentMonProbeResult?> CompletePresentMonAsync(
+        PresentMonProbeResult? presentMon,
+        List<string> warnings)
+    {
+        return await AwaitPresentMonAsync(presentMon, warnings).ConfigureAwait(false);
+    }
+
+    internal async Task<DiagnosticSessionBackgroundTaskDrainResult> ObserveAfterFaultAsync(
+        List<string> warnings,
+        Action<string> setStage,
+        Action<Exception, string> recordTerminalException,
+        Func<Task> writeLiveStateBestEffortAsync,
+        PresentMonProbeResult? presentMon,
+        FlashbackRecordingSettingsDeferredPresetState recordingSettingsDeferredPresetState)
+    {
+        setStage("background-task-drain");
+        foreach (var registration in _scenarioTasks.OrderBy(task => task.AwaitOrder))
+        {
+            await ObserveTaskAfterFaultAsync(
+                    registration.Task,
+                    registration.Stage,
+                    warnings,
+                    recordTerminalException)
+                .ConfigureAwait(false);
+        }
+
+        presentMon = await ObservePresentMonAfterFaultAsync(
+                warnings,
+                recordTerminalException,
+                presentMon)
+            .ConfigureAwait(false);
+        recordingSettingsDeferredPresetState = await ObserveRecordingSettingsDeferredAfterFaultAsync(
+                warnings,
+                recordTerminalException,
+                recordingSettingsDeferredPresetState)
+            .ConfigureAwait(false);
+        await writeLiveStateBestEffortAsync().ConfigureAwait(false);
+
+        return new DiagnosticSessionBackgroundTaskDrainResult(presentMon, recordingSettingsDeferredPresetState);
+    }
+
+    private async Task AwaitScenarioTasksAsync()
+    {
+        foreach (var registration in _scenarioTasks.OrderBy(task => task.AwaitOrder))
+        {
+            await registration.Task.ConfigureAwait(false);
+        }
+    }
+
+    private async Task<PresentMonProbeResult?> AwaitPresentMonAsync(
+        PresentMonProbeResult? current,
+        List<string> warnings)
+    {
+        if (_presentMonTask is null)
+        {
+            return current;
+        }
+
+        var result = await _presentMonTask.ConfigureAwait(false);
+        if (!result.Success)
+        {
+            warnings.Add($"PresentMon failed: {result.Message}");
+        }
+
+        return result;
+    }
+
+    private async Task<FlashbackRecordingSettingsDeferredPresetState> AwaitRecordingSettingsDeferredAsync(
+        FlashbackRecordingSettingsDeferredPresetState current)
+    {
+        return _recordingSettingsDeferredTask is null
+            ? current
+            : await _recordingSettingsDeferredTask.ConfigureAwait(false);
+    }
+
+    private async Task<PresentMonProbeResult?> ObservePresentMonAfterFaultAsync(
+        List<string> warnings,
+        Action<Exception, string> recordTerminalException,
+        PresentMonProbeResult? presentMon)
+    {
+        if (_presentMonTask is null || _presentMonTask.IsCompletedSuccessfully)
+        {
+            if (_presentMonTask is { IsCompletedSuccessfully: true } && presentMon is null)
+            {
+                presentMon = await _presentMonTask.ConfigureAwait(false);
+            }
+
+            return presentMon;
+        }
+
+        try
+        {
+            var completedTask = _presentMonTask.IsCompleted
+                ? _presentMonTask
+                : await Task.WhenAny(_presentMonTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+            if (!ReferenceEquals(completedTask, _presentMonTask))
+            {
+                warnings.Add("presentmon-task: task still running after diagnostic interruption");
+                return presentMon;
+            }
+
+            presentMon = await _presentMonTask.ConfigureAwait(false);
+            if (!presentMon.Success)
+            {
+                warnings.Add($"PresentMon failed: {presentMon.Message}");
+            }
+
+            return presentMon;
+        }
+        catch (Exception ex)
+        {
+            recordTerminalException(ex, "presentmon-task");
+            return presentMon;
+        }
+    }
+
+    private async Task<FlashbackRecordingSettingsDeferredPresetState> ObserveRecordingSettingsDeferredAfterFaultAsync(
+        List<string> warnings,
+        Action<Exception, string> recordTerminalException,
+        FlashbackRecordingSettingsDeferredPresetState recordingSettingsDeferredPresetState)
+    {
+        if (_recordingSettingsDeferredTask is null || _recordingSettingsDeferredTask.IsCompletedSuccessfully)
+        {
+            if (_recordingSettingsDeferredTask is { IsCompletedSuccessfully: true })
+            {
+                recordingSettingsDeferredPresetState = await _recordingSettingsDeferredTask.ConfigureAwait(false);
+            }
+
+            return recordingSettingsDeferredPresetState;
+        }
+
+        try
+        {
+            var completedTask = _recordingSettingsDeferredTask.IsCompleted
+                ? _recordingSettingsDeferredTask
+                : await Task.WhenAny(_recordingSettingsDeferredTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+            if (!ReferenceEquals(completedTask, _recordingSettingsDeferredTask))
+            {
+                warnings.Add("flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
+                return recordingSettingsDeferredPresetState;
+            }
+
+            return await _recordingSettingsDeferredTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            recordTerminalException(ex, "flashback-recording-settings-deferred-task");
+            return recordingSettingsDeferredPresetState;
+        }
+    }
+
+    private static async Task ObserveTaskAfterFaultAsync(
+        Task? task,
+        string stage,
+        List<string> warnings,
+        Action<Exception, string> recordTerminalException)
+    {
+        if (task is null || task.IsCompletedSuccessfully)
+        {
+            return;
+        }
+
+        try
+        {
+            var completedTask = task.IsCompleted
+                ? task
+                : await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+            if (!ReferenceEquals(completedTask, task))
+            {
+                warnings.Add($"{stage}: task still running after diagnostic interruption");
+                return;
+            }
+
+            await task.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            recordTerminalException(ex, stage);
+        }
+    }
+}

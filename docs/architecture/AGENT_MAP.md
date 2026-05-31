@@ -19,7 +19,7 @@ mentions the moved files.
 
 | Area | Current owners / split families | Preferred next owner |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`, `tools/Common/DiagnosticSessionResult.cs` | public runner compatibility surface plus phase sequencing, cohesive mutable run context, initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction, post-cleanup completion phase, completion context handoff, result-build request mapping, named scenario phase execution with consolidated context/result/state/result DTO models, scenario sampling, post-sampling completion order/fault-drain delegation, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
+| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionResult.cs` | public runner compatibility surface plus phase sequencing, named scenario phase execution, scenario sampling, post-sampling completion order/fault-drain/background-task delegation, cohesive mutable run context, initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction, post-cleanup completion phase, completion context handoff, result-build request mapping, consolidated context/result/state/result DTO models, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/Program.cs`, focused `tests/Sussudio.Tests/XUnit.*.cs` slices | runner entry point, compatibility no-op check shim, xUnit slices, and focused contract tests such as `XUnit.StatsPresentation.Formatting.Tests.cs` |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CapturePipelineResources.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackExportCore.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs`, `CaptureService.Snapshots.cs` | service state, construction, public event/property surface, initialization owner, transition transaction/state-sampling owner, and lifecycle guards, preview start/stop/recycle/fast-path/reuse predicates/fresh-pipeline/video-pipeline handoff/disposal transition owner, audio preview lifecycle/volume/event/startup/rollback and live audio input switching owner, microphone monitor state/event/disposal/update/restart owner, preview audio resource owner, active recording backend resource owner, video pipeline resource owner, cleanup/disposal, resource-release helper, failure callback, failure-telemetry, fatal cleanup, and Flashback backend failure cleanup/device-lost owner, Flashback public state, segment access, enable/disable, restart, settings, buffer/GPU/format, encoder-cycle owner, preview backend startup/disposal, artifact-cleanup adapter, and Flashback buffer cycle coordination owner, Flashback export diagnostics/progress/fallback lifecycle, failure taxonomy, health projection, entry/routing and backend snapshot/lock handoff, core lifetime, request assembly, segment metadata mapping, live-export throttle policy, segment path normalization, segment PTS timestamp repair, range-resolution, buffer-position clamps, PTS offset math, and force-rotate preparation owner, Flashback recording backend/capability/session-context/frame-rate/start/finalize/export-finalize/boundary snapshot/reconciliation owner, health snapshot sampler with capture cadence/MJPEG/source telemetry, Flashback backend/queue, Flashback playback, and recording health field projections, health snapshot DTO assembler and handoff owner, read-only automation probe owner, recording integrity active-backend resolver, counter/audio DTO capture, normalized summary input, status/reason evaluation, and integrity logging owner, recording start transition/router, context request assembly, rollback-state holder, transient recording rollback, standard LibAv recording start/video/audio startup, and recording outcome-state owner, recording stop transition/finalization router owner, LibAv recording finalization/video-boundary/sink/idle-preview/preview-restore owner, runtime snapshot sampler with ingest/audio, reader/transport, recording-integrity, HDR/encoder pipeline, source-telemetry projections, private assembly handoff models, and final runtime snapshot DTO construction, diagnostics compatibility, read-only automation probes, preview-frame capture waits, shared snapshot utilities/recording stats/format/observed frames/A/V sync/source telemetry snapshot policy, source telemetry polling/fallback merge, capture-format and observed pixel telemetry owner, resource managers |
 | App shell | `Sussudio/App.xaml.cs` | XAML partial root, FFmpeg startup check, global handler hookup, recoverable/fatal exception policy plus emergency recording finalization, single-instance guard, startup identity logging, and MainWindow activation |
@@ -2751,23 +2751,18 @@ Primary owners:
   scenario/completion context construction.
 - `tools/Common/DiagnosticSessionRunner.cs` owns the public diagnostic-session
   compatibility surface, phase sequencing around context creation, initial
-  snapshot capture, scenario phase invocation, cleanup, post-cleanup evidence/result sequence, result-build
-  request mapping, post-run performance timeline and final health snapshot fetches, result-build
-  invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase. Keep the
-  `timeline` and `final-snapshot` stage names stable there. It also owns the
-  per-output-directory exclusive lock that prevents concurrent diagnostic
-  sessions from writing the same artifact set.
-- `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` owns the named
-  diagnostic-session scenario phase: state-mutation gating, setup/startup,
-  scenario sampling, snapshot sample collection, completion delegation, fault
-  drain delegation, and the cleanup result consumed by `RunAsync`. Preserve
-  sample-loop ordering: append the cloned sample before running checkpoint
-  callbacks.
-- `tools/Common/DiagnosticSessionBackgroundTasks.cs` owns diagnostic-session
+  snapshot capture, named scenario phase invocation and execution, cleanup,
+  post-cleanup evidence/result sequence, result-build request mapping,
+  post-run performance timeline and final health snapshot fetches, result-build
+  invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase. It also owns scenario sampling, snapshot
+  sample collection, post-sampling completion order, fault-drain delegation,
   scenario background task registration, deterministic await order, normal
   registered scenario completion, PresentMon and deferred recording-settings
   task tracking, interrupted task observation, warning collection, and the drain
-  result handoff.
+  result handoff. Preserve sample-loop ordering: append the cloned sample before
+  running checkpoint callbacks. Keep the `timeline` and `final-snapshot` stage
+  names stable there. It also owns the per-output-directory exclusive lock that
+  prevents concurrent diagnostic sessions from writing the same artifact set.
 - `tools/Common/DiagnosticSessionScenarioActivation.cs` owns diagnostic-session
   initial setup and optional background startup orchestration: Flashback
   enable/disable for scenario requirements, preview start and video-flow

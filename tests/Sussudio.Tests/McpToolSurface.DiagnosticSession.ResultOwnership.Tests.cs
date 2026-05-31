@@ -100,7 +100,7 @@ static partial class Program
         AssertDoesNotContain(builderText, "TryGetSnapshot(");
         AssertDoesNotContain(builderText, "TryGetVerification(");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
-        AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
+        AssertContains(executionText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertDoesNotContain(executionText, "private static async Task WriteJsonAsync<T>(");
         AssertDoesNotContain(executionText, "private static bool TryGetSnapshot(");
         AssertDoesNotContain(executionText, "private static bool TryGetVerification(");

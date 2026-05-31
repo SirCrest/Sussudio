@@ -2581,13 +2581,12 @@ into those phases.
 for recording checks, post-run timeline and final snapshot capture, result-build
 request mapping, result-build invocation, and terminal live-state write.
 `DiagnosticSessionRunner.cs` owns the completion context handoff consumed by the
-post-cleanup phase and hands scenario execution directly to
-`DiagnosticSessionScenarioPhaseRunner.cs`, which owns the main scenario phase
-for setup/startup, sampling, completion delegation, and fault drain delegation.
-`DiagnosticSessionScenarioPhaseRunner.cs` owns post-sampling completion order
-and fault-drain delegation beside the scenario phase sequence: registered
-background work before rejected-export handling, rejected-export handling
-before PresentMon completion, and interrupted drain handoff.
+post-cleanup phase and the main scenario phase for setup/startup, sampling,
+completion delegation, and fault drain delegation.
+`DiagnosticSessionRunner.cs` owns post-sampling completion order and
+fault-drain delegation beside the scenario phase sequence: registered background
+work before rejected-export handling, rejected-export handling before PresentMon
+completion, and interrupted drain handoff.
 `DiagnosticSessionRunner.cs` owns the final result-build
 request mapping consumed by the completion phase.
 The public options/result/sample contracts are separated from runner behavior. The result
@@ -2771,11 +2770,10 @@ acquires it. It owns the `.sussudio-diag.lock` file, exclusive
 failure message.
 
 Diagnostic-session background task tracking now lives in
-`tools/Common/DiagnosticSessionBackgroundTasks.cs`. It owns scenario task
-registration, deterministic await order, normal registered scenario completion,
-PresentMon and deferred Flashback recording-settings task tracking,
-interrupted-session observation, warning collection, and the drain handoff
-record.
+`tools/Common/DiagnosticSessionRunner.cs`. It owns scenario task registration,
+deterministic await order, normal registered scenario completion, PresentMon and
+deferred Flashback recording-settings task tracking, interrupted-session
+observation, warning collection, and the drain handoff record.
 
 Diagnostic-session scenario activation now lives in
 `tools/Common/DiagnosticSessionScenarioActivation.cs`, which owns initial setup
@@ -2833,9 +2831,9 @@ post-re-enable active-state validation. Startup only delegates selected cycle
 and lifecycle scenario registration.
 
 Diagnostic-session sampling now lives in
-`tools/Common/DiagnosticSessionScenarioPhaseRunner.cs` beside the scenario
-phase sequence that invokes it. Keep the sample append before the optional
-checkpoint callback so checkpoint failures cannot orphan an unseen sample.
+`tools/Common/DiagnosticSessionRunner.cs` beside the scenario phase sequence
+that invokes it. Keep the sample append before the optional checkpoint callback
+so checkpoint failures cannot orphan an unseen sample.
 
 Diagnostic-session metric projection now lives in
 `tools/Common/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
@@ -2992,7 +2990,6 @@ imports, SetupAPI imports, and native interface DTOs in
 Remaining `tools/Common` ownership:
 
 - `AutomationPipeClient/AutomationPipeClient.cs`
-- `DiagnosticSessionBackgroundTasks.cs`
 - `DiagnosticSessionPostRunActions.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackSupport.cs`
@@ -3016,7 +3013,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionScenarioActivation.cs`
 - `DiagnosticSessionRunner.cs`
-- `DiagnosticSessionScenarioPhaseRunner.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
 
 ## Next Slices
@@ -3039,14 +3035,12 @@ owner, fold it back into that owner and update the source-shape tests and
    explicit scenario/completion context construction.
    `DiagnosticSessionRunner.cs` owns the
    post-cleanup evidence/result sequence, completion context handoff, and
-   result-build request mapping, while
-   `DiagnosticSessionScenarioPhaseRunner.cs` owns the main scenario execution
-   phase including scenario sampling. `DiagnosticSessionResult.cs`
+   result-build request mapping, plus the main scenario execution phase
+   including scenario sampling. `DiagnosticSessionResult.cs`
    owns the explicit scenario context/result/state handoffs and final summary
    DTO surface, with
-   `DiagnosticSessionScenarioPhaseRunner.cs` owning post-sampling
-   completion ordering and fault-drain delegation while background task
-   completion lives in `DiagnosticSessionBackgroundTasks.cs`. Scenario catalog,
+   `DiagnosticSessionRunner.cs` owning post-sampling completion ordering,
+   fault-drain delegation, and background task completion. Scenario catalog,
    initial scenario setup, optional scenario
    startup, cleanup mutation ownership, post-cleanup recording checks,
    post-run snapshot fetches, command send/failure plumbing, and result

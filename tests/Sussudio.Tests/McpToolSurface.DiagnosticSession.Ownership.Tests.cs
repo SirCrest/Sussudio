@@ -4,7 +4,7 @@ static partial class Program
 {
     private static string ReadDiagnosticSessionBackgroundTasksSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionBackgroundTasks.cs");
+            "tools/Common/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
         => ReadNormalizedSourceFiles(
@@ -70,8 +70,7 @@ static partial class Program
     private static string ReadDiagnosticSessionRunnerSource()
         => ReadNormalizedSourceFiles(
             "tools/Common/DiagnosticSessionRunner.cs",
-            "tools/Common/DiagnosticSessionRunContext.cs",
-            "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs");
+            "tools/Common/DiagnosticSessionRunContext.cs");
 
     private static string ReadDiagnosticSessionRunExecutionRootSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunner.cs");
@@ -84,7 +83,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionRunExecutionScenarioSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionScenarioPhaseRunner.cs",
+            "tools/Common/DiagnosticSessionRunner.cs",
             "tools/Common/DiagnosticSessionResult.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
@@ -346,6 +345,10 @@ static partial class Program
         AssertDoesNotContain(runnerText, "Task<PresentMonProbeResult>? presentMonTask");
         AssertDoesNotContain(runnerText, "async Task ObserveBackgroundTasksAfterFaultAsync()");
         AssertDoesNotContain(runnerText, "async Task ObserveTaskAfterFaultAsync(Task? task, string stage)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionBackgroundTasks.cs")),
+            "diagnostic-session background task drain folded into DiagnosticSessionRunner.cs");
 
         return Task.CompletedTask;
     }
@@ -375,16 +378,17 @@ static partial class Program
 
     internal static Task DiagnosticSessionSampler_OwnsSampleLoopOrdering()
     {
-        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
-        var scenarioText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioPhaseRunner.cs")
-            .Replace("\r\n", "\n");
+        var scenarioText = ReadDiagnosticSessionRunExecutionRootSource();
 
         AssertContains(scenarioText, "private static async Task SampleLoopAsync(");
         AssertContains(scenarioText, "var response = await sendCommandAsync(\"GetSnapshot\", null, null)");
         AssertContains(scenarioText, "samples.Add(new DiagnosticSessionSample");
         AssertContains(scenarioText, "await sampleCheckpointAsync().ConfigureAwait(false);");
         AssertOccursBefore(scenarioText, "samples.Add(new DiagnosticSessionSample", "await sampleCheckpointAsync().ConfigureAwait(false);");
-        AssertDoesNotContain(executionText, "private static async Task SampleLoopAsync(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioPhaseRunner.cs")),
+            "diagnostic-session scenario phase runner folded into DiagnosticSessionRunner.cs");
 
         return Task.CompletedTask;
     }
