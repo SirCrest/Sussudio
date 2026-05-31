@@ -56,7 +56,7 @@ static partial class Program
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
 
         var audioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
-        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs");
+        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs");
         var previewChanged = ExtractMemberCode(audioStateCode, "OnPreviewVolumeChanged");
         var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
         var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
@@ -78,7 +78,8 @@ static partial class Program
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")), "MainViewModel.AudioMonitoring.cs folded into audio state");
         AssertDoesNotContain(audioStateCode, "private const int PreviewAudioRampDownSteps");
         AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.Ramps.cs")), "PreviewAudioVolumeTransitionController.Ramps.cs folded into PreviewAudioVolumeTransitionController.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.Ramps.cs")), "PreviewAudioVolumeTransitionController.Ramps.cs folded into PreviewAudioTransitionControllers.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.cs")), "preview audio volume transition controller folded into PreviewAudioTransitionControllers.cs");
         AssertContains(transitionCode, "private const int RampDownSteps = 18;");
         AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
         AssertContains(transitionCode, "private const int RampUpSteps = 30;");
@@ -243,11 +244,11 @@ static partial class Program
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs").Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs")
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/AudioRampTraceRecorder.cs").Replace("\r\n", "\n");
+        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderText = audioRampTraceRecorderRootText;
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var playbackRenderText = playbackText;
@@ -271,6 +272,7 @@ static partial class Program
         AssertContains(traceModelsText, "public long PlaybackOutputAgeMs { get; init; }");
 
         AssertContains(audioRampTraceRecorderRootText, "internal sealed class AudioRampTraceRecorder");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "AudioRampTraceRecorder.cs")), "audio ramp trace recorder folded into PreviewAudioTransitionControllers.cs");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTraceCapacity = 2048;");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTraceSampleIntervalMs = 10;");
         AssertContains(audioRampTraceRecorderText, "private const int AudioRampTracePostCompleteSampleMs = 250;");

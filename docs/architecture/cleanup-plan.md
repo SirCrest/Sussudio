@@ -2421,11 +2421,13 @@ Preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime,
 and volume save suppression now live with preview start/stop/reinit event
 routing in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
 `Sussudio/MainWindow.PreviewLifecycle.Composition.cs` is the XAML-facing adapter.
-Preview-audio volume transition mechanics now live in
-`Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs`, which owns
+Preview-audio volume transition mechanics and ramp diagnostics now live in
+`Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, which owns
 save suppression/override state, transition priming and restore behavior,
 trace adapters, property-to-session volume forwarding, ramp constants/easing,
-and async ramp-down/ramp-up execution.
+async ramp-down/ramp-up execution, bounded trace storage, trace session
+start/complete, trace-point capture, sampler loop, and delayed sampler
+shutdown.
 `Sussudio/ViewModels/MainViewModel.AudioState.cs` is the
 view-model compatibility facade for preview-volume save suppression, override,
 change notification, ramp adapter methods, and monitoring enable/disable
@@ -3234,8 +3236,9 @@ owner, fold it back into that owner and update the source-shape tests and
    lives with audio state in `MainViewModel.AudioState.cs`; keep future meter
    behavior there instead of growing the root facade file. Audio ramp trace
    state, bounded ring-buffer storage, snapshot projection, trace session
-   start/complete, trace-point capture, sampler loop, and delayed sampler
-   shutdown live in `Sussudio/ViewModels/AudioRampTraceRecorder.cs`, with
+   start/complete, trace-point capture, sampler loop, delayed sampler
+   shutdown, and preview-volume transition mechanics live in
+   `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, with
    `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
    trace/preview-volume controller wiring owner;
    preview-volume save/override, ramp adapter methods, preview monitoring

@@ -326,7 +326,7 @@ static partial class Program
         return string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
             (fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
              fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
-             fileName.StartsWith("AudioRampTraceRecorder", StringComparison.Ordinal) ||
+             fileName.StartsWith("PreviewAudioTransitionControllers", StringComparison.Ordinal) ||
              string.Equals(fileName, "ViewModelBuilders.cs", StringComparison.Ordinal));
     }
 
@@ -340,7 +340,7 @@ static partial class Program
                 fileName.StartsWith("MainWindow", StringComparison.Ordinal)) ||
             (string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
                 (fileName.StartsWith("MainViewModel", StringComparison.Ordinal) ||
-                 fileName.StartsWith("AudioRampTraceRecorder", StringComparison.Ordinal) ||
+                 fileName.StartsWith("PreviewAudioTransitionControllers", StringComparison.Ordinal) ||
                  fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
                  fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
                  string.Equals(fileName, "ViewModelSelectionPolicies.cs", StringComparison.Ordinal) ||

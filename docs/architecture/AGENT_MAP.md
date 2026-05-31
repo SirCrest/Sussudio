@@ -2202,16 +2202,15 @@ Primary current owners:
   timeline/export state plus buffer, bitrate, playback-state, in/out marker,
   and gap-from-live UI projection. Keep callback-thread meter targets
   in `MainViewModel.AudioState.cs` and out of the root facade file.
-  `Sussudio/ViewModels/AudioRampTraceRecorder.cs`
+  `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`
   owns audio ramp diagnostic state, bounded ring-buffer storage, snapshot
   projection, trace session start/complete, trace-point capture, sampler loop,
-  and delayed sampler shutdown.
+  delayed sampler shutdown, preview-volume save suppression/override state,
+  priming, restoring, trace adapters, property-to-session volume forwarding,
+  preview-audio ramp constants, easing, and async ramp-down/ramp-up execution.
   `MainViewModel.AudioState.cs` keeps the automation-facing audio-ramp trace
   adapter methods plus trace recorder and preview-volume transition controller
-  wiring. `PreviewAudioVolumeTransitionController.cs`
-  owns preview-volume save suppression/override state, priming, restoring,
-  trace adapters, property-to-session volume forwarding, preview-audio ramp
-  constants, easing, and async ramp-down/ramp-up execution.
+  wiring.
   `MainViewModel.AudioState.cs` owns
   audio capture enablement and Flashback restart/teardown routing.
   `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing,

@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-31T06:55:23Z
+Generated UTC: 2026-05-31T07:01:57Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 215 |
+| Production .cs files | 214 |
 | Test .cs files | 113 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (0.9%) |
@@ -57,15 +57,15 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 1065 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1055 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
-| 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 1054 | tools/ssctl/CommandHandlers.cs |
+| 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 1053 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
 | 1034 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |
 | 1033 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 1011 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs |
 | 996 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs |
-| 981 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 981 | Sussudio/Services/Recording/Verification/RecordingVerifier.cs |
+| 981 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 979 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs |
 | 965 | Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | 960 | Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs |
