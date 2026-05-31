@@ -1444,15 +1444,15 @@ Primary current owners:
   failure/priority scenarios, HEVC/H264 codec success and mismatch, Flashback
   verification format, resolution/frame-rate mismatch, HDR validation, and
   NTSC frame-rate tolerance scenarios.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.DiagnosticsContract.Tests.cs`
-  owns renderer diagnostics source-shape, frame queue, frame ownership, present
-  cadence metric shape/suppression baseline, public renderer diagnostics API
-  contract assertions, preview runtime, automation snapshot, nested renderer
-  metrics, preview tracking, slow-frame diagnostic reflection contracts, and
-  `AutomationRuntimeModels.cs` preview, Flashback playback, Flashback export,
-  and process diagnostics reflection contracts.
 - `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
-  renderer core and render-pipeline source-ownership assertions:
+  renderer diagnostics contract assertions plus core and render-pipeline
+  source-ownership assertions:
+  diagnostics source-shape, frame queue, frame ownership, present cadence metric
+  shape/suppression baseline, public renderer diagnostics API, preview runtime,
+  automation snapshot, nested renderer metrics, preview tracking, slow-frame
+  diagnostic reflection contracts, `AutomationRuntimeModels.cs` preview,
+  Flashback playback, Flashback export, and process diagnostics reflection
+  contracts,
   configuration, native interop, frame type/ownership state, DXGI frame-stat
   state, slow-frame state, metric-window lifecycle, metric-tracking method/state,
   panel binding, shared-device, device initialization, input-resource,
