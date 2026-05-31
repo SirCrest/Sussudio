@@ -551,13 +551,12 @@ channel intentionally remaining string-based.
   Flashback preview startup AGENT_MAP wording, shared tool automation path
   coverage, duplicate tools/Common owner checks, empty test marker-shell checks,
   literal `ReadRepoFile` source-shape path resolution, cleanup-plan file/folder
-  reference drift checks, architecture-doc test-family coverage, the xUnit
-  migration inventory guard, and the xUnit execution surface for those
-  architecture-doc checks after removal from the legacy offline harness catalog.
-`tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns shared
-Markdown code-span path-token extraction and resolution helpers, AGENT_MAP
-consumer coverage, ownership-file discovery, exact code-span policy, and xUnit
-inventory discovery.
+  reference drift checks, architecture-doc test-family coverage, shared
+  Markdown code-span path-token extraction and resolution helpers, AGENT_MAP
+  consumer coverage, ownership-file discovery, exact code-span policy, xUnit
+  inventory discovery, the xUnit migration inventory guard, and the xUnit
+  execution surface for those architecture-doc checks after removal from the
+  legacy offline harness catalog.
 Shared harness helpers now live in one support boundary,
 `tests/Sussudio.Tests/HarnessCore.cs`: generic assertions, repo-file/source
 text helpers, reflection/property access, wait helpers, and synthetic

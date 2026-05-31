@@ -49,6 +49,19 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: architecture-doc reference helper locality
+Problem: `ArchitectureDocs.MarkdownReferenceHelpers.cs` was a helper-only `Program` partial with no xUnit entry points, used only by `ArchitectureDocs.ReferenceIntegrity.Tests.cs` for AGENT_MAP, cleanup-plan, migration-plan, and literal path reference checks. Reviewing docs-reference validation still required opening a separate support shard before returning to the executable owner, even though the merged owner remains under the large-file review threshold.
+Files consolidated: `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: `Program` architecture-doc helper partial count -1
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~ArchitectureDocs` passed (16 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
+CLI/MCP/pipe checks, if applicable: not applicable; no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed.
+Behavior preserved: AGENT_MAP path resolution, Markdown code-span parsing, cleanup-plan and migration-plan reference resolution, README automation consumer coverage, UI/presentation and CaptureService ownership discovery, shared tool automation exact-path coverage, empty marker-shell detection, and xUnit inventory helpers now live with the architecture-doc reference-integrity test owner.
+Notes for future agents: keep architecture-doc reference-integrity assertions and their Markdown/path helper methods together in `ArchitectureDocs.ReferenceIntegrity.Tests.cs` while they share the same docs-validation fixture; split only if a helper family gains an independent test fixture or reusable non-docs caller.
+Current file/LoC checkpoint: core app `.cs`: 147 / 89,754 nonblank LoC; tests `.cs`: 100 / 56,104 nonblank LoC.
+
+Date: 2026-05-31
 Area: MainViewModel automation recording test locality
 Problem: `MainViewModel.Automation.RecordingTransition.Tests.cs` was a small legacy `Program` partial for automation recording routing, recording-setting automation, emergency stop routing, and bitrate-window checks. The adjacent `MainViewModel.Automation.AsyncSurface.Tests.cs` parent already owned the `IAutomationViewModel` async surface, preview/recording port routing, automation command dispatch, UI-dispatch cancellation, audio command guards, and automation options/runtime snapshot checks, so reviewing automation recording behavior still required opening a second small sidecar.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.RecordingTransition.Tests.cs`
@@ -3848,7 +3861,7 @@ Partial clusters reduced: legacy `Program` architecture-doc helper partial file 
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test/docs-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: AGENT_MAP file/path coverage, cleanup-plan coverage, xUnit inventory discovery, markdown token resolution, and UI/capture/tool ownership enumerators remain registered through `ArchitectureDocs.ReferenceIntegrity.Tests`.
-Notes for future agents: keep architecture-doc markdown/path helper methods and ownership-file enumerators together in `ArchitectureDocs.MarkdownReferenceHelpers.cs`; create a separate helper file only for an independently named docs-validation support boundary.
+Notes for future agents: superseded by the 2026-05-31 architecture-doc reference helper locality slice; keep architecture-doc markdown/path helper methods, ownership-file enumerators, and reference-integrity assertions together in `ArchitectureDocs.ReferenceIntegrity.Tests.cs` while the helper methods have no independent fixture.
 
 Date: 2026-05-26
 Area: Flashback test locality
@@ -4533,8 +4546,8 @@ Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: n/a; ArchitectureDocs legacy implementation shard count -1 while preserving the existing xUnit classes and facts
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (885 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: not applicable; test/docs locality only. Full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, runtime behavior, or docs validation semantics changed.
-Behavior preserved: AGENT_MAP path resolution, test-owner code-span checks, README automation consumer coverage, UI/presentation and CaptureService ownership coverage, Flashback preview startup wording checks, shared tool automation path coverage, duplicate tools/Common ownership detection, empty test marker-shell detection, cleanup-plan reference checks, and xUnit migration inventory checks now live in `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs`; shared markdown/path helper logic remains in `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs`.
-Notes for future agents: keep architecture-doc AGENT_MAP, cleanup-plan, migration-plan, and literal path implementation checks together in `ArchitectureDocs.ReferenceIntegrity.Tests.cs`; keep reusable markdown tokenization and ownership-file enumeration helpers in `ArchitectureDocs.MarkdownReferenceHelpers.cs` unless they gain an independent fixture.
+Behavior preserved: AGENT_MAP path resolution, test-owner code-span checks, README automation consumer coverage, UI/presentation and CaptureService ownership coverage, Flashback preview startup wording checks, shared tool automation path coverage, duplicate tools/Common ownership detection, empty test marker-shell detection, cleanup-plan reference checks, and xUnit migration inventory checks live in `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs`.
+Notes for future agents: superseded by the 2026-05-31 architecture-doc reference helper locality slice; keep architecture-doc AGENT_MAP, cleanup-plan, migration-plan, literal path implementation checks, reusable markdown tokenization, and ownership-file enumeration helpers together in `ArchitectureDocs.ReferenceIntegrity.Tests.cs` while they share one docs-reference fixture.
 
 Date: 2026-05-26
 Area: cached MJPEG timing snapshot test locality

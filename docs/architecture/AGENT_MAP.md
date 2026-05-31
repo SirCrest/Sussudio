@@ -1565,13 +1565,11 @@ Primary current owners:
   CaptureService ownership, Flashback preview startup wording, shared tool
   automation exact-path, duplicate tools/Common owner, empty test marker-shell
   checks, literal `ReadRepoFile` source-shape path drift, cleanup-plan
-  file/folder reference drift, xUnit migration inventory checks, and the xUnit
-  execution surface for those architecture-doc checks after their removal from
-  the legacy offline harness catalog.
-  `tests/Sussudio.Tests/ArchitectureDocs.MarkdownReferenceHelpers.cs` owns
-  shared Markdown code-span path-token extraction and resolution helpers,
-  AGENT_MAP consumer coverage, ownership-file discovery, exact code-span policy,
-  and xUnit inventory helpers.
+  file/folder reference drift, xUnit migration inventory checks, shared Markdown
+  code-span path-token extraction and resolution helpers, AGENT_MAP consumer
+  coverage, ownership-file discovery, exact code-span policy, xUnit inventory
+  helpers, and the xUnit execution surface for those architecture-doc checks
+  after their removal from the legacy offline harness catalog.
 - `tests/Sussudio.Tests/AutomationToolContracts.SnapshotFormatter.Tests.cs`
     owns the shared/ssctl snapshot formatter contract family: typed accessors,
     core section formatting, section-order, Flashback opt-in smoke checks,
