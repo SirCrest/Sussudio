@@ -10,8 +10,7 @@ static partial class Program
 {
     internal static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
     {
-        var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs");
+        var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs");
         var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.Reorder.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
@@ -61,8 +60,7 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs")
             .Replace("\r\n", "\n");
         var queueIngressText = rootText;
-        var framePacingText = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs")
-            .Replace("\r\n", "\n");
+        var framePacingText = rootText;
         var metricsText = rootText;
 
         AssertContains(queueIngressText, "private sealed class BufferedFrame : IDisposable");
@@ -97,9 +95,13 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.Adaptive.cs")),
-            "MJPEG preview adaptive deadline/depth policy folded into frame pacing owner");
-        AssertDoesNotContain(rootText, "private long AlignDueTickToDisplayClock(");
-        AssertDoesNotContain(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
+            "MJPEG preview adaptive deadline/depth policy folded into the lifecycle root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MjpegPreviewJitterBuffer.FramePacing.cs")),
+            "MJPEG preview frame pacing folded into the lifecycle root");
+        AssertContains(rootText, "private long AlignDueTickToDisplayClock(");
+        AssertContains(rootText, "private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)");
         AssertContains(metricsText, "public Metrics GetMetrics()");
         AssertContains(metricsText, "private void RecordInputInterval(long nowTick)");
         AssertContains(metricsText, "private void RecordDroppedFrame(long sourceSequenceNumber, string reason)");

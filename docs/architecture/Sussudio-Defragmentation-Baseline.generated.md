@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-31T02:40:38Z
+Generated UTC: 2026-05-31T02:47:40Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 238 |
+| Production .cs files | 237 |
 | Test .cs files | 126 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (0.8%) |
@@ -36,18 +36,19 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | FlashbackBufferManager | 2 | 1413 | Sussudio/Services/Flashback/FlashbackBufferManager.cs, Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs |
 | AutomationCommandDispatcher | 2 | 1638 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs, Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | Formatters | 2 | 941 | tools/ssctl/Formatters.Common.cs, tools/ssctl/Formatters.Snapshot.cs |
-| MjpegPreviewJitterBuffer | 2 | 1246 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs, Sussudio/Services/Capture/MjpegPreviewJitterBuffer.FramePacing.cs |
 | LoggingJsonContext | 1 | 306 | Sussudio/Logger.cs |
 | App | 1 | 260 | Sussudio/App.xaml.cs |
+| StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
+| MjpegPreviewJitterBuffer | 1 | 1236 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
 | DeviceFormatCacheJsonContext | 1 | 697 | Sussudio/Services/Capture/DeviceService.cs |
 | SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
-| StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
 
 ## Largest production files
 
 | Lines | Path |
 | ---: | --- |
 | 1252 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
+| 1236 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
 | 1193 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
 | 1144 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
@@ -66,7 +67,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 950 | Sussudio/Services/Capture/CaptureSessionCoordinator.cs |
 | 937 | Sussudio/Services/Audio/WasapiAudioCapture.cs |
 | 912 | Sussudio/Services/Flashback/FlashbackBackendResources.cs |
-| 905 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
 | 904 | Sussudio/Services/Automation/AutomationCommandDispatcher.CustomCommands.cs |
 | 884 | tools/NativeXuAudioProbe/Program.I2cCommands.cs |
 | 876 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs |
@@ -76,7 +76,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 833 | Sussudio/Models/Automation/AutomationSnapshot.cs |
 | 831 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs |
 | 830 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
-| 823 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
+| 823 | Sussudio/ViewModels/MainViewModel.cs |
 
 ## Sample production files under 60 lines
 

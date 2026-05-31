@@ -1847,7 +1847,7 @@ recording, duplicate-run counters, fast packet hashing, metrics DTO
 construction, ring-buffer snapshot copying, unique-interval projection,
 duplicate-percent statistics, and pattern labels there.
 
-MJPEG preview jitter-buffer metrics and decoded-frame queue ingress now live in
+MJPEG preview jitter-buffer metrics, decoded-frame queue ingress, and frame pacing now live in
 `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` with the root lifecycle
 state they sample and mutate. Keep metrics records, snapshot construction,
 timing samples, selected/dropped-frame telemetry, tick/millisecond conversion
@@ -1856,12 +1856,9 @@ input-interval recording, queue-full admission drops, enqueue signaling, queue
 depth, ordered frame insertion/dequeue, missing-sequence recovery, clear
 behavior, and resume reprime accounting there beside construction, paced emit
 loop control flow, MMCSS registration, thread lifecycle, suppression/reprime
-lifecycle, and dispose-time queue teardown.
-
-MJPEG preview jitter-buffer frame pacing remains focused in
-`MjpegPreviewJitterBuffer.FramePacing.cs`. It owns display-clock alignment,
-frame submission to the preview sink, tick waits, hard/soft deadline drops,
-adjusted output cadence, target-depth increase/decrease, latency-pressure
+lifecycle, dispose-time queue teardown, display-clock alignment, frame
+submission to the preview sink, tick waits, hard/soft deadline drops, adjusted
+output cadence, target-depth increase/decrease, latency-pressure
 classification, and timer-resolution P/Invoke.
 
 Parallel MJPEG compressed input admission now lives with the bounded work-channel
