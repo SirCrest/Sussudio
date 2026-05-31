@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: Capture settings projection test locality
+Problem: `MainViewModel.Capture.SettingsProjection.Tests.cs` was a small legacy `Program` shard for capture settings projection ownership and frame-rate request precedence. The checks already depended on the capture selection-policy helper surface in `MainViewModel.Capture.SelectionPolicy.Tests.cs`, and their xUnit wrappers already live with the presentation-preview MainViewModel runtime contract group, so reviewing capture selection/settings policy still required opening a redundant sibling file.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: n/a; capture selection/settings legacy `Program` shard count -1; generated baseline test `.cs` count 91 -> 90
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SelectionPolicy|FullyQualifiedName~SettingsProjection|FullyQualifiedName~PresentationPreviewMainViewModelRuntimeContractsTests"` passed (26 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); diff checks passed; current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 88 / 56,078.
+CLI/MCP/pipe checks, if applicable: no live pipe session was run; this was test/doc locality only. No public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
+Behavior preserved: `Program.MainViewModelCaptureSettings_OwnsSettingsProjection`, `Program.MainViewModelCaptureSettingsFrameRate_PreservesProjectionPrecedence`, their xUnit wrapper method names, source-shape assertions, frame-rate precedence cases, HDR/MJPEG/audio/microphone projection checks, and reflection helper behavior remain unchanged while living in `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`.
+Notes for future agents: keep capture format, recording settings selection, capture settings projection, late device-format probe retarget behavior, and their shared selection-policy fixtures in `MainViewModel.Capture.SelectionPolicy.Tests.cs` while they depend on the same model-construction helpers and `CaptureSettingsProjectionBuilder.cs` owner. Split only if capture settings projection gains an independent runtime fixture or reusable test seam.
+
+Date: 2026-05-31
 Area: Automation tool protocol xUnit locality
 Problem: `AutomationToolContracts.ProtocolXunit.Tests.cs` was a direct xUnit sidecar for automation client timeout policy, advanced command-map alignment, pipe-connect failure classification, tool command delegation, script freshness, synthetic error envelope, and response-state parsing. Those checks already depend on the shared automation tool-contract source readers, expected command-ID table, and protocol helper context in `AutomationToolContracts.Tests.cs`, so reviewing automation tool protocol contracts still required opening a separate test file for the same owner.
 Files consolidated: `tests/Sussudio.Tests/AutomationToolContracts.ProtocolXunit.Tests.cs`

@@ -1249,9 +1249,6 @@ Primary current owners:
   format/transport, source/cadence, MJPEG, recording, preview, and Flashback
   projection families; keep this surface separate from the old mega diagnostics
   refresh assertion.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SettingsProjection.Tests.cs`
-  owns capture settings projection ownership assertions, including the focused
-  frame-rate request projector used by `BuildCaptureSettings`.
 - `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`
   owns analog gain curve mapping, audio monitoring visual state, preview audio
   monitoring volume-ramp, audio meter callback-state, audio-ramp trace
@@ -1283,7 +1280,9 @@ Primary current owners:
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions plus compact selection-policy ownership assertions for
   mode-selection reset, resolved automatic frame-rate application, and
-  recording format selection policy ownership.
+  recording format selection policy ownership. It also owns capture settings
+  projection ownership assertions, including the focused frame-rate request
+  projector used by `BuildCaptureSettings`.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Resolution.Behavior.Tests.cs`
   owns resolution-selection source-shape assertions for option rebuild,
   auto-selection state, pure policy placement, and policy behavior assertions
@@ -1299,10 +1298,10 @@ Primary current owners:
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
 - `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
-  capture format, recording settings, and late device-format probe retarget
-  selection-policy ownership/behavior checks plus the shared reflection,
-  option-list, and capture-mode model construction helpers for the
-  selection-policy test family.
+  capture format, recording settings, capture settings projection, and late
+  device-format probe retarget selection-policy ownership/behavior checks plus
+  the shared reflection, option-list, and capture-mode model construction
+  helpers for the selection-policy test family.
 - `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
   preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
   audio-ramp, device-discovery-before-recording-capability, UI/audio preview

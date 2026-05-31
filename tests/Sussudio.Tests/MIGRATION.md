@@ -149,8 +149,8 @@ add xUnit alongside, and port incrementally.
   checks.
 - `XUnit.PresentationPreviewContractsTests.cs` also owns the
   former legacy presentation-preview capture selection-policy group:
-  mode-selection state, capture format selection, and recording settings
-  selection ownership/behavior checks.
+  mode-selection state, capture format selection, recording settings selection,
+  and capture settings projection ownership/behavior checks.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview preview-startup groups: ownership, controller behavior,
   signal/failure text, startup ordering, capture preview-lifecycle, and
