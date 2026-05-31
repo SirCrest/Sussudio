@@ -1780,8 +1780,9 @@ Primary current owners:
   `McpToolSurface.Performance.Tools.Tests.cs` keeps shared performance-tool
   source loading, timeline source-ownership assertions, rendering text
   contracts, Flashback command-counter formatting checks,
-  `PerformanceTimelineEntry` projection contracts, and PresentMon correlation
-  coverage together.
+  `PerformanceTimelineEntry` projection contracts, PresentMon correlation
+  coverage, and frame-pacing verdict source-shape plus behavior checks
+  together.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit
   execution surface for these performance/probe contracts after their removal
   from the legacy harness catalog.
