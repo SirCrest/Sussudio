@@ -1,13 +1,13 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-05-31T14:36:45Z
+Generated UTC: 2026-05-31T14:43:32Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 187 |
+| Production .cs files | 186 |
 | Test .cs files | 95 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (1.1%) |
@@ -68,8 +68,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1065 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1055 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 1055 | Sussudio/ViewModels/MainViewModel.AudioState.cs |
-| 1054 | tools/ssctl/CommandHandlers.cs |
 | 1054 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
+| 1054 | tools/ssctl/CommandHandlers.cs |
 | 1053 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
 | 1042 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 1034 | tools/Common/DiagnosticSessionFlashbackExportScenarios.cs |

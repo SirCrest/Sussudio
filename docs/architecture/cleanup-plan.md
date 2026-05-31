@@ -2908,12 +2908,13 @@ playable completed-segment target selection plus the playback-target DTO, and
 playback-boundary headroom polling while the runner keeps scenario command
 sequencing.
 
-Diagnostic-session Flashback snapshot waits now live in
-`tools/Common/DiagnosticSessionFlashbackWaits.cs`. It owns read-only polling
-loops for preview-active state, Flashback-active state, Flashback-backed
-recording readiness, stress buffer readiness, playback state, boundary
-crossing, warmed-playback frame-count/FPS, and position convergence while the
-runner keeps scenario command sequencing.
+Diagnostic-session Flashback snapshot waits are also a support section of
+`tools/Common/DiagnosticSessionFlashbackSupport.cs`. The
+`DiagnosticSessionFlashbackWaits` helper owns read-only polling loops for
+preview-active state, Flashback-active state, Flashback-backed recording
+readiness, stress buffer readiness, playback state, boundary crossing,
+warmed-playback frame-count/FPS, and position convergence while the runner
+keeps scenario command sequencing.
 
 Diagnostic-session Flashback metrics live in
 `tools/Common/DiagnosticSessionFlashbackMetrics.cs`, including the
@@ -2994,7 +2995,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`
 - `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
-- `DiagnosticSessionFlashbackWaits.cs`
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionResult.cs`

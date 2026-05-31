@@ -1293,7 +1293,6 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSupportSource()
                 + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
-                + "\n" + ReadDiagnosticSessionFlashbackWaitsSource()
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
                 + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs")
                 + "\n" + ReadDiagnosticSessionMetricsSource()

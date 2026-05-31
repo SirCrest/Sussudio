@@ -2791,9 +2791,11 @@ Primary owners:
   companion used by the range export audio-switch scenario, read-only
   `FlashbackGetSegments` response parsing, completed-segment discovery,
   playable completed-segment target selection, buffered-boundary projection,
-  playback headroom polling, parsed segment DTOs, and Flashback recording,
-  playback, and preview scheduler warning policy over already projected
-  metrics. Keep state-mutating scenario steps in the scenario owners.
+  playback headroom polling, read-only snapshot polling waits for preview,
+  Flashback, recording, stress-buffer, playback-state, warmed-playback, and
+  position convergence, parsed segment DTOs, and Flashback recording, playback,
+  and preview scheduler warning policy over already projected metrics. Keep
+  state-mutating scenario steps in the scenario owners.
 - `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
   export diagnostic scenario task registration plus concurrent export, rotated
   export, disable-during-export command coordination, export-during-playback
@@ -2836,11 +2838,6 @@ Primary owners:
   frame/FPS/1% low checks, audio-master fallback delta capture/classification,
   shared command-drain polling, and command-health/latency/final-state warning
   policy.
-- `tools/Common/DiagnosticSessionFlashbackWaits.cs` owns read-only snapshot
-  polling waits for preview-active state, Flashback-active state,
-  Flashback-backed recording readiness, stress buffer readiness, playback
-  state, boundary crossing, warmed-playback frame-count/FPS, and position
-  convergence.
 - `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   observation, severity, Flashback warmup filtering, source/preview/Flashback
   health-observation classifiers, sparse-cadence tolerances, and tolerated

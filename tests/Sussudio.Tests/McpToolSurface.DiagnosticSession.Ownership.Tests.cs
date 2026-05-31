@@ -49,7 +49,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackWaitsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackWaits.cs");
+            "tools/Common/DiagnosticSessionFlashbackSupport.cs");
 
     private static string ReadDiagnosticSessionMetricsSource()
         => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionMetrics.cs");
