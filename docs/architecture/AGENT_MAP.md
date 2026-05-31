@@ -1330,12 +1330,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCore.cs` also owns the source
   reader for property-changed preview assertions over
   `MainWindow.Composition.cs`.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
-  owns retained Flashback preview backend, audio restoration, preview stop
-  rollback assertions, device-switch teardown ordering between video stop,
-  Flashback backend disposal, preview reinit disposal, Flashback lifecycle
-  outcome log-token, codec no-downgrade, export force-rotate, buffer-cycle,
-  delivered-cadence rational, and enable/disable preview-state assertions.
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns retained
+  Flashback preview backend, audio restoration, preview stop rollback
+  assertions, device-switch teardown ordering between video stop, Flashback
+  backend disposal, preview reinit disposal, Flashback lifecycle outcome
+  log-token, codec no-downgrade, export force-rotate, buffer-cycle,
+  delivered-cadence rational, and enable/disable preview-state assertions
+  through the automation capture/Flashback routing xUnit wrapper group.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface, including the `SmallContractsTests` wrapper
   for ported audio input, audio level event, capture device metadata/default
