@@ -5660,3 +5660,15 @@ Build/tests/runtime checks: focused tool/MCP/architecture tests passed (70 passe
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private test helper code.
 Behavior preserved: shared tool assembly loading, isolated load contexts, stale-build detection, project input scanning, explicit compile include scanning, common-tool source detection, and tool build command mapping keep the same helper names and behavior while living in `tests/Sussudio.Tests/HarnessCore.cs`.
 Notes for future agents: keep shared legacy harness support helpers in `HarnessCore.cs` when they are used broadly by xUnit and `Program`-partial tests; create a separate helper file only for an independent fixture family with its own setup state.
+
+Date: 2026-05-31
+Area: Audio microphone controls locality
+Problem: `Sussudio/Controllers/Audio/MicrophoneControlsController.cs` was a one-use audio-control helper wired only through `MainWindow.ControlBindings.cs`, while `AudioControlBindingController.cs` already owned audio/microphone setup, property-change projection, microphone enablement, microphone volume sync, and the audio-control XAML binding flow that calls the helper. Reviewing microphone volume and row visibility behavior still required opening a second adjacent audio-controller file for the same UI control surface.
+Files consolidated: `Sussudio/Controllers/Audio/MicrophoneControlsController.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; small audio controller file count -1
+Build/tests/runtime checks: focused audio/MainWindow/presentation-preview tests passed (179 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full validation recorded in checkpoint commit notes.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private audio UI controller code.
+Behavior preserved: microphone volume slider binding, shelf slider binding, save triggers, microphone-volume label sync, microphone shelf enablement, initial row visibility, row show/hide storyboard state, device-audio row translation, mic-meter row animation, row animation stop, and microphone meter visual reset keep the same helper type names and behavior while living in `Sussudio/Controllers/Audio/AudioControlBindingController.cs`.
+Notes for future agents: keep audio-control setup, property-change projection, microphone volume synchronization, and microphone row animation together in `AudioControlBindingController.cs` while they remain one XAML control binding surface; split microphone controls again only for a real independent fixture/controller boundary.

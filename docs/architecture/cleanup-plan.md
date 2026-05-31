@@ -2545,14 +2545,10 @@ callbacks alongside the root ViewModel router.
 Audio and microphone-specific ViewModel property projections now live with
 audio control setup in `Sussudio/Controllers/Audio/AudioControlBindingController.cs`:
 audio toggles, monitoring meter state, preview volume slider sync, microphone
-enablement, and microphone volume sync. The controller also owns the audio
-property-change router; `Sussudio/MainWindow.ControlBindings.cs` is the
-XAML-facing audio/microphone presentation adapter.
-
-Microphone volume slider synchronization, save triggers, shelf enablement, and
-mic-meter row animation state now live in
-`Sussudio/Controllers/Audio/MicrophoneControlsController.cs`.
-`MainWindow.ControlBindings.cs` is the XAML-facing audio/microphone
+enablement, microphone volume sync, microphone volume slider synchronization,
+save triggers, shelf enablement, and mic-meter row animation state. The
+controller also owns the audio property-change router;
+`Sussudio/MainWindow.ControlBindings.cs` is the XAML-facing audio/microphone
 presentation adapter.
 
 Responsive shell layout is owned by
