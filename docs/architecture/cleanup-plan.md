@@ -710,7 +710,7 @@ Renderer-level preview frame capture request state, timeout/cancellation
 handling, render-thread GPU readback, before-present screenshot dispatch,
 error-result construction, capture-result logging, and off-thread PNG
 completion gate state now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`.
+`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`.
 Preview-frame capture staging-resource reuse and teardown also live there.
 Preview-frame BMP/PNG pixel conversion, mapped-frame buffer copying, luminance
 analysis, and letterbox/pillarbox measurement live in
@@ -1729,7 +1729,7 @@ creation orchestration, processor-resource teardown, swap-chain RTV/output view
 reuse, and VideoProcessor input/output color-space updates there.
 Shader/SRV teardown stays with
 `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
-teardown stays with `D3D11PreviewRenderer.ScreenshotCapture.cs`; keep
+teardown stays with `D3D11PreviewRenderer.RenderPasses.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
 Device-lost recovery has its own focused owner; keep render loop consumption in

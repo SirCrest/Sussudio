@@ -3941,7 +3941,7 @@ Partial clusters reduced: screenshot production owner count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after source-shape test adjustment); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer`, `tools/ssctl`, and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, screenshot status/log text, output path policy, or PNG/BMP encoding behavior changed
 Behavior preserved: preview-frame screenshot preview-required guard, output directory fallback, timestamped filename, button disable/reenable, status/log text, whole-window dispatch cancellation/failure handling, native PrintWindow capture, result shaping, and PNG/BMP byte-stream encoding remain covered by the existing screenshot tests.
-Notes for future agents: keep preview-frame screenshot workflow and whole-window screenshot capture together in `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs`; renderer-level preview-frame GPU readback still belongs with `D3D11PreviewRenderer.ScreenshotCapture.cs`.
+Notes for future agents: keep preview-frame screenshot workflow and whole-window screenshot capture together in `Sussudio/Controllers/Screenshot/ScreenshotControllers.cs`; renderer-level preview-frame GPU readback belongs with `D3D11PreviewRenderer.RenderPasses.cs` because it runs inside the present transaction.
 
 Date: 2026-05-26
 Area: D3D11 preview renderer resource locality
@@ -5552,3 +5552,15 @@ Build/tests/runtime checks: focused recording lifecycle/source ownership tests (
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private recording lifecycle methods.
 Behavior preserved: standard LibAv recording stop/finalize sequencing, emergency sink-stop timeout routing, unified-video boundary counters, WASAPI detach/dispose, deferred LibAv drain cleanup, Flashback preview restore after recording, microphone monitor restart, recording integrity publication, final outcome publication, and cancellation propagation keep the same method names and call order while living in `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`.
 Notes for future agents: keep standard LibAv recording start, stop, finalization, rollback, and outcome publication in `CaptureService.RecordingLifecycle.cs`; keep Flashback-specific recording backend lifecycle in `CaptureService.FlashbackRecording.cs`.
+
+Date: 2026-05-30
+Area: D3D preview renderer present/capture locality
+Problem: `D3D11PreviewRenderer.ScreenshotCapture.cs` was a small renderer partial whose primary hot-path hook, `TryCaptureFrameBeforePresent`, is part of the same present transaction owned by `D3D11PreviewRenderer.RenderPasses.cs`. Reviewing render-pass completion required opening a separate partial for request exchange, before-present GPU readback, staging reuse, PNG completion gating, and capture logging even though pixel conversion remains in the dedicated screenshot helper.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `D3D11PreviewRenderer` partial file count -1
+Build/tests/runtime checks: focused D3D renderer/screenshot ownership tests (2 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests (16 passed), and diff checks.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private renderer capture lifecycle code.
+Behavior preserved: preview-frame capture request setup, timeout/cancellation, pending-request cleanup, render-thread request exchange, before-present back-buffer readback, staging texture reuse/teardown, BMP vs PNG dispatch, off-thread PNG completion gate, result/error construction, and capture logging keep the same method names and call order while living in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`.
+Notes for future agents: keep renderer-level preview-frame GPU readback with `D3D11PreviewRenderer.RenderPasses.cs` while it is part of `PresentAndTrackFrame`; keep mapped-frame BMP/PNG pixel conversion and PNG container writing in `PreviewScreenshotCapture.cs`.

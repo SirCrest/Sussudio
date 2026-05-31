@@ -82,7 +82,7 @@ static partial class Program
 
     internal static Task D3D11PreviewRenderer_ScreenshotEncodingLivesWithScreenshotCapture()
     {
-        var captureText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
+        var captureText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
@@ -126,6 +126,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotEncoding.cs")),
             "renderer screenshot encoding partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotCapture.cs")),
+            "renderer screenshot capture folded into the render-pass present transaction owner");
         AssertDoesNotContain(captureText, "private static PreviewFrameCaptureResult CaptureMappedFrameToBmp(");
         AssertDoesNotContain(captureText, "private static void WriteBitmapHeaders(");
         AssertDoesNotContain(resourcesText, "_captureStagingTexture?.Dispose();");
@@ -158,7 +162,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotStaging.cs")),
-            "renderer screenshot staging is consolidated into D3D11PreviewRenderer.ScreenshotCapture.cs");
+            "renderer screenshot staging is consolidated into D3D11PreviewRenderer.RenderPasses.cs");
 
         return Task.CompletedTask;
     }
@@ -517,7 +521,7 @@ static partial class Program
 
     internal static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
     {
-        var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.ScreenshotCapture.cs")
+        var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
         var captureMethod = ExtractTextBetween(
             rendererText,
