@@ -1487,15 +1487,14 @@ Primary current owners:
   xUnit execution surface for recording pipeline, recording-model/Flashback
   buffer, recording verifier, LibAv encoder, Flashback integrity, shared
   formatter, and dedicated LibAv verification script contracts after their
-  removal from the legacy offline harness catalog. Keep the public wrapper
+  removal from the legacy offline harness catalog. It also owns LibAvEncoder
+  codec policy, diagnostics/frame-size helpers, HDR metadata, ValidateOptions
+  reflection coverage, source-ownership and output lifecycle layout
+  assertions, and shared source-reading helpers. Keep the public wrapper
   classes in this file unless a group needs independent fixture state.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks plus xUnit temp artifact finalize/rollback
   behavior for recording output cleanup.
-- `tests/Sussudio.Tests/LibAvEncoder.Contracts.Tests.cs` owns LibAvEncoder
-  codec policy, diagnostics/frame-size helpers, HDR metadata, ValidateOptions
-  reflection coverage, source-ownership and output lifecycle layout
-  assertions, and shared source-reading helpers.
 - `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs`
   owns the live dispatcher source-family reader, shared dispatcher/proxy
   helpers, consolidated root dispatcher authorization and manifest behavior,
