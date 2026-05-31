@@ -373,16 +373,17 @@ static partial class Program
     {
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
-            .Replace("\r\n", "\n");
+        var deviceInitializationText = resourcesText;
 
         AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
         AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
         AssertContains(deviceInitializationText, "TrackFrameDropped(stalePending, \"device-lost\");");
         AssertContains(deviceInitializationText, "ResultCode.DeviceRemoved");
         AssertContains(deviceInitializationText, "unchecked((int)0x887A0005)");
-        AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
-        AssertDoesNotContain(resourcesText, "private static bool IsDeviceLostException(Exception ex)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DeviceLost.cs")),
+            "D3D11 preview device-lost recovery folded into D3D resource ownership");
 
         return Task.CompletedTask;
     }

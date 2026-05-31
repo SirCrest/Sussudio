@@ -5564,3 +5564,15 @@ Build/tests/runtime checks: focused D3D renderer/screenshot ownership tests (2 p
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private renderer capture lifecycle code.
 Behavior preserved: preview-frame capture request setup, timeout/cancellation, pending-request cleanup, render-thread request exchange, before-present back-buffer readback, staging texture reuse/teardown, BMP vs PNG dispatch, off-thread PNG completion gate, result/error construction, and capture logging keep the same method names and call order while living in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`.
 Notes for future agents: keep renderer-level preview-frame GPU readback with `D3D11PreviewRenderer.RenderPasses.cs` while it is part of `PresentAndTrackFrame`; keep mapped-frame BMP/PNG pixel conversion and PNG container writing in `PreviewScreenshotCapture.cs`.
+
+Date: 2026-05-30
+Area: D3D preview renderer device/resource locality
+Problem: `D3D11PreviewRenderer.DeviceInitialization.cs` was a small renderer partial whose methods directly create, reset, and recover the D3D device/swap-chain resources declared and cleaned up in `D3D11PreviewRenderer.Resources.cs`. Reviewing device initialization and device-lost recovery still required opening a separate partial before reaching the resource fields, VideoProcessor pipeline resources, shared-device active flag, and top-level cleanup transaction.
+Files consolidated: `Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs`
+Files added: none
+Net production .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: `D3D11PreviewRenderer` partial file count -1
+Build/tests/runtime checks: focused D3D renderer/presentation-preview ownership tests (36 passed), full solution build (0 warnings), full test suite (883 passed), runtime harness, regenerated baseline, architecture-doc tests (16 passed), and diff checks.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private D3D renderer device/resource lifecycle code.
+Behavior preserved: shared-device COM reference duplication, reset scheduling, renderer-owned device fallback, D3D device/context/video-interface initialization, composition swap-chain creation, HDR-capability probing and SDR fallback, media present duration setup, initial panel binding, shader compilation handoff, device-lost classification/recovery, stale-frame drops, and stop-guarded cleanup keep the same method names and call order while living in `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`.
+Notes for future agents: keep D3D device/swap-chain creation, shared-device handoff, device-lost recovery, resource fields, VideoProcessor resource setup, and top-level cleanup together in `D3D11PreviewRenderer.Resources.cs`; keep render-loop consumption in `RenderThread`, render-pass execution in `RenderPasses`, shader/SRV lifecycle in `ShaderRendering`, and metrics in `Metrics`.

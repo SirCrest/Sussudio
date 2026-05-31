@@ -1706,35 +1706,29 @@ in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs`. Keep
 pacing so frame dequeue, wait, render dispatch, and wait metrics are reviewed
 together.
 
-D3D preview renderer device initialization now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs`. Keep
+D3D preview renderer device initialization and resource management now live in
+`Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
 `InitializeD3D` orchestration, shared-vs-owned device setup, shared-device COM
 reference duplication/release policy, reinit retirement, reset request
 scheduling, `TryInitializeWithSharedDevice`, device-loss classification,
 device-lost frame drops, stop-guarded cleanup, reinitialize scheduling, video
-interface acquisition, media present duration setup, initial panel binding, and
-renderer-owned device fallback there. Composition swap-chain creation, startup
+interface acquisition, media present duration setup, initial panel binding,
+renderer-owned device fallback, composition swap-chain creation, startup
 dimensions, HDR swap-chain capability probing, SDR swap-chain fallback, initial
-color-space selection, and configured output size publication also live there
-with the device initialization path. Keep generic resource disposal in
-`D3D11PreviewRenderer.Resources.cs` and render-thread reset consumption in
-`D3D11PreviewRenderer.RenderThread.cs`.
-
-D3D preview renderer resource management now lives in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`. Keep
-top-level D3D resource cleanup orchestration, NV12/P010 VideoProcessor input
-textures, staging textures, input views, HDR P010 shader input/staging textures,
-plane SRV creation, Device3 fallback, input texture cleanup, video-processor
-creation orchestration, processor-resource teardown, swap-chain RTV/output view
-reuse, and VideoProcessor input/output color-space updates there.
+color-space selection, configured output size publication, top-level D3D
+resource cleanup orchestration, NV12/P010 VideoProcessor input textures,
+staging textures, input views, HDR P010 shader input/staging textures, plane
+SRV creation, Device3 fallback, input texture cleanup, video-processor creation
+orchestration, processor-resource teardown, swap-chain RTV/output view reuse,
+and VideoProcessor input/output color-space updates there.
 Shader/SRV teardown stays with
 `D3D11PreviewRenderer.ShaderRendering.cs`, and preview-frame capture staging
 teardown stays with `D3D11PreviewRenderer.RenderPasses.cs`; keep
 swap-chain color-space application with render-pass selection in
 `D3D11PreviewRenderer.RenderPasses.cs`.
-Device-lost recovery has its own focused owner; keep render loop consumption in
-`D3D11PreviewRenderer.RenderThread.cs`, present paths with render-pass
-completion and shader draw paths in `D3D11PreviewRenderer.RenderPasses.cs`.
+Keep render loop consumption in `D3D11PreviewRenderer.RenderThread.cs`,
+present paths with render-pass completion and shader draw paths in
+`D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer swap-chain panel binding now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep

@@ -42,8 +42,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
-            .Replace("\r\n", "\n");
+        var deviceInitializationText = resourcesText;
         var videoProcessorPipelineText = resourcesText;
 
         AssertContains(resourcesText, "private ID3D11Device? _device;");
@@ -65,7 +64,11 @@ static partial class Program
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.SwapChainInitialization.cs")),
-            "D3D11 preview swap-chain setup folded into device initialization owner");
+            "D3D11 preview swap-chain setup folded into D3D resource ownership");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DeviceInitialization.cs")),
+            "D3D11 preview device initialization folded into D3D resource ownership");
         AssertContains(videoProcessorPipelineText, "private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)");
         AssertContains(videoProcessorPipelineText, "private void EnsureSwapChainRTV()");
         AssertContains(videoProcessorPipelineText, "private void RecreateOutputView()");
@@ -86,13 +89,10 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.VideoProcessorPipeline.cs")),
             "VideoProcessor setup and output-view resources live with D3D resource ownership");
-        AssertDoesNotContain(resourcesText, "private void InitializeD3D()");
+        AssertContains(resourcesText, "private void InitializeD3D()");
         AssertContains(deviceInitializationText, "private bool TryInitializeWithSharedDevice(");
         AssertContains(deviceInitializationText, "private void HandleDeviceLost(Exception ex)");
         AssertContains(deviceInitializationText, "private static bool IsDeviceLostException(Exception ex)");
-        AssertDoesNotContain(resourcesText, "private bool TryInitializeWithSharedDevice(");
-        AssertDoesNotContain(resourcesText, "private void HandleDeviceLost(Exception ex)");
-        AssertDoesNotContain(resourcesText, "private void CreateRendererOwnedDevice(");
         AssertDoesNotContain(rootText, "private ID3D11Device? _device;");
         AssertDoesNotContain(rootText, "private IDXGISwapChain1? _swapChain;");
 
@@ -103,7 +103,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.DeviceInitialization.cs")
+        var deviceInitializationText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
         var renderThreadText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderThread.cs")
             .Replace("\r\n", "\n");
@@ -128,6 +128,10 @@ static partial class Program
         AssertContains(renderThreadText, "InitializeD3D();");
         AssertDoesNotContain(rootText, "public void SetSharedDevice(ID3D11Device sharedDevice)");
         AssertDoesNotContain(rootText, "public void RetireSharedDeviceReferenceForReinit()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.SharedDevice.cs")),
+            "shared D3D device lifecycle folded into D3D resource ownership");
 
         return Task.CompletedTask;
     }
