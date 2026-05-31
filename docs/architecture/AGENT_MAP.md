@@ -1808,11 +1808,11 @@ Primary current owners:
   phase checks stay grouped in one infrastructure spec.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
   owns diagnostic-session model ownership assertions, formatter ownership,
-  builder summary-write failure, artifact, and JSON/shared-text checks.
-  `ResultOwnership.Builder.Tests.cs` covers core, preview scheduler,
-  overview/capture checks, Flashback playback, recording, and export result
-  projections, preview result projections, analysis-warning,
-  diagnostic-health, and artifact-handoff ownership.
+  builder summary-write failure, artifact, JSON/shared-text checks, core
+  result-builder construction, preview scheduler, overview/capture checks,
+  Flashback playback, recording, and export result projections, preview result
+  projections, analysis-warning, diagnostic-health, and artifact-handoff
+  ownership.
 - `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
   owns diagnostic-session Flashback warmup health-policy, warning-policy,
   snapshot polling wait, cycle, preview-cycle, rejected-export,
