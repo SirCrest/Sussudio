@@ -3294,11 +3294,10 @@ owner, fold it back into that owner and update the source-shape tests and
    The runtime lifecycle graph-port contract for timer creation, runtime
    snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
    stats refresh, Flashback bitrate refresh, disk-space refresh, watcher
-   disposal, and the runtime lifecycle graph-port contract live in
+   disposal, runtime event handling through graph-built context ports, and the
+   runtime lifecycle graph-port contract live in
    `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
-   while runtime event handling through graph-built context ports now lives in
-   `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
-   for system-resume preview rebind handling, audio-device-invalidated rebind
+   including system-resume preview rebind handling, audio-device-invalidated rebind
    scheduling through the preview lifecycle owner, capture status/error fan-out,
    capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
    graph-port contract, and event subscription/unsubscription ordering,

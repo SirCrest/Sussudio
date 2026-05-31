@@ -2269,9 +2269,7 @@ Primary current owners:
   runtime lifecycle graph-port contract for timer creation, runtime
   snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
   stats refresh, Flashback bitrate refresh, disk-space refresh, and watcher
-  disposal, while
-  `Sussudio/Controllers/ViewModel/MainViewModelRuntimeEventIngressController.cs`
-  is a top-level `Sussudio.Controllers` owner for runtime event handling through graph-built context ports:
+  disposal, plus runtime event handling through graph-built context ports:
   system-resume preview rebind handling, audio-device-invalidated rebind
   scheduling through the preview lifecycle owner, capture status/error fan-out,
   capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
