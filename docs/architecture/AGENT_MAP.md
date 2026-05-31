@@ -1806,22 +1806,18 @@ Primary current owners:
   execution surface for the former legacy Flashback encoder sink frame-rate,
   codec, counter, queue, force-rotate, packet-drain, startup, and
   source-ownership checks after their removal from the legacy harness catalog.
-- `tests/Sussudio.Tests/Flashback.Exporter.Behavior.Tests.cs` owns Flashback
-  exporter request-surface smoke tests, path/request validation, cancellation
+- `tests/Sussudio.Tests/Flashback.Exporter.Tests.cs` owns Flashback exporter
+  request-surface smoke tests, path/request validation, cancellation
   precedence, cancelled lock-wait behavior, export throttle tests,
   failure-classifier status-message mapping, range validation, buffered-packet
   failure cleanup, progress/finalization assertions, timestamp saturation,
-  segment template selection, stream-layout validation, and requested-segment
-  skip policy tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.Ownership.Tests.cs` owns
-  Flashback exporter source-ownership tests, task-wrapper infrastructure,
-  disposal timeout/native-state lifetime guards, and stream-count/template
-  stream-copy owner/call-site tests.
-- `tests/Sussudio.Tests/Flashback.Exporter.OutputPaths.Tests.cs` owns Flashback
-  exporter segment path, duplicate path, missing segment, output path
-  validation, source-overwrite guard, blocked temp-path tests, final-output
-  replacement, overwrite refusal/force behavior, final validation cleanup,
-  orphan temp-file cleanup, and output-directory scan guard tests.
+  segment template selection, stream-layout validation, requested-segment skip
+  policy, source-ownership tests, task-wrapper infrastructure, disposal
+  timeout/native-state lifetime guards, stream-count/template stream-copy
+  owner/call-site tests, segment path, duplicate path, missing segment, output
+  path validation, source-overwrite guard, blocked temp-path tests,
+  final-output replacement, overwrite refusal/force behavior, final validation
+  cleanup, orphan temp-file cleanup, and output-directory scan guard tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface for the former legacy Flashback exporter cleanup, request
   validation, failure classification, segment, cancellation, output
