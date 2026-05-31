@@ -354,16 +354,16 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters();
 
     [Fact]
-    public Task FlashbackBufferManagerMathHelpersLiveInFocusedPartial()
-        => global::Program.FlashbackBufferManager_MathHelpersLiveInFocusedPartial();
+    public Task FlashbackBufferManagerMathHelpersLiveWithRootState()
+        => global::Program.FlashbackBufferManager_MathHelpersLiveWithRootState();
 
     [Fact]
-    public Task FlashbackBufferManagerSegmentQueryHelpersLiveInFocusedPartial()
-        => global::Program.FlashbackBufferManager_SegmentQueriesLiveInFocusedPartial();
+    public Task FlashbackBufferManagerSegmentQueryHelpersLiveWithRootState()
+        => global::Program.FlashbackBufferManager_SegmentQueriesLiveWithRootState();
 
     [Fact]
-    public Task FlashbackBufferManagerSegmentMutationLivesInFocusedPartial()
-        => global::Program.FlashbackBufferManager_SegmentMutationLiveInFocusedPartial();
+    public Task FlashbackBufferManagerSegmentMutationLivesWithRootState()
+        => global::Program.FlashbackBufferManager_SegmentMutationLivesWithRootState();
 
     [Fact]
     public Task FlashbackBufferManagerLiveAccountingLivesWithRootState()

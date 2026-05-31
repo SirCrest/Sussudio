@@ -352,15 +352,8 @@ static partial class Program
     }
 
     private static string ReadFlashbackBufferManagerSource()
-    {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.Segments.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
+        => ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
 
     private static (int, int) GetTupleValues(object tuple)
     {
