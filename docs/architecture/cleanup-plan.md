@@ -3171,7 +3171,7 @@ owner, fold it back into that owner and update the source-shape tests and
    selected-device refresh, mode request scheduling, shared debounce CTS fields,
    cancellation cleanup, graph-built context ports, analog-gain request
    scheduling, UI/XU debounce, and flash-persist debounce now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
    device-native
    audio-control support probing, readback, pending saved-state reconciliation,
    mode switching, failure readback, shared audio-control guards, and analog
@@ -3349,7 +3349,7 @@ owner, fold it back into that owner and update the source-shape tests and
    context ports;
    the root `MainViewModel.cs` keeps the public capture-device refresh
    compatibility facade, while the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
    owns startup refresh orchestration: requesting the combined discovery result,
    applying audio-device startup selection, replacing the capture-device collection,
    starting background format probes, restoring saved capture-device selection,
@@ -3371,7 +3371,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
    with source telemetry readiness in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`. `MainViewModel.CaptureSelection.cs`
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`. `MainViewModel.CaptureSelection.cs`
    keeps selected-format and video-format rebuild compatibility adapters, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    is now a top-level `Sussudio.Controllers` owner for selected-format
@@ -3388,7 +3388,7 @@ owner, fold it back into that owner and update the source-shape tests and
     Late-arriving device format probe reconciliation, collection mutation,
     selected-device capability refresh, enqueue/failure logging, and retarget
     handoff live in the top-level
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`;
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
     its graph-port contract now lives with that controller. UI-side late-probe
     retarget application, session mismatch checks, active-capture restore, and
     the retarget applier graph-port contract also live there, while
@@ -3445,7 +3445,7 @@ owner, fold it back into that owner and update the source-shape tests and
    application, source telemetry ingress behavior, telemetry age refresh,
    enum-string caching, source-aware auto-retargeting, and source telemetry
    graph-port contract in
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`.
    Settings initialization, simple persistence reactions, the impure settings
    load/save adapter, persisted-settings validation, clamping, deferred-selection
    projection, save DTO projection, load/save projection contracts, validated
@@ -3461,7 +3461,7 @@ owner, fold it back into that owner and update the source-shape tests and
    shared debounce CTS fields, graph-port context contract, cancellation
    cleanup, gain property-change adapters, XU debounce, and flash-persist
    debounce, stays in
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`;
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
    async native-XU
    device audio-control refresh/readback, mode switching, failure readback,
    shared audio-control guards, analog gain XU writes, and settings
@@ -3521,7 +3521,7 @@ owner, fold it back into that owner and update the source-shape tests and
    UI-thread dispatch, and format-change suppression.
    Startup FFmpeg capability probes for recording formats and split-encode modes
    plus observable recording-format option rebuilds now live with source telemetry readiness in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`.
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`.
    `Sussudio/ViewModels/MainViewModel.cs` keeps recording-runtime
    counters, disk-space assignment, and the stable recording-capability facade
    methods used by settings initialization and HDR mode-change rebuild callers.

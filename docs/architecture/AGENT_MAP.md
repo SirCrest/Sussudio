@@ -2136,7 +2136,7 @@ Primary current owners:
   retargeting, preview-monitoring ramp handoff, microphone observable state,
   endpoint volume synchronization, persistence, and microphone property-change
   routing.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for device-native audio request
   lifetime: selected-device refresh scheduling, mode-change scheduling, shared
   debounce CTS fields, UI enqueue lifetime, graph-port context contract,
@@ -2179,7 +2179,7 @@ Primary current owners:
   runtime event ingress graph-port contract, and event
   subscription/unsubscription ordering including the desktop power-resume
   signal.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe event
   ingress, UI enqueue/generation checks, selected-device capability refresh,
   UI-side late-probe retarget application, HDR/SDR reinitialize dispatch,
@@ -2309,7 +2309,7 @@ Primary current owners:
   format-change suppression, and projected status text.
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`
   owns pure selected capture-format choice and mode-tuple video-format filtering.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
   probes for recording formats and split-encode modes through graph-built
   context ports, UI enqueue failure logging, recording-format policy
@@ -2324,7 +2324,7 @@ Primary current owners:
   codec filtering, selected-codec fallback policy, string-to-model format/quality
   parsing, and custom bitrate clamp policy shared by UI and automation.
   the root `MainViewModel.cs` keeps the public capture-device refresh facade,
-  while `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
+  while `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup refresh
   orchestration: requesting the combined discovery result, applying
   audio-device startup selection, replacing the capture-device collection,
@@ -2341,7 +2341,7 @@ Primary current owners:
   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure capture-card
   endpoint filtering plus previous/saved/default audio and microphone selection
   fallback policy.
-  `Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe
   reconciliation, format collection mutation, capability refresh after
   background probes, enqueue/failure logging, and UI-side late-probe retarget
@@ -2377,7 +2377,7 @@ Primary current owners:
   partial family stay in `MainViewModel.CaptureSelection.cs`; observable
   resolution dropdown mutation routes through the top-level
   `MainViewModelCaptureModeOptionRebuildController.cs`.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   also keeps the pure summary builder and auto-resolution predicate ports that
   keep facade-private helpers explicit.
   `Sussudio/ViewModels/ViewModelBuilders.cs`
@@ -2432,7 +2432,7 @@ Primary current owners:
   dispatch, option collections, suppression flags, selected encoder/output
   state, recording-format coordinator updates, and Flashback encoder setting
   cycles.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
   probes for recording formats and split-encode modes plus observable
   recording-format option rebuilds.

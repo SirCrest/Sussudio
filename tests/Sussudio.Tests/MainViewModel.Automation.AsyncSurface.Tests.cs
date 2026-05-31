@@ -542,7 +542,7 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
                 .Replace("\r\n", "\n");
@@ -1496,7 +1496,7 @@ static partial class Program
         var deviceSelectionAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceDiscoveryControllers.cs")
+        var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
             .Replace("\r\n", "\n");
         var selectDevice = ExtractTextBetween(
             deviceSelectionAutomationText,

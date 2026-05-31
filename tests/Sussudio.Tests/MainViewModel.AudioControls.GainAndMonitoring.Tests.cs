@@ -364,7 +364,7 @@ static partial class Program
         var deviceAudioRefreshText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
         var deviceAudioRefreshCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
-        var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs");
+        var deviceAudioRequestControllerCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs");
         var deviceAudioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
         var microphoneVolumeCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
         var audioCode = deviceAudioModeCode + "\n" + deviceAudioRefreshCode + "\n" + deviceAudioRequestControllerCode + "\n" + deviceAudioStateCode + "\n" + microphoneVolumeCode;
@@ -475,7 +475,7 @@ static partial class Program
 
     internal static Task MainViewModelDeviceAudioRequestController_OwnsDeviceAudioRequestLifetime()
     {
-        var deviceAudioRequestControllerCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceAudioRequestController.cs")
+        var deviceAudioRequestControllerCode = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
             .Replace("\r\n", "\n");
         var deviceAudioStateCode = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");

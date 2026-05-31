@@ -402,7 +402,7 @@ public sealed class ViewModelBuildersTests
     [Fact]
     public void SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
-        var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureReadinessControllers.cs");
+        var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs");
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
         var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
