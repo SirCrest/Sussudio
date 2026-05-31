@@ -1200,8 +1200,13 @@ Primary current owners:
   recording runtime ownership assertions, recording-setting automation routing
   for Flashback encoder cycles, emergency recording-stop dispatcher/coordinator
   routing assertions, bounded bitrate sample-window behavior assertions,
-  preview-volume persistence, automation options surface, and capture
-  audio-monitoring coordinator surface and runtime-guard assertions.
+  preview-volume persistence, automation options surface, capture
+  audio-monitoring coordinator surface and runtime-guard assertions,
+  MainViewModel Flashback coordinator-routing assertions, negative
+  `_captureService` access guards, Flashback settings owner checks for
+  automation enable/restart entry points, Flashback export backend-lease and
+  export-operation lock assertions, ViewModel export routing, and export CTS
+  lifecycle assertions.
 - `tests/Sussudio.Tests/MainViewModel.Automation.UiSettings.Tests.cs` owns
   automation UI-setting persistence, frame-time/stat visibility contracts,
   capture-mode reinitialization, device refresh, device/audio-input selection
@@ -1326,12 +1331,6 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCore.cs` also owns the source
   reader for property-changed preview assertions over
   `MainWindow.Composition.cs`.
-- `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackRouting.ViewModel.Tests.cs`
-  owns MainViewModel Flashback coordinator-routing assertions, negative
-  `_captureService` access guards, Flashback settings owner checks for
-  automation enable/restart entry points, Flashback export backend-lease and
-  export-operation lock assertions, ViewModel export routing, and export CTS
-  lifecycle assertions.
 - `tests/Sussudio.Tests/MainViewModel.Capture.FlashbackBackend.PreviewPipeline.Tests.cs`
   owns retained Flashback preview backend, audio restoration, preview stop
   rollback assertions, device-switch teardown ordering between video stop,
