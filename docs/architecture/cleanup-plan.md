@@ -535,7 +535,7 @@ guards also live in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`; they req
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
-`tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
+`tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns
   shared implementations for consolidated AGENT_MAP reference resolution,
   test-owner code-span coverage, automation consumer checklist coverage,
   UI/presentation ownership coverage, CaptureService ownership coverage,

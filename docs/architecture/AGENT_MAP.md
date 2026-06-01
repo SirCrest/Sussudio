@@ -1367,7 +1367,7 @@ Primary current owners:
   CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts; and
   SourceSignalTelemetrySnapshot plus source telemetry automation projection
   contract checks.
-- `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns DeviceService
+- `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns DeviceService
   scoring, cohesive MF device enumerator ownership, source-reader
   negotiation/interop ownership, MF symbolic-link matching assertions, and the
   broader service-layer source-ownership checks.
@@ -1538,7 +1538,7 @@ Primary current owners:
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness
   catalog.
-- `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs` owns
+- `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns
   shared implementations for consolidated AGENT_MAP reference drift,
   test-owner code-span, README automation consumer, UI/presentation ownership,
   CaptureService ownership, Flashback preview startup wording, shared tool
@@ -1615,7 +1615,7 @@ Primary current owners:
   their removal from the legacy offline harness catalog. Keep the public
   wrapper classes in this file unless a group needs an independent fixture or
   executable helper state.
-- `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns service
+- `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns service
   folder-to-namespace architecture assertions, flat `Sussudio.Services`
   import bans, and the harness-visible service namespace/source ownership
   orchestrator, plus app-service contract boundary assertions that keep
