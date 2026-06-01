@@ -96,7 +96,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioStartupSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionScenarioActivation.cs");
+            "tools/Common/DiagnosticSessionScenarioCatalog.cs");
 
     private static string ReadNormalizedSourceFiles(params string[] paths)
     {
@@ -247,6 +247,10 @@ static partial class Program
         AssertDoesNotContain(setupText, "sendAsync(\"SetFlashbackEnabled\"");
         AssertDoesNotContain(setupText, "sendAsync(\"SetPreviewEnabled\"");
         AssertDoesNotContain(setupText, "sendAsync(\"SetRecordingEnabled\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioActivation.cs")),
+            "diagnostic-session scenario setup/startup activation folded into the scenario catalog owner");
 
         return Task.CompletedTask;
     }

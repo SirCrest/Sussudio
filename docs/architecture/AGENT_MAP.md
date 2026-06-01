@@ -2656,7 +2656,14 @@ Primary owners:
   playback, Flashback export/lifecycle, Flashback recording/rejection, and
   combined scenario metadata. It also owns the scenario plan DTO, creation
   factory, catalog lookup handoff, and grouped warning/validation policies,
-  including the preview-cycle grouped predicate, used by the runner.
+  including the preview-cycle grouped predicate, used by the runner. It also
+  owns diagnostic-session initial setup and optional background startup
+  orchestration: Flashback enable/disable for scenario requirements, preview
+  start and video-flow readiness wait, recording start and Flashback
+  recording-readiness wait, setup/startup result records, Flashback scenario
+  registration delegation, deferred Flashback recording-settings task
+  registration, direct Flashback playback start command, optional PresentMon
+  launch, correlation snapshot capture, and `presentmon.csv` output selection.
 - `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
@@ -2716,16 +2723,6 @@ Primary owners:
   running checkpoint callbacks. Keep the `timeline` and `final-snapshot` stage
   names stable there. It also owns the per-output-directory exclusive lock that
   prevents concurrent diagnostic sessions from writing the same artifact set.
-- `tools/Common/DiagnosticSessionScenarioActivation.cs` owns diagnostic-session
-  initial setup and optional background startup orchestration: Flashback
-  enable/disable for scenario requirements, preview start and video-flow
-  readiness wait, recording start and Flashback recording-readiness wait,
-  setup/startup result records, Flashback scenario registration delegation,
-  deferred Flashback recording-settings task registration, direct Flashback
-  playback start command, optional PresentMon launch, correlation snapshot
-  capture, and `presentmon.csv` output selection. Keep fixed setup mutations on
-  `DiagnosticSessionCommandChannel` typed `AutomationCommandKind` sends and task
-  stage names stable there.
 - `tools/Common/DiagnosticSessionPostRunActions.cs` owns diagnostic-session
   cleanup and recording-check flow: cleanup ordering, stage/action naming,
   cleanup result handoff, recording stop for verification, Flashback playback
