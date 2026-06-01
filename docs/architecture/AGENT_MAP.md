@@ -2627,7 +2627,14 @@ Primary owners:
   the diagnostic-session summary DTO fields: core metadata, artifact paths,
   terminal state, actions, warnings, end-of-run overview, capture/source,
   Flashback playback/recording/export, preview cadence, preview scheduler, and
-  preview D3D result fields.
+  preview D3D result fields. It also owns the human-readable diagnostic-session
+  result text flow used by ssctl and MCP, including overview/health/evidence,
+  capture mode, recording verification, PresentMon, Flashback playback/
+  recording/export, preview scheduler, preview D3D, visual cadence, process
+  performance, artifacts, actions, warnings, and shared optional text
+  formatting used by scenarios, result builders, result formatters, and
+  validation policies. Keep `DiagnosticSessionRunner.Format(...)` as the
+  stable compatibility wrapper.
 - `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario name
   constants, MCP-compatible scenario description text, the CLI help-list
   constant, the `Names` projection, normalization, entry lookup, requirement
@@ -2779,14 +2786,6 @@ Primary owners:
   observation, severity, Flashback warmup filtering, source/preview/Flashback
   health-observation classifiers, sparse-cadence tolerances, and tolerated
   Flashback warning classification.
-- `tools/Common/DiagnosticSessionResultFormatter.cs` owns the public
-  human-readable diagnostic-session text flow used by ssctl and MCP plus
-  all rendered section rows: overview/health/evidence, capture mode, recording
-  verification, PresentMon, Flashback playback/recording/export, preview
-  scheduler, preview D3D, visual cadence, process performance, artifacts,
-  actions, warnings, and shared optional text formatting used by scenarios,
-  result builders, result formatters, and validation policies. Keep
-  `DiagnosticSessionRunner.Format(...)` as the stable compatibility wrapper.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
   automation snapshot console text flow, state/capture-command queue,
   selected-device and initialized/preview/recording text, audio enablement,

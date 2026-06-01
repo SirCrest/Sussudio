@@ -67,8 +67,7 @@ static partial class Program
             "tools/Common/DiagnosticSessionResultBuilder.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionResultFormatter.cs");
+        => ReadDiagnosticSessionModelsSource();
 
     private static string ReadDiagnosticSessionRunnerSource()
         => ReadNormalizedSourceFiles(

@@ -2601,11 +2601,12 @@ cadence, preview scheduler, preview D3D, preview visual cadence, process,
 recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in
-`tools/Common/DiagnosticSessionResultFormatter.cs`. The formatter owns the
-public `Format(...)` flow, section ordering, and all rendered rows: overview,
-capture mode, recording verification, PresentMon, Flashback playback/recording/
-export, preview scheduler, preview D3D, visual cadence, process performance,
-artifacts, actions, warnings, and shared optional text helpers.
+`tools/Common/DiagnosticSessionResult.cs` beside the public result DTO model.
+The formatter owns the public `Format(...)` flow, section ordering, and all
+rendered rows: overview, capture mode, recording verification, PresentMon,
+Flashback playback/recording/export, preview scheduler, preview D3D, visual
+cadence, process performance, artifacts, actions, warnings, and shared optional
+text helpers.
 The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
 and MCP callers do not need to know about the formatter owner.
 
@@ -2666,10 +2667,10 @@ result artifact path construction, pre-summary sample, frame-ledger, and
 timeline writes while the builder keeps summary field construction.
 
 Shared diagnostic-session optional text formatting now lives in
-`tools/Common/DiagnosticSessionResultFormatter.cs` alongside the human-readable
-result text owner. Keep cross-cutting `FormatOptional(...)` handling there
-instead of reintroducing private duplicates in scenario, result builder,
-formatter, or validation policy files.
+`tools/Common/DiagnosticSessionResult.cs` alongside the human-readable result
+text owner. Keep cross-cutting `FormatOptional(...)` handling there instead of
+reintroducing private duplicates in scenario, result builder, formatter, or
+validation policy files.
 
 MCP performance tooling now lives in
 `tools/McpServer/Tools/PerformanceTools.cs`. Keep the public timeline tool entry
@@ -2993,7 +2994,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionResult.cs`
 - `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
-- `DiagnosticSessionResultFormatter.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionRunner.cs`

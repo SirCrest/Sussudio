@@ -2237,7 +2237,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
-        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
+        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs")
             .Replace("\r\n", "\n");
         var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
@@ -2245,7 +2245,8 @@ static partial class Program
         AssertContains(formatterRootText, "internal static class DiagnosticSessionOptionalTextFormatter");
         AssertContains(formatterRootText, "internal static string FormatOptional(string value)");
         AssertContains(formatterRootText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionOptionalTextFormatter.cs")), "Optional diagnostic text formatting stays folded into DiagnosticSessionResultFormatter.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionOptionalTextFormatter.cs")), "Optional diagnostic text formatting stays folded into DiagnosticSessionResult.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultFormatter.cs")), "Diagnostic session result text formatting stays folded into DiagnosticSessionResult.cs");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
@@ -2332,7 +2333,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
-        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResultFormatter.cs")
+        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(formatterRootText, "public static class DiagnosticSessionResultFormatter");
@@ -2409,6 +2410,7 @@ static partial class Program
         AssertContains(formatterRootText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertContains(formatterRootText, "VisualCadenceLongestRepeatRunAtEnd");
         AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultFormatter.cs")), "DiagnosticSessionResultFormatter lives with the diagnostic result model surface");
         AssertDoesNotContain(runnerText, "== Diagnostic Session:");
         AssertDoesNotContain(runnerText, "\"Flashback Playback Perf: \"");
         AssertDoesNotContain(runnerText, "private static string FormatFrameRate(");
