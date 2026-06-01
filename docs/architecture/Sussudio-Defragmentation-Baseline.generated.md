@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T00:39:36Z
+Generated UTC: 2026-06-01T00:52:41Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 168 |
+| Production .cs files | 167 |
 | Test .cs files | 54 |
-| Core app .cs files (Sussudio/) | 127 |
-| Core app nonblank LoC (Sussudio/) | 89625 |
+| Core app .cs files (Sussudio/) | 126 |
+| Core app nonblank LoC (Sussudio/) | 89621 |
 | Sussudio.Tests .cs files | 52 |
-| Sussudio.Tests nonblank LoC | 56017 |
+| Sussudio.Tests nonblank LoC | 56020 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.6%) |
 
@@ -35,7 +35,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | MainWindow | 2 | 2434 | Sussudio/MainWindow.Composition.cs, Sussudio/MainWindow.xaml.cs |
 | SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 260 | Sussudio/App.xaml.cs |
-| ParallelMjpegDecodePipeline | 1 | 1186 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
+| ParallelMjpegDecodePipeline | 1 | 1467 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
 | LoggingJsonContext | 1 | 306 | Sussudio/Logger.cs |
 | AutomationCommandDispatcher | 1 | 1627 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
@@ -52,6 +52,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1547 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 1506 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1472 | Sussudio/Controllers/Flashback/FlashbackUiControllers.cs |
+| 1467 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 1455 | tools/Common/DiagnosticSessionResultBuilder.cs |
 | 1404 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
 | 1363 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs |
@@ -67,7 +68,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1211 | Sussudio/MainWindow.Composition.cs |
 | 1197 | tools/Common/PresentMon/PresentMonProbe.cs |
 | 1193 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
-| 1186 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
 | 1166 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1144 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |

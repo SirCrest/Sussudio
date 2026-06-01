@@ -226,7 +226,7 @@ namespace Sussudio.Tests
         [Fact]
         public void SoftwareMjpegDecoderPropertiesExposeCorrectDimensions()
         {
-            var rootText = ReadRepoFile("Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs");
+            var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
             var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
 
             AssertContains(rootText, "internal sealed unsafe class SoftwareMjpegDecoder : IDisposable");
@@ -238,6 +238,9 @@ namespace Sussudio.Tests
             Assert.False(
                 File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Gpu", "SoftwareMjpegDecoder.Decode.cs")),
                 "Software MJPEG decode path folded into decoder state/lifetime owner");
+            Assert.False(
+                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Gpu", "SoftwareMjpegDecoder.cs")),
+                "Software MJPEG decoder folded into the pipeline worker owner");
 
             var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
             var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);

@@ -1808,12 +1808,12 @@ Parallel MJPEG worker execution now lives with the bounded work-channel owner in
 ownership, worker thread creation/naming, worker decode-loop execution, worker
 liveness checks, construction, callback storage, channel creation, compressed
 input admission, and startup sequencing together.
-Software MJPEG decode/copy execution now lives with its decoder state in
-`Sussudio/Services/Gpu/SoftwareMjpegDecoder.cs`. Keep FFmpeg decoder context
-allocation, frame/packet ownership, hot MJPEG send/receive,
+Software MJPEG decode/copy execution now lives with its only worker caller in
+`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep FFmpeg decoder
+context allocation, frame/packet ownership, hot MJPEG send/receive,
 format/dimension validation, one-time diagnostics, YUV420-to-NV12 copy,
-disposal, and error-string helpers together unless a real named collaborator
-emerges.
+disposal, and error-string helpers beside decoder array ownership and worker
+decode-loop execution unless a real named collaborator emerges.
 
 Parallel MJPEG decode pipeline timing now lives in
 `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs` with the bounded
