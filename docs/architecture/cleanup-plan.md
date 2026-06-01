@@ -2835,7 +2835,14 @@ Diagnostic-session metric projection now lives in
 `tools/Common/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
 projections: source, preview, and visual cadence aggregation, visual-cadence
 health classification, D3D metric aggregation, playback command-health deltas,
-and shared counter-delta helpers.
+shared counter-delta helpers, and Flashback recording/export metrics,
+playback-session observation and aggregation, and playback result copying.
+Playback session metrics own observation dispatch, active/relevant snapshot
+gating, session frame-count projection, 1% low capture, frame/decode maxima,
+audio-master maxima, and end-of-session playback counter deltas. Export metrics
+also own force-rotate fallback total, delta, and last fallback segment count,
+derived outside export-observed relevance gating. These helpers remain
+snapshot-only projections and must not send automation commands.
 
 Diagnostic-session Flashback support helpers now live in
 `tools/Common/DiagnosticSessionFlashbackSupport.cs`, which owns strict export
@@ -2852,17 +2859,6 @@ range orchestration, verification, cleanup, and playback command-health
 validation for the export scenario family.
 Diagnostic-session startup makes a single qualified call into the export
 scenario owner. Do not reintroduce one-method registration partials.
-
-Diagnostic-session Flashback metric projection now lives in
-`tools/Common/DiagnosticSessionFlashbackMetrics.cs`. Recording/export metrics,
-playback-session observation and aggregation, and playback result copying stay
-in one concrete behavior owner instead of an empty partial family. Playback
-session metrics own observation dispatch, active/relevant snapshot gating,
-session frame-count projection, 1% low capture, frame/decode maxima,
-audio-master maxima, and end-of-session playback counter deltas. Export metrics
-also own force-rotate fallback total, delta, and last fallback segment count,
-derived outside export-observed relevance gating. These helpers remain
-snapshot-only projections and must not send automation commands.
 
 MCP fixed command routes should use `AutomationCommandKind` overloads when the
 command is part of the shared catalog. Keep this as an ownership rule, not a
@@ -2914,7 +2910,7 @@ warmed-playback frame-count/FPS, and position convergence while the runner
 keeps scenario command sequencing.
 
 Diagnostic-session Flashback metrics live in
-`tools/Common/DiagnosticSessionFlashbackMetrics.cs`, including the
+`tools/Common/DiagnosticSessionMetrics.cs`, including the
 `FlashbackRecordingSessionMetrics`, `FlashbackExportSessionMetrics`,
 `FlashbackPlaybackSessionMetrics`, and `FlashbackPlaybackResultMetrics` handoff
 shapes; recording metric projection; export-relevance and snapshot max
@@ -2987,7 +2983,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackSupport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
-- `DiagnosticSessionFlashbackMetrics.cs`
 - `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackScenarioTasks.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`

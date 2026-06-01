@@ -25,7 +25,7 @@ static partial class Program
         => ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
     private static string ReadDiagnosticSessionFlashbackMetricsSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackMetrics.cs");
+        => ReadDiagnosticSessionMetricsSource();
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
         => ReadNormalizedSourceFiles(

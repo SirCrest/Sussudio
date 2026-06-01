@@ -681,6 +681,7 @@ static partial class Program
         var exportText = metricsText;
 
         AssertContains(metricsText, "internal static class DiagnosticSessionFlashbackMetrics");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.cs")), "Flashback metrics stay folded into DiagnosticSessionMetrics.cs");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into the consolidated metrics owner");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into the consolidated metrics owner");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into the consolidated metrics owner");

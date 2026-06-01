@@ -1287,7 +1287,6 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackExportScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
-                + "\n" + ReadDiagnosticSessionFlashbackMetricsSource()
                 + "\n" + ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()

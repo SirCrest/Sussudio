@@ -2742,7 +2742,20 @@ Primary owners:
 - `tools/Common/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback
-  command-health deltas, and shared counter-delta helpers.
+  command-health deltas, shared counter-delta helpers, and Flashback diagnostic
+  recording/export, playback-session, and playback-result metric projection.
+  It includes the `FlashbackRecordingSessionMetrics`,
+  `FlashbackExportSessionMetrics`, `FlashbackPlaybackSessionMetrics`, and
+  `FlashbackPlaybackResultMetrics` handoff shapes; read-only recording metric
+  projection; export-relevance and snapshot max aggregation; playback snapshot
+  observation dispatch; active/relevant snapshot gating; session frame-count
+  projection; 1% low window capture; frame/decode/audio-master maxima;
+  end-of-session playback counter deltas; final result construction; and the
+  grouped command, cadence, decode, audio-master, and stage end-snapshot reads.
+  Export metrics include force-rotate fallback total, delta, and last fallback
+  segment count; keep those counters derived outside export-observed relevance
+  gating. These helpers remain snapshot-only projections and must not send
+  automation commands.
 - `tools/Common/DiagnosticSessionFlashbackSupport.cs` owns Flashback diagnostic
   support helpers: rotated-export segment-count parsing, strict export
   verification payload construction, range-selection cleanup, the audio-toggle
@@ -2762,18 +2775,6 @@ Primary owners:
   backend-stability assertions. Keep the scenario registration, command flows,
   verification, cleanup, and playback command-health checks together in this
   scenario-family owner.
-- `tools/Common/DiagnosticSessionFlashbackMetrics.cs` owns Flashback diagnostic
-  recording/export, playback-session, and playback-result metric projection. It
-  includes the `FlashbackRecordingSessionMetrics`,
-  `FlashbackExportSessionMetrics`, `FlashbackPlaybackSessionMetrics`, and
-  `FlashbackPlaybackResultMetrics` handoff shapes; read-only recording metric
-  projection; export-relevance and snapshot max aggregation; playback snapshot
-  observation dispatch; active/relevant snapshot gating; session frame-count
-  projection; 1% low window capture; frame/decode/audio-master maxima;
-  end-of-session playback counter deltas; final result construction; and the
-  grouped command, cadence, decode, audio-master, and stage end-snapshot reads.
-  Export metrics include force-rotate fallback total, delta, and last fallback
-  segment count; keep those counters derived outside export-observed relevance gating.
 - `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` owns
   Flashback preview-cycle diagnostic task registration, priorities, task labels,
   started action strings, normal Flashback preview-cycle stop/restart command
