@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T00:17:30Z
+Generated UTC: 2026-06-01T00:28:25Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 170 |
+| Production .cs files | 169 |
 | Test .cs files | 54 |
-| Core app .cs files (Sussudio/) | 129 |
-| Core app nonblank LoC (Sussudio/) | 89638 |
+| Core app .cs files (Sussudio/) | 128 |
+| Core app nonblank LoC (Sussudio/) | 89629 |
 | Sussudio.Tests .cs files | 52 |
-| Sussudio.Tests nonblank LoC | 55989 |
+| Sussudio.Tests nonblank LoC | 56013 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.6%) |
 
@@ -46,6 +46,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 | Lines | Path |
 | ---: | --- |
+| 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1627 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1562 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
 | 1547 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
@@ -75,7 +76,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 1086 | Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs |
 | 1083 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
-| 1065 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 
 ## Sample production files under 60 lines
 

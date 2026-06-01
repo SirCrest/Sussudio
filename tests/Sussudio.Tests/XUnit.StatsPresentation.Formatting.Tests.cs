@@ -235,7 +235,7 @@ public partial class StatsPresentationTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
-        var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs");
+        var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsSnapshotProviderText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
@@ -268,7 +268,7 @@ public partial class StatsPresentationTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
-        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
@@ -384,7 +384,7 @@ public partial class StatsPresentationTests
     public void StatsPanels_UseSourceTelemetry_ForHdmiInput()
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
-        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
@@ -414,8 +414,11 @@ public partial class StatsPresentationTests
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
-        var statsDockCompositionText = statsOverlayCompositionText;
-        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var statsDockCompositionText = ExtractTextBetween(
+            statsOverlayCompositionText,
+            "internal sealed class StatsDockControllerGraphContext",
+            "internal sealed class StatsDockRefreshControllerContext");
+        var refreshControllerText = statsOverlayCompositionText;
         var controllerText = refreshControllerText;
 
         AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
@@ -458,7 +461,10 @@ public partial class StatsPresentationTests
         AssertContains(controllerText, "MetricGoodBrush = new(Windows.UI.Color.FromArgb(0xFF, 0x70, 0xF0, 0x8B))");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockPresentationController.cs")),
-            "stats dock presentation application lives with stats dock refresh ownership");
+            "stats dock presentation application lives with stats overlay composition ownership");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRefreshController.cs")),
+            "stats dock refresh ownership folded into StatsOverlayCompositionController.cs");
         AssertDoesNotContain(statsOverlayText, "SetMetricBrush(");
         AssertDoesNotContain(statsOverlayText, "SetTextIfChanged(Stats_");
         AssertDoesNotContain(statsOverlayText, "private static readonly SolidColorBrush MetricNeutralBrush");
@@ -479,13 +485,17 @@ public partial class StatsPresentationTests
     public void StatsDockRowChrome_LivesInFocusedController()
     {
         var statsOverlayText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
-        var statsDockCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var statsDockCompositionText = ExtractTextBetween(
+            statsOverlayCompositionText,
+            "internal sealed class StatsDockControllerGraphContext",
+            "internal sealed class StatsDockRefreshControllerContext");
         var mainWindowText = MainWindowCompositionSource.Read();
-        var statsDockRowsText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var statsDockRowsText = statsOverlayCompositionText;
         var controllerText = statsDockRowsText;
         var rowChromePresenterText = statsDockRowsText;
         var rowChromeControllerText = statsDockRowsText;
-        var refreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsDockRefreshController.cs").Replace("\r\n", "\n");
+        var refreshControllerText = statsOverlayCompositionText;
         var hardwareRowsControllerStart = refreshControllerText.IndexOf(
             "internal sealed class StatsHardwareRowsController\n",
             StringComparison.Ordinal);
@@ -588,7 +598,7 @@ public partial class StatsPresentationTests
         AssertDoesNotContain(controllerText, "_context.RowChromeController.UpdateDiagnosticsRows(presentation);");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDiagnosticRowsController.cs")),
-            "diagnostic stats rows folded into StatsDockRefreshController.cs");
+            "diagnostic stats rows folded into StatsOverlayCompositionController.cs");
         AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeControllerContext");
         AssertContains(rowChromeControllerText, "internal sealed class StatsDockRowChromeController");
         AssertContains(rowChromeControllerText, "internal enum StatsDockSimpleRowPool");
@@ -609,10 +619,10 @@ public partial class StatsPresentationTests
         AssertContains(rowChromePresenterText, "public static void CollapseRows(IReadOnlyList<StatsDockRowChromeSlot> pool, int startIndex = 0)");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowChromePresenter.cs")),
-            "stats dock row chrome folded into StatsDockRefreshController.cs");
+            "stats dock row chrome folded into StatsOverlayCompositionController.cs");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockRowsController.cs")),
-            "stats dock row chrome folded into StatsDockRefreshController.cs");
+            "stats dock row chrome folded into StatsOverlayCompositionController.cs");
         AssertDoesNotContain(rowChromeControllerText, "public void UpdateDiagnosticsRows(StatsDiagnosticRowsPresentation presentation)");
         AssertDoesNotContain(rowChromeControllerText, "private Border CreateRow(");
         AssertDoesNotContain(controllerText, "private Border CreateRow(");
@@ -654,6 +664,23 @@ public partial class StatsPresentationTests
 
     private static Type RequireType(string typeName)
         => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static string ExtractTextBetween(string source, string startMarker, string endMarker)
+    {
+        var start = source.IndexOf(startMarker, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            throw new InvalidOperationException($"Start marker '{startMarker}' was not found.");
+        }
+
+        var end = source.IndexOf(endMarker, start, StringComparison.Ordinal);
+        if (end < 0)
+        {
+            throw new InvalidOperationException($"End marker '{endMarker}' was not found.");
+        }
+
+        return source.Substring(start, end - start);
+    }
 
     private static string ReadRepoFile(string relativePath)
     {

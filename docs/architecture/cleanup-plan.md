@@ -1984,7 +1984,7 @@ are out of the event adapter. Stats dock show/hide animation mechanics now live
 in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` with the
 polling/visibility orchestration they mutate.
 Stats dock refresh orchestration now lives in
-`Sussudio/Controllers/Stats/StatsDockRefreshController.cs`: snapshot acquisition,
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`: snapshot acquisition,
 dock presentation build/apply, diagnostics visibility gating, and decode/GPU
 row refresh ordering. Stats dock metric value, visibility, and status brush
 application also live there.
@@ -2015,18 +2015,18 @@ overlay adapter beside the stats overlay visibility route, while grouped stats
 composition context contracts and presentation-controller graph composition live
 in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
-`Sussudio/Controllers/Stats/StatsDockRefreshController.cs` keeps the stats dock
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` keeps the stats dock
 projection refresh adapter.
 Decode and GPU hardware stats row refresh/application over presentation inputs
-now lives in `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`;
+now lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 live MJPEG/NVML sampling and decode availability policy live in the local
-hardware input provider in that refresh-controller file, alongside pure
+hardware input provider in that composition file, alongside pure
 MJPEG/NVML telemetry-to-presentation-input projection; pure row text
 projection over presentation inputs lives in
 `Sussudio/ViewModels/StatsPresentationBuilder.cs`;
 decode/GPU row element pooling, shared row chrome, diagnostics empty-state
 chrome, group-header chrome, diagnostic row pooling, and diagnostic row style
-application also live in `Sussudio/Controllers/Stats/StatsDockRefreshController.cs`;
+application also live in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation contract checks now live in
 `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` for builder
@@ -2057,7 +2057,7 @@ Pure capture option construction lives in
 `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
 
 Dynamic stats dock row chrome now lives in
-`Sussudio/Controllers/Stats/StatsDockRefreshController.cs`. It owns decode/GPU
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`. It owns decode/GPU
 row reuse, shared stats dock row creation, text mutation, visibility toggles,
 row style application, diagnostic row presentation, telemetry diagnostics empty
 state, group headers, diagnostic row pooling, live MJPEG/NVML input acquisition

@@ -1063,7 +1063,7 @@ Primary current owners:
   presentation, diagnostic row, hardware row, and refresh-controller graph
   construction plus the dock graph context contract because the dock is only
   driven by the overlay controller.
-  `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns stats dock refresh
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats dock refresh
   orchestration: snapshot acquisition, dock presentation build/apply,
   diagnostics visibility gating, decode/GPU row refresh ordering, stats dock
   metric text, visibility, and status brush application after the presentation
@@ -1090,7 +1090,7 @@ Primary current owners:
   contract checks for stats presentation formatting plus stats dock refresh
   orchestration, diagnostic row update delegation, hardware row projection,
   source-shape ownership, HDMI source telemetry panels, and row chrome pooling.
-- `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns stats dock row
+- `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats dock row
   chrome alongside refresh orchestration: shared row creation, label/value text
   mutation, visibility toggles, dock row style application, dynamic decode/GPU
   simple row pools, diagnostic row presentation, empty-state rows, group
@@ -1116,7 +1116,7 @@ Primary current owners:
   visual-cadence FPS/repeat/motion text formatting, expected visual-repeat drift
   helpers, encoder dock visibility, codec label, bitrate, encoder drift text
   formatting, diagnostic row construction, and source-summary parsing.
-  `Sussudio/Controllers/Stats/StatsDockRefreshController.cs` owns the local
+  `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns the local
   hardware input provider for live MJPEG/NVML sampling callbacks and pure
   telemetry-to-presentation-input projection for hardware rows.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` also owns decode/GPU row
