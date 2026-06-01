@@ -17,9 +17,9 @@ static partial class Program
         var propertyChangedRouterText = rootText;
         var previewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
         var previewPropertyChangedHandler = ExtractMemberCode(previewText, "TryHandlePreviewPropertyChangedAsync");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
         var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
         var recordingText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var recordingStatePresentationControllerText = ReadRepoFile("Sussudio/Controllers/Recording/RecordingControlsControllers.cs").Replace("\r\n", "\n");
@@ -475,8 +475,8 @@ static partial class Program
         var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
-        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
+        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewTransitionAnimationController _previewTransitionAnimationController = null!;");
         AssertContains(adapterText, "private void InitializePreviewTransitionAnimationController()");
@@ -518,7 +518,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfacePresentationController.cs")),
-            "preview surface presentation folded into PreviewTransitionAnimationController.cs");
+            "preview surface presentation folded into PreviewLifecycleControllers.cs");
         AssertDoesNotContain(controllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(previewSurfaceControllerText, "PreviewShadowFadeAnimator.");
         AssertDoesNotContain(adapterText, "FadeOutVideoFrameShadow(durationMs: 150);");
@@ -533,7 +533,7 @@ static partial class Program
     {
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewStartupOverlayController _previewStartupOverlayController = null!;");
         AssertContains(adapterText, "private void InitializePreviewStartupOverlayController()");
@@ -568,7 +568,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
         var previewTransitionText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private PreviewFadeInController _previewFadeInController = null!;");
         AssertContains(adapterText, "private void InitializePreviewFadeInController()");
@@ -1762,9 +1762,9 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlBindingFamilyText = audioControlBindingControllerText;
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
@@ -1821,7 +1821,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewAudioFadeController.cs")),
-            "preview audio fade folded into PreviewLifecycleEventController.cs");
+            "preview audio fade folded into PreviewLifecycleControllers.cs");
         AssertDoesNotContain(mainWindowText, "private double _savedPreviewVolume;");
         AssertDoesNotContain(mainWindowText, "private bool _isVolumeFadingIn;");
         AssertDoesNotContain(mainWindowText, "private Storyboard? _previewVolumeFadeStoryboard;");
@@ -1836,11 +1836,11 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var mainWindowText = ReadMainWindowCompositionSource();
         var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
         var propertyChangedPreviewText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
         var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
         var actionControllerText = previewLifecycleControllerText;
         var controllerText = actionControllerText;
-        var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs").Replace("\r\n", "\n");
+        var reinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(propertyChangedPreviewText, "private PreviewButtonPresentationController _previewButtonPresentationController = null!;");
         AssertContains(propertyChangedPreviewText, "private void InitializePreviewButtonPresentationController()");

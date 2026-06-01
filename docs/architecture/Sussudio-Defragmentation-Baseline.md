@@ -888,7 +888,7 @@ Notes for future agents: keep capture-mode property-change reactions and adapter
 
 Date: 2026-05-26
 Area: preview lifecycle button/fade locality
-Problem: `PreviewButtonActionController.cs` carried preview toggle choreography, button glyph/tooltip presentation, and fade-in timer policy while `PreviewLifecycleEventController.cs` owned the adjacent preview start/stop/reinit property-change lifecycle. Reviewing preview startup/stop behavior required opening both controller files even though they coordinate the same preview lifecycle surface and are wired together from `MainWindow.PreviewLifecycle.Composition.cs`.
+Problem: `PreviewButtonActionController.cs` carried preview toggle choreography, button glyph/tooltip presentation, and fade-in timer policy while `PreviewLifecycleControllers.cs` owned the adjacent preview start/stop/reinit property-change lifecycle. Reviewing preview startup/stop behavior required opening both controller files even though they coordinate the same preview lifecycle surface and are wired together from `MainWindow.PreviewLifecycle.Composition.cs`.
 Files consolidated: `Sussudio/Controllers/Preview/PreviewButtonActionController.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
@@ -896,7 +896,7 @@ Partial clusters reduced: none
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after updating preview lifecycle source-shape assertions); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: no public automation command names, IDs, wire payloads, XAML event handler names, preview button labels/glyphs, preview startup log text, or animation timing changed
 Behavior preserved: preview reinit cancel, user stop intent, audio/visual fade-out before stop, failed-start placeholder reveal, Start/Stop Preview tooltip/glyph selection, delayed fade-in timer scheduling, and first-render fade-in threshold remain unchanged.
-Notes for future agents: keep preview button action, preview button presentation, fade-in timer policy, and preview start/stop property-change lifecycle together in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`; keep renderer host setup and preview surface presentation in their existing renderer/surface controllers.
+Notes for future agents: keep preview button action, preview button presentation, fade-in timer policy, and preview start/stop property-change lifecycle together in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`; keep renderer host setup and preview surface presentation in their existing renderer/surface controllers.
 
 Date: 2026-05-26
 Area: shared runtime window-size helper locality
@@ -4397,15 +4397,15 @@ Notes for future agents: keep compact frame-time overlay target wiring and prese
 
 Date: 2026-05-26
 Area: preview reinit transition locality
-Problem: `PreviewReinitTransitionController.cs` was a small preview reinitialization state/logging owner split from `PreviewTransitionAnimationController.cs`, even though it coordinates the same preview transition animation lifecycle and completion presentation callbacks wired by `MainWindow.PreviewTransitions.Composition.cs`. Reviewing preview reinit animate-out/animate-in/reset behavior required opening two adjacent preview transition controller files.
+Problem: `PreviewReinitTransitionController.cs` was a small preview reinitialization state/logging owner split from `PreviewLifecycleControllers.cs`, even though it coordinates the same preview transition animation lifecycle and completion presentation callbacks wired by `MainWindow.PreviewTransitions.Composition.cs`. Reviewing preview reinit animate-out/animate-in/reset behavior required opening two adjacent preview transition controller files.
 Files consolidated: `Sussudio/Controllers/Preview/PreviewReinitTransitionController.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: preview transition production owner count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app and automation tooling; no public automation command names, IDs, wire payloads, XAML bindings, preview button labels, reinit log text, or animation timing changed
-Behavior preserved: preview reinit animation active flag, completion presentation selection, unavailable placeholder reveal, confirmed visual reset, first-visual transition clear, startup-reset preservation, operation-scoped clear logging, and `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` log strings now live in `PreviewTransitionAnimationController.cs` with preview shell/content transition and startup overlay presentation.
-Notes for future agents: keep preview transition animation, startup overlay presentation, and reinit transition state in `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`; keep preview startup attempt/session bookkeeping and watchdog timeout recovery in `PreviewStartupControllers.cs`.
+Behavior preserved: preview reinit animation active flag, completion presentation selection, unavailable placeholder reveal, confirmed visual reset, first-visual transition clear, startup-reset preservation, operation-scoped clear logging, and `D3D11_RENDERER_REINIT_FLAG` / `PREVIEW_REINIT_ANIMATE_*` log strings now live in `PreviewLifecycleControllers.cs` with preview shell/content transition and startup overlay presentation.
+Notes for future agents: keep preview transition animation, startup overlay presentation, and reinit transition state in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`; keep preview startup attempt/session bookkeeping and watchdog timeout recovery in `PreviewStartupControllers.cs`.
 
 Date: 2026-05-26
 Area: D3D11 preview renderer shader source locality
@@ -5515,15 +5515,15 @@ Notes for future agents: keep CaptureService read-only diagnostics, automation p
 
 Date: 2026-05-27
 Area: Preview lifecycle audio fade locality
-Problem: `PreviewAudioFadeController.cs` was a one-use preview lifecycle controller wired only by `MainWindow.PreviewLifecycle.Composition.cs`, while `PreviewLifecycleEventController.cs` already owned preview start/stop/reinit event routing, preview button action/presentation, fade-in timing, and the ordering that primes/starts audio fade. Reviewing preview start/stop UX required opening both adjacent controller files plus the same adapter.
+Problem: `PreviewAudioFadeController.cs` was a one-use preview lifecycle controller wired only by `MainWindow.PreviewLifecycle.Composition.cs`, while `PreviewLifecycleControllers.cs` already owned preview start/stop/reinit event routing, preview button action/presentation, fade-in timing, and the ordering that primes/starts audio fade. Reviewing preview start/stop UX required opening both adjacent controller files plus the same adapter.
 Files consolidated: `Sussudio/Controllers/Preview/PreviewAudioFadeController.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; preview controller file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PreviewAudioFade|FullyQualifiedName~PreviewStartup|FullyQualifiedName~MainWindow.ControllerOwnership|FullyQualifiedName~PresentationPreview"` passed (180 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
 CLI/MCP/pipe checks, if applicable: not applicable; full solution build rebuilds app, MainWindow preview lifecycle adapter, preview controllers, automation snapshot projections, tools, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, preview behavior, recording behavior, Flashback behavior, or HDR semantics changed.
-Behavior preserved: preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime, volume save suppression/override, fade-in priming, fade-in/fade-out logging, user-cancel handling, preview start/stop/reinit property-change routing, preview button action/presentation, and fade-in rendered-frame timing now live together in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`.
-Notes for future agents: keep preview start/stop/reinit event routing, preview button action/presentation, rendered-frame fade-in scheduling, and preview audio fade state together in `Sussudio/Controllers/Preview/PreviewLifecycleEventController.cs`; keep shell/content transition animation and startup overlay presentation in `PreviewTransitionAnimationController.cs`, and keep startup attempt/watchdog/signal state in `Controllers/Preview/Startup/`.
+Behavior preserved: preview-volume fade-in/fade-out state, saved target volume, storyboard lifetime, volume save suppression/override, fade-in priming, fade-in/fade-out logging, user-cancel handling, preview start/stop/reinit property-change routing, preview button action/presentation, and fade-in rendered-frame timing now live together in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`.
+Notes for future agents: keep preview start/stop/reinit event routing, preview button action/presentation, rendered-frame fade-in scheduling, and preview audio fade state together in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`; keep shell/content transition animation and startup overlay presentation in `PreviewLifecycleControllers.cs`, and keep startup attempt/watchdog/signal state in `Controllers/Preview/Startup/`.
 
 Date: 2026-05-27
 Area: Flashback UI command locality
@@ -6392,15 +6392,15 @@ Notes for future agents: keep ViewModel runtime lifecycle bootstrap, periodic re
 
 Date: 2026-05-31
 Area: MainWindow preview surface and transition presentation locality
-Problem: `PreviewSurfacePresentationController.cs` was a 197-line preview surface/shadow sidecar composed only by `MainWindow.PreviewLifecycle.Composition.cs`, while `PreviewTransitionAnimationController.cs` already owned preview shell/content transitions, startup overlay, reinit transition state, and fade callbacks into preview shadows. Reviewing preview visual presentation required two adjacent controller files for one MainWindow preview visual surface.
+Problem: `PreviewSurfacePresentationController.cs` was a 197-line preview surface/shadow sidecar composed only by `MainWindow.PreviewLifecycle.Composition.cs`, while `PreviewLifecycleControllers.cs` already owned preview shell/content transitions, startup overlay, reinit transition state, and fade callbacks into preview shadows. Reviewing preview visual presentation required two adjacent controller files for one MainWindow preview visual surface.
 Files consolidated: `Sussudio/Controllers/Preview/PreviewSurfacePresentationController.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: preview presentation controller file count -1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~PreviewTransitionAnimationsLiveInController` passed (1 passed); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~PreviewSurfacePresentationAndShadowLiveInControllers` passed (1 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 171 / 89,944; current test `.cs` count/LoC: 111 / 56,100.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves internal preview presentation controller types without changing type names or MainWindow adapter calls.
-Behavior preserved: `PreviewSurfacePresentationController`, `PreviewSurfaceShadowController`, their context records, surface sizing, GPU visibility, video/control-bar shadow setup/fade, preview shell/content transition, startup overlay, and reinit transition behavior keep the same type/member names and MainWindow adapter calls while living in `Sussudio/Controllers/Preview/PreviewTransitionAnimationController.cs`.
-Notes for future agents: keep preview surface sizing, video/control-bar shadow presentation, preview shell/content transitions, startup overlay, and reinit transition state together in `PreviewTransitionAnimationController.cs` while they remain one MainWindow preview visual presentation surface.
+Behavior preserved: `PreviewSurfacePresentationController`, `PreviewSurfaceShadowController`, their context records, surface sizing, GPU visibility, video/control-bar shadow setup/fade, preview shell/content transition, startup overlay, and reinit transition behavior keep the same type/member names and MainWindow adapter calls while living in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`.
+Notes for future agents: keep preview surface sizing, video/control-bar shadow presentation, preview shell/content transitions, startup overlay, and reinit transition state together in `PreviewLifecycleControllers.cs` while they remain one MainWindow preview visual presentation surface.
 
 Date: 2026-05-31
 Area: Native XU source snapshot and telemetry detail locality

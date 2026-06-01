@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T00:12:53Z
+Generated UTC: 2026-06-01T00:17:30Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 171 |
+| Production .cs files | 170 |
 | Test .cs files | 54 |
-| Core app .cs files (Sussudio/) | 130 |
-| Core app nonblank LoC (Sussudio/) | 89643 |
+| Core app .cs files (Sussudio/) | 129 |
+| Core app nonblank LoC (Sussudio/) | 89638 |
 | Sussudio.Tests .cs files | 52 |
 | Sussudio.Tests nonblank LoC | 55989 |
 | Production .cs files under 60 lines | 0 (0.0%) |
@@ -71,11 +71,11 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1166 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1144 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
 | 1143 | Sussudio/Controllers/Capture/CaptureBindingControllers.cs |
+| 1122 | Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs |
 | 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 | 1086 | Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs |
 | 1083 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1065 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
-| 1055 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 
 ## Sample production files under 60 lines
 
