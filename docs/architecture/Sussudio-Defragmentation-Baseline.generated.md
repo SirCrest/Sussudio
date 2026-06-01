@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T12:17:40Z
+Generated UTC: 2026-06-01T12:37:03Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 157 |
+| Production .cs files | 156 |
 | Test .cs files | 22 |
-| Core app .cs files (Sussudio/) | 118 |
-| Core app nonblank LoC (Sussudio/) | 89562 |
+| Core app .cs files (Sussudio/) | 117 |
+| Core app nonblank LoC (Sussudio/) | 89555 |
 | Sussudio.Tests .cs files | 20 |
-| Sussudio.Tests nonblank LoC | 55941 |
+| Sussudio.Tests nonblank LoC | 55945 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.6%) |
 
@@ -21,7 +21,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Type | Files | Total lines | Sample paths |
 | --- | ---: | ---: | --- |
 | CaptureService | 10 | 9886 | Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.FlashbackControls.cs, Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs, Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs, Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs, Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs, Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
-| AutomationDiagnosticsHub | 9 | 9928 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs |
+| AutomationDiagnosticsHub | 8 | 9920 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | MainViewModel | 6 | 4479 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.CaptureSelection.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs, Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs |
 | FlashbackPlaybackController | 5 | 4872 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | D3D11PreviewRenderer | 4 | 4871 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
@@ -51,6 +51,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1552 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1547 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 1506 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
+| 1505 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1484 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 1472 | Sussudio/Controllers/Flashback/FlashbackUiControllers.cs |
 | 1467 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
@@ -72,7 +73,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1143 | Sussudio/Controllers/Capture/CaptureBindingControllers.cs |
 | 1141 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
 | 1122 | Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs |
-| 1092 | Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs |
 
 ## Sample production files under 60 lines
 

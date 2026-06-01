@@ -170,7 +170,11 @@ static partial class Program
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvents.cs")),
-            "diagnostic event state helpers folded into AutomationDiagnosticsHub.Alerts.cs");
+            "diagnostic event state helpers folded into AutomationDiagnosticsHub.Snapshots.cs");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Alerts.cs")),
+            "diagnostic alert refresh folded into AutomationDiagnosticsHub.Snapshots.cs");
         AssertContains(diagnostics.AlertsText, "UpdateSignalAlerts(");
         AssertContains(diagnostics.AlertsText, "private void UpdateSignalAlerts(");
         AssertContains(diagnostics.AlertsText, "UpdatePreviewSignalAlerts(");
@@ -1076,7 +1080,7 @@ static partial class Program
             DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Alerts.cs"),
+            AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),

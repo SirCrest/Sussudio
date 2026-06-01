@@ -224,15 +224,15 @@ HDR availability/request state, runtime/readiness fallback, HDR warmup/
 downgrade, pipeline parity, telemetry-alignment, and HDR truth verdict
 projection consumed by the automation snapshot DTO plus final HDR pipeline
 projection-to-`AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.Alerts.cs` owns alert rule evaluation, active-alert
-transitions, signal alert orchestration and rules for preview blank/stall/
-startup/cadence/display 1% low, capture cadence drop/1% low, audio muted
-signal, recording output growth, Flashback alert group routing, Flashback
+`AutomationDiagnosticsHub.Snapshots.cs` also owns alert rule evaluation,
+active-alert transitions, signal alert orchestration and rules for preview
+blank/stall/startup/cadence/display 1% low, capture cadence drop/1% low, audio
+muted signal, recording output growth, Flashback alert group routing, Flashback
 recording alert orchestration, export progress/force-rotation gap alerts,
 temp-cache pressure alerts, encoder failure alerts, recording path degradation
 alerts, Flashback playback alert orchestration, Flashback playback performance
 alert routing, and frame-submission failure alerts.
-`AutomationDiagnosticsHub.Alerts.cs` also owns Flashback playback alert
+`AutomationDiagnosticsHub.Snapshots.cs` also owns Flashback playback alert
 orchestration, command queue/failure alerts, target-rate/present-cadence/
 slow-playback/frametime alerts, submit-failure alerts, audio-master fallback
 alerts, audio-queue backlog alerts, diagnostics event publication, event

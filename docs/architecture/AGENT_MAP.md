@@ -39,7 +39,7 @@ mentions the moved files.
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | construction, suppression/reprime and disposal lifecycle, paced emit loop control flow, display-clock alignment, renderer submission, tick waits, deadline drops, adaptive target-depth policy, jitter-buffer metric records, timing sample projection, decoded preview-frame ingress, pooled payload ownership, queue ordering/dequeue selection, and reprime recovery |
 | MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `NvdecMjpegDecoder.cs`, `CudaD3D11InteropBridge.cs` | pipeline construction/startup sequencing, bounded work-channel construction, compressed input admission/byte budget/depth accounting, CPU MJPEG worker decode-loop execution and decoder ownership, pipeline timing and packet-hash metrics, stop/dispose/shutdown joins/fatal callback signaling, decoder/work-item/reorder-frame resource cleanup, decoded-frame ordering, missing-sequence state, decoded-frame emission and preview notification, software MJPEG decoder initialization/lifetime, decode/copy hot path, NVDEC decoder state, standalone CUDA device/frame-pool initialization, shared CUDA device/frame-pool adoption, decode/context access, CPU download/copy helpers, disposal, and error text, CUDA-to-D3D11 bridge state, public texture handles, bridge setup/zero-copy registration, bridge disposal/resource unregister, CUDA native constants/P/Invoke declarations, and zero-copy/staging copy behavior |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | optional NVML telemetry snapshot/polling lifecycle, graceful unavailable behavior, raw NVML constants, structs, library loading, device-name helper, and P/Invoke declarations |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Alerts.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationRuntimeModels.cs`, `AutomationSupportModels.cs` | consolidated automation evidence DTO for app/capture/audio/preview/recording/Flashback diagnostics; `AutomationRuntimeModels.cs` owns capture runtime, preview runtime, and performance timeline DTO surfaces; `AutomationSupportModels.cs` owns command protocol DTOs/converters, automation options DTOs, support DTOs/enums for diagnostics events, Flashback segments, preview startup, screenshot/window capture, recording verification, video source/color probe, and view-model runtime snapshot DTOs |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | device/options/settings/session-state leaf types, audio endpoint/event/path/trace DTOs, explicit transition legality policy, mutable capture session state machine, frame-ledger event DTOs, diagnostics core/format/HDR/source-telemetry/cadence/queue/Flashback/MJPEG fields, and inherited health source/queue/AV-sync/playback/export fields kept together as the capture model surface |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | consolidated recording and Flashback model surface for media format display/equality/HDR helper policy, encoder support, integrity summary, pipeline queue options, recording byte stats, Flashback buffer/session/playback/export DTOs, and Flashback force-rotate result status |
@@ -216,17 +216,17 @@ Automation diagnostics ownership:
   refresh loop.
   The hub constructor should take `IAutomationSnapshotQueryPort` directly because
   snapshot refresh and verification are read-only over that port.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs` owns alert
-  rule evaluation, active-alert transitions, signal alert orchestration and rules
-  for preview blank/stall/startup/cadence/display 1% low, capture cadence
-  drop/1% low, audio muted signal, recording output growth, Flashback alert
-  group routing, Flashback recording alert orchestration, export progress/
-  force-rotation gap alerts, temp-cache pressure alerts, encoder failure alerts,
-  recording path degradation alerts, Flashback playback alert orchestration,
-  Flashback playback performance alert routing, and frame-submission failure
-  alerts.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Alerts.cs` owns
-  Flashback playback alert orchestration, command queue/failure alerts,
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` also
+  owns alert rule evaluation, active-alert transitions, signal alert
+  orchestration and rules for preview blank/stall/startup/cadence/display 1%
+  low, capture cadence drop/1% low, audio muted signal, recording output
+  growth, Flashback alert group routing, Flashback recording alert
+  orchestration, export progress/force-rotation gap alerts, temp-cache pressure
+  alerts, encoder failure alerts, recording path degradation alerts, Flashback
+  playback alert orchestration, Flashback playback performance alert routing,
+  and frame-submission failure alerts.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` also
+  owns Flashback playback alert orchestration, command queue/failure alerts,
   target-rate/present-cadence/slow-playback/frametime alerts, submit-failure
   alerts, audio-master fallback alerts, audio-queue backlog alerts, diagnostics
   event publication, event throttling, Flashback export completion events, and
