@@ -180,12 +180,13 @@ static partial class Program
         AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`");
         AssertContains(closureSection, "do not merge this family just to reduce partial count");
 
-        AssertContains(closureSection, "| AutomationDiagnosticsHub | Needs Boundary Pass |");
+        AssertContains(closureSection, "| AutomationDiagnosticsHub | Ready |");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`");
-        AssertContains(closureSection, "The next non-cosmetic slice should carve a named projection collaborator");
+        AssertContains(closureSection, "Treat the current hub family as closed");
 
         AssertContains(closureSection, "| FlashbackPlaybackController | Ready |");
         AssertContains(closureSection, "`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`");
