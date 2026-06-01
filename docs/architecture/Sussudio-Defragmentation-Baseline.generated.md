@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T17:33:24Z
+Generated UTC: 2026-06-01T17:56:18Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 142 |
+| Production .cs files | 140 |
 | Test .cs files | 14 |
-| Core app .cs files (Sussudio/) | 107 |
-| Core app nonblank LoC (Sussudio/) | 88522 |
+| Core app .cs files (Sussudio/) | 105 |
+| Core app nonblank LoC (Sussudio/) | 88498 |
 | Sussudio.Tests .cs files | 12 |
-| Sussudio.Tests nonblank LoC | 55881 |
+| Sussudio.Tests nonblank LoC | 55875 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.7%) |
 
@@ -21,8 +21,8 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Type | Files | Total lines | Sample paths |
 | --- | ---: | ---: | --- |
 | CaptureService | 8 | 9865 | Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.Flashback.cs, Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs, Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs, Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs, Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs, Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
-| MainViewModel | 6 | 4479 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.CaptureSelection.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs, Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs |
 | FlashbackPlaybackController | 5 | 4872 | Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
+| MainViewModel | 4 | 4452 | Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs, Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | AutomationDiagnosticsHub | 4 | 9893 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | D3D11PreviewRenderer | 4 | 4871 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | FlashbackEncoderSink | 3 | 2639 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs |
@@ -45,6 +45,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | ---: | --- |
 | 6046 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 2421 | Sussudio/MainWindow.xaml.cs |
+| 2012 | Sussudio/ViewModels/MainViewModel.cs |
 | 1721 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1619 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
@@ -67,7 +68,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1285 | Sussudio/Services/Flashback/FlashbackExporter.Execution.cs |
 | 1249 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |
 | 1236 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
-| 1225 | Sussudio/ViewModels/MainViewModel.cs |
 | 1204 | Sussudio/Services/Capture/CaptureService.cs |
 | 1197 | tools/Common/PresentMon/PresentMonProbe.cs |
 | 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |

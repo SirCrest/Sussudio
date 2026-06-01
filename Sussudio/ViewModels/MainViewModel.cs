@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +18,166 @@ using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
+
+internal readonly record struct MainViewModelSettingsLoadInput(
+    IReadOnlyCollection<string> AvailableRecordingFormats,
+    IReadOnlyCollection<string> AvailableQualities,
+    IReadOnlyCollection<string> AvailablePresets,
+    IReadOnlyCollection<string> AvailableSplitEncodeModes,
+    IReadOnlyCollection<string> AvailableDeviceAudioModes,
+    Func<string, bool> OutputDirectoryExists);
+
+internal readonly record struct MainViewModelSettingsLoadPlan(
+    string? OutputPath,
+    string? SelectedRecordingFormat,
+    string? UnavailableRecordingFormat,
+    string? SelectedQuality,
+    string? SelectedPreset,
+    string? SelectedSplitEncodeMode,
+    double? CustomBitrateMbps,
+    bool? IsHdrEnabled,
+    bool? IsAudioEnabled,
+    bool? IsAudioPreviewEnabled,
+    bool? IsCustomAudioInputEnabled,
+    bool? IsMicrophoneEnabled,
+    double? MicrophoneVolume,
+    string? PendingMicrophoneVolumeDeviceId,
+    double? PreviewVolume,
+    bool? IsStatsVisible,
+    string? SelectedDeviceAudioMode,
+    double? AnalogAudioGainPercent,
+    bool? FlashbackGpuDecode,
+    int? FlashbackBufferMinutes,
+    string? PendingDeviceId,
+    string? PendingAudioDeviceId,
+    string? PendingMicrophoneDeviceId,
+    string? PendingDeviceAudioMode,
+    double? PendingAnalogAudioGainPercent);
+
+internal readonly record struct MainViewModelSettingsSaveInput(
+    string? SelectedDeviceId,
+    string OutputPath,
+    string SelectedRecordingFormat,
+    string SelectedQuality,
+    string SelectedPreset,
+    string SelectedSplitEncodeMode,
+    double CustomBitrateMbps,
+    bool IsHdrEnabled,
+    bool IsAudioEnabled,
+    bool IsAudioPreviewEnabled,
+    bool IsCustomAudioInputEnabled,
+    string? SelectedAudioInputDeviceId,
+    bool IsMicrophoneEnabled,
+    string? SelectedMicrophoneDeviceId,
+    double MicrophoneVolume,
+    double PreviewVolume,
+    bool IsStatsVisible,
+    string SelectedDeviceAudioMode,
+    double AnalogAudioGainPercent,
+    bool FlashbackGpuDecode,
+    int FlashbackBufferMinutes);
+
+/// <summary>
+/// Pure settings projection between persisted settings and MainViewModel load state.
+/// </summary>
+internal static class MainViewModelSettingsPersistenceProjection
+{
+    internal static MainViewModelSettingsLoadPlan BuildLoadPlan(
+        UserSettings settings,
+        MainViewModelSettingsLoadInput input)
+    {
+        var outputPath = !string.IsNullOrWhiteSpace(settings.OutputPath) &&
+            input.OutputDirectoryExists(settings.OutputPath)
+                ? settings.OutputPath
+                : null;
+
+        var selectedRecordingFormat = ResolveAvailableValue(
+            settings.SelectedRecordingFormat,
+            input.AvailableRecordingFormats,
+            StringComparer.Ordinal);
+        var unavailableRecordingFormat = selectedRecordingFormat is null &&
+            !string.IsNullOrWhiteSpace(settings.SelectedRecordingFormat)
+                ? settings.SelectedRecordingFormat
+                : null;
+
+        var microphoneVolume = settings.MicrophoneVolume.HasValue
+            ? Math.Clamp(settings.MicrophoneVolume.Value, 0.0, 100.0)
+            : (double?)null;
+
+        return new MainViewModelSettingsLoadPlan(
+            OutputPath: outputPath,
+            SelectedRecordingFormat: selectedRecordingFormat,
+            UnavailableRecordingFormat: unavailableRecordingFormat,
+            SelectedQuality: ResolveAvailableValue(settings.SelectedQuality, input.AvailableQualities, StringComparer.Ordinal),
+            SelectedPreset: ResolveAvailableValue(settings.SelectedPreset, input.AvailablePresets, StringComparer.Ordinal),
+            SelectedSplitEncodeMode: ResolveAvailableValue(settings.SelectedSplitEncodeMode, input.AvailableSplitEncodeModes, StringComparer.Ordinal),
+            CustomBitrateMbps: settings.CustomBitrateMbps,
+            IsHdrEnabled: settings.IsHdrEnabled,
+            IsAudioEnabled: settings.IsAudioEnabled,
+            IsAudioPreviewEnabled: settings.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled: settings.IsCustomAudioInputEnabled,
+            IsMicrophoneEnabled: settings.IsMicrophoneEnabled,
+            MicrophoneVolume: microphoneVolume,
+            PendingMicrophoneVolumeDeviceId: microphoneVolume.HasValue ? settings.SelectedMicrophoneDeviceId : null,
+            PreviewVolume: settings.PreviewVolume.HasValue ? Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0) : null,
+            IsStatsVisible: settings.IsStatsVisible,
+            SelectedDeviceAudioMode: ResolveAvailableValue(
+                settings.SelectedDeviceAudioMode,
+                input.AvailableDeviceAudioModes,
+                StringComparer.OrdinalIgnoreCase),
+            AnalogAudioGainPercent: settings.AnalogAudioGainPercent.HasValue
+                ? Math.Clamp(settings.AnalogAudioGainPercent.Value, 0.0, 100.0)
+                : null,
+            FlashbackGpuDecode: settings.FlashbackGpuDecode,
+            FlashbackBufferMinutes: settings.FlashbackBufferMinutes.HasValue
+                ? Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30)
+                : null,
+            PendingDeviceId: settings.SelectedDeviceId,
+            PendingAudioDeviceId: settings.SelectedAudioInputDeviceId,
+            PendingMicrophoneDeviceId: settings.SelectedMicrophoneDeviceId,
+            PendingDeviceAudioMode: settings.SelectedDeviceAudioMode,
+            PendingAnalogAudioGainPercent: settings.AnalogAudioGainPercent);
+    }
+
+    internal static UserSettings BuildSaveSettings(MainViewModelSettingsSaveInput input)
+    {
+        return new UserSettings
+        {
+            SelectedDeviceId = input.SelectedDeviceId,
+            OutputPath = input.OutputPath,
+            SelectedRecordingFormat = input.SelectedRecordingFormat,
+            SelectedQuality = input.SelectedQuality,
+            SelectedPreset = input.SelectedPreset,
+            SelectedSplitEncodeMode = input.SelectedSplitEncodeMode,
+            CustomBitrateMbps = input.CustomBitrateMbps,
+            IsHdrEnabled = input.IsHdrEnabled,
+            IsAudioEnabled = input.IsAudioEnabled,
+            IsAudioPreviewEnabled = input.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled = input.IsCustomAudioInputEnabled,
+            SelectedAudioInputDeviceId = input.SelectedAudioInputDeviceId,
+            IsMicrophoneEnabled = input.IsMicrophoneEnabled,
+            SelectedMicrophoneDeviceId = input.SelectedMicrophoneDeviceId,
+            MicrophoneVolume = input.MicrophoneVolume,
+            PreviewVolume = input.PreviewVolume,
+            IsStatsVisible = input.IsStatsVisible,
+            SelectedDeviceAudioMode = input.SelectedDeviceAudioMode,
+            AnalogAudioGainPercent = input.AnalogAudioGainPercent,
+            FlashbackGpuDecode = input.FlashbackGpuDecode,
+            FlashbackBufferMinutes = input.FlashbackBufferMinutes,
+        };
+    }
+
+    private static string? ResolveAvailableValue(
+        string? savedValue,
+        IEnumerable<string> availableValues,
+        StringComparer comparer)
+    {
+        return !string.IsNullOrWhiteSpace(savedValue) &&
+            availableValues.Contains(savedValue, comparer)
+                ? savedValue
+                : null;
+    }
+}
 
 /// <summary>
 /// UI-facing state coordinator. MainViewModel translates user settings and
@@ -95,6 +256,224 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         _runtimeLifecycleController.Start();
         _runtimeLifecycleController.InitializePresentation();
+    }
+
+    public Task InitializeAsync()
+    {
+        LoadSettings();
+        StartRecordingCapabilityRefresh();
+        return Task.CompletedTask;
+    }
+
+    partial void OnOutputPathChanged(string value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnIsStatsVisibleChanged(bool value)
+    {
+        SaveSettings();
+    }
+
+    private void LoadSettings()
+    {
+        _isLoadingSettings = true;
+        try
+        {
+            var settings = SettingsService.Load();
+            var loadPlan = MainViewModelSettingsPersistenceProjection.BuildLoadPlan(
+                settings,
+                new MainViewModelSettingsLoadInput(
+                    AvailableRecordingFormats,
+                    AvailableQualities,
+                    AvailablePresets,
+                    AvailableSplitEncodeModes,
+                    AvailableDeviceAudioModes,
+                    Directory.Exists));
+
+            if (!string.IsNullOrWhiteSpace(loadPlan.UnavailableRecordingFormat))
+            {
+                Logger.Log($"SETTINGS_LOAD: saved format '{loadPlan.UnavailableRecordingFormat}' not available, using default.");
+            }
+
+            ApplySettingsLoadPlan(loadPlan);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"SETTINGS_LOAD: unexpected error: {ex.Message}");
+        }
+        finally
+        {
+            _isLoadingSettings = false;
+        }
+    }
+
+    private void SaveSettings()
+    {
+        if (_isLoadingSettings)
+        {
+            return;
+        }
+
+        try
+        {
+            var settings = MainViewModelSettingsPersistenceProjection.BuildSaveSettings(
+                new MainViewModelSettingsSaveInput(
+                    SelectedDevice?.Id,
+                    OutputPath,
+                    SelectedRecordingFormat,
+                    SelectedQuality,
+                    SelectedPreset,
+                    SelectedSplitEncodeMode,
+                    CustomBitrateMbps,
+                    IsHdrEnabled,
+                    IsAudioEnabled,
+                    IsAudioPreviewEnabled,
+                    IsCustomAudioInputEnabled,
+                    SelectedAudioInputDevice?.Id,
+                    IsMicrophoneEnabled,
+                    SelectedMicrophoneDevice?.Id,
+                    MicrophoneVolume,
+                    VolumeSaveOverride ?? PreviewVolume,
+                    IsStatsVisible,
+                    SelectedDeviceAudioMode,
+                    AnalogAudioGainPercent,
+                    FlashbackGpuDecode,
+                    FlashbackBufferMinutes));
+
+            SettingsService.Save(settings);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"SETTINGS_SAVE: unexpected error: {ex.Message}");
+        }
+    }
+
+    private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        ApplyRecordingSettingsLoadPlan(loadPlan);
+        ApplyAudioSettingsLoadPlan(loadPlan);
+        ApplyUiSettingsLoadPlan(loadPlan);
+        ApplyDeviceAudioSettingsLoadPlan(loadPlan);
+        ApplyFlashbackSettingsLoadPlan(loadPlan);
+        StageDeferredDeviceSettingsLoadPlan(loadPlan);
+    }
+
+    private void ApplyRecordingSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        if (loadPlan.OutputPath is not null)
+        {
+            OutputPath = loadPlan.OutputPath;
+        }
+
+        if (loadPlan.SelectedRecordingFormat is not null)
+        {
+            SelectedRecordingFormat = loadPlan.SelectedRecordingFormat;
+        }
+
+        if (loadPlan.SelectedQuality is not null)
+        {
+            SelectedQuality = loadPlan.SelectedQuality;
+        }
+
+        if (loadPlan.SelectedPreset is not null)
+        {
+            SelectedPreset = loadPlan.SelectedPreset;
+        }
+
+        if (loadPlan.SelectedSplitEncodeMode is not null)
+        {
+            SelectedSplitEncodeMode = loadPlan.SelectedSplitEncodeMode;
+        }
+
+        if (loadPlan.CustomBitrateMbps.HasValue)
+        {
+            CustomBitrateMbps = loadPlan.CustomBitrateMbps.Value;
+        }
+
+        if (loadPlan.IsHdrEnabled.HasValue)
+        {
+            IsHdrEnabled = loadPlan.IsHdrEnabled.Value;
+        }
+    }
+
+    private void ApplyAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        if (loadPlan.IsAudioEnabled.HasValue)
+        {
+            IsAudioEnabled = loadPlan.IsAudioEnabled.Value;
+        }
+
+        if (loadPlan.IsAudioPreviewEnabled.HasValue)
+        {
+            IsAudioPreviewEnabled = loadPlan.IsAudioPreviewEnabled.Value;
+        }
+
+        if (loadPlan.IsCustomAudioInputEnabled.HasValue)
+        {
+            IsCustomAudioInputEnabled = loadPlan.IsCustomAudioInputEnabled.Value;
+        }
+
+        if (loadPlan.IsMicrophoneEnabled.HasValue)
+        {
+            IsMicrophoneEnabled = loadPlan.IsMicrophoneEnabled.Value;
+        }
+
+        if (loadPlan.MicrophoneVolume.HasValue)
+        {
+            MicrophoneVolume = loadPlan.MicrophoneVolume.Value;
+            _pendingSavedMicrophoneVolume = loadPlan.MicrophoneVolume.Value;
+            _pendingSavedMicrophoneVolumeDeviceId = loadPlan.PendingMicrophoneVolumeDeviceId;
+        }
+
+        if (loadPlan.PreviewVolume.HasValue)
+        {
+            PreviewVolume = loadPlan.PreviewVolume.Value;
+        }
+    }
+
+    private void ApplyUiSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        if (loadPlan.IsStatsVisible.HasValue)
+        {
+            IsStatsVisible = loadPlan.IsStatsVisible.Value;
+        }
+    }
+
+    private void ApplyDeviceAudioSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        if (loadPlan.SelectedDeviceAudioMode is not null)
+        {
+            SelectedDeviceAudioMode = loadPlan.SelectedDeviceAudioMode;
+        }
+
+        if (loadPlan.AnalogAudioGainPercent.HasValue)
+        {
+            AnalogAudioGainPercent = loadPlan.AnalogAudioGainPercent.Value;
+        }
+    }
+
+    private void ApplyFlashbackSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        if (loadPlan.FlashbackGpuDecode.HasValue)
+        {
+            FlashbackGpuDecode = loadPlan.FlashbackGpuDecode.Value;
+        }
+
+        if (loadPlan.FlashbackBufferMinutes.HasValue)
+        {
+            FlashbackBufferMinutes = loadPlan.FlashbackBufferMinutes.Value;
+        }
+    }
+
+    private void StageDeferredDeviceSettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
+    {
+        // Defer device selection until RefreshDevicesAsync populates the device list.
+        _pendingSavedDeviceId = loadPlan.PendingDeviceId;
+        _pendingSavedAudioDeviceId = loadPlan.PendingAudioDeviceId;
+        _pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;
+        _pendingSavedDeviceAudioMode = loadPlan.PendingDeviceAudioMode;
+        _pendingSavedAnalogAudioGainPercent = loadPlan.PendingAnalogAudioGainPercent;
     }
 
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
@@ -192,6 +571,414 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isLoadingSettings;
     private string? _pendingSavedDeviceId;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
+    private bool _pendingModeOptionsRefresh;
+    private bool _suppressFormatChangeReinitialize;
+    private bool _isRevertingHdrToggle;
+
+    /// <summary>
+    /// Capture-device, resolution, and frame-rate selection reactions.
+    /// Capture-mode transactions that coordinate option rebuilds, HDR/SDR changes,
+    /// and active-preview reinitialization without duplicate property-change cascades.
+    /// </summary>
+    private void RebuildResolutionOptions()
+        => _captureModeOptionRebuildController.RebuildResolutionOptions();
+
+    private void RebuildFrameRateOptions()
+        => _captureModeOptionRebuildController.RebuildFrameRateOptions();
+
+    private void UpdateSelectedFormat()
+        => _captureModeOptionRebuildController.UpdateSelectedFormat();
+
+    private void RebuildVideoFormatOptions()
+        => _captureModeOptionRebuildController.RebuildVideoFormatOptions();
+
+    partial void OnSelectedDeviceChanged(CaptureDevice? value)
+    {
+        CancelPendingAudioControlWork();
+        RebuildSelectedDeviceCapabilities(value, resetTelemetryState: true);
+        RequestDeviceAudioControlsRefresh(value);
+        SaveSettings();
+    }
+
+    private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)
+    {
+        _isChangingDevice = true;
+        try
+        {
+            ResetFrameRateSelectionState();
+            HdrResolutionSupportHint = string.Empty;
+
+            AvailableFormats.Clear();
+            AvailableFrameRates.Clear();
+            _resolutionToFormats.Clear();
+            if (resetTelemetryState)
+            {
+                _pendingSdrAutoSelectionForDeviceChange = device != null && !IsHdrEnabled;
+                _pendingSdrAutoFriendlyFrameRateBucket = null;
+                _sourceTelemetryController.ApplySourceTelemetrySnapshot(
+                    SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
+                    allowAutoRetarget: false);
+            }
+
+            if (device != null)
+            {
+                foreach (var format in device.SupportedFormats)
+                {
+                    AvailableFormats.Add(format);
+
+                    var resolutionKey = GetResolutionKey(format.Width, format.Height);
+                    if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+                    {
+                        formats = new List<MediaFormat>();
+                        _resolutionToFormats[resolutionKey] = formats;
+                    }
+
+                    formats.Add(format);
+                }
+
+                IsHdrAvailable = device.IsHdrCapable;
+                if (!IsHdrAvailable)
+                {
+                    IsHdrEnabled = false;
+                }
+            }
+
+            if (IsRecording)
+            {
+                _pendingModeOptionsRefresh = true;
+            }
+            else
+            {
+                RebuildResolutionOptions();
+            }
+        }
+        finally
+        {
+            _isChangingDevice = false;
+        }
+    }
+
+    private static bool IsAutoResolutionValue(string? resolutionValue)
+        => string.Equals(resolutionValue, AutoResolutionValue, StringComparison.OrdinalIgnoreCase);
+
+    private bool TryResolveResolutionKey(string? resolutionValue, out string resolutionKey)
+    {
+        resolutionKey = string.Empty;
+        if (string.IsNullOrWhiteSpace(resolutionValue))
+        {
+            return false;
+        }
+
+        if (IsAutoResolutionValue(resolutionValue))
+        {
+            if (AutoResolvedWidth.HasValue &&
+                AutoResolvedHeight.HasValue &&
+                AutoResolvedWidth.Value > 0 &&
+                AutoResolvedHeight.Value > 0)
+            {
+                resolutionKey = GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (!TryParseResolutionKey(resolutionValue, out var width, out var height))
+        {
+            return false;
+        }
+
+        resolutionKey = GetResolutionKey(width, height);
+        return true;
+    }
+
+    private string? GetEffectiveResolutionKey(string? resolutionValue)
+        => TryResolveResolutionKey(resolutionValue, out var resolutionKey)
+            ? resolutionKey
+            : null;
+
+    private bool TryGetEffectiveResolutionSelection(out string resolutionKey, out uint width, out uint height)
+    {
+        resolutionKey = string.Empty;
+        width = 0;
+        height = 0;
+
+        if (!TryResolveResolutionKey(SelectedResolution, out resolutionKey) ||
+            !TryParseResolutionKey(resolutionKey, out width, out height))
+        {
+            resolutionKey = string.Empty;
+            width = 0;
+            height = 0;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryParseResolutionKey(string? resolutionKey, out uint width, out uint height)
+        => CaptureResolutionSelectionPolicy.TryParseResolutionKey(resolutionKey, out width, out height);
+
+    private static string GetResolutionKey(uint width, uint height)
+        => $"{width}x{height}";
+
+    private bool ResolutionSupportsFrameRate(string resolutionKey, double frameRate, bool hdrOnly)
+        => CaptureResolutionSelectionPolicy.ResolutionSupportsFrameRate(
+            _resolutionToFormats,
+            resolutionKey,
+            frameRate,
+            hdrOnly);
+
+    private bool ResolutionSupportsFriendlyFrameRate(
+        string resolutionKey,
+        int friendlyBucket,
+        bool hdrOnly,
+        bool sdrOnly)
+        => CaptureResolutionSelectionPolicy.ResolutionSupportsFriendlyFrameRate(
+            _resolutionToFormats,
+            resolutionKey,
+            friendlyBucket,
+            hdrOnly,
+            sdrOnly);
+
+    private string BuildHdrSupportHintForResolution(string? resolutionKey)
+        => CaptureResolutionSelectionPolicy.BuildHdrSupportHint(new HdrSupportHintRequest(
+            _resolutionToFormats,
+            resolutionKey,
+            IsHdrEnabled,
+            SelectedFrameRate));
+
+    partial void OnSelectedResolutionChanged(string? value)
+    {
+        if (TryResolveResolutionKey(value, out var resolvedResolutionKey))
+        {
+            _lastKnownResolutionKey = resolvedResolutionKey;
+        }
+
+        if (!_isRebuildingModeOptions && !_isApplyingAutomaticResolutionSelection)
+        {
+            _hasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
+            _pendingSdrAutoSelectionForDeviceChange = false;
+            _pendingSdrAutoFriendlyFrameRateBucket = null;
+        }
+
+        if (_isRebuildingModeOptions)
+        {
+            return;
+        }
+
+        _forceSourceAutoRetarget = false;
+        ResetFrameRateSelectionState();
+        RebuildFrameRateOptions();
+        UpdateTargetSummary();
+    }
+
+    partial void OnSelectedFormatChanged(MediaFormat? value)
+    {
+        if (value != null && !_isChangingDevice && !_suppressFormatChangeReinitialize && IsPreviewing && IsInitialized)
+        {
+            Logger.Log($"=== Format changed to {value.Width}x{value.Height}@{value.FrameRate}fps - reinitializing device ===");
+            EnqueueUiOperation(() => ReinitializeDeviceAsync("format change"), "format change reinitialize");
+        }
+    }
+
+    partial void OnSelectedVideoFormatChanged(string value)
+    {
+        if (!_isRebuildingModeOptions)
+        {
+            var previousSuppress = _suppressFormatChangeReinitialize;
+            _suppressFormatChangeReinitialize = true;
+            try
+            {
+                UpdateSelectedFormat();
+            }
+            finally
+            {
+                _suppressFormatChangeReinitialize = previousSuppress;
+            }
+        }
+
+        if (!_isChangingDevice && !_suppressFormatChangeReinitialize && IsPreviewing && IsInitialized)
+        {
+            Logger.Log($"=== Video format override changed to {value} - reinitializing device ===");
+            EnqueueUiOperation(() => ReinitializeDeviceAsync("video format override"), "video format override reinitialize");
+        }
+    }
+
+    partial void OnSelectedFrameRateChanged(double value)
+    {
+        if (FrameRateTimingPolicy.IsAutoFrameRateValue(value))
+        {
+            SelectAutoFrameRate(rebuildOptions: !IsRecording && !_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection);
+            return;
+        }
+
+        if (!_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection)
+        {
+            IsAutoFrameRateSelected = false;
+            _hasUserOverriddenFrameRateForCurrentMode = true;
+            _pendingSdrAutoSelectionForDeviceChange = false;
+            _pendingSdrAutoFriendlyFrameRateBucket = null;
+        }
+
+        var selected = AvailableFrameRates
+            .FirstOrDefault(option => FrameRateTimingPolicy.IsFrameRateMatch(option.Value, value))
+            ?? AvailableFrameRates.FirstOrDefault(option => FrameRateTimingPolicy.IsFriendlyFrameRateMatch(option.FriendlyValue, value));
+        SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(value, MidpointRounding.AwayFromZero);
+        SelectedExactFrameRate = selected?.Value ?? value;
+        SelectedExactFrameRateArg = selected?.Rational;
+        if (IsAutoResolutionValue(SelectedResolution))
+        {
+            AutoResolvedFrameRate = selected?.Value ?? value;
+        }
+
+        RebuildVideoFormatOptions();
+        UpdateSelectedFormat();
+        UpdateTargetSummary();
+    }
+
+    public void SelectAutoFrameRate()
+        => SelectAutoFrameRate(rebuildOptions: !IsRecording && !_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection);
+
+    private void SelectAutoFrameRate(bool rebuildOptions)
+    {
+        IsAutoFrameRateSelected = true;
+        _hasUserOverriddenFrameRateForCurrentMode = false;
+        _pendingSdrAutoSelectionForDeviceChange = false;
+        _pendingSdrAutoFriendlyFrameRateBucket = null;
+
+        if (rebuildOptions)
+        {
+            RebuildFrameRateOptions();
+            return;
+        }
+
+        var currentOptions = AvailableFrameRates
+            .Where(option => !FrameRateTimingPolicy.IsAutoFrameRateValue(option.FriendlyValue))
+            .ToList();
+        var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
+        var sourceRate = _frameRateTimingResolver.ResolveDetectedSourceFrameRate(selectedResolutionKey, currentOptions, SelectedFrameRate);
+        var sourceTimingFamilyKnown = FrameRateTimingPolicy.TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
+        var selection = FrameRateAutoSelectionPolicy.Select(new FrameRateAutoSelectionRequest(
+            currentOptions,
+            AutoFrameRateOptionAvailable: false,
+            ForceAutoSelection: true,
+            IsAutoFrameRateSelected: IsAutoFrameRateSelected,
+            HasUserOverriddenFrameRateForCurrentMode: _hasUserOverriddenFrameRateForCurrentMode,
+            IsHdrEnabled: IsHdrEnabled,
+            PendingSdrAutoSelectionForDeviceChange: _pendingSdrAutoSelectionForDeviceChange,
+            PendingSdrAutoFriendlyFrameRateBucket: _pendingSdrAutoFriendlyFrameRateBucket,
+            Source: new FrameRateAutoSelectionSource(sourceRate.Rate, sourceTimingFamilyKnown, sourceTimingFamily),
+            PreviousRate: SelectedFrameRate));
+
+        ApplyResolvedFrameRateSelection(selection.Selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);
+        UpdateSelectedFormat();
+        UpdateTargetSummary();
+    }
+
+    partial void OnMjpegDecoderCountChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 1, 8);
+        if (clamped != value)
+        {
+            MjpegDecoderCount = clamped;
+            return;
+        }
+
+        if (!_isChangingDevice &&
+            IsPreviewing &&
+            IsInitialized &&
+            BuildCaptureSettings().UseMjpegHighFrameRateMode)
+        {
+            Logger.Log($"=== MJPEG decoder count changed to {value} - reinitializing device ===");
+            EnqueueUiOperation(() => ReinitializeDeviceAsync("mjpeg decoder count"), "mjpeg decoder count reinitialize");
+        }
+    }
+
+    public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (IsRecording)
+            {
+                throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);
+            }
+
+            if (enabled && !IsHdrAvailable)
+            {
+                throw new InvalidOperationException("HDR is not available on the selected device.");
+            }
+
+            IsHdrEnabled = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (IsRecording)
+            {
+                throw new InvalidOperationException("True HDR preview cannot be changed while recording.");
+            }
+
+            IsTrueHdrPreviewEnabled = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    partial void OnIsHdrEnabledChanged(bool value)
+    {
+        if (_isRevertingHdrToggle)
+        {
+            return;
+        }
+
+        if (value)
+        {
+            _pendingSdrAutoSelectionForDeviceChange = false;
+            _pendingSdrAutoFriendlyFrameRateBucket = null;
+        }
+
+        if (IsRecording)
+        {
+            _isRevertingHdrToggle = true;
+            try
+            {
+                IsHdrEnabled = !value;
+            }
+            finally
+            {
+                _isRevertingHdrToggle = false;
+            }
+
+            StatusText = HdrToggleBlockedWhileRecordingMessage;
+            return;
+        }
+
+        if (!_isChangingDevice)
+        {
+            _suppressFormatChangeReinitialize = true;
+            try
+            {
+                ResetModeSelectionState();
+                RebuildResolutionOptions();
+                RebuildRecordingFormatOptions();
+            }
+            finally
+            {
+                _suppressFormatChangeReinitialize = false;
+            }
+
+            if (IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)
+            {
+                Logger.Log($"HDR toggle changed to {(value ? "On" : "Off")} - forcing immediate device renegotiation");
+                EnqueueUiOperation(() => ReinitializeDeviceAsync("HDR toggle"), "hdr toggle reinitialize");
+            }
+        }
+
+        SaveSettings();
+    }
 
     public Task ToggleRecordingAsync()
         => _recordingTransitionController.ToggleRecordingAsync();

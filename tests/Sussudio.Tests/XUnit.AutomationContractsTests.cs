@@ -6297,7 +6297,7 @@ static partial class Program
     {
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var automationAudioText = automationUiText;
-        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
+        var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         AssertContains(settingsProjectionText, "PreviewVolume = input.PreviewVolume,");
@@ -6323,10 +6323,10 @@ static partial class Program
 
     internal static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
-        var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs").Replace("\r\n", "\n");
+        var settingsPersistenceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var settingsLoadApplicationText = settingsPersistenceText;
         var settingsProjectionText = settingsPersistenceText[..settingsPersistenceText.IndexOf("public partial class MainViewModel", StringComparison.Ordinal)];
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
@@ -6378,7 +6378,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedFile)),
-                $"{removedFile} folded into MainViewModel.SettingsPersistence.cs");
+                $"{removedFile} folded into MainViewModel.cs");
         }
         AssertContains(settingsProjectionText, "internal static class MainViewModelSettingsPersistenceProjection");
         AssertContains(settingsProjectionText, "internal static MainViewModelSettingsLoadPlan BuildLoadPlan(");
@@ -6397,7 +6397,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", removedProjectionFile)),
-                $"{removedProjectionFile} folded into MainViewModel.SettingsPersistence.cs");
+                $"{removedProjectionFile} folded into MainViewModel.cs");
         }
         AssertDoesNotContain(settingsProjectionText, "SettingsService");
         AssertDoesNotContain(settingsProjectionText, "Logger");
@@ -6534,7 +6534,7 @@ static partial class Program
         var viewModelStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
 
         AssertDoesNotContain(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
         AssertContains(automationSettingsText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
@@ -6655,7 +6655,7 @@ static partial class Program
 
     internal static Task MainViewModelAutomation_HdrEnablementLivesInCaptureSelection()
     {
-        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs")
+        var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var hdrChangeBlock = ExtractMemberCode(
             captureModeTransactionsText,

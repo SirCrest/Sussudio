@@ -1830,7 +1830,7 @@ static partial class Program
         var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
-        var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureSelection.cs"));
+        var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelCompositionText = mainViewModelText;
         var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "UiDispatchControllers.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
@@ -1849,6 +1849,14 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Composition.cs")),
             "MainViewModel composition partial folded into MainViewModel.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.SettingsPersistence.cs")),
+            "MainViewModel settings persistence partial folded into MainViewModel.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureSelection.cs")),
+            "MainViewModel capture selection partial folded into MainViewModel.cs");
         AssertContains(mainViewModelCompositionText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelCompositionText, "_uiDispatchController.Enqueue(operation, operationName, allowDuringDispose);");
         AssertContains(mainViewModelCompositionText, "_uiDispatchController.InvokeAsync(operation, cancellationToken);");
@@ -1932,7 +1940,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureModePropertyChanges.cs")),
-            "MainViewModel.CaptureModePropertyChanges.cs folded into MainViewModel.CaptureSelection.cs");
+            "MainViewModel.CaptureModePropertyChanges.cs folded into MainViewModel.cs");
         AssertContains(mainViewModelAudioStateText, "OnSelectedDeviceAudioModeChanged");
         AssertContains(mainViewModelAudioStateText, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
         AssertEqual(
@@ -2067,7 +2075,7 @@ static partial class Program
         var mainViewModelDisposalText = mainViewModelText;
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
         var deviceRefreshControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
-        var deviceSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.CaptureSelection.cs"));
+        var deviceSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var audioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelSelectionPolicies.cs"));
         AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceSelection.cs")), "old device selection partial folded into capture selection owner");
@@ -2097,14 +2105,8 @@ static partial class Program
         AssertContains(deviceSelectionText, "private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)");
         AssertContains(deviceSelectionText, "_sourceTelemetryController.ApplySourceTelemetrySnapshot(");
         AssertContains(deviceSelectionText, "RebuildResolutionOptions();");
-        AssertDoesNotContain(mainViewModelText, "partial void OnSelectedDeviceChanged");
-        AssertDoesNotContain(mainViewModelText, "private void RebuildSelectedDeviceCapabilities");
         AssertDoesNotContain(mainViewModelText, "MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync");
         AssertDoesNotContain(mainViewModelText, "BeginBackgroundFormatProbe");
-        AssertDoesNotContain(mainViewModelText, "partial void OnSelectedResolutionChanged");
-        AssertDoesNotContain(mainViewModelText, "partial void OnSelectedFormatChanged");
-        AssertDoesNotContain(mainViewModelText, "partial void OnSelectedVideoFormatChanged");
-        AssertDoesNotContain(mainViewModelText, "partial void OnMjpegDecoderCountChanged");
         AssertContains(deviceAudioRequestControllerText, "namespace Sussudio.Controllers;");
         AssertContains(deviceAudioRequestControllerText, "public void CancelPendingAudioControlWork()");
         AssertContains(deviceAudioRequestControllerText, "_gainFlashDebounceCts");
@@ -2194,7 +2196,7 @@ static partial class Program
         AssertContains(recordingCapabilityControllerText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(recordingCapabilityControllerText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
         AssertDoesNotContain(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.SettingsPersistence.cs")),
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs")),
             "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(
             File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderPasses.cs"))
