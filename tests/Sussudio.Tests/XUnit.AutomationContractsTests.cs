@@ -2712,7 +2712,7 @@ static partial class Program
 // Tests for diagnostic snapshot JSON source-generation compatibility.
     internal static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
-        var loggerText = ReadRepoFile("Sussudio/Logger.cs");
+        var loggerText = ReadRepoFile("Sussudio/AppRuntime.cs");
         AssertContains(loggerText, "public static class Logger");
         AssertDoesNotContain(loggerText, "partial class Logger");
         AssertContains(loggerText, "[JsonSourceGenerationOptions(WriteIndented = false)]");

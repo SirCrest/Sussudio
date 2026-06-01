@@ -28,19 +28,15 @@ handlers, emergency recording finalization, the single-instance mutex guard,
 startup identity logging, and MainWindow activation. The class remains partial
 only for the generated XAML half.
 
-Logger diagnostics live with the nonblocking writer without changing the public
-static logging surface. `Sussudio/Logger.cs` owns initialization, rotation,
-bounded channel enqueueing, dropped-message fallback, direct file writes,
-`LogEvent`, system evidence collection, exception formatting, structured
-snapshot JSON routing through `LoggingJsonContext`, and fatal breadcrumbs.
-`Logger.cs` also owns the source-generated JSON context boundary for known log
-payloads.
-
-Runtime path resolution lives with the public cached path API without changing
-repo/temp/log path behavior. `Sussudio/RuntimePaths.cs` owns the public
-`GetRepo*` API, lazy cache fields,
-repo-root marker discovery, latest-build parent fallback, log-root override and
-fallback policy, guarded directory creation, and trace fallback diagnostics.
+App runtime infrastructure now lives in one root owner without changing the
+public static logging or path surfaces. `Sussudio/AppRuntime.cs` owns
+`RuntimePaths`, the public `GetRepo*` API, repo/temp/log root resolution,
+latest-build fallback, marker discovery, guarded directory creation, trace
+fallback diagnostics, `Logger` initialization, rotation, bounded channel
+enqueueing, dropped-message fallback, direct file writes, `LogEvent`, system
+evidence collection, exception formatting, structured snapshot JSON routing
+through `LoggingJsonContext`, fatal breadcrumbs, and the source-generated JSON
+context boundary for known log payloads.
 
 FFmpeg runtime location lives with capability probing without changing the
 public locator surface. `Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs` owns

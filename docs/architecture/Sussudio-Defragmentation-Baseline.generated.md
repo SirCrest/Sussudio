@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T15:56:59Z
+Generated UTC: 2026-06-01T16:27:46Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 150 |
+| Production .cs files | 149 |
 | Test .cs files | 14 |
-| Core app .cs files (Sussudio/) | 115 |
-| Core app nonblank LoC (Sussudio/) | 89534 |
+| Core app .cs files (Sussudio/) | 114 |
+| Core app nonblank LoC (Sussudio/) | 89529 |
 | Sussudio.Tests .cs files | 12 |
 | Sussudio.Tests nonblank LoC | 55896 |
 | Production .cs files under 60 lines | 0 (0.0%) |
@@ -32,7 +32,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | NativeXuAtCommandProvider | 3 | 2539 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs |
 | LibAvRecordingSink | 2 | 1886 | Sussudio/Services/Recording/LibAvRecordingSink.cs, Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs |
 | MfSourceReaderVideoCapture | 2 | 2033 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs |
-| LoggingJsonContext | 1 | 306 | Sussudio/Logger.cs |
+| LoggingJsonContext | 1 | 545 | Sussudio/AppRuntime.cs |
 | SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 260 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 697 | Sussudio/Services/Capture/DeviceService.cs |

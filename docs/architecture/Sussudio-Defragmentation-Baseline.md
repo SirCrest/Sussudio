@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: app runtime root utility locality
+Problem: `Sussudio/Logger.cs` and `Sussudio/RuntimePaths.cs` were the two root-namespace app runtime utility leaves. `Logger` already depends on `RuntimePaths` for repo-local log placement, and both surfaces are app-wide runtime infrastructure rather than subsystem collaborators. Reviewing startup/log path behavior, structured logging source generation, and repo/temp/log fallback policy still required opening two tiny root files after the surrounding app-surface folds.
+Files consolidated: `Sussudio/Logger.cs`; `Sussudio/RuntimePaths.cs`
+Files added: `Sussudio/AppRuntime.cs`
+Net production .cs delta: -1; net core app .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: no multi-file production partial cluster change; `LoggingJsonContext` now lives in the consolidated `Sussudio/AppRuntime.cs` app-runtime owner.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RuntimePaths|FullyQualifiedName~LoggingJsonContext"` passed (5 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+CLI/MCP/pipe checks, if applicable: no automation command names/IDs, pipe protocol, MCP/tool source, XAML bindings, capture, recording, Flashback, preview, HDR, or hot-path behavior changed; full solution build rebuilt app, tools, MCP server, probes, labs, and harnesses.
+Behavior preserved: `RuntimePaths` public type/name/API, repo/temp/log path resolution, latest-build fallback, marker discovery, guarded directory creation, trace fallback diagnostics, `Logger` public type/name/API, channel writer behavior, log rotation, direct-write fallback, `LogSystemInfo`, structured snapshot JSON routing through `LoggingJsonContext`, and fatal breadcrumbs keep the same behavior while living in `Sussudio/AppRuntime.cs`.
+Notes for future agents: keep app-root runtime path resolution and nonblocking logging together in `Sussudio/AppRuntime.cs` while `Logger` consumes `RuntimePaths` and both remain root-namespace static runtime infrastructure. Split again only if path resolution becomes an injected service, logging gains an alternate sink/provider boundary, or either surface grows independent fixture state. Current counts: core app 114 `.cs` files / 89,529 nonblank LoC; `Sussudio.Tests` 12 `.cs` files / 55,896 nonblank LoC; all tests 14 `.cs` files / 56,746 nonblank LoC.
+
+Date: 2026-06-01
 Area: stats presentation xUnit owner locality
 Problem: `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` was the smallest remaining direct xUnit owner. It carried stats presentation and hardware-row contracts that share the model/presentation reflection helpers and production surface already described by `XUnit.ModelContractsTests.cs` for view-model builder and presentation DTO contracts. Reviewing stats presentation still required opening a standalone test file before returning to the broader model/presentation contract parent.
 Files consolidated: `tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs`

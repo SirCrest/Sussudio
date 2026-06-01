@@ -237,7 +237,7 @@ public sealed class RuntimeContractsTests
     [Fact]
     public void RuntimePaths_OwnsPublicApiAndResolutionPolicy()
     {
-        var rootText = RuntimeContractSource.ReadRepoFile("Sussudio/RuntimePaths.cs")
+        var rootText = RuntimeContractSource.ReadRepoFile("Sussudio/AppRuntime.cs")
             .Replace("\r\n", "\n");
 
         Assert.Contains("public static class RuntimePaths", rootText);
