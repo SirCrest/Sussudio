@@ -396,14 +396,7 @@ static partial class Program
 
     private static string ReadFlashbackExporterSource()
     {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.Execution.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
+        return ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs").Replace("\r\n", "\n");
     }
 
     private static string ReadFlashbackDecoderSource()

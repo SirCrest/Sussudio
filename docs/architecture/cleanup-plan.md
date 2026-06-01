@@ -1449,81 +1449,23 @@ scanner helpers, startup cache budget calculation, session-directory stats,
 preserved-session skips, oldest-session deletion, and cache-budget cleanup
 telemetry there.
 
-Flashback exporter lifecycle behavior now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`. Keep shared native
-export state, constants, public `Dispose`, active export cancellation, linked
-export cancellation-source helpers, shared cancelled/disposed result creation,
-export-lock wait/release/disposal, native input/output cleanup, native-state
-cleanup on dispose, and dispose-timeout logging there.
-
-Flashback exporter execution scheduling and runtime export policy now live in
-`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`. Keep public
-`ExportAsync` null/disposed guards, segment path normalization, adaptive
-throttle provider handoff, single-versus-segment export selection,
-single/multi-segment task wrappers, linked cancellation source disposal,
-background thread priority, segment snapshots, progress normalization/reporting,
-heartbeat cadence, export writer adaptive throttling, fixed sleep/yield pacing,
-and per-export throttle provider scoping there so native export cores stay
-behind focused entry points.
-
-Flashback exporter single-file export shell now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs` with the request
-routing and task wrapper that call it. Keep the single `.ts` export validation,
-seek/setup, single-file packet result validation, active input packet pump,
-native frame reads, per-read packet unref, stream filtering, out-point clipping,
-timestamp rebasing, inline remux writes, writer throttling, progress heartbeat,
-final packet cleanup, packet write state, timestamp-base discovery, buffered
-packet transition, EOF partial-base rescue, final output replacement, success
-result shaping, and single-export lock release there.
-
-Flashback exporter multi-segment packet-copy/remux behavior now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`. Keep segment
-validation dispatch, temp-output preparation, output-template selection,
-template-skip diagnostics, per-segment input open, stream-info lookup,
-stream-count checks, layout-mismatch skip tracking, final output replacement,
-and segment-export lock release there. Segment packet writing now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`; keep
-output-template initialization, segment input sequencing, segment export
-range/window projection, segment offset updates, completion progress, and
-requested-segment skip validation there. The
-active segment packet pump lives in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`; keep
-native frame reads, per-read packet unref, stream filtering, timestamp-base
-discovery, buffered packet transition, rebased packet writes, writer throttling,
-and EOF partial-base rescue/freeing there, along with the per-segment packet
-write state, buffered-packet rescue/flush, and native packet write outcome
-state. Segment timestamp rebasing, segment-boundary repair,
-DTS monotonicity, and native packet writes live there too. Keep this owner as
-one in-file `FlashbackExporter` body so packet read-loop and orchestration
-sections do not reintroduce fake partial shells.
-`FlashbackExporter.Lifecycle.cs` keeps shared native state, constants, and
-fields.
-
-Flashback exporter validation policy now lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs` with the request
-execution and output replacement paths that consume it. Keep completed-output
-length validation, normalized path comparison, output path validation,
-export-range validation, segment/export-range overlap classification,
-multi-segment input validation, and readable-segment byte estimation there.
-FFmpeg error string formatting/throwing lives in
-`Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`, and timestamp
-math/saturated arithmetic lives in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs` so
-`FlashbackExporter.Lifecycle.cs` stays focused on export native state and
-lifetime policy while packet timestamp policy stays with packet writing.
-Packet timestamp normalization, export time-span conversion, saturated time arithmetic, segment
-boundary timestamp repair, packet clone/free helpers, and buffered packet
-flushes live in
-`Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs`. FFmpeg input and
-output context setup, stream count validation, and output header writing live in
-`Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`. Stream-template copying
-and segment stream-layout compatibility checks live in
-`Sussudio/Services/Flashback/FlashbackExporter.Lifecycle.cs`. Temp output
-validation, active output trailer/IO close finalization, atomic replacement,
-overwrite policy, and invalid final-output cleanup live in
-`Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`.
-Temp output cleanup, stale temp preparation, and orphan `.mp4.tmp` cleanup live
-in `Sussudio/Services/Flashback/FlashbackExporter.Execution.cs`.
+Flashback exporter behavior now lives in
+`Sussudio/Services/Flashback/FlashbackExporter.cs`. Keep shared native export
+state, constants, public `Dispose`, active export cancellation, linked export
+cancellation-source helpers, export-lock wait/release/disposal, FFmpeg
+input/output cleanup and context setup, stream-template copying,
+stream-layout compatibility checks, public `ExportAsync` request routing,
+single-versus-segment export selection, task wrappers, segment snapshots,
+single-file export validation/seek/setup/packet pump, multi-segment template
+selection/preflight/packet remuxing, packet timestamp normalization, saturated
+time/byte arithmetic, buffered packet clone/free/flush helpers, progress
+normalization/heartbeat, export writer pacing, temp-output cleanup, orphan
+`.mp4.tmp` cleanup, active output finalization, atomic destination replacement,
+output/path/range validation, final result shaping, and FFmpeg error formatting
+together while those helpers share the same active native contexts, temp path,
+export lock, cancellation source, and packet lifetime state. Split again only
+if a named exporter collaborator with its own lifetime boundary and fixture
+replaces the private helper regions.
 
 D3D preview renderer metrics now live in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
