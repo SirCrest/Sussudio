@@ -1092,7 +1092,9 @@ path normalization, and segment PTS timestamp repair also live there because
 they are part of `FlashbackExportRequest` assembly. Flashback export
 force-rotate preparation also lives there; keep failure/committed-pending
 outcomes, timeout fallback segment discovery, and related diagnostics/logging
-with the request assembly path.
+with the request assembly path. Keep this owner as one in-file `CaptureService`
+body so range entry points and shared export-core helpers stay together without
+fake partial shells.
 
 Flashback export diagnostics now lives in
 `Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
@@ -1238,6 +1240,8 @@ and emergency `StopAsync` routing, `_started` clearing, encode-drain deadline
 selection, emergency cancellation/flush fallback, encoding-failure
 classification, HDR script validation through the bounded process supervisor,
 stopped-output validation handoff, stop logging, and `FinalizeResult` shaping.
+Keep `LibAvRecordingSink.cs` as one in-file sink body for root lifecycle and
+packet drains; queue admission remains in `LibAvRecordingSink.Queueing.cs`.
 
 LibAv recording sink encode-loop and packet-drain ownership now lives in
 `Sussudio/Services/Recording/LibAvRecordingSink.cs`. Keep the
@@ -1494,7 +1498,9 @@ discovery, buffered packet transition, rebased packet writes, writer throttling,
 and EOF partial-base rescue/freeing there, along with the per-segment packet
 write state, buffered-packet rescue/flush, and native packet write outcome
 state. Segment timestamp rebasing, segment-boundary repair,
-DTS monotonicity, and native packet writes live there too.
+DTS monotonicity, and native packet writes live there too. Keep this owner as
+one in-file `FlashbackExporter` body so packet read-loop and orchestration
+sections do not reintroduce fake partial shells.
 `FlashbackExporter.Lifecycle.cs` keeps shared native state, constants, and
 fields.
 

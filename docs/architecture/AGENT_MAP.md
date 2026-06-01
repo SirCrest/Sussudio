@@ -493,7 +493,9 @@ Important entry points:
   normalization, segment PTS timestamp repair, partial-fallback result marking,
   cleanup, and live-edge force-rotate export preparation including
   failure/committed-pending outcomes, timeout fallback segment discovery, and
-  related diagnostics/logging. It also owns export result/rejection diagnostic
+  related diagnostics/logging. Keep this as one in-file `CaptureService` body
+  so entry points and shared export-core helpers do not reintroduce artificial
+  partial shells. It also owns export result/rejection diagnostic
   state, progress forwarding/normalization, force-rotate fallback counters,
   locked diagnostic field copy, elapsed/progress-age/file-length helpers,
   derived progress/throughput projection used by health snapshots, and the
@@ -851,7 +853,8 @@ Entry points:
   stream filtering, timestamp-base discovery, buffered packet
   transition/rescue/flush, rebased packet writes, writer throttling, EOF
   partial-base rescue/freeing, segment timestamp rebasing, segment-boundary
-  repair, DTS monotonicity, and native packet writes.
+  repair, DTS monotonicity, and native packet writes. Keep this as one in-file
+  `FlashbackExporter` body for the segment packet-writing owner.
 - `FlashbackExporter.Lifecycle.cs` owns exporter disposal, active-export
   cancellation during disposal, linked cancellation-source helpers, export-lock
   wait/release/disposal policy, native input/output close, and native FFmpeg
@@ -1384,8 +1387,8 @@ Primary current owners:
   microphone restart, post-finalize telemetry, health/automation telemetry,
   LibAv recording sink try-enqueue, video-queue submission, audio queue,
   queue-cleanup, output validation, video-session setup, drain-loop,
-  encoding-loop, startup sequencing, stop-lifecycle, and lifetime-helper
-  ownership assertions.
+  encoding-loop, startup sequencing, stop-lifecycle, lifetime-helper, and
+  single in-file `LibAvRecordingSink` body ownership assertions.
   It also owns CaptureService recording lifecycle, recording-stop finalization
   failure propagation, active recording backend resource aggregate, recording
   start rollback, and recording outcome-state file-ownership assertions.

@@ -477,12 +477,9 @@ internal sealed unsafe partial class FlashbackExporter
     }
 
     private readonly record struct SegmentPacketWriteResult(FinalizeResult? Failure, long TotalPackets);
-}
 
-// Per-segment packet read loop: read frames from the active input, discover
-// timestamp bases, buffer early packets, and write rebased packets.
-internal sealed unsafe partial class FlashbackExporter
-{
+    // Per-segment packet read loop: read frames from the active input, discover
+    // timestamp bases, buffer early packets, and write rebased packets.
     private static readonly AVRational SegmentPacketUsTimeBase = new() { num = 1, den = 1_000_000 };
 
     private static SegmentPacketWriteState CreateSegmentPacketWriteState(

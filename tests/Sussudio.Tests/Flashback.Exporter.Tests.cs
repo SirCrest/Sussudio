@@ -39,6 +39,10 @@ static partial class Program
         AssertContains(exportPlanningText, "private static int ResolveFlashbackExportThrottleDelayMs(");
         AssertContains(exportPlanningText, "private static IReadOnlyList<FlashbackExportSegment>? BuildFlashbackExportSegments(");
         AssertEqual(
+            1,
+            exportCoreText.Split("public partial class CaptureService", StringSplitOptions.None).Length - 1,
+            "CaptureService.FlashbackExportCore.cs stays one in-file CaptureService body");
+        AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportPlanning.cs")),
             "CaptureService.FlashbackExportPlanning.cs folded into CaptureService.FlashbackExportCore.cs");
@@ -832,6 +836,10 @@ static partial class Program
         var timeMathText = packetTimingText;
         var packetBuffersText = packetTimingText;
 
+        AssertEqual(
+            1,
+            segmentPacketWritingText.Split("internal sealed unsafe partial class FlashbackExporter", StringSplitOptions.None).Length - 1,
+            "FlashbackExporter.SegmentPacketWriting.cs stays one in-file FlashbackExporter body");
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
         AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
         AssertContains(lifecycleText, "internal sealed unsafe partial class FlashbackExporter : IDisposable");

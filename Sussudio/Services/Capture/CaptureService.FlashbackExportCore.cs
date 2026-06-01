@@ -1090,12 +1090,9 @@ public partial class CaptureService
         long LastProgressAgeMs,
         long OutputBytes,
         double ThroughputBytesPerSec);
-}
 
-// Flashback export entry points: range export, last-N-seconds export, and
-// operation-specific range resolution before the shared core pipeline runs.
-public partial class CaptureService
-{
+    // Flashback export entry points: range export, last-N-seconds export, and
+    // operation-specific range resolution before the shared core pipeline runs.
     internal async Task<FinalizeResult> ExportFlashbackRangeAsync(
         TimeSpan? inPoint, TimeSpan? outPoint, string outputPath,
         IProgress<ExportProgress>? progress,

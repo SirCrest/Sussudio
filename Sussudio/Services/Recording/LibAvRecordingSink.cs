@@ -782,10 +782,7 @@ public sealed partial class LibAvRecordingSink : IRecordingSink, IRawVideoFrameE
             Logger.Log($"LIBAV_SINK_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
-}
 
-public sealed partial class LibAvRecordingSink
-{
     private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)
     {
         var drainedAny = false;

@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: In-file partial shell cleanup for Flashback export and LibAv recording
+Problem: `CaptureService.FlashbackExportCore.cs`, `FlashbackExporter.SegmentPacketWriting.cs`, and `LibAvRecordingSink.cs` each contained two declarations for the same partial type inside one physical file. These were leftover navigation shells after earlier sidecar folds: behavior already lived in the same file, but the fake class boundaries kept partial sprawl visible and made source-shape evidence less precise.
+Files consolidated: none
+Files added: none
+Net production .cs delta: 0; net test .cs delta: 0
+Partial clusters reduced: in-file partial declarations reduced by 3 total: `CaptureService.FlashbackExportCore.cs` 2 -> 1 `CaptureService` declaration, `FlashbackExporter.SegmentPacketWriting.cs` 2 -> 1 `FlashbackExporter` declaration, and `LibAvRecordingSink.cs` 2 -> 1 `LibAvRecordingSink` declaration. Partial-cluster file counts are unchanged, but cluster line totals dropped: `CaptureService` 9,889 -> 9,886, `FlashbackExporter` 3,000 -> 2,997, `LibAvRecordingSink` 1,889 -> 1,886. Core app `.cs` count unchanged at 118; core app nonblank LoC 89,574 -> 89,565. `Sussudio.Tests` `.cs` count unchanged at 38; test nonblank LoC 56,040 -> 56,052.
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackExporter|FullyQualifiedName~LibAvRecording|FullyQualifiedName~CaptureService_FlashbackExport"` passed (38 passed); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no live app automation session was run; full solution build rebuilds app, automation contracts, ssctl, AutomationClient, MCP server, NativeXuAudioProbe, and console harnesses. Public automation command names, command IDs, wire payloads, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, and hot paths are unchanged.
+Behavior preserved: methods, nested helper records/structs, packet-drain loops, Flashback export range/entry-point flow, segment packet read/write state, and LibAv stop/drain lifecycle are unchanged; only same-file class close/reopen shells were removed. Source-shape tests now assert each touched file keeps a single in-file body for its owner.
+Notes for future agents: keep these files as single in-file owner bodies while they remain cohesive sections. Extract a named collaborator only for a real behavior seam; do not reintroduce same-file partial declarations for navigation. Current counts: core app 118 `.cs` files / 89,565 nonblank LoC; `Sussudio.Tests` 38 `.cs` files / 56,052 nonblank LoC.
+
+Date: 2026-06-01
 Area: Automation dispatcher in-file partial cleanup
 Problem: `AutomationCommandDispatcher.cs` still contained three `partial` declarations inside one physical file after earlier sidecar consolidation. That kept artificial class-body boundaries around command routing/helpers and left the dispatcher in the generated partial-cluster evidence even though there was no generated, platform, or collaborator boundary.
 Files consolidated: none

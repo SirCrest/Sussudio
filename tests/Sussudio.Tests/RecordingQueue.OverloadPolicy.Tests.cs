@@ -207,6 +207,10 @@ static partial class Program
         AssertContains(rootText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
         AssertContains(rootText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
         AssertEqual(
+            1,
+            rootText.Split("public sealed partial class LibAvRecordingSink", StringSplitOptions.None).Length - 1,
+            "LibAvRecordingSink.cs stays one in-file sink body");
+        AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.EncodingLoop.cs")),
             "LibAvRecordingSink encoding loop stays folded into the sink root");
