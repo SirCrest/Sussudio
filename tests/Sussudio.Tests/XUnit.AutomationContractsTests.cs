@@ -523,8 +523,8 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsSnapshotEvaluationProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task AutomationDiagnosticsAudioProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsAudioProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsSnapshotAudioProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
     public Task AutomationDiagnosticsCaptureCommandProjectionLivesInFocusedPartial()
@@ -535,16 +535,16 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsUserSettingsProjection_LivesWithSnapshotProjection();
 
     [Fact]
-    public Task AutomationDiagnosticsCaptureFormatProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsCaptureFormatProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsCaptureFormatProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsCaptureFormatProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsCaptureTransportProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsCaptureTransportProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsCaptureTransportProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsCaptureTransportProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsHdrPipelineProjectionLivesWithCaptureFormatProjection()
-        => global::Program.AutomationDiagnosticsHdrPipelineProjection_LivesWithCaptureFormatProjection();
+    public Task AutomationDiagnosticsHdrPipelineProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsHdrPipelineProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
     public Task AutomationDiagnosticsCaptureCadenceProjectionLivesInFocusedPartial()
@@ -555,8 +555,8 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsVisualCadenceProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task AutomationDiagnosticsMjpegProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsMjpegProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsMjpegProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsMjpegProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
     public Task AutomationDiagnosticsSourceSignalProjectionLivesInFocusedPartial()
@@ -567,16 +567,16 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsSourceTelemetryProjection_LivesInFocusedPartial();
 
     [Fact]
-    public Task AutomationDiagnosticsRecordingPipelineProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsRecordingPipelineProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsRecordingPipelineProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsRecordingPipelineProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsRecordingBackendProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsRecordingBackendProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsRecordingBackendProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsRecordingBackendProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsRecordingOutputProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsRecordingOutputProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsRecordingOutputProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsRecordingOutputProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
     public Task AutomationDiagnosticsProcessResourceProjectionLivesInFocusedPartial()
@@ -587,24 +587,24 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsAvSyncProjection_LivesWithProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsPreviewRuntimeProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsPreviewRuntimeProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsPreviewRuntimeProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsPreviewRuntimeProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsPreviewD3DProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsPreviewD3DProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsPreviewD3DProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsPreviewD3DProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsFlashbackExportProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsFlashbackExportProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsFlashbackExportProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsFlashbackExportProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsFlashbackRecordingProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsFlashbackRecordingProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsFlashbackRecordingProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsFlashbackRecordingProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
-    public Task AutomationDiagnosticsFlashbackPlaybackProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsFlashbackPlaybackProjection_LivesInFocusedPartial();
+    public Task AutomationDiagnosticsFlashbackPlaybackProjectionLivesWithSnapshotProjectionRoot()
+        => global::Program.AutomationDiagnosticsFlashbackPlaybackProjection_LivesWithSnapshotProjectionRoot();
 }
 
 public sealed class AutomationCaptureFlashbackRoutingContractsTests
@@ -3429,7 +3429,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadAutomationSnapshotFlatteningFamilyText()
-            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
                 .Replace("\r\n", "\n");
         AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = flashbackRecordingFlattening.Backend.ExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = backend.ExportVerificationFormat,");
@@ -6940,12 +6940,12 @@ static partial class Program
     }
 
 
-    internal static Task AutomationDiagnosticsSnapshotAudioProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsSnapshotAudioProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
+        var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var captureIngestProjectionText = audioProjectionText;
         var wasapiAudioProjectionText = audioProjectionText;
@@ -7024,7 +7024,7 @@ static partial class Program
         AssertContains(wasapiAudioProjectionText, "BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,");
         if (System.IO.File.Exists(obsoleteAudioProjectionPath))
         {
-            throw new System.InvalidOperationException("Audio projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.Media.cs.");
+            throw new System.InvalidOperationException("Audio projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
         }
 
         return Task.CompletedTask;
@@ -7118,12 +7118,12 @@ static partial class Program
     }
 
 
-    internal static Task AutomationDiagnosticsCaptureFormatProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsCaptureFormatProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureFormatProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
+        var captureFormatProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
@@ -7199,12 +7199,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsCaptureTransportProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsCaptureTransportProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureTransportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
+        var captureTransportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
@@ -7231,12 +7231,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsHdrPipelineProjection_LivesWithCaptureFormatProjection()
+    internal static Task AutomationDiagnosticsHdrPipelineProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
+        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
@@ -7454,12 +7454,12 @@ static partial class Program
     }
 
 
-    internal static Task AutomationDiagnosticsMjpegProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsMjpegProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs")
+        var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var mjpegPreviewJitterProjectionText = mjpegProjectionText;
 
@@ -7573,12 +7573,12 @@ static partial class Program
     }
 
 
-    internal static Task AutomationDiagnosticsRecordingPipelineProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsRecordingPipelineProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
+        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var obsoleteRecordingProjectionPath = System.IO.Path.Combine(
             GetRepoRoot(),
@@ -7643,18 +7643,18 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "public RecordingPipelineHardwareQueuesProjection HardwareQueues { get; init; }");
         if (System.IO.File.Exists(obsoleteRecordingProjectionPath))
         {
-            throw new System.InvalidOperationException("Recording projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.Media.cs.");
+            throw new System.InvalidOperationException("Recording projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
         }
 
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsRecordingBackendProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsRecordingBackendProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
+        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
@@ -7682,12 +7682,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsRecordingOutputProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsRecordingOutputProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs")
+        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var obsoleteRecordingOutputPath = System.IO.Path.Combine(
             GetRepoRoot(),
@@ -7720,19 +7720,19 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "LastVerification = recordingOutput.LastVerification");
         if (System.IO.File.Exists(obsoleteRecordingOutputPath))
         {
-            throw new System.InvalidOperationException("Recording output projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.Media.cs.");
+            throw new System.InvalidOperationException("Recording output projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
         }
 
         return Task.CompletedTask;
     }
 
 
-    internal static Task AutomationDiagnosticsPreviewRuntimeProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsPreviewRuntimeProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var previewRuntimeProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs")
+        var previewRuntimeProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
@@ -7826,12 +7826,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsPreviewD3DProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsPreviewD3DProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var previewD3DProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs")
+        var previewD3DProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var previewD3DFrameFlowProjectionText = previewD3DProjectionText;
         var previewD3DCpuTimingProjectionText = previewD3DProjectionText;
@@ -7943,12 +7943,12 @@ static partial class Program
     }
 
 
-    internal static Task AutomationDiagnosticsFlashbackExportProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsFlashbackExportProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
+        var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
@@ -7992,12 +7992,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsFlashbackRecordingProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsFlashbackRecordingProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
+        var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var flashbackRecordingQueuesProjectionText = flashbackRecordingProjectionText;
 
@@ -8115,12 +8115,12 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationDiagnosticsFlashbackPlaybackProjection_LivesInFocusedPartial()
+    internal static Task AutomationDiagnosticsFlashbackPlaybackProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
         var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs")
+        var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
@@ -9129,6 +9129,20 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")),
             "final automation snapshot DTO initialization folded into AutomationDiagnosticsHub.SnapshotProjection.cs");
+        foreach (var deletedProjectionShard in new[]
+                 {
+                     "AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs",
+                     "AutomationDiagnosticsHub.SnapshotProjection.Media.cs",
+                     "AutomationDiagnosticsHub.SnapshotProjection.Preview.cs",
+                     "AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs",
+                 })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", deletedProjectionShard)),
+                deletedProjectionShard + " folded into AutomationDiagnosticsHub.SnapshotProjection.cs");
+        }
+
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
         AssertContains(diagnostics.SnapshotProjectionText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
@@ -9288,30 +9302,30 @@ static partial class Program
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             VerificationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
-            HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
+            HdrText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionFlatteningText = ReadAutomationSnapshotFlatteningFamilyText(),
-            SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
-            SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
-            SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
-            SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
+            SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionCaptureFormatText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionCaptureCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionVisualCadenceText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
-            SnapshotProjectionMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs"),
-            SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
-            SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
-            SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
-            SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs"),
-            SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Preview.cs"),
-            SnapshotProjectionPreviewD3DFrameFlowText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Preview.cs"),
-            SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Preview.cs"),
-            SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Preview.cs"),
+            SnapshotProjectionMjpegText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionMjpegPreviewJitterText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionFlashbackExportText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionFlashbackPlaybackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionFlashbackRecordingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionFlashbackRecordingQueuesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionPreviewD3DText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionPreviewD3DFrameFlowText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionPreviewD3DCpuTimingText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionPreviewRuntimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionProcessResourcesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
-            SnapshotProjectionRecordingPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
+            SnapshotProjectionRecordingIntegrityText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
+            SnapshotProjectionRecordingPipelineText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionSourceSignalText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionSourceTelemetryText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionUserSettingsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),

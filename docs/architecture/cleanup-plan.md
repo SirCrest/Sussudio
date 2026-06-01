@@ -83,7 +83,10 @@ The final `AutomationSnapshot` DTO initializer also lives in
 composition that feeds it. This final initializer is intentionally a single
 `init`-property map: do not split it by adding mutable setters or shallow
 fragment records unless a deliberate snapshot construction pattern is
-introduced first. `AutomationDiagnosticsHub.Snapshots.cs` owns
+introduced first. The former capture-format, media, preview, and Flashback
+projection shards also live in this parent while they remain private projection
+records over the same snapshot composition and flattening path.
+`AutomationDiagnosticsHub.Snapshots.cs` owns
 stateful snapshot bookkeeping for audio mute suspicion and recording file growth
 tracking. `AutomationDiagnosticsHub.cs` owns performance-timeline ring
 reads, append mechanics, final `AutomationSnapshot` to
@@ -102,7 +105,7 @@ score, diagnostic lane, preview pacing classifier, performance threshold
 projection, selected device/capture/recording settings, preview volume/stats
 visibility projection, AV-sync projection, capture command projection, and final
 status/evaluation/settings/AV-sync/capture-command flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Media.cs` owns audio/ingest
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns audio/ingest
 projection routing, view-model audio peak/clipping and detected audio-signal
 projection inputs, capture-ingest and WASAPI projection groups, capture
 audio/video reader, source-reader and ingest counters, WASAPI capture/playback
@@ -148,7 +151,7 @@ latency, last-command, last-error projection inputs, selected device/capture/
 recording settings, preview volume, and stats visibility consumed by the
 automation snapshot DTO, plus final capture-command and settings projection-to-
 `AutomationSnapshot` field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns
 capture-format projection routing and groups requested, HDR-request, actual,
 negotiated, reader-observation, and encoder format modules consumed by the
 automation snapshot DTO, plus HDR activation/auto-downgrade projection, actual
@@ -171,7 +174,7 @@ cadence, visual cadence, and center-crop visual cadence projection inputs
 consumed by the automation snapshot DTO, plus final source capture cadence,
 visual cadence, and center-crop visual cadence projection-to-`AutomationSnapshot`
 field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs` owns active
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns active
 Flashback export progress, failure, force-rotate fallback, last-result
 projection, recording failure, cleanup, force-rotate, temp-drive/startup-cache,
 active output/runtime, backend settings drift, export-verification, codec
@@ -183,7 +186,7 @@ It also owns Flashback playback state/frame summary, audio-master delay/fallback
 projection, playback event/cadence/PTS-cadence/A/V drift projection,
 seek-cap/decode timing projection, playback command queue projection, and final
 flattened playback fields consumed by the automation snapshot DTO.
-`AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` owns preview runtime
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns preview runtime
 projection routing, preview frame counters, estimated pipeline latency, preview
 surface visibility, renderer attachment, GPU playback state/position, preview
 HDR/tone-map/color metadata, display-cadence/startup/readiness and renderer mode
@@ -197,7 +200,7 @@ projection-to-`AutomationSnapshot` flattening.
 and thread-pool projection consumed by the automation snapshot DTO, plus final
 process resource projection-to-`AutomationSnapshot` field flattening alongside
 the core snapshot status/evaluation projections.
-`AutomationDiagnosticsHub.SnapshotProjection.Media.cs` owns recording-
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns recording-
 integrity projection routing, status/reason, video-frame counters, queue/
 backpressure, audio integrity, A/V sync projection inputs, recording-pipeline
 projection routing, encoder queue age/count/failure health, conversion/ffmpeg/
@@ -214,7 +217,7 @@ source projection flattening orchestration, source dimensions, frame-rate, HDR,
 video/audio format, firmware, input, USB, HDCP, raw timing field flattening, and
 final source telemetry availability, confidence, detail, age, backend,
 suppression, circuit-state, summary, and target-summary field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns HDR truth
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns HDR truth
 classification from capture runtime, UI state, and recording verification plus
 HDR availability/request state, runtime/readiness fallback, HDR warmup/
 downgrade, pipeline parity, telemetry-alignment, and HDR truth verdict
@@ -246,7 +249,7 @@ scheduler/renderer/present/display/visual-cadence lane formatting, Flashback
 recording/export/playback lane formatting, lane DTOs used by diagnostic
 verdicts, shared renderer-drop threshold constants, shared alert-detail
 formatting, and health classifiers used by alerts and diagnostic evaluation.
-`AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs` owns HDR truth
+`AutomationDiagnosticsHub.SnapshotProjection.cs` owns HDR truth
 classification from capture pipeline, source-HDR, and verification metadata
 evidence, plus preview HDR input detection, HDR pixel-format helpers used by
 preview state, and tone-map state projection.

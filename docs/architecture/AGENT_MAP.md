@@ -38,7 +38,7 @@ mentions the moved files.
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | construction, suppression/reprime and disposal lifecycle, paced emit loop control flow, display-clock alignment, renderer submission, tick waits, deadline drops, adaptive target-depth policy, jitter-buffer metric records, timing sample projection, decoded preview-frame ingress, pooled payload ownership, queue ordering/dequeue selection, and reprime recovery |
 | MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `NvdecMjpegDecoder.cs`, `CudaD3D11InteropBridge.cs` | pipeline construction/startup sequencing, bounded work-channel construction, compressed input admission/byte budget/depth accounting, CPU MJPEG worker decode-loop execution and decoder ownership, pipeline timing and packet-hash metrics, stop/dispose/shutdown joins/fatal callback signaling, decoder/work-item/reorder-frame resource cleanup, decoded-frame ordering, missing-sequence state, decoded-frame emission and preview notification, software MJPEG decoder initialization/lifetime, decode/copy hot path, NVDEC decoder state, standalone CUDA device/frame-pool initialization, shared CUDA device/frame-pool adoption, decode/context access, CPU download/copy helpers, disposal, and error text, CUDA-to-D3D11 bridge state, public texture handles, bridge setup/zero-copy registration, bridge disposal/resource unregister, CUDA native constants/P/Invoke declarations, and zero-copy/staging copy behavior |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | optional NVML telemetry snapshot/polling lifecycle, graceful unavailable behavior, raw NVML constants, structs, library loading, device-name helper, and P/Invoke declarations |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Media.cs`, `AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`, `AutomationDiagnosticsHub.SnapshotProjection.Preview.cs` | additional collectors/controllers when hub orchestration grows |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs` | additional collectors/controllers when hub orchestration grows |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | consolidated automation evidence DTO for app/capture/audio/preview/recording/Flashback diagnostics; `AutomationSnapshot.cs` owns the broad flattened snapshot evidence DTO, while `AutomationModels.cs` owns command protocol DTOs/converters, automation options/support DTOs, capture runtime, preview runtime, performance timeline, screenshot/window capture, recording verification, video source/color probe, and view-model runtime snapshot DTO surfaces |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | device/options/settings/session-state leaf types, audio endpoint/event/path/trace DTOs, explicit transition legality policy, mutable capture session state machine, frame-ledger event DTOs, diagnostics core/format/HDR/source-telemetry/cadence/queue/Flashback/MJPEG fields, and inherited health source/queue/AV-sync/playback/export fields kept together as the capture model surface |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | consolidated recording and Flashback model surface for media format display/equality/HDR helper policy, encoder support, integrity summary, pipeline queue options, recording byte stats, Flashback buffer/session/playback/export DTOs, and Flashback force-rotate result status |
@@ -250,7 +250,7 @@ Automation diagnostics ownership:
   Flashback recording/export/playback lane formatting, lane DTOs used by
   diagnostic verdicts, shared alert-detail formatting, and health classifiers
   used by alerts and diagnostic evaluation.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns HDR truth classification from capture pipeline, source-HDR, and
   verification metadata evidence, plus preview HDR input detection, HDR
   pixel-format helpers used by preview state, and tone-map state projection.
@@ -276,7 +276,10 @@ Automation diagnostics ownership:
   the private flattened projection-set handoff, the final `AutomationSnapshot`
   DTO initializer that flattens named projection records into the automation
   wire snapshot, plus live A/V sync drift and encoder correction projection and
-  final A/V sync projection-to-`AutomationSnapshot` field flattening. Keep this
+  final A/V sync projection-to-`AutomationSnapshot` field flattening. It also
+  owns the former capture-format, media, preview, and Flashback projection
+  shards while they remain private projection records over the same snapshot
+  composition and flattening path. Keep this
   final `init`-property wire-contract adapter intact unless a deliberate
   snapshot construction pattern exists; do not add mutable setters or shallow
   fragment records just to reduce line count.
@@ -288,7 +291,7 @@ Automation diagnostics ownership:
   preview volume/stats visibility projection, AV-sync projection, capture
   command projection, and final status/evaluation/settings/AV-sync/capture-
   command flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns audio/ingest projection routing, view-model audio peak/clipping and
   detected audio-signal projection inputs, capture-ingest and WASAPI projection
   groups, capture audio/video reader, source-reader and ingest counters, WASAPI
@@ -305,7 +308,7 @@ Automation diagnostics ownership:
   preview visual cadence, center-crop visual cadence, source signal metadata,
   source telemetry fallback/age policy, source-target summary inputs, and final
   source/cadence projection flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns capture-format projection routing and groups requested, HDR-request,
   actual, negotiated, reader-observation, and encoder format modules consumed
   by `AutomationSnapshot`, plus HDR activation/auto-downgrade projection,
@@ -326,7 +329,7 @@ Automation diagnostics ownership:
   jitter projection routing, queue counters, timing samples, adaptive drop/depth
   counters, last scheduler event projection, and final preview-jitter
   projection-to-`AutomationSnapshot` flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns active Flashback export progress, failure, force-rotate fallback, final
   Flashback export last-result projection, recording failure, cleanup,
   force-rotate, temp-drive/startup-cache, active output/runtime, backend
@@ -339,7 +342,7 @@ Automation diagnostics ownership:
   projection, playback event/cadence/PTS-cadence/A/V drift projection,
   seek-cap/decode timing projection, playback command queue projection, and
   final flattened playback fields consumed by `AutomationSnapshot`.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Preview.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns preview runtime projection routing, preview frame counters, estimated
   pipeline latency, preview surface visibility, renderer attachment, GPU
   playback state/position, preview HDR/tone-map/color metadata, the frame,
@@ -354,7 +357,7 @@ Automation diagnostics ownership:
   It also owns process memory, CPU, GC, and thread-pool projection consumed by
   `AutomationSnapshot`, plus final process resource
   projection-to-`AutomationSnapshot` field flattening.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Media.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns recording-integrity projection routing, status/reason, video-frame
   counters, queue/backpressure, audio integrity, A/V sync projection inputs,
   recording-pipeline projection routing, encoder queue age/count/failure health,

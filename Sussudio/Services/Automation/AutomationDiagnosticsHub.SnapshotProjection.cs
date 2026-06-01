@@ -1998,4 +1998,4049 @@ public sealed partial class AutomationDiagnosticsHub
             LastExportMessage = flashbackExportFlattening.LastExportMessage
         };
     }
+
+    private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Requested = BuildCaptureFormatRequestedProjection(captureRuntime),
+            HdrRequest = BuildCaptureFormatHdrRequestProjection(captureRuntime),
+            Actual = BuildCaptureFormatActualProjection(captureRuntime),
+            Negotiated = BuildCaptureFormatNegotiatedProjection(captureRuntime),
+            ReaderObservation = BuildCaptureFormatReaderObservationProjection(captureRuntime),
+            Encoder = BuildCaptureFormatEncoderProjection(captureRuntime)
+        };
+
+    private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            Requested = BuildCaptureFormatRequestedFlattenedProjection(captureFormat),
+            HdrRequest = BuildCaptureFormatHdrRequestFlattenedProjection(captureFormat),
+            Actual = BuildCaptureFormatActualFlattenedProjection(captureFormat),
+            Negotiated = BuildCaptureFormatNegotiatedFlattenedProjection(captureFormat),
+            ReaderObservation = BuildCaptureFormatReaderObservationFlattenedProjection(captureFormat),
+            Encoder = BuildCaptureFormatEncoderFlattenedProjection(captureFormat)
+        };
+
+    private readonly record struct CaptureFormatProjection
+    {
+        public CaptureFormatRequestedProjection Requested { get; init; }
+        public CaptureFormatHdrRequestProjection HdrRequest { get; init; }
+        public CaptureFormatActualProjection Actual { get; init; }
+        public CaptureFormatNegotiatedProjection Negotiated { get; init; }
+        public CaptureFormatReaderObservationProjection ReaderObservation { get; init; }
+        public CaptureFormatEncoderProjection Encoder { get; init; }
+    }
+
+    private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Width = captureRuntime.RequestedWidth,
+            Height = captureRuntime.RequestedHeight,
+            FrameRate = captureRuntime.RequestedFrameRate,
+            FrameRateArg = captureRuntime.RequestedFrameRateArg,
+            FrameRateNumerator = captureRuntime.RequestedFrameRateNumerator,
+            FrameRateDenominator = captureRuntime.RequestedFrameRateDenominator,
+            PixelFormat = captureRuntime.RequestedPixelFormat,
+            Format = captureRuntime.RequestedFormat,
+            Quality = captureRuntime.RequestedQuality,
+            HdrEnabled = captureRuntime.RequestedHdrEnabled,
+            HdrMasteringMetadata = captureRuntime.RequestedHdrMasteringMetadata,
+            AudioEnabled = captureRuntime.RequestedAudioEnabled
+        };
+
+    private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            Width = captureFormat.Requested.Width,
+            Height = captureFormat.Requested.Height,
+            FrameRate = captureFormat.Requested.FrameRate,
+            FrameRateArg = captureFormat.Requested.FrameRateArg,
+            FrameRateNumerator = captureFormat.Requested.FrameRateNumerator,
+            FrameRateDenominator = captureFormat.Requested.FrameRateDenominator,
+            PixelFormat = captureFormat.Requested.PixelFormat,
+            Format = captureFormat.Requested.Format,
+            Quality = captureFormat.Requested.Quality,
+            HdrEnabled = captureFormat.Requested.HdrEnabled,
+            HdrMasteringMetadata = captureFormat.Requested.HdrMasteringMetadata,
+            AudioEnabled = captureFormat.Requested.AudioEnabled
+        };
+
+    private readonly record struct CaptureFormatRequestedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+        public uint? FrameRateNumerator { get; init; }
+        public uint? FrameRateDenominator { get; init; }
+        public string? PixelFormat { get; init; }
+        public string? Format { get; init; }
+        public string? Quality { get; init; }
+        public bool? HdrEnabled { get; init; }
+        public bool? HdrMasteringMetadata { get; init; }
+        public bool? AudioEnabled { get; init; }
+    }
+
+    private readonly record struct CaptureFormatRequestedFlattenedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+        public uint? FrameRateNumerator { get; init; }
+        public uint? FrameRateDenominator { get; init; }
+        public string? PixelFormat { get; init; }
+        public string? Format { get; init; }
+        public string? Quality { get; init; }
+        public bool? HdrEnabled { get; init; }
+        public bool? HdrMasteringMetadata { get; init; }
+        public bool? AudioEnabled { get; init; }
+    }
+
+    private static CaptureFormatHdrRequestProjection BuildCaptureFormatHdrRequestProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            ActivationReason = captureRuntime.HdrActivationReason,
+            AutoDowngraded = captureRuntime.HdrAutoDowngraded,
+            AutoDowngradeReason = captureRuntime.HdrAutoDowngradeReason,
+            RequestedButSourceNot10Bit = captureRuntime.HdrRequestedButSourceNot10Bit
+        };
+
+    private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            ActivationReason = captureFormat.HdrRequest.ActivationReason,
+            AutoDowngraded = captureFormat.HdrRequest.AutoDowngraded,
+            AutoDowngradeReason = captureFormat.HdrRequest.AutoDowngradeReason,
+            RequestedButSourceNot10Bit = captureFormat.HdrRequest.RequestedButSourceNot10Bit
+        };
+
+    private readonly record struct CaptureFormatHdrRequestProjection
+    {
+        public string ActivationReason { get; init; }
+        public bool AutoDowngraded { get; init; }
+        public string AutoDowngradeReason { get; init; }
+        public bool RequestedButSourceNot10Bit { get; init; }
+    }
+
+    private readonly record struct CaptureFormatHdrRequestFlattenedProjection
+    {
+        public string ActivationReason { get; init; }
+        public bool AutoDowngraded { get; init; }
+        public string AutoDowngradeReason { get; init; }
+        public bool RequestedButSourceNot10Bit { get; init; }
+    }
+
+    private static CaptureFormatActualProjection BuildCaptureFormatActualProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Width = captureRuntime.ActualWidth,
+            Height = captureRuntime.ActualHeight,
+            FrameRate = captureRuntime.ActualFrameRate,
+            FrameRateArg = captureRuntime.ActualFrameRateArg
+        };
+
+    private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            Width = captureFormat.Actual.Width,
+            Height = captureFormat.Actual.Height,
+            FrameRate = captureFormat.Actual.FrameRate,
+            FrameRateArg = captureFormat.Actual.FrameRateArg
+        };
+
+    private readonly record struct CaptureFormatActualProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+    }
+
+    private readonly record struct CaptureFormatActualFlattenedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+    }
+
+    private static CaptureFormatNegotiatedProjection BuildCaptureFormatNegotiatedProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Width = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,
+            Height = captureRuntime.NegotiatedHeight ?? captureRuntime.ActualHeight,
+            FrameRate = captureRuntime.NegotiatedFrameRate ?? captureRuntime.ActualFrameRate,
+            FrameRateArg = captureRuntime.NegotiatedFrameRateArg ?? captureRuntime.ActualFrameRateArg,
+            FrameRateNumerator = captureRuntime.NegotiatedFrameRateNumerator,
+            FrameRateDenominator = captureRuntime.NegotiatedFrameRateDenominator,
+            PixelFormat = captureRuntime.NegotiatedPixelFormat,
+            MediaSubtypeToken = captureRuntime.NegotiatedMediaSubtypeToken
+        };
+
+    private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            Width = captureFormat.Negotiated.Width,
+            Height = captureFormat.Negotiated.Height,
+            FrameRate = captureFormat.Negotiated.FrameRate,
+            FrameRateArg = captureFormat.Negotiated.FrameRateArg,
+            FrameRateNumerator = captureFormat.Negotiated.FrameRateNumerator,
+            FrameRateDenominator = captureFormat.Negotiated.FrameRateDenominator,
+            PixelFormat = captureFormat.Negotiated.PixelFormat,
+            MediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken
+        };
+
+    private readonly record struct CaptureFormatNegotiatedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+        public uint? FrameRateNumerator { get; init; }
+        public uint? FrameRateDenominator { get; init; }
+        public string? PixelFormat { get; init; }
+        public string? MediaSubtypeToken { get; init; }
+    }
+
+    private readonly record struct CaptureFormatNegotiatedFlattenedProjection
+    {
+        public uint? Width { get; init; }
+        public uint? Height { get; init; }
+        public double? FrameRate { get; init; }
+        public string? FrameRateArg { get; init; }
+        public uint? FrameRateNumerator { get; init; }
+        public uint? FrameRateDenominator { get; init; }
+        public string? PixelFormat { get; init; }
+        public string? MediaSubtypeToken { get; init; }
+    }
+
+    private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            RequestedReaderSubtype = captureRuntime.RequestedReaderSubtype,
+            ReaderSourceStreamType = captureRuntime.ReaderSourceStreamType,
+            ReaderSourceSubtype = captureRuntime.ReaderSourceSubtype,
+            FirstObservedFramePixelFormat = captureRuntime.FirstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,
+            LatestObservedSurfaceFormat = captureRuntime.LatestObservedSurfaceFormat,
+            ObservedP010FrameCount = captureRuntime.ObservedP010FrameCount,
+            ObservedNv12FrameCount = captureRuntime.ObservedNv12FrameCount,
+            ObservedOtherFrameCount = captureRuntime.ObservedOtherFrameCount,
+            ObservedP010BitDepthSampleCount = captureRuntime.ObservedP010BitDepthSampleCount,
+            ObservedP010Low2BitNonZeroPercent = captureRuntime.ObservedP010Low2BitNonZeroPercent,
+            ObservedP010Likely8BitUpscaled = captureRuntime.ObservedP010Likely8BitUpscaled,
+            MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters
+        };
+
+    private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            RequestedReaderSubtype = captureFormat.ReaderObservation.RequestedReaderSubtype,
+            ReaderSourceStreamType = captureFormat.ReaderObservation.ReaderSourceStreamType,
+            ReaderSourceSubtype = captureFormat.ReaderObservation.ReaderSourceSubtype,
+            FirstObservedFramePixelFormat = captureFormat.ReaderObservation.FirstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,
+            LatestObservedSurfaceFormat = captureFormat.ReaderObservation.LatestObservedSurfaceFormat,
+            ObservedP010FrameCount = captureFormat.ReaderObservation.ObservedP010FrameCount,
+            ObservedNv12FrameCount = captureFormat.ReaderObservation.ObservedNv12FrameCount,
+            ObservedOtherFrameCount = captureFormat.ReaderObservation.ObservedOtherFrameCount,
+            ObservedP010BitDepthSampleCount = captureFormat.ReaderObservation.ObservedP010BitDepthSampleCount,
+            ObservedP010Low2BitNonZeroPercent = captureFormat.ReaderObservation.ObservedP010Low2BitNonZeroPercent,
+            ObservedP010Likely8BitUpscaled = captureFormat.ReaderObservation.ObservedP010Likely8BitUpscaled,
+            MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters
+        };
+
+    private readonly record struct CaptureFormatReaderObservationProjection
+    {
+        public string? RequestedReaderSubtype { get; init; }
+        public string? ReaderSourceStreamType { get; init; }
+        public string? ReaderSourceSubtype { get; init; }
+        public string? FirstObservedFramePixelFormat { get; init; }
+        public string? LatestObservedFramePixelFormat { get; init; }
+        public string? LatestObservedSurfaceFormat { get; init; }
+        public long ObservedP010FrameCount { get; init; }
+        public long ObservedNv12FrameCount { get; init; }
+        public long ObservedOtherFrameCount { get; init; }
+        public long ObservedP010BitDepthSampleCount { get; init; }
+        public double ObservedP010Low2BitNonZeroPercent { get; init; }
+        public bool? ObservedP010Likely8BitUpscaled { get; init; }
+        public bool? MfReadwriteDisableConverters { get; init; }
+    }
+
+    private readonly record struct CaptureFormatReaderObservationFlattenedProjection
+    {
+        public string? RequestedReaderSubtype { get; init; }
+        public string? ReaderSourceStreamType { get; init; }
+        public string? ReaderSourceSubtype { get; init; }
+        public string? FirstObservedFramePixelFormat { get; init; }
+        public string? LatestObservedFramePixelFormat { get; init; }
+        public string? LatestObservedSurfaceFormat { get; init; }
+        public long ObservedP010FrameCount { get; init; }
+        public long ObservedNv12FrameCount { get; init; }
+        public long ObservedOtherFrameCount { get; init; }
+        public long ObservedP010BitDepthSampleCount { get; init; }
+        public double ObservedP010Low2BitNonZeroPercent { get; init; }
+        public bool? ObservedP010Likely8BitUpscaled { get; init; }
+        public bool? MfReadwriteDisableConverters { get; init; }
+    }
+
+    private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            InputPixelFormat = captureRuntime.EncoderInputPixelFormat,
+            OutputPixelFormat = captureRuntime.EncoderOutputPixelFormat,
+            VideoCodec = captureRuntime.EncoderVideoCodec,
+            VideoProfile = captureRuntime.EncoderVideoProfile,
+            TenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed
+        };
+
+    private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(
+        CaptureFormatProjection captureFormat)
+        => new()
+        {
+            InputPixelFormat = captureFormat.Encoder.InputPixelFormat,
+            OutputPixelFormat = captureFormat.Encoder.OutputPixelFormat,
+            VideoCodec = captureFormat.Encoder.VideoCodec,
+            VideoProfile = captureFormat.Encoder.VideoProfile,
+            TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed
+        };
+
+    private readonly record struct CaptureFormatEncoderProjection
+    {
+        public string? InputPixelFormat { get; init; }
+        public string? OutputPixelFormat { get; init; }
+        public string? VideoCodec { get; init; }
+        public string? VideoProfile { get; init; }
+        public bool? TenBitPipelineConfirmed { get; init; }
+    }
+
+    private readonly record struct CaptureFormatEncoderFlattenedProjection
+    {
+        public string? InputPixelFormat { get; init; }
+        public string? OutputPixelFormat { get; init; }
+        public string? VideoCodec { get; init; }
+        public string? VideoProfile { get; init; }
+        public bool? TenBitPipelineConfirmed { get; init; }
+    }
+
+    private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            MemoryPreference = captureRuntime.MemoryPreference,
+            VideoRequestedSubtype = captureRuntime.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = captureRuntime.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureRuntime.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureRuntime.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureRuntime.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents
+        };
+
+    private readonly record struct CaptureTransportProjection
+    {
+        public string MemoryPreference { get; init; }
+        public string VideoRequestedSubtype { get; init; }
+        public string VideoNegotiatedSubtype { get; init; }
+        public int FrameLedgerCapacity { get; init; }
+        public long FrameLedgerEventCount { get; init; }
+        public long FrameLedgerDroppedEventCount { get; init; }
+        public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; }
+    }
+
+    private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(
+        CaptureTransportProjection captureTransport)
+        => new()
+        {
+            MemoryPreference = captureTransport.MemoryPreference,
+            VideoRequestedSubtype = captureTransport.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureTransport.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureTransport.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureTransport.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents
+        };
+
+    private readonly record struct CaptureTransportFlattenedProjection
+    {
+        public string MemoryPreference { get; init; }
+        public string VideoRequestedSubtype { get; init; }
+        public string VideoNegotiatedSubtype { get; init; }
+        public int FrameLedgerCapacity { get; init; }
+        public long FrameLedgerEventCount { get; init; }
+        public long FrameLedgerDroppedEventCount { get; init; }
+        public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; }
+    }
+
+    private readonly record struct CaptureFormatFlattenedProjection
+    {
+        public CaptureFormatRequestedFlattenedProjection Requested { get; init; }
+        public CaptureFormatHdrRequestFlattenedProjection HdrRequest { get; init; }
+        public CaptureFormatActualFlattenedProjection Actual { get; init; }
+        public CaptureFormatNegotiatedFlattenedProjection Negotiated { get; init; }
+        public CaptureFormatReaderObservationFlattenedProjection ReaderObservation { get; init; }
+        public CaptureFormatEncoderFlattenedProjection Encoder { get; init; }
+    }
+
+    private static bool IsHdrSubtype(string? subtype)
+        => MediaFormat.IsHdrPixelFormat(subtype);
+
+    private static PreviewHdrState BuildPreviewHdrState(
+        CaptureRuntimeSnapshot captureRuntime,
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        PreviewRuntimeSnapshot previewRuntime)
+    {
+        var inputDetected =
+            IsHdrSubtype(captureRuntime.NegotiatedPixelFormat) ||
+            (captureRuntime.RequestedHdrEnabled ?? false) ||
+            viewModelSnapshot.IsHdrEnabled;
+        var toneMapMode = !inputDetected
+            ? "None"
+            : previewRuntime.GpuActive
+                ? "Auto"
+                : "Unavailable";
+
+        return new PreviewHdrState(inputDetected, toneMapMode);
+    }
+
+    private static HdrTruthVerdict BuildHdrTruthVerdict(
+        CaptureRuntimeSnapshot captureRuntime,
+        bool hdrEnabledInUi,
+        RecordingVerificationResult? lastVerification)
+    {
+        static string NormalizeFormatToken(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return "unknown";
+            }
+
+            var value = text.Trim();
+            if (value.Contains("P010", StringComparison.OrdinalIgnoreCase))
+            {
+                return "P010";
+            }
+
+            if (value.Contains("NV12", StringComparison.OrdinalIgnoreCase))
+            {
+                return "NV12";
+            }
+
+            return value.ToUpperInvariant();
+        }
+
+        var evidence = new List<string>(capacity: 8);
+        var observedFormatToken = NormalizeFormatToken(
+            captureRuntime.LatestObservedFramePixelFormat ??
+            captureRuntime.FirstObservedFramePixelFormat ??
+            captureRuntime.NegotiatedPixelFormat);
+        var hasP010 = captureRuntime.ObservedP010FrameCount > 0 || string.Equals(observedFormatToken, "P010", StringComparison.OrdinalIgnoreCase);
+        var hasNv12 = captureRuntime.ObservedNv12FrameCount > 0 || string.Equals(observedFormatToken, "NV12", StringComparison.OrdinalIgnoreCase);
+        var pipelineFormat = hasP010
+            ? "P010"
+            : hasNv12
+                ? "NV12"
+                : observedFormatToken;
+
+        if (hasP010)
+        {
+            evidence.Add($"observed-p010-frames={captureRuntime.ObservedP010FrameCount}");
+        }
+        if (hasNv12)
+        {
+            evidence.Add($"observed-nv12-frames={captureRuntime.ObservedNv12FrameCount}");
+        }
+
+        string effectiveBitDepth;
+        if (string.Equals(pipelineFormat, "NV12", StringComparison.OrdinalIgnoreCase))
+        {
+            effectiveBitDepth = "8bit-like";
+        }
+        else if (string.Equals(pipelineFormat, "P010", StringComparison.OrdinalIgnoreCase))
+        {
+            if (captureRuntime.ObservedP010Likely8BitUpscaled == true)
+            {
+                effectiveBitDepth = "8bit-like";
+                evidence.Add("p010-samples-look-upscaled-8bit=true");
+            }
+            else if (captureRuntime.ObservedP010BitDepthSampleCount > 0)
+            {
+                effectiveBitDepth = captureRuntime.ObservedP010Low2BitNonZeroPercent >= 0.50
+                    ? "10bit"
+                    : "8bit-like";
+                evidence.Add(
+                    $"p010-low2-nonzero-pct={captureRuntime.ObservedP010Low2BitNonZeroPercent:0.###} (samples={captureRuntime.ObservedP010BitDepthSampleCount})");
+            }
+            else
+            {
+                effectiveBitDepth = "unknown";
+                evidence.Add("p010-bitdepth-samples=0");
+            }
+        }
+        else
+        {
+            effectiveBitDepth = "unknown";
+        }
+
+        string metadataState;
+        if (lastVerification is null)
+        {
+            metadataState = "unknown";
+            evidence.Add("metadata=verification-not-run");
+        }
+        else if (lastVerification.HdrColorimetryValid == false)
+        {
+            metadataState = "invalid";
+            evidence.Add("metadata=colorimetry-invalid");
+        }
+        else if (lastVerification.HdrMetadataPresent == true)
+        {
+            metadataState = "present-valid";
+            evidence.Add("metadata=present-valid");
+        }
+        else if (lastVerification.HdrMetadataPresent == false)
+        {
+            metadataState = "missing";
+            evidence.Add("metadata=missing");
+        }
+        else
+        {
+            metadataState = "unknown";
+            evidence.Add("metadata=unknown");
+        }
+
+        var captureHdrLike =
+            string.Equals(pipelineFormat, "P010", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(effectiveBitDepth, "10bit", StringComparison.OrdinalIgnoreCase);
+        var sourceHdr = captureRuntime.SourceIsHdr;
+        string sourceVsCaptureParity;
+        if (!sourceHdr.HasValue)
+        {
+            sourceVsCaptureParity = "unknown";
+        }
+        else if (sourceHdr.Value == captureHdrLike)
+        {
+            sourceVsCaptureParity = "match";
+        }
+        else if (sourceHdr.Value && !captureHdrLike && !hdrEnabledInUi)
+        {
+            sourceVsCaptureParity = "expected-sdr-capture";
+            evidence.Add("source-hdr=true, capture-hdr-like=false, hdr-requested=false");
+        }
+        else
+        {
+            sourceVsCaptureParity = "mismatch";
+            evidence.Add($"source-hdr={sourceHdr.Value}, capture-hdr-like={captureHdrLike}");
+        }
+
+        var finalClassification = pipelineFormat switch
+        {
+            "NV12" => "sdr-8bit",
+            "P010" when string.Equals(effectiveBitDepth, "10bit", StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(metadataState, "present-valid", StringComparison.OrdinalIgnoreCase)
+                => "true-hdr10",
+            "P010" => "p010-sdr",
+            _ => "inconclusive"
+        };
+
+        if (hdrEnabledInUi && string.Equals(finalClassification, "sdr-8bit", StringComparison.OrdinalIgnoreCase))
+        {
+            evidence.Add("hdr-enabled-ui-while-effective-path-is-sdr-8bit");
+        }
+
+        return new HdrTruthVerdict
+        {
+            PipelineFormat = pipelineFormat,
+            EffectiveBitDepth = effectiveBitDepth,
+            HdrMetadataState = metadataState,
+            SourceVsCaptureParity = sourceVsCaptureParity,
+            FinalClassification = finalClassification,
+            Evidence = evidence
+        };
+    }
+
+    private static HdrPipelineProjection BuildHdrPipelineProjection(
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        CaptureRuntimeSnapshot captureRuntime,
+        HdrTruthVerdict truthVerdict)
+        => new()
+        {
+            IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,
+            IsHdrEnabled = viewModelSnapshot.IsHdrEnabled,
+            HdrOutputActive = captureRuntime.HdrOutputActive,
+            HdrRuntimeState = PreferViewModelHdrText(viewModelSnapshot.HdrRuntimeState, captureRuntime.HdrRuntimeState),
+            HdrReadinessReason = PreferViewModelHdrText(viewModelSnapshot.HdrReadinessReason, captureRuntime.HdrReadinessReason),
+            HdrWarmupState = captureRuntime.HdrWarmupState,
+            HdrWarmupRequiredP010Frames = captureRuntime.HdrWarmupRequiredP010Frames,
+            HdrWarmupAllowedNonP010Frames = captureRuntime.HdrWarmupAllowedNonP010Frames,
+            HdrWarmupObservedP010Frames = captureRuntime.HdrWarmupObservedP010Frames,
+            HdrWarmupObservedNonP010Frames = captureRuntime.HdrWarmupObservedNonP010Frames,
+            HdrDowngradeCode = captureRuntime.HdrDowngradeCode,
+            RequestedPipelineMode = captureRuntime.RequestedPipelineMode,
+            ActivePipelineMode = captureRuntime.ActivePipelineMode,
+            PipelineModeMatched = captureRuntime.PipelineModeMatched,
+            PipelineModeStatus = captureRuntime.PipelineModeStatus,
+            PipelineModeReason = captureRuntime.PipelineModeReason,
+            TelemetryAlignmentStatus = captureRuntime.TelemetryAlignmentStatus,
+            TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,
+            TruthVerdict = truthVerdict
+        };
+
+    private static string PreferViewModelHdrText(string viewModelValue, string runtimeValue)
+        => !string.IsNullOrWhiteSpace(viewModelValue) ? viewModelValue : runtimeValue;
+
+    private readonly record struct HdrPipelineProjection
+    {
+        public bool IsHdrAvailable { get; init; }
+        public bool IsHdrEnabled { get; init; }
+        public bool HdrOutputActive { get; init; }
+        public string HdrRuntimeState { get; init; }
+        public string HdrReadinessReason { get; init; }
+        public string HdrWarmupState { get; init; }
+        public int HdrWarmupRequiredP010Frames { get; init; }
+        public int HdrWarmupAllowedNonP010Frames { get; init; }
+        public int HdrWarmupObservedP010Frames { get; init; }
+        public int HdrWarmupObservedNonP010Frames { get; init; }
+        public string HdrDowngradeCode { get; init; }
+        public string RequestedPipelineMode { get; init; }
+        public string ActivePipelineMode { get; init; }
+        public bool PipelineModeMatched { get; init; }
+        public string PipelineModeStatus { get; init; }
+        public string PipelineModeReason { get; init; }
+        public string TelemetryAlignmentStatus { get; init; }
+        public string TelemetryAlignmentReason { get; init; }
+        public HdrTruthVerdict TruthVerdict { get; init; }
+    }
+
+    private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(
+        HdrPipelineProjection hdrPipeline)
+        => new()
+        {
+            IsHdrAvailable = hdrPipeline.IsHdrAvailable,
+            IsHdrEnabled = hdrPipeline.IsHdrEnabled,
+            HdrOutputActive = hdrPipeline.HdrOutputActive,
+            HdrRuntimeState = hdrPipeline.HdrRuntimeState,
+            HdrReadinessReason = hdrPipeline.HdrReadinessReason,
+            HdrWarmupState = hdrPipeline.HdrWarmupState,
+            HdrWarmupRequiredP010Frames = hdrPipeline.HdrWarmupRequiredP010Frames,
+            HdrWarmupAllowedNonP010Frames = hdrPipeline.HdrWarmupAllowedNonP010Frames,
+            HdrWarmupObservedP010Frames = hdrPipeline.HdrWarmupObservedP010Frames,
+            HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,
+            HdrDowngradeCode = hdrPipeline.HdrDowngradeCode,
+            RequestedPipelineMode = hdrPipeline.RequestedPipelineMode,
+            ActivePipelineMode = hdrPipeline.ActivePipelineMode,
+            PipelineModeMatched = hdrPipeline.PipelineModeMatched,
+            PipelineModeStatus = hdrPipeline.PipelineModeStatus,
+            PipelineModeReason = hdrPipeline.PipelineModeReason,
+            TelemetryAlignmentStatus = hdrPipeline.TelemetryAlignmentStatus,
+            TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,
+            TruthVerdict = hdrPipeline.TruthVerdict
+        };
+
+    private readonly record struct HdrPipelineFlattenedProjection
+    {
+        public bool IsHdrAvailable { get; init; }
+        public bool IsHdrEnabled { get; init; }
+        public bool HdrOutputActive { get; init; }
+        public string HdrRuntimeState { get; init; }
+        public string HdrReadinessReason { get; init; }
+        public string HdrWarmupState { get; init; }
+        public int HdrWarmupRequiredP010Frames { get; init; }
+        public int HdrWarmupAllowedNonP010Frames { get; init; }
+        public int HdrWarmupObservedP010Frames { get; init; }
+        public int HdrWarmupObservedNonP010Frames { get; init; }
+        public string HdrDowngradeCode { get; init; }
+        public string RequestedPipelineMode { get; init; }
+        public string ActivePipelineMode { get; init; }
+        public bool PipelineModeMatched { get; init; }
+        public string PipelineModeStatus { get; init; }
+        public string PipelineModeReason { get; init; }
+        public string TelemetryAlignmentStatus { get; init; }
+        public string TelemetryAlignmentReason { get; init; }
+        public HdrTruthVerdict TruthVerdict { get; init; }
+    }
+
+    private readonly record struct PreviewHdrState(bool InputDetected, string ToneMapMode);
+
+    private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)
+    {
+        var timing = BuildMjpegTimingProjection(health);
+        var previewJitter = BuildMjpegPreviewJitterProjection(health);
+        var packetHash = BuildMjpegPacketHashProjection(health);
+
+        return new()
+        {
+            Timing = timing,
+            TotalDecoded = health.MjpegTotalDecoded,
+            TotalEmitted = health.MjpegTotalEmitted,
+            TotalDropped = health.MjpegTotalDropped,
+            CompressedFramesQueued = health.MjpegCompressedFramesQueued,
+            CompressedFramesDequeued = health.MjpegCompressedFramesDequeued,
+            CompressedDropsQueueFull = health.MjpegCompressedDropsQueueFull,
+            CompressedDropsByteBudget = health.MjpegCompressedDropsByteBudget,
+            CompressedDropsDisposed = health.MjpegCompressedDropsDisposed,
+            DecodeFailures = health.MjpegDecodeFailures,
+            ReorderCollisions = health.MjpegReorderCollisions,
+            EmitFailures = health.MjpegEmitFailures,
+            CompressedQueueDepth = health.MjpegCompressedQueueDepth,
+            CompressedQueueBytes = health.MjpegCompressedQueueBytes,
+            CompressedQueueByteBudget = health.MjpegCompressedQueueByteBudget,
+            ReorderSkips = health.MjpegReorderSkips,
+            ReorderBufferDepth = health.MjpegReorderBufferDepth,
+            PreviewJitter = previewJitter,
+            PacketHash = packetHash,
+        };
+    }
+
+    private readonly record struct MjpegProjection
+    {
+        public MjpegTimingProjection Timing { get; init; }
+        public long TotalDecoded { get; init; }
+        public long TotalEmitted { get; init; }
+        public long TotalDropped { get; init; }
+        public long CompressedFramesQueued { get; init; }
+        public long CompressedFramesDequeued { get; init; }
+        public long CompressedDropsQueueFull { get; init; }
+        public long CompressedDropsByteBudget { get; init; }
+        public long CompressedDropsDisposed { get; init; }
+        public long DecodeFailures { get; init; }
+        public long ReorderCollisions { get; init; }
+        public long EmitFailures { get; init; }
+        public int CompressedQueueDepth { get; init; }
+        public long CompressedQueueBytes { get; init; }
+        public long CompressedQueueByteBudget { get; init; }
+        public long ReorderSkips { get; init; }
+        public int ReorderBufferDepth { get; init; }
+        public MjpegPreviewJitterProjection PreviewJitter { get; init; }
+        public MjpegPacketHashProjection PacketHash { get; init; }
+    }
+
+    private static MjpegTimingProjection BuildMjpegTimingProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            DecodeSampleCount = health.MjpegDecodeSampleCount,
+            DecodeAvgMs = health.MjpegDecodeAvgMs,
+            DecodeP95Ms = health.MjpegDecodeP95Ms,
+            DecodeMaxMs = health.MjpegDecodeMaxMs,
+            InteropCopySampleCount = health.MjpegInteropCopySampleCount,
+            InteropCopyAvgMs = health.MjpegInteropCopyAvgMs,
+            InteropCopyP95Ms = health.MjpegInteropCopyP95Ms,
+            InteropCopyMaxMs = health.MjpegInteropCopyMaxMs,
+            CallbackSampleCount = health.MjpegCallbackSampleCount,
+            CallbackAvgMs = health.MjpegCallbackAvgMs,
+            CallbackP95Ms = health.MjpegCallbackP95Ms,
+            CallbackMaxMs = health.MjpegCallbackMaxMs,
+            DecoderCount = health.MjpegDecoderCount,
+            ReorderSampleCount = health.MjpegReorderSampleCount,
+            ReorderAvgMs = health.MjpegReorderAvgMs,
+            ReorderP95Ms = health.MjpegReorderP95Ms,
+            ReorderMaxMs = health.MjpegReorderMaxMs,
+            PipelineSampleCount = health.MjpegPipelineSampleCount,
+            PipelineAvgMs = health.MjpegPipelineAvgMs,
+            PipelineP95Ms = health.MjpegPipelineP95Ms,
+            PipelineMaxMs = health.MjpegPipelineMaxMs,
+            PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder
+                ? Array.ConvertAll(
+                    perDecoder,
+                    worker => new MjpegDecoderAutomationSnapshot(
+                        worker.WorkerIndex,
+                        worker.SampleCount,
+                        worker.AvgMs,
+                        worker.P95Ms,
+                        worker.MaxMs))
+                : Array.Empty<MjpegDecoderAutomationSnapshot>()
+        };
+
+    private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(
+        MjpegTimingProjection timing)
+        => new()
+        {
+            DecodeSampleCount = timing.DecodeSampleCount,
+            DecodeAvgMs = timing.DecodeAvgMs,
+            DecodeP95Ms = timing.DecodeP95Ms,
+            DecodeMaxMs = timing.DecodeMaxMs,
+            InteropCopySampleCount = timing.InteropCopySampleCount,
+            InteropCopyAvgMs = timing.InteropCopyAvgMs,
+            InteropCopyP95Ms = timing.InteropCopyP95Ms,
+            InteropCopyMaxMs = timing.InteropCopyMaxMs,
+            CallbackSampleCount = timing.CallbackSampleCount,
+            CallbackAvgMs = timing.CallbackAvgMs,
+            CallbackP95Ms = timing.CallbackP95Ms,
+            CallbackMaxMs = timing.CallbackMaxMs,
+            DecoderCount = timing.DecoderCount,
+            ReorderSampleCount = timing.ReorderSampleCount,
+            ReorderAvgMs = timing.ReorderAvgMs,
+            ReorderP95Ms = timing.ReorderP95Ms,
+            ReorderMaxMs = timing.ReorderMaxMs,
+            PipelineSampleCount = timing.PipelineSampleCount,
+            PipelineAvgMs = timing.PipelineAvgMs,
+            PipelineP95Ms = timing.PipelineP95Ms,
+            PipelineMaxMs = timing.PipelineMaxMs,
+            PerDecoder = timing.PerDecoder
+        };
+
+    private readonly record struct MjpegTimingProjection
+    {
+        public int DecodeSampleCount { get; init; }
+        public double DecodeAvgMs { get; init; }
+        public double DecodeP95Ms { get; init; }
+        public double DecodeMaxMs { get; init; }
+        public int InteropCopySampleCount { get; init; }
+        public double InteropCopyAvgMs { get; init; }
+        public double InteropCopyP95Ms { get; init; }
+        public double InteropCopyMaxMs { get; init; }
+        public int CallbackSampleCount { get; init; }
+        public double CallbackAvgMs { get; init; }
+        public double CallbackP95Ms { get; init; }
+        public double CallbackMaxMs { get; init; }
+        public int DecoderCount { get; init; }
+        public int ReorderSampleCount { get; init; }
+        public double ReorderAvgMs { get; init; }
+        public double ReorderP95Ms { get; init; }
+        public double ReorderMaxMs { get; init; }
+        public int PipelineSampleCount { get; init; }
+        public double PipelineAvgMs { get; init; }
+        public double PipelineP95Ms { get; init; }
+        public double PipelineMaxMs { get; init; }
+        public MjpegDecoderAutomationSnapshot[] PerDecoder { get; init; }
+    }
+
+    private readonly record struct MjpegTimingFlattenedProjection
+    {
+        public int DecodeSampleCount { get; init; }
+        public double DecodeAvgMs { get; init; }
+        public double DecodeP95Ms { get; init; }
+        public double DecodeMaxMs { get; init; }
+        public int InteropCopySampleCount { get; init; }
+        public double InteropCopyAvgMs { get; init; }
+        public double InteropCopyP95Ms { get; init; }
+        public double InteropCopyMaxMs { get; init; }
+        public int CallbackSampleCount { get; init; }
+        public double CallbackAvgMs { get; init; }
+        public double CallbackP95Ms { get; init; }
+        public double CallbackMaxMs { get; init; }
+        public int DecoderCount { get; init; }
+        public int ReorderSampleCount { get; init; }
+        public double ReorderAvgMs { get; init; }
+        public double ReorderP95Ms { get; init; }
+        public double ReorderMaxMs { get; init; }
+        public int PipelineSampleCount { get; init; }
+        public double PipelineAvgMs { get; init; }
+        public double PipelineP95Ms { get; init; }
+        public double PipelineMaxMs { get; init; }
+        public MjpegDecoderAutomationSnapshot[] PerDecoder { get; init; }
+    }
+
+    private static MjpegPreviewJitterProjection BuildMjpegPreviewJitterProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            Queue = BuildMjpegPreviewJitterQueueProjection(health),
+            Timing = BuildMjpegPreviewJitterTimingProjection(health),
+            Adaptive = BuildMjpegPreviewJitterAdaptiveProjection(health),
+            Events = BuildMjpegPreviewJitterEventProjection(health)
+        };
+
+    private readonly record struct MjpegPreviewJitterProjection
+    {
+        public MjpegPreviewJitterQueueProjection Queue { get; init; }
+        public MjpegPreviewJitterTimingProjection Timing { get; init; }
+        public MjpegPreviewJitterAdaptiveProjection Adaptive { get; init; }
+        public MjpegPreviewJitterEventProjection Events { get; init; }
+    }
+
+    private static MjpegPreviewJitterQueueProjection BuildMjpegPreviewJitterQueueProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            Enabled = health.MjpegPreviewJitterEnabled,
+            TargetDepth = health.MjpegPreviewJitterTargetDepth,
+            MaxDepth = health.MjpegPreviewJitterMaxDepth,
+            QueueDepth = health.MjpegPreviewJitterQueueDepth,
+            TotalQueued = health.MjpegPreviewJitterTotalQueued,
+            TotalSubmitted = health.MjpegPreviewJitterTotalSubmitted,
+            TotalDropped = health.MjpegPreviewJitterTotalDropped,
+            UnderflowCount = health.MjpegPreviewJitterUnderflowCount,
+            ResumeReprimeCount = health.MjpegPreviewJitterResumeReprimeCount
+        };
+
+    private readonly record struct MjpegPreviewJitterQueueProjection
+    {
+        public bool Enabled { get; init; }
+        public int TargetDepth { get; init; }
+        public int MaxDepth { get; init; }
+        public int QueueDepth { get; init; }
+        public long TotalQueued { get; init; }
+        public long TotalSubmitted { get; init; }
+        public long TotalDropped { get; init; }
+        public long UnderflowCount { get; init; }
+        public long ResumeReprimeCount { get; init; }
+    }
+
+    private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(
+        MjpegPreviewJitterQueueProjection queue)
+        => new()
+        {
+            Enabled = queue.Enabled,
+            TargetDepth = queue.TargetDepth,
+            MaxDepth = queue.MaxDepth,
+            QueueDepth = queue.QueueDepth,
+            TotalQueued = queue.TotalQueued,
+            TotalSubmitted = queue.TotalSubmitted,
+            TotalDropped = queue.TotalDropped,
+            UnderflowCount = queue.UnderflowCount,
+            ResumeReprimeCount = queue.ResumeReprimeCount
+        };
+
+    private readonly record struct MjpegPreviewJitterQueueFlattenedProjection
+    {
+        public bool Enabled { get; init; }
+        public int TargetDepth { get; init; }
+        public int MaxDepth { get; init; }
+        public int QueueDepth { get; init; }
+        public long TotalQueued { get; init; }
+        public long TotalSubmitted { get; init; }
+        public long TotalDropped { get; init; }
+        public long UnderflowCount { get; init; }
+        public long ResumeReprimeCount { get; init; }
+    }
+
+    private static MjpegPreviewJitterTimingProjection BuildMjpegPreviewJitterTimingProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            InputSampleCount = health.MjpegPreviewJitterInputSampleCount,
+            InputAvgMs = health.MjpegPreviewJitterInputAvgMs,
+            InputP95Ms = health.MjpegPreviewJitterInputP95Ms,
+            InputMaxMs = health.MjpegPreviewJitterInputMaxMs,
+            OutputSampleCount = health.MjpegPreviewJitterOutputSampleCount,
+            OutputAvgMs = health.MjpegPreviewJitterOutputAvgMs,
+            OutputP95Ms = health.MjpegPreviewJitterOutputP95Ms,
+            OutputMaxMs = health.MjpegPreviewJitterOutputMaxMs,
+            LatencySampleCount = health.MjpegPreviewJitterLatencySampleCount,
+            LatencyAvgMs = health.MjpegPreviewJitterLatencyAvgMs,
+            LatencyP95Ms = health.MjpegPreviewJitterLatencyP95Ms,
+            LatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs
+        };
+
+    private readonly record struct MjpegPreviewJitterTimingProjection
+    {
+        public int InputSampleCount { get; init; }
+        public double InputAvgMs { get; init; }
+        public double InputP95Ms { get; init; }
+        public double InputMaxMs { get; init; }
+        public int OutputSampleCount { get; init; }
+        public double OutputAvgMs { get; init; }
+        public double OutputP95Ms { get; init; }
+        public double OutputMaxMs { get; init; }
+        public int LatencySampleCount { get; init; }
+        public double LatencyAvgMs { get; init; }
+        public double LatencyP95Ms { get; init; }
+        public double LatencyMaxMs { get; init; }
+    }
+
+    private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(
+        MjpegPreviewJitterTimingProjection timing)
+        => new()
+        {
+            InputSampleCount = timing.InputSampleCount,
+            InputAvgMs = timing.InputAvgMs,
+            InputP95Ms = timing.InputP95Ms,
+            InputMaxMs = timing.InputMaxMs,
+            OutputSampleCount = timing.OutputSampleCount,
+            OutputAvgMs = timing.OutputAvgMs,
+            OutputP95Ms = timing.OutputP95Ms,
+            OutputMaxMs = timing.OutputMaxMs,
+            LatencySampleCount = timing.LatencySampleCount,
+            LatencyAvgMs = timing.LatencyAvgMs,
+            LatencyP95Ms = timing.LatencyP95Ms,
+            LatencyMaxMs = timing.LatencyMaxMs
+        };
+
+    private readonly record struct MjpegPreviewJitterTimingFlattenedProjection
+    {
+        public int InputSampleCount { get; init; }
+        public double InputAvgMs { get; init; }
+        public double InputP95Ms { get; init; }
+        public double InputMaxMs { get; init; }
+        public int OutputSampleCount { get; init; }
+        public double OutputAvgMs { get; init; }
+        public double OutputP95Ms { get; init; }
+        public double OutputMaxMs { get; init; }
+        public int LatencySampleCount { get; init; }
+        public double LatencyAvgMs { get; init; }
+        public double LatencyP95Ms { get; init; }
+        public double LatencyMaxMs { get; init; }
+    }
+
+    private static MjpegPreviewJitterAdaptiveProjection BuildMjpegPreviewJitterAdaptiveProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            DeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,
+            ClearedDropCount = health.MjpegPreviewJitterClearedDropCount,
+            TargetIncreaseCount = health.MjpegPreviewJitterTargetIncreaseCount,
+            TargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount
+        };
+
+    private readonly record struct MjpegPreviewJitterAdaptiveProjection
+    {
+        public long DeadlineDropCount { get; init; }
+        public long ClearedDropCount { get; init; }
+        public long TargetIncreaseCount { get; init; }
+        public long TargetDecreaseCount { get; init; }
+    }
+
+    private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(
+        MjpegPreviewJitterAdaptiveProjection adaptive)
+        => new()
+        {
+            DeadlineDropCount = adaptive.DeadlineDropCount,
+            ClearedDropCount = adaptive.ClearedDropCount,
+            TargetIncreaseCount = adaptive.TargetIncreaseCount,
+            TargetDecreaseCount = adaptive.TargetDecreaseCount
+        };
+
+    private readonly record struct MjpegPreviewJitterAdaptiveFlattenedProjection
+    {
+        public long DeadlineDropCount { get; init; }
+        public long ClearedDropCount { get; init; }
+        public long TargetIncreaseCount { get; init; }
+        public long TargetDecreaseCount { get; init; }
+    }
+
+    private static MjpegPreviewJitterEventProjection BuildMjpegPreviewJitterEventProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            LastSelectedPreviewPresentId = health.MjpegPreviewJitterLastSelectedPreviewPresentId,
+            LastSelectedSourceSequenceNumber = health.MjpegPreviewJitterLastSelectedSourceSequenceNumber,
+            LastSelectedQpc = health.MjpegPreviewJitterLastSelectedQpc,
+            LastSelectedSourceLatencyMs = health.MjpegPreviewJitterLastSelectedSourceLatencyMs,
+            LastDroppedSourceSequenceNumber = health.MjpegPreviewJitterLastDroppedSourceSequenceNumber,
+            LastDropQpc = health.MjpegPreviewJitterLastDropQpc,
+            LastDropReason = health.MjpegPreviewJitterLastDropReason,
+            LastUnderflowQpc = health.MjpegPreviewJitterLastUnderflowQpc,
+            LastUnderflowReason = health.MjpegPreviewJitterLastUnderflowReason,
+            LastUnderflowQueueDepth = health.MjpegPreviewJitterLastUnderflowQueueDepth,
+            LastUnderflowInputAgeMs = health.MjpegPreviewJitterLastUnderflowInputAgeMs,
+            LastUnderflowOutputAgeMs = health.MjpegPreviewJitterLastUnderflowOutputAgeMs,
+            LastScheduleLateMs = health.MjpegPreviewJitterLastScheduleLateMs,
+            MaxScheduleLateMs = health.MjpegPreviewJitterMaxScheduleLateMs,
+            ScheduleLateCount = health.MjpegPreviewJitterScheduleLateCount
+        };
+
+    private readonly record struct MjpegPreviewJitterEventProjection
+    {
+        public long LastSelectedPreviewPresentId { get; init; }
+        public long LastSelectedSourceSequenceNumber { get; init; }
+        public long LastSelectedQpc { get; init; }
+        public double LastSelectedSourceLatencyMs { get; init; }
+        public long LastDroppedSourceSequenceNumber { get; init; }
+        public long LastDropQpc { get; init; }
+        public string LastDropReason { get; init; }
+        public long LastUnderflowQpc { get; init; }
+        public string LastUnderflowReason { get; init; }
+        public int LastUnderflowQueueDepth { get; init; }
+        public double LastUnderflowInputAgeMs { get; init; }
+        public double LastUnderflowOutputAgeMs { get; init; }
+        public double LastScheduleLateMs { get; init; }
+        public double MaxScheduleLateMs { get; init; }
+        public long ScheduleLateCount { get; init; }
+    }
+
+    private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(
+        MjpegPreviewJitterEventProjection events)
+        => new()
+        {
+            LastSelectedPreviewPresentId = events.LastSelectedPreviewPresentId,
+            LastSelectedSourceSequenceNumber = events.LastSelectedSourceSequenceNumber,
+            LastSelectedQpc = events.LastSelectedQpc,
+            LastSelectedSourceLatencyMs = events.LastSelectedSourceLatencyMs,
+            LastDroppedSourceSequenceNumber = events.LastDroppedSourceSequenceNumber,
+            LastDropQpc = events.LastDropQpc,
+            LastDropReason = events.LastDropReason,
+            LastUnderflowQpc = events.LastUnderflowQpc,
+            LastUnderflowReason = events.LastUnderflowReason,
+            LastUnderflowQueueDepth = events.LastUnderflowQueueDepth,
+            LastUnderflowInputAgeMs = events.LastUnderflowInputAgeMs,
+            LastUnderflowOutputAgeMs = events.LastUnderflowOutputAgeMs,
+            LastScheduleLateMs = events.LastScheduleLateMs,
+            MaxScheduleLateMs = events.MaxScheduleLateMs,
+            ScheduleLateCount = events.ScheduleLateCount
+        };
+
+    private readonly record struct MjpegPreviewJitterEventFlattenedProjection
+    {
+        public long LastSelectedPreviewPresentId { get; init; }
+        public long LastSelectedSourceSequenceNumber { get; init; }
+        public long LastSelectedQpc { get; init; }
+        public double LastSelectedSourceLatencyMs { get; init; }
+        public long LastDroppedSourceSequenceNumber { get; init; }
+        public long LastDropQpc { get; init; }
+        public string LastDropReason { get; init; }
+        public long LastUnderflowQpc { get; init; }
+        public string LastUnderflowReason { get; init; }
+        public int LastUnderflowQueueDepth { get; init; }
+        public double LastUnderflowInputAgeMs { get; init; }
+        public double LastUnderflowOutputAgeMs { get; init; }
+        public double LastScheduleLateMs { get; init; }
+        public double MaxScheduleLateMs { get; init; }
+        public long ScheduleLateCount { get; init; }
+    }
+
+    private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(
+        MjpegPreviewJitterProjection previewJitter)
+        => new()
+        {
+            Queue = BuildMjpegPreviewJitterQueueFlattenedProjection(previewJitter.Queue),
+            Timing = BuildMjpegPreviewJitterTimingFlattenedProjection(previewJitter.Timing),
+            Adaptive = BuildMjpegPreviewJitterAdaptiveFlattenedProjection(previewJitter.Adaptive),
+            Events = BuildMjpegPreviewJitterEventFlattenedProjection(previewJitter.Events)
+        };
+
+    private readonly record struct MjpegPreviewJitterFlattenedProjection
+    {
+        public MjpegPreviewJitterQueueFlattenedProjection Queue { get; init; }
+        public MjpegPreviewJitterTimingFlattenedProjection Timing { get; init; }
+        public MjpegPreviewJitterAdaptiveFlattenedProjection Adaptive { get; init; }
+        public MjpegPreviewJitterEventFlattenedProjection Events { get; init; }
+    }
+
+    private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            SampleCount = health.MjpegPacketHashSampleCount,
+            UniqueFrameCount = health.MjpegPacketHashUniqueFrameCount,
+            DuplicateFrameCount = health.MjpegPacketHashDuplicateFrameCount,
+            LongestDuplicateRun = health.MjpegPacketHashLongestDuplicateRun,
+            InputObservedFps = health.MjpegPacketHashInputObservedFps,
+            UniqueObservedFps = health.MjpegPacketHashUniqueObservedFps,
+            DuplicateFramePercent = health.MjpegPacketHashDuplicateFramePercent,
+            LastHash = health.MjpegPacketHashLastHash,
+            LastFrameDuplicate = health.MjpegPacketHashLastFrameDuplicate,
+            Pattern = health.MjpegPacketHashPattern,
+            RecentInputIntervalsMs = health.MjpegPacketHashRecentInputIntervalsMs,
+            RecentUniqueIntervalsMs = health.MjpegPacketHashRecentUniqueIntervalsMs,
+            RecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags
+        };
+
+    private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(
+        MjpegPacketHashProjection packetHash)
+        => new()
+        {
+            SampleCount = packetHash.SampleCount,
+            UniqueFrameCount = packetHash.UniqueFrameCount,
+            DuplicateFrameCount = packetHash.DuplicateFrameCount,
+            LongestDuplicateRun = packetHash.LongestDuplicateRun,
+            InputObservedFps = packetHash.InputObservedFps,
+            UniqueObservedFps = packetHash.UniqueObservedFps,
+            DuplicateFramePercent = packetHash.DuplicateFramePercent,
+            LastHash = packetHash.LastHash,
+            LastFrameDuplicate = packetHash.LastFrameDuplicate,
+            Pattern = packetHash.Pattern,
+            RecentInputIntervalsMs = packetHash.RecentInputIntervalsMs,
+            RecentUniqueIntervalsMs = packetHash.RecentUniqueIntervalsMs,
+            RecentDuplicateFlags = packetHash.RecentDuplicateFlags
+        };
+
+    private readonly record struct MjpegPacketHashProjection
+    {
+        public int SampleCount { get; init; }
+        public long UniqueFrameCount { get; init; }
+        public long DuplicateFrameCount { get; init; }
+        public long LongestDuplicateRun { get; init; }
+        public double InputObservedFps { get; init; }
+        public double UniqueObservedFps { get; init; }
+        public double DuplicateFramePercent { get; init; }
+        public string LastHash { get; init; }
+        public bool LastFrameDuplicate { get; init; }
+        public string Pattern { get; init; }
+        public double[] RecentInputIntervalsMs { get; init; }
+        public double[] RecentUniqueIntervalsMs { get; init; }
+        public int[] RecentDuplicateFlags { get; init; }
+    }
+
+    private readonly record struct MjpegPacketHashFlattenedProjection
+    {
+        public int SampleCount { get; init; }
+        public long UniqueFrameCount { get; init; }
+        public long DuplicateFrameCount { get; init; }
+        public long LongestDuplicateRun { get; init; }
+        public double InputObservedFps { get; init; }
+        public double UniqueObservedFps { get; init; }
+        public double DuplicateFramePercent { get; init; }
+        public string LastHash { get; init; }
+        public bool LastFrameDuplicate { get; init; }
+        public string Pattern { get; init; }
+        public double[] RecentInputIntervalsMs { get; init; }
+        public double[] RecentUniqueIntervalsMs { get; init; }
+        public int[] RecentDuplicateFlags { get; init; }
+    }
+
+    private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(MjpegProjection mjpeg)
+    {
+        return new()
+        {
+            TotalDecoded = mjpeg.TotalDecoded,
+            TotalEmitted = mjpeg.TotalEmitted,
+            TotalDropped = mjpeg.TotalDropped,
+            CompressedFramesQueued = mjpeg.CompressedFramesQueued,
+            CompressedFramesDequeued = mjpeg.CompressedFramesDequeued,
+            CompressedDropsQueueFull = mjpeg.CompressedDropsQueueFull,
+            CompressedDropsByteBudget = mjpeg.CompressedDropsByteBudget,
+            CompressedDropsDisposed = mjpeg.CompressedDropsDisposed,
+            DecodeFailures = mjpeg.DecodeFailures,
+            ReorderCollisions = mjpeg.ReorderCollisions,
+            EmitFailures = mjpeg.EmitFailures,
+            CompressedQueueDepth = mjpeg.CompressedQueueDepth,
+            CompressedQueueBytes = mjpeg.CompressedQueueBytes,
+            CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,
+            ReorderSkips = mjpeg.ReorderSkips,
+            ReorderBufferDepth = mjpeg.ReorderBufferDepth,
+        };
+    }
+
+    private readonly record struct MjpegFlattenedProjection
+    {
+        public long TotalDecoded { get; init; }
+        public long TotalEmitted { get; init; }
+        public long TotalDropped { get; init; }
+        public long CompressedFramesQueued { get; init; }
+        public long CompressedFramesDequeued { get; init; }
+        public long CompressedDropsQueueFull { get; init; }
+        public long CompressedDropsByteBudget { get; init; }
+        public long CompressedDropsDisposed { get; init; }
+        public long DecodeFailures { get; init; }
+        public long ReorderCollisions { get; init; }
+        public long EmitFailures { get; init; }
+        public int CompressedQueueDepth { get; init; }
+        public long CompressedQueueBytes { get; init; }
+        public long CompressedQueueByteBudget { get; init; }
+        public long ReorderSkips { get; init; }
+        public int ReorderBufferDepth { get; init; }
+    }
+
+    private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Summary = BuildRecordingIntegritySummaryProjection(captureRuntime),
+            Video = BuildRecordingIntegrityVideoProjection(captureRuntime),
+            Backpressure = BuildRecordingIntegrityBackpressureProjection(captureRuntime),
+            Audio = BuildRecordingIntegrityAudioProjection(captureRuntime),
+            AvSync = BuildRecordingIntegrityAvSyncProjection(captureRuntime)
+        };
+
+    private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(
+        RecordingIntegrityProjection recordingIntegrity)
+        => new()
+        {
+            Summary = BuildRecordingIntegritySummaryFlattenedProjection(recordingIntegrity.Summary),
+            Video = BuildRecordingIntegrityVideoFlattenedProjection(recordingIntegrity.Video),
+            Backpressure = BuildRecordingIntegrityBackpressureFlattenedProjection(recordingIntegrity.Backpressure),
+            Audio = BuildRecordingIntegrityAudioFlattenedProjection(recordingIntegrity.Audio),
+            AvSync = BuildRecordingIntegrityAvSyncFlattenedProjection(recordingIntegrity.AvSync)
+        };
+
+    private readonly record struct RecordingIntegrityProjection
+    {
+        public RecordingIntegritySummaryProjection Summary { get; init; }
+        public RecordingIntegrityVideoProjection Video { get; init; }
+        public RecordingIntegrityBackpressureProjection Backpressure { get; init; }
+        public RecordingIntegrityAudioProjection Audio { get; init; }
+        public RecordingIntegrityAvSyncProjection AvSync { get; init; }
+    }
+
+    private static RecordingIntegritySummaryProjection BuildRecordingIntegritySummaryProjection(
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Status = captureRuntime.RecordingIntegrityStatus,
+            Complete = captureRuntime.RecordingIntegrityComplete,
+            Backend = captureRuntime.RecordingIntegrityBackend,
+            CompletedUtc = captureRuntime.RecordingIntegrityCompletedUtc,
+            Reason = captureRuntime.RecordingIntegrityReason
+        };
+
+    private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(
+        RecordingIntegritySummaryProjection summary)
+        => new()
+        {
+            Status = summary.Status,
+            Complete = summary.Complete,
+            Backend = summary.Backend,
+            CompletedUtc = summary.CompletedUtc,
+            Reason = summary.Reason
+        };
+
+    private readonly record struct RecordingIntegritySummaryProjection
+    {
+        public string Status { get; init; }
+        public bool Complete { get; init; }
+        public string Backend { get; init; }
+        public DateTimeOffset? CompletedUtc { get; init; }
+        public string Reason { get; init; }
+    }
+
+    private readonly record struct RecordingIntegritySummaryFlattenedProjection
+    {
+        public string Status { get; init; }
+        public bool Complete { get; init; }
+        public string Backend { get; init; }
+        public DateTimeOffset? CompletedUtc { get; init; }
+        public string Reason { get; init; }
+    }
+
+    private static RecordingIntegrityVideoProjection BuildRecordingIntegrityVideoProjection(
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            SourceFrames = captureRuntime.RecordingIntegritySourceFrames,
+            AcceptedFrames = captureRuntime.RecordingIntegrityAcceptedFrames,
+            PipelineDroppedFrames = captureRuntime.RecordingIntegrityPipelineDroppedFrames,
+            QueueDroppedFrames = captureRuntime.RecordingIntegrityQueueDroppedFrames,
+            SubmittedFrames = captureRuntime.RecordingIntegritySubmittedFrames,
+            EncodedFrames = captureRuntime.RecordingIntegrityEncodedFrames,
+            PacketsWritten = captureRuntime.RecordingIntegrityPacketsWritten,
+            EncoderDroppedFrames = captureRuntime.RecordingIntegrityEncoderDroppedFrames,
+            SequenceGaps = captureRuntime.RecordingIntegritySequenceGaps
+        };
+
+    private static RecordingIntegrityVideoFlattenedProjection BuildRecordingIntegrityVideoFlattenedProjection(
+        RecordingIntegrityVideoProjection video)
+        => new()
+        {
+            SourceFrames = video.SourceFrames,
+            AcceptedFrames = video.AcceptedFrames,
+            PipelineDroppedFrames = video.PipelineDroppedFrames,
+            QueueDroppedFrames = video.QueueDroppedFrames,
+            SubmittedFrames = video.SubmittedFrames,
+            EncodedFrames = video.EncodedFrames,
+            PacketsWritten = video.PacketsWritten,
+            EncoderDroppedFrames = video.EncoderDroppedFrames,
+            SequenceGaps = video.SequenceGaps
+        };
+
+    private readonly record struct RecordingIntegrityVideoProjection
+    {
+        public long SourceFrames { get; init; }
+        public long AcceptedFrames { get; init; }
+        public long PipelineDroppedFrames { get; init; }
+        public long QueueDroppedFrames { get; init; }
+        public long SubmittedFrames { get; init; }
+        public long EncodedFrames { get; init; }
+        public long PacketsWritten { get; init; }
+        public long EncoderDroppedFrames { get; init; }
+        public long SequenceGaps { get; init; }
+    }
+
+    private readonly record struct RecordingIntegrityVideoFlattenedProjection
+    {
+        public long SourceFrames { get; init; }
+        public long AcceptedFrames { get; init; }
+        public long PipelineDroppedFrames { get; init; }
+        public long QueueDroppedFrames { get; init; }
+        public long SubmittedFrames { get; init; }
+        public long EncodedFrames { get; init; }
+        public long PacketsWritten { get; init; }
+        public long EncoderDroppedFrames { get; init; }
+        public long SequenceGaps { get; init; }
+    }
+
+    private static RecordingIntegrityBackpressureProjection BuildRecordingIntegrityBackpressureProjection(
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            QueueMaxDepth = captureRuntime.RecordingIntegrityQueueMaxDepth,
+            QueueOldestFrameAgeMs = captureRuntime.RecordingIntegrityQueueOldestFrameAgeMs,
+            BackpressureWaitMs = captureRuntime.RecordingIntegrityBackpressureWaitMs,
+            BackpressureEvents = captureRuntime.RecordingIntegrityBackpressureEvents,
+            BackpressureMaxWaitMs = captureRuntime.RecordingIntegrityBackpressureMaxWaitMs
+        };
+
+    private static RecordingIntegrityBackpressureFlattenedProjection BuildRecordingIntegrityBackpressureFlattenedProjection(
+        RecordingIntegrityBackpressureProjection backpressure)
+        => new()
+        {
+            QueueMaxDepth = backpressure.QueueMaxDepth,
+            QueueOldestFrameAgeMs = backpressure.QueueOldestFrameAgeMs,
+            BackpressureWaitMs = backpressure.BackpressureWaitMs,
+            BackpressureEvents = backpressure.BackpressureEvents,
+            BackpressureMaxWaitMs = backpressure.BackpressureMaxWaitMs
+        };
+
+    private readonly record struct RecordingIntegrityBackpressureProjection
+    {
+        public int QueueMaxDepth { get; init; }
+        public long QueueOldestFrameAgeMs { get; init; }
+        public long BackpressureWaitMs { get; init; }
+        public long BackpressureEvents { get; init; }
+        public long BackpressureMaxWaitMs { get; init; }
+    }
+
+    private readonly record struct RecordingIntegrityBackpressureFlattenedProjection
+    {
+        public int QueueMaxDepth { get; init; }
+        public long QueueOldestFrameAgeMs { get; init; }
+        public long BackpressureWaitMs { get; init; }
+        public long BackpressureEvents { get; init; }
+        public long BackpressureMaxWaitMs { get; init; }
+    }
+
+    private static RecordingIntegrityAudioProjection BuildRecordingIntegrityAudioProjection(
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            AudioStatus = captureRuntime.RecordingIntegrityAudioStatus,
+            AudioEnabled = captureRuntime.RecordingIntegrityAudioEnabled,
+            AudioCaptureActive = captureRuntime.RecordingIntegrityAudioCaptureActive,
+            AudioFramesArrived = captureRuntime.RecordingIntegrityAudioFramesArrived,
+            AudioFramesWrittenToSink = captureRuntime.RecordingIntegrityAudioFramesWrittenToSink,
+            AudioSamplesEncoded = captureRuntime.RecordingIntegrityAudioSamplesEncoded,
+            AudioDropEvents = captureRuntime.RecordingIntegrityAudioDropEvents,
+            AudioDiscontinuities = captureRuntime.RecordingIntegrityAudioDiscontinuities,
+            AudioTimestampErrors = captureRuntime.RecordingIntegrityAudioTimestampErrors,
+            AudioCallbackGaps = captureRuntime.RecordingIntegrityAudioCallbackGaps
+        };
+
+    private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(
+        RecordingIntegrityAudioProjection audio)
+        => new()
+        {
+            AudioStatus = audio.AudioStatus,
+            AudioEnabled = audio.AudioEnabled,
+            AudioCaptureActive = audio.AudioCaptureActive,
+            AudioFramesArrived = audio.AudioFramesArrived,
+            AudioFramesWrittenToSink = audio.AudioFramesWrittenToSink,
+            AudioSamplesEncoded = audio.AudioSamplesEncoded,
+            AudioDropEvents = audio.AudioDropEvents,
+            AudioDiscontinuities = audio.AudioDiscontinuities,
+            AudioTimestampErrors = audio.AudioTimestampErrors,
+            AudioCallbackGaps = audio.AudioCallbackGaps
+        };
+
+    private readonly record struct RecordingIntegrityAudioProjection
+    {
+        public string AudioStatus { get; init; }
+        public bool AudioEnabled { get; init; }
+        public bool AudioCaptureActive { get; init; }
+        public long AudioFramesArrived { get; init; }
+        public long AudioFramesWrittenToSink { get; init; }
+        public long AudioSamplesEncoded { get; init; }
+        public long AudioDropEvents { get; init; }
+        public long AudioDiscontinuities { get; init; }
+        public long AudioTimestampErrors { get; init; }
+        public long AudioCallbackGaps { get; init; }
+    }
+
+    private readonly record struct RecordingIntegrityAudioFlattenedProjection
+    {
+        public string AudioStatus { get; init; }
+        public bool AudioEnabled { get; init; }
+        public bool AudioCaptureActive { get; init; }
+        public long AudioFramesArrived { get; init; }
+        public long AudioFramesWrittenToSink { get; init; }
+        public long AudioSamplesEncoded { get; init; }
+        public long AudioDropEvents { get; init; }
+        public long AudioDiscontinuities { get; init; }
+        public long AudioTimestampErrors { get; init; }
+        public long AudioCallbackGaps { get; init; }
+    }
+
+    private static RecordingIntegrityAvSyncProjection BuildRecordingIntegrityAvSyncProjection(
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            AvSyncDriftMs = captureRuntime.RecordingIntegrityAvSyncDriftMs,
+            AvSyncDriftRateMsPerSec = captureRuntime.RecordingIntegrityAvSyncDriftRateMsPerSec,
+            EncoderAvSyncDriftMs = captureRuntime.RecordingIntegrityEncoderAvSyncDriftMs,
+            EncoderAvSyncCorrectionSamples = captureRuntime.RecordingIntegrityEncoderAvSyncCorrectionSamples
+        };
+
+    private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(
+        RecordingIntegrityAvSyncProjection avSync)
+        => new()
+        {
+            AvSyncDriftMs = avSync.AvSyncDriftMs,
+            AvSyncDriftRateMsPerSec = avSync.AvSyncDriftRateMsPerSec,
+            EncoderAvSyncDriftMs = avSync.EncoderAvSyncDriftMs,
+            EncoderAvSyncCorrectionSamples = avSync.EncoderAvSyncCorrectionSamples
+        };
+
+    private readonly record struct RecordingIntegrityAvSyncProjection
+    {
+        public double? AvSyncDriftMs { get; init; }
+        public double? AvSyncDriftRateMsPerSec { get; init; }
+        public double? EncoderAvSyncDriftMs { get; init; }
+        public long? EncoderAvSyncCorrectionSamples { get; init; }
+    }
+
+    private readonly record struct RecordingIntegrityAvSyncFlattenedProjection
+    {
+        public double? AvSyncDriftMs { get; init; }
+        public double? AvSyncDriftRateMsPerSec { get; init; }
+        public double? EncoderAvSyncDriftMs { get; init; }
+        public long? EncoderAvSyncCorrectionSamples { get; init; }
+    }
+
+    private readonly record struct RecordingIntegrityFlattenedProjection
+    {
+        public RecordingIntegritySummaryFlattenedProjection Summary { get; init; }
+        public RecordingIntegrityVideoFlattenedProjection Video { get; init; }
+        public RecordingIntegrityBackpressureFlattenedProjection Backpressure { get; init; }
+        public RecordingIntegrityAudioFlattenedProjection Audio { get; init; }
+        public RecordingIntegrityAvSyncFlattenedProjection AvSync { get; init; }
+    }
+
+    private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            Encoder = BuildRecordingPipelineEncoderProjection(health),
+            Ingest = BuildRecordingPipelineIngestProjection(health),
+            VideoQueue = BuildRecordingPipelineVideoQueueProjection(health),
+            HardwareQueues = BuildRecordingPipelineHardwareQueuesProjection(health)
+        };
+
+    private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(
+        RecordingPipelineProjection recordingPipeline)
+        => new()
+        {
+            Encoder = BuildRecordingPipelineEncoderFlattenedProjection(recordingPipeline),
+            Ingest = BuildRecordingPipelineIngestFlattenedProjection(recordingPipeline),
+            VideoQueue = BuildRecordingPipelineVideoQueueFlattenedProjection(recordingPipeline),
+            HardwareQueues = BuildRecordingPipelineHardwareQueuesFlattenedProjection(recordingPipeline)
+        };
+
+    private readonly record struct RecordingPipelineProjection
+    {
+        public RecordingPipelineEncoderProjection Encoder { get; init; }
+        public RecordingPipelineIngestProjection Ingest { get; init; }
+        public RecordingPipelineVideoQueueProjection VideoQueue { get; init; }
+        public RecordingPipelineHardwareQueuesProjection HardwareQueues { get; init; }
+    }
+
+    private static RecordingPipelineEncoderProjection BuildRecordingPipelineEncoderProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            VideoFramesEnqueued = health.VideoFramesEnqueued,
+            VideoFramesEncoded = health.VideoFramesConverted,
+            LastEnqueueAgeMs = health.LastVideoEnqueueAgeMs,
+            LastWriteAgeMs = health.LastVideoWriteAgeMs,
+            EncodingFailed = health.RecordingEncodingFailed,
+            EncodingFailureType = health.RecordingEncodingFailureType,
+            EncodingFailureMessage = health.RecordingEncodingFailureMessage
+        };
+
+    private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(
+        RecordingPipelineProjection recordingPipeline)
+        => new()
+        {
+            VideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,
+            VideoFramesEncoded = recordingPipeline.Encoder.VideoFramesEncoded,
+            LastEnqueueAgeMs = recordingPipeline.Encoder.LastEnqueueAgeMs,
+            LastWriteAgeMs = recordingPipeline.Encoder.LastWriteAgeMs,
+            EncodingFailed = recordingPipeline.Encoder.EncodingFailed,
+            EncodingFailureType = recordingPipeline.Encoder.EncodingFailureType,
+            EncodingFailureMessage = recordingPipeline.Encoder.EncodingFailureMessage
+        };
+
+    private readonly record struct RecordingPipelineEncoderProjection
+    {
+        public long VideoFramesEnqueued { get; init; }
+        public long VideoFramesEncoded { get; init; }
+        public long LastEnqueueAgeMs { get; init; }
+        public long LastWriteAgeMs { get; init; }
+        public bool EncodingFailed { get; init; }
+        public string? EncodingFailureType { get; init; }
+        public string? EncodingFailureMessage { get; init; }
+    }
+
+    private readonly record struct RecordingPipelineEncoderFlattenedProjection
+    {
+        public long VideoFramesEnqueued { get; init; }
+        public long VideoFramesEncoded { get; init; }
+        public long LastEnqueueAgeMs { get; init; }
+        public long LastWriteAgeMs { get; init; }
+        public bool EncodingFailed { get; init; }
+        public string? EncodingFailureType { get; init; }
+        public string? EncodingFailureMessage { get; init; }
+    }
+
+    private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            ConversionQueueDepth = health.ConversionQueueDepth,
+            FfmpegVideoQueueDepth = health.FfmpegVideoQueueDepth,
+            FfmpegAudioQueueDepth = health.FfmpegAudioQueueDepth,
+            VideoFramesArrived = health.VideoFramesArrived,
+            VideoFramesQueued = health.VideoFramesQueued,
+            VideoFramesDropped = health.VideoFramesDropped,
+            VideoFramesDroppedBacklog = health.VideoFramesDroppedBacklog,
+            VideoFramesConverted = health.VideoFramesConverted,
+            VideoFramesEnqueued = health.VideoFramesEnqueued,
+            VideoDropsQueueSaturated = health.VideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = health.VideoDropsBacklogEviction
+        };
+
+    private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(
+        RecordingPipelineProjection recordingPipeline)
+        => new()
+        {
+            ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,
+            FfmpegVideoQueueDepth = recordingPipeline.Ingest.FfmpegVideoQueueDepth,
+            FfmpegAudioQueueDepth = recordingPipeline.Ingest.FfmpegAudioQueueDepth,
+            VideoFramesArrived = recordingPipeline.Ingest.VideoFramesArrived,
+            VideoFramesQueued = recordingPipeline.Ingest.VideoFramesQueued,
+            VideoFramesDropped = recordingPipeline.Ingest.VideoFramesDropped,
+            VideoFramesDroppedBacklog = recordingPipeline.Ingest.VideoFramesDroppedBacklog,
+            VideoFramesConverted = recordingPipeline.Ingest.VideoFramesConverted,
+            VideoFramesEnqueued = recordingPipeline.Ingest.VideoFramesEnqueued,
+            VideoDropsQueueSaturated = recordingPipeline.Ingest.VideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction
+        };
+
+    private readonly record struct RecordingPipelineIngestProjection
+    {
+        public int ConversionQueueDepth { get; init; }
+        public int FfmpegVideoQueueDepth { get; init; }
+        public int FfmpegAudioQueueDepth { get; init; }
+        public long VideoFramesArrived { get; init; }
+        public long VideoFramesQueued { get; init; }
+        public long VideoFramesDropped { get; init; }
+        public long VideoFramesDroppedBacklog { get; init; }
+        public long VideoFramesConverted { get; init; }
+        public long VideoFramesEnqueued { get; init; }
+        public long VideoDropsQueueSaturated { get; init; }
+        public long VideoDropsBacklogEviction { get; init; }
+    }
+
+    private readonly record struct RecordingPipelineIngestFlattenedProjection
+    {
+        public int ConversionQueueDepth { get; init; }
+        public int FfmpegVideoQueueDepth { get; init; }
+        public int FfmpegAudioQueueDepth { get; init; }
+        public long VideoFramesArrived { get; init; }
+        public long VideoFramesQueued { get; init; }
+        public long VideoFramesDropped { get; init; }
+        public long VideoFramesDroppedBacklog { get; init; }
+        public long VideoFramesConverted { get; init; }
+        public long VideoFramesEnqueued { get; init; }
+        public long VideoDropsQueueSaturated { get; init; }
+        public long VideoDropsBacklogEviction { get; init; }
+    }
+
+    private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            Capacity = health.RecordingVideoQueueCapacity,
+            MaxDepth = health.RecordingVideoQueueMaxDepth,
+            FramesSubmittedToEncoder = health.RecordingVideoFramesSubmittedToEncoder,
+            EncoderPts = health.RecordingVideoEncoderPts,
+            EncoderPacketsWritten = health.RecordingVideoEncoderPacketsWritten,
+            EncoderDroppedFrames = health.RecordingVideoEncoderDroppedFrames,
+            SequenceGaps = health.RecordingVideoSequenceGaps,
+            OldestFrameAgeMs = health.RecordingVideoQueueOldestFrameAgeMs,
+            LastLatencyMs = health.RecordingVideoQueueLastLatencyMs,
+            LatencySampleCount = health.RecordingVideoQueueLatencySampleCount,
+            LatencyAvgMs = health.RecordingVideoQueueLatencyAvgMs,
+            LatencyP95Ms = health.RecordingVideoQueueLatencyP95Ms,
+            LatencyP99Ms = health.RecordingVideoQueueLatencyP99Ms,
+            LatencyMaxMs = health.RecordingVideoQueueLatencyMaxMs,
+            BackpressureWaitMs = health.RecordingVideoBackpressureWaitMs,
+            BackpressureEvents = health.RecordingVideoBackpressureEvents,
+            BackpressureLastWaitMs = health.RecordingVideoBackpressureLastWaitMs,
+            BackpressureMaxWaitMs = health.RecordingVideoBackpressureMaxWaitMs
+        };
+
+    private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(
+        RecordingPipelineProjection recordingPipeline)
+        => new()
+        {
+            Capacity = recordingPipeline.VideoQueue.Capacity,
+            MaxDepth = recordingPipeline.VideoQueue.MaxDepth,
+            FramesSubmittedToEncoder = recordingPipeline.VideoQueue.FramesSubmittedToEncoder,
+            EncoderPts = recordingPipeline.VideoQueue.EncoderPts,
+            EncoderPacketsWritten = recordingPipeline.VideoQueue.EncoderPacketsWritten,
+            EncoderDroppedFrames = recordingPipeline.VideoQueue.EncoderDroppedFrames,
+            SequenceGaps = recordingPipeline.VideoQueue.SequenceGaps,
+            OldestFrameAgeMs = recordingPipeline.VideoQueue.OldestFrameAgeMs,
+            LastLatencyMs = recordingPipeline.VideoQueue.LastLatencyMs,
+            LatencySampleCount = recordingPipeline.VideoQueue.LatencySampleCount,
+            LatencyAvgMs = recordingPipeline.VideoQueue.LatencyAvgMs,
+            LatencyP95Ms = recordingPipeline.VideoQueue.LatencyP95Ms,
+            LatencyP99Ms = recordingPipeline.VideoQueue.LatencyP99Ms,
+            LatencyMaxMs = recordingPipeline.VideoQueue.LatencyMaxMs,
+            BackpressureWaitMs = recordingPipeline.VideoQueue.BackpressureWaitMs,
+            BackpressureEvents = recordingPipeline.VideoQueue.BackpressureEvents,
+            BackpressureLastWaitMs = recordingPipeline.VideoQueue.BackpressureLastWaitMs,
+            BackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs
+        };
+
+    private readonly record struct RecordingPipelineVideoQueueProjection
+    {
+        public int Capacity { get; init; }
+        public int MaxDepth { get; init; }
+        public long FramesSubmittedToEncoder { get; init; }
+        public long EncoderPts { get; init; }
+        public long EncoderPacketsWritten { get; init; }
+        public long EncoderDroppedFrames { get; init; }
+        public long SequenceGaps { get; init; }
+        public long OldestFrameAgeMs { get; init; }
+        public long LastLatencyMs { get; init; }
+        public int LatencySampleCount { get; init; }
+        public double LatencyAvgMs { get; init; }
+        public double LatencyP95Ms { get; init; }
+        public double LatencyP99Ms { get; init; }
+        public double LatencyMaxMs { get; init; }
+        public long BackpressureWaitMs { get; init; }
+        public long BackpressureEvents { get; init; }
+        public long BackpressureLastWaitMs { get; init; }
+        public long BackpressureMaxWaitMs { get; init; }
+    }
+
+    private readonly record struct RecordingPipelineVideoQueueFlattenedProjection
+    {
+        public int Capacity { get; init; }
+        public int MaxDepth { get; init; }
+        public long FramesSubmittedToEncoder { get; init; }
+        public long EncoderPts { get; init; }
+        public long EncoderPacketsWritten { get; init; }
+        public long EncoderDroppedFrames { get; init; }
+        public long SequenceGaps { get; init; }
+        public long OldestFrameAgeMs { get; init; }
+        public long LastLatencyMs { get; init; }
+        public int LatencySampleCount { get; init; }
+        public double LatencyAvgMs { get; init; }
+        public double LatencyP95Ms { get; init; }
+        public double LatencyP99Ms { get; init; }
+        public double LatencyMaxMs { get; init; }
+        public long BackpressureWaitMs { get; init; }
+        public long BackpressureEvents { get; init; }
+        public long BackpressureLastWaitMs { get; init; }
+        public long BackpressureMaxWaitMs { get; init; }
+    }
+
+    private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            GpuQueueDepth = health.RecordingGpuQueueDepth,
+            GpuQueueCapacity = health.RecordingGpuQueueCapacity,
+            GpuQueueMaxDepth = health.RecordingGpuQueueMaxDepth,
+            GpuFramesEnqueued = health.RecordingGpuFramesEnqueued,
+            GpuFramesDropped = health.RecordingGpuFramesDropped,
+            CudaQueueDepth = health.RecordingCudaQueueDepth,
+            CudaQueueCapacity = health.RecordingCudaQueueCapacity,
+            CudaQueueMaxDepth = health.RecordingCudaQueueMaxDepth,
+            CudaFramesEnqueued = health.RecordingCudaFramesEnqueued,
+            CudaFramesDropped = health.RecordingCudaFramesDropped
+        };
+
+    private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(
+        RecordingPipelineProjection recordingPipeline)
+        => new()
+        {
+            GpuQueueDepth = recordingPipeline.HardwareQueues.GpuQueueDepth,
+            GpuQueueCapacity = recordingPipeline.HardwareQueues.GpuQueueCapacity,
+            GpuQueueMaxDepth = recordingPipeline.HardwareQueues.GpuQueueMaxDepth,
+            GpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,
+            GpuFramesDropped = recordingPipeline.HardwareQueues.GpuFramesDropped,
+            CudaQueueDepth = recordingPipeline.HardwareQueues.CudaQueueDepth,
+            CudaQueueCapacity = recordingPipeline.HardwareQueues.CudaQueueCapacity,
+            CudaQueueMaxDepth = recordingPipeline.HardwareQueues.CudaQueueMaxDepth,
+            CudaFramesEnqueued = recordingPipeline.HardwareQueues.CudaFramesEnqueued,
+            CudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped
+        };
+
+    private readonly record struct RecordingPipelineHardwareQueuesProjection
+    {
+        public int GpuQueueDepth { get; init; }
+        public int GpuQueueCapacity { get; init; }
+        public int GpuQueueMaxDepth { get; init; }
+        public long GpuFramesEnqueued { get; init; }
+        public long GpuFramesDropped { get; init; }
+        public int CudaQueueDepth { get; init; }
+        public int CudaQueueCapacity { get; init; }
+        public int CudaQueueMaxDepth { get; init; }
+        public long CudaFramesEnqueued { get; init; }
+        public long CudaFramesDropped { get; init; }
+    }
+
+    private readonly record struct RecordingPipelineHardwareQueuesFlattenedProjection
+    {
+        public int GpuQueueDepth { get; init; }
+        public int GpuQueueCapacity { get; init; }
+        public int GpuQueueMaxDepth { get; init; }
+        public long GpuFramesEnqueued { get; init; }
+        public long GpuFramesDropped { get; init; }
+        public int CudaQueueDepth { get; init; }
+        public int CudaQueueCapacity { get; init; }
+        public int CudaQueueMaxDepth { get; init; }
+        public long CudaFramesEnqueued { get; init; }
+        public long CudaFramesDropped { get; init; }
+    }
+
+    private readonly record struct RecordingPipelineFlattenedProjection
+    {
+        public RecordingPipelineEncoderFlattenedProjection Encoder { get; init; }
+        public RecordingPipelineIngestFlattenedProjection Ingest { get; init; }
+        public RecordingPipelineVideoQueueFlattenedProjection VideoQueue { get; init; }
+        public RecordingPipelineHardwareQueuesFlattenedProjection HardwareQueues { get; init; }
+    }
+
+    private static RecordingOutputProjection BuildRecordingOutputProjection(
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        CaptureRuntimeSnapshot captureRuntime,
+        RecordingStats recordingStats,
+        bool recordingFileGrowing,
+        LastOutputProbe lastOutput,
+        RecordingVerificationResult? lastVerification)
+        => new()
+        {
+            OutputPath = viewModelSnapshot.OutputPath,
+            RecordingTime = viewModelSnapshot.RecordingTime,
+            RecordingSizeInfo = viewModelSnapshot.RecordingSizeInfo,
+            RecordingBitrateInfo = viewModelSnapshot.RecordingBitrateInfo,
+            RecordingVideoBytes = recordingStats.VideoBytes,
+            RecordingAudioBytes = recordingStats.AudioBytes,
+            RecordingTotalBytes = recordingStats.TotalBytes,
+            RecordingFileGrowing = recordingFileGrowing,
+            LastOutputPath = captureRuntime.LastOutputPath,
+            LastFinalizeStatus = captureRuntime.LastFinalizeStatus,
+            LastFinalizeUtc = captureRuntime.LastFinalizeUtc,
+            LastOutputExists = lastOutput.Exists,
+            LastOutputSizeBytes = lastOutput.SizeBytes,
+            LastVerification = lastVerification
+        };
+
+    private readonly record struct RecordingOutputProjection
+    {
+        public string OutputPath { get; init; }
+        public string RecordingTime { get; init; }
+        public string RecordingSizeInfo { get; init; }
+        public string RecordingBitrateInfo { get; init; }
+        public long RecordingVideoBytes { get; init; }
+        public long RecordingAudioBytes { get; init; }
+        public long RecordingTotalBytes { get; init; }
+        public bool RecordingFileGrowing { get; init; }
+        public string? LastOutputPath { get; init; }
+        public string LastFinalizeStatus { get; init; }
+        public DateTimeOffset? LastFinalizeUtc { get; init; }
+        public bool LastOutputExists { get; init; }
+        public long? LastOutputSizeBytes { get; init; }
+        public RecordingVerificationResult? LastVerification { get; init; }
+    }
+
+    private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Backend = captureRuntime.RecordingBackend,
+            AudioPathMode = captureRuntime.AudioPathMode,
+            MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)
+        };
+
+    private static string ResolveMuxResult(bool? muxSucceeded)
+        => muxSucceeded.HasValue
+            ? (muxSucceeded.Value ? "Succeeded" : "Failed")
+            : "NotAttempted";
+
+    private readonly record struct RecordingBackendProjection
+    {
+        public string Backend { get; init; }
+        public string AudioPathMode { get; init; }
+        public string MuxResult { get; init; }
+    }
+
+    private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(
+        RecordingBackendProjection recordingBackend,
+        RecordingOutputProjection recordingOutput)
+        => new()
+        {
+            Backend = recordingBackend.Backend,
+            AudioPathMode = recordingBackend.AudioPathMode,
+            MuxResult = recordingBackend.MuxResult,
+            OutputPath = recordingOutput.OutputPath,
+            RecordingTime = recordingOutput.RecordingTime,
+            RecordingSizeInfo = recordingOutput.RecordingSizeInfo,
+            RecordingBitrateInfo = recordingOutput.RecordingBitrateInfo,
+            RecordingVideoBytes = recordingOutput.RecordingVideoBytes,
+            RecordingAudioBytes = recordingOutput.RecordingAudioBytes,
+            RecordingTotalBytes = recordingOutput.RecordingTotalBytes,
+            RecordingFileGrowing = recordingOutput.RecordingFileGrowing,
+            LastOutputPath = recordingOutput.LastOutputPath,
+            LastFinalizeStatus = recordingOutput.LastFinalizeStatus,
+            LastFinalizeUtc = recordingOutput.LastFinalizeUtc,
+            LastOutputExists = recordingOutput.LastOutputExists,
+            LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
+            LastVerification = recordingOutput.LastVerification
+        };
+
+    private readonly record struct RecordingOutputFlattenedProjection
+    {
+        public string Backend { get; init; }
+        public string AudioPathMode { get; init; }
+        public string MuxResult { get; init; }
+        public string OutputPath { get; init; }
+        public string RecordingTime { get; init; }
+        public string RecordingSizeInfo { get; init; }
+        public string RecordingBitrateInfo { get; init; }
+        public long RecordingVideoBytes { get; init; }
+        public long RecordingAudioBytes { get; init; }
+        public long RecordingTotalBytes { get; init; }
+        public bool RecordingFileGrowing { get; init; }
+        public string? LastOutputPath { get; init; }
+        public string LastFinalizeStatus { get; init; }
+        public DateTimeOffset? LastFinalizeUtc { get; init; }
+        public bool LastOutputExists { get; init; }
+        public long? LastOutputSizeBytes { get; init; }
+        public RecordingVerificationResult? LastVerification { get; init; }
+    }
+
+    private static AudioAndIngestProjection BuildAudioAndIngestProjection(
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        CaptureRuntimeSnapshot captureRuntime,
+        AudioSignalState audioSignal)
+        => new()
+        {
+            Signal = BuildAudioSignalProjection(viewModelSnapshot, audioSignal),
+            Ingest = BuildCaptureIngestProjection(captureRuntime),
+            Wasapi = BuildWasapiAudioProjection(captureRuntime)
+        };
+
+    private readonly record struct AudioAndIngestProjection
+    {
+        public AudioSignalProjection Signal { get; init; }
+        public CaptureIngestProjection Ingest { get; init; }
+        public WasapiAudioProjection Wasapi { get; init; }
+    }
+
+    private static AudioSignalProjection BuildAudioSignalProjection(
+        ViewModelRuntimeSnapshot viewModelSnapshot,
+        AudioSignalState audioSignal)
+        => new()
+        {
+            Peak = viewModelSnapshot.AudioPeak,
+            Clipping = viewModelSnapshot.AudioClipping,
+            SignalPresent = audioSignal.SignalPresent,
+            MutedSuspected = audioSignal.MutedSuspected
+        };
+
+    private readonly record struct AudioSignalProjection
+    {
+        public double Peak { get; init; }
+        public bool Clipping { get; init; }
+        public bool SignalPresent { get; init; }
+        public bool MutedSuspected { get; init; }
+    }
+
+    private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(
+        AudioSignalProjection signal)
+        => new()
+        {
+            Peak = signal.Peak,
+            Clipping = signal.Clipping,
+            SignalPresent = signal.SignalPresent,
+            MutedSuspected = signal.MutedSuspected
+        };
+
+    private readonly record struct AudioSignalFlattenedProjection
+    {
+        public double Peak { get; init; }
+        public bool Clipping { get; init; }
+        public bool SignalPresent { get; init; }
+        public bool MutedSuspected { get; init; }
+    }
+
+    private static CaptureIngestProjection BuildCaptureIngestProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            AudioReaderActive = captureRuntime.AudioReaderActive,
+            AudioFramesArrived = captureRuntime.AudioFramesArrived,
+            AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,
+            VideoReaderActive = captureRuntime.VideoReaderActive,
+            VideoFramesArrived = captureRuntime.IngestVideoFramesArrived,
+            VideoFramesWrittenToSink = captureRuntime.IngestVideoFramesWrittenToSink,
+            LastVideoFrameAgeMs = captureRuntime.IngestLastVideoFrameAgeMs,
+            VideoIngestErrorCount = captureRuntime.VideoIngestErrorCount,
+            MfSourceReaderFramesDelivered = captureRuntime.MfSourceReaderFramesDelivered,
+            MfSourceReaderFramesDropped = captureRuntime.MfSourceReaderFramesDropped,
+            MfSourceReaderNegotiatedFormat = captureRuntime.MfSourceReaderNegotiatedFormat,
+            SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,
+            SourceReaderReadOutstandingMs = captureRuntime.SourceReaderReadOutstandingMs,
+            SourceReaderLastFrameTickMs = captureRuntime.SourceReaderLastFrameTickMs,
+            SourceReaderFrameChannelDepth = captureRuntime.SourceReaderFrameChannelDepth
+        };
+
+    private readonly record struct CaptureIngestProjection
+    {
+        public bool AudioReaderActive { get; init; }
+        public long AudioFramesArrived { get; init; }
+        public long AudioFramesWrittenToSink { get; init; }
+        public bool VideoReaderActive { get; init; }
+        public long VideoFramesArrived { get; init; }
+        public long VideoFramesWrittenToSink { get; init; }
+        public long LastVideoFrameAgeMs { get; init; }
+        public long VideoIngestErrorCount { get; init; }
+        public long MfSourceReaderFramesDelivered { get; init; }
+        public long MfSourceReaderFramesDropped { get; init; }
+        public string? MfSourceReaderNegotiatedFormat { get; init; }
+        public bool SourceReaderReadOutstanding { get; init; }
+        public long SourceReaderReadOutstandingMs { get; init; }
+        public long SourceReaderLastFrameTickMs { get; init; }
+        public int SourceReaderFrameChannelDepth { get; init; }
+    }
+
+    private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(
+        CaptureIngestProjection ingest)
+        => new()
+        {
+            AudioReaderActive = ingest.AudioReaderActive,
+            AudioFramesArrived = ingest.AudioFramesArrived,
+            AudioFramesWrittenToSink = ingest.AudioFramesWrittenToSink,
+            VideoReaderActive = ingest.VideoReaderActive,
+            VideoFramesArrived = ingest.VideoFramesArrived,
+            VideoFramesWrittenToSink = ingest.VideoFramesWrittenToSink,
+            LastVideoFrameAgeMs = ingest.LastVideoFrameAgeMs,
+            VideoIngestErrorCount = ingest.VideoIngestErrorCount
+        };
+
+    private readonly record struct CaptureIngestFlattenedProjection
+    {
+        public bool AudioReaderActive { get; init; }
+        public long AudioFramesArrived { get; init; }
+        public long AudioFramesWrittenToSink { get; init; }
+        public bool VideoReaderActive { get; init; }
+        public long VideoFramesArrived { get; init; }
+        public long VideoFramesWrittenToSink { get; init; }
+        public long LastVideoFrameAgeMs { get; init; }
+        public long VideoIngestErrorCount { get; init; }
+    }
+
+    private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(
+        CaptureIngestProjection ingest)
+        => new()
+        {
+            FramesDelivered = ingest.MfSourceReaderFramesDelivered,
+            FramesDropped = ingest.MfSourceReaderFramesDropped,
+            NegotiatedFormat = ingest.MfSourceReaderNegotiatedFormat,
+            ReadOutstanding = ingest.SourceReaderReadOutstanding,
+            ReadOutstandingMs = ingest.SourceReaderReadOutstandingMs,
+            LastFrameTickMs = ingest.SourceReaderLastFrameTickMs,
+            FrameChannelDepth = ingest.SourceReaderFrameChannelDepth
+        };
+
+    private readonly record struct SourceReaderFlattenedProjection
+    {
+        public long FramesDelivered { get; init; }
+        public long FramesDropped { get; init; }
+        public string? NegotiatedFormat { get; init; }
+        public bool ReadOutstanding { get; init; }
+        public long ReadOutstandingMs { get; init; }
+        public long LastFrameTickMs { get; init; }
+        public int FrameChannelDepth { get; init; }
+    }
+
+    private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            CaptureCallbackCount = captureRuntime.WasapiCaptureCallbackCount,
+            CaptureCallbackAvgIntervalMs = captureRuntime.WasapiCaptureCallbackAvgIntervalMs,
+            CaptureCallbackMaxIntervalMs = captureRuntime.WasapiCaptureCallbackMaxIntervalMs,
+            CaptureCallbackSevereGapCount = captureRuntime.WasapiCaptureCallbackSevereGapCount,
+            CaptureAudioDiscontinuityCount = captureRuntime.WasapiCaptureAudioDiscontinuityCount,
+            CaptureAudioTimestampErrorCount = captureRuntime.WasapiCaptureAudioTimestampErrorCount,
+            CaptureAudioGlitchCount = captureRuntime.WasapiCaptureAudioGlitchCount,
+            CaptureCallbackSilenceCount = captureRuntime.WasapiCaptureCallbackSilenceCount,
+            CaptureLastCallbackTickMs = captureRuntime.WasapiCaptureLastCallbackTickMs,
+            CaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,
+            CaptureAudioLevelLastFireTickMs = captureRuntime.WasapiCaptureAudioLevelLastFireTickMs,
+            PlaybackRenderCallbackCount = captureRuntime.WasapiPlaybackRenderCallbackCount,
+            PlaybackRenderSilenceCount = captureRuntime.WasapiPlaybackRenderSilenceCount,
+            PlaybackQueueDepth = captureRuntime.WasapiPlaybackQueueDepth,
+            PlaybackQueueDropCount = captureRuntime.WasapiPlaybackQueueDropCount,
+            PlaybackQueueDurationMs = captureRuntime.WasapiPlaybackQueueDurationMs,
+            PlaybackActiveChunkDurationMs = captureRuntime.WasapiPlaybackActiveChunkDurationMs,
+            PlaybackEndpointQueuedDurationMs = captureRuntime.WasapiPlaybackEndpointQueuedDurationMs,
+            PlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,
+            PlaybackStreamLatencyMs = captureRuntime.WasapiPlaybackStreamLatencyMs,
+            PlaybackLastRenderTickMs = captureRuntime.WasapiPlaybackLastRenderTickMs
+        };
+
+    private readonly record struct WasapiAudioProjection
+    {
+        public long CaptureCallbackCount { get; init; }
+        public double CaptureCallbackAvgIntervalMs { get; init; }
+        public double CaptureCallbackMaxIntervalMs { get; init; }
+        public long CaptureCallbackSevereGapCount { get; init; }
+        public long CaptureAudioDiscontinuityCount { get; init; }
+        public long CaptureAudioTimestampErrorCount { get; init; }
+        public long CaptureAudioGlitchCount { get; init; }
+        public int CaptureCallbackSilenceCount { get; init; }
+        public long CaptureLastCallbackTickMs { get; init; }
+        public long CaptureAudioLevelEventsFired { get; init; }
+        public long CaptureAudioLevelLastFireTickMs { get; init; }
+        public long PlaybackRenderCallbackCount { get; init; }
+        public int PlaybackRenderSilenceCount { get; init; }
+        public int PlaybackQueueDepth { get; init; }
+        public int PlaybackQueueDropCount { get; init; }
+        public double PlaybackQueueDurationMs { get; init; }
+        public double PlaybackActiveChunkDurationMs { get; init; }
+        public double PlaybackEndpointQueuedDurationMs { get; init; }
+        public double PlaybackBufferedDurationMs { get; init; }
+        public double PlaybackStreamLatencyMs { get; init; }
+        public long PlaybackLastRenderTickMs { get; init; }
+    }
+
+    private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(
+        WasapiAudioProjection wasapi)
+        => new()
+        {
+            CallbackCount = wasapi.CaptureCallbackCount,
+            CallbackAvgIntervalMs = wasapi.CaptureCallbackAvgIntervalMs,
+            CallbackMaxIntervalMs = wasapi.CaptureCallbackMaxIntervalMs,
+            CallbackSevereGapCount = wasapi.CaptureCallbackSevereGapCount,
+            AudioDiscontinuityCount = wasapi.CaptureAudioDiscontinuityCount,
+            AudioTimestampErrorCount = wasapi.CaptureAudioTimestampErrorCount,
+            AudioGlitchCount = wasapi.CaptureAudioGlitchCount,
+            CallbackSilenceCount = wasapi.CaptureCallbackSilenceCount,
+            LastCallbackTickMs = wasapi.CaptureLastCallbackTickMs,
+            AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,
+            AudioLevelLastFireTickMs = wasapi.CaptureAudioLevelLastFireTickMs
+        };
+
+    private readonly record struct WasapiCaptureFlattenedProjection
+    {
+        public long CallbackCount { get; init; }
+        public double CallbackAvgIntervalMs { get; init; }
+        public double CallbackMaxIntervalMs { get; init; }
+        public long CallbackSevereGapCount { get; init; }
+        public long AudioDiscontinuityCount { get; init; }
+        public long AudioTimestampErrorCount { get; init; }
+        public long AudioGlitchCount { get; init; }
+        public int CallbackSilenceCount { get; init; }
+        public long LastCallbackTickMs { get; init; }
+        public long AudioLevelEventsFired { get; init; }
+        public long AudioLevelLastFireTickMs { get; init; }
+    }
+
+    private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(
+        WasapiAudioProjection wasapi)
+        => new()
+        {
+            RenderCallbackCount = wasapi.PlaybackRenderCallbackCount,
+            RenderSilenceCount = wasapi.PlaybackRenderSilenceCount,
+            QueueDepth = wasapi.PlaybackQueueDepth,
+            QueueDropCount = wasapi.PlaybackQueueDropCount,
+            QueueDurationMs = wasapi.PlaybackQueueDurationMs,
+            ActiveChunkDurationMs = wasapi.PlaybackActiveChunkDurationMs,
+            EndpointQueuedDurationMs = wasapi.PlaybackEndpointQueuedDurationMs,
+            BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,
+            StreamLatencyMs = wasapi.PlaybackStreamLatencyMs,
+            LastRenderTickMs = wasapi.PlaybackLastRenderTickMs
+        };
+
+    private readonly record struct WasapiPlaybackFlattenedProjection
+    {
+        public long RenderCallbackCount { get; init; }
+        public int RenderSilenceCount { get; init; }
+        public int QueueDepth { get; init; }
+        public int QueueDropCount { get; init; }
+        public double QueueDurationMs { get; init; }
+        public double ActiveChunkDurationMs { get; init; }
+        public double EndpointQueuedDurationMs { get; init; }
+        public double BufferedDurationMs { get; init; }
+        public double StreamLatencyMs { get; init; }
+        public long LastRenderTickMs { get; init; }
+    }
+
+    private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            QueueSaturated = health.AudioDropsQueueSaturated,
+            BacklogEviction = health.AudioDropsBacklogEviction,
+            ChunksDropped = health.AudioChunksDropped,
+            QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,
+            QueueDropsFileWriter = health.AudioChunksDropped
+        };
+
+    private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(AudioDropsProjection audioDrops)
+        => new()
+        {
+            QueueSaturated = audioDrops.QueueSaturated,
+            BacklogEviction = audioDrops.BacklogEviction,
+            ChunksDropped = audioDrops.ChunksDropped,
+            QueueDropsRealtime = audioDrops.QueueDropsRealtime,
+            QueueDropsFileWriter = audioDrops.QueueDropsFileWriter
+        };
+
+    private readonly record struct AudioDropsProjection
+    {
+        public long QueueSaturated { get; init; }
+        public long BacklogEviction { get; init; }
+        public long ChunksDropped { get; init; }
+        public long QueueDropsRealtime { get; init; }
+        public long QueueDropsFileWriter { get; init; }
+    }
+
+    private readonly record struct AudioDropsFlattenedProjection
+    {
+        public long QueueSaturated { get; init; }
+        public long BacklogEviction { get; init; }
+        public long ChunksDropped { get; init; }
+        public long QueueDropsRealtime { get; init; }
+        public long QueueDropsFileWriter { get; init; }
+    }
+
+    private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(
+        AudioAndIngestProjection audioAndIngest)
+        => new()
+        {
+            Signal = BuildAudioSignalFlattenedProjection(audioAndIngest.Signal),
+            Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),
+            SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),
+            WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),
+            WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)
+        };
+
+    private readonly record struct AudioAndIngestFlattenedProjection
+    {
+        public AudioSignalFlattenedProjection Signal { get; init; }
+        public CaptureIngestFlattenedProjection Ingest { get; init; }
+        public SourceReaderFlattenedProjection SourceReader { get; init; }
+        public WasapiCaptureFlattenedProjection WasapiCapture { get; init; }
+        public WasapiPlaybackFlattenedProjection WasapiPlayback { get; init; }
+    }
+
+    private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(
+        PreviewRuntimeSnapshot previewRuntime,
+        PreviewHdrState previewHdrState,
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            Frame = BuildPreviewRuntimeFrameProjection(previewRuntime),
+            Cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime),
+            Surface = BuildPreviewRuntimeSurfaceProjection(previewRuntime),
+            Startup = BuildPreviewRuntimeStartupProjection(previewRuntime),
+            GpuPlayback = BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime),
+            Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)
+        };
+
+    private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(
+        PreviewRuntimeProjection previewSummary)
+        => new()
+        {
+            Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),
+            Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),
+            Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),
+            Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),
+            GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),
+            Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)
+        };
+
+    private readonly record struct PreviewRuntimeProjection
+    {
+        public PreviewRuntimeFrameProjection Frame { get; init; }
+        public PreviewRuntimeCadenceProjection Cadence { get; init; }
+        public PreviewRuntimeSurfaceProjection Surface { get; init; }
+        public PreviewRuntimeStartupProjection Startup { get; init; }
+        public PreviewRuntimeGpuPlaybackProjection GpuPlayback { get; init; }
+        public PreviewRuntimeColorProjection Color { get; init; }
+    }
+
+    private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            FramesArrived = previewRuntime.FramesArrived,
+            FramesDisplayed = previewRuntime.FramesDisplayed,
+            FramesDropped = previewRuntime.FramesDropped,
+            EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs
+        };
+
+    private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(
+        PreviewRuntimeFrameProjection frame)
+        => new()
+        {
+            FramesArrived = frame.FramesArrived,
+            FramesDisplayed = frame.FramesDisplayed,
+            FramesDropped = frame.FramesDropped,
+            EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs
+        };
+
+    private readonly record struct PreviewRuntimeFrameProjection
+    {
+        public long FramesArrived { get; init; }
+        public long FramesDisplayed { get; init; }
+        public long FramesDropped { get; init; }
+        public long EstimatedPipelineLatencyMs { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeFrameFlattenedProjection
+    {
+        public long FramesArrived { get; init; }
+        public long FramesDisplayed { get; init; }
+        public long FramesDropped { get; init; }
+        public long EstimatedPipelineLatencyMs { get; init; }
+    }
+
+    private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            SampleCount = previewRuntime.DisplayCadenceSampleCount,
+            ObservedFps = previewRuntime.DisplayCadenceObservedFps,
+            ExpectedIntervalMs = previewRuntime.DisplayCadenceExpectedIntervalMs,
+            AverageIntervalMs = previewRuntime.DisplayCadenceAverageIntervalMs,
+            P95IntervalMs = previewRuntime.DisplayCadenceP95IntervalMs,
+            P99IntervalMs = previewRuntime.DisplayCadenceP99IntervalMs,
+            MaxIntervalMs = previewRuntime.DisplayCadenceMaxIntervalMs,
+            OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,
+            FivePercentLowFps = previewRuntime.DisplayCadenceFivePercentLowFps,
+            SampleDurationMs = previewRuntime.DisplayCadenceSampleDurationMs,
+            RecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,
+            JitterStdDevMs = previewRuntime.DisplayCadenceJitterStdDevMs,
+            SlowFrameCount = previewRuntime.DisplayCadenceSlowFrameCount,
+            SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent
+        };
+
+    private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(
+        PreviewRuntimeCadenceProjection cadence)
+        => new()
+        {
+            SampleCount = cadence.SampleCount,
+            ObservedFps = cadence.ObservedFps,
+            ExpectedIntervalMs = cadence.ExpectedIntervalMs,
+            AverageIntervalMs = cadence.AverageIntervalMs,
+            P95IntervalMs = cadence.P95IntervalMs,
+            P99IntervalMs = cadence.P99IntervalMs,
+            MaxIntervalMs = cadence.MaxIntervalMs,
+            OnePercentLowFps = cadence.OnePercentLowFps,
+            FivePercentLowFps = cadence.FivePercentLowFps,
+            SampleDurationMs = cadence.SampleDurationMs,
+            RecentIntervalsMs = cadence.RecentIntervalsMs,
+            JitterStdDevMs = cadence.JitterStdDevMs,
+            SlowFrameCount = cadence.SlowFrameCount,
+            SlowFramePercent = cadence.SlowFramePercent
+        };
+
+    private readonly record struct PreviewRuntimeCadenceProjection
+    {
+        public int SampleCount { get; init; }
+        public double ObservedFps { get; init; }
+        public double ExpectedIntervalMs { get; init; }
+        public double AverageIntervalMs { get; init; }
+        public double P95IntervalMs { get; init; }
+        public double P99IntervalMs { get; init; }
+        public double MaxIntervalMs { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentIntervalsMs { get; init; }
+        public double JitterStdDevMs { get; init; }
+        public long SlowFrameCount { get; init; }
+        public double SlowFramePercent { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeCadenceFlattenedProjection
+    {
+        public int SampleCount { get; init; }
+        public double ObservedFps { get; init; }
+        public double ExpectedIntervalMs { get; init; }
+        public double AverageIntervalMs { get; init; }
+        public double P95IntervalMs { get; init; }
+        public double P99IntervalMs { get; init; }
+        public double MaxIntervalMs { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentIntervalsMs { get; init; }
+        public double JitterStdDevMs { get; init; }
+        public long SlowFrameCount { get; init; }
+        public double SlowFramePercent { get; init; }
+    }
+
+    private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(
+        PreviewHdrState previewHdrState,
+        CaptureRuntimeSnapshot captureRuntime)
+        => new()
+        {
+            HdrInputDetected = previewHdrState.InputDetected,
+            ToneMapMode = previewHdrState.ToneMapMode,
+            ColorContext = captureRuntime.NegotiatedPixelFormat,
+            AdapterColorMetadata = captureRuntime.PreviewColorMetadata
+        };
+
+    private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(
+        PreviewRuntimeColorProjection color)
+        => new()
+        {
+            HdrInputDetected = color.HdrInputDetected,
+            ToneMapMode = color.ToneMapMode,
+            ColorContext = color.ColorContext,
+            AdapterColorMetadata = color.AdapterColorMetadata
+        };
+
+    private readonly record struct PreviewRuntimeColorProjection
+    {
+        public bool HdrInputDetected { get; init; }
+        public string ToneMapMode { get; init; }
+        public string? ColorContext { get; init; }
+        public string AdapterColorMetadata { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeColorFlattenedProjection
+    {
+        public bool HdrInputDetected { get; init; }
+        public string ToneMapMode { get; init; }
+        public string? ColorContext { get; init; }
+        public string AdapterColorMetadata { get; init; }
+    }
+
+    private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            GpuActive = previewRuntime.GpuActive,
+            PlaceholderVisible = previewRuntime.PlaceholderVisible,
+            GpuElementVisible = previewRuntime.GpuElementVisible,
+            CpuElementVisible = previewRuntime.CpuElementVisible,
+            RendererAttached = previewRuntime.RendererAttached
+        };
+
+    private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(
+        PreviewRuntimeSurfaceProjection surface)
+        => new()
+        {
+            GpuActive = surface.GpuActive,
+            PlaceholderVisible = surface.PlaceholderVisible,
+            GpuElementVisible = surface.GpuElementVisible,
+            CpuElementVisible = surface.CpuElementVisible,
+            RendererAttached = surface.RendererAttached
+        };
+
+    private readonly record struct PreviewRuntimeSurfaceProjection
+    {
+        public bool GpuActive { get; init; }
+        public bool PlaceholderVisible { get; init; }
+        public bool GpuElementVisible { get; init; }
+        public bool CpuElementVisible { get; init; }
+        public bool RendererAttached { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeSurfaceFlattenedProjection
+    {
+        public bool GpuActive { get; init; }
+        public bool PlaceholderVisible { get; init; }
+        public bool GpuElementVisible { get; init; }
+        public bool CpuElementVisible { get; init; }
+        public bool RendererAttached { get; init; }
+    }
+
+    private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            State = previewRuntime.StartupState,
+            AttemptId = previewRuntime.StartupAttemptId,
+            ElapsedMs = previewRuntime.StartupElapsedMs,
+            TimeoutMs = previewRuntime.StartupTimeoutMs,
+            GpuSignalMediaOpened = previewRuntime.StartupGpuSignalMediaOpened,
+            GpuSignalFirstFrame = previewRuntime.StartupGpuSignalFirstFrame,
+            GpuSignalPlaybackAdvancing = previewRuntime.StartupGpuSignalPlaybackAdvancing,
+            RequiredSignals = previewRuntime.StartupRequiredSignals,
+            ReceivedSignals = previewRuntime.StartupReceivedSignals,
+            Strategy = previewRuntime.StartupStrategy.ToString(),
+            MissingSignals = previewRuntime.StartupMissingSignals,
+            RecoveryAttemptCount = previewRuntime.StartupRecoveryAttemptCount,
+            LastFailureReason = previewRuntime.StartupLastFailureReason,
+            FirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,
+            BlankSuspected = previewRuntime.BlankSuspected,
+            Stalled = previewRuntime.StallSuspected,
+            RendererMode = previewRuntime.RendererMode
+        };
+
+    private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(
+        PreviewRuntimeStartupProjection startup)
+        => new()
+        {
+            State = startup.State,
+            AttemptId = startup.AttemptId,
+            ElapsedMs = startup.ElapsedMs,
+            TimeoutMs = startup.TimeoutMs,
+            GpuSignalMediaOpened = startup.GpuSignalMediaOpened,
+            GpuSignalFirstFrame = startup.GpuSignalFirstFrame,
+            GpuSignalPlaybackAdvancing = startup.GpuSignalPlaybackAdvancing,
+            RequiredSignals = startup.RequiredSignals,
+            ReceivedSignals = startup.ReceivedSignals,
+            Strategy = startup.Strategy,
+            MissingSignals = startup.MissingSignals,
+            RecoveryAttemptCount = startup.RecoveryAttemptCount,
+            LastFailureReason = startup.LastFailureReason,
+            FirstVisualConfirmed = startup.FirstVisualConfirmed,
+            BlankSuspected = startup.BlankSuspected,
+            Stalled = startup.Stalled,
+            RendererMode = startup.RendererMode
+        };
+
+    private readonly record struct PreviewRuntimeStartupProjection
+    {
+        public string State { get; init; }
+        public string? AttemptId { get; init; }
+        public double? ElapsedMs { get; init; }
+        public int TimeoutMs { get; init; }
+        public bool GpuSignalMediaOpened { get; init; }
+        public bool GpuSignalFirstFrame { get; init; }
+        public bool GpuSignalPlaybackAdvancing { get; init; }
+        public PreviewStartupSignalFlags RequiredSignals { get; init; }
+        public PreviewStartupSignalFlags ReceivedSignals { get; init; }
+        public string Strategy { get; init; }
+        public string? MissingSignals { get; init; }
+        public int RecoveryAttemptCount { get; init; }
+        public string? LastFailureReason { get; init; }
+        public bool FirstVisualConfirmed { get; init; }
+        public bool BlankSuspected { get; init; }
+        public bool Stalled { get; init; }
+        public string RendererMode { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeStartupFlattenedProjection
+    {
+        public string State { get; init; }
+        public string? AttemptId { get; init; }
+        public double? ElapsedMs { get; init; }
+        public int TimeoutMs { get; init; }
+        public bool GpuSignalMediaOpened { get; init; }
+        public bool GpuSignalFirstFrame { get; init; }
+        public bool GpuSignalPlaybackAdvancing { get; init; }
+        public PreviewStartupSignalFlags RequiredSignals { get; init; }
+        public PreviewStartupSignalFlags ReceivedSignals { get; init; }
+        public string Strategy { get; init; }
+        public string? MissingSignals { get; init; }
+        public int RecoveryAttemptCount { get; init; }
+        public string? LastFailureReason { get; init; }
+        public bool FirstVisualConfirmed { get; init; }
+        public bool BlankSuspected { get; init; }
+        public bool Stalled { get; init; }
+        public string RendererMode { get; init; }
+    }
+
+    private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            PlaybackState = previewRuntime.GpuPlaybackState,
+            NaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
+            NaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
+            PositionMs = previewRuntime.GpuPositionMs,
+            PositionEventCount = previewRuntime.GpuPositionEventCount
+        };
+
+    private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(
+        PreviewRuntimeGpuPlaybackProjection gpuPlayback)
+        => new()
+        {
+            PlaybackState = gpuPlayback.PlaybackState,
+            NaturalVideoWidth = gpuPlayback.NaturalVideoWidth,
+            NaturalVideoHeight = gpuPlayback.NaturalVideoHeight,
+            PositionMs = gpuPlayback.PositionMs,
+            PositionEventCount = gpuPlayback.PositionEventCount
+        };
+
+    private readonly record struct PreviewRuntimeGpuPlaybackProjection
+    {
+        public string PlaybackState { get; init; }
+        public int NaturalVideoWidth { get; init; }
+        public int NaturalVideoHeight { get; init; }
+        public double PositionMs { get; init; }
+        public long PositionEventCount { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeGpuPlaybackFlattenedProjection
+    {
+        public string PlaybackState { get; init; }
+        public int NaturalVideoWidth { get; init; }
+        public int NaturalVideoHeight { get; init; }
+        public double PositionMs { get; init; }
+        public long PositionEventCount { get; init; }
+    }
+
+    private readonly record struct PreviewRuntimeFlattenedProjection
+    {
+        public PreviewRuntimeFrameFlattenedProjection Frame { get; init; }
+        public PreviewRuntimeCadenceFlattenedProjection Cadence { get; init; }
+        public PreviewRuntimeSurfaceFlattenedProjection Surface { get; init; }
+        public PreviewRuntimeStartupFlattenedProjection Startup { get; init; }
+        public PreviewRuntimeGpuPlaybackFlattenedProjection GpuPlayback { get; init; }
+        public PreviewRuntimeColorFlattenedProjection Color { get; init; }
+    }
+
+    private static PreviewD3DProjection BuildPreviewD3DProjection(
+        PreviewRuntimeSnapshot previewRuntime,
+        long recentD3DMissedRefreshes,
+        long recentD3DStatsFailures)
+    {
+        var cpuTiming = BuildPreviewD3DCpuTimingProjection(previewRuntime);
+        var frameFlow = BuildPreviewD3DFrameFlowProjection(previewRuntime);
+        var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);
+        var pipelineLatency = BuildPreviewD3DPipelineLatencyProjection(previewRuntime);
+        var frameStats = BuildPreviewD3DFrameStatsProjection(
+            previewRuntime,
+            recentD3DMissedRefreshes,
+            recentD3DStatsFailures);
+
+        return new()
+        {
+            PresentSyncInterval = previewRuntime.D3DPresentSyncInterval,
+            MaxFrameLatency = previewRuntime.D3DMaxFrameLatency,
+            SwapChainBufferCount = previewRuntime.D3DSwapChainBufferCount,
+            SwapChainAddress = previewRuntime.D3DSwapChainAddress,
+            FramesSubmitted = previewRuntime.D3DFramesSubmitted,
+            FramesRendered = previewRuntime.D3DFramesRendered,
+            FramesDropped = previewRuntime.D3DFramesDropped,
+            RenderThreadFailureCount = previewRuntime.D3DRenderThreadFailureCount,
+            LastRenderThreadFailureType = previewRuntime.D3DLastRenderThreadFailureType,
+            LastRenderThreadFailureMessage = previewRuntime.D3DLastRenderThreadFailureMessage,
+            LastRenderThreadFailureHResult = previewRuntime.D3DLastRenderThreadFailureHResult,
+            PendingFrameCount = previewRuntime.D3DPendingFrameCount,
+            InputColorSpace = previewRuntime.D3DInputColorSpace,
+            OutputColorSpace = previewRuntime.D3DOutputColorSpace,
+            CpuTiming = cpuTiming,
+            FrameLatencyWait = frameLatencyWait,
+            PipelineLatency = pipelineLatency,
+            FrameStats = frameStats,
+            FrameFlow = frameFlow
+        };
+    }
+
+    private readonly record struct PreviewD3DProjection
+    {
+        public int PresentSyncInterval { get; init; }
+        public int MaxFrameLatency { get; init; }
+        public int SwapChainBufferCount { get; init; }
+        public string SwapChainAddress { get; init; }
+        public long FramesSubmitted { get; init; }
+        public long FramesRendered { get; init; }
+        public long FramesDropped { get; init; }
+        public long RenderThreadFailureCount { get; init; }
+        public string LastRenderThreadFailureType { get; init; }
+        public string LastRenderThreadFailureMessage { get; init; }
+        public int LastRenderThreadFailureHResult { get; init; }
+        public int PendingFrameCount { get; init; }
+        public string InputColorSpace { get; init; }
+        public string OutputColorSpace { get; init; }
+        public PreviewD3DCpuTimingProjection CpuTiming { get; init; }
+        public PreviewD3DFrameLatencyWaitProjection FrameLatencyWait { get; init; }
+        public PreviewD3DPipelineLatencyProjection PipelineLatency { get; init; }
+        public PreviewD3DFrameStatsProjection FrameStats { get; init; }
+        public PreviewD3DFrameFlowProjection FrameFlow { get; init; }
+    }
+
+    private static PreviewD3DCpuTimingProjection BuildPreviewD3DCpuTimingProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            SampleCount = previewRuntime.D3DCpuTimingSampleCount,
+            InputUploadAvgMs = previewRuntime.D3DInputUploadCpuAvgMs,
+            InputUploadP95Ms = previewRuntime.D3DInputUploadCpuP95Ms,
+            InputUploadP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,
+            InputUploadMaxMs = previewRuntime.D3DInputUploadCpuMaxMs,
+            RenderSubmitAvgMs = previewRuntime.D3DRenderSubmitCpuAvgMs,
+            RenderSubmitP95Ms = previewRuntime.D3DRenderSubmitCpuP95Ms,
+            RenderSubmitP99Ms = previewRuntime.D3DRenderSubmitCpuP99Ms,
+            RenderSubmitMaxMs = previewRuntime.D3DRenderSubmitCpuMaxMs,
+            PresentCallAvgMs = previewRuntime.D3DPresentCallAvgMs,
+            PresentCallP95Ms = previewRuntime.D3DPresentCallP95Ms,
+            PresentCallP99Ms = previewRuntime.D3DPresentCallP99Ms,
+            PresentCallMaxMs = previewRuntime.D3DPresentCallMaxMs,
+            TotalFrameAvgMs = previewRuntime.D3DTotalFrameCpuAvgMs,
+            TotalFrameP95Ms = previewRuntime.D3DTotalFrameCpuP95Ms,
+            TotalFrameP99Ms = previewRuntime.D3DTotalFrameCpuP99Ms,
+            TotalFrameMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs
+        };
+
+    private readonly record struct PreviewD3DCpuTimingProjection
+    {
+        public int SampleCount { get; init; }
+        public double InputUploadAvgMs { get; init; }
+        public double InputUploadP95Ms { get; init; }
+        public double InputUploadP99Ms { get; init; }
+        public double InputUploadMaxMs { get; init; }
+        public double RenderSubmitAvgMs { get; init; }
+        public double RenderSubmitP95Ms { get; init; }
+        public double RenderSubmitP99Ms { get; init; }
+        public double RenderSubmitMaxMs { get; init; }
+        public double PresentCallAvgMs { get; init; }
+        public double PresentCallP95Ms { get; init; }
+        public double PresentCallP99Ms { get; init; }
+        public double PresentCallMaxMs { get; init; }
+        public double TotalFrameAvgMs { get; init; }
+        public double TotalFrameP95Ms { get; init; }
+        public double TotalFrameP99Ms { get; init; }
+        public double TotalFrameMaxMs { get; init; }
+    }
+
+    private static PreviewD3DPipelineLatencyProjection BuildPreviewD3DPipelineLatencyProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            SampleCount = previewRuntime.D3DPipelineLatencySampleCount,
+            AvgMs = previewRuntime.D3DPipelineLatencyAvgMs,
+            P95Ms = previewRuntime.D3DPipelineLatencyP95Ms,
+            P99Ms = previewRuntime.D3DPipelineLatencyP99Ms,
+            MaxMs = previewRuntime.D3DPipelineLatencyMaxMs
+        };
+
+    private readonly record struct PreviewD3DPipelineLatencyProjection
+    {
+        public int SampleCount { get; init; }
+        public double AvgMs { get; init; }
+        public double P95Ms { get; init; }
+        public double P99Ms { get; init; }
+        public double MaxMs { get; init; }
+    }
+
+    private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            Enabled = previewRuntime.D3DFrameLatencyWaitEnabled,
+            HandleActive = previewRuntime.D3DFrameLatencyWaitHandleActive,
+            CallCount = previewRuntime.D3DFrameLatencyWaitCallCount,
+            SignaledCount = previewRuntime.D3DFrameLatencyWaitSignaledCount,
+            TimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,
+            UnexpectedResultCount = previewRuntime.D3DFrameLatencyWaitUnexpectedResultCount,
+            LastResult = previewRuntime.D3DFrameLatencyWaitLastResult,
+            LastMs = previewRuntime.D3DFrameLatencyWaitLastMs,
+            SampleCount = previewRuntime.D3DFrameLatencyWaitSampleCount,
+            AvgMs = previewRuntime.D3DFrameLatencyWaitAvgMs,
+            P95Ms = previewRuntime.D3DFrameLatencyWaitP95Ms,
+            P99Ms = previewRuntime.D3DFrameLatencyWaitP99Ms,
+            MaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs
+        };
+
+    private readonly record struct PreviewD3DFrameLatencyWaitProjection
+    {
+        public bool Enabled { get; init; }
+        public bool HandleActive { get; init; }
+        public long CallCount { get; init; }
+        public long SignaledCount { get; init; }
+        public long TimeoutCount { get; init; }
+        public long UnexpectedResultCount { get; init; }
+        public uint LastResult { get; init; }
+        public double LastMs { get; init; }
+        public int SampleCount { get; init; }
+        public double AvgMs { get; init; }
+        public double P95Ms { get; init; }
+        public double P99Ms { get; init; }
+        public double MaxMs { get; init; }
+    }
+
+    private static PreviewD3DFrameStatsProjection BuildPreviewD3DFrameStatsProjection(
+        PreviewRuntimeSnapshot previewRuntime,
+        long recentD3DMissedRefreshes,
+        long recentD3DStatsFailures)
+        => new()
+        {
+            SampleCount = previewRuntime.D3DFrameStatsSampleCount,
+            SuccessCount = previewRuntime.D3DFrameStatsSuccessCount,
+            FailureCount = previewRuntime.D3DFrameStatsFailureCount,
+            LastError = previewRuntime.D3DFrameStatsLastError,
+            PresentCount = previewRuntime.D3DFrameStatsPresentCount,
+            PresentRefreshCount = previewRuntime.D3DFrameStatsPresentRefreshCount,
+            SyncRefreshCount = previewRuntime.D3DFrameStatsSyncRefreshCount,
+            SyncQpcTime = previewRuntime.D3DFrameStatsSyncQpcTime,
+            LastPresentDelta = previewRuntime.D3DFrameStatsLastPresentDelta,
+            LastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
+            LastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
+            MissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
+            RecentMissedRefreshCount = recentD3DMissedRefreshes,
+            RecentFailureCount = recentD3DStatsFailures
+        };
+
+    private readonly record struct PreviewD3DFrameStatsProjection
+    {
+        public long SampleCount { get; init; }
+        public long SuccessCount { get; init; }
+        public long FailureCount { get; init; }
+        public string LastError { get; init; }
+        public long PresentCount { get; init; }
+        public long PresentRefreshCount { get; init; }
+        public long SyncRefreshCount { get; init; }
+        public long SyncQpcTime { get; init; }
+        public long LastPresentDelta { get; init; }
+        public long LastPresentRefreshDelta { get; init; }
+        public long LastSyncRefreshDelta { get; init; }
+        public long MissedRefreshCount { get; init; }
+        public long RecentMissedRefreshCount { get; init; }
+        public long RecentFailureCount { get; init; }
+    }
+
+    private static PreviewD3DFrameFlowProjection BuildPreviewD3DFrameFlowProjection(
+        PreviewRuntimeSnapshot previewRuntime)
+        => new()
+        {
+            LastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
+            LastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
+            LastSubmittedSourcePtsTicks = previewRuntime.D3DLastSubmittedSourcePtsTicks,
+            LastSubmittedQpc = previewRuntime.D3DLastSubmittedQpc,
+            LastSubmittedUtcUnixMs = previewRuntime.D3DLastSubmittedUtcUnixMs,
+            LastRenderedPreviewPresentId = previewRuntime.D3DLastRenderedPreviewPresentId,
+            LastRenderedSourceSequenceNumber = previewRuntime.D3DLastRenderedSourceSequenceNumber,
+            LastRenderedSourcePtsTicks = previewRuntime.D3DLastRenderedSourcePtsTicks,
+            LastRenderedQpc = previewRuntime.D3DLastRenderedQpc,
+            LastRenderedUtcUnixMs = previewRuntime.D3DLastRenderedUtcUnixMs,
+            LastRenderedSchedulerToPresentMs = previewRuntime.D3DLastRenderedSchedulerToPresentMs,
+            LastRenderedPipelineLatencyMs = previewRuntime.D3DLastRenderedPipelineLatencyMs,
+            LastDroppedPreviewPresentId = previewRuntime.D3DLastDroppedPreviewPresentId,
+            LastDroppedSourceSequenceNumber = previewRuntime.D3DLastDroppedSourceSequenceNumber,
+            LastDroppedSourcePtsTicks = previewRuntime.D3DLastDroppedSourcePtsTicks,
+            LastDroppedQpc = previewRuntime.D3DLastDroppedQpc,
+            LastDroppedUtcUnixMs = previewRuntime.D3DLastDroppedUtcUnixMs,
+            LastDropReason = previewRuntime.D3DLastDropReason,
+            RecentSlowFrames = previewRuntime.D3DRecentSlowFrames
+        };
+
+    private readonly record struct PreviewD3DFrameFlowProjection
+    {
+        public long LastSubmittedPreviewPresentId { get; init; }
+        public long LastSubmittedSourceSequenceNumber { get; init; }
+        public long LastSubmittedSourcePtsTicks { get; init; }
+        public long LastSubmittedQpc { get; init; }
+        public long LastSubmittedUtcUnixMs { get; init; }
+        public long LastRenderedPreviewPresentId { get; init; }
+        public long LastRenderedSourceSequenceNumber { get; init; }
+        public long LastRenderedSourcePtsTicks { get; init; }
+        public long LastRenderedQpc { get; init; }
+        public long LastRenderedUtcUnixMs { get; init; }
+        public double LastRenderedSchedulerToPresentMs { get; init; }
+        public double LastRenderedPipelineLatencyMs { get; init; }
+        public long LastDroppedPreviewPresentId { get; init; }
+        public long LastDroppedSourceSequenceNumber { get; init; }
+        public long LastDroppedSourcePtsTicks { get; init; }
+        public long LastDroppedQpc { get; init; }
+        public long LastDroppedUtcUnixMs { get; init; }
+        public string LastDropReason { get; init; }
+        public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }
+    }
+
+    private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(
+        PreviewD3DProjection previewD3D)
+        => new()
+        {
+            PresentSyncInterval = previewD3D.PresentSyncInterval,
+            MaxFrameLatency = previewD3D.MaxFrameLatency,
+            SwapChainBufferCount = previewD3D.SwapChainBufferCount,
+            SwapChainAddress = previewD3D.SwapChainAddress,
+            FramesSubmitted = previewD3D.FramesSubmitted,
+            FramesRendered = previewD3D.FramesRendered,
+            FramesDropped = previewD3D.FramesDropped,
+            RenderThreadFailureCount = previewD3D.RenderThreadFailureCount,
+            LastRenderThreadFailureType = previewD3D.LastRenderThreadFailureType,
+            LastRenderThreadFailureMessage = previewD3D.LastRenderThreadFailureMessage,
+            LastRenderThreadFailureHResult = previewD3D.LastRenderThreadFailureHResult,
+            PendingFrameCount = previewD3D.PendingFrameCount,
+            InputColorSpace = previewD3D.InputColorSpace,
+            OutputColorSpace = previewD3D.OutputColorSpace,
+            CpuTiming = BuildPreviewD3DCpuTimingFlattenedProjection(previewD3D.CpuTiming),
+            LatencyAndStats = BuildPreviewD3DLatencyAndStatsFlattenedProjection(
+                previewD3D.PipelineLatency,
+                previewD3D.FrameLatencyWait,
+                previewD3D.FrameStats),
+            FrameFlow = BuildPreviewD3DFrameFlowFlattenedProjection(previewD3D.FrameFlow)
+        };
+
+    private readonly record struct PreviewD3DFlattenedProjection
+    {
+        public int PresentSyncInterval { get; init; }
+        public int MaxFrameLatency { get; init; }
+        public int SwapChainBufferCount { get; init; }
+        public string SwapChainAddress { get; init; }
+        public long FramesSubmitted { get; init; }
+        public long FramesRendered { get; init; }
+        public long FramesDropped { get; init; }
+        public long RenderThreadFailureCount { get; init; }
+        public string LastRenderThreadFailureType { get; init; }
+        public string LastRenderThreadFailureMessage { get; init; }
+        public int LastRenderThreadFailureHResult { get; init; }
+        public int PendingFrameCount { get; init; }
+        public string InputColorSpace { get; init; }
+        public string OutputColorSpace { get; init; }
+        public PreviewD3DCpuTimingFlattenedProjection CpuTiming { get; init; }
+        public PreviewD3DLatencyAndStatsFlattenedProjection LatencyAndStats { get; init; }
+        public PreviewD3DFrameFlowFlattenedProjection FrameFlow { get; init; }
+    }
+
+    private static PreviewD3DCpuTimingFlattenedProjection BuildPreviewD3DCpuTimingFlattenedProjection(
+        PreviewD3DCpuTimingProjection cpuTiming)
+        => new()
+        {
+            SampleCount = cpuTiming.SampleCount,
+            InputUploadCpuAvgMs = cpuTiming.InputUploadAvgMs,
+            InputUploadCpuP95Ms = cpuTiming.InputUploadP95Ms,
+            InputUploadCpuP99Ms = cpuTiming.InputUploadP99Ms,
+            InputUploadCpuMaxMs = cpuTiming.InputUploadMaxMs,
+            RenderSubmitCpuAvgMs = cpuTiming.RenderSubmitAvgMs,
+            RenderSubmitCpuP95Ms = cpuTiming.RenderSubmitP95Ms,
+            RenderSubmitCpuP99Ms = cpuTiming.RenderSubmitP99Ms,
+            RenderSubmitCpuMaxMs = cpuTiming.RenderSubmitMaxMs,
+            PresentCallAvgMs = cpuTiming.PresentCallAvgMs,
+            PresentCallP95Ms = cpuTiming.PresentCallP95Ms,
+            PresentCallP99Ms = cpuTiming.PresentCallP99Ms,
+            PresentCallMaxMs = cpuTiming.PresentCallMaxMs,
+            TotalFrameCpuAvgMs = cpuTiming.TotalFrameAvgMs,
+            TotalFrameCpuP95Ms = cpuTiming.TotalFrameP95Ms,
+            TotalFrameCpuP99Ms = cpuTiming.TotalFrameP99Ms,
+            TotalFrameCpuMaxMs = cpuTiming.TotalFrameMaxMs
+        };
+
+    private readonly record struct PreviewD3DCpuTimingFlattenedProjection
+    {
+        public int SampleCount { get; init; }
+        public double InputUploadCpuAvgMs { get; init; }
+        public double InputUploadCpuP95Ms { get; init; }
+        public double InputUploadCpuP99Ms { get; init; }
+        public double InputUploadCpuMaxMs { get; init; }
+        public double RenderSubmitCpuAvgMs { get; init; }
+        public double RenderSubmitCpuP95Ms { get; init; }
+        public double RenderSubmitCpuP99Ms { get; init; }
+        public double RenderSubmitCpuMaxMs { get; init; }
+        public double PresentCallAvgMs { get; init; }
+        public double PresentCallP95Ms { get; init; }
+        public double PresentCallP99Ms { get; init; }
+        public double PresentCallMaxMs { get; init; }
+        public double TotalFrameCpuAvgMs { get; init; }
+        public double TotalFrameCpuP95Ms { get; init; }
+        public double TotalFrameCpuP99Ms { get; init; }
+        public double TotalFrameCpuMaxMs { get; init; }
+    }
+
+    private static PreviewD3DLatencyAndStatsFlattenedProjection BuildPreviewD3DLatencyAndStatsFlattenedProjection(
+        PreviewD3DPipelineLatencyProjection pipelineLatency,
+        PreviewD3DFrameLatencyWaitProjection frameLatencyWait,
+        PreviewD3DFrameStatsProjection frameStats)
+        => new()
+        {
+            PipelineLatencySampleCount = pipelineLatency.SampleCount,
+            PipelineLatencyAvgMs = pipelineLatency.AvgMs,
+            PipelineLatencyP95Ms = pipelineLatency.P95Ms,
+            PipelineLatencyP99Ms = pipelineLatency.P99Ms,
+            PipelineLatencyMaxMs = pipelineLatency.MaxMs,
+            FrameLatencyWaitEnabled = frameLatencyWait.Enabled,
+            FrameLatencyWaitHandleActive = frameLatencyWait.HandleActive,
+            FrameLatencyWaitCallCount = frameLatencyWait.CallCount,
+            FrameLatencyWaitSignaledCount = frameLatencyWait.SignaledCount,
+            FrameLatencyWaitTimeoutCount = frameLatencyWait.TimeoutCount,
+            FrameLatencyWaitUnexpectedResultCount = frameLatencyWait.UnexpectedResultCount,
+            FrameLatencyWaitLastResult = frameLatencyWait.LastResult,
+            FrameLatencyWaitLastMs = frameLatencyWait.LastMs,
+            FrameLatencyWaitSampleCount = frameLatencyWait.SampleCount,
+            FrameLatencyWaitAvgMs = frameLatencyWait.AvgMs,
+            FrameLatencyWaitP95Ms = frameLatencyWait.P95Ms,
+            FrameLatencyWaitP99Ms = frameLatencyWait.P99Ms,
+            FrameLatencyWaitMaxMs = frameLatencyWait.MaxMs,
+            FrameStatsSampleCount = frameStats.SampleCount,
+            FrameStatsSuccessCount = frameStats.SuccessCount,
+            FrameStatsFailureCount = frameStats.FailureCount,
+            FrameStatsLastError = frameStats.LastError,
+            FrameStatsPresentCount = frameStats.PresentCount,
+            FrameStatsPresentRefreshCount = frameStats.PresentRefreshCount,
+            FrameStatsSyncRefreshCount = frameStats.SyncRefreshCount,
+            FrameStatsSyncQpcTime = frameStats.SyncQpcTime,
+            FrameStatsLastPresentDelta = frameStats.LastPresentDelta,
+            FrameStatsLastPresentRefreshDelta = frameStats.LastPresentRefreshDelta,
+            FrameStatsLastSyncRefreshDelta = frameStats.LastSyncRefreshDelta,
+            FrameStatsMissedRefreshCount = frameStats.MissedRefreshCount,
+            FrameStatsRecentMissedRefreshCount = frameStats.RecentMissedRefreshCount,
+            FrameStatsRecentFailureCount = frameStats.RecentFailureCount
+        };
+
+    private readonly record struct PreviewD3DLatencyAndStatsFlattenedProjection
+    {
+        public int PipelineLatencySampleCount { get; init; }
+        public double PipelineLatencyAvgMs { get; init; }
+        public double PipelineLatencyP95Ms { get; init; }
+        public double PipelineLatencyP99Ms { get; init; }
+        public double PipelineLatencyMaxMs { get; init; }
+        public bool FrameLatencyWaitEnabled { get; init; }
+        public bool FrameLatencyWaitHandleActive { get; init; }
+        public long FrameLatencyWaitCallCount { get; init; }
+        public long FrameLatencyWaitSignaledCount { get; init; }
+        public long FrameLatencyWaitTimeoutCount { get; init; }
+        public long FrameLatencyWaitUnexpectedResultCount { get; init; }
+        public uint FrameLatencyWaitLastResult { get; init; }
+        public double FrameLatencyWaitLastMs { get; init; }
+        public int FrameLatencyWaitSampleCount { get; init; }
+        public double FrameLatencyWaitAvgMs { get; init; }
+        public double FrameLatencyWaitP95Ms { get; init; }
+        public double FrameLatencyWaitP99Ms { get; init; }
+        public double FrameLatencyWaitMaxMs { get; init; }
+        public long FrameStatsSampleCount { get; init; }
+        public long FrameStatsSuccessCount { get; init; }
+        public long FrameStatsFailureCount { get; init; }
+        public string FrameStatsLastError { get; init; }
+        public long FrameStatsPresentCount { get; init; }
+        public long FrameStatsPresentRefreshCount { get; init; }
+        public long FrameStatsSyncRefreshCount { get; init; }
+        public long FrameStatsSyncQpcTime { get; init; }
+        public long FrameStatsLastPresentDelta { get; init; }
+        public long FrameStatsLastPresentRefreshDelta { get; init; }
+        public long FrameStatsLastSyncRefreshDelta { get; init; }
+        public long FrameStatsMissedRefreshCount { get; init; }
+        public long FrameStatsRecentMissedRefreshCount { get; init; }
+        public long FrameStatsRecentFailureCount { get; init; }
+    }
+
+    private static PreviewD3DFrameFlowFlattenedProjection BuildPreviewD3DFrameFlowFlattenedProjection(
+        PreviewD3DFrameFlowProjection frameFlow)
+        => new()
+        {
+            LastSubmittedPreviewPresentId = frameFlow.LastSubmittedPreviewPresentId,
+            LastSubmittedSourceSequenceNumber = frameFlow.LastSubmittedSourceSequenceNumber,
+            LastSubmittedSourcePtsTicks = frameFlow.LastSubmittedSourcePtsTicks,
+            LastSubmittedQpc = frameFlow.LastSubmittedQpc,
+            LastSubmittedUtcUnixMs = frameFlow.LastSubmittedUtcUnixMs,
+            LastRenderedPreviewPresentId = frameFlow.LastRenderedPreviewPresentId,
+            LastRenderedSourceSequenceNumber = frameFlow.LastRenderedSourceSequenceNumber,
+            LastRenderedSourcePtsTicks = frameFlow.LastRenderedSourcePtsTicks,
+            LastRenderedQpc = frameFlow.LastRenderedQpc,
+            LastRenderedUtcUnixMs = frameFlow.LastRenderedUtcUnixMs,
+            LastRenderedSchedulerToPresentMs = frameFlow.LastRenderedSchedulerToPresentMs,
+            LastRenderedPipelineLatencyMs = frameFlow.LastRenderedPipelineLatencyMs,
+            LastDroppedPreviewPresentId = frameFlow.LastDroppedPreviewPresentId,
+            LastDroppedSourceSequenceNumber = frameFlow.LastDroppedSourceSequenceNumber,
+            LastDroppedSourcePtsTicks = frameFlow.LastDroppedSourcePtsTicks,
+            LastDroppedQpc = frameFlow.LastDroppedQpc,
+            LastDroppedUtcUnixMs = frameFlow.LastDroppedUtcUnixMs,
+            LastDropReason = frameFlow.LastDropReason,
+            RecentSlowFrames = frameFlow.RecentSlowFrames
+        };
+
+    private readonly record struct PreviewD3DFrameFlowFlattenedProjection
+    {
+        public long LastSubmittedPreviewPresentId { get; init; }
+        public long LastSubmittedSourceSequenceNumber { get; init; }
+        public long LastSubmittedSourcePtsTicks { get; init; }
+        public long LastSubmittedQpc { get; init; }
+        public long LastSubmittedUtcUnixMs { get; init; }
+        public long LastRenderedPreviewPresentId { get; init; }
+        public long LastRenderedSourceSequenceNumber { get; init; }
+        public long LastRenderedSourcePtsTicks { get; init; }
+        public long LastRenderedQpc { get; init; }
+        public long LastRenderedUtcUnixMs { get; init; }
+        public double LastRenderedSchedulerToPresentMs { get; init; }
+        public double LastRenderedPipelineLatencyMs { get; init; }
+        public long LastDroppedPreviewPresentId { get; init; }
+        public long LastDroppedSourceSequenceNumber { get; init; }
+        public long LastDroppedSourcePtsTicks { get; init; }
+        public long LastDroppedQpc { get; init; }
+        public long LastDroppedUtcUnixMs { get; init; }
+        public string LastDropReason { get; init; }
+        public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }
+    }
+
+    private static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            Active = health.FlashbackExportActive,
+            Id = health.FlashbackExportId,
+            Status = health.FlashbackExportStatus,
+            OutputPath = health.FlashbackExportOutputPath,
+            StartedUtcUnixMs = health.FlashbackExportStartedUtcUnixMs,
+            LastProgressUtcUnixMs = health.FlashbackExportLastProgressUtcUnixMs,
+            CompletedUtcUnixMs = health.FlashbackExportCompletedUtcUnixMs,
+            ElapsedMs = health.FlashbackExportElapsedMs,
+            LastProgressAgeMs = health.FlashbackExportLastProgressAgeMs,
+            OutputBytes = health.FlashbackExportOutputBytes,
+            ThroughputBytesPerSec = health.FlashbackExportThroughputBytesPerSec,
+            SegmentsProcessed = health.FlashbackExportSegmentsProcessed,
+            TotalSegments = health.FlashbackExportTotalSegments,
+            Percent = health.FlashbackExportPercent,
+            InPointMs = health.FlashbackExportInPointMs,
+            OutPointMs = health.FlashbackExportOutPointMs,
+            Message = health.FlashbackExportMessage,
+            FailureKind = health.FlashbackExportFailureKind,
+            ForceRotateFallbacks = health.FlashbackExportForceRotateFallbacks,
+            LastForceRotateFallbackUtcUnixMs = health.FlashbackExportLastForceRotateFallbackUtcUnixMs,
+            LastForceRotateFallbackSegments = health.FlashbackExportLastForceRotateFallbackSegments,
+            LastForceRotateFallbackInPointMs = health.FlashbackExportLastForceRotateFallbackInPointMs,
+            LastForceRotateFallbackOutPointMs = health.FlashbackExportLastForceRotateFallbackOutPointMs
+        };
+
+    private static FlashbackExportLastResultProjection BuildFlashbackExportLastResultProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            LastExportId = health.LastExportId,
+            LastExportPath = health.LastExportPath,
+            LastExportSuccess = health.LastExportSuccess,
+            LastExportMessage = health.LastExportMessage
+        };
+
+    private readonly record struct FlashbackExportProjection
+    {
+        public bool Active { get; init; }
+        public long Id { get; init; }
+        public string Status { get; init; }
+        public string OutputPath { get; init; }
+        public long StartedUtcUnixMs { get; init; }
+        public long LastProgressUtcUnixMs { get; init; }
+        public long CompletedUtcUnixMs { get; init; }
+        public long ElapsedMs { get; init; }
+        public long LastProgressAgeMs { get; init; }
+        public long OutputBytes { get; init; }
+        public double ThroughputBytesPerSec { get; init; }
+        public int SegmentsProcessed { get; init; }
+        public int TotalSegments { get; init; }
+        public double Percent { get; init; }
+        public long InPointMs { get; init; }
+        public long OutPointMs { get; init; }
+        public string Message { get; init; }
+        public string FailureKind { get; init; }
+        public long ForceRotateFallbacks { get; init; }
+        public long LastForceRotateFallbackUtcUnixMs { get; init; }
+        public int LastForceRotateFallbackSegments { get; init; }
+        public long LastForceRotateFallbackInPointMs { get; init; }
+        public long LastForceRotateFallbackOutPointMs { get; init; }
+    }
+
+    private readonly record struct FlashbackExportLastResultProjection
+    {
+        public long LastExportId { get; init; }
+        public string? LastExportPath { get; init; }
+        public bool? LastExportSuccess { get; init; }
+        public string? LastExportMessage { get; init; }
+    }
+
+    private static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(
+        FlashbackExportProjection flashbackExport,
+        FlashbackExportLastResultProjection lastResult)
+        => new()
+        {
+            Active = flashbackExport.Active,
+            Id = flashbackExport.Id,
+            Status = flashbackExport.Status,
+            OutputPath = flashbackExport.OutputPath,
+            StartedUtcUnixMs = flashbackExport.StartedUtcUnixMs,
+            LastProgressUtcUnixMs = flashbackExport.LastProgressUtcUnixMs,
+            CompletedUtcUnixMs = flashbackExport.CompletedUtcUnixMs,
+            ElapsedMs = flashbackExport.ElapsedMs,
+            LastProgressAgeMs = flashbackExport.LastProgressAgeMs,
+            OutputBytes = flashbackExport.OutputBytes,
+            ThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,
+            SegmentsProcessed = flashbackExport.SegmentsProcessed,
+            TotalSegments = flashbackExport.TotalSegments,
+            Percent = flashbackExport.Percent,
+            InPointMs = flashbackExport.InPointMs,
+            OutPointMs = flashbackExport.OutPointMs,
+            Message = flashbackExport.Message,
+            FailureKind = flashbackExport.FailureKind,
+            ForceRotateFallbacks = flashbackExport.ForceRotateFallbacks,
+            LastForceRotateFallbackUtcUnixMs = flashbackExport.LastForceRotateFallbackUtcUnixMs,
+            LastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
+            LastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
+            LastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
+            LastExportId = lastResult.LastExportId,
+            LastExportPath = lastResult.LastExportPath,
+            LastExportSuccess = lastResult.LastExportSuccess,
+            LastExportMessage = lastResult.LastExportMessage
+        };
+
+    private readonly record struct FlashbackExportFlattenedProjection
+    {
+        public bool Active { get; init; }
+        public long Id { get; init; }
+        public string Status { get; init; }
+        public string OutputPath { get; init; }
+        public long StartedUtcUnixMs { get; init; }
+        public long LastProgressUtcUnixMs { get; init; }
+        public long CompletedUtcUnixMs { get; init; }
+        public long ElapsedMs { get; init; }
+        public long LastProgressAgeMs { get; init; }
+        public long OutputBytes { get; init; }
+        public double ThroughputBytesPerSec { get; init; }
+        public int SegmentsProcessed { get; init; }
+        public int TotalSegments { get; init; }
+        public double Percent { get; init; }
+        public long InPointMs { get; init; }
+        public long OutPointMs { get; init; }
+        public string Message { get; init; }
+        public string FailureKind { get; init; }
+        public long ForceRotateFallbacks { get; init; }
+        public long LastForceRotateFallbackUtcUnixMs { get; init; }
+        public int LastForceRotateFallbackSegments { get; init; }
+        public long LastForceRotateFallbackInPointMs { get; init; }
+        public long LastForceRotateFallbackOutPointMs { get; init; }
+        public long LastExportId { get; init; }
+        public string? LastExportPath { get; init; }
+        public bool? LastExportSuccess { get; init; }
+        public string? LastExportMessage { get; init; }
+    }
+
+    private static FlashbackRecordingProjection BuildFlashbackRecordingProjection(
+        CaptureRuntimeSnapshot captureRuntime,
+        CaptureHealthSnapshot health)
+    {
+        var startupCache = BuildFlashbackRecordingStartupCacheProjection(health);
+        var queues = BuildFlashbackRecordingQueuesProjection(health);
+        var runtime = BuildFlashbackRecordingRuntimeProjection(health);
+        var backend = BuildFlashbackRecordingBackendProjection(captureRuntime, health);
+        var encoder = BuildFlashbackRecordingEncoderProjection(health);
+
+        return new()
+        {
+            EncodingFailed = health.FlashbackEncodingFailed,
+            EncodingFailureType = health.FlashbackEncodingFailureType,
+            EncodingFailureMessage = health.FlashbackEncodingFailureMessage,
+            FatalCleanupInProgress = health.FatalCleanupInProgress,
+            CleanupInProgress = health.FlashbackCleanupInProgress,
+            ForceRotateActive = health.FlashbackForceRotateActive,
+            ForceRotateRequested = health.FlashbackForceRotateRequested,
+            ForceRotateDraining = health.FlashbackForceRotateDraining,
+            StartupCache = startupCache,
+            Queues = queues,
+            Runtime = runtime,
+            Backend = backend,
+            Encoder = encoder
+        };
+    }
+
+    private readonly record struct FlashbackRecordingProjection
+    {
+        public bool EncodingFailed { get; init; }
+        public string? EncodingFailureType { get; init; }
+        public string? EncodingFailureMessage { get; init; }
+        public bool FatalCleanupInProgress { get; init; }
+        public bool CleanupInProgress { get; init; }
+        public bool ForceRotateActive { get; init; }
+        public bool ForceRotateRequested { get; init; }
+        public bool ForceRotateDraining { get; init; }
+        public FlashbackRecordingStartupCacheProjection StartupCache { get; init; }
+        public FlashbackRecordingQueuesProjection Queues { get; init; }
+        public FlashbackRecordingRuntimeProjection Runtime { get; init; }
+        public FlashbackRecordingBackendProjection Backend { get; init; }
+        public FlashbackRecordingEncoderProjection Encoder { get; init; }
+    }
+
+    private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            TempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
+            BudgetBytes = health.FlashbackStartupCacheBudgetBytes,
+            Bytes = health.FlashbackStartupCacheBytes,
+            SessionCount = health.FlashbackStartupCacheSessionCount,
+            DeletedSessionCount = health.FlashbackStartupCacheDeletedSessionCount,
+            FreedBytes = health.FlashbackStartupCacheFreedBytes,
+            OverBudget = health.FlashbackStartupCacheOverBudget
+        };
+
+    private readonly record struct FlashbackRecordingStartupCacheProjection
+    {
+        public long TempDriveFreeBytes { get; init; }
+        public long BudgetBytes { get; init; }
+        public long Bytes { get; init; }
+        public int SessionCount { get; init; }
+        public int DeletedSessionCount { get; init; }
+        public long FreedBytes { get; init; }
+        public bool OverBudget { get; init; }
+    }
+
+    private static FlashbackRecordingStartupCacheFlattenedProjection BuildFlashbackRecordingStartupCacheFlattenedProjection(
+        FlashbackRecordingStartupCacheProjection startupCache)
+        => new()
+        {
+            TempDriveFreeBytes = startupCache.TempDriveFreeBytes,
+            BudgetBytes = startupCache.BudgetBytes,
+            Bytes = startupCache.Bytes,
+            SessionCount = startupCache.SessionCount,
+            DeletedSessionCount = startupCache.DeletedSessionCount,
+            FreedBytes = startupCache.FreedBytes,
+            OverBudget = startupCache.OverBudget
+        };
+
+    private readonly record struct FlashbackRecordingStartupCacheFlattenedProjection
+    {
+        public long TempDriveFreeBytes { get; init; }
+        public long BudgetBytes { get; init; }
+        public long Bytes { get; init; }
+        public int SessionCount { get; init; }
+        public int DeletedSessionCount { get; init; }
+        public long FreedBytes { get; init; }
+        public bool OverBudget { get; init; }
+    }
+
+    private static FlashbackRecordingQueuesProjection BuildFlashbackRecordingQueuesProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            VideoQueueCapacity = health.FlashbackVideoQueueCapacity,
+            VideoQueueMaxDepth = health.FlashbackVideoQueueMaxDepth,
+            VideoFramesSubmittedToEncoder = health.FlashbackVideoFramesSubmittedToEncoder,
+            VideoEncoderPts = health.FlashbackVideoEncoderPts,
+            VideoEncoderPacketsWritten = health.FlashbackVideoEncoderPacketsWritten,
+            VideoEncoderDroppedFrames = health.FlashbackVideoEncoderDroppedFrames,
+            VideoSequenceGaps = health.FlashbackVideoSequenceGaps,
+            VideoQueueRejectedFrames = health.FlashbackVideoQueueRejectedFrames,
+            VideoQueueLastRejectReason = health.FlashbackVideoQueueLastRejectReason,
+            VideoQueueOldestFrameAgeMs = health.FlashbackVideoQueueOldestFrameAgeMs,
+            VideoQueueLastLatencyMs = health.FlashbackVideoQueueLastLatencyMs,
+            VideoQueueLatencySampleCount = health.FlashbackVideoQueueLatencySampleCount,
+            VideoQueueLatencyAvgMs = health.FlashbackVideoQueueLatencyAvgMs,
+            VideoQueueLatencyP95Ms = health.FlashbackVideoQueueLatencyP95Ms,
+            VideoQueueLatencyP99Ms = health.FlashbackVideoQueueLatencyP99Ms,
+            VideoQueueLatencyMaxMs = health.FlashbackVideoQueueLatencyMaxMs,
+            VideoBackpressureWaitMs = health.FlashbackVideoBackpressureWaitMs,
+            VideoBackpressureEvents = health.FlashbackVideoBackpressureEvents,
+            VideoBackpressureLastWaitMs = health.FlashbackVideoBackpressureLastWaitMs,
+            VideoBackpressureMaxWaitMs = health.FlashbackVideoBackpressureMaxWaitMs,
+            GpuQueueDepth = health.FlashbackGpuQueueDepth,
+            GpuQueueCapacity = health.FlashbackGpuQueueCapacity,
+            GpuQueueMaxDepth = health.FlashbackGpuQueueMaxDepth,
+            GpuFramesEnqueued = health.FlashbackGpuFramesEnqueued,
+            GpuFramesDropped = health.FlashbackGpuFramesDropped,
+            GpuQueueRejectedFrames = health.FlashbackGpuQueueRejectedFrames,
+            GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,
+            VideoQueueDepth = health.FlashbackVideoQueueDepth,
+            AudioQueueDepth = health.FlashbackAudioQueueDepth,
+            AudioQueueCapacity = health.FlashbackAudioQueueCapacity
+        };
+
+    private readonly record struct FlashbackRecordingQueuesProjection
+    {
+        public int VideoQueueCapacity { get; init; }
+        public int VideoQueueMaxDepth { get; init; }
+        public long VideoFramesSubmittedToEncoder { get; init; }
+        public long VideoEncoderPts { get; init; }
+        public long VideoEncoderPacketsWritten { get; init; }
+        public long VideoEncoderDroppedFrames { get; init; }
+        public long VideoSequenceGaps { get; init; }
+        public long VideoQueueRejectedFrames { get; init; }
+        public string VideoQueueLastRejectReason { get; init; }
+        public long VideoQueueOldestFrameAgeMs { get; init; }
+        public long VideoQueueLastLatencyMs { get; init; }
+        public int VideoQueueLatencySampleCount { get; init; }
+        public double VideoQueueLatencyAvgMs { get; init; }
+        public double VideoQueueLatencyP95Ms { get; init; }
+        public double VideoQueueLatencyP99Ms { get; init; }
+        public double VideoQueueLatencyMaxMs { get; init; }
+        public long VideoBackpressureWaitMs { get; init; }
+        public long VideoBackpressureEvents { get; init; }
+        public long VideoBackpressureLastWaitMs { get; init; }
+        public long VideoBackpressureMaxWaitMs { get; init; }
+        public int GpuQueueDepth { get; init; }
+        public int GpuQueueCapacity { get; init; }
+        public int GpuQueueMaxDepth { get; init; }
+        public long GpuFramesEnqueued { get; init; }
+        public long GpuFramesDropped { get; init; }
+        public long GpuQueueRejectedFrames { get; init; }
+        public string GpuQueueLastRejectReason { get; init; }
+        public int VideoQueueDepth { get; init; }
+        public int AudioQueueDepth { get; init; }
+        public int AudioQueueCapacity { get; init; }
+    }
+
+    private static FlashbackRecordingQueuesFlattenedProjection BuildFlashbackRecordingQueuesFlattenedProjection(
+        FlashbackRecordingQueuesProjection queues)
+        => new()
+        {
+            VideoQueueCapacity = queues.VideoQueueCapacity,
+            VideoQueueMaxDepth = queues.VideoQueueMaxDepth,
+            VideoFramesSubmittedToEncoder = queues.VideoFramesSubmittedToEncoder,
+            VideoEncoderPts = queues.VideoEncoderPts,
+            VideoEncoderPacketsWritten = queues.VideoEncoderPacketsWritten,
+            VideoEncoderDroppedFrames = queues.VideoEncoderDroppedFrames,
+            VideoSequenceGaps = queues.VideoSequenceGaps,
+            VideoQueueRejectedFrames = queues.VideoQueueRejectedFrames,
+            VideoQueueLastRejectReason = queues.VideoQueueLastRejectReason,
+            VideoQueueOldestFrameAgeMs = queues.VideoQueueOldestFrameAgeMs,
+            VideoQueueLastLatencyMs = queues.VideoQueueLastLatencyMs,
+            VideoQueueLatencySampleCount = queues.VideoQueueLatencySampleCount,
+            VideoQueueLatencyAvgMs = queues.VideoQueueLatencyAvgMs,
+            VideoQueueLatencyP95Ms = queues.VideoQueueLatencyP95Ms,
+            VideoQueueLatencyP99Ms = queues.VideoQueueLatencyP99Ms,
+            VideoQueueLatencyMaxMs = queues.VideoQueueLatencyMaxMs,
+            VideoBackpressureWaitMs = queues.VideoBackpressureWaitMs,
+            VideoBackpressureEvents = queues.VideoBackpressureEvents,
+            VideoBackpressureLastWaitMs = queues.VideoBackpressureLastWaitMs,
+            VideoBackpressureMaxWaitMs = queues.VideoBackpressureMaxWaitMs,
+            GpuQueueDepth = queues.GpuQueueDepth,
+            GpuQueueCapacity = queues.GpuQueueCapacity,
+            GpuQueueMaxDepth = queues.GpuQueueMaxDepth,
+            GpuFramesEnqueued = queues.GpuFramesEnqueued,
+            GpuFramesDropped = queues.GpuFramesDropped,
+            GpuQueueRejectedFrames = queues.GpuQueueRejectedFrames,
+            GpuQueueLastRejectReason = queues.GpuQueueLastRejectReason,
+            VideoQueueDepth = queues.VideoQueueDepth,
+            AudioQueueDepth = queues.AudioQueueDepth,
+            AudioQueueCapacity = queues.AudioQueueCapacity
+        };
+
+    private readonly record struct FlashbackRecordingQueuesFlattenedProjection
+    {
+        public int VideoQueueCapacity { get; init; }
+        public int VideoQueueMaxDepth { get; init; }
+        public long VideoFramesSubmittedToEncoder { get; init; }
+        public long VideoEncoderPts { get; init; }
+        public long VideoEncoderPacketsWritten { get; init; }
+        public long VideoEncoderDroppedFrames { get; init; }
+        public long VideoSequenceGaps { get; init; }
+        public long VideoQueueRejectedFrames { get; init; }
+        public string VideoQueueLastRejectReason { get; init; }
+        public long VideoQueueOldestFrameAgeMs { get; init; }
+        public long VideoQueueLastLatencyMs { get; init; }
+        public int VideoQueueLatencySampleCount { get; init; }
+        public double VideoQueueLatencyAvgMs { get; init; }
+        public double VideoQueueLatencyP95Ms { get; init; }
+        public double VideoQueueLatencyP99Ms { get; init; }
+        public double VideoQueueLatencyMaxMs { get; init; }
+        public long VideoBackpressureWaitMs { get; init; }
+        public long VideoBackpressureEvents { get; init; }
+        public long VideoBackpressureLastWaitMs { get; init; }
+        public long VideoBackpressureMaxWaitMs { get; init; }
+        public int GpuQueueDepth { get; init; }
+        public int GpuQueueCapacity { get; init; }
+        public int GpuQueueMaxDepth { get; init; }
+        public long GpuFramesEnqueued { get; init; }
+        public long GpuFramesDropped { get; init; }
+        public long GpuQueueRejectedFrames { get; init; }
+        public string GpuQueueLastRejectReason { get; init; }
+        public int VideoQueueDepth { get; init; }
+        public int AudioQueueDepth { get; init; }
+        public int AudioQueueCapacity { get; init; }
+    }
+
+    private static FlashbackRecordingRuntimeProjection BuildFlashbackRecordingRuntimeProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            Active = health.FlashbackActive,
+            BufferedDurationMs = health.FlashbackBufferedDurationMs,
+            DiskBytes = health.FlashbackDiskBytes,
+            TotalBytesWritten = health.FlashbackTotalBytesWritten,
+            OutputBytes = health.FlashbackOutputBytes,
+            FilePath = health.FlashbackFilePath,
+            EncodedFrames = health.FlashbackEncodedFrames,
+            DroppedFrames = health.FlashbackDroppedFrames,
+            GpuEncoding = health.FlashbackGpuEncoding
+        };
+
+    private readonly record struct FlashbackRecordingRuntimeProjection
+    {
+        public bool Active { get; init; }
+        public long BufferedDurationMs { get; init; }
+        public long DiskBytes { get; init; }
+        public long TotalBytesWritten { get; init; }
+        public long OutputBytes { get; init; }
+        public string? FilePath { get; init; }
+        public long EncodedFrames { get; init; }
+        public long DroppedFrames { get; init; }
+        public bool GpuEncoding { get; init; }
+    }
+
+    private static FlashbackRecordingRuntimeFlattenedProjection BuildFlashbackRecordingRuntimeFlattenedProjection(
+        FlashbackRecordingRuntimeProjection runtime)
+        => new()
+        {
+            Active = runtime.Active,
+            BufferedDurationMs = runtime.BufferedDurationMs,
+            DiskBytes = runtime.DiskBytes,
+            TotalBytesWritten = runtime.TotalBytesWritten,
+            OutputBytes = runtime.OutputBytes,
+            FilePath = runtime.FilePath,
+            EncodedFrames = runtime.EncodedFrames,
+            DroppedFrames = runtime.DroppedFrames,
+            GpuEncoding = runtime.GpuEncoding
+        };
+
+    private readonly record struct FlashbackRecordingRuntimeFlattenedProjection
+    {
+        public bool Active { get; init; }
+        public long BufferedDurationMs { get; init; }
+        public long DiskBytes { get; init; }
+        public long TotalBytesWritten { get; init; }
+        public long OutputBytes { get; init; }
+        public string? FilePath { get; init; }
+        public long EncodedFrames { get; init; }
+        public long DroppedFrames { get; init; }
+        public bool GpuEncoding { get; init; }
+    }
+
+    private static FlashbackRecordingBackendProjection BuildFlashbackRecordingBackendProjection(
+        CaptureRuntimeSnapshot captureRuntime,
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            SettingsStale = health.FlashbackBackendSettingsStale,
+            SettingsStaleReason = health.FlashbackBackendSettingsStaleReason,
+            ActiveFormat = health.FlashbackBackendActiveFormat,
+            RequestedFormat = health.FlashbackBackendRequestedFormat,
+            ActivePreset = health.FlashbackBackendActivePreset,
+            RequestedPreset = health.FlashbackBackendRequestedPreset,
+            ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,
+            CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason
+        };
+
+    private readonly record struct FlashbackRecordingBackendProjection
+    {
+        public bool SettingsStale { get; init; }
+        public string SettingsStaleReason { get; init; }
+        public string ActiveFormat { get; init; }
+        public string RequestedFormat { get; init; }
+        public string ActivePreset { get; init; }
+        public string RequestedPreset { get; init; }
+        public string? ExportVerificationFormat { get; init; }
+        public string? CodecDowngradeReason { get; init; }
+    }
+
+    private static FlashbackRecordingBackendFlattenedProjection BuildFlashbackRecordingBackendFlattenedProjection(
+        FlashbackRecordingBackendProjection backend)
+        => new()
+        {
+            SettingsStale = backend.SettingsStale,
+            SettingsStaleReason = backend.SettingsStaleReason,
+            ActiveFormat = backend.ActiveFormat,
+            RequestedFormat = backend.RequestedFormat,
+            ActivePreset = backend.ActivePreset,
+            RequestedPreset = backend.RequestedPreset,
+            ExportVerificationFormat = backend.ExportVerificationFormat,
+            CodecDowngradeReason = backend.CodecDowngradeReason,
+        };
+
+    private readonly record struct FlashbackRecordingBackendFlattenedProjection
+    {
+        public bool SettingsStale { get; init; }
+        public string SettingsStaleReason { get; init; }
+        public string ActiveFormat { get; init; }
+        public string RequestedFormat { get; init; }
+        public string ActivePreset { get; init; }
+        public string RequestedPreset { get; init; }
+        public string? ExportVerificationFormat { get; init; }
+        public string? CodecDowngradeReason { get; init; }
+    }
+
+    private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(
+        CaptureHealthSnapshot health)
+        => new()
+        {
+            CodecName = health.EncoderCodecName,
+            TargetBitRate = health.EncoderTargetBitRate,
+            Width = health.EncoderWidth,
+            Height = health.EncoderHeight,
+            FrameRate = health.EncoderFrameRate,
+            FrameRateNumerator = health.EncoderFrameRateNumerator,
+            FrameRateDenominator = health.EncoderFrameRateDenominator
+        };
+
+    private readonly record struct FlashbackRecordingEncoderProjection
+    {
+        public string? CodecName { get; init; }
+        public uint TargetBitRate { get; init; }
+        public int Width { get; init; }
+        public int Height { get; init; }
+        public double FrameRate { get; init; }
+        public int? FrameRateNumerator { get; init; }
+        public int? FrameRateDenominator { get; init; }
+    }
+
+    private static FlashbackRecordingEncoderFlattenedProjection BuildFlashbackRecordingEncoderFlattenedProjection(
+        FlashbackRecordingEncoderProjection encoder)
+        => new()
+        {
+            CodecName = encoder.CodecName,
+            TargetBitRate = encoder.TargetBitRate,
+            Width = encoder.Width,
+            Height = encoder.Height,
+            FrameRate = encoder.FrameRate,
+            FrameRateNumerator = encoder.FrameRateNumerator,
+            FrameRateDenominator = encoder.FrameRateDenominator
+        };
+
+    private readonly record struct FlashbackRecordingEncoderFlattenedProjection
+    {
+        public string? CodecName { get; init; }
+        public uint TargetBitRate { get; init; }
+        public int Width { get; init; }
+        public int Height { get; init; }
+        public double FrameRate { get; init; }
+        public int? FrameRateNumerator { get; init; }
+        public int? FrameRateDenominator { get; init; }
+    }
+
+    private static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(
+        FlashbackRecordingProjection flashbackRecording)
+        => new()
+        {
+            EncodingFailed = flashbackRecording.EncodingFailed,
+            EncodingFailureType = flashbackRecording.EncodingFailureType,
+            EncodingFailureMessage = flashbackRecording.EncodingFailureMessage,
+            FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress,
+            CleanupInProgress = flashbackRecording.CleanupInProgress,
+            ForceRotateActive = flashbackRecording.ForceRotateActive,
+            ForceRotateRequested = flashbackRecording.ForceRotateRequested,
+            ForceRotateDraining = flashbackRecording.ForceRotateDraining,
+            StartupCache = BuildFlashbackRecordingStartupCacheFlattenedProjection(flashbackRecording.StartupCache),
+            Queues = BuildFlashbackRecordingQueuesFlattenedProjection(flashbackRecording.Queues),
+            Runtime = BuildFlashbackRecordingRuntimeFlattenedProjection(flashbackRecording.Runtime),
+            Backend = BuildFlashbackRecordingBackendFlattenedProjection(flashbackRecording.Backend),
+            Encoder = BuildFlashbackRecordingEncoderFlattenedProjection(flashbackRecording.Encoder)
+        };
+
+    private readonly record struct FlashbackRecordingFlattenedProjection
+    {
+        public bool EncodingFailed { get; init; }
+        public string? EncodingFailureType { get; init; }
+        public string? EncodingFailureMessage { get; init; }
+        public bool FatalCleanupInProgress { get; init; }
+        public bool CleanupInProgress { get; init; }
+        public bool ForceRotateActive { get; init; }
+        public bool ForceRotateRequested { get; init; }
+        public bool ForceRotateDraining { get; init; }
+        public FlashbackRecordingStartupCacheFlattenedProjection StartupCache { get; init; }
+        public FlashbackRecordingQueuesFlattenedProjection Queues { get; init; }
+        public FlashbackRecordingRuntimeFlattenedProjection Runtime { get; init; }
+        public FlashbackRecordingBackendFlattenedProjection Backend { get; init; }
+        public FlashbackRecordingEncoderFlattenedProjection Encoder { get; init; }
+    }
+
+private static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)
+    {
+        var audioMaster = BuildFlashbackPlaybackAudioMasterProjection(health);
+        var timing = BuildFlashbackPlaybackTimingProjection(health);
+        var decode = BuildFlashbackPlaybackDecodeProjection(health);
+        var commands = BuildFlashbackPlaybackCommandProjection(health);
+
+        return new()
+        {
+            State = health.FlashbackPlaybackState,
+            PositionMs = health.FlashbackPlaybackPositionMs,
+            DecoderHwAccel = health.FlashbackDecoderHwAccel,
+            FrameCount = health.FlashbackPlaybackFrameCount,
+            LateFrames = health.FlashbackPlaybackLateFrames,
+            DroppedFrames = health.FlashbackPlaybackDroppedFrames,
+            AudioMaster = audioMaster,
+            Timing = timing,
+            Decode = decode,
+            Commands = commands
+        };
+    }
+
+    private readonly record struct FlashbackPlaybackProjection
+    {
+        public string State { get; init; }
+        public long PositionMs { get; init; }
+        public string DecoderHwAccel { get; init; }
+        public long FrameCount { get; init; }
+        public long LateFrames { get; init; }
+        public long DroppedFrames { get; init; }
+        public FlashbackPlaybackAudioMasterProjection AudioMaster { get; init; }
+        public FlashbackPlaybackTimingProjection Timing { get; init; }
+        public FlashbackPlaybackDecodeProjection Decode { get; init; }
+        public FlashbackPlaybackCommandProjection Commands { get; init; }
+    }
+
+    private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            DelayDoubles = health.FlashbackPlaybackAudioMasterDelayDoubles,
+            DelayShrinks = health.FlashbackPlaybackAudioMasterDelayShrinks,
+            Fallbacks = health.FlashbackPlaybackAudioMasterFallbacks,
+            UnavailableFallbacks = health.FlashbackPlaybackAudioMasterUnavailableFallbacks,
+            StaleFallbacks = health.FlashbackPlaybackAudioMasterStaleFallbacks,
+            DriftOutlierFallbacks = health.FlashbackPlaybackAudioMasterDriftOutlierFallbacks,
+            LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,
+            LastFallbackDriftMs = health.FlashbackPlaybackAudioMasterLastFallbackDriftMs,
+            LastFallbackClockAgeMs = health.FlashbackPlaybackAudioMasterLastFallbackClockAgeMs
+        };
+
+    private static FlashbackPlaybackAudioMasterFlattenedProjection BuildFlashbackPlaybackAudioMasterFlattenedProjection(
+        FlashbackPlaybackAudioMasterProjection audioMaster)
+        => new()
+        {
+            DelayDoubles = audioMaster.DelayDoubles,
+            DelayShrinks = audioMaster.DelayShrinks,
+            Fallbacks = audioMaster.Fallbacks,
+            UnavailableFallbacks = audioMaster.UnavailableFallbacks,
+            StaleFallbacks = audioMaster.StaleFallbacks,
+            DriftOutlierFallbacks = audioMaster.DriftOutlierFallbacks,
+            LastFallbackReason = audioMaster.LastFallbackReason,
+            LastFallbackDriftMs = audioMaster.LastFallbackDriftMs,
+            LastFallbackClockAgeMs = audioMaster.LastFallbackClockAgeMs
+        };
+
+    private readonly record struct FlashbackPlaybackAudioMasterProjection
+    {
+        public long DelayDoubles { get; init; }
+        public long DelayShrinks { get; init; }
+        public long Fallbacks { get; init; }
+        public long UnavailableFallbacks { get; init; }
+        public long StaleFallbacks { get; init; }
+        public long DriftOutlierFallbacks { get; init; }
+        public string LastFallbackReason { get; init; }
+        public double LastFallbackDriftMs { get; init; }
+        public double LastFallbackClockAgeMs { get; init; }
+    }
+
+    private readonly record struct FlashbackPlaybackAudioMasterFlattenedProjection
+    {
+        public long DelayDoubles { get; init; }
+        public long DelayShrinks { get; init; }
+        public long Fallbacks { get; init; }
+        public long UnavailableFallbacks { get; init; }
+        public long StaleFallbacks { get; init; }
+        public long DriftOutlierFallbacks { get; init; }
+        public string LastFallbackReason { get; init; }
+        public double LastFallbackDriftMs { get; init; }
+        public double LastFallbackClockAgeMs { get; init; }
+    }
+
+    private static FlashbackPlaybackTimingProjection BuildFlashbackPlaybackTimingProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            SegmentSwitches = health.FlashbackPlaybackSegmentSwitches,
+            Fmp4Reopens = health.FlashbackPlaybackFmp4Reopens,
+            WriteHeadWaits = health.FlashbackPlaybackWriteHeadWaits,
+            NearLiveSnaps = health.FlashbackPlaybackNearLiveSnaps,
+            DecodeErrorSnaps = health.FlashbackPlaybackDecodeErrorSnaps,
+            SubmitFailures = health.FlashbackPlaybackSubmitFailures,
+            LastDropUtcUnixMs = health.FlashbackPlaybackLastDropUtcUnixMs,
+            LastDropReason = health.FlashbackPlaybackLastDropReason,
+            LastSubmitFailureUtcUnixMs = health.FlashbackPlaybackLastSubmitFailureUtcUnixMs,
+            LastSubmitFailure = health.FlashbackPlaybackLastSubmitFailure,
+            LastSegmentSwitchUtcUnixMs = health.FlashbackPlaybackLastSegmentSwitchUtcUnixMs,
+            LastFmp4ReopenUtcUnixMs = health.FlashbackPlaybackLastFmp4ReopenUtcUnixMs,
+            LastWriteHeadWaitGapMs = health.FlashbackPlaybackLastWriteHeadWaitGapMs,
+            TargetFps = health.FlashbackPlaybackTargetFps,
+            ObservedFps = health.FlashbackPlaybackObservedFps,
+            AvgFrameMs = health.FlashbackPlaybackAvgFrameMs,
+            CadenceSampleCount = health.FlashbackPlaybackCadenceSampleCount,
+            P95FrameMs = health.FlashbackPlaybackP95FrameMs,
+            P99FrameMs = health.FlashbackPlaybackP99FrameMs,
+            MaxFrameMs = health.FlashbackPlaybackMaxFrameMs,
+            SlowFrames = health.FlashbackPlaybackSlowFrames,
+            SlowFramePercent = health.FlashbackPlaybackSlowFramePercent,
+            OnePercentLowFps = health.FlashbackPlaybackOnePercentLowFps,
+            FivePercentLowFps = health.FlashbackPlaybackFivePercentLowFps,
+            SampleDurationMs = health.FlashbackPlaybackSampleDurationMs,
+            RecentFrameIntervalsMs = health.FlashbackPlaybackRecentFrameIntervalsMs,
+            PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount,
+            LastPtsCadenceMismatchUtcUnixMs = health.FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs,
+            LastPtsCadenceDeltaMs = health.FlashbackPlaybackLastPtsCadenceDeltaMs,
+            LastPtsCadenceExpectedMs = health.FlashbackPlaybackLastPtsCadenceExpectedMs,
+            AvDriftMs = health.FlashbackAvDriftMs
+        };
+
+    private static FlashbackPlaybackTimingFlattenedProjection BuildFlashbackPlaybackTimingFlattenedProjection(
+        FlashbackPlaybackTimingProjection timing)
+        => new()
+        {
+            SegmentSwitches = timing.SegmentSwitches,
+            Fmp4Reopens = timing.Fmp4Reopens,
+            WriteHeadWaits = timing.WriteHeadWaits,
+            NearLiveSnaps = timing.NearLiveSnaps,
+            DecodeErrorSnaps = timing.DecodeErrorSnaps,
+            SubmitFailures = timing.SubmitFailures,
+            LastDropUtcUnixMs = timing.LastDropUtcUnixMs,
+            LastDropReason = timing.LastDropReason,
+            LastSubmitFailureUtcUnixMs = timing.LastSubmitFailureUtcUnixMs,
+            LastSubmitFailure = timing.LastSubmitFailure,
+            LastSegmentSwitchUtcUnixMs = timing.LastSegmentSwitchUtcUnixMs,
+            LastFmp4ReopenUtcUnixMs = timing.LastFmp4ReopenUtcUnixMs,
+            LastWriteHeadWaitGapMs = timing.LastWriteHeadWaitGapMs,
+            TargetFps = timing.TargetFps,
+            ObservedFps = timing.ObservedFps,
+            AvgFrameMs = timing.AvgFrameMs,
+            CadenceSampleCount = timing.CadenceSampleCount,
+            P95FrameMs = timing.P95FrameMs,
+            P99FrameMs = timing.P99FrameMs,
+            MaxFrameMs = timing.MaxFrameMs,
+            SlowFrames = timing.SlowFrames,
+            SlowFramePercent = timing.SlowFramePercent,
+            OnePercentLowFps = timing.OnePercentLowFps,
+            FivePercentLowFps = timing.FivePercentLowFps,
+            SampleDurationMs = timing.SampleDurationMs,
+            RecentFrameIntervalsMs = timing.RecentFrameIntervalsMs,
+            PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount,
+            LastPtsCadenceMismatchUtcUnixMs = timing.LastPtsCadenceMismatchUtcUnixMs,
+            LastPtsCadenceDeltaMs = timing.LastPtsCadenceDeltaMs,
+            LastPtsCadenceExpectedMs = timing.LastPtsCadenceExpectedMs,
+            AvDriftMs = timing.AvDriftMs
+        };
+
+    private readonly record struct FlashbackPlaybackTimingProjection
+    {
+        public long SegmentSwitches { get; init; }
+        public long Fmp4Reopens { get; init; }
+        public long WriteHeadWaits { get; init; }
+        public long NearLiveSnaps { get; init; }
+        public long DecodeErrorSnaps { get; init; }
+        public long SubmitFailures { get; init; }
+        public long LastDropUtcUnixMs { get; init; }
+        public string LastDropReason { get; init; }
+        public long LastSubmitFailureUtcUnixMs { get; init; }
+        public string LastSubmitFailure { get; init; }
+        public long LastSegmentSwitchUtcUnixMs { get; init; }
+        public long LastFmp4ReopenUtcUnixMs { get; init; }
+        public long LastWriteHeadWaitGapMs { get; init; }
+        public double TargetFps { get; init; }
+        public double ObservedFps { get; init; }
+        public double AvgFrameMs { get; init; }
+        public int CadenceSampleCount { get; init; }
+        public double P95FrameMs { get; init; }
+        public double P99FrameMs { get; init; }
+        public double MaxFrameMs { get; init; }
+        public long SlowFrames { get; init; }
+        public double SlowFramePercent { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentFrameIntervalsMs { get; init; }
+        public long PtsCadenceMismatchCount { get; init; }
+        public long LastPtsCadenceMismatchUtcUnixMs { get; init; }
+        public double LastPtsCadenceDeltaMs { get; init; }
+        public double LastPtsCadenceExpectedMs { get; init; }
+        public double AvDriftMs { get; init; }
+    }
+
+    private readonly record struct FlashbackPlaybackTimingFlattenedProjection
+    {
+        public long SegmentSwitches { get; init; }
+        public long Fmp4Reopens { get; init; }
+        public long WriteHeadWaits { get; init; }
+        public long NearLiveSnaps { get; init; }
+        public long DecodeErrorSnaps { get; init; }
+        public long SubmitFailures { get; init; }
+        public long LastDropUtcUnixMs { get; init; }
+        public string LastDropReason { get; init; }
+        public long LastSubmitFailureUtcUnixMs { get; init; }
+        public string LastSubmitFailure { get; init; }
+        public long LastSegmentSwitchUtcUnixMs { get; init; }
+        public long LastFmp4ReopenUtcUnixMs { get; init; }
+        public long LastWriteHeadWaitGapMs { get; init; }
+        public double TargetFps { get; init; }
+        public double ObservedFps { get; init; }
+        public double AvgFrameMs { get; init; }
+        public int CadenceSampleCount { get; init; }
+        public double P95FrameMs { get; init; }
+        public double P99FrameMs { get; init; }
+        public double MaxFrameMs { get; init; }
+        public long SlowFrames { get; init; }
+        public double SlowFramePercent { get; init; }
+        public double OnePercentLowFps { get; init; }
+        public double FivePercentLowFps { get; init; }
+        public double SampleDurationMs { get; init; }
+        public double[] RecentFrameIntervalsMs { get; init; }
+        public long PtsCadenceMismatchCount { get; init; }
+        public long LastPtsCadenceMismatchUtcUnixMs { get; init; }
+        public double LastPtsCadenceDeltaMs { get; init; }
+        public double LastPtsCadenceExpectedMs { get; init; }
+        public double AvDriftMs { get; init; }
+    }
+
+    private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,
+            LastSeekHitForwardDecodeCap = health.FlashbackPlaybackLastSeekHitForwardDecodeCap,
+            SampleCount = health.FlashbackPlaybackDecodeSampleCount,
+            AvgMs = health.FlashbackPlaybackDecodeAvgMs,
+            P95Ms = health.FlashbackPlaybackDecodeP95Ms,
+            P99Ms = health.FlashbackPlaybackDecodeP99Ms,
+            MaxMs = health.FlashbackPlaybackDecodeMaxMs,
+            MaxPhase = health.FlashbackPlaybackMaxDecodePhase,
+            MaxReceiveMs = health.FlashbackPlaybackMaxDecodeReceiveMs,
+            MaxFeedMs = health.FlashbackPlaybackMaxDecodeFeedMs,
+            MaxReadMs = health.FlashbackPlaybackMaxDecodeReadMs,
+            MaxSendMs = health.FlashbackPlaybackMaxDecodeSendMs,
+            MaxAudioMs = health.FlashbackPlaybackMaxDecodeAudioMs,
+            MaxConvertMs = health.FlashbackPlaybackMaxDecodeConvertMs,
+            MaxUtcUnixMs = health.FlashbackPlaybackMaxDecodeUtcUnixMs,
+            MaxPositionMs = health.FlashbackPlaybackMaxDecodePositionMs
+        };
+
+    private static FlashbackPlaybackDecodeFlattenedProjection BuildFlashbackPlaybackDecodeFlattenedProjection(
+        FlashbackPlaybackDecodeProjection decode)
+        => new()
+        {
+            SeekForwardDecodeCapHits = decode.SeekForwardDecodeCapHits,
+            LastSeekHitForwardDecodeCap = decode.LastSeekHitForwardDecodeCap,
+            SampleCount = decode.SampleCount,
+            AvgMs = decode.AvgMs,
+            P95Ms = decode.P95Ms,
+            P99Ms = decode.P99Ms,
+            MaxMs = decode.MaxMs,
+            MaxPhase = decode.MaxPhase,
+            MaxReceiveMs = decode.MaxReceiveMs,
+            MaxFeedMs = decode.MaxFeedMs,
+            MaxReadMs = decode.MaxReadMs,
+            MaxSendMs = decode.MaxSendMs,
+            MaxAudioMs = decode.MaxAudioMs,
+            MaxConvertMs = decode.MaxConvertMs,
+            MaxUtcUnixMs = decode.MaxUtcUnixMs,
+            MaxPositionMs = decode.MaxPositionMs
+        };
+
+    private readonly record struct FlashbackPlaybackDecodeProjection
+    {
+        public long SeekForwardDecodeCapHits { get; init; }
+        public bool LastSeekHitForwardDecodeCap { get; init; }
+        public int SampleCount { get; init; }
+        public double AvgMs { get; init; }
+        public double P95Ms { get; init; }
+        public double P99Ms { get; init; }
+        public double MaxMs { get; init; }
+        public string MaxPhase { get; init; }
+        public double MaxReceiveMs { get; init; }
+        public double MaxFeedMs { get; init; }
+        public double MaxReadMs { get; init; }
+        public double MaxSendMs { get; init; }
+        public double MaxAudioMs { get; init; }
+        public double MaxConvertMs { get; init; }
+        public long MaxUtcUnixMs { get; init; }
+        public long MaxPositionMs { get; init; }
+    }
+
+    private readonly record struct FlashbackPlaybackDecodeFlattenedProjection
+    {
+        public long SeekForwardDecodeCapHits { get; init; }
+        public bool LastSeekHitForwardDecodeCap { get; init; }
+        public int SampleCount { get; init; }
+        public double AvgMs { get; init; }
+        public double P95Ms { get; init; }
+        public double P99Ms { get; init; }
+        public double MaxMs { get; init; }
+        public string MaxPhase { get; init; }
+        public double MaxReceiveMs { get; init; }
+        public double MaxFeedMs { get; init; }
+        public double MaxReadMs { get; init; }
+        public double MaxSendMs { get; init; }
+        public double MaxAudioMs { get; init; }
+        public double MaxConvertMs { get; init; }
+        public long MaxUtcUnixMs { get; init; }
+        public long MaxPositionMs { get; init; }
+    }
+
+    private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)
+        => new()
+        {
+            ThreadAlive = health.FlashbackPlaybackThreadAlive,
+            Enqueued = health.FlashbackPlaybackCommandsEnqueued,
+            Processed = health.FlashbackPlaybackCommandsProcessed,
+            Dropped = health.FlashbackPlaybackCommandsDropped,
+            SkippedNotReady = health.FlashbackPlaybackCommandsSkippedNotReady,
+            ScrubUpdatesCoalesced = health.FlashbackPlaybackScrubUpdatesCoalesced,
+            SeekCommandsCoalesced = health.FlashbackPlaybackSeekCommandsCoalesced,
+            QueueCapacity = health.FlashbackPlaybackCommandQueueCapacity,
+            Pending = health.FlashbackPlaybackPendingCommands,
+            MaxPending = health.FlashbackPlaybackMaxPendingCommands,
+            LastQueueLatencyMs = health.FlashbackPlaybackLastCommandQueueLatencyMs,
+            MaxQueueLatencyMs = health.FlashbackPlaybackMaxCommandQueueLatencyMs,
+            MaxQueueLatencyCommand = health.FlashbackPlaybackMaxCommandQueueLatencyCommand,
+            LastQueued = health.FlashbackPlaybackLastCommandQueued,
+            LastProcessed = health.FlashbackPlaybackLastCommandProcessed,
+            LastQueuedUtcUnixMs = health.FlashbackPlaybackLastCommandQueuedUtcUnixMs,
+            LastProcessedUtcUnixMs = health.FlashbackPlaybackLastCommandProcessedUtcUnixMs,
+            LastFailureUtcUnixMs = health.FlashbackPlaybackLastCommandFailureUtcUnixMs,
+            LastFailure = health.FlashbackPlaybackLastCommandFailure
+        };
+
+    private static FlashbackPlaybackCommandFlattenedProjection BuildFlashbackPlaybackCommandFlattenedProjection(
+        FlashbackPlaybackCommandProjection commands)
+        => new()
+        {
+            ThreadAlive = commands.ThreadAlive,
+            Enqueued = commands.Enqueued,
+            Processed = commands.Processed,
+            Dropped = commands.Dropped,
+            SkippedNotReady = commands.SkippedNotReady,
+            ScrubUpdatesCoalesced = commands.ScrubUpdatesCoalesced,
+            SeekCommandsCoalesced = commands.SeekCommandsCoalesced,
+            QueueCapacity = commands.QueueCapacity,
+            Pending = commands.Pending,
+            MaxPending = commands.MaxPending,
+            LastQueueLatencyMs = commands.LastQueueLatencyMs,
+            MaxQueueLatencyMs = commands.MaxQueueLatencyMs,
+            MaxQueueLatencyCommand = commands.MaxQueueLatencyCommand,
+            LastQueued = commands.LastQueued,
+            LastProcessed = commands.LastProcessed,
+            LastQueuedUtcUnixMs = commands.LastQueuedUtcUnixMs,
+            LastProcessedUtcUnixMs = commands.LastProcessedUtcUnixMs,
+            LastFailureUtcUnixMs = commands.LastFailureUtcUnixMs,
+            LastFailure = commands.LastFailure
+        };
+
+    private readonly record struct FlashbackPlaybackCommandProjection
+    {
+        public bool ThreadAlive { get; init; }
+        public long Enqueued { get; init; }
+        public long Processed { get; init; }
+        public long Dropped { get; init; }
+        public long SkippedNotReady { get; init; }
+        public long ScrubUpdatesCoalesced { get; init; }
+        public long SeekCommandsCoalesced { get; init; }
+        public int QueueCapacity { get; init; }
+        public int Pending { get; init; }
+        public int MaxPending { get; init; }
+        public long LastQueueLatencyMs { get; init; }
+        public long MaxQueueLatencyMs { get; init; }
+        public string MaxQueueLatencyCommand { get; init; }
+        public string LastQueued { get; init; }
+        public string LastProcessed { get; init; }
+        public long LastQueuedUtcUnixMs { get; init; }
+        public long LastProcessedUtcUnixMs { get; init; }
+        public long LastFailureUtcUnixMs { get; init; }
+        public string LastFailure { get; init; }
+    }
+
+    private readonly record struct FlashbackPlaybackCommandFlattenedProjection
+    {
+        public bool ThreadAlive { get; init; }
+        public long Enqueued { get; init; }
+        public long Processed { get; init; }
+        public long Dropped { get; init; }
+        public long SkippedNotReady { get; init; }
+        public long ScrubUpdatesCoalesced { get; init; }
+        public long SeekCommandsCoalesced { get; init; }
+        public int QueueCapacity { get; init; }
+        public int Pending { get; init; }
+        public int MaxPending { get; init; }
+        public long LastQueueLatencyMs { get; init; }
+        public long MaxQueueLatencyMs { get; init; }
+        public string MaxQueueLatencyCommand { get; init; }
+        public string LastQueued { get; init; }
+        public string LastProcessed { get; init; }
+        public long LastQueuedUtcUnixMs { get; init; }
+        public long LastProcessedUtcUnixMs { get; init; }
+        public long LastFailureUtcUnixMs { get; init; }
+        public string LastFailure { get; init; }
+    }
+
+    private static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(
+        FlashbackPlaybackProjection flashbackPlayback)
+        => new()
+        {
+            State = flashbackPlayback.State,
+            PositionMs = flashbackPlayback.PositionMs,
+            DecoderHwAccel = flashbackPlayback.DecoderHwAccel,
+            FrameCount = flashbackPlayback.FrameCount,
+            LateFrames = flashbackPlayback.LateFrames,
+            DroppedFrames = flashbackPlayback.DroppedFrames,
+            AudioMaster = BuildFlashbackPlaybackAudioMasterFlattenedProjection(flashbackPlayback.AudioMaster),
+            Timing = BuildFlashbackPlaybackTimingFlattenedProjection(flashbackPlayback.Timing),
+            Decode = BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode),
+            Commands = BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)
+        };
+
+    private readonly record struct FlashbackPlaybackFlattenedProjection
+    {
+        public string State { get; init; }
+        public long PositionMs { get; init; }
+        public string DecoderHwAccel { get; init; }
+        public long FrameCount { get; init; }
+        public long LateFrames { get; init; }
+        public long DroppedFrames { get; init; }
+        public FlashbackPlaybackAudioMasterFlattenedProjection AudioMaster { get; init; }
+        public FlashbackPlaybackTimingFlattenedProjection Timing { get; init; }
+        public FlashbackPlaybackDecodeFlattenedProjection Decode { get; init; }
+        public FlashbackPlaybackCommandFlattenedProjection Commands { get; init; }
+    }
 }
