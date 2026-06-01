@@ -704,7 +704,7 @@ formatter batching, device, pipeline,
 UI, and verification owner files. Captured `request.command` ID assertions now
 flow through `AssertAutomationCommandId` instead of duplicating numeric IDs in
 routing tests. Cross-tool source guards now live with the route owner in
-`McpToolSurface.CommandRouting.Tests.cs` and require fixed-command MCP
+`XUnit.ToolContractsTests.cs` and require fixed-command MCP
 automation routes to use `AutomationCommandKind` enum overloads at the pipe
 seam while preserving existing labels and wire IDs. Catalog/manifest-backed
 dynamic batches and
@@ -1257,12 +1257,12 @@ parsing, and ffprobe frame timestamp cadence analysis together there. Dimensions
 frame-rate, cadence, container/codec format, Flashback export verification
 format resolution, and HDR validation policy stay with the orchestration and
 result shaping that consume them.
-`tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` keeps the
-recording verifier integration seam together: shared fake process-supervisor,
-runtime snapshot, verifier construction, verification invocation helpers, and
-the early failure paths, source-shape/result DTO/script contracts, ffprobe
-failure, process-priority, codec, Flashback verification format, mismatch, HDR,
-and cadence scenarios that use that seam.
+`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` keeps the recording
+verifier integration seam together: shared fake process-supervisor, runtime
+snapshot, verifier construction, verification invocation helpers, and the early
+failure paths, source-shape/result DTO/script contracts, ffprobe failure,
+process-priority, codec, Flashback verification format, mismatch, HDR, and
+cadence scenarios that use that seam.
 
 Native XU source telemetry detail assembly now lives with source snapshot
 assembly in

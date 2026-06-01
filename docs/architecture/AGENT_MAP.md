@@ -1441,7 +1441,8 @@ Primary current owners:
   cached MJPEG timing propagation for health and diagnostics snapshots, the
   synthetic MJPEG timing metric factories used by those scenarios, and shared
   health snapshot assertion helpers.
-- `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs` owns the
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the xUnit
+  execution surface and consolidated backing `Program` methods for the
   recording verifier integration seam: fake process-supervisor,
   runtime-snapshot, verifier-construction, verification-invocation helpers,
   early failure paths, verifier contract/source-shape assertions, result DTO
@@ -1694,14 +1695,15 @@ Primary current owners:
   root, focused Flashback coordinator partials, coordinator
   queue/cancellation/rejection contracts, and shared reflective harness
   helpers.
-- `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
-  command-routing route/formatter assertions plus surface compatibility checks
-  that span raw app state, capture options, capture settings, and UI settings
-  tools. It also owns source guards that fixed-command MCP automation routes
-  call `AutomationCommandKind` enum overloads at the pipe seam while preserving
-  existing command labels and wire IDs.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns MCP command-routing
+  xUnit wrappers and consolidated backing `Program` methods for route/formatter
+  assertions plus surface compatibility checks that span raw app state, capture
+  options, capture settings, and UI settings tools. It also owns source guards
+  that fixed-command MCP automation routes call `AutomationCommandKind` enum
+  overloads at the pipe seam while preserving existing command labels and wire
+  IDs.
 - Keep MCP command-routing route/formatter assertions in the focused sections
-  of this file for the
+  of `XUnit.ToolContractsTests.cs` for the
   `CommandRouting.Capture`, `CommandRouting.Host`,
   `CommandRouting.Recording`, `CommandRouting.Formatting`,
   `CommandRouting.Device`, `CommandRouting.Pipeline`, `CommandRouting.Ui`, and
@@ -1770,16 +1772,14 @@ Primary current owners:
   preservation, startup-cache budget, session-id and segment-extension
   validation, eviction accounting, purge retention, active-byte accounting,
   eviction-pause behavior, and initialization recording-PTS reset tests.
-- `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
-  sink frame-rate, option, startup rollback, runtime counter, PTS guard, queue
-  rejection, lifecycle cleanup, packet-validation, drain-loop ordering,
-  force-rotate, segment-registration recovery, and broad source-ownership
-  assertions for root/startup, queueing, encoding-loop, force-rotate,
-  recording, runtime-state, and packet-buffer locality.
-- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
-  execution surface for the former legacy Flashback encoder sink frame-rate,
-  codec, counter, queue, force-rotate, packet-drain, startup, and
-  source-ownership checks after their removal from the legacy harness catalog.
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback encoder
+  sink xUnit wrappers and consolidated backing `Program` methods for frame-rate,
+  option, startup rollback, runtime counter, PTS guard, queue rejection,
+  lifecycle cleanup, packet-validation, drain-loop ordering, force-rotate,
+  segment-registration recovery, and broad source-ownership assertions for
+  root/startup, queueing, encoding-loop, force-rotate, recording,
+  runtime-state, and packet-buffer locality after their removal from the legacy
+  harness catalog.
 - `tests/Sussudio.Tests/Flashback.Exporter.Tests.cs` owns Flashback exporter
   request-surface smoke tests, path/request validation, cancellation
   precedence, cancelled lock-wait behavior, export throttle tests,

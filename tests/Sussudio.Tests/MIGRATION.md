@@ -237,7 +237,7 @@ every check has a `[Fact]`/`[Theory]` equivalent:
    probably the bug; consider exposing the value or restructuring.
 6. **Integration tests** — stand up in-process flows via the
    `IProcessSupervisor` `DispatchProxy` seam already in
-   `RecordingVerifier.Integration.Tests.cs`. Targets: HDR/SDR encode round-trip,
+   `XUnit.RecordingContractsTests.cs`. Targets: HDR/SDR encode round-trip,
    flashback ring-buffer rotation, automation hub ssctl/MCP command surface.
 
 ## Conventions for ported tests

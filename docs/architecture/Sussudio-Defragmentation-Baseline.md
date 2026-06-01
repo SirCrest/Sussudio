@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: MCP, recording verifier, and Flashback encoder sink xUnit owner locality
+Problem: `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs`, `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs`, and `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` were factless legacy `Program` sidecars whose executable xUnit facts already lived in `XUnit.ToolContractsTests.cs`, `XUnit.RecordingContractsTests.cs`, and `XUnit.FlashbackContractsTests.cs`. Reviewing MCP routing, recording verifier, or Flashback encoder sink contracts still required opening an extra backing-method file per owner with no independent fixture boundary.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs`; `tests/Sussudio.Tests/RecordingVerifier.Integration.Tests.cs`; `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -3
+Partial clusters reduced: no production partial cluster change; MCP command-routing, recording verifier, and Flashback encoder sink backing `Program` methods now live with their xUnit wrapper owners in three physical files instead of six.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~McpToolSurface|FullyQualifiedName~RecordingVerifier|FullyQualifiedName~FlashbackEncoderSink"` passed (60 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; focused architecture-doc tests passed (19 passed); `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+CLI/MCP/pipe checks, if applicable: no production runtime, automation, CLI, MCP, XAML, capture, recording, Flashback, preview, HDR, or hot-path code changed; MCP route assertions and pipe command-ID checks keep the same backing method names.
+Behavior preserved: xUnit wrapper class names, `[Fact]` names, public automation command names/IDs, and underlying `Program.Mcp*`, `Program.RecordingVerifier_*`, and `Program.FlashbackEncoderSink_*` method names are unchanged. Assertions, fake ffprobe supervisor seam, MCP command-routing pipe capture, Flashback encoder sink source-shape checks, and source readers were moved intact.
+Notes for future agents: keep these three contract surfaces in their `XUnit.*ContractsTests.cs` owners while they share the same wrapper and helper seams; split again only for a distinct fixture, external process lifecycle, or independently named production collaborator. Current counts: core app 118 `.cs` files / 89,562 nonblank LoC; `Sussudio.Tests` 30 `.cs` files / 56,000 nonblank LoC.
+
+Date: 2026-06-01
 Area: Flashback playback command-queue xUnit owner locality
 Problem: `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` was a factless legacy `Program` sidecar for Flashback playback command queue capacity/drop-oldest, scrub coalescing, seek-slot barrier/failure behavior, playback-thread lifecycle, command dispatch, and command telemetry checks whose executable xUnit facts already lived in `XUnit.FlashbackContractsTests.cs`. Reviewing command-queue contracts still required opening a second file solely for backing methods.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs`
