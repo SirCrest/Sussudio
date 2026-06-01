@@ -162,6 +162,46 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task ArchitectureAgentMap_ClassifiesMajorRuntimeClosureStatus()
+    {
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
+            .Replace("\r\n", "\n");
+        var closureSection = ExtractTextBetween(
+            agentMapText,
+            "## Major Runtime Closure Status",
+            "Preview renderer notes:");
+
+        AssertContains(closureSection, "| CaptureService | Leave As-Is For Now |");
+        AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.Flashback.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`");
+        AssertContains(closureSection, "do not merge this family just to reduce partial count");
+
+        AssertContains(closureSection, "| AutomationDiagnosticsHub | Needs Boundary Pass |");
+        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`");
+        AssertContains(closureSection, "The next non-cosmetic slice should carve a named projection collaborator");
+
+        AssertContains(closureSection, "| FlashbackPlaybackController | Ready |");
+        AssertContains(closureSection, "`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs`");
+        AssertContains(closureSection, "Treat the three-file split as intentional");
+
+        AssertContains(closureSection, "| D3D11PreviewRenderer | Ready |");
+        AssertContains(closureSection, "`Sussudio/Services/Preview/D3D11PreviewRenderer.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`");
+        AssertContains(closureSection, "`Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs`");
+        AssertContains(closureSection, "Preserve preview pacing, swap-chain binding, device-lost recovery");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task ArchitectureAgentMap_MapsFlashbackPreviewStartupToResourceOwner()
     {
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
@@ -2544,6 +2584,10 @@ namespace Sussudio.Tests
         [Fact]
         public Task AgentMapCoversCaptureRuntimeOwnershipFiles()
             => global::Program.ArchitectureAgentMap_CoversCaptureRuntimeOwnershipFiles();
+
+        [Fact]
+        public Task AgentMapClassifiesMajorRuntimeClosureStatus()
+            => global::Program.ArchitectureAgentMap_ClassifiesMajorRuntimeClosureStatus();
 
         [Fact]
         public Task AgentMapMapsFlashbackPreviewStartupToResourceOwner()
