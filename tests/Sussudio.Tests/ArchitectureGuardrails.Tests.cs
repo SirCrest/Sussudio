@@ -1118,14 +1118,24 @@ static partial class Program
         AssertContains(protocolText, "public readonly record struct AutomationPipeCommandResult");
         AssertContains(protocolText, "public static class AutomationResponseState");
         AssertContains(protocolText, "public static class AutomationSyntheticErrorResponse");
+        AssertContains(protocolText, "internal static class AutomationPipeClient");
+        AssertContains(protocolText, "internal static class AutomationCommandTransport");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio.Automation.Contracts", "AutomationPipeClientModels.cs")),
             "pipe client handoff/error models stay folded into AutomationPipeProtocol.cs");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.cs")),
+            "tools/Common/AutomationPipeClient must not own AutomationPipeClient.cs");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.Models.cs")),
             "tools/Common/AutomationPipeClient must not own AutomationPipeClient.Models.cs");
+        var contractsProjectText = File.ReadAllText(automationContractsProject);
+        AssertContains(contractsProjectText, "<_Parameter1>AutomationClient</_Parameter1>");
+        AssertContains(contractsProjectText, "<_Parameter1>ssctl</_Parameter1>");
+        AssertContains(contractsProjectText, "<_Parameter1>McpServer</_Parameter1>");
         AssertEqual(
             1,
             CountProjectReference(appReferences, @"..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj"),

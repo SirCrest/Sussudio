@@ -383,7 +383,7 @@ internal static class RuntimeContractSource
     public static string ReadAutomationPipeClientSource()
         => ReadSourceFamily(new[]
         {
-            "tools/Common/AutomationPipeClient/AutomationPipeClient.cs"
+            "Sussudio.Automation.Contracts/AutomationPipeProtocol.cs"
         });
 
     public static string ReadAutomationSnapshotFormatterSource()

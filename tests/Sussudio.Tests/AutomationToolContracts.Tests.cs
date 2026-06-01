@@ -2137,11 +2137,13 @@ public sealed class AutomationToolContractsProtocolXunitTests
     public void AutomationPipeConnectFailures_AreClassifiedForCliAndMcp()
     {
         var sharedClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
-        var pipeClientText = RuntimeContractSource.ReadRepoFile("tools/Common/AutomationPipeClient/AutomationPipeClient.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var pipeClientText = sharedClientText;
         Assert.False(
             File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "PipeTransport.cs")),
             "ssctl PipeTransport should stay with the command-handler surface instead of returning as a tiny adapter file.");
+        Assert.False(
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "Common", "AutomationPipeClient", "AutomationPipeClient.cs")),
+            "AutomationPipeClient transport is folded into Sussudio.Automation.Contracts/AutomationPipeProtocol.cs");
         var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")

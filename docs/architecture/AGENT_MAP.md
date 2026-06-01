@@ -1534,7 +1534,7 @@ Primary current owners:
   alignment, pipe-connect failure, tool delegation, script freshness, and
   response-state contracts. It uses
   `RuntimeContractSource.ReadAutomationPipeClientSource()` for the shared
-  AutomationPipeClient source family.
+  automation pipe protocol/client source family.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness
@@ -2475,20 +2475,20 @@ Primary owners:
   registration, tool discovery, and the `PipeClient` DI adapter over the shared
   automation command transport.
 - `tools/Common/` for shared tool helpers that are not contracts, including
-  pipe client, snapshot formatting, diagnostic sessions, diagnostic scenario
-  cataloging, diagnostic-session pipe retry policy, PresentMon probing, and
-  shared JSON options.
-- `tools/Common/AutomationPipeClient/` owns the shared pipe-client helper family
-  used by ssctl, MCP, diagnostic sessions, and smoke tools.
-- `tools/Common/AutomationPipeClient/AutomationPipeClient.cs` owns command
+  snapshot formatting, diagnostic sessions, diagnostic scenario cataloging,
+  diagnostic-session pipe retry policy, PresentMon probing, and shared JSON
+  options.
+- `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs` owns the shared
+  pipe-client helper family used by ssctl, MCP, diagnostic sessions, and smoke
+  tools.
+- `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs` owns command
   envelope sending, typed `AutomationCommandKind` command-id routing,
-  `not_ready` retry behavior, response-state parsing handoff to
-  `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`, named-pipe
-  connect orchestration, pipe connect failure classification, exact CLI/MCP
-  diagnostic error codes, request/response framing, response timeout,
-  command-specific timeout selection for string and typed commands, shared
-  response-element validation, synthetic error shaping, and the handoff to
-  `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`.
+  `not_ready` retry behavior, response-state parsing, named-pipe connect
+  orchestration, pipe connect failure classification, exact CLI/MCP diagnostic
+  error codes, request/response framing, response timeout, command-specific
+  timeout selection for string and typed commands, shared response-element
+  validation, synthetic error shaping, and the internal transport used by the
+  friend tool assemblies.
 - Fixed MCP routes whose commands exist in `AutomationCommandKind` should call
   the typed MCP `PipeClient.SendCommandAsync(AutomationCommandKind, ...)`
   overload at the pipe seam; fixed ssctl routes should do the same through

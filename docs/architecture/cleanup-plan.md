@@ -2947,18 +2947,15 @@ observation, Flashback warmup filtering, source/preview/Flashback
 health-observation classifiers, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning emission.
 
-Shared automation pipe client ownership lives under
-`tools/Common/AutomationPipeClient/`. `AutomationPipeClient.cs` owns command
+Shared automation pipe protocol/client ownership lives in
+`Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`. It owns command
 envelope sending, typed `AutomationCommandKind` command-id routing,
 `not_ready` retry policy, named-pipe connect orchestration, connect failure
 classification with exact CLI/MCP diagnostic error codes, write/read framing,
 response timeout, command-specific timeout selection for string and typed
 commands, shared response-element validation, synthetic error shaping, and
-handoff to
-`Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`.
-`AutomationPipeClient.cs` owns tolerant response-state parsing handoff to
-`Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`; that contract file
-also owns the command result handoff, pipe client exception taxonomy,
+the internal transport used by the friend tool assemblies. The same file also
+owns the command result handoff, pipe client exception taxonomy,
 response-state parsing, unknown-command handling, structured error-envelope
 creation, and common transport/protocol exception mapping for the shared command
 transport.
@@ -2984,7 +2981,6 @@ imports, SetupAPI imports, and native interface DTOs in
 
 Remaining `tools/Common` ownership:
 
-- `AutomationPipeClient/AutomationPipeClient.cs`
 - `DiagnosticSessionPostRunActions.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackSupport.cs`
