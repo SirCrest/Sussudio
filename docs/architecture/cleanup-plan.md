@@ -1,4 +1,4 @@
-# Architecture Cleanup Plan
+﻿# Architecture Cleanup Plan
 
 Last reviewed: 2026-05-16.
 
@@ -1376,37 +1376,32 @@ if a named exporter collaborator with its own lifetime boundary and fixture
 replaces the private helper regions.
 
 D3D preview renderer metrics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep present
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep present
 cadence, pipeline latency, render CPU timing, frame-latency wait metric state,
 sample tracking, expected-frame-rate window resizing, metric reset/clear
 lifecycle, read-only projections, and recent sample copies there. Shared
 ring-copy, timing-summary, tick-to-ms, render-stage validation helpers, and
 metric record structs live there too. Renderer implementation fields should
-live with the partial that mutates or projects them: keep
-renderer diagnostic ring/write state, render-thread failure state, first-frame
-notification state, and slow-frame reason classification in
-`D3D11PreviewRenderer.Metrics.cs`; startup/disposal lifecycle state,
+live with the partial that mutates or projects them: keep renderer diagnostic
+ring/write state, render-thread failure state, first-frame notification state,
+slow-frame reason classification, startup/disposal lifecycle state,
 stop/unbind/native-call fence state, render-loop shell orchestration,
 shared-device reset/rebind consumption, composition-transform wake handling,
-pending-frame render dispatch, final render-thread drain, and renderer-mode
-reset in the renderer root facade,
-queue state and signaling in the renderer root facade, D3D device/swap-chain, input texture, HDR shader input resources, shader resource/cache state, and shader compilation in
-`D3D11PreviewRenderer.Resources.cs`, swap-chain panel binding state in
-`D3D11PreviewRenderer.cs`, render-thread waitable frame-latency
-pacing in `D3D11PreviewRenderer.cs`, render-pass selection plus
-VideoProcessor, NV12 shader, and HDR shader execution plus shared present
-accounting in `D3D11PreviewRenderer.RenderPasses.cs`. Keep the
-renderer root limited to facade/lifecycle/render-loop orchestration, panel
-binding, composition transforms, frame-latency pacing, user-facing accessors,
-public frame submission, queue signaling, and public state toggles; leave resource, render-pass, and
-metrics implementation state in their focused owners.
+pending-frame render dispatch, final render-thread drain, renderer-mode reset,
+queue state/signaling, swap-chain panel binding state, and render-thread
+waitable frame-latency pacing in `D3D11PreviewRenderer.cs`; keep D3D
+device/swap-chain, input texture, HDR shader input resources, shader
+resource/cache state, and shader compilation in
+`D3D11PreviewRenderer.Resources.cs`; keep render-pass selection plus
+VideoProcessor, NV12 shader, HDR shader execution, and shared present
+accounting in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer queue-owned frame lifetime and metrics model types now live
 with their caller owners. Keep the `PendingFrame` lifetime wrapper in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` beside
 queue admission/drain/drop behavior and render-loop consumption; keep renderer metric record structs and
 shared metric sample helpers in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs` beside metric
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs` beside metric
 state, mutation, reset, and read-only projections.
 
 D3D preview renderer runtime knobs live in
@@ -1416,7 +1411,7 @@ overrides, DXGI statistics toggles, MMCSS settings, and stop-fence timeouts ther
 interop declarations now live with their behavior owners: keep
 `ISwapChainPanelNative` in `D3D11PreviewRenderer.cs`,
 `ID3DBlob` and `D3DCompileNative` in `D3D11PreviewRenderer.Resources.cs`,
-and `DwmFlush` in `D3D11PreviewRenderer.Metrics.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
+and `DwmFlush` in `D3D11PreviewRenderer.cs`; leave `WaitForSingleObject` with render-thread frame pacing in
 `D3D11PreviewRenderer.cs`.
 
 D3D preview renderer shader compilation now lives in
@@ -1448,7 +1443,7 @@ consumption, stale-generation drops, frame-latency wait, render dispatch,
 device-lost handoff, failure notification handoff, final pending-frame
 drain/frame-capture failure, and renderer-mode reset there; keep render-thread
 failure telemetry and first-frame notification reset/UI enqueue in
-`D3D11PreviewRenderer.Metrics.cs`, render-pass selection,
+`D3D11PreviewRenderer.cs`, render-pass selection,
 VideoProcessor execution, shader draw execution, and shared present accounting in
 `D3D11PreviewRenderer.RenderPasses.cs`, and shader resource/cache state in
 `D3D11PreviewRenderer.Resources.cs`.
@@ -1468,12 +1463,12 @@ present accounting and slow-frame diagnostic call sites with render-pass
 completion in `D3D11PreviewRenderer.RenderPasses.cs`.
 
 D3D preview renderer diagnostics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
 recent slow-frame snapshot access, diagnostic thresholding, the slow-frame
 ring buffer writer, slow-frame reason token classification, render-thread
 failure telemetry, first-frame UI notification, and DXGI refresh-slip capture
 there; keep cadence and CPU timing windows in
-`D3D11PreviewRenderer.Metrics.cs`.
+`D3D11PreviewRenderer.cs`.
 
 D3D preview renderer viewport and letterbox helpers now live with render-pass
 execution in `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`.
@@ -1482,20 +1477,20 @@ Keep `ComputeLetterboxViewport`, `UpdateViewportConstantBuffer`, and
 creation in `D3D11PreviewRenderer.Resources.cs`.
 
 D3D preview renderer submitted/rendered/dropped frame ownership tracking now
-lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`. Keep
+lives in `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
 frame ownership snapshot projection and submitted/presented/dropped ownership
 state updates with cadence, latency, frame-latency timing, DXGI statistics, and
 slow-frame diagnostic projection there.
 
 D3D preview renderer DXGI frame statistics now live in
-`Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs`.
+`Sussudio/Services/Preview/D3D11PreviewRenderer.cs`.
 Keep `GetFrameStatistics`, optional `DwmFlush`, DXGI counter deltas, and missed
 refresh accounting there. Display-clock projection also lives there; keep
 visible-frame tick estimation and `IPreviewDisplayClock` snapshot construction
 with the DXGI statistics state it samples. Keep pending-frame lifetime, queue control, and `IPreviewFrameQueueControl` in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
-slow-frame diagnostic consumption of the latest DXGI counters in the same metrics
-owner.
+slow-frame diagnostic consumption of the latest DXGI counters in the same
+renderer root.
 
 D3D preview renderer frame-latency waitable swap-chain setup and waits now live
 in `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
@@ -1538,7 +1533,7 @@ D3D preview pending-frame queue ownership now lives in
 `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`. Keep
 enqueue, backlog trimming, frame-ready signal/reset wrappers, explicit pending
 drains, pending-count accounting, and render-loop consumption there; keep frame ownership metrics in
-`D3D11PreviewRenderer.Metrics.cs`.
+`D3D11PreviewRenderer.cs`.
 
 Media Foundation source-reader negotiation now lives in the root
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs` startup owner. Keep

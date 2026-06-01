@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T20:00:04Z
+Generated UTC: 2026-06-01T20:14:17Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 127 |
+| Production .cs files | 126 |
 | Test .cs files | 14 |
-| Core app .cs files (Sussudio/) | 92 |
-| Core app nonblank LoC (Sussudio/) | 88377 |
+| Core app .cs files (Sussudio/) | 91 |
+| Core app nonblank LoC (Sussudio/) | 88369 |
 | Sussudio.Tests .cs files | 12 |
-| Sussudio.Tests nonblank LoC | 55826 |
+| Sussudio.Tests nonblank LoC | 55808 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.8%) |
 
@@ -22,9 +22,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | --- | ---: | ---: | --- |
 | CaptureService | 8 | 9865 | Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.Flashback.cs, Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs, Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs, Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs, Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs, Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | AutomationDiagnosticsHub | 4 | 9893 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
-| D3D11PreviewRenderer | 4 | 4871 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
-| LibAvEncoder | 3 | 2972 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
+| D3D11PreviewRenderer | 3 | 4863 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | FlashbackPlaybackController | 3 | 4855 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
+| LibAvEncoder | 3 | 2972 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | MainViewModel | 3 | 4442 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 545 | Sussudio/AppRuntime.cs |
 | SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
@@ -44,6 +44,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 2617 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2517 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2421 | Sussudio/MainWindow.xaml.cs |
+| 2397 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 2024 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 1933 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 1873 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
@@ -61,7 +62,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1404 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
 | 1374 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
 | 1363 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs |
-| 1313 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 1290 | Sussudio/ViewModels/StatsPresentationBuilder.cs |
 | 1289 | Sussudio/Services/Recording/LibAvEncoder.cs |
 | 1249 | Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs |

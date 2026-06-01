@@ -1083,13 +1083,16 @@ static partial class Program
         var panelBindingText = rootText;
         var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
 
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.NativeInterop.cs")),
             "mixed native interop bucket retired into behavior owners");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Metrics.cs")),
+            "renderer metrics partial folded into the renderer root");
         AssertContains(panelBindingText, "private interface ISwapChainPanelNative");
         AssertContains(panelBindingText, "WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel)");
         AssertContains(resourcesText, "private interface ID3DBlob");
@@ -1101,7 +1104,6 @@ static partial class Program
         AssertContains(rootText, "private interface ISwapChainPanelNative");
         AssertDoesNotContain(rootText, "private interface ID3DBlob");
         AssertDoesNotContain(rootText, "D3DCompileNative(");
-        AssertDoesNotContain(rootText, "private static extern int DwmFlush()");
 
         return Task.CompletedTask;
     }
@@ -1110,13 +1112,12 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
 
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrame.cs")), "pending-frame lifetime model stays folded into the renderer root");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PendingFrames.cs")), "pending-frame queue folded into the renderer root");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Submission.cs")), "pending-frame submission folded into the renderer root");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")), "renderer metric model types folded into Metrics.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")), "renderer metric model types folded into the renderer root");
         AssertContains(rootText, "private sealed class PendingFrame : IDisposable");
         AssertContains(rootText, "ArrayPool<byte>.Shared.Return(RawData);");
         AssertContains(rootText, "FrameLease?.Dispose();");
@@ -1131,9 +1132,6 @@ static partial class Program
         AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertContains(metricsText, "private static double TicksToMs(long ticks)");
         AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
-        AssertDoesNotContain(rootText, "public readonly record struct PresentCadenceMetrics(");
-        AssertDoesNotContain(rootText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertDoesNotContain(metricsText, "private sealed class PendingFrame : IDisposable");
 
         return Task.CompletedTask;
     }
@@ -1142,8 +1140,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
 
         AssertEqual(
             false,
@@ -1163,8 +1160,6 @@ static partial class Program
         AssertContains(metricsText, "private void TrackFrameDropped(PendingFrame frame, string reason)");
         AssertContains(metricsText, "Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);");
         AssertContains(metricsText, "Volatile.Write(ref _lastDropReason, reason);");
-        AssertDoesNotContain(rootText, "private long _framesSubmitted;");
-        AssertDoesNotContain(rootText, "private long _submissionGeneration;");
 
         return Task.CompletedTask;
     }
@@ -1173,8 +1168,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
 
         AssertEqual(
             false,
@@ -1198,8 +1192,6 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.DisplayClock.cs")),
             "D3D11 preview display-clock projection lives with renderer metrics");
-        AssertDoesNotContain(rootText, "private readonly object _dxgiFrameStatisticsLock = new();");
-        AssertDoesNotContain(rootText, "private long _dxgiFrameStatisticsPresentCount = -1;");
 
         return Task.CompletedTask;
     }
@@ -1208,8 +1200,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Diagnostics.cs")),
@@ -1226,8 +1217,6 @@ static partial class Program
         AssertContains(metricsText, "private static string BuildSlowFrameDiagnosticReason(");
         AssertContains(metricsText, "private static void AppendSlowFrameReason(");
         AssertContains(metricsText, "\"dxgi_refresh_slip\"");
-        AssertDoesNotContain(rootText, "private readonly object _slowFrameDiagnosticsLock = new();");
-        AssertDoesNotContain(rootText, "new PreviewSlowFrameDiagnostic[64]");
 
         return Task.CompletedTask;
     }
@@ -1236,8 +1225,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
-        var metricsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var metricsText = rootText;
 
         AssertContains(metricsText, "private readonly object _presentCadenceLock = new();");
         AssertContains(metricsText, "private double[] _presentIntervalWindowMs = new double[1200];");
@@ -1267,21 +1255,19 @@ static partial class Program
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.PresentCadenceMetrics.cs")),
-            "Present cadence metrics folded into renderer metrics owner");
+            "Present cadence metrics folded into the renderer root");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricTypes.cs")),
-            "Renderer metric model types folded into renderer metrics owner");
+            "Renderer metric model types folded into the renderer root");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricsTracking.cs")),
-            "Metric tracking folded into renderer metrics owner");
+            "Metric tracking folded into the renderer root");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.MetricWindows.cs")),
-            "Metric window lifecycle folded into renderer metrics owner");
-        AssertDoesNotContain(rootText, "private readonly object _presentCadenceLock = new();");
-        AssertDoesNotContain(rootText, "private long _lastPresentTick;");
+            "Metric window lifecycle folded into the renderer root");
 
         return Task.CompletedTask;
     }
@@ -1957,8 +1943,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var renderPassesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
-            .Replace("\r\n", "\n");
+        var diagnosticsText = rootText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -1995,10 +1980,12 @@ static partial class Program
         AssertContains(rootText, "TrackFrameDropped(stale, \"renderer-exit\");");
         AssertContains(rootText, "FailPendingFrameCapture(\"Render thread exited before frame capture completed.\");");
         AssertDoesNotContain(agentMapText, "D3D11PreviewRenderer.RenderThread.cs");
+        AssertDoesNotContain(agentMapText, "D3D11PreviewRenderer.Metrics.cs");
         AssertContains(agentMapText, "D3D11PreviewRenderer.cs");
         AssertContains(agentMapText, "shared-device reset consumption/rebind");
         AssertContains(agentMapText, "queued-frame render dispatch");
         AssertDoesNotContain(cleanupPlanText, "D3D11PreviewRenderer.RenderThread.cs");
+        AssertDoesNotContain(cleanupPlanText, "D3D11PreviewRenderer.Metrics.cs");
         AssertContains(cleanupPlanText, "D3D11PreviewRenderer.cs");
         AssertContains(cleanupPlanText, "shared-device reset/rebind consumption");
         AssertContains(cleanupPlanText, "pending-frame render dispatch");
@@ -2019,8 +2006,6 @@ static partial class Program
             throw new InvalidOperationException("Render thread must wait for frame-latency signal before rendering the frame.");
         }
 
-        AssertDoesNotContain(rootText, "private int _firstFrameRaised;");
-        AssertDoesNotContain(rootText, "private string _lastRenderThreadFailureType = string.Empty;");
         AssertDoesNotContain(renderPassesText, "private void RenderThreadMain()");
         AssertDoesNotContain(renderPassesText, "private void NotifyRenderThreadFailed(Exception ex)");
         AssertDoesNotContain(renderPassesText, "FirstFrameRendered?.Invoke()");
@@ -2814,10 +2799,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
     private static D3D11PreviewRendererDiagnosticsContractSources ReadD3D11PreviewRendererDiagnosticsContractSources()
     {
-        var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs");
+        var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
