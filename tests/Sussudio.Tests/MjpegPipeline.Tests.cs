@@ -721,6 +721,7 @@ static partial class Program
         var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
 
+        AssertDoesNotContain(rootText, "partial class ParallelMjpegDecodePipeline");
         AssertContains(rootText, "private const int WorkQueueItemCapacityPerDecoder = 8;");
         AssertContains(rootText, "private readonly Channel<MjpegWorkItem> _workQueue;");
         AssertContains(rootText, "private readonly FrameFingerprintCadenceTracker _packetHashTracker = new();");
@@ -1062,6 +1063,7 @@ static partial class Program
         var framePacingText = rootText;
         var metricsText = rootText;
 
+        AssertDoesNotContain(rootText, "partial class MjpegPreviewJitterBuffer");
         AssertContains(queueIngressText, "private sealed class BufferedFrame : IDisposable");
         AssertContains(queueIngressText, "public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)");
         AssertContains(queueIngressText, "public void Enqueue(PooledVideoFrameLease frame)");

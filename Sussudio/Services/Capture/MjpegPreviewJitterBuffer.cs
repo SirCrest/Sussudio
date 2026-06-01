@@ -14,7 +14,7 @@ namespace Sussudio.Services.Capture;
 // decode workers can emit in bursts, so this thread paces frame submission
 // against the expected display cadence and drops stale frames instead of
 // letting preview latency grow without bound.
-internal sealed partial class MjpegPreviewJitterBuffer : IDisposable
+internal sealed class MjpegPreviewJitterBuffer : IDisposable
 {
     private sealed class BufferedFrame : IDisposable
     {

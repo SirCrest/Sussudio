@@ -1063,9 +1063,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
-static partial class Program
-{
     internal static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
         var sourceText = ReadFlashbackExporterSource();
@@ -1138,10 +1135,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
-}
-static partial class Program
-{
     internal static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
     {
         var sourceText = ReadFlashbackExporterSource();
@@ -1171,10 +1164,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
-
-static partial class Program
-{
     internal static Task FlashbackExporter_InputStreamCountsAreBounded()
     {
         var sourceText = ReadFlashbackExporterSource();

@@ -16,7 +16,7 @@ namespace Sussudio.Services.Gpu;
 // compressed MJPG samples. It parallelizes decode, restores source sequence
 // order in the emitter, and returns decoded NV12/P010 frames through pooled
 // leases so preview and recording can share bytes safely.
-internal sealed partial class ParallelMjpegDecodePipeline : IDisposable
+internal sealed class ParallelMjpegDecodePipeline : IDisposable
 {
     public delegate void EmitFrameCallback(PooledVideoFrame frame);
     public delegate void PreviewFrameCallback(PooledVideoFrameLease frame);

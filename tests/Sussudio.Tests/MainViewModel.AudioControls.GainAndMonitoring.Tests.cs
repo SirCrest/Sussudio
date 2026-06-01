@@ -349,10 +349,6 @@ static partial class Program
                 $"Assertion failed for {fieldName}: expected {expected:0.###} +/- {tolerance:0.###}, actual {actual:0.###}.");
         }
     }
-}
-
-static partial class Program
-{
     internal static Task MainViewModelAudioControls_PreserveMicrophoneVolumeAndDeviceGuards()
     {
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");

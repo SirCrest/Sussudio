@@ -580,10 +580,6 @@ static partial class Program
             await DisposeValueTaskAsync(unifiedVideoCapture).ConfigureAwait(false);
         }
     }
-}
-
-static partial class Program
-{
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
         "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",

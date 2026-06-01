@@ -273,6 +273,34 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task TestProject_NonXUnitFilesDoNotReopenProgramWithinSameFile()
+    {
+        var repoRoot = GetRepoRoot();
+        var testRoot = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
+        var duplicateProgramBodies = Directory.EnumerateFiles(testRoot, "*.cs", SearchOption.TopDirectoryOnly)
+            .Where(path => !Path.GetFileName(path).StartsWith("XUnit.", StringComparison.Ordinal))
+            .Select(path => new
+            {
+                Path = Path.GetRelativePath(repoRoot, path).Replace('\\', '/'),
+                Count = Regex.Matches(
+                    File.ReadAllText(path),
+                    @"(?m)^static partial class Program\s*$").Count
+            })
+            .Where(candidate => candidate.Count > 1)
+            .OrderBy(candidate => candidate.Path, StringComparer.Ordinal)
+            .Select(candidate => $"{candidate.Path} ({candidate.Count})")
+            .ToArray();
+
+        if (duplicateProgramBodies.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "Non-XUnit test owner files should keep one Program body instead of same-file partial shells: " +
+                string.Join(", ", duplicateProgramBodies));
+        }
+
+        return Task.CompletedTask;
+    }
+
     internal static Task ArchitectureDocs_ReadRepoFileLiteralPathsResolve()
     {
         var repoRoot = GetRepoRoot();
@@ -836,6 +864,10 @@ namespace Sussudio.Tests
         [Fact]
         public Task TestProjectDoesNotKeepEmptyPartialMarkerShells()
             => global::Program.TestProject_DoesNotKeepEmptyPartialMarkerShells();
+
+        [Fact]
+        public Task TestProjectNonXUnitFilesDoNotReopenProgramWithinSameFile()
+            => global::Program.TestProject_NonXUnitFilesDoNotReopenProgramWithinSameFile();
 
         [Fact]
         public Task AgentMapCoversAutomationConsumerChecklist()

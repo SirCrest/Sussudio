@@ -648,10 +648,6 @@ static partial class Program
             _ = (bool)tryComplete.Invoke(writer, new object?[] { null })!;
         }
     }
-}
-
-static partial class Program
-{
     private static string ReadFlashbackPlaybackControllerPlaybackSource()
         => ReadFlashbackPlaybackControllerSource();
 

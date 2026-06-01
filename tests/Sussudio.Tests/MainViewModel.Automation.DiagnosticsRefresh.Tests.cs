@@ -745,9 +745,6 @@ static partial class Program
         AssertDoesNotContain(mcpDiagnosticSessionText, "int seconds = 10");
         AssertDoesNotContain(mcpDiagnosticSessionText, "int sampleIntervalMs = 1000");
     }
-}
-static partial class Program
-{
     private static void AssertDiagnosticSessionCoreOwnership(DiagnosticSessionSourceFamily diagnosticSessionSources)
     {
         var diagnosticSessionText = diagnosticSessionSources.SourceFamilyText;
@@ -825,9 +822,6 @@ static partial class Program
         AssertContains(diagnosticSessionText, "WriteArtifactBestEffortAsync(\"write-samples\", paths.SamplesPath, samples)");
         AssertContains(diagnosticSessionText, "await WriteJsonAsync(result.SummaryPath, result, CancellationToken.None)");
     }
-}
-static partial class Program
-{
     private static void AssertDiagnosticSessionExportRecordingOwnership(DiagnosticSessionSourceFamily diagnosticSessionSources)
     {
         var diagnosticSessionText = diagnosticSessionSources.SourceFamilyText;

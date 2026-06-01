@@ -611,10 +611,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
-
-static partial class Program
-{
     internal static Task FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
@@ -960,11 +956,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
-
-static partial class Program
-{
-
     internal static Task FlashbackBufferManager_CleansStaleSessionDirectories()
     {
         var bufferText = ReadFlashbackBufferManagerSource();
