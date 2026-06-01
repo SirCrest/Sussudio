@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: CaptureSessionCoordinator API test locality
+Problem: `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs` contained only private `Program` method bodies for coordinator API/model/snapshot/queue/Flashback/disposal assertions whose executable facts already live in `AutomationCaptureFlashbackRoutingContractsTests` in `XUnit.AutomationContractsTests.cs`; one default snapshot helper is also called from the tool contracts wrapper. Reviewing the automation Flashback routing contract still required opening an extra coordinator sidecar even though there was no independent fixture or xUnit surface.
+Files consolidated: `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` CaptureSessionCoordinator API sidecar count -1; `Sussudio.Tests` `.cs` count 45 -> 44
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationCaptureFlashbackRoutingContractsTests|FullyQualifiedName~ToolContractsTests.CaptureSessionSnapshotDefaultState"` passed (36 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed (17 passed); `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves private test method bodies and updates architecture ownership docs.
+Behavior preserved: `AutomationCaptureFlashbackRoutingContractsTests` and `XUnit.ToolContractsTests.CaptureSessionSnapshotDefaultState` keep the same `[Fact]` wrappers and underlying `Program` method names. CaptureSessionCoordinator public API, command/snapshot/model shape, queue/cancellation/coalescing/disposal behavior, Flashback mutation routing, inactive rejection diagnostics, and source-shape ownership assertions now live with the automation xUnit execution owner in `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`.
+Notes for future agents: keep automation Flashback routing wrappers and their coordinator API/model/source-shape method bodies together in `XUnit.AutomationContractsTests.cs` while the coordinator contract is executed through that xUnit surface. Create a separate coordinator test file only for a distinct fixture, reusable coordinator harness type, or non-automation execution owner. Current core app `.cs` count/LoC: 119 / 89,585; current test `.cs` count/LoC: 44 / 56,040.
+
+Date: 2026-06-01
 Area: MainViewModel dependency-composition test locality
 Problem: `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` contained only private `Program` method bodies for dependency-composition facts whose xUnit execution surface already lived in `XUnit.PresentationPreviewContractsTests.cs`. Reviewing MainViewModel root construction, controller graph creation, UI-dispatch, preview/recording/runtime context wiring, and state partial ownership still required opening a sidecar that had no independent fixture or public facts of its own.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs`

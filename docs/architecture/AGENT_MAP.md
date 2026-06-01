@@ -1684,11 +1684,11 @@ Primary current owners:
   bitrate policy, MJPEG HFR policy, recording selection policy, encoder
   support, and recording pipeline option xUnit contract checks.
 - Focused capture session coordinator coverage lives in
-  `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs` and
-  `CaptureModels` files; API/model/source ownership checks include the
-  consolidated coordinator root, focused Flashback coordinator partials,
-  coordinator queue/cancellation/rejection contracts, and shared reflective
-  harness helpers.
+  `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` and `CaptureModels`
+  files; API/model/source ownership checks include the consolidated coordinator
+  root, focused Flashback coordinator partials, coordinator
+  queue/cancellation/rejection contracts, and shared reflective harness
+  helpers.
 - `tests/Sussudio.Tests/McpToolSurface.CommandRouting.Tests.cs` owns MCP
   command-routing route/formatter assertions plus surface compatibility checks
   that span raw app state, capture options, capture settings, and UI settings
