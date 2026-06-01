@@ -130,9 +130,10 @@ add xUnit alongside, and port incrementally.
   recording transition failure propagation, audio controls and monitoring,
   output path and disk-space presentation, dependency composition, runtime
   automation/capture settings, preview lifecycle, and audio ramp trace
-  telemetry. The public wrapper classes remain separate inside this file so
-  existing test identities stay stable while the execution surface is easier to
-  scan.
+  telemetry. The audio-control backing `Program` checks now live in this same
+  file so the wrapper and execution surface stay together. The public wrapper
+  classes remain separate inside this file so existing test identities stay
+  stable while the execution surface is easier to scan.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview MainWindow xUnit execution groups: window lifecycle,
   launch/startup, preview screenshot, shell chrome, visual shell, recording

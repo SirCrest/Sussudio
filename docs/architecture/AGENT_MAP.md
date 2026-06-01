@@ -1259,22 +1259,19 @@ Primary current owners:
   format/transport, source/cadence, MJPEG, recording, preview, and Flashback
   projection families; keep this surface separate from the old mega diagnostics
   refresh assertion.
-- `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`
-  owns analog gain curve mapping, audio monitoring visual state, preview audio
-  monitoring volume-ramp, audio meter callback-state, audio-ramp trace
-  telemetry, audio device selection policy, device audio refresh, saved-state
-  guard, device-audio request-controller ownership assertions, and native XU
-  audio-control service cohesion, profile, payload workflow, and raw transport
-  ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns the xUnit execution surface for MainViewModel source and behavior
   contracts after their removal from the legacy offline harness catalog,
-  including MainViewModel dependency-composition seam assertions for root
-  construction, controller graph creation, UI-dispatch, recording-transition,
-  preview lifecycle/reinitialize/state/automation, capture/device,
-  source-telemetry, runtime lifecycle/event ingress/subscription/disposal
-  dependency contexts, state partial ownership, and default dependency factory
-  wiring.
+  including analog gain curve mapping, audio monitoring visual state, preview
+  audio monitoring volume-ramp, audio meter callback-state, audio-ramp trace
+  telemetry, audio device selection policy, device audio refresh, saved-state
+  guard, device-audio request-controller ownership, native XU audio-control
+  service cohesion/profile/payload/raw-transport assertions, and MainViewModel
+  dependency-composition seam assertions for root construction, controller
+  graph creation, UI-dispatch, recording-transition, preview lifecycle/
+  reinitialize/state/automation, capture/device, source-telemetry, runtime
+  lifecycle/event ingress/subscription/disposal dependency contexts, state
+  partial ownership, and default dependency factory wiring.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns shared source-inspection helpers,
   including MainViewModel source readers, member extraction, comment/string
   stripping, regex assertions, and token-order assertions used by capture,

@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: Presentation-preview audio-control test owner locality
+Problem: `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs` was the last small legacy `Program` shard for the MainViewModel audio-control presentation-preview wrapper group. All executable xUnit facts already lived in `PresentationPreviewMainViewModelAudioControlsContractsTests` inside `XUnit.PresentationPreviewContractsTests.cs`, so reviewing audio-control test behavior still required opening a second file solely for backing methods.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: no production partial cluster change; presentation-preview audio-control backing `Program` methods now live with their xUnit wrapper owner in one physical file.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PresentationPreviewMainViewModelAudioControlsContractsTests|FullyQualifiedName~AudioMonitoringVisualsFollowRuntimePreviewActivity"` passed (12 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed.
+CLI/MCP/pipe checks, if applicable: no production runtime, automation, CLI, MCP, XAML, capture, recording, Flashback, preview, HDR, or hot-path code changed.
+Behavior preserved: xUnit wrapper class names and `[Fact]` names are unchanged. Analog gain mapping, monitoring/ramp ordering, audio meter callback-state, audio-monitoring visual state, microphone/device guard, device-audio request lifetime, native XU audio-control service ownership, and audio-device selection policy checks keep the same backing method names and assertions.
+Notes for future agents: keep presentation-preview audio-control wrapper facts and their backing `Program` methods together in `XUnit.PresentationPreviewContractsTests.cs` unless the audio-control test fixture becomes independently executable or gains distinct setup. Current counts: core app 118 `.cs` files / 89,562 nonblank LoC; `Sussudio.Tests` 35 `.cs` files / 56,037 nonblank LoC.
+
+Date: 2026-06-01
 Area: XUnit same-file `Program` shell and stale test partial cleanup
 Problem: The prior same-file `Program` shell guard intentionally skipped `XUnit.*` files, leaving several large xUnit owner files that still reopened `static partial class Program` multiple times inside one physical file after legacy sidecar folds. A few single-file test/helper declarations also still advertised `partial` after their sibling files had been consolidated, and `AGENT_MAP.md` lacked an exact owner row for the cohesive Native XU audio-control service.
 Files consolidated: none
