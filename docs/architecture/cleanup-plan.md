@@ -445,13 +445,13 @@ startup, Flashback export locking, Flashback coordinator/UI routing, Flashback
 backend lifecycle, capture selection policy, output path, audio monitoring,
 reinitialization, and Flashback frame-rate/enable-disable owner files.
 
-`tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the snapshot-model
-xUnit contract suite. Snapshot model coverage for CaptureDiagnosticsSnapshot,
+`tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` owns the model-contract
+xUnit source owner. Snapshot model coverage for CaptureDiagnosticsSnapshot,
 CaptureHealthSnapshot, SourceSignalTelemetrySnapshot,
 SourceTelemetryDetailEntry, source telemetry automation projection,
 AutomationSnapshot metric-shape bands, and AutomationOptions DTO shape checks
-now lives in that single suite with shared reflection/spec helpers beside the
-facts that use them.
+live there beside the capture-configuration model contract suite, while both
+public xUnit class identities remain unchanged.
 
 `Sussudio/Models/Automation/AutomationSnapshot.cs` owns the flattened
 automation snapshot DTO properties for app, capture, audio, preview, recording,
@@ -559,11 +559,11 @@ and cached-metrics scenarios that use them in
 
 Shared capture configuration reflection helpers for remaining legacy capture
 model checks now live in `tests/Sussudio.Tests/HarnessCore.cs`.
-`tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns shared
-reflection helpers plus capture mode option, capture settings/MJPEG
-HFR/bitrate policy, MediaFormat equality/hash-code behavior, recording
-selection, encoder support, and recording pipeline option xUnit contract checks
-without scattering one contract surface across several wrapper files.
+`tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` owns shared reflection
+helpers plus capture mode option, capture settings/MJPEG HFR/bitrate policy,
+MediaFormat equality/hash-code behavior, recording selection, encoder support,
+and recording pipeline option xUnit contract checks without scattering one
+contract surface across several wrapper files.
 `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording contract
 DTO checks plus the former recording pipeline, recording-model, and
 core-runtime recording xUnit execution surfaces: recording queue, LibAv sink,

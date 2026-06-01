@@ -1344,15 +1344,15 @@ Primary current owners:
   telemetry/provider ownership, root active-read/rolling-poll locality, shared
   snapshot assembly ownership, cohesive KS bridge source/probe-link ownership,
   and supported 4K X product-revision checks.
-- `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns
-  MediaFormat equality/hash-code checks alongside the broader capture
-  configuration model contract surface.
-- `tests/Sussudio.Tests/XUnit.SnapshotModelsTests.cs` owns the xUnit
-  snapshot-model contract suite. It keeps shared snapshot-model spec DTOs,
-  registration state, reflection JSON round-trip, registered-property coverage,
-  property-list, nullability, and helper assertion methods beside the facts
-  that use them. It also owns AutomationSnapshot and AutomationOptions DTO
-  shape checks for CPU MJPEG, MJPEG preview, preview diagnostics,
+- `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` owns the xUnit
+  model-contract suites. It keeps `CaptureConfigurationModelsTests` and
+  `SnapshotModelsTests` class identities in one source owner, with capture
+  configuration reflection helpers, MediaFormat equality/hash-code checks, and
+  snapshot-model spec DTOs, registration state, reflection JSON round-trip,
+  registered-property coverage, property-list, nullability, and helper
+  assertion methods beside the facts that use them. It also owns
+  AutomationSnapshot and AutomationOptions DTO shape checks for CPU MJPEG,
+  MJPEG preview, preview diagnostics,
   capture-command/cadence, recording, Flashback recording/playback/export,
   visual cadence, and advanced control-state options; CaptureDiagnosticsSnapshot
   property spec/default/round-trip/reflection JSON/source-ownership checks;
@@ -1679,11 +1679,11 @@ Primary current owners:
   enum/type lookup, capture configuration reflection helpers, synthetic
   capture/settings/recording-context factories, capture-service initialization,
   async disposal, polling waits, and field-value fixture helpers.
-- `tests/Sussudio.Tests/XUnit.CaptureConfigurationModelsTests.cs` owns shared
-  reflection helpers plus capture mode option display metadata, option-builder
-  behavior, capture settings defaults, output path/file naming, bitrate policy,
-  MJPEG HFR policy, recording selection policy, encoder support, and recording
-  pipeline option xUnit contract checks.
+- `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` owns shared capture
+  configuration reflection helpers plus capture mode option display metadata,
+  option-builder behavior, capture settings defaults, output path/file naming,
+  bitrate policy, MJPEG HFR policy, recording selection policy, encoder
+  support, and recording pipeline option xUnit contract checks.
 - Focused capture session coordinator coverage lives in
   `tests/Sussudio.Tests/CaptureSessionCoordinator.Api.Tests.cs` and
   `CaptureModels` files; API/model/source ownership checks include the

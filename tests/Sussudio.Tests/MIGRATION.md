@@ -39,19 +39,20 @@ add xUnit alongside, and port incrementally.
   location, bounded process supervision, MMCSS registration, ProcessSpec,
   ProcessRunResult, and the shared `RuntimeContractSource` source-family
   readers used by tool/runtime contract tests.
-- `XUnit.SnapshotModelsTests.cs` owns the former legacy
+- `XUnit.ModelContractsTests.cs` owns the former legacy
   CaptureDiagnosticsSnapshot, CaptureHealthSnapshot,
   SourceSignalTelemetrySnapshot, SourceTelemetryDetailEntry, and source
   telemetry automation projection contract checks, plus AutomationSnapshot CPU
   MJPEG, MJPEG preview, preview diagnostics, capture-command, recording,
   Flashback recording/playback/export, visual cadence, and AutomationOptions DTO
   shape checks. Shared AutomationSnapshot property assertions and
-  snapshot-model reflection/spec helpers live in that same suite file.
+  snapshot-model reflection/spec helpers live in that same source file.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts
   through the `SmallContractsTests` wrapper.
-- `XUnit.CaptureConfigurationModelsTests.cs` owns shared reflection helpers,
-  capture mode option display metadata, option-builder behavior, capture
+- `XUnit.ModelContractsTests.cs` also owns shared reflection helpers for
+  `CaptureConfigurationModelsTests`, capture mode option display metadata,
+  option-builder behavior, capture
   settings defaults, output path/file naming, bitrate policy, MJPEG HFR policy,
   MediaFormat equality/hash-code behavior, recording selection policy, encoder
   support, and recording pipeline option xUnit contract checks.
