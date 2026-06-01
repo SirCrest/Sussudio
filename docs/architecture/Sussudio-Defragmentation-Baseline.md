@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: ssctl command-handler contract locality
+Problem: `tests/Sussudio.Tests/CommandHandlers.Routing.Tests.cs` contained only private `Program` method bodies and helpers for ssctl command-handler routing/source/help contracts whose executable facts already live in `SsctlCommandHandlerContractsTests` in `XUnit.ToolContractsTests.cs`. Reviewing the ssctl command-handler surface still required opening a second legacy sidecar with no independent fixture, while the smallest production files inspected for this slice (`AppSurface.cs`, `IAutomationViewModel.cs`, `RuntimePaths.cs`, `RecordingArtifactManager.cs`, `MainViewModel.SettingsPersistence.cs`, `MainViewModel.CaptureSelection.cs`, and `MainViewModelControllerGraph.cs`) were meaningful leaves or required a larger real port extraction rather than a safe file-count fold.
+Files consolidated: `tests/Sussudio.Tests/CommandHandlers.Routing.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` ssctl command-handler routing sidecar count -1; `Sussudio.Tests` `.cs` count 42 -> 41
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~SsctlCommandHandlerContractsTests"` passed (12 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed; `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names/IDs, wire payloads, CLI flags, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves private test method bodies/helpers and updates architecture ownership docs.
+Behavior preserved: `SsctlCommandHandlerContractsTests` keeps the same `[Fact]` wrappers and underlying `Program` method names. Pipe-captured route coverage, source-family/source-shape checks, golden command-ID assertions, ssctl help/catalog checks, and routing helpers now live with the tool xUnit owner in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`.
+Notes for future agents: keep ssctl command-handler route coverage, source ownership, help/catalog coverage, source-family readers, and `AssertSsctlCommandRequest` in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` while they share the same tool-contract routing harness. Current counts: core app 119 `.cs` files / 89,585 nonblank LoC; `Sussudio.Tests` 41 `.cs` files / 56,034 nonblank LoC.
+
+Date: 2026-06-01
 Area: MCP window and preview tool contract locality
 Problem: `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` contained only private `Program` method bodies for MCP wait, window action, screenshot, preview-frame capture, preview toggle, Flashback toggle, and probe checks whose executable facts already live in `McpWindowPreviewToolContractsTests` in `XUnit.ToolContractsTests.cs`. Reviewing this MCP surface still required opening a second sidecar with no independent fixture or public facts.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs`

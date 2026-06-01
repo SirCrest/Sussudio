@@ -525,15 +525,15 @@ source ownership assertions live in
 `RuntimeContractSource` formatter source-family readers after removal from the
 legacy offline harness catalog.
 ssctl command-handler routing coverage now lives in
-`CommandHandlers.Routing.Tests.cs` for device, capture controls, recordings,
-Flashback, window, manifest, observability, automation-flow, UI visibility, and
-verification commands, source ownership, and help/catalog source-shape coverage,
-with xUnit execution owned by `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
-after removal from the legacy offline harness catalog. Captured ssctl
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` for device, capture controls,
+recordings, Flashback, window, manifest, observability, automation-flow, UI
+visibility, and verification commands, source ownership, and help/catalog
+source-shape coverage after removal from the legacy offline harness catalog.
+Captured ssctl
 `request.command` ID assertions now flow through `AssertSsctlCommandRequest`,
 which delegates to `AssertAutomationCommandId` instead of duplicating numeric
 IDs in routing tests. Fixed ssctl source
-guards also live in `CommandHandlers.Routing.Tests.cs`; they require
+guards also live in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`; they require
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
