@@ -2344,7 +2344,7 @@ static partial class Program
         AssertContains(nvdecText, "private static string GetErrorString");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
-        var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs"));
+        var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshots.cs"));
         AssertContains(captureServiceTelemetryText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");
         AssertContains(captureServiceText, "_telemetryPollSync");
         AssertContains(captureServiceTelemetryText, "lock (_telemetryPollSync)");

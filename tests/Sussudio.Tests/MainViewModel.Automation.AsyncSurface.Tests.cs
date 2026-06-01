@@ -549,7 +549,7 @@ static partial class Program
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
                 .Replace("\r\n", "\n");
 
         AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");

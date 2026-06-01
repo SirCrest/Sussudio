@@ -113,7 +113,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotAssemblerText = ExtractMemberCode(healthSnapshotText, "Build");
-        var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+        var avSyncSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(healthSnapshotText, "var avSyncHealth = CaptureAvSyncHealthSnapshotFields();");
@@ -892,7 +892,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()");
@@ -926,7 +926,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
-            "source telemetry polling folded into CaptureService.Snapshots.cs");
+            "source telemetry polling folded into CaptureService.RuntimeSnapshots.cs");
 
         return Task.CompletedTask;
     }

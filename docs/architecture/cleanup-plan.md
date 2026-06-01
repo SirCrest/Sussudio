@@ -900,9 +900,9 @@ activation in `MfDeviceEnumerator.cs`.
 Capture service source telemetry polling, provider reads, fallback snapshot
 construction, merge policy, capture-format runtime telemetry, NTSC frame-rate
 correction, frame-rate argument formatting, and observed pixel-format
-normalization/reset/counters now live with the read-only diagnostics and
-automation probe helpers in
-`Sussudio/Services/Capture/CaptureService.Snapshots.cs`. The root capture service
+normalization/reset/counters now live with the runtime/diagnostics snapshot
+sampler and read-only automation probe helpers in
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. The root capture service
 owns shared state, construction, and public event surface, but these diagnostics
 are no longer embedded in the lifecycle/orchestration file.
 
@@ -980,10 +980,10 @@ artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
 
 Capture read-only automation probes now live in
-`Sussudio/Services/Capture/CaptureService.Snapshots.cs` alongside diagnostics
-and automation snapshot projection. Video source probing, preview color probing,
-and preview-frame screenshot waits stay separated from runtime lifecycle
-mutation code.
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` alongside
+diagnostics compatibility, runtime snapshot projection, and automation snapshot
+helper policy. Video source probing, preview color probing, and preview-frame
+screenshot waits stay separated from runtime lifecycle mutation code.
 
 Flashback-facing capture controls now live in focused CaptureService partials:
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public
@@ -1899,7 +1899,8 @@ keep shared source snapshot assembly in
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
 read-only runtime inputs consumed by UI, automation, and verification, and owns
-final `CaptureRuntimeSnapshot` DTO construction.
+final `CaptureRuntimeSnapshot` DTO construction plus diagnostics compatibility
+and read-only automation probe helpers.
 Runtime snapshot behavior and source projection ownership coverage live together
 in `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs`.
 The private runtime snapshot assembly handoff contract lives with the runtime
@@ -1914,8 +1915,8 @@ detail/frame-rate-origin/age/alignment projection, the `HdrOutputPolicy`
 environment gate used by capture setup and preview readiness checks, and their
 private handoff models now live with the runtime snapshot sampler in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`.
-Recording-format and observed-frame helper policy live in focused snapshot
-partials.
+Recording-format and observed-frame helper policy live with the runtime snapshot
+sampler.
 
 Capture health snapshot sampling now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`. That file
@@ -1950,7 +1951,7 @@ with the aggregate playback field record, state/frame/segment/PTS/seek-cap/
 submit-failure/A/V drift sampling, playback cadence metric sampling, decode
 timing and max-phase metric sampling, audio-master pacing/fallback sampling,
 playback command telemetry sampling, and each matching private field record.
-The general snapshot partial is now the diagnostics-snapshot compatibility
+The runtime snapshot partial is now the diagnostics-snapshot compatibility
 entry point plus shared tick-age snapshot helper policy. Flashback
 backend-staleness reason policy now stays with the health snapshot sampler, while
 export elapsed/progress-age/file-length helpers stay with the export
@@ -1958,7 +1959,7 @@ diagnostics partial.
 
 Recording byte-count, recording-format, observed frame-format, source
 telemetry, and A/V sync snapshot policy now live in
-`Sussudio/Services/Capture/CaptureService.Snapshots.cs`. Keep these helpers
+`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs`. Keep these helpers
 read-only: no transition-lock waits or state mutation. Active LibAv byte
 polling, active Flashback buffer estimates, finalized-output file fallback,
 failure flagging, encoder codec/output/profile labels, requested frame-rate

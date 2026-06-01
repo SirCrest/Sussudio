@@ -1326,7 +1326,7 @@ static partial class Program
 
     internal static Task CaptureService_SnapshotHelperPolicy_LivesInFocusedPartials()
     {
-        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
@@ -1389,6 +1389,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.SnapshotObservedFrames.cs")),
             "old observed frames snapshot partial removed");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs")),
+            "capture diagnostics/source telemetry snapshot helpers folded into CaptureService.RuntimeSnapshots.cs");
 
         return Task.CompletedTask;
     }
@@ -1461,12 +1465,13 @@ static partial class Program
         var method = serviceType.GetMethod("ResolveHdrWarmupState",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveHdrWarmupState not found.");
-        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
-            .Replace("\r\n", "\n");
         var hdrPipelineText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        AssertDoesNotContain(snapshotsText, "private static string ResolveHdrWarmupState(");
         AssertContains(hdrPipelineText, "private static string ResolveHdrWarmupState(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs")),
+            "old snapshot helper partial folded into runtime snapshot owner");
 
         // HDR not requested Ã¢â€ â€™ NotRequested
         var notRequested = method.Invoke(null, new object[] { false, false, false, 0L })?.ToString();
@@ -1486,7 +1491,7 @@ static partial class Program
 
     internal static Task CaptureService_ObservedPixelTelemetry_LivesWithSourceTelemetry()
     {
-        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+        var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(telemetryText, "private void ResetObservedPixelTelemetry()");
@@ -1508,7 +1513,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Telemetry.cs")),
-            "source telemetry polling folded into CaptureService.Snapshots.cs");
+            "source telemetry polling folded into CaptureService.RuntimeSnapshots.cs");
 
         return Task.CompletedTask;
     }
@@ -1547,7 +1552,7 @@ static partial class Program
 
         var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var originType = RequireType("Sussudio.Models.SourceTelemetryOrigin");
-        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "private static string ResolveSourceTelemetryBackend(");
         AssertEqual(
@@ -1626,12 +1631,13 @@ static partial class Program
         var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
-        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
-            .Replace("\r\n", "\n");
         var runtimeSourceTelemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
-        AssertDoesNotContain(snapshotsText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
         AssertContains(runtimeSourceTelemetryText, "private static (string Status, string Reason) ResolveTelemetryAlignment(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Snapshots.cs")),
+            "old snapshot helper partial folded into runtime snapshot owner");
 
         var alignedTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
         SetPropertyBackingField(alignedTelemetry, "Availability", Enum.Parse(availabilityType, "Available"));
@@ -1749,7 +1755,7 @@ static partial class Program
             "Sussudio",
             "Services",
             "Capture",
-            "CaptureService.Snapshots.cs"));
+            "CaptureService.RuntimeSnapshots.cs"));
         var serviceText = ReadCaptureServiceRecordingFinalizationSource();
 
         AssertContains(unifiedText, "public long FlashbackRecordingSequenceGaps");

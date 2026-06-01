@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -2212,7 +2212,7 @@ static partial class Program
             "    private void TryCaptureFrameBeforePresent");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
                 .Replace("\r\n", "\n");
 
         AssertContains(captureMethod, "if (cancellationToken.IsCancellationRequested)");
@@ -6422,7 +6422,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
                 .Replace("\r\n", "\n");
 
         AssertContains(previewStateText, "public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)\n        => _previewLifecycleController.SetPreviewEnabledAsync(enabled, cancellationToken);");
