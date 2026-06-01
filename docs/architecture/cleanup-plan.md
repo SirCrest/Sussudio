@@ -1124,7 +1124,7 @@ unified-video cleanup mechanics still delegate to the video pipeline resource
 owner.
 
 Recording integrity policy now lives in
-`Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs`. That owner
+`Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`. That owner
 keeps active-backend resolution, private video/audio counter DTOs, baseline
 deltas, final `RecordingIntegritySummary` DTO construction, normalized
 video/audio summary handoff fields, integrity status, reason, audio-status

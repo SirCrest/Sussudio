@@ -190,8 +190,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame();
 
     [Fact]
-    public Task CaptureServiceRecordingIntegrityOwnershipLivesInFocusedPartials()
-        => global::Program.CaptureService_RecordingIntegrityLivesInFocusedPartials();
+    public Task CaptureServiceRecordingIntegrityOwnershipLivesWithRecordingLifecycle()
+        => global::Program.CaptureService_RecordingIntegrityLivesWithRecordingLifecycle();
 }
 
 // xUnit slice for no-hardware runtime contracts ported from the legacy runner.
@@ -1774,9 +1774,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_RecordingIntegrityLivesInFocusedPartials()
+    internal static Task CaptureService_RecordingIntegrityLivesWithRecordingLifecycle()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs");
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
 
         AssertContains(rootText, "private RecordingIntegritySummary ResolveRecordingIntegritySummary(");
         AssertContains(rootText, "private sealed record RecordingIntegrityCounterSnapshot(");
@@ -1801,6 +1801,10 @@ static partial class Program
         AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot GetRecordingAudioCountersSinceBaseline(");
         AssertContains(rootText, "private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(");
         AssertContains(rootText, "CreateRecordingAudioCounters(");
+        AssertEqual(
+            false,
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.cs")),
+            "recording integrity sidecar folded into recording lifecycle");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingIntegrity.Summary.cs")),

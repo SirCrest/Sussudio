@@ -3667,7 +3667,7 @@ static partial class Program
 
     private static readonly string[] CaptureServiceRecordingIntegrityFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.RecordingIntegrity.cs"
+        "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"
     };
 
     private static string ReadCaptureServiceFlashbackOrchestrationSource()
