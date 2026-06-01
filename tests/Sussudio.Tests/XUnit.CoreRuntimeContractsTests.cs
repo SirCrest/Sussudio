@@ -1045,11 +1045,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         var rollingPollText = rootText;
         var rollingCommandGroupsText = rootText;
-        var snapshotAssemblyText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
-            .Replace("\r\n", "\n");
+        var snapshotAssemblyText = rootText;
         var telemetryDetailsText = snapshotAssemblyText;
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
+        AssertContains(rootText, "public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider");
         AssertContains(rootText, "public async Task<SourceSignalTelemetrySnapshot> ReadAsync(");
         AssertContains(rootText, "var attempt = TryReadInterface(ksInterface, cancellationToken);");
         AssertContains(rootText, "private NodeReadAttempt TryReadInterface(");
@@ -1064,10 +1064,9 @@ static partial class Program
         AssertContains(rootText, "private static AtCommandResult SendAtCommand(");
         AssertContains(rootText, "private static bool SendAtSetCommand(");
         AssertContains(rootText, "private static bool SendSelector4Command(");
-        AssertDoesNotContain(rootText, "private readonly record struct VicTiming(");
         AssertContains(rootText, "private NodeReadAttempt TryReadRolling(");
         AssertContains(rootText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
-        AssertDoesNotContain(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertContains(rootText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.InterfaceRead.cs")),
@@ -1077,13 +1076,13 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.RollingPoll.cs")),
             "active rolling telemetry folded into the NativeXuAtCommandProvider root read owner");
         AssertContains(rollingPollText, "private int _rollingGroup;");
-        AssertDoesNotContain(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
-        AssertDoesNotContain(rollingPollText, "private static readonly double[] CanonicalFrameRates");
+        AssertContains(rollingPollText, "private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap");
+        AssertContains(rollingPollText, "private static readonly double[] CanonicalFrameRates");
         AssertContains(rollingPollText, "private NodeReadAttempt TryReadRolling(");
         AssertContains(rollingPollText, "private NodeReadAttempt BuildSnapshotFromCachedResults(");
         AssertContains(rollingPollText, "BuildSnapshotFromCommandResults(");
-        AssertDoesNotContain(rollingPollText, "BuildDetailEntries(");
-        AssertDoesNotContain(rollingPollText, "new SourceSignalTelemetrySnapshot");
+        AssertContains(rollingPollText, "BuildDetailEntries(");
+        AssertContains(rollingPollText, "new SourceSignalTelemetrySnapshot");
         AssertContains(rollingPollText, "PopulateInitialRollingCache(handle, nodeId, cancellationToken);");
         AssertContains(rollingPollText, "RefreshRollingGroup(handle, nodeId, _rollingGroup, cancellationToken);");
         AssertContains(rollingPollText, "private AtCommandResult SendRollingCommand(");
@@ -1138,7 +1137,8 @@ static partial class Program
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.InterfaceRead.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingPoll.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
-        AssertContains(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DiagnosticSummary.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.FullSnapshot.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.RollingCommandGroups.cs");
@@ -1153,10 +1153,9 @@ static partial class Program
 
     internal static Task NativeXuAtCommandProvider_DeviceCommandsOwnPublicCommandSurface()
     {
-        var deviceCommandsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs")
-            .Replace("\r\n", "\n");
         var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
+        var deviceCommandsText = providerRootText;
         var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
@@ -1181,7 +1180,7 @@ static partial class Program
         AssertContains(deviceCommandsText, "commands=14");
         AssertContains(deviceCommandsText, "private static bool ExecuteGainChange(");
         AssertContains(deviceCommandsText, "internal static void ComputeGainRegisters(");
-        AssertDoesNotContain(deviceCommandsText, "private static bool SendSelector4Command(");
+        AssertContains(deviceCommandsText, "private static bool SendSelector4Command(");
         AssertContains(deviceCommandsText, "SendSelector4Command(");
         AssertEqual(
             false,
@@ -1205,6 +1204,7 @@ static partial class Program
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AnalogGain.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AudioSwitch.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommandReads.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.DeviceCommands.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.Selector4.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuDeviceSupport.cs");
@@ -1244,11 +1244,11 @@ static partial class Program
 
     internal static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
     {
-        var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs")
+        var telemetryDetailsText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
-        AssertContains(telemetryDetailsText, "public sealed partial class NativeXuAtCommandProvider");
+        AssertContains(telemetryDetailsText, "public sealed class NativeXuAtCommandProvider");
         AssertContains(telemetryDetailsText, "private static IReadOnlyList<SourceTelemetryDetailEntry> BuildDetailEntries(");
         AssertContains(telemetryDetailsText, "private static void AddAtDetail(");
         AssertContains(telemetryDetailsText, "private static string? TryFormatAtDetailValue(");
@@ -1261,7 +1261,7 @@ static partial class Program
         AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatInputSourceDetail(byte[] data)");
         AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(byte[] data)");
         AssertContains(telemetryDetailsText, "private static (string Value, string? RawValue) FormatAsciiOrHexDetail(byte[] data)");
-        AssertDoesNotContain(telemetryDetailsText, "private static string? DecodeCString(byte[] buffer)");
+        AssertContains(telemetryDetailsText, "private static string? DecodeCString(byte[] buffer)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.TelemetryDetails.cs")),
@@ -1282,6 +1282,7 @@ static partial class Program
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.AudioInput.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Build.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.TelemetryDetails.Formatters.cs");
+        AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.SnapshotAssembly.cs");
 
         return Task.CompletedTask;
     }

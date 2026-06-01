@@ -1249,22 +1249,19 @@ failure paths, source-shape/result DTO/script contracts, ffprobe failure,
 process-priority, codec, Flashback verification format, mismatch, HDR, and
 cadence scenarios that use that seam.
 
-Native XU source telemetry detail assembly now lives with source snapshot
-assembly in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`.
-Keep detail row construction, flash-audio input interpretation, analog-gain
-detail row insertion, input-source display text, and AT detail
-byte/number/hex/ascii display formatters together there. Keep it linked from
-`tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj` whenever this partial
-family changes, since that tool links shared provider files explicitly instead
-of project-referencing the app.
-
-Native XU public device and audio commands now live in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs`.
-Keep generic AT SET wrappers, named SET wrappers, and probe-facing raw AT reads
-there with the public `SwitchAudioInputAsync` and `SetAnalogGainAsync` entry
-points, the HDMI/Analog codec switch sequence, and the analog gain register
-mapping/writes. Public device command routing now stays in one owner while
+Native XU provider ownership now lives in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`. Keep public
+`ReadAsync`, selected-interface reading, active rolling polling, AT-command
+transport/parsing, selector-4 I2C writes, payload decoding, reference/full and
+rolling snapshot assembly, diagnostic summary formatting, source telemetry
+detail rows, flash-audio input interpretation, analog-gain detail insertion,
+audio-origin policy, generic public AT SET/read wrappers, public
+`SwitchAudioInputAsync` and `SetAnalogGainAsync` entry points, the HDMI/Analog
+codec switch sequence, and analog gain register mapping/writes together there
+while they remain one linked-source provider. `tools/NativeXuAudioProbe` links
+the provider root explicitly, so update its project file whenever this provider
+root or its shared contracts change.
+Public device command routing now stays with the read/transport owner while
 shared device support continues to enforce identity, selected-interface, and
 transport gates.
 Shared device identity, selected-interface projection, and native transport
@@ -1287,15 +1284,14 @@ writes, payload decoders, scalar helpers, and command failure formatting there
 with the node-read path that calls them.
 
 Native XU source snapshot assembly now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs`,
-including source telemetry detail row formatting and audio-origin projection.
-Keep the reference full-snapshot AT-command acquisition, full/rolling
-AT-command-result handoff contract, VIC/frame-rate lookup policy,
-AT-command-result decode into `SourceSignalTelemetrySnapshot`, diagnostic/detail
-assembly, the `nativexu:` diagnostic-summary token contract, extended AT result
-field formatting, and full-vs-rolling logging switches there.
-Flash-audio analog-gain row insertion and snapshot audio-origin policy belong
-to the audio-input telemetry detail partial.
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, including source
+telemetry detail row formatting and audio-origin projection. Keep the reference
+full-snapshot AT-command acquisition, full/rolling AT-command-result handoff
+contract, VIC/frame-rate lookup policy, AT-command-result decode into
+`SourceSignalTelemetrySnapshot`, diagnostic/detail assembly, the `nativexu:`
+diagnostic-summary token contract, extended AT result field formatting,
+full-vs-rolling logging switches, flash-audio analog-gain row insertion, and
+snapshot audio-origin policy there.
 Native XU payload decoding now lives with the root provider's AT transport
 helpers in `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`. Keep AVI
 InfoFrame decoding, HDR metadata decoding, scalar/ascii payload reads,
@@ -1720,8 +1716,7 @@ Native XU AT-command transport and payload parsing now live in
 AT read/write frames, LRC/envelope handling, selector-4 I2C payload writes,
 device-ID parsing, payload decoders, scalar helpers, and command failure
 formatting there with rolling telemetry polling and the active read path, and
-keep shared source snapshot assembly in
-`NativeXuAtCommandProvider.SnapshotAssembly.cs`.
+keep shared source snapshot assembly in the same provider root.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the

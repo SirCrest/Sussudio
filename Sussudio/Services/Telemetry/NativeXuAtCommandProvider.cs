@@ -26,7 +26,7 @@ public sealed class DisabledSourceSignalTelemetryProvider : ISourceSignalTelemet
     }
 }
 
-public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
+public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 {
     private static readonly Guid XuGuid = NativeXuDeviceSupport.ExtensionUnitGuid;
 
@@ -1001,4 +1001,1517 @@ public sealed partial class NativeXuAtCommandProvider : ISourceSignalTelemetryPr
 
     private static bool HasNonZeroData(byte[] buffer)
         => buffer.AsSpan().IndexOfAnyExcept((byte)0) >= 0;
+
+    private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap = new Dictionary<int, VicTiming>
+    {
+        [118] = new(3840, 2160, 120.0, false),
+        [119] = new(3840, 2160, 120.0, false),
+        [97] = new(3840, 2160, 60.0, false),
+        [96] = new(3840, 2160, 50.0, false),
+        [95] = new(3840, 2160, 30.0, false),
+        [94] = new(3840, 2160, 25.0, false),
+        [93] = new(3840, 2160, 24.0, false),
+        [63] = new(1920, 1080, 120.0, false),
+        [16] = new(1920, 1080, 60.0, false),
+        [31] = new(1920, 1080, 50.0, false),
+        [34] = new(1920, 1080, 30.0, false),
+        [32] = new(1920, 1080, 24.0, false),
+        [5] = new(1920, 1080, 60.0, true),
+        [4] = new(1280, 720, 60.0, false),
+        [19] = new(1280, 720, 50.0, false)
+    };
+
+    private static readonly double[] CanonicalFrameRates =
+    {
+        24000.0 / 1001.0,
+        24.0,
+        25.0,
+        30000.0 / 1001.0,
+        30.0,
+        50.0,
+        60000.0 / 1001.0,
+        60.0,
+        120000.0 / 1001.0,
+        120.0
+    };
+
+    private readonly record struct VicTiming(int Width, int Height, double NominalFrameRate, bool IsInterlaced);
+
+    private readonly record struct NativeXuSnapshotCommandResults(
+        AtCommandResult Vic,
+        AtCommandResult Vfreq,
+        AtCommandResult AviInfo,
+        AtCommandResult HdrMetadata,
+        AtCommandResult SystemInfo,
+        AtCommandResult Hdr2Sdr,
+        AtCommandResult AudioFormat,
+        AtCommandResult AudioSamplingRate,
+        AtCommandResult InputSource,
+        AtCommandResult FlashAudio,
+        AtCommandResult AdcOnOff,
+        AtCommandResult AdcVolumeGain,
+        AtCommandResult UacVolumeGain,
+        AtCommandResult UacOut1Mute,
+        AtCommandResult UacOut2Mute,
+        AtCommandResult UacOut2MixerSource,
+        AtCommandResult UsbHostProtocol,
+        AtCommandResult UsbCdc,
+        AtCommandResult UsbLinkState,
+        AtCommandResult UsbForceSpeed,
+        AtCommandResult TxHpd,
+        AtCommandResult TxVrr,
+        AtCommandResult TxEdidValid,
+        AtCommandResult UvcOutputTiming,
+        AtCommandResult UvcVideoFormat,
+        AtCommandResult UvcErrStatus,
+        AtCommandResult HdcpMode,
+        AtCommandResult HdcpVersion,
+        AtCommandResult RxTxHdcpVersion,
+        AtCommandResult Hdr2SdrExtended,
+        AtCommandResult CustomerVersion,
+        AtCommandResult RescueVersion,
+        AtCommandResult Hdr2SdrColorParam,
+        AtCommandResult ColorRangeSetting,
+        AtCommandResult Vtem,
+        AtCommandResult BitError,
+        AtCommandResult RawTiming);
+
+    /// <summary>
+    /// Original monolithic read - fires all commands. Kept for callers that
+    /// need a guaranteed-complete snapshot, while rolling poll handles periodic reads.
+    /// </summary>
+    private static NodeReadAttempt TryReadSnapshot(
+        SafeFileHandle handle,
+        int nodeId,
+        string interfacePath)
+    {
+        var cable = SendAtCommand(handle, nodeId, "CableConnect", CmdCableConnect);
+        if (!cable.Success)
+        {
+            return HandleFailedCommand("nativexu-read-failed", interfacePath, cable);
+        }
+
+        if (TryReadInt32(cable.Response, out var cableState) && cableState == 0)
+        {
+            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-cable");
+            return CreateUnavailableNodeResult(interfacePath, "nativexu-no-cable");
+        }
+
+        var videoStable = SendAtCommand(handle, nodeId, "VideoStable", CmdVideoStable);
+        if (!videoStable.Success)
+        {
+            return HandleFailedCommand("nativexu-read-failed", interfacePath, videoStable);
+        }
+
+        if (TryReadInt32(videoStable.Response, out var stableValue) && stableValue == 0)
+        {
+            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=signal-unstable");
+            return CreateUnavailableNodeResult(interfacePath, "nativexu-signal-unstable");
+        }
+
+        var results = new NativeXuSnapshotCommandResults(
+            SendAtCommand(handle, nodeId, "VIC", CmdVic),
+            SendAtCommand(handle, nodeId, "Vfreq", CmdVfreq),
+            SendAtCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame),
+            SendAtCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata),
+            SendAtCommand(handle, nodeId, "SystemInfo", CmdSystemInfo),
+            SendAtCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr),
+            SendAtCommand(handle, nodeId, "AudioFormat", CmdAudioFormat),
+            SendAtCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate),
+            SendAtCommand(handle, nodeId, "InputSource", CmdInputSource),
+            SendAtCommand(handle, nodeId, "FlashAudioInput", CmdFlashGetCustomerProprietary),
+            SendAtCommand(handle, nodeId, "AdcOnOff", CmdAdcOnOff),
+            SendAtCommand(handle, nodeId, "AdcVolumeGain", CmdAdcVolumeGain),
+            SendAtCommand(handle, nodeId, "UacVolumeGain", CmdUacVolumeGain),
+            SendAtCommand(handle, nodeId, "UacOut1Mute", CmdUacOut1Mute),
+            SendAtCommand(handle, nodeId, "UacOut2Mute", CmdUacOut2Mute),
+            SendAtCommand(handle, nodeId, "UacOut2MixerSource", CmdUacOut2MixerSource),
+            SendAtCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol),
+            SendAtCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff),
+            SendAtCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState),
+            SendAtCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed),
+            SendAtCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus),
+            SendAtCommand(handle, nodeId, "TxVrr", CmdTxVrr),
+            SendAtCommand(handle, nodeId, "TxEdidValid", CmdTxEdidValid),
+            SendAtCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming),
+            SendAtCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat),
+            SendAtCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus),
+            SendAtCommand(handle, nodeId, "HdcpMode", CmdHdcpMode),
+            SendAtCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion),
+            SendAtCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion),
+            SendAtCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended),
+            SendAtCommand(handle, nodeId, "CustomerVersion", CmdCustomerVersion),
+            SendAtCommand(handle, nodeId, "RescueVersion", CmdRescueVersion),
+            SendAtCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam),
+            SendAtCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting),
+            SendAtCommand(handle, nodeId, "Vtem", CmdVtem),
+            SendAtCommand(handle, nodeId, "BitError", CmdBitError),
+            SendAtCommand(handle, nodeId, "RawTiming", CmdRawTiming));
+
+        return BuildSnapshotFromCommandResults(
+            results,
+            interfacePath,
+            nodeId,
+            logDecodeSummary: true,
+            logNoDecodableSourceData: true,
+            useDetailedAudioInputOrigin: true);
+    }
+
+    private static NodeReadAttempt BuildSnapshotFromCommandResults(
+        NativeXuSnapshotCommandResults results,
+        string interfacePath,
+        int nodeId,
+        bool logDecodeSummary,
+        bool logNoDecodableSourceData,
+        bool useDetailedAudioInputOrigin)
+    {
+        var aviInfo = results.AviInfo.Success ? DecodeAviInfoFrame(results.AviInfo.Response) : AviInfoFrameInfo.Empty;
+        var hdrInfo = results.HdrMetadata.Success ? DecodeHdrMetadata(results.HdrMetadata.Response) : new HdrMetadataInfo(false, null, null);
+        if (results.HdrMetadata.Success && !hdrInfo.HasMetadata)
+        {
+            hdrInfo = new HdrMetadataInfo(true, 0, false);
+        }
+
+        var systemInfo = results.SystemInfo.Success ? DecodeCString(results.SystemInfo.Response) : null;
+        var vicCode = results.Vic.Success ? ExtractInt32AsVicCode(results.Vic.Response) : null;
+        var vfreqHz100 = results.Vfreq.Success && TryReadInt32(results.Vfreq.Response, out var vfreqRaw) ? (int?)vfreqRaw : null;
+        var timing = vicCode.HasValue && VicTimingMap.TryGetValue(vicCode.Value, out var mappedTiming)
+            ? mappedTiming
+            : (VicTiming?)null;
+        double? frameRateExact;
+        if (vfreqHz100.HasValue && vfreqHz100.Value > 0)
+        {
+            frameRateExact = SnapToCanonicalFrameRate(vfreqHz100.Value / 100.0);
+        }
+        else if (timing.HasValue)
+        {
+            frameRateExact = SnapToCanonicalFrameRate(timing.Value.NominalFrameRate);
+        }
+        else
+        {
+            frameRateExact = null;
+        }
+
+        var hdr2SdrState = results.Hdr2Sdr.Success && TryReadInt32(results.Hdr2Sdr.Response, out var hdr2SdrValue)
+            ? (hdr2SdrValue == 1 ? (byte)1 : (byte)0)
+            : (byte?)null;
+        var adcOnOff = TryReadBoolean(results.AdcOnOff.Success ? results.AdcOnOff.Response : Array.Empty<byte>());
+        var adcVolumeGain = TryReadInt16(results.AdcVolumeGain.Success ? results.AdcVolumeGain.Response : Array.Empty<byte>());
+        var uacVolumeGain = TryReadInt16(results.UacVolumeGain.Success ? results.UacVolumeGain.Response : Array.Empty<byte>());
+        var uacOut1Mute = TryReadBoolean(results.UacOut1Mute.Success ? results.UacOut1Mute.Response : Array.Empty<byte>());
+        var uacOut2Mute = TryReadBoolean(results.UacOut2Mute.Success ? results.UacOut2Mute.Response : Array.Empty<byte>());
+        var uacOut2MixerSource = TryReadInt16(results.UacOut2MixerSource.Success ? results.UacOut2MixerSource.Response : Array.Empty<byte>());
+        var sourceAudioFormat = TryFormatAtDetailValue(results.AudioFormat, FormatAudioFormatDetail);
+        var sourceAudioSampleRate = TryFormatAtDetailValue(results.AudioSamplingRate, FormatAudioSampleRateDetail);
+        var sourceInputSource = TryFormatAtDetailValue(results.InputSource, FormatInputSourceDetail);
+        var sourceUsbHostProtocol = TryFormatAtDetailValue(results.UsbHostProtocol, FormatUsbHostProtocolDetail);
+        var txEdidValid = TryReadBoolean(results.TxEdidValid.Success ? results.TxEdidValid.Response : Array.Empty<byte>());
+        var sourceHdcpMode = TryFormatAtDetailValue(results.HdcpMode, FormatHdcpModeDetail);
+        var sourceHdcpVersion = TryFormatAtDetailValue(results.HdcpVersion, FormatHdcpVersionDetail);
+        var sourceRxTxHdcpVersion = TryFormatAtDetailValue(results.RxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
+        var customerVersion = TryFormatAtDetailValue(results.CustomerVersion, FormatAsciiOrHexDetail);
+        var rescueVersion = results.RescueVersion.Success && TryReadInt32(results.RescueVersion.Response, out var rescueVersionValue)
+            ? (int?)rescueVersionValue
+            : null;
+        var sourceRawTimingHex = results.RawTiming.Success && results.RawTiming.Response.Length > 0
+            ? Convert.ToHexString(results.RawTiming.Response)
+            : null;
+
+        if (!vicCode.HasValue && !timing.HasValue && !frameRateExact.HasValue && !hdrInfo.HasMetadata && !aviInfo.HasData)
+        {
+            if (logNoDecodableSourceData)
+            {
+                Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-decodable-source-data");
+            }
+
+            return new NodeReadAttempt(null, false, "nativexu-no-signal-data", $"{interfacePath}: node={nodeId}");
+        }
+
+        if (logDecodeSummary)
+        {
+            Logger.Log(
+                $"NATIVEXU_DECODE vic={(vicCode.HasValue ? vicCode.Value.ToString(CultureInfo.InvariantCulture) : "none")} " +
+                $"size={timing?.Width.ToString(CultureInfo.InvariantCulture) ?? "?"}x{timing?.Height.ToString(CultureInfo.InvariantCulture) ?? "?"} " +
+                $"fps={(frameRateExact.HasValue ? frameRateExact.Value.ToString("0.###", CultureInfo.InvariantCulture) : "?")} " +
+                $"vfreq={(vfreqHz100.HasValue ? vfreqHz100.Value.ToString(CultureInfo.InvariantCulture) : "?")} " +
+                $"hdr={BoolToToken(hdrInfo.IsHdr)} colorspace={aviInfo.ColorSpace ?? "unknown"} " +
+                $"colorimetry={aviInfo.Colorimetry ?? "unknown"} firmware={systemInfo ?? "unknown"}");
+        }
+
+        var baseDiagnosticSummary = BuildDiagnosticSummary(vicCode, timing, frameRateExact, hdrInfo, aviInfo, vfreqHz100, hdr2SdrState, systemInfo);
+        var fullDiagnosticSummary = AppendExtendedDiagnostics(
+            baseDiagnosticSummary,
+            results.AudioFormat, results.AudioSamplingRate, results.InputSource,
+            results.UsbHostProtocol, results.UsbCdc, results.UsbLinkState, results.UsbForceSpeed,
+            results.TxHpd, results.TxVrr,
+            results.UvcOutputTiming, results.UvcVideoFormat, results.UvcErrStatus,
+            results.HdcpMode, results.HdcpVersion, results.RxTxHdcpVersion,
+            results.Hdr2SdrExtended, results.Hdr2SdrColorParam, results.ColorRangeSetting,
+            results.Vtem, results.BitError, results.RawTiming);
+
+        var effectiveInputSource = results.InputSource;
+        if (IsValidFlashAudioData(results.FlashAudio))
+        {
+            effectiveInputSource = new AtCommandResult(
+                "InputSource", CmdInputSource, true,
+                new[] { results.FlashAudio.Response[0] }, null, null);
+        }
+
+        var detailEntries = BuildDetailEntries(
+            aviInfo, hdrInfo, hdr2SdrState, systemInfo,
+            results.AudioFormat, results.AudioSamplingRate, effectiveInputSource,
+            results.AdcOnOff, results.AdcVolumeGain, results.UacVolumeGain,
+            results.UacOut1Mute, results.UacOut2Mute, results.UacOut2MixerSource,
+            results.UsbHostProtocol, results.UsbCdc, results.UsbLinkState, results.UsbForceSpeed,
+            results.TxHpd, results.TxVrr, results.TxEdidValid,
+            results.UvcOutputTiming, results.UvcVideoFormat, results.UvcErrStatus,
+            results.HdcpMode, results.HdcpVersion, results.RxTxHdcpVersion,
+            results.Hdr2SdrExtended, results.CustomerVersion, results.RescueVersion,
+            results.Hdr2SdrColorParam, results.ColorRangeSetting,
+            results.RawTiming, vicCode, vfreqHz100);
+
+        detailEntries = AppendFlashAudioAnalogGainDetail(detailEntries, results.FlashAudio);
+        var analogGainByte = ResolveAnalogGainByte(results.FlashAudio);
+
+        return new NodeReadAttempt(
+            new SourceSignalTelemetrySnapshot
+            {
+                TimestampUtc = DateTimeOffset.UtcNow,
+                Availability = SourceTelemetryAvailability.Available,
+                Origin = SourceTelemetryOrigin.NativeXu,
+                OriginDetail = $"NativeXu:{interfacePath}",
+                Confidence = ResolveConfidence(vicCode.HasValue, hdrInfo, aviInfo, frameRateExact),
+                Width = timing?.Width,
+                Height = timing?.Height,
+                FrameRateExact = frameRateExact,
+                FrameRateArg = InferFrameRateRational(frameRateExact),
+                IsHdr = hdrInfo.IsHdr,
+                VideoFormat = aviInfo.ColorSpace,
+                Colorimetry = aviInfo.Colorimetry,
+                Quantization = aviInfo.Quantization,
+                HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),
+                HdrTransferCode = hdrInfo.Eotf,
+                Firmware = null,
+                AudioFormat = sourceAudioFormat,
+                AudioSampleRate = sourceAudioSampleRate,
+                InputSource = ResolveAudioInputSource(results.FlashAudio, sourceInputSource),
+                AdcOnOff = adcOnOff,
+                AdcVolumeGain = adcVolumeGain,
+                AnalogGainByte = analogGainByte,
+                UacVolumeGain = uacVolumeGain,
+                UacOut1Mute = uacOut1Mute,
+                UacOut2Mute = uacOut2Mute,
+                UacOut2MixerSource = uacOut2MixerSource,
+                UsbHostProtocol = sourceUsbHostProtocol,
+                TxEdidValid = txEdidValid,
+                HdcpMode = sourceHdcpMode,
+                HdcpVersion = sourceHdcpVersion,
+                RxTxHdcpVersion = sourceRxTxHdcpVersion,
+                CustomerVersion = customerVersion,
+                RescueVersion = rescueVersion,
+                RawTimingHex = sourceRawTimingHex,
+                DetailEntries = detailEntries,
+                DiagnosticSummary = fullDiagnosticSummary,
+                AudioInputAvailability = results.InputSource.Success
+                    ? SourceAudioInputAvailability.Available
+                    : SourceAudioInputAvailability.Unavailable,
+                AudioInputMode = ResolveAudioInputMode(results.FlashAudio, results.InputSource),
+                AudioInputOrigin = ResolveSnapshotAudioInputOrigin(results.FlashAudio, results.InputSource, useDetailedAudioInputOrigin)
+            },
+            false,
+            null,
+            null);
+    }
+
+    private static string BuildDiagnosticSummary(
+        int? vicCode,
+        VicTiming? timing,
+        double? frameRateExact,
+        HdrMetadataInfo hdrInfo,
+        AviInfoFrameInfo aviInfoFrame,
+        int? vfreqHz100,
+        byte? hdr2SdrState,
+        string? systemInfo)
+    {
+        var resolutionToken = timing.HasValue
+            ? $"{timing.Value.Width}x{timing.Value.Height}{(timing.Value.IsInterlaced ? "i" : "p")}"
+            : "unknown";
+        var hdr2SdrToken = hdr2SdrState.HasValue
+            ? (hdr2SdrState.Value == 1 ? "on" : "off")
+            : "unknown";
+
+        return string.Join(
+            ":",
+            "nativexu",
+            $"vic={(vicCode.HasValue ? vicCode.Value.ToString(CultureInfo.InvariantCulture) : "unknown")}",
+            resolutionToken,
+            FormatFrameRate(frameRateExact),
+            hdrInfo.IsHdr switch
+            {
+                true => "hdr",
+                false => "sdr",
+                _ => "unknown"
+            },
+            $"vfreq={(vfreqHz100.HasValue ? vfreqHz100.Value.ToString(CultureInfo.InvariantCulture) : "unknown")}",
+            aviInfoFrame.ColorSpace ?? "unknown-space",
+            aviInfoFrame.Colorimetry ?? "unknown-color",
+            $"quant={aviInfoFrame.Quantization ?? "unknown"}",
+            $"hdr2sdr={hdr2SdrToken}",
+            $"eotf={(hdrInfo.Eotf.HasValue ? hdrInfo.Eotf.Value.ToString(CultureInfo.InvariantCulture) : "unknown")}",
+            $"fw={systemInfo ?? "unknown"}");
+    }
+
+    private static string AppendExtendedDiagnostics(
+        string baseSummary,
+        AtCommandResult audioFormat,
+        AtCommandResult audioSamplingRate,
+        AtCommandResult inputSource,
+        AtCommandResult usbHostProtocol,
+        AtCommandResult usbCdc,
+        AtCommandResult usbLinkState,
+        AtCommandResult usbForceSpeed,
+        AtCommandResult txHpd,
+        AtCommandResult txVrr,
+        AtCommandResult uvcOutputTiming,
+        AtCommandResult uvcVideoFormat,
+        AtCommandResult uvcErrStatus,
+        AtCommandResult hdcpMode,
+        AtCommandResult hdcpVersion,
+        AtCommandResult rxTxHdcpVersion,
+        AtCommandResult hdr2SdrExtended,
+        AtCommandResult hdr2SdrColorParam,
+        AtCommandResult colorRangeSetting,
+        AtCommandResult vtem,
+        AtCommandResult bitError,
+        AtCommandResult rawTiming)
+    {
+        var sb = new StringBuilder(baseSummary);
+
+        AppendResultField(sb, "audiofmt", audioFormat, FormatByte);
+        AppendResultField(sb, "audiosrate", audioSamplingRate, FormatByte);
+        AppendResultField(sb, "inputsrc", inputSource, FormatByte);
+        AppendResultField(sb, "usbproto", usbHostProtocol, FormatInt32);
+        AppendResultField(sb, "usbcdc", usbCdc, FormatByte);
+        AppendResultField(sb, "usblinkst", usbLinkState, FormatByte);
+        AppendResultField(sb, "usbspeed", usbForceSpeed, FormatByte);
+        AppendResultField(sb, "txhpd", txHpd, FormatInt32);
+        AppendResultField(sb, "txvrr", txVrr, FormatInt32);
+        AppendResultField(sb, "uvctiming", uvcOutputTiming, FormatHex);
+        AppendResultField(sb, "uvcfmt", uvcVideoFormat, FormatByte);
+        AppendResultField(sb, "uvcerr", uvcErrStatus, FormatByte);
+        AppendResultField(sb, "hdcpmode", hdcpMode, FormatByte);
+        AppendResultField(sb, "hdcpver", hdcpVersion, FormatHex);
+        AppendResultField(sb, "rxtxhdcp", rxTxHdcpVersion, FormatInt16);
+        AppendResultField(sb, "hdr2sdrext", hdr2SdrExtended, FormatInt32);
+        AppendResultField(sb, "hdr2sdrcolor", hdr2SdrColorParam, FormatInt32);
+        AppendResultField(sb, "colorrangesetting", colorRangeSetting, FormatByte);
+        AppendResultField(sb, "vtem", vtem, FormatInt16);
+        AppendResultField(sb, "biterr", bitError, FormatInt64);
+        AppendResultField(sb, "rawtiming", rawTiming, FormatHex);
+
+        return sb.ToString();
+    }
+
+    private static void AppendResultField(StringBuilder sb, string key, AtCommandResult result, Func<byte[], string> formatter)
+    {
+        sb.Append(':');
+        sb.Append(key);
+        sb.Append('=');
+        if (result.Success && result.Response.Length > 0)
+        {
+            sb.Append(formatter(result.Response));
+        }
+        else
+        {
+            sb.Append("n/a");
+        }
+    }
+
+    private static string FormatByte(byte[] data)
+        => data.Length >= 1 ? data[0].ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatInt16(byte[] data)
+        => data.Length >= 2 ? BitConverter.ToInt16(data, 0).ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatInt32(byte[] data)
+        => data.Length >= 4 ? BitConverter.ToInt32(data, 0).ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatInt64(byte[] data)
+        => data.Length >= 8 ? BitConverter.ToInt64(data, 0).ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatHex(byte[] data)
+        => data.Length > 0 ? Convert.ToHexString(data) : "n/a";
+
+    private static string FormatFrameRate(double? value)
+        => value.HasValue && value.Value > 0
+            ? value.Value.ToString("0.###", CultureInfo.InvariantCulture)
+            : "unknown";
+
+    private static IReadOnlyList<SourceTelemetryDetailEntry> BuildDetailEntries(
+        AviInfoFrameInfo aviInfoFrame,
+        HdrMetadataInfo hdrInfo,
+        byte? hdr2SdrState,
+        string? systemInfo,
+        AtCommandResult audioFormat,
+        AtCommandResult audioSamplingRate,
+        AtCommandResult inputSource,
+        AtCommandResult adcOnOff,
+        AtCommandResult adcVolumeGain,
+        AtCommandResult uacVolumeGain,
+        AtCommandResult uacOut1Mute,
+        AtCommandResult uacOut2Mute,
+        AtCommandResult uacOut2MixerSource,
+        AtCommandResult usbHostProtocol,
+        AtCommandResult usbCdc,
+        AtCommandResult usbLinkState,
+        AtCommandResult usbForceSpeed,
+        AtCommandResult txHpd,
+        AtCommandResult txVrr,
+        AtCommandResult txEdidValid,
+        AtCommandResult uvcOutputTiming,
+        AtCommandResult uvcVideoFormat,
+        AtCommandResult uvcErrStatus,
+        AtCommandResult hdcpMode,
+        AtCommandResult hdcpVersion,
+        AtCommandResult rxTxHdcpVersion,
+        AtCommandResult hdr2SdrExtended,
+        AtCommandResult customerVersion,
+        AtCommandResult rescueVersion,
+        AtCommandResult hdr2SdrColorParam,
+        AtCommandResult colorRangeSetting,
+        AtCommandResult rawTiming,
+        int? vicCode,
+        int? vfreqHz100)
+    {
+        var details = new List<SourceTelemetryDetailEntry>();
+
+        AddDetail(details, "Signal Details", "Video Format", aviInfoFrame.ColorSpace);
+        AddDetail(details, "Signal Details", "Colorimetry", aviInfoFrame.Colorimetry);
+        AddDetail(details, "Signal Details", "Quantization", aviInfoFrame.Quantization);
+        AddDetail(
+            details,
+            "Signal Details",
+            "HDR Transfer",
+            ResolveHdrTransferFunction(hdrInfo.Eotf),
+            hdrInfo.Eotf?.ToString(CultureInfo.InvariantCulture));
+        AddDetail(
+            details,
+            "Signal Details",
+            "HDR to SDR",
+            hdr2SdrState switch
+            {
+                0 => "Off",
+                1 => "On",
+                _ => null
+            },
+            hdr2SdrState?.ToString(CultureInfo.InvariantCulture));
+        AddDetail(details, "Signal Details", "VIC", vicCode?.ToString(CultureInfo.InvariantCulture));
+        AddDetail(details, "Signal Details", "Vert Freq", vfreqHz100.HasValue ? $"{vfreqHz100.Value / 100.0:0.##} Hz" : null, vfreqHz100?.ToString(CultureInfo.InvariantCulture));
+
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", inputSource, FormatInputSourceDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", audioFormat, FormatAudioFormatDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Sample Rate", audioSamplingRate, FormatAudioSampleRateDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, TelemetryLabels.AdcAnalog, adcOnOff, FormatOnOffByteDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "ADC Gain", adcVolumeGain, FormatDecimalInt16Detail);
+
+        AddAtDetail(details, "Audio / USB", "UAC Volume", uacVolumeGain, FormatDecimalInt16Detail);
+        AddAtDetail(details, "Audio / USB", "UAC Out1 Mute", uacOut1Mute, FormatMuteByteDetail);
+        AddAtDetail(details, "Audio / USB", "UAC Out2 Mute", uacOut2Mute, FormatMuteByteDetail);
+        AddAtDetail(details, "Audio / USB", "UAC Out2 Mixer", uacOut2MixerSource, FormatDecimalInt16Detail);
+
+        AddAtDetail(details, "Link / Protection", "USB Protocol", usbHostProtocol, FormatUsbHostProtocolDetail);
+        AddAtDetail(details, "Link / Protection", "USB CDC", usbCdc, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "USB Link State", usbLinkState, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "USB Speed", usbForceSpeed, FormatCodeByteDetail);
+        AddAtDetail(details, "Link / Protection", "TX Hot Plug", txHpd, FormatModeInt32Detail);
+        AddAtDetail(details, "Link / Protection", "TX VRR", txVrr, FormatModeInt32Detail);
+        AddAtDetail(details, "Link / Protection", "TX EDID Valid", txEdidValid, FormatValidByteDetail);
+        AddAtDetail(details, "Link / Protection", "HDCP Mode", hdcpMode, FormatHdcpModeDetail);
+        AddAtDetail(details, "Link / Protection", "HDCP Version", hdcpVersion, FormatHdcpVersionDetail);
+        AddAtDetail(details, "Link / Protection", "RX/TX HDCP", rxTxHdcpVersion, FormatRxTxHdcpVersionDetail);
+
+        AddAtDetail(details, "Capture Card / UVC", "UVC Timing", uvcOutputTiming, FormatHexDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Format", uvcVideoFormat, FormatHexDetail);
+        AddAtDetail(details, "Capture Card / UVC", "UVC Error", uvcErrStatus, FormatCodeByteDetail);
+
+        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Status", hdr2SdrExtended, FormatModeInt32Detail);
+        AddAtDetail(details, "Raw / Firmware", "Customer Version", customerVersion, FormatAsciiOrHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "Rescue Version", rescueVersion, FormatDecimalInt32Detail);
+        AddAtDetail(details, "Raw / Firmware", "HDR2SDR Color", hdr2SdrColorParam, FormatHexDetail);
+        AddAtDetail(details, "Raw / Firmware", "Color Range", colorRangeSetting, FormatCodeByteDetail);
+        AddAtDetail(details, "Raw / Firmware", "Raw Timing", rawTiming, FormatHexDetail);
+
+        return details;
+    }
+
+    private static void AddDetail(
+        ICollection<SourceTelemetryDetailEntry> details,
+        string group,
+        string label,
+        string? value,
+        string? rawValue = null)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        var displayValue = string.IsNullOrWhiteSpace(rawValue) || string.Equals(value, rawValue, StringComparison.OrdinalIgnoreCase)
+            ? value
+            : $"{value} ({rawValue})";
+
+        details.Add(new SourceTelemetryDetailEntry(group, label, displayValue, rawValue));
+    }
+
+    private static void AddAtDetail(
+        ICollection<SourceTelemetryDetailEntry> details,
+        string group,
+        string label,
+        AtCommandResult result,
+        Func<byte[], (string Value, string? RawValue)> formatter)
+    {
+        if (!result.Success || result.Response.Length == 0)
+        {
+            details.Add(new SourceTelemetryDetailEntry(group, label, "Unavailable", result.FailureStage));
+            return;
+        }
+
+        var formatted = formatter(result.Response);
+        AddDetail(details, group, label, formatted.Value, formatted.RawValue);
+    }
+
+    private static string? TryFormatAtDetailValue(
+        AtCommandResult result,
+        Func<byte[], (string Value, string? RawValue)> formatter)
+    {
+        if (!result.Success || result.Response.Length == 0)
+        {
+            return null;
+        }
+
+        return BuildDisplayValue(formatter(result.Response));
+    }
+
+    private static string? ResolveHdrTransferFunction(byte? eotf)
+        => eotf switch
+        {
+            0 => "SDR",
+            1 => "Traditional HDR",
+            2 => "HDR10 / PQ",
+            3 => "HLG",
+            _ => eotf.HasValue ? "Unknown" : null
+        };
+
+    private static string? BuildDisplayValue((string Value, string? RawValue) formatted)
+    {
+        if (string.IsNullOrWhiteSpace(formatted.Value))
+        {
+            return null;
+        }
+
+        return string.IsNullOrWhiteSpace(formatted.RawValue) ||
+               string.Equals(formatted.Value, formatted.RawValue, StringComparison.OrdinalIgnoreCase)
+            ? formatted.Value
+            : $"{formatted.Value} ({formatted.RawValue})";
+    }
+
+    /// <summary>
+    /// Validates flash audio data: [source, 0x80, gainByte, 0xAA, 0x55, ...].
+    /// Byte[2] is the gain value (0x00-0xFF), NOT part of the magic signature.
+    /// </summary>
+    private static bool IsValidFlashAudioData(AtCommandResult flashResult)
+        => flashResult.Success && flashResult.Response.Length >= 5 &&
+           flashResult.Response[1] == 0x80 &&
+           flashResult.Response[3] == 0xAA && flashResult.Response[4] == 0x55;
+
+    /// <summary>
+    /// Resolves the audio input source from flash proprietary data (AT 0x52).
+    /// The flash response contains 0x80, the gain byte, 0xAA, 0x55 at bytes 1-4
+    /// and the source byte at offset 0: 0x00=HDMI, 0x01=Analog.
+    /// Falls back to the AT 0x35 telemetry value if flash read fails.
+    /// </summary>
+    private static string? ResolveAudioInputSource(AtCommandResult flashResult, string? fallback)
+    {
+        if (IsValidFlashAudioData(flashResult))
+        {
+            return flashResult.Response[0] == 0 ? DeviceAudioMode.Hdmi : DeviceAudioMode.Analog;
+        }
+
+        return fallback;
+    }
+
+    private static SourceAudioInputMode? ResolveAudioInputMode(AtCommandResult flashResult, AtCommandResult inputSourceResult)
+    {
+        if (IsValidFlashAudioData(flashResult))
+        {
+            return flashResult.Response[0] == 0 ? SourceAudioInputMode.Hdmi : SourceAudioInputMode.Analog;
+        }
+
+        if (inputSourceResult.Success && inputSourceResult.Response.Length >= 1)
+        {
+            return inputSourceResult.Response[0] == 0 ? SourceAudioInputMode.Hdmi : SourceAudioInputMode.Analog;
+        }
+
+        return null;
+    }
+
+    private static string ResolveSnapshotAudioInputOrigin(
+        AtCommandResult flashAudioResult,
+        AtCommandResult inputSourceResult,
+        bool useDetailedAudioInputOrigin)
+    {
+        if (useDetailedAudioInputOrigin)
+        {
+            return flashAudioResult.Success && flashAudioResult.Response.Length >= 5
+                ? $"NativeXu:Flash=0x{flashAudioResult.Response[0]:X2}"
+                : (inputSourceResult.Success && inputSourceResult.Response.Length >= 1
+                    ? $"NativeXu:InputSource={inputSourceResult.Response[0]}"
+                    : "not-implemented");
+        }
+
+        return flashAudioResult.Success && flashAudioResult.Response.Length >= 5
+            ? "nativexu-flash-audio"
+            : (inputSourceResult.Success ? "nativexu-input-source" : "unknown");
+    }
+
+    private static int? ResolveAnalogGainByte(AtCommandResult flashResult)
+        => IsValidFlashAudioData(flashResult)
+            ? flashResult.Response[2]
+            : null;
+
+    private static IReadOnlyList<SourceTelemetryDetailEntry> AppendFlashAudioAnalogGainDetail(
+        IReadOnlyList<SourceTelemetryDetailEntry> detailEntries,
+        AtCommandResult flashResult)
+    {
+        var analogGainByte = ResolveAnalogGainByte(flashResult);
+        if (!analogGainByte.HasValue)
+        {
+            return detailEntries;
+        }
+
+        var mutable = new List<SourceTelemetryDetailEntry>(detailEntries);
+        var lastAudioIdx = mutable.FindLastIndex(d => d.Group == TelemetryLabels.GroupAudioInput);
+        var insertIdx = lastAudioIdx >= 0 ? lastAudioIdx + 1 : mutable.Count;
+        mutable.Insert(insertIdx,
+            new SourceTelemetryDetailEntry(
+                TelemetryLabels.GroupAudioInput,
+                TelemetryLabels.AnalogGain,
+                FormatAnalogGainDisplayValue((byte)analogGainByte.Value),
+                analogGainByte.Value.ToString(CultureInfo.InvariantCulture)));
+        return mutable;
+    }
+
+    private static string FormatAnalogGainDisplayValue(byte gainByte)
+    {
+        var y = gainByte / 255.0;
+        var gainPct = (Math.Exp(4.0 * y) - 1.0) / (Math.Exp(4.0) - 1.0) * 100.0;
+        return $"0x{gainByte:X2} ({gainPct:0}%)";
+    }
+
+    private static (string Value, string? RawValue) FormatInputSourceDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        var value = data[0] switch
+        {
+            0 => DeviceAudioMode.Hdmi,
+            1 => DeviceAudioMode.Analog,
+            _ => "Unknown"
+        };
+        return (value, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatAudioFormatDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        return ("Unknown", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatAudioSampleRateDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        return ("Unknown", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatUsbHostProtocolDetail(byte[] data)
+    {
+        if (data.Length < 4)
+        {
+            return ("Unavailable", null);
+        }
+
+        var rawValue = BitConverter.ToInt32(data, 0);
+        var raw = rawValue.ToString(CultureInfo.InvariantCulture);
+        var value = rawValue switch
+        {
+            0 => "Undefined",
+            1 => "Bulk",
+            2 => "Isochronous",
+            _ => "Unknown"
+        };
+        return (value, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatHdcpModeDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        return ("Unknown", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatHdcpVersionDetail(byte[] data)
+    {
+        var raw = Convert.ToHexString(data);
+        return (raw, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatRxTxHdcpVersionDetail(byte[] data)
+    {
+        if (data.Length < 2)
+        {
+            return ("Unavailable", null);
+        }
+
+        var raw = BitConverter.ToInt16(data, 0).ToString(CultureInfo.InvariantCulture);
+        return ("Unknown", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatCodeByteDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        return ($"Code {raw}", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatOnOffByteDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        var value = data[0] switch
+        {
+            0 => "Off",
+            1 => "On",
+            _ => "Unknown"
+        };
+        return (value, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatMuteByteDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        var value = data[0] switch
+        {
+            0 => "Unmuted",
+            1 => "Muted",
+            _ => "Unknown"
+        };
+        return (value, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatValidByteDetail(byte[] data)
+    {
+        var raw = data[0].ToString(CultureInfo.InvariantCulture);
+        var value = data[0] switch
+        {
+            0 => "Invalid",
+            1 => "Valid",
+            _ => "Unknown"
+        };
+        return (value, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatDecimalInt16Detail(byte[] data)
+    {
+        if (data.Length < 2)
+        {
+            return ("Unavailable", null);
+        }
+
+        var raw = BitConverter.ToInt16(data, 0).ToString(CultureInfo.InvariantCulture);
+        return (raw, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatDecimalInt32Detail(byte[] data)
+    {
+        if (data.Length < 4)
+        {
+            return ("Unavailable", null);
+        }
+
+        var raw = BitConverter.ToInt32(data, 0).ToString(CultureInfo.InvariantCulture);
+        return (raw, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatModeInt16Detail(byte[] data)
+    {
+        if (data.Length < 2)
+        {
+            return ("Unavailable", null);
+        }
+
+        var raw = BitConverter.ToInt16(data, 0).ToString(CultureInfo.InvariantCulture);
+        return ($"Mode {raw}", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatModeInt32Detail(byte[] data)
+    {
+        if (data.Length < 4)
+        {
+            return ("Unavailable", null);
+        }
+
+        var raw = BitConverter.ToInt32(data, 0).ToString(CultureInfo.InvariantCulture);
+        return ($"Mode {raw}", raw);
+    }
+
+    private static (string Value, string? RawValue) FormatHexDetail(byte[] data)
+    {
+        var raw = Convert.ToHexString(data);
+        return (raw, raw);
+    }
+
+    private static (string Value, string? RawValue) FormatAsciiOrHexDetail(byte[] data)
+    {
+        var raw = Convert.ToHexString(data);
+        var ascii = TryDecodePrintableAscii(data);
+        return string.IsNullOrWhiteSpace(ascii)
+            ? (raw, raw)
+            : (ascii, raw);
+    }
+
+    /// <summary>
+    /// Sends an AT SET command to the Realtek chip. Opens its own KS handle.
+    /// </summary>
+    public static async Task<bool> SendAtSetCommandAsync(
+        CaptureDevice? device,
+        int cmdCode,
+        byte[] inputData,
+        CancellationToken cancellationToken = default)
+    {
+        if (device == null || string.IsNullOrWhiteSpace(device.Id))
+        {
+            return false;
+        }
+
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        {
+            return false;
+        }
+
+        if (!NativeXuDeviceSupport.HasSelectedInterface(device, "SET"))
+        {
+            return false;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                return false;
+            }
+
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            foreach (var ksInterface in interfaces)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                if (handle is null)
+                {
+                    continue;
+                }
+
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                {
+                    continue;
+                }
+
+                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                foreach (var node in nodeList)
+                {
+                    if (!node.IsDevSpecific)
+                    {
+                        continue;
+                    }
+
+                    var result = SendAtSetCommand(handle, node.NodeId, cmdCode, inputData, cancellationToken);
+                    if (result)
+                    {
+                        Logger.Log($"NATIVEXU_SET_OK cmd=0x{cmdCode:X2} inputLen={inputData.Length}");
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"NATIVEXU_SET_EXCEPTION cmd=0x{cmdCode:X2} type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                NativeXuDeviceSupport.ReleaseTransportGate();
+            }
+        }
+    }
+
+    public static async Task<byte[]?> ReadAtCommandAsync(
+        CaptureDevice? device,
+        int cmdCode,
+        string label,
+        CancellationToken cancellationToken = default)
+    {
+        if (device == null || string.IsNullOrWhiteSpace(device.Id))
+        {
+            return null;
+        }
+
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(device.NativeXuInterfacePath))
+        {
+            return null;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                return null;
+            }
+
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            foreach (var ksInterface in interfaces)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                if (handle is null)
+                {
+                    continue;
+                }
+
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                {
+                    continue;
+                }
+
+                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                foreach (var node in nodeList)
+                {
+                    if (!node.IsDevSpecific)
+                    {
+                        continue;
+                    }
+
+                    var result = SendAtCommand(handle, node.NodeId, label, cmdCode);
+                    if (result.Success)
+                    {
+                        return result.Response;
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"NATIVEXU_GET_EXCEPTION cmd=0x{cmdCode:X2} type={ex.GetType().Name} msg={ex.Message}");
+            return null;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                NativeXuDeviceSupport.ReleaseTransportGate();
+            }
+        }
+    }
+
+    public static Task<bool> SetInputSourceAsync(
+        CaptureDevice? device,
+        int source,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetInputSource,
+            new byte[] { (byte)source },
+            $"InputSource source={source}",
+            ct);
+
+    public static Task<bool> SetAdcOnOffAsync(
+        CaptureDevice? device,
+        bool on,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetAdcOnOff,
+            BitConverter.GetBytes(on ? 1 : 0),
+            $"AdcOnOff on={on}",
+            ct);
+
+    public static Task<bool> SetAdcVolumeGainAsync(
+        CaptureDevice? device,
+        int gain,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetAdcVolumeGain,
+            BitConverter.GetBytes(gain),
+            $"AdcVolumeGain gain={gain}",
+            ct);
+
+    public static Task<bool> SetHdr2SdrOnOffAsync(
+        CaptureDevice? device,
+        bool on,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetHdr2Sdr,
+            new byte[] { on ? (byte)1 : (byte)0 },
+            $"Hdr2Sdr on={on}",
+            ct);
+
+    public static Task<bool> SetLedLightAsync(
+        CaptureDevice? device,
+        int value,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetLedLight,
+            BitConverter.GetBytes(value),
+            $"LedLight value={value}",
+            ct);
+
+    public static Task<bool> SetDacHpOnOffAsync(
+        CaptureDevice? device,
+        bool on,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetDacHpOnOff,
+            BitConverter.GetBytes(on ? 1 : 0),
+            $"DacHpOnOff on={on}",
+            ct);
+
+    public static Task<bool> SetDacHpMuteAsync(
+        CaptureDevice? device,
+        bool mute,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            0x30,
+            new byte[] { mute ? (byte)1 : (byte)0 },
+            $"DacHpMute mute={mute}",
+            ct);
+
+    public static Task<bool> SetHpOutGainAsync(
+        CaptureDevice? device,
+        int gain,
+        CancellationToken ct = default)
+        => SendNamedSetCommandAsync(
+            device,
+            CmdSetHpOutGain,
+            BitConverter.GetBytes((short)gain),
+            $"HpOutGain gain={gain}",
+            ct);
+
+    // Public wrapper for probe tools
+    public static Task<bool> SendNamedSetCommandPublicAsync(
+        CaptureDevice? device,
+        int cmdCode,
+        byte[] inputData,
+        string operation,
+        CancellationToken cancellationToken = default)
+        => SendNamedSetCommandAsync(device, cmdCode, inputData, operation, cancellationToken);
+
+    private static async Task<bool> SendNamedSetCommandAsync(
+        CaptureDevice? device,
+        int cmdCode,
+        byte[] inputData,
+        string operation,
+        CancellationToken cancellationToken)
+    {
+        Logger.Log(
+            $"NATIVEXU_SET_REQUEST op='{operation}' cmd=0x{cmdCode:X2} " +
+            $"inputLen={inputData.Length} input={GetHexPreview(inputData, inputData.Length, inputData.Length)}");
+        var success = await SendAtSetCommandAsync(device, cmdCode, inputData, cancellationToken).ConfigureAwait(false);
+        Logger.Log($"NATIVEXU_SET_RESULT op='{operation}' cmd=0x{cmdCode:X2} success={success}");
+        return success;
+    }
+
+    /// <summary>
+    /// Switches the audio input source (HDMI/Analog) using the same sequence
+    /// that Elgato Studio uses: flash persistence plus I2C codec register writes.
+    /// This is seamless: no USB re-enumeration, no preview interruption.
+    /// DO NOT use SetInputSourceAsync (AT 0x34); it causes USB re-enumeration
+    /// and can permanently corrupt firmware audio state.
+    /// </summary>
+    public static async Task<bool> SwitchAudioInputAsync(
+        CaptureDevice? device,
+        bool analog,
+        byte gainByte = 0xFF,
+        CancellationToken ct = default)
+    {
+        var sourceLabel = analog ? DeviceAudioMode.Analog : DeviceAudioMode.Hdmi;
+        Logger.Log($"NATIVEXU_SWITCH_AUDIO begin source={sourceLabel} gain=0x{gainByte:X2}");
+
+        if (device == null || string.IsNullOrWhiteSpace(device.Id))
+        {
+            return false;
+        }
+
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        {
+            return false;
+        }
+
+        if (!NativeXuDeviceSupport.HasSelectedInterface(device, "SWITCH_AUDIO"))
+        {
+            return false;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(
+                NativeXuDeviceSupport.DefaultTransportGateTimeoutMs * 4,
+                ct).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                Logger.Log("NATIVEXU_SWITCH_AUDIO FAILED stage=gate_timeout");
+                return false;
+            }
+
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            foreach (var ksInterface in interfaces)
+            {
+                ct.ThrowIfCancellationRequested();
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                if (handle is null)
+                {
+                    continue;
+                }
+
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                {
+                    continue;
+                }
+
+                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                foreach (var node in nodeList)
+                {
+                    if (!node.IsDevSpecific)
+                    {
+                        continue;
+                    }
+
+                    var ok = ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel, ct);
+                    if (ok)
+                    {
+                        Logger.Log($"NATIVEXU_SWITCH_AUDIO OK source={sourceLabel}");
+                        return true;
+                    }
+                }
+            }
+
+            Logger.Log("NATIVEXU_SWITCH_AUDIO FAILED stage=no_device");
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"NATIVEXU_SWITCH_AUDIO EXCEPTION type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                NativeXuDeviceSupport.ReleaseTransportGate();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets the analog input gain via I2C codec register writes plus flash persistence.
+    /// The gain byte maps 0x00-0xFF (0-100%) to a 3-zone codec register configuration:
+    /// Zone 1 (0x00-0x7F): digital attenuation only, regs 0x0C/0x0D = 0x80 + gain.
+    /// Zone 2 (0x80-0x97): PGA gain, regs 0x0A/0x0B = gain - 0x80.
+    /// Zone 3 (0x98-0xAF): PGA maxed plus output gain, regs 0x0E/0x0F = gain - 0x98.
+    /// Zone 4 (0xB0-0xFF): all stages maxed (PGA=0x18, OutGain=0x18).
+    /// </summary>
+    public static async Task<bool> SetAnalogGainAsync(
+        CaptureDevice? device,
+        byte gainByte,
+        bool persistFlash = true,
+        CancellationToken ct = default)
+    {
+        var logPct = (Math.Exp(4.0 * (gainByte / 255.0)) - 1.0) / (Math.Exp(4.0) - 1.0) * 100.0;
+        Logger.Log($"NATIVEXU_SET_GAIN begin gain=0x{gainByte:X2} ({logPct:0}%) flash={persistFlash}");
+
+        if (device == null || string.IsNullOrWhiteSpace(device.Id))
+        {
+            return false;
+        }
+
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        {
+            return false;
+        }
+
+        if (!NativeXuDeviceSupport.HasSelectedInterface(device, "SET_GAIN"))
+        {
+            return false;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await NativeXuDeviceSupport.TryAcquireTransportGateAsync(
+                NativeXuDeviceSupport.DefaultTransportGateTimeoutMs * 4,
+                ct).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                Logger.Log("NATIVEXU_SET_GAIN FAILED stage=gate_timeout");
+                return false;
+            }
+
+            var interfaces = NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device);
+            foreach (var ksInterface in interfaces)
+            {
+                ct.ThrowIfCancellationRequested();
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                if (handle is null)
+                {
+                    continue;
+                }
+
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                {
+                    continue;
+                }
+
+                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                foreach (var node in nodeList)
+                {
+                    if (!node.IsDevSpecific)
+                    {
+                        continue;
+                    }
+
+                    var ok = ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash, ct);
+                    if (ok)
+                    {
+                        Logger.Log($"NATIVEXU_SET_GAIN OK gain=0x{gainByte:X2} flash={persistFlash}");
+                        return true;
+                    }
+                }
+            }
+
+            Logger.Log("NATIVEXU_SET_GAIN FAILED stage=no_device");
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"NATIVEXU_SET_GAIN EXCEPTION type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                NativeXuDeviceSupport.ReleaseTransportGate();
+            }
+        }
+    }
+
+    private static bool ExecuteAudioSwitch(
+        SafeFileHandle handle,
+        int nodeId,
+        bool analog,
+        byte gainByte,
+        string sourceLabel,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!SendAtSetCommand(handle, nodeId, CmdGpioSetParam, new byte[] { 0x00, 0x05, 0x00 }, cancellationToken))
+        {
+            Logger.Log("NATIVEXU_SWITCH_AUDIO FAILED stage=gpio");
+            return false;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!SendAtSetCommand(handle, nodeId, CmdFlashGetCustomerProprietary, Array.Empty<byte>(), cancellationToken))
+        {
+            Logger.Log("NATIVEXU_SWITCH_AUDIO FAILED stage=flash_read");
+            return false;
+        }
+
+        var flashData = new byte[32];
+        flashData[0] = analog ? (byte)0x01 : (byte)0x00;
+        flashData[1] = 0x80;
+        flashData[2] = gainByte;
+        flashData[3] = 0xAA;
+        flashData[4] = 0x55;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!SendAtSetCommand(handle, nodeId, CmdFlashSetCustomerProprietary, flashData, cancellationToken))
+        {
+            Logger.Log("NATIVEXU_SWITCH_AUDIO FAILED stage=flash_write");
+            return false;
+        }
+
+        Logger.Log($"NATIVEXU_SWITCH_AUDIO flash_ok source={sourceLabel}");
+
+        byte reg0E = analog ? (byte)0x18 : (byte)0x98;
+        byte reg0F = analog ? (byte)0x18 : (byte)0x98;
+        byte reg10 = analog ? (byte)0x80 : (byte)0x00;
+        byte reg11 = analog ? (byte)0x80 : (byte)0x00;
+
+        var i2cCommands = new (int cmd, byte[] data)[]
+        {
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x09, 0x42 }),
+            (CmdI2cRead,  new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x01, 0x00 }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x03, 0xA0 }),
+            (CmdI2cRead,  new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x0E, 0x01, 0x00 }),
+            (CmdI2cRead,  new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x10, 0x01, 0x00 }),
+            (CmdI2cRead,  new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x01, 0x00 }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x0E }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x07, 0x00 }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x0E, reg0E }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x0F, reg0F }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x10, reg10 }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x11, reg11 }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x0E }),
+            (CmdI2cWrite, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x07, 0x00 }),
+        };
+
+        for (var i = 0; i < i2cCommands.Length; i++)
+        {
+            var (cmd, data) = i2cCommands[i];
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!SendSelector4Command(handle, nodeId, cmd, data, cancellationToken))
+            {
+                Logger.Log($"NATIVEXU_SWITCH_AUDIO FAILED stage=i2c_{i} cmd=0x{cmd:X2}");
+                return false;
+            }
+        }
+
+        Logger.Log($"NATIVEXU_SWITCH_AUDIO i2c_ok source={sourceLabel} commands=14");
+        return true;
+    }
+
+    private static bool ExecuteGainChange(
+        SafeFileHandle handle,
+        int nodeId,
+        byte gainByte,
+        bool persistFlash,
+        CancellationToken cancellationToken)
+    {
+        ComputeGainRegisters(gainByte, out var pga, out var digAtt, out var outGain);
+
+        Logger.Log($"NATIVEXU_SET_GAIN regs gain=0x{gainByte:X2} PGA=0x{pga:X2} DigAtt=0x{digAtt:X2} OutGain=0x{outGain:X2} flash={persistFlash}");
+
+        var i2cWrites = new (byte reg, byte val)[]
+        {
+            (0x0A, pga),
+            (0x0B, pga),
+            (0x0E, outGain),
+            (0x0F, outGain),
+            (0x0C, digAtt),
+            (0x0D, digAtt),
+        };
+
+        foreach (var (reg, val) in i2cWrites)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!SendSelector4Command(
+                    handle,
+                    nodeId,
+                    CmdI2cWrite,
+                    new byte[] { 0x00, 0x4A, 0x02, 0x00, reg, val },
+                    cancellationToken))
+            {
+                Logger.Log($"NATIVEXU_SET_GAIN FAILED stage=i2c_write_r{reg:X2}");
+                return false;
+            }
+        }
+
+        if (!persistFlash)
+        {
+            return true;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!SendAtSetCommand(handle, nodeId, CmdFlashGetCustomerProprietary, Array.Empty<byte>(), cancellationToken))
+        {
+            Logger.Log("NATIVEXU_SET_GAIN FAILED stage=flash_read");
+            return false;
+        }
+
+        var flashData = new byte[32];
+        flashData[0] = 0x01;
+        flashData[1] = 0x80;
+        flashData[2] = gainByte;
+        flashData[3] = 0xAA;
+        flashData[4] = 0x55;
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!SendAtSetCommand(handle, nodeId, CmdFlashSetCustomerProprietary, flashData, cancellationToken))
+        {
+            Logger.Log("NATIVEXU_SET_GAIN FAILED stage=flash_write");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal static void ComputeGainRegisters(byte gainByte, out byte pga, out byte digAtt, out byte outGain)
+    {
+        if (gainByte < 0x80)
+        {
+            pga = 0x00;
+            digAtt = (byte)(0x80 + gainByte);
+            outGain = 0x00;
+        }
+        else if (gainByte < 0x98)
+        {
+            pga = (byte)(gainByte - 0x80);
+            digAtt = 0x00;
+            outGain = 0x00;
+        }
+        else if (gainByte < 0xB0)
+        {
+            pga = 0x18;
+            digAtt = 0x00;
+            outGain = (byte)(gainByte - 0x98);
+        }
+        else
+        {
+            pga = 0x18;
+            digAtt = 0x00;
+            outGain = 0x18;
+        }
+    }
 }
