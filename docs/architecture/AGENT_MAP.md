@@ -1643,9 +1643,12 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
   surface for the former legacy NVML snapshot, CaptureSessionSnapshot
   default-state, and RTK I2C unsafe-native-path tool-contract checks.
-- `tests/Sussudio.FfmpegEncodeLab/Program.cs` owns standalone HDR encode-lab
-  orchestration, CLI parsing, tool-path resolution, child-process log capture,
-  FFmpeg argument construction, and AV1 encoder selection policy.
+- `tests/Sussudio.FfmpegEncodeLab/Program.cs` owns the shared HDR lab source
+  for `tests/Sussudio.FfmpegEncodeLab/Sussudio.FfmpegEncodeLab.csproj` and
+  `tests/Sussudio.HdrLab/Sussudio.HdrLab.csproj`: P010 capture-lab
+  orchestration, encode-lab CLI parsing, tool-path resolution, child-process
+  log capture, FFmpeg argument construction, validation routing, and AV1
+  encoder selection policy.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns shared harness primitives:
   generic assertions, repo-root/file reads, automation snapshot source family
   readers, source-text extraction, reflection/private-field access,
