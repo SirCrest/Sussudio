@@ -1359,10 +1359,10 @@ Primary current owners:
   CaptureHealthSnapshot and SourceTelemetryDetailEntry DTO contracts; and
   SourceSignalTelemetrySnapshot plus source telemetry automation projection
   contract checks.
-- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
-  owns DeviceService scoring, cohesive MF device enumerator ownership,
-  source-reader negotiation/interop ownership, and MF symbolic-link matching
-  assertions with the broader service-layer source-ownership checks.
+- `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs` owns DeviceService
+  scoring, cohesive MF device enumerator ownership, source-reader
+  negotiation/interop ownership, MF symbolic-link matching assertions, and the
+  broader service-layer source-ownership checks.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns the core
   runtime xUnit execution surface plus the ported HdrOutputPolicy, HDR output
   environment-switch, disabled source-telemetry-provider behavior checks, and
@@ -1619,15 +1619,13 @@ Primary current owners:
   enumeration, project XML, and C# comment/string stripping helpers used by
   service namespace architecture assertions, plus NativeXuAudioProbe
   linked-source, split-source, locator, RTK unsafe-path behavior, and
-  no-reflection source ownership assertions.
-- `tests/Sussudio.Tests/ServiceNamespace.SourceOwnership.ServicesLayer.Tests.cs`
-  owns DeviceService, NativeXu support, GPU interop, decoder, capture
-  telemetry, MainViewModel source ownership orchestration assertions, and
-  MainViewModel device-native audio state, mode/gain, request-controller,
-  device refresh, capture device selection, format probe, source telemetry,
-  recording capability, preview renderer enqueue, UI dispatch, property-change,
-  runtime lifecycle/event-ingress, recording runtime, and disposal source
-  ownership assertions.
+  no-reflection source ownership assertions. It also owns DeviceService,
+  NativeXu support, GPU interop, decoder, capture telemetry, MainViewModel
+  source ownership orchestration assertions, and MainViewModel device-native
+  audio state, mode/gain, request-controller, device refresh, capture device
+  selection, format probe, source telemetry, recording capability, preview
+  renderer enqueue, UI dispatch, property-change, runtime lifecycle/event-
+  ingress, recording runtime, and disposal source ownership assertions.
 - Focused `tests/Sussudio.Tests/XUnit.PresentationPreview*.cs` slices own
   presentation-preview capture/root policy, MainViewModel, MainWindow, stats,
   D3D renderer, preview pacing, and harness-registration execution surfaces.
