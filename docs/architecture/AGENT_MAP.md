@@ -1,4 +1,4 @@
-# Sussudio Agent Map
+﻿# Sussudio Agent Map
 
 Last reviewed: 2026-06-01.
 
@@ -2222,7 +2222,7 @@ Primary current owners:
   auto-selection entry points. `MainViewModel.cs` keeps
   the resolution, frame-rate, selected-format, and video-format rebuild
   compatibility adapters alongside capture-mode transaction state, while
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   owns the cohesive capture-mode option rebuild transaction, including
   frame-rate option rebuilding, source-rate filtering handoff, auto/source
   option selection, observable frame-rate collection mutation, and selected
@@ -2242,13 +2242,13 @@ Primary current owners:
   timing family and variant models, rational parsing, friendly/exact frame-rate
   matching, timing-family ranking, and preferred-format ranking helpers used by
   frame-rate, resolution, capture-settings, and automation projections.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   owns the stateful resolver that resolves timing variants and source/preferred
   timing from resolution capabilities, runtime snapshots, selected formats,
   source telemetry, UI selection state, and its graph-built context ports.
   `MainViewModel.cs` keeps selected-format and video-format
   rebuild compatibility adapters, while
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for selected-format assignment,
   video-format option collection mutation, capture-format request shaping,
   and the capture-mode option rebuild graph-port contract for option
@@ -2307,7 +2307,7 @@ Primary current owners:
   MJPG HFR preservation, session mismatch, and active-capture restore.
   `MainViewModel.cs` keeps the compatibility adapter for
   resolution option rebuild callers.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   owns resolution option rebuilds inside the top-level capture option
   rebuild controller: automatic resolution dropdown option construction,
   automatic resolution-selection adaptation over current ViewModel state,
@@ -2324,7 +2324,7 @@ Primary current owners:
   State-backed capability queries for callers that live across the ViewModel
   partial family stay in `MainViewModel.cs`; observable
   resolution dropdown mutation routes through the top-level
-  `MainViewModelCaptureModeOptionRebuildController.cs`.
+  `MainViewModelDeviceControllers.cs`.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   also keeps the pure summary builder and auto-resolution predicate ports that
   keep facade-private helpers explicit.
