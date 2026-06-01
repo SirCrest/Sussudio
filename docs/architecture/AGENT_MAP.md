@@ -1782,13 +1782,12 @@ Primary current owners:
   path lookup, path normalization, segment-start PTS, segment range query,
   active path, segment-count, segment-list behavior, and buffer-manager source
   ownership assertions for root state, segment mutation/query, lifecycle,
-  purge, and eviction-pause placement.
-- `tests/Sussudio.Tests/Flashback.Buffer.Retention.Tests.cs` owns Flashback
-  buffer startup-generated segment cleanup, legacy root cleanup, stale session
+  purge, and eviction-pause placement. It also owns Flashback buffer
+  startup-generated segment cleanup, legacy root cleanup, stale session
   directory cleanup, session-recovery scanner ownership, unrelated temp-directory
-  preservation, startup-cache budget, session-id, segment-extension validation,
-  eviction accounting, purge retention, active-byte accounting, eviction-pause
-  behavior, and initialization recording-PTS reset tests.
+  preservation, startup-cache budget, session-id and segment-extension
+  validation, eviction accounting, purge retention, active-byte accounting,
+  eviction-pause behavior, and initialization recording-PTS reset tests.
 - `tests/Sussudio.Tests/Flashback.EncoderSink.Tests.cs` owns Flashback encoder
   sink frame-rate, option, startup rollback, runtime counter, PTS guard, queue
   rejection, lifecycle cleanup, packet-validation, drain-loop ordering,
