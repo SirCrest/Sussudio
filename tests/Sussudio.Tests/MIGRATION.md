@@ -82,6 +82,10 @@ add xUnit alongside, and port incrementally.
   startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
   timestamp, audio, in/out marker, request validation, segment, cancellation,
   output path/finalization, and source-ownership checks.
+- `XUnit.FlashbackContractsTests.cs` also owns the backing `Program` methods
+  for Flashback playback command queue/coalescing/seek-slot/thread lifecycle
+  contracts; do not recreate a separate command-queue sidecar unless those
+  checks gain an independent fixture or runtime harness.
 - `Flashback.Playback.SourceShape.Tests.cs` owns the former legacy Flashback
   playback fMP4 reopen, seek recovery, in/out marker API, normalization,
   disposal, marker clamp, root state, transition, and audio guard checks.

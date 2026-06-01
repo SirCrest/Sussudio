@@ -1807,15 +1807,14 @@ Primary current owners:
   frame-duration, decoded-PTS cadence projection/telemetry, decode metrics
   reset/projection, decoded-frame submit-failure, preview frame submission,
   held-frame ownership, and live-recovery ownership tests.
-- `tests/Sussudio.Tests/Flashback.Playback.CommandQueue.Tests.cs` owns
-  Flashback playback command queue capacity/drop-oldest, scrub-coalescing
-  source ownership, seek-slot barrier/failure behavior, playback thread
-  recovery, command dispatch, thread lifecycle, and command telemetry
-  coverage.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
-  execution surface for the former legacy Flashback playback startup,
-  command-queue, source-shape, cadence, submission, reopen, transition-guard,
-  and metric-reset checks after their removal from the legacy harness catalog.
+  execution surface and backing `Program` methods for the former legacy
+  Flashback playback startup, command-queue, source-shape, cadence, submission,
+  reopen, transition-guard, and metric-reset checks after their removal from
+  the legacy harness catalog. It includes Flashback playback command queue
+  capacity/drop-oldest, scrub-coalescing source ownership, seek-slot
+  barrier/failure behavior, playback thread recovery, command dispatch, thread
+  lifecycle, and command telemetry coverage.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface and legacy `Program` implementations for Flashback decoder
   audio, timestamp, stream-bound, validation, lifetime, callback,
