@@ -1258,13 +1258,13 @@ Primary current owners:
   ownership assertions.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns the xUnit execution surface for MainViewModel source and behavior
-  contracts after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` owns the
-  MainViewModel dependency-composition seam assertions for root construction,
-  controller graph creation, UI-dispatch, recording-transition, preview
-  lifecycle/reinitialize/state/automation, capture/device, source-telemetry,
-  runtime lifecycle/event ingress/subscription/disposal dependency contexts,
-  state partial ownership, and default dependency factory wiring.
+  contracts after their removal from the legacy offline harness catalog,
+  including MainViewModel dependency-composition seam assertions for root
+  construction, controller graph creation, UI-dispatch, recording-transition,
+  preview lifecycle/reinitialize/state/automation, capture/device,
+  source-telemetry, runtime lifecycle/event ingress/subscription/disposal
+  dependency contexts, state partial ownership, and default dependency factory
+  wiring.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns shared source-inspection helpers,
   including MainViewModel source readers, member extraction, comment/string
   stripping, regex assertions, and token-order assertions used by capture,

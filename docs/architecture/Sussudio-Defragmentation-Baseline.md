@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: MainViewModel dependency-composition test locality
+Problem: `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs` contained only private `Program` method bodies for dependency-composition facts whose xUnit execution surface already lived in `XUnit.PresentationPreviewContractsTests.cs`. Reviewing MainViewModel root construction, controller graph creation, UI-dispatch, preview/recording/runtime context wiring, and state partial ownership still required opening a sidecar that had no independent fixture or public facts of its own.
+Files consolidated: `tests/Sussudio.Tests/MainViewModel.DependencyComposition.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MainViewModel dependency-composition sidecar count -1; `Sussudio.Tests` `.cs` count 46 -> 45
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PresentationPreviewMainViewModelDependencyComposition|FullyQualifiedName~RecordingModelContractsTests.CaptureErrorsRefreshViewModelRuntimeFlags"` passed (7 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed (17 passed); `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves private test method bodies and updates architecture ownership docs.
+Behavior preserved: `PresentationPreviewMainViewModelDependencyCompositionContractsTests` and `RecordingModelContractsTests.CaptureErrorsRefreshViewModelRuntimeFlags` keep the same `[Fact]` wrappers and underlying `Program` method names. MainViewModel dependency-composition source-shape assertions now live in `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` beside their xUnit execution owner.
+Notes for future agents: keep MainViewModel presentation/preview dependency-composition wrappers and their private source-shape method bodies together in `XUnit.PresentationPreviewContractsTests.cs` while they share that xUnit execution surface. Create a separate dependency-composition file only if a real fixture, reusable harness type, or independent non-presentation owner emerges. Current core app `.cs` count/LoC: 119 / 89,585; current test `.cs` count/LoC: 45 / 56,042.
+
+Date: 2026-06-01
 Area: diagnostics refresh Flashback test locality
 Problem: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Flashback.Tests.cs` contained only private `Program` helper assertions for the single diagnostics-refresh ownership test in `MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`. Reviewing diagnostics refresh and diagnostic-session Flashback coverage still required opening a sidecar even though every helper was called by the same parent entry point and shared the same diagnostics source-family readers.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Flashback.Tests.cs`
