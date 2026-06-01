@@ -187,8 +187,7 @@ add xUnit alongside, and port incrementally.
   advanced command-map alignment, and pipe/tool protocol contracts through
   `AutomationToolContractsProtocolXunitTests`),
   `XUnit.CoreRuntimeContractsTests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
-  and `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
-  already run through `dotnet test`.
+  and `CaptureService.Ownership.Tests.cs` already run through `dotnet test`.
 
 ## Targeting reality
 

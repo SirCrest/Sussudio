@@ -1425,25 +1425,21 @@ Primary current owners:
   probes, frame-ledger recent-event contracts, recording integrity, and shared
   formatter rendering checks after their removal from legacy `Program`
   sidecars.
-- `tests/Sussudio.Tests/CaptureService.LifecycleOwnership.Tests.cs` owns
-  CaptureService initialization, session-state-machine and transition-policy
-  ownership, asserts that lifecycle partials route state changes through
+- `tests/Sussudio.Tests/CaptureService.Ownership.Tests.cs` owns CaptureService
+  initialization, session-state-machine and transition-policy ownership,
+  asserts that lifecycle partials route state changes through
   transition/state-machine helpers, owns last-failure telemetry and Flashback
   backend failure cleanup source placement, keeps the
   no-direct-session-state-write/faulted-session guards for failure cleanup, and
   owns video-only preview fallback, missing audio endpoint, preview-stop API
   surface, preview backend log contracts, CaptureService audio source-family
   helpers, audio focused-partial ownership, PreviewAudioGraphResources
-  ownership, and post-recording microphone monitor restart assertions after the
-  preview lifecycle sidecar was folded into the broader CaptureService
-  lifecycle owner.
-- `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`
-  owns CaptureService health snapshot assembly, capture-cadence, MJPEG,
-  AV-sync, Flashback export/buffer/queue/playback, recording, and
-  source-telemetry ownership assertions plus structured source telemetry,
-  cached MJPEG timing propagation for health and diagnostics snapshots, the
-  synthetic MJPEG timing metric factories used by those scenarios, and shared
-  health snapshot assertion helpers.
+  ownership, post-recording microphone monitor restart assertions, health
+  snapshot assembly, capture-cadence, MJPEG, AV-sync, Flashback
+  export/buffer/queue/playback, recording, and source-telemetry ownership
+  assertions, structured source telemetry, cached MJPEG timing propagation for
+  health and diagnostics snapshots, the synthetic MJPEG timing metric factories
+  used by those scenarios, and shared health snapshot assertion helpers.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the xUnit
   execution surface and consolidated backing `Program` methods for the
   recording verifier integration seam: fake process-supervisor,
