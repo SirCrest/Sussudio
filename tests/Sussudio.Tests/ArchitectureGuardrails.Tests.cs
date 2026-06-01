@@ -2275,7 +2275,6 @@ static partial class Program
         AssertContains(nativeXuAudioServiceText, "TryXuGetDirect(");
         AssertContains(nativeXuAudioServiceText, "TryXuSetViaOutput(");
 
-        var cudaInteropBridgeText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11InteropBridge.cs"));
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.cs")),
@@ -2292,24 +2291,10 @@ static partial class Program
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Lifetime.cs")),
             "CUDA/D3D11 interop lifetime is consolidated with bridge initialization");
-        AssertContains(cudaInteropBridgeText, "internal sealed unsafe class CudaD3D11InteropBridge : IDisposable");
-        AssertContains(cudaInteropBridgeText, "private static readonly object D3D11InteropLock");
-        AssertContains(cudaInteropBridgeText, "public IntPtr TextureNativePointer");
-        AssertContains(cudaInteropBridgeText, "public CudaD3D11InteropBridge(");
-        AssertContains(cudaInteropBridgeText, "private bool TryInitializeZeroCopyResources");
-        AssertContains(cudaInteropBridgeText, "CUDA_D3D11_INTEROP_CTX_INIT");
-        AssertContains(cudaInteropBridgeText, "CUDA_D3D11_ZEROCOPY_REGISTER_OK");
-        AssertContains(cudaInteropBridgeText, "public void CopyFrameToTexture");
-        AssertContains(cudaInteropBridgeText, "private void CopyFrameZeroCopy");
-        AssertContains(cudaInteropBridgeText, "private void CopyFrameStaging");
-        AssertContains(cudaInteropBridgeText, "cuGraphicsMapResources");
-        AssertContains(cudaInteropBridgeText, "MapMode.Write");
-        AssertContains(cudaInteropBridgeText, "DllImport(\"nvcuda.dll\")");
-        AssertContains(cudaInteropBridgeText, "private struct CUDA_MEMCPY2D");
-        AssertContains(cudaInteropBridgeText, "public void Dispose()");
-        AssertContains(cudaInteropBridgeText, "private void TryUnregisterResource");
-        AssertContains(cudaInteropBridgeText, "cuDevicePrimaryCtxRelease");
-        AssertContains(cudaInteropBridgeText, "private const uint CU_MEMORYTYPE_DEVICE");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11InteropBridge.cs")),
+            "unused CUDA/D3D11 interop bridge removed until a live caller owns the path");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs")),

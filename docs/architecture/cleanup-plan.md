@@ -1843,13 +1843,11 @@ joins, fatal-callback dispatch, remaining-timeout helpers, decoder disposal,
 queued work-item return, remaining reorder-frame disposal, and emit-signal
 disposal with the root pipeline owner.
 
-CUDA/D3D11 preview interop ownership lives in
-`Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`: bridge state, public texture
-handles, constructor setup, zero-copy registration, disposal, CUDA resource
-unregistration, native CUDA constants, P/Invoke entry points, the
-`CUDA_MEMCPY2D` native struct, and the zero-copy/staging frame-copy paths.
-Keep D3D11 locking, primary-context ownership, and fallback-to-staging behavior
-unchanged.
+The unused CUDA/D3D11 preview interop bridge was removed after live source
+search showed no production construction or caller path. Current GPU MJPEG
+preview behavior stays with the active pipeline and `NvdecMjpegDecoder` CPU
+download/copy path; reintroduce a CUDA/D3D11 bridge only with a live pipeline
+caller, behavior tests, and runtime validation for the zero-copy/staging path.
 
 NVDEC MJPEG decoder ownership now lives in
 `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs`: shared decoder state, standalone
