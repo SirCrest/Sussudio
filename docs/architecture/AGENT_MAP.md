@@ -1150,13 +1150,16 @@ Primary current owners:
   projection ownership assertions, preview runtime snapshot controller Build
   integration, D3D policy null-renderer defaults, health policy/input factory,
   and surface/startup/GPU playback projection policy regression checks.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.WindowLifecycle.Tests.cs`
-  owns MainWindow startup/launch ownership, launch entrance animation,
-  first-load hosting, splash loading phrases, splash pacing policy, native
-  bootstrap, adapter, first-frame reveal, window-lifecycle composition, close
-  lifecycle state, close request/app-closing controllers, recording-stop close
-  protection, recording-finalization stop-wait policy, post-close shutdown
-  cleanup, automation-host disposal, and ownership documentation assertions.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
+  MainWindow startup/launch ownership, launch entrance animation, first-load
+  hosting, splash loading phrases, splash pacing policy, native bootstrap,
+  adapter, first-frame reveal, window-lifecycle composition, close lifecycle
+  state, close request/app-closing controllers, recording-stop close protection,
+  recording-finalization stop-wait policy, post-close shutdown cleanup,
+  automation-host disposal, and ownership documentation assertions. Keep the
+  presentation-preview window-lifecycle and launch/startup wrappers plus their
+  backing `Program` method bodies together unless an independent fixture or
+  reusable helper boundary emerges.
 - `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` owns
   MainWindow property-change routing ownership assertions across focused
   controller adapters, visual shell/preview controller-adapter ownership for
