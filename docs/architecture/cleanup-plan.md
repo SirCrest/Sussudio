@@ -923,7 +923,7 @@ state, mic-level forwarding, writer-detach/disposal cleanup, the public update
 transaction, preview-time Flashback mic writer attachment, and post-recording
 restart/reattachment.
 Flashback preview/recording backend audio input restoration is folded into
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs` beside
+`Sussudio/Services/Capture/CaptureService.Flashback.cs` beside
 Flashback audio attachment and recording topology validation.
 `Sussudio/Services/Capture/CaptureService.cs` owns the live
 program WASAPI capture, microphone capture, playback startup/shutdown,
@@ -972,7 +972,7 @@ partials.
 
 Deferred Flashback artifact cleanup adapter handoff and export-lock delegation
 now live with the Flashback controls owner in
-`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`.
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
 `Sussudio/Services/Capture/CaptureService.cs`. Flashback backend
@@ -985,19 +985,19 @@ diagnostics compatibility, runtime snapshot projection, and automation snapshot
 helper policy. Video source probing, preview color probing, and preview-frame
 screenshot waits stay separated from runtime lifecycle mutation code.
 
-Flashback-facing capture controls now live in focused CaptureService partials:
-`Sussudio/Services/Capture/CaptureService.FlashbackControls.cs` owns public
+Flashback-facing capture controls now live in the unified CaptureService
+Flashback partial:
+`Sussudio/Services/Capture/CaptureService.Flashback.cs` owns public
 Flashback state, segment access, enable/disable transition gating, restart
 entry points, committed restart orchestration after preview backend teardown,
 buffer/GPU settings updates, live playback-controller GPU decode propagation,
 recording-format changes, active encoding-setting application, encoder-setting
 cycles, and rollback after failed Flashback buffer cycles
-while backend resource construction stays in the Flashback preview backend
-partials.
+while backend resource construction stays in `FlashbackBackendResources.cs`.
 
 Flashback recording backend ownership, audio attachment, encoded-frame
 forwarding, and recording topology validation now live in
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`. Flashback
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`. Flashback
 recording session-context policy, codec selection, GPU handle handoff, HDR
 guardrails, delivered-cadence frame-rate rational preservation/inference, and
 legacy Flashback export verification/downgrade snapshot fields stay with that
@@ -1027,7 +1027,7 @@ video-capture reuse/creation, source-reader compatibility checks, preview
 sink/shared-device handoff, video pipeline installation, audio-input startup,
 WASAPI sink attachment, preview playback preservation, recording microphone
 capture wiring, and recording-start rollback cleanup.
-`CaptureService.FlashbackRecording.cs`
+`CaptureService.Flashback.cs`
 owns Flashback recording fast-path reuse, backend startup, live-edge
 finalize/export handoff, boundary snapshots, post-finalize reconciliation, and
 Flashback-specific microphone monitor restart.
@@ -1052,7 +1052,7 @@ Recording outcome field publication now lives with
 microphone monitor restart mechanics live in
 `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`.
 The live-edge boundary snapshot in
-`Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs`
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`
 keeps idempotent `EndFlashbackRecordingAccounting()` calls, source-frame
 counters, recording integrity counters, and audio integrity counters with the
 backend finalization path that consumes them.
@@ -3550,7 +3550,7 @@ owner, fold it back into that owner and update the source-shape tests and
    backend teardown, and artifact cleanup mechanics. CaptureService callers now use that aggregate directly
    instead of private root resource shim properties. Keep later Flashback backend
    mechanics in the matching focused owner before inventing another small owner;
-   `CaptureService.FlashbackControls.cs` stays the transition coordinator for
+   `CaptureService.Flashback.cs` stays the transition coordinator for
    AV1 probing, readiness waiting, cleanup handoff, and preview backend disposal
    request construction.
    `CaptureService.cs` now owns active capture resource holders:

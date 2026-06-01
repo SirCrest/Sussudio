@@ -167,8 +167,8 @@ static partial class Program
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var previewBackendEntry = ExtractTextBetween(
             agentMapText,
-            "- `CaptureService.FlashbackControls.cs` owns Flashback public state",
-            "- `CaptureService.FlashbackControls.cs` owns buffer-cycle");
+            "- `CaptureService.Flashback.cs` owns Flashback public state",
+            "- `CaptureService.Flashback.cs` owns buffer-cycle");
 
         AssertContains(previewBackendEntry, "transition coordination");
         AssertContains(previewBackendEntry, "AV1 encoder support probing");

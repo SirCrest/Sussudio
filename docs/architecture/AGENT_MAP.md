@@ -21,7 +21,7 @@ mentions the moved files.
 |------|---------------------|----------------------|
 | Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionResult.cs` | public runner compatibility surface plus phase sequencing, named scenario phase execution, scenario sampling, post-sampling completion order/fault-drain/background-task delegation, cohesive mutable run context, initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction, post-cleanup completion phase, completion context handoff, result-build request mapping, consolidated context/result/state/result DTO models, run bootstrap/options normalization, scenario catalog, startup/cleanup/recording-check/post-run snapshot helpers, result formatter, plus per-scenario runners |
 | Offline regression harness | `tests/Sussudio.Tests/HarnessCore.cs`, focused `tests/Sussudio.Tests/XUnit.*.cs` slices | runner entry point, compatibility no-op check shim, shared legacy `Program` harness helpers, MCP process/JSON-RPC/tool-result/pipe-capture helpers, xUnit slices, and focused contract tests such as `XUnit.StatsPresentation.Formatting.Tests.cs` |
-| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.FlashbackControls.cs`, `CaptureService.FlashbackExportCore.cs`, `CaptureService.FlashbackRecording.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | service state, construction, public event/property surface, initialization owner, transition transaction/state-sampling owner, resource holder aggregates, and lifecycle guards, preview start/stop/recycle/fast-path/reuse predicates/fresh-pipeline/video-pipeline handoff/disposal transition owner, audio preview lifecycle/volume/event/startup/rollback and live audio input switching owner, microphone monitor state/event/disposal/update/restart owner, preview audio resource owner, active recording backend resource owner, video pipeline resource owner, cleanup/disposal, resource-release helper, failure callback, failure-telemetry, fatal cleanup, and Flashback backend failure cleanup/device-lost owner, Flashback public state, segment access, enable/disable, restart, settings, buffer/GPU/format, encoder-cycle owner, preview backend startup/disposal, artifact-cleanup adapter, and Flashback buffer cycle coordination owner, Flashback export diagnostics/progress/fallback lifecycle, failure taxonomy, health projection, entry/routing and backend snapshot/lock handoff, core lifetime, request assembly, segment metadata mapping, live-export throttle policy, segment path normalization, segment PTS timestamp repair, range-resolution, buffer-position clamps, PTS offset math, and force-rotate preparation owner, Flashback recording backend/capability/session-context/frame-rate/start/finalize/export-finalize/boundary snapshot/reconciliation owner, health snapshot sampler with capture cadence/MJPEG/source telemetry, Flashback backend/queue, Flashback playback, and recording health field projections, health snapshot DTO assembler and handoff owner, recording integrity active-backend resolver, counter/audio DTO capture, normalized summary input, status/reason evaluation, and integrity logging owner, recording start transition/router, context request assembly, rollback-state holder, transient recording rollback, standard LibAv recording start/video/audio startup, and recording outcome-state owner, recording stop transition/finalization router owner, LibAv recording finalization/video-boundary/sink/idle-preview/preview-restore owner, runtime/diagnostics snapshot sampler with ingest/audio, reader/transport, recording-integrity, HDR/encoder pipeline, source-telemetry projections, diagnostics compatibility, read-only automation probes, preview-frame capture waits, shared snapshot utilities/recording stats/format/observed frames/A/V sync/source telemetry snapshot policy, source telemetry polling/fallback merge, capture-format and observed pixel telemetry owner, private assembly handoff models, and final runtime snapshot DTO construction |
+| Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.FlashbackExportCore.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingIntegrity.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | service state, construction, public event/property surface, initialization owner, transition transaction/state-sampling owner, resource holder aggregates, and lifecycle guards, preview start/stop/recycle/fast-path/reuse predicates/fresh-pipeline/video-pipeline handoff/disposal transition owner, audio preview lifecycle/volume/event/startup/rollback and live audio input switching owner, microphone monitor state/event/disposal/update/restart owner, preview audio resource owner, active recording backend resource owner, video pipeline resource owner, cleanup/disposal, resource-release helper, failure callback, failure-telemetry, fatal cleanup, and Flashback backend failure cleanup/device-lost owner, Flashback public state, segment access, enable/disable, restart, settings, buffer/GPU/format, encoder-cycle owner, preview backend startup/disposal, artifact-cleanup adapter, buffer cycle coordination, and recording backend/capability/session-context/frame-rate/start/finalize/export-finalize/boundary snapshot/reconciliation owner, Flashback export diagnostics/progress/fallback lifecycle, failure taxonomy, health projection, entry/routing and backend snapshot/lock handoff, core lifetime, request assembly, segment metadata mapping, live-export throttle policy, segment path normalization, segment PTS timestamp repair, range-resolution, buffer-position clamps, PTS offset math, and force-rotate preparation owner, health snapshot sampler with capture cadence/MJPEG/source telemetry, Flashback backend/queue, Flashback playback, and recording health field projections, health snapshot DTO assembler and handoff owner, recording integrity active-backend resolver, counter/audio DTO capture, normalized summary input, status/reason evaluation, and integrity logging owner, recording start transition/router, context request assembly, rollback-state holder, transient recording rollback, standard LibAv recording start/video/audio startup, and recording outcome-state owner, recording stop transition/finalization router owner, LibAv recording finalization/video-boundary/sink/idle-preview/preview-restore owner, runtime/diagnostics snapshot sampler with ingest/audio, reader/transport, recording-integrity, HDR/encoder pipeline, source-telemetry projections, diagnostics compatibility, read-only automation probes, preview-frame capture waits, shared snapshot utilities/recording stats/format/observed frames/A/V sync/source telemetry snapshot policy, source telemetry polling/fallback merge, capture-format and observed pixel telemetry owner, private assembly handoff models, and final runtime snapshot DTO construction |
 | App shell | `Sussudio/App.xaml.cs` | XAML partial root, FFmpeg startup check, global handler hookup, recoverable/fatal exception policy plus emergency recording finalization, single-instance guard, startup identity logging, and MainWindow activation |
 | App surface helpers | `Sussudio/AppSurface.cs` | compact app-facing display formatters plus the XAML bool/inverse/visibility converter types used by hand-bound WinUI controls; keep public converter type names and `Sussudio.DisplayFormatters` stable |
 | Logging | `Sussudio/Logger.cs` | nonblocking log writer state, rotation, channel saturation fallback, direct write path, diagnostics/system evidence, structured snapshot JSON routing, exception formatting, fatal breadcrumbs, and source-generated JSON context for known log payloads |
@@ -462,7 +462,7 @@ Important entry points:
   transition-state entry, steady-state input sampling and resolution, fault
   publication, transition-lock release, cleanup/disposal state helpers,
   current-state projection, public initialization, and initialization/disposal guards.
-- `CaptureService.FlashbackControls.cs` owns Flashback public state, segment
+- `CaptureService.Flashback.cs` owns Flashback public state, segment
   access, enable/disable transition gating, restart entry points, committed
   restart orchestration after preview backend teardown, buffer/GPU settings
   updates, live playback-controller GPU decode propagation, recording-format
@@ -472,14 +472,14 @@ Important entry points:
   waiting, resource-owner request construction, deferred cleanup handoff,
   artifact-cleanup export-lock delegation, teardown lock ordering, purge-policy
   resolution, service callback binding, cancellation-token choice, and preview backend disposal request construction.
-- `CaptureService.FlashbackRecording.cs` owns Flashback recording backend ownership checks,
+- `CaptureService.Flashback.cs` owns Flashback recording backend ownership checks,
   WASAPI and microphone input restoration for Flashback preview/recording
   backends, audio attachment, frame-encoded fan-out, recording topology
   validation, and Flashback session context construction.
 - `FlashbackBackendResources.cs` owns startup construction, install, playback
   initialization, rollback cleanup, producer attach/detach request contracts,
   feed wiring, teardown mechanics, and backend artifact cleanup.
-- `CaptureService.FlashbackControls.cs` owns buffer-cycle transition
+- `CaptureService.Flashback.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
   full rebuild fallbacks. Sink-only resource mechanics live in
   `FlashbackBackendResources.cs`: playback disposal, old-sink stop/dispose,
@@ -502,7 +502,7 @@ Important entry points:
   derived progress/throughput projection used by health snapshots, and the
   export failure-kind taxonomy shared by capture diagnostics and automation
   responses.
-- `CaptureService.FlashbackRecording.cs` owns Flashback recording backend
+- `CaptureService.Flashback.cs` owns Flashback recording backend
   ownership checks, audio attachment, encoded-frame forwarding, and recording
   topology validation, Flashback recording session-context construction, codec
   selection, GPU handle handoff, HDR guardrails, delivered-cadence frame-rate
@@ -565,7 +565,7 @@ Important entry points:
   pipeline installation, audio-input startup, WASAPI sink attachment, preview
   playback preservation, recording microphone capture wiring, and failed-start
   rollback cleanup.
-  `CaptureService.FlashbackRecording.cs` owns Flashback recording backend
+  `CaptureService.Flashback.cs` owns Flashback recording backend
   startup, fast-path reuse, live-edge finalize/export handoff,
   finalize-in-progress choreography, Flashback recording integrity summaries,
   cancellation-result classification, post-finalize backend reconciliation,
@@ -593,7 +593,7 @@ Important entry points:
   failure log/last-failure update, Flashback rollback accounting, rollback
   artifact cleanup, best-effort sink, WASAPI, unified-video, and deferred LibAv
   drain cleanup.
-- `CaptureService.FlashbackRecording.cs` also owns Flashback
+- `CaptureService.Flashback.cs` also owns Flashback
   recording export finalization, cancellation-result classification, and
   live-edge boundary snapshots, including idempotent
   `EndFlashbackRecordingAccounting()` calls, source-frame counters, recording

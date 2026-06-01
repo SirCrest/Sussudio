@@ -1217,7 +1217,7 @@ static partial class Program
         var currentStateTransitionOwners = new[]
         {
             "Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs",
-            "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs"
+            "Sussudio/Services/Capture/CaptureService.Flashback.cs"
         };
 
         foreach (var owner in currentStateTransitionOwners)
@@ -1354,7 +1354,7 @@ static partial class Program
             "private async Task StartFreshPreviewPipelineAsync(",
             "private async Task DisposePreviewPipelineAsync(");
         var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
-        var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs").Replace("\r\n", "\n");
+        var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"))
@@ -1564,7 +1564,7 @@ static partial class Program
     internal static Task CaptureService_MicrophoneRestartAfterRecordingLivesInPreviewLifecycleOwner()
     {
         var flashbackFinalizationText = ExtractTextBetween(
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs").Replace("\r\n", "\n"),
             "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(",
             "private async Task<OperationCanceledException?> ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
         var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")

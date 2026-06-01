@@ -1428,15 +1428,12 @@ static partial class Program
     internal static Task RecordingBackendFlashbackBufferCycle_PreservesPolicies()
     {
         var sources = ReadRecordingQueueOverloadPolicySources();
-        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
-            .Replace("\r\n", "\n");
-        var finalizeBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+        var bufferCycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(bufferCycleText, "private async Task CycleFlashbackBufferAsync(");
         AssertContains(bufferCycleText, "_flashbackBackend.CycleSinkOnlyAsync(");
-        AssertDoesNotContain(finalizeBackendText, "private async Task CycleFlashbackBufferAsync(");
-        AssertDoesNotContain(finalizeBackendText, "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(");
+        AssertDoesNotContain(bufferCycleText, "public async Task<FlashbackBufferCycleResult> CycleSinkOnlyAsync(");
         AssertFlashbackBufferCyclePolicies(
             sources.CaptureServiceSource,
             sources.FlashbackBackendSource);
@@ -1467,8 +1464,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadCaptureServicePreviewLifecycleSource()
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
@@ -3661,13 +3657,12 @@ static partial class Program
     }
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.FlashbackControls.cs",
-        "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"
+        "Sussudio/Services/Capture/CaptureService.Flashback.cs"
     };
 
     private static readonly string[] CaptureServiceRecordingFinalizationFiles =
     {
-        "Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs",
+        "Sussudio/Services/Capture/CaptureService.Flashback.cs",
         "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"
     };
 
@@ -3714,10 +3709,10 @@ static partial class Program
 
     internal static Task CaptureService_FlashbackOrchestrationLivesInFocusedPartials()
     {
-        var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
-        var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
+        var flashbackStateText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
+        var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var previewBackendText = flashbackStateText;
-        var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
+        var settingsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
         var backendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
@@ -3729,6 +3724,14 @@ static partial class Program
         AssertContains(flashbackStateText, "public Task RestartFlashbackAsync(");
         AssertContains(flashbackStateText, "private async Task RestartFlashbackCoreAsync(");
         AssertContains(flashbackStateText, "UpdateEncodingSettings(settings);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackControls.cs")),
+            "Flashback controls owner folded into CaptureService.Flashback.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackRecording.cs")),
+            "Flashback recording owner folded into CaptureService.Flashback.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackAudioInputs.cs")),
@@ -3759,13 +3762,13 @@ static partial class Program
         AssertContains(settingsText, "private void UpdateEncodingSettings(CaptureSettings source)");
         AssertContains(settingsText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
-        AssertContains(agentMapText, "CaptureService.FlashbackControls.cs");
+        AssertContains(agentMapText, "CaptureService.Flashback.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackEnable.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackRestart.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackState.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackSettings.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackSettingsControls.cs");
-        AssertContains(cleanupPlanText, "CaptureService.FlashbackControls.cs");
+        AssertContains(cleanupPlanText, "CaptureService.Flashback.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackEnable.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackRestart.cs");
         AssertDoesNotContain(cleanupPlanText, "CaptureService.FlashbackState.cs");
@@ -3802,15 +3805,14 @@ static partial class Program
             "recording finalize policy folded into FlashbackBackendResources.cs");
         AssertContains(backendResourcesText, "public void AttachProducers(FlashbackProducerAttachRequest request)");
         AssertContains(backendResourcesText, "public void DetachProducers(FlashbackProducerDetachRequest request)");
-        AssertDoesNotContain(flashbackStateText, "private async Task EnsureFlashbackAudioInputsAsync(");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackState.cs")),
-            "Flashback state owner folded into CaptureService.FlashbackControls.cs");
+            "Flashback state owner folded into CaptureService.Flashback.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackSettings.cs")),
-            "Flashback settings owner folded into CaptureService.FlashbackControls.cs");
+            "Flashback settings owner folded into CaptureService.Flashback.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackSettingsControls.cs")),
@@ -3822,7 +3824,7 @@ static partial class Program
     internal static Task CaptureService_RecordingFinalizationLivesInFocusedPartials()
     {
         var stopLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
-        var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs");
+        var flashbackBackendFinalizationText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var libAvBackendFinalizationText =
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
         var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
@@ -3904,7 +3906,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashback.cs")),
-            "Flashback export-finalize helpers folded into CaptureService.FlashbackRecording.cs");
+            "Flashback export-finalize helpers folded into CaptureService.Flashback.cs");
         AssertContains(recordingLifecycleText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
         AssertContains(recordingLifecycleText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertEqual(
@@ -3956,9 +3958,9 @@ static partial class Program
         var libAvFinalizeText = (
             ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs"))
             .Replace("\r\n", "\n");
-        var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+        var flashbackFinalizeText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
-        var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+        var flashbackRecordingText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
         var flashbackStartText = ExtractTextBetween(
             flashbackRecordingText,
@@ -4147,7 +4149,7 @@ static partial class Program
             "\n",
             new[]
             {
-                ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs"),
+                ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs"),
                 ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             }).Replace("\r\n", "\n");
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
@@ -4187,7 +4189,7 @@ static partial class Program
         var lifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             .Replace("\r\n", "\n");
         var flashbackFinalizeText = ExtractMemberCode(
-            ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs").Replace("\r\n", "\n"),
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs").Replace("\r\n", "\n"),
             "StopAndDisposeFlashbackRecordingBackendAsync");
         var libAvFinalizeText = ExtractMemberCode(
             lifecycleText,
@@ -4215,7 +4217,7 @@ static partial class Program
         AssertContains(lifecycleText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertContains(lifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
 
-        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+        var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
         var libAvStartText = lifecycleText;
 

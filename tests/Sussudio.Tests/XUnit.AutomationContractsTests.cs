@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -3043,7 +3043,7 @@ static partial class Program
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
             + "\n" + ReadCaptureServicePreviewLifecycleCodeWithoutCommentsOrStrings()
-            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+            + "\n" + ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             + "\n" + ReadCaptureServiceAudioCodeWithoutCommentsOrStrings()
             + "\n" + ReadCaptureServiceFlashbackOrchestrationCodeWithoutCommentsOrStrings();
         var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
@@ -3051,7 +3051,7 @@ static partial class Program
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServicePreviewLifecycleSource()
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource()
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource();
@@ -3059,7 +3059,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewLifecycleText = ReadCaptureServicePreviewLifecycleSource();
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
-        var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs");
+        var flashbackPreviewBackendText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var flashbackBackendResourcesText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
         var viewModelPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
             .Replace("\r\n", "\n");
@@ -3264,10 +3264,6 @@ static partial class Program
             .ToArray();
         var captureServiceText = ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs")
-                .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
@@ -3528,7 +3524,7 @@ static partial class Program
             .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n");
@@ -3661,7 +3657,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // â”€â”€ CaptureSessionCoordinator: CaptureCommand shape â”€â”€
+    // ── CaptureSessionCoordinator: CaptureCommand shape ──
 
     internal static Task CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues()
     {
@@ -3689,7 +3685,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // â”€â”€ CaptureSessionCoordinator: CaptureSessionSnapshot â”€â”€
+    // ── CaptureSessionCoordinator: CaptureSessionSnapshot ──
 
     internal static Task CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract()
     {

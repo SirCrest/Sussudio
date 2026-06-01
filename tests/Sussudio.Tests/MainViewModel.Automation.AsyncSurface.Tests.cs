@@ -786,7 +786,7 @@ static partial class Program
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n")
             + "\n" + ReadCaptureServiceAudioSource();
 
