@@ -971,15 +971,8 @@ internal static class EnvVarScope
 static partial class Program
 {
     private static string ReadLibAvRecordingSinkSource()
-    {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
+        => ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
+            .Replace("\r\n", "\n");
 
     private static string ReadUnifiedVideoCaptureSource()
         => ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs")
@@ -1056,10 +1049,9 @@ static partial class Program
 
     internal static Task LibAvRecordingSink_QueueingOwnsProducerAdmissionAndCleanup()
     {
-        var queueingText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs")
-            .Replace("\r\n", "\n");
-        var queueText = queueingText;
-        var videoSubmissionText = queueingText;
+        var rootText = ReadLibAvRecordingSinkSource();
+        var queueText = rootText;
+        var videoSubmissionText = rootText;
 
         AssertContains(queueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
         AssertContains(queueText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
@@ -1099,15 +1091,19 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Queues.cs")),
-            "LibAvRecordingSink.Queues.cs folded into LibAvRecordingSink.Queueing.cs");
+            "LibAvRecordingSink.Queues.cs folded into LibAvRecordingSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.VideoQueueSubmission.cs")),
-            "LibAvRecordingSink.VideoQueueSubmission.cs folded into LibAvRecordingSink.Queueing.cs");
+            "LibAvRecordingSink.VideoQueueSubmission.cs folded into LibAvRecordingSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "VideoQueueLatencyTracker.cs")),
             "shared video queue latency tracker folded into the recording queueing owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.Queueing.cs")),
+            "LibAvRecordingSink queueing sidecar folded into the sink root");
 
         return Task.CompletedTask;
     }
@@ -1173,7 +1169,7 @@ static partial class Program
         AssertContains(rootText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
         AssertEqual(
             1,
-            rootText.Split("public sealed partial class LibAvRecordingSink", StringSplitOptions.None).Length - 1,
+            rootText.Split("public sealed class LibAvRecordingSink", StringSplitOptions.None).Length - 1,
             "LibAvRecordingSink.cs stays one in-file sink body");
         AssertEqual(
             false,
@@ -1199,8 +1195,6 @@ static partial class Program
     internal static Task LibAvRecordingSink_LifecycleHelpersLiveWithTheirOwners()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
-        var queueText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs")
             .Replace("\r\n", "\n");
         var stopText = rootText;
 
@@ -1252,7 +1246,6 @@ static partial class Program
         AssertContains(rootText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
         AssertContains(rootText, "SignalWork(\"complete_writer\");");
-        AssertDoesNotContain(queueText, "private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Recording", "LibAvRecordingSink.StopLifecycle.cs")),

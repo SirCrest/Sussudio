@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T18:53:47Z
+Generated UTC: 2026-06-01T19:09:42Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 133 |
+| Production .cs files | 132 |
 | Test .cs files | 14 |
-| Core app .cs files (Sussudio/) | 98 |
-| Core app nonblank LoC (Sussudio/) | 88433 |
+| Core app .cs files (Sussudio/) | 97 |
+| Core app nonblank LoC (Sussudio/) | 88422 |
 | Sussudio.Tests .cs files | 12 |
-| Sussudio.Tests nonblank LoC | 55811 |
+| Sussudio.Tests nonblank LoC | 55805 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.8%) |
 
@@ -27,10 +27,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | D3D11PreviewRenderer | 4 | 4871 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Metrics.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | LibAvEncoder | 3 | 2972 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | NativeXuAtCommandProvider | 3 | 2539 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.DeviceCommands.cs, Sussudio/Services/Telemetry/NativeXuAtCommandProvider.SnapshotAssembly.cs |
-| LibAvRecordingSink | 2 | 1886 | Sussudio/Services/Recording/LibAvRecordingSink.cs, Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs |
-| App | 1 | 260 | Sussudio/App.xaml.cs |
-| SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | LoggingJsonContext | 1 | 545 | Sussudio/AppRuntime.cs |
+| SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
+| App | 1 | 260 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 697 | Sussudio/Services/Capture/DeviceService.cs |
 | StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
 | MainWindow | 1 | 2421 | Sussudio/MainWindow.xaml.cs |
@@ -46,6 +45,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 2024 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 2012 | Sussudio/ViewModels/MainViewModel.cs |
 | 1933 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
+| 1873 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1721 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1619 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
@@ -68,7 +68,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1236 | Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs |
 | 1204 | Sussudio/Services/Capture/CaptureService.cs |
 | 1197 | tools/Common/PresentMon/PresentMonProbe.cs |
-| 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
 
 ## Sample production files under 60 lines
 

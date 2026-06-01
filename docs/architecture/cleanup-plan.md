@@ -1211,39 +1211,25 @@ output file naming, HDR-active context fields, mux success/failure cleanup,
 final-output validation, rollback, preserved temp-artifact discovery, and
 best-effort artifact deletion.
 
-LibAv recording sink queue ownership now lives in
-`Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs`. Keep public
-video/GPU/CUDA enqueue entry points, hot audio/microphone WASAPI write adapters,
-caller-side validation, audio queue eviction, audio remaining-buffer cleanup,
-the audio packet DTO, shared video queue latency/backpressure tracker, and
-shared work-signal/fatal-failure/queue-depth-underflow helpers there.
-`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the queue,
-submission, and cleanup assertions for this family alongside LibAv sink
-lifecycle checks.
-Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
-fatal signaling, queue cleanup, pooled video buffer leasing, pooled packet
-return helpers, video packet records, and queue dwell-time metric sampling also live in
-`LibAvRecordingSink.Queueing.cs`. `LibAvRecordingSink.cs` owns root state,
+LibAv recording sink ownership now lives in
+`Sussudio/Services/Recording/LibAvRecordingSink.cs`. Keep root state,
 construction, read-only telemetry, encoder drift accessors, the
 `IRecordingSink.StartAsync` adapter, FFmpeg/runtime initialization, encoder
 option creation/application, per-recording video session setup, hardware-frame
-queue selection, video/GPU/CUDA channel creation, width/height session state,
-video/GPU/CUDA metric reset, video diagnostics reset, audio/microphone queue
-setup, startup sequencing, encoding-task creation, start logging, startup
-rollback cleanup, the background encode loop, dispose/deferred cleanup, public
-and emergency `StopAsync` routing, `_started` clearing, encode-drain deadline
-selection, emergency cancellation/flush fallback, encoding-failure
-classification, HDR script validation through the bounded process supervisor,
-stopped-output validation handoff, stop logging, and `FinalizeResult` shaping.
-Keep `LibAvRecordingSink.cs` as one in-file sink body for root lifecycle and
-packet drains; queue admission remains in `LibAvRecordingSink.Queueing.cs`.
-
-LibAv recording sink encode-loop and packet-drain ownership now lives in
-`Sussudio/Services/Recording/LibAvRecordingSink.cs`. Keep the
-background loop ordering, second audio/microphone drain pass, cancellation
-cleanup, fatal encoder failure handling, bounded video/GPU/CUDA drain batches,
-unbounded LibAv audio/microphone drains, frame-encoded event dispatch, GPU
-texture release, CUDA frame free, and pooled buffer returns there.
+queue selection, video/GPU/CUDA/audio/microphone channel creation,
+width/height session state, metric resets, video diagnostics reset, startup
+sequencing, encoding-task creation, start logging, startup rollback cleanup,
+the background encode loop, bounded video/GPU/CUDA packet drains, unbounded
+LibAv audio/microphone drains, public video/GPU/CUDA enqueue entry points, hot
+audio/microphone WASAPI write adapters, caller-side validation, audio queue
+eviction, queue cleanup, pooled packet ownership, the shared video queue
+latency/backpressure tracker, shared work-signal/fatal-failure/
+queue-depth-underflow helpers, dispose/deferred cleanup, public and emergency
+`StopAsync` routing, `_started` clearing, encode-drain deadline selection,
+emergency cancellation/flush fallback, encoding-failure classification, HDR
+script validation through the bounded process supervisor, stopped-output
+validation handoff, stop logging, and `FinalizeResult` shaping together unless
+a distinct queue collaborator with its own injected state/test seam is created.
 `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`
 owns the LibAv sink queue, lifecycle, output-validation, drain-loop, and
 packet-drain assertions.
