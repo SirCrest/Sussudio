@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: Recording fanout xUnit owner locality
+Problem: `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` was a factless legacy `Program` sidecar for recording queue, UnifiedVideoCapture fanout, WASAPI, and CaptureService recording/Flashback ownership checks whose executable xUnit facts already lived in `RecordingPipelineContractsTests` inside `XUnit.RecordingContractsTests.cs`. Reviewing the recording fanout test surface still required opening a second file solely for backing methods and source-family helpers.
+Files consolidated: `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: no production partial cluster change; recording fanout backing `Program` methods now live with their xUnit recording wrapper owner in one physical file.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~RecordingPipelineContractsTests|FullyQualifiedName~UnifiedVideoCapture|FullyQualifiedName~WasapiAudioCapture|FullyQualifiedName~CaptureServiceFlashback"` passed (25 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed.
+CLI/MCP/pipe checks, if applicable: no production runtime, automation, CLI, MCP, XAML, capture, recording, Flashback, preview, HDR, or hot-path code changed.
+Behavior preserved: xUnit wrapper class names and `[Fact]` names are unchanged. UnifiedVideoCapture frame-ingress/fanout, WASAPI hot-write/conversion/diagnostics/interop, CaptureService Flashback backend ownership, Flashback orchestration partial ownership, recording finalization partial ownership, and recording outcome-state checks keep their same backing method names and assertions.
+Notes for future agents: keep recording fanout wrapper facts and their backing `Program` methods together in `XUnit.RecordingContractsTests.cs` unless the fanout/WASAPI/CaptureService ownership checks gain an independent fixture or runtime harness. Current counts: core app 118 `.cs` files / 89,562 nonblank LoC; `Sussudio.Tests` 34 `.cs` files / 56,027 nonblank LoC.
+
+Date: 2026-06-01
 Area: Presentation-preview audio-control test owner locality
 Problem: `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs` was the last small legacy `Program` shard for the MainViewModel audio-control presentation-preview wrapper group. All executable xUnit facts already lived in `PresentationPreviewMainViewModelAudioControlsContractsTests` inside `XUnit.PresentationPreviewContractsTests.cs`, so reviewing audio-control test behavior still required opening a second file solely for backing methods.
 Files consolidated: `tests/Sussudio.Tests/MainViewModel.AudioControls.GainAndMonitoring.Tests.cs`

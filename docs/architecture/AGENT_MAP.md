@@ -1390,7 +1390,10 @@ Primary current owners:
   It also owns CaptureService recording lifecycle, recording-stop finalization
   failure propagation, active recording backend resource aggregate, recording
   start rollback, and recording outcome-state file-ownership assertions.
-- `tests/Sussudio.Tests/RecordingQueue.CaptureFanout.Tests.cs` owns
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the
+  xUnit execution surface and backing `Program` methods for recording queue,
+  LibAv sink, WASAPI, capture fan-out, and CaptureService recording ownership
+  contracts after their removal from the legacy harness catalog. It includes
   WASAPI capture-loop, hot-write, conversion, root diagnostics, COM contract,
   bounded stop assertions, UnifiedVideoCapture frame-ingress, CPU-MJPEG format
   reporting, stop-failure MJPEG pipeline retention, sink fan-out, CaptureService
@@ -1398,10 +1401,6 @@ Primary current owners:
   helper for Flashback backend orchestration/recording finalization partials,
   focused Flashback orchestration partial ownership contracts, LibAv
   live-preview restoration, and recording outcome-state ownership.
-  `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the
-  xUnit execution surface for these recording queue, LibAv sink, WASAPI,
-  capture fan-out, and CaptureService recording ownership contracts after their
-  removal from the legacy harness catalog.
 - `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` owns CPU MJPEG pipeline
   source-shape, focused-partial ownership, startup-drop, known-loss,
   packet-hash duplicate cadence, visual-cadence crop sampling, shared-reorder

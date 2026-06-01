@@ -60,6 +60,11 @@ add xUnit alongside, and port incrementally.
   the former legacy recording pipeline, recording-model/Flashback buffer, and
   core-runtime recording xUnit execution surfaces. The public wrapper classes
   remain separate inside this file so existing test identities stay stable.
+- `XUnit.RecordingContractsTests.cs` also owns the backing `Program` methods
+  for recording queue, UnifiedVideoCapture fan-out, WASAPI, CaptureService
+  recording/Flashback ownership, and related source-family helpers; do not
+  recreate a separate recording fan-out sidecar unless those checks gain an
+  independent fixture or harness.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy core runtime
   subgroup: runtime telemetry, capture-service snapshot, NativeXu, frame ledger,
   recording-integrity, and basic app contract checks.
