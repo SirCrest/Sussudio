@@ -539,12 +539,12 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
             "preview runtime DTO folded into AutomationRuntimeModels.cs");
-        AssertContains(agentMapText, "MainWindow.Composition.cs");
+        AssertContains(agentMapText, "MainWindow.xaml.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
         AssertContains(agentMapText, "health input factory");
-        AssertContains(cleanupPlanText, "MainWindow.Composition.cs");
+        AssertContains(cleanupPlanText, "MainWindow.xaml.cs");
         AssertContains(cleanupPlanText, "surface/frame");
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
@@ -584,7 +584,6 @@ static partial class Program
         AssertDoesNotContain(previewRuntimeSnapshotText, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
         AssertDoesNotContain(previewRuntimeSnapshotText, "CurrentPreviewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed");
         AssertDoesNotContain(previewRuntimeSnapshotText, "IsStartupWaitingForFirstVisual = CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual");
-        AssertDoesNotContain(mainWindowText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync");
         AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
         AssertEqual(
             false,

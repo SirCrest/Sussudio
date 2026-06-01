@@ -747,19 +747,19 @@ static partial class Program
         => ReadMainWindowCompositionSource();
 
     private static string ReadMainWindowPreviewRendererAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
 
     private static string ReadMainWindowPreviewStartupAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
 
     private static string ReadMainWindowPreviewTransitionsAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
 
     private static string ReadMainWindowPropertyChangedPreviewAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
 
     private static string ReadMainWindowShellChromeAdapterSource()
-        => ReadMainWindowAdapterSource("Sussudio/MainWindow.Composition.cs");
+        => ReadMainWindowAdapterSource("Sussudio/MainWindow.xaml.cs");
 
     private static string ReadMainWindowAdapterSource(params string[] files)
         => string.Join(
@@ -1522,6 +1522,6 @@ namespace Sussudio.Tests
     internal static class MainWindowStatsOverlaySource
     {
         public static string Read()
-            => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
+            => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
     }
 }

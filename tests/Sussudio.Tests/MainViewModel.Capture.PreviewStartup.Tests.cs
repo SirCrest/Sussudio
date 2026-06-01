@@ -79,7 +79,6 @@ static partial class Program
         AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupPlaybackPositionResult TrackPlaybackPosition(");
         AssertContains(previewStartupReadinessSignalControllerText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
         AssertContains(previewStartupSignalCoordinatorText, "PreviewStartupSignalFormatter.FormatSignalList(");
-        AssertDoesNotContain(mainWindowText, "ResetPreviewSignalState()");
         AssertEqual(
             true,
             previewStartupText.Split('\n').Length >= 100,
@@ -804,9 +803,9 @@ static partial class Program
         AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
         AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview reinit adapter lives in the preview transitions composition partial");
+            "preview reinit adapter folded into MainWindow.xaml.cs");
         AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
         AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
         AssertContains(previewStartupText, "private PreviewStartupState CurrentPreviewStartupState");

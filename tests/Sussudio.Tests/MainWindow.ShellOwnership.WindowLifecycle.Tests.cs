@@ -11,15 +11,15 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var nativeWindowText = ReadMainWindowShellChromeAdapterSource();
         var nativeWindowControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
         var nativeBootstrapOwner = "Sussudio/Controllers/Window/WindowControllers.cs";
 
         AssertContains(agentMapText, nativeBootstrapOwner);
         AssertContains(cleanupPlanText, nativeBootstrapOwner);
-        AssertContains(agentMapText, "Sussudio/MainWindow.Composition.cs");
-        AssertContains(cleanupPlanText, "Sussudio/MainWindow.Composition.cs");
+        AssertContains(agentMapText, "Sussudio/MainWindow.xaml.cs");
+        AssertContains(cleanupPlanText, "Sussudio/MainWindow.xaml.cs");
         AssertContains(agentMapText, "owns native window");
         AssertContains(cleanupPlanText, "DWM cloak/dark-mode setup");
         AssertContains(agentMapText, "first-composed-frame");
@@ -49,9 +49,9 @@ static partial class Program
         AssertContains(nativeWindowText, "private void CancelNativeShellRevealAfterFirstFrame()");
         AssertContains(nativeWindowText, "=> _nativeWindowBootstrapController.CancelPendingFirstFrameReveal();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "native window adapter lives in the shell chrome composition partial");
+            "native window adapter folded into MainWindow.xaml.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Window", "NativeWindowBootstrapController.cs")),
@@ -123,7 +123,7 @@ static partial class Program
         {
             "Sussudio/Controllers/Window/WindowControllers.cs",
             "Sussudio/Controllers/Window/WindowControllers.cs",
-            "Sussudio/MainWindow.Composition.cs",
+            "Sussudio/MainWindow.xaml.cs",
             "Sussudio/MainWindow.xaml.cs",
         };
 
@@ -156,17 +156,14 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "DwmSetWindowAttribute(");
         AssertDoesNotContain(mainWindowText, "MinSizeWindowSubclass.Install(");
         AssertDoesNotContain(mainWindowText, "appWindow.Resize(new Windows.Graphics.SizeInt32(1950, 1450));");
-        AssertDoesNotContain(mainWindowText, "appWindow.Closing += MainWindow_Closing;");
         AssertDoesNotContain(mainWindowText, "private int _windowCloseRequested;");
-        AssertDoesNotContain(mainWindowText, "private bool _isWindowClosing;");
-        AssertDoesNotContain(mainWindowText, "private IntPtr _hwnd;");
 
         return Task.CompletedTask;
     }
 
     internal static Task MainWindowCloseLifecycleControllers_OwnCloseRequestAndAppClosing()
     {
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var appClosingControllerText = closeLifecycleControllerText;
         var closeRequestControllerText = closeLifecycleControllerText;
@@ -262,7 +259,6 @@ static partial class Program
         AssertDoesNotContain(closeLifecycleText, "WINDOW_CLOSING_TRIGGER ");
         AssertDoesNotContain(closeLifecycleText, "private Microsoft.UI.Windowing.AppWindow GetAppWindow()");
         AssertDoesNotContain(closeLifecycleText, "DwmSetWindowAttribute(");
-        AssertDoesNotContain(closeLifecycleText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
 
         return Task.CompletedTask;
     }
@@ -271,7 +267,7 @@ static partial class Program
     {
         var windowCtorText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs")
             .Replace("\r\n", "\n");
@@ -313,7 +309,7 @@ static partial class Program
 
     internal static Task MainWindowCloseRecordingFinalization_OwnsRecordingStopPolicy()
     {
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var shutdownCleanupText = ReadMainWindowCompositionSource();
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");
@@ -572,9 +568,9 @@ static partial class Program
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PrepareInitialState();");
         AssertContains(adapterText, "=> _launchEntranceAnimationController.PlaySplashAndEntrance();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "launch entrance adapter lives in the shell chrome composition partial");
+            "launch entrance adapter folded into MainWindow.xaml.cs");
         AssertContains(controllerInitializationText, "InitializeLaunchEntranceAnimationController();");
         AssertContains(mainWindowText, "PrepareLaunchEntranceInitialState();");
         AssertContains(startupText, "PlaySplashAndEntrance();");
@@ -626,7 +622,7 @@ static partial class Program
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
-        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
+        var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -667,9 +663,9 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Launch", "Entrance", "LaunchEntranceAnimationController.cs")),
             "launch entrance choreography lives with the launch flow owner");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "startup adapter lives in the shell chrome composition partial");
+            "startup adapter folded into MainWindow.xaml.cs");
         AssertContains(mainWindowText, "private readonly WindowAutomationHostLifecycleController _automationHostLifecycleController;");
         AssertEqual(
             false,

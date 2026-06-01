@@ -126,9 +126,9 @@ static partial class Program
         AssertDoesNotContain(previewPropertyChangedHandler, "await HandlePreviewingChangedAsync();");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview reinit adapter lives in the preview transitions composition partial");
+            "preview reinit adapter folded into MainWindow.xaml.cs");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
         AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
@@ -858,7 +858,7 @@ internal static Task ResponsiveShellLayout_LivesInController()
         var mainWindowText = ReadMainWindowCompositionSource();
         var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var adapterText = ReadRepoFile("Sussudio/MainWindow.Composition.cs").Replace("\r\n", "\n");
+        var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -1348,7 +1348,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
     internal static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
     {
-        var windowText = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
+        var windowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Screenshot/ScreenshotControllers.cs")
             .Replace("\r\n", "\n");
@@ -1458,13 +1458,13 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(settingsShelfText, "=> _settingsShelfController.Toggle();");
         AssertContains(settingsShelfText, "=> _settingsShelfController.ApplyVisibility(visible);");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "settings shelf adapter lives in the shell chrome composition partial");
+            "settings shelf adapter folded into MainWindow.xaml.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.FullScreen.Composition.cs")),
-            "fullscreen adapter folded into the shell chrome composition partial");
+            "fullscreen adapter folded into MainWindow.xaml.cs");
         AssertContains(mainWindowText, "InitializeSettingsShelfController();");
         AssertContains(fullScreenText, "ResetSettingsShelfAnimation = _settingsShelfController.ResetAnimationState,");
         AssertDoesNotContain(settingsShelfText, "ResetSettingsShelfAnimationForFullScreen");
@@ -1519,7 +1519,6 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(propertyChangedText, "TryHandleStatusStrip = TryHandleStatusStripPropertyChanged,");
         AssertContains(statusStripText, "ApplyWindowTitle);");
         AssertDoesNotContain(mainWindowText, "private static string BuildWindowTitleBase()");
-        AssertDoesNotContain(mainWindowText, "private void ApplyWindowTitle()");
         AssertDoesNotContain(mainWindowText, "CultureInfo.InvariantCulture");
         AssertDoesNotContain(statusStripText, "Environment.ProcessPath");
         AssertDoesNotContain(statusStripText, "File.GetLastWriteTime(");
@@ -1629,7 +1628,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.StatusStripPresentation.cs")),
-            "status strip adapter lives with the shell chrome composition partial");
+            "status strip adapter folded into MainWindow.xaml.cs");
         AssertContains(adapterText, "private void InitializeStatusStripPresentationController()");
         AssertContains(adapterText, "DiskWarningInfoBar = DiskWarningInfoBar,");
         AssertContains(adapterText, "StatusTextBlock = StatusTextBlock,");
@@ -1784,9 +1783,9 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(adapterText, "=> _previewAudioFadeController.CancelFadeInForUser();");
         AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview audio fade adapter lives in the preview transitions composition partial");
+            "preview audio fade adapter folded into MainWindow.xaml.cs");
         AssertContains(mainWindowText, "InitializeAudioControlBindingController();");
         AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
         AssertContains(audioControlBindingControllerText, "internal sealed class AudioControlBindingControllerContext");
@@ -1869,9 +1868,9 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(previewActionsText, "_ = RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click));");
         AssertContains(mainWindowText, "InitializePreviewButtonActionController();");
         AssertEqual(
-            true,
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview button action adapter lives in the preview transitions composition partial");
+            "preview button action adapter folded into MainWindow.xaml.cs");
         AssertContains(actionControllerText, "internal sealed class PreviewButtonActionController");
         AssertEqual(
             false,
@@ -2142,7 +2141,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var fullScreenSource = ReadMainWindowShellChromeAdapterSource();
         var fullScreenControllerRootSource = ReadRepoFile("Sussudio/Controllers/FullScreen/FullScreenController.cs")
             .Replace("\r\n", "\n");
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
@@ -2180,11 +2179,11 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     internal static Task MainWindowWindowAutomationCommands_LiveInController()
     {
         var mainWindowSource = ReadMainWindowCompositionSource();
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
-        var adapterSource = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
+        var adapterSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs")
             .Replace("\r\n", "\n");
@@ -2228,7 +2227,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
     internal static Task MainWindowUiDispatching_LivesInShellChromeAdapter()
     {
-        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
+        var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
