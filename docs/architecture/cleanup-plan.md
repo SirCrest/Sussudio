@@ -1685,15 +1685,15 @@ enqueue, backlog trimming, frame-ready signal/reset wrappers, explicit pending
 drains, pending-count accounting, and render-loop consumption there; keep frame ownership metrics in
 `D3D11PreviewRenderer.Metrics.cs`.
 
-Media Foundation source-reader negotiation now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs`. Keep
+Media Foundation source-reader negotiation now lives in the root
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs` startup owner. Keep
 DXGI manager attachment, direct device-source open, native media-type selection,
-frame-size/frame-rate attribute reads, and converted output media-type
-construction, device-enumeration open fallback, and candidate reporting there.
-Keep the Source Reader transform boundary beside native media-type selection so
-the selected native type and requested NV12/P010 output type can be reviewed
-together without changing negotiation semantics. Keep high-level source-reader
-state fields in the root source-reader file.
+frame-size/frame-rate attribute reads, converted output media-type construction,
+device-enumeration open fallback, and candidate reporting beside initialization
+validation and runtime-state commit. Keep the Source Reader transform boundary
+beside native media-type selection so the selected native type and requested
+NV12/P010 output type can be reviewed together without changing negotiation
+semantics.
 
 Media Foundation source-reader initialization orchestration and active lifetime
 now live together in

@@ -1511,7 +1511,7 @@ static partial class Program
     {
         var deviceRootText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.cs").Replace("\r\n", "\n");
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
-        var sourceReaderNegotiationText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.Negotiation.cs").Replace("\r\n", "\n");
+        var sourceReaderNegotiationText = sourceReaderRootText;
         var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
         var mfInteropText = ReadRepoFile("Sussudio/Services/Capture/MfInterop.cs").Replace("\r\n", "\n");
 
@@ -1555,6 +1555,10 @@ static partial class Program
         AssertContains(sourceReaderNegotiationText, "private static bool TryGetFrameRate(");
         AssertEqual(
             false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Negotiation.cs")),
+            "source-reader negotiation and source-open helpers folded into root source-reader owner");
+        AssertEqual(
+            false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Interop.cs")),
             "source-reader MF P/Invokes and constants folded into shared MF interop owner");
         AssertEqual(
@@ -1582,8 +1586,8 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.SampleBufferContracts.cs")),
             "source-reader sample/buffer COM declarations folded into shared MF interop owner");
-        AssertDoesNotContain(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
-        AssertDoesNotContain(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
+        AssertContains(sourceReaderRootText, "private IMFMediaSource CreateMediaSource(");
+        AssertContains(sourceReaderRootText, "private IMFMediaType SelectMediaType(");
         AssertDoesNotContain(sourceReaderRootText, "private static class MfInterop");
         AssertDoesNotContain(sourceReaderRootText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
 
