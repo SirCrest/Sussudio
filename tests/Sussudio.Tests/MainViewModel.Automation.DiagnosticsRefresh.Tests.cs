@@ -1280,7 +1280,6 @@ static partial class Program
         return new DiagnosticSessionSourceFamily(
             ReadDiagnosticSessionRunnerSource()
                 + "\n" + ReadDiagnosticSessionScenarioStartupSource()
-                + "\n" + ReadDiagnosticSessionCleanupActionsSource()
                 + "\n" + ReadDiagnosticSessionResultBuilderSource()
                 + "\n" + ReadDiagnosticSessionBackgroundTasksSource()
                 + "\n" + ReadDiagnosticSessionFlashbackCycleScenariosSource()

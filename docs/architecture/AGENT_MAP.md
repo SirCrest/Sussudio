@@ -2705,7 +2705,15 @@ Primary owners:
   snapshot capture, named scenario phase invocation and execution, cleanup,
   post-cleanup evidence/result sequence, result-build request mapping,
   post-run performance timeline and final health snapshot fetches, result-build
-  invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase. It also owns scenario sampling, snapshot
+  invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase.
+  It also owns diagnostic-session cleanup and recording-check flow, cleanup
+  ordering, stage/action naming, cleanup result handoff,
+  recording stop for verification, Flashback playback go-live restore, preview
+  stop, Flashback enable-state restore through typed automation commands,
+  deferred Flashback recording-settings restore, last-recording or Flashback
+  export verification command selection, payload shape, 60-second timeout,
+  cloned verification result, skipped-verification action text, and Flashback
+  recording validation. It also owns scenario sampling, snapshot
   sample collection, post-sampling completion order, fault-drain delegation,
   scenario background task registration, deterministic await order, normal
   registered scenario completion, PresentMon and deferred recording-settings
@@ -2714,16 +2722,6 @@ Primary owners:
   running checkpoint callbacks. Keep the `timeline` and `final-snapshot` stage
   names stable there. It also owns the per-output-directory exclusive lock that
   prevents concurrent diagnostic sessions from writing the same artifact set.
-- `tools/Common/DiagnosticSessionPostRunActions.cs` owns diagnostic-session
-  cleanup and recording-check flow: cleanup ordering, stage/action naming,
-  cleanup result handoff, recording stop for verification, Flashback playback
-  go-live restore, preview stop, Flashback enable-state restore through typed
-  automation commands, deferred Flashback recording-settings restore, last-
-  recording or Flashback export verification command selection, payload shape,
-  60-second timeout, cloned verification result, skipped-verification action
-  text, and Flashback recording validation. Keep the `cleanup-*`,
-  `settings-deferred-restore`, `recording-verification`, and
-  `recording-validation` stage names stable there.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
   restart/encoder/lifecycle cycle diagnostic task registration, restart-cycle
   playback priming/restart/refill/export verification, encoder-cycle preset

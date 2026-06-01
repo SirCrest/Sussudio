@@ -2793,15 +2793,15 @@ mutations should use `DiagnosticSessionCommandChannel` typed
 `AutomationCommandKind` sends.
 
 Diagnostic-session post-run actions now live in
-`tools/Common/DiagnosticSessionPostRunActions.cs`. It owns the public cleanup
-flow and ordering, recording stop for verification, Flashback playback go-live
-restore, preview stop, Flashback enable-state restore, typed automation command
-sends, cleanup result record, deferred Flashback recording-settings restore,
-last-recording or Flashback export verification command selection, payload
-shape, 60-second timeout, cloned verification result, skipped-verification
-action text, and Flashback recording validation while the runner keeps the
-high-level post-cleanup phase order. Result analysis validation owns the
-post-cleanup warning validator.
+`tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
+orders them. The runner owns the public cleanup flow and ordering, recording
+stop for verification, Flashback playback go-live restore, preview stop,
+Flashback enable-state restore, typed automation command sends, cleanup result
+record, deferred Flashback recording-settings restore, last-recording or
+Flashback export verification command selection, payload shape, 60-second
+timeout, cloned verification result, skipped-verification action text, and
+Flashback recording validation. Result analysis validation owns the post-cleanup
+warning validator.
 
 Diagnostic-session post-run snapshot fetches now live in
 `tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
@@ -2983,7 +2983,6 @@ imports, SetupAPI imports, and native interface DTOs in
 
 Remaining `tools/Common` ownership:
 
-- `DiagnosticSessionPostRunActions.cs`
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackSupport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`

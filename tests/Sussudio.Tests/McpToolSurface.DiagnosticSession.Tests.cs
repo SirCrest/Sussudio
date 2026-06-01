@@ -13,7 +13,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionPostRunActions.cs");
+            "tools/Common/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionScenarioSetupSource()
         => ReadDiagnosticSessionScenarioStartupSource();
@@ -402,6 +402,7 @@ static partial class Program
     internal static Task DiagnosticSessionAnalysisValidation_OwnsCleanupRestoreWarnings()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var runAsyncText = ExtractMemberCode(runnerText, "RunAsync");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
         var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
@@ -439,10 +440,10 @@ static partial class Program
         AssertContains(runnerText, "runContext.CommandChannel,");
         AssertContains(runnerText, "stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;");
         AssertDoesNotContain(builderText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
-        AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-recording\")");
-        AssertDoesNotContain(runnerText, "setStage(\"cleanup-go-live\")");
-        AssertDoesNotContain(runnerText, "setStage(\"cleanup-stop-preview\")");
-        AssertDoesNotContain(runnerText, "setStage(\"cleanup-restore-flashback-off\")");
+        AssertDoesNotContain(runAsyncText, "setStage(\"cleanup-stop-recording\")");
+        AssertDoesNotContain(runAsyncText, "setStage(\"cleanup-go-live\")");
+        AssertDoesNotContain(runAsyncText, "setStage(\"cleanup-stop-preview\")");
+        AssertDoesNotContain(runAsyncText, "setStage(\"cleanup-restore-flashback-off\")");
         AssertDoesNotContain(runnerText, "private static void ValidateCleanupLifecycleRestored(");
         AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"SetRecordingEnabled\"");
         AssertDoesNotContain(cleanupActionsText, "sendWithTokenAsync(\"FlashbackAction\"");
@@ -456,6 +457,7 @@ static partial class Program
     internal static Task DiagnosticSessionRecordingChecks_OwnPostRunRecordingVerification()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
+        var completionText = ExtractMemberCode(runnerText, "RunCompletionPhaseAsync");
         var recordingChecksText = ReadDiagnosticSessionCleanupActionsSource()
             .Replace("\r\n", "\n");
         var recordingVerificationText = recordingChecksText;
@@ -481,11 +483,11 @@ static partial class Program
         AssertContains(recordingVerificationText, "recording verification skipped: scenario does not produce a recording or export artifact");
         AssertContains(recordingVerificationText, "recordTerminalException(ex, \"recording-verification\")");
         AssertContains(runnerText, "DiagnosticSessionRecordingChecks.RunAsync(");
-        AssertDoesNotContain(runnerText, "SetStage(\"settings-deferred-restore\")");
+        AssertDoesNotContain(completionText, "SetStage(\"settings-deferred-restore\")");
         AssertContains(recordingChecksText, "var verificationCommand = \"VerifyLastRecording\"");
-        AssertDoesNotContain(runnerText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
+        AssertDoesNotContain(completionText, "DiagnosticSessionScenarioCatalog.TryGetFlashbackExportVerificationPath(");
         AssertContains(recordingChecksText, "[\"verificationProfile\"] = \"flashback-export\"");
-        AssertDoesNotContain(runnerText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
+        AssertDoesNotContain(completionText, "ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings)");
 
         return Task.CompletedTask;
     }
