@@ -1750,18 +1750,16 @@ Primary current owners:
   `DiagnosticSessionRunner.RunAsync`, parsing synthetic JSON responses, and
   validating artifacts, health policy, Flashback playback, initial snapshot,
   pipe retry, and concurrency behavior.
-- `tests/Sussudio.Tests/McpToolSurface.Performance.*.Tests.cs` owns MCP
-  performance timeline contract, Flashback timeline formatting, PresentMon MCP
-  correlation and option precedence coverage, and frame-pacing verdict tests.
-  `McpToolSurface.Performance.Tools.Tests.cs` keeps shared performance-tool
-  source loading, timeline source-ownership assertions, rendering text
-  contracts, Flashback command-counter formatting checks,
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns MCP performance
+  timeline contract, Flashback timeline formatting, PresentMon MCP correlation
+  and option precedence coverage, and frame-pacing verdict tests. Keep the
+  xUnit wrappers and backing `Program` method bodies for shared
+  performance-tool source loading, timeline source-ownership assertions,
+  rendering text contracts, Flashback command-counter formatting checks,
   `PerformanceTimelineEntry` projection contracts, PresentMon correlation
-  coverage, and frame-pacing verdict source-shape plus behavior checks
-  together.
-  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit
-  execution surface for these performance/probe contracts after their removal
-  from the legacy harness catalog.
+  coverage, and frame-pacing verdict source-shape plus behavior checks together
+  in this tool-contract owner unless a distinct fixture or reusable helper
+  boundary emerges.
 - `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
   window action, preview toggle, Flashback toggle, screenshot,
   preview-frame-capture, and probe tests. `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
