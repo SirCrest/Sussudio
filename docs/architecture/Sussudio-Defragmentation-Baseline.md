@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: MCP diagnostic-session xUnit owner locality
+Problem: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` was a fixture-free backing `Program` sidecar while every executable diagnostic-session MCP fact already lived in `XUnit.ToolContractsTests.cs`. Reviewing MCP diagnostic-session artifact contracts, runner behavior, source-family readers, helper ownership, and Flashback scenario/metric/wait/export assertions still required opening the xUnit parent plus a separate backing file with no independent fixture boundary.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: no production partial cluster change; diagnostic-session MCP backing `Program` methods now live with their xUnit wrapper owner.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface"` passed (66 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+CLI/MCP/pipe checks, if applicable: no production runtime, automation, CLI, MCP, XAML, capture, recording, Flashback, preview, HDR, or hot-path code changed; full solution build rebuilt MCP, `ssctl`, tools, app, and tests.
+Behavior preserved: all `XUnit.ToolContractsTests` diagnostic-session `[Fact]` wrappers and underlying `Program.DiagnosticSession*` / `Program.McpDiagnosticSessionTool_*` method names are unchanged. Source-family readers, helper ownership checks, runner synthetic-command tests, Flashback scenario/metric/wait/export checks, MCP artifact contract tests, synthetic pipe responses, and JSON fixture assertions moved intact.
+Notes for future agents: keep fixture-free MCP diagnostic-session backing methods with `XUnit.ToolContractsTests.cs` while they share the same xUnit wrapper surface and tool-contract helper seams. Split again only for a real fixture, external-process lifecycle, or independently named tool collaborator. Current counts: core app 115 `.cs` files / 89,534 nonblank LoC; `Sussudio.Tests` 19 `.cs` files / 55,959 nonblank LoC; all tests 21 `.cs` files / 56,809 nonblank LoC.
+
+Date: 2026-06-01
 Area: Flashback exporter and D3D preview renderer xUnit owner locality
 Problem: `tests/Sussudio.Tests/Flashback.Exporter.Tests.cs` and `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` were fixture-free legacy `Program` sidecars whose executable facts already lived in `XUnit.FlashbackContractsTests.cs` and `XUnit.PresentationPreviewContractsTests.cs`. Reviewing Flashback exporter behavior/output-safety or D3D preview renderer diagnostics/source ownership still required opening wrapper owners plus adjacent backing-method files with no independent fixture boundary.
 Files consolidated: `tests/Sussudio.Tests/Flashback.Exporter.Tests.cs`; `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs`

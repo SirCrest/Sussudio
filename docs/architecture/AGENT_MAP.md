@@ -1244,10 +1244,9 @@ Primary current owners:
   ownership assertions, including diagnostic-evaluation, alerts,
   snapshot-projection, aggregate `SourceFamilyText` composition, and the
   corresponding diagnostics-refresh ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`
-  owns shared diagnostic-session source-family readers used by refresh, MCP,
-  and tool ownership assertions alongside the broad diagnostic-session
-  ownership checks.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns shared
+  diagnostic-session source-family readers used by refresh, MCP, and tool
+  ownership assertions alongside the broad diagnostic-session ownership checks.
 - `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs`
   owns automation async surface and automation snapshot/options source-shape
   assertions, including the diagnostics-loop contract that keeps options
@@ -1712,17 +1711,14 @@ Primary current owners:
   `CommandRouting.Verification` owner files. Captured command-ID assertions use
   the shared `AssertAutomationCommandId` helper so the golden command table is
   the only test-owned numeric ID list.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`
-  owns the consolidated backing `Program` method bodies for MCP
-  `run_diagnostic_session` success/failure artifact contract tests, focused
-  diagnostic-session runner behavior, diagnostic-session helper ownership
-  checks, shared source-family readers, and Flashback scenario/metrics/wait/export
-  ownership assertions.
-  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit
-  execution surface for the general MCP tool-surface, command-routing,
-  host/pipe, verification, Flashback tool, diagnostic-session tool entry,
-  performance/probe, and window/preview tool contracts after their removal from
-  the legacy harness catalog.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit execution
+  surface and consolidated backing `Program` method bodies for the general MCP
+  tool-surface, command-routing, host/pipe, verification, Flashback tool,
+  diagnostic-session tool entry, performance/probe, and window/preview tool
+  contracts. This includes MCP `run_diagnostic_session` success/failure
+  artifact contract tests, focused diagnostic-session runner behavior,
+  diagnostic-session helper ownership checks, shared source-family readers, and
+  Flashback scenario/metrics/wait/export ownership assertions.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns diagnostic-session
   model ownership assertions, formatter ownership, builder summary-write
   failure, artifact, JSON/shared-text checks, core result-builder

@@ -388,18 +388,17 @@ frame-budget, and tick-age display helpers. Tests that reason about formatter
 source use the shared `RuntimeContractSource` snapshot formatter source reader
 from both the legacy harness and xUnit formatter contracts.
 
-Diagnostic-session MCP surface coverage keeps
-`McpToolSurface.DiagnosticSession.Tests.cs` as the consolidated backing
-`Program` method owner for MCP tool success/failure artifact contracts,
+Diagnostic-session MCP surface coverage now lives in
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` as the xUnit wrapper and
+backing `Program` method owner for MCP tool success/failure artifact contracts,
 reflective runner behavior, planning, execution, teardown, reporting,
 infrastructure, and Flashback scenario/metrics/wait/export ownership
-assertions. The consolidated file owns final-snapshot artifact failures, sparse
+assertions. That owner includes final-snapshot artifact failures, sparse
 source-cadence health tolerance, Flashback export/playback command flow,
 unknown-initial-snapshot mutation safety, synthetic pipe-connect retry,
 concurrent-output-directory lockout, runner/initial-snapshot, pipe
-retry/command channel, run context, and scenario/completion phase assertions.
-MCP tool checks now execute through
-`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`, keeping window/preview,
+retry/command channel, run context, and scenario/completion phase assertions,
+while also keeping window/preview,
 condition wait, screenshots, preview-frame capture, probes, PresentMon
 correlation, performance timeline, frame-pacing verdict, command routing,
 host/pipe behavior, verification formatting, Flashback tool routing, and
