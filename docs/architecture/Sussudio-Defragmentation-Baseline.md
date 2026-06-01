@@ -5150,8 +5150,8 @@ Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: none; preview runtime snapshot owner-file count -1
 Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PreviewRuntimeSnapshot|FullyQualifiedName~PreviewRuntime|FullyQualifiedName~PresentationPreview"` (183 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
 CLI/MCP/pipe checks, if applicable: not applicable; no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed.
-Behavior preserved: UI-dispatch sampling, D3D projection, health policy, surface/startup/GPU playback projection, and final preview runtime snapshot DTO flattening now live together in `PreviewRuntimeSnapshotController.cs`.
-Notes for future agents: keep sampled-input assembly, health policy, elapsed timing, final snapshot flattening, and surface/startup/GPU playback projection policy in `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`; keep D3D-specific renderer projection in `PreviewRuntimeD3DProjection.cs`.
+Behavior preserved: UI-dispatch sampling, D3D projection, health policy, surface/startup/GPU playback projection, and final preview runtime snapshot DTO flattening now live together in `PreviewRuntimeSnapshotControllers.cs`.
+Notes for future agents: keep sampled-input assembly, health policy, elapsed timing, final snapshot flattening, and surface/startup/GPU playback projection policy in `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`; keep D3D-specific renderer projection in `PreviewRuntimeSnapshotControllers.cs`.
 
 Date: 2026-05-26
 Area: Test source-reader helper locality

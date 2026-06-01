@@ -949,7 +949,7 @@ Primary current owners:
 - `Sussudio/MainWindow.Composition.cs` owns the stable
   automation preview snapshot adapter and context wiring alongside preview
   renderer host composition.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`
   owns the UI-dispatch sampling wrapper, UI-thread-only preview runtime field
   sampling, startup missing-signal refresh, sampled-input assembly, read-only
   preview runtime snapshot construction orchestration, and the UI-thread
@@ -958,7 +958,7 @@ Primary current owners:
   sampled input and D3D projection; surface/startup/GPU playback projection policies;
   the health input factory; preview startup elapsed timing; and
   blank/stall suspicion policy.
-  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs`
+  `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`
   owns the renderer projection data contract, D3D policy records, policy
   evaluation order, and assignment from evaluated policy records. It keeps the
   named policy classes for D3D-vs-CPU frame counters, renderer state, display

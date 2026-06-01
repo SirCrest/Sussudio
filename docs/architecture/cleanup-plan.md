@@ -751,7 +751,7 @@ replacement, and retired-renderer handoff during D3D renderer mode switches.
 `Sussudio/MainWindow.Composition.cs` owns the stable automation
 preview snapshot adapter and context wiring alongside preview renderer host
 composition.
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs`,
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`,
 owns the UI-dispatch sampling wrapper, UI-thread-only preview runtime field
 sampling, startup missing-signal refresh, sampled-input assembly, read-only
 preview-state orchestration, and the UI-thread sampled preview snapshot input
@@ -759,7 +759,7 @@ contract shared by the snapshot controller and D3D projection builder. It also
 owns final preview runtime snapshot DTO flattening from sampled input and D3D
 projection, surface/startup/GPU playback projection policies, the health input factory,
 preview startup elapsed timing, and blank/stall suspicion policy.
-`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs` owns the
+`Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs` owns the
 renderer projection data contract, D3D policy records, policy evaluation order,
 and assignment from evaluated policy records. It keeps the named policy classes
 for D3D-vs-CPU frame counters, renderer state, display cadence, render CPU

@@ -183,7 +183,7 @@ static partial class Program
 
     internal static Task PreviewRuntimeD3DProjection_OwnsPolicyGroups()
     {
-        var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeD3DProjection.cs").Replace("\r\n", "\n");
+        var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -262,10 +262,10 @@ static partial class Program
         AssertContains(previewRuntimeD3DProjectionText, "LastSubmittedSourceSequenceNumber: frameOwnership?.LastSubmittedSourceSequenceNumber ?? -1,");
         AssertContains(previewRuntimeD3DProjectionText, "LastDroppedSourceSequenceNumber: frameOwnership?.LastDroppedSourceSequenceNumber ?? -1,");
 
-        AssertContains(agentMapText, "PreviewRuntimeD3DProjection.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertContains(agentMapText, "owns the renderer projection data contract, D3D policy records");
         AssertContains(agentMapText, "assignment from evaluated policy records");
-        AssertContains(cleanupPlanText, "PreviewRuntimeD3DProjection.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
         AssertContains(cleanupPlanText, "renderer projection data contract, D3D policy records");
         AssertContains(cleanupPlanText, "evaluated policy records");
         foreach (var removedFile in new[]
@@ -283,7 +283,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", removedFile)),
-                $"{removedFile} folded into PreviewRuntimeD3DProjection.cs");
+                $"{removedFile} folded into PreviewRuntimeSnapshotControllers.cs");
         }
 
         return Task.CompletedTask;
@@ -425,7 +425,7 @@ static partial class Program
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRuntimeSnapshotText = previewRendererText;
         var previewRuntimeSnapshotInitialization = ExtractMemberCode(previewRuntimeSnapshotText, "InitializePreviewRuntimeSnapshotSamplingController");
-        var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotController.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs").Replace("\r\n", "\n");
         var previewRuntimeSnapshotControllerBuildText = ExtractMemberCode(previewRuntimeSnapshotControllerText, "Build");
         var previewRuntimeSnapshotSamplingControllerText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotMapperText = ExtractTextBetween(
@@ -540,7 +540,7 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
             "preview runtime DTO folded into AutomationRuntimeModels.cs");
         AssertContains(agentMapText, "MainWindow.Composition.cs");
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotController.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
         AssertContains(agentMapText, "health input factory");
@@ -548,7 +548,7 @@ static partial class Program
         AssertContains(cleanupPlanText, "surface/frame");
         AssertContains(cleanupPlanText, "display cadence");
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotController.cs");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
         AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");
         AssertContains(cleanupPlanText, "health input factory");
