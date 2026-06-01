@@ -1453,9 +1453,10 @@ Primary current owners:
   failure/priority scenarios, HEVC/H264 codec success and mismatch, Flashback
   verification format, resolution/frame-rate mismatch, HDR validation, and
   NTSC frame-rate tolerance scenarios.
-- `tests/Sussudio.Tests/D3D11PreviewRenderer.SourceOwnership.Tests.cs` owns
-  renderer diagnostics contract assertions plus core and render-pipeline
-  source-ownership assertions:
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns D3D11
+  preview renderer xUnit wrappers and backing `Program` methods for renderer
+  diagnostics contract assertions plus core and render-pipeline source-ownership
+  assertions:
   diagnostics source-shape, frame queue, frame ownership, present cadence metric
   shape/suppression baseline, public renderer diagnostics API, preview runtime,
   automation snapshot, nested renderer metrics, preview tracking, slow-frame
@@ -1784,22 +1785,19 @@ Primary current owners:
   root/startup, queueing, encoding-loop, force-rotate, recording,
   runtime-state, and packet-buffer locality after their removal from the legacy
   harness catalog.
-- `tests/Sussudio.Tests/Flashback.Exporter.Tests.cs` owns Flashback exporter
-  request-surface smoke tests, path/request validation, cancellation
-  precedence, cancelled lock-wait behavior, export throttle tests,
-  failure-classifier status-message mapping, range validation, buffered-packet
-  failure cleanup, progress/finalization assertions, timestamp saturation,
-  segment template selection, stream-layout validation, requested-segment skip
-  policy, source-ownership tests, task-wrapper infrastructure, disposal
-  timeout/native-state lifetime guards, stream-count/template stream-copy
-  owner/call-site tests, segment path, duplicate path, missing segment, output
-  path validation, source-overwrite guard, blocked temp-path tests,
-  final-output replacement, overwrite refusal/force behavior, final validation
-  cleanup, orphan temp-file cleanup, and output-directory scan guard tests.
-- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
-  execution surface for the former legacy Flashback exporter cleanup, request
-  validation, failure classification, segment, cancellation, output
-  path/finalization, and source-ownership checks after their removal from the
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback
+  exporter xUnit wrappers and backing `Program` methods for request-surface
+  smoke tests, path/request validation, cancellation precedence, cancelled
+  lock-wait behavior, export throttle tests, failure-classifier status-message
+  mapping, range validation, buffered-packet failure cleanup,
+  progress/finalization assertions, timestamp saturation, segment template
+  selection, stream-layout validation, requested-segment skip policy,
+  source-ownership tests, task-wrapper infrastructure, disposal timeout/native
+  state lifetime guards, stream-count/template stream-copy owner/call-site
+  tests, segment path, duplicate path, missing segment, output path validation,
+  source-overwrite guard, blocked temp-path tests, final-output replacement,
+  overwrite refusal/force behavior, final validation cleanup, orphan temp-file
+  cleanup, and output-directory scan guard tests after their removal from the
   legacy harness catalog.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback
   playback xUnit wrappers and backing `Program` methods for root state,
