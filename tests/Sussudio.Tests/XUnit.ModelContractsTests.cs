@@ -1014,7 +1014,7 @@ public sealed class SnapshotModelsTests
     [Fact]
     public void CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
-        var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureSnapshotModels.cs");
+        var diagnosticsRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
         AssertContains(diagnosticsRootText, "public class CaptureDiagnosticsSnapshot");
         AssertContains(diagnosticsRootText, "public SourceTelemetryAvailability SourceTelemetryAvailability { get; init; } = SourceTelemetryAvailability.Unknown;");
         AssertContains(diagnosticsRootText, "public bool? SourceIsHdr { get; init; }");
@@ -1031,7 +1031,11 @@ public sealed class SnapshotModelsTests
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureDiagnosticsSnapshot.cs")),
-            "CaptureDiagnosticsSnapshot.cs folded into CaptureSnapshotModels.cs");
+            "CaptureDiagnosticsSnapshot.cs folded into CaptureModels.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureSnapshotModels.cs")),
+            "CaptureSnapshotModels.cs folded into CaptureModels.cs");
 
         var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");
@@ -1948,7 +1952,7 @@ public sealed class SnapshotModelsTests
         var diagnosticsType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
         var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
-        var healthRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureSnapshotModels.cs");
+        var healthRootText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
 
         AssertCaptureHealthSnapshotDefaultsAndInheritance(diagnosticsType, healthType);
         RegisterCaptureDiagnosticsSnapshotProperties(diagnosticsType);
@@ -1966,7 +1970,11 @@ public sealed class SnapshotModelsTests
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureHealthSnapshot.cs")),
-            "CaptureHealthSnapshot.cs folded into CaptureSnapshotModels.cs");
+            "CaptureHealthSnapshot.cs folded into CaptureModels.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Capture", "CaptureSnapshotModels.cs")),
+            "CaptureSnapshotModels.cs folded into CaptureModels.cs");
 
         var detailEntry = CreateSourceTelemetryDetailEntry(detailType);
         AssertSourceTelemetryDetailEntryValues(detailEntry);

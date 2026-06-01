@@ -459,14 +459,15 @@ and Flashback evidence. Keep broad model buckets from regrowing into partial
 sprawl: new evidence fields should land in the existing grouped DTO surface and
 get a matching source-ownership assertion in the snapshot-model tests.
 
-`Sussudio/Models/Capture/CaptureSnapshotModels.cs` owns the base diagnostics
-DTO surface and its extended health DTO: session state, negotiated format,
-observed frame, HDR auto-downgrade, source telemetry, capture cadence,
-recording/audio queue, Flashback queue, MJPEG, visual-cadence diagnostics,
-source-signal health, queue-age, A/V sync, Flashback encoder/backend, playback,
-and export health properties. Keep these inherited capture snapshot DTOs
-together unless a future change introduces a real named collaborator instead of
-another partial fragment.
+`Sussudio/Models/Capture/CaptureModels.cs` owns the capture model contract
+surface: device/options/settings/session-state leaf types, audio endpoint/event
+and trace DTOs, frame-ledger DTOs, the base diagnostics DTO, and its extended
+health DTO. Keep session state, negotiated format, observed frame, HDR
+auto-downgrade, source telemetry, capture cadence, recording/audio queue,
+Flashback queue, MJPEG, visual-cadence diagnostics, source-signal health,
+queue-age, A/V sync, Flashback encoder/backend, playback, and export health
+properties together unless a future change introduces a real named collaborator
+instead of another partial fragment.
 
 `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` now owns the
 shared recording queue source readers and source-block extraction helpers
