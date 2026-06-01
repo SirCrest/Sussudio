@@ -1147,13 +1147,14 @@ Primary current owners:
   HDMI source telemetry panel projection checks, hardware row presentation and
   input-provider behavior checks, and shared StatsPresentation/StatsHardwareRows
   xUnit reflection/file helpers.
-- `tests/Sussudio.Tests/MainWindow.ShellOwnership.PreviewRuntime.Tests.cs`
-  owns MainWindow preview resize telemetry, preview renderer startup-plan
-  fallback policy, preview surface/shadow, renderer host lifecycle, D3D
-  startup/reinit, stats adapter, preview runtime snapshot mapping, D3D
-  projection ownership assertions, preview runtime snapshot controller Build
-  integration, D3D policy null-renderer defaults, health policy/input factory,
-  and surface/startup/GPU playback projection policy regression checks.
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
+  MainWindow preview runtime xUnit wrappers and backing `Program` methods for
+  preview resize telemetry, preview renderer startup-plan fallback policy,
+  preview surface/shadow, renderer host lifecycle, D3D startup/reinit, stats
+  adapter, preview runtime snapshot mapping, D3D projection ownership
+  assertions, preview runtime snapshot controller Build integration, D3D policy
+  null-renderer defaults, health policy/input factory, and
+  surface/startup/GPU playback projection policy regression checks.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
   MainWindow startup/launch ownership, launch entrance animation, first-load
   hosting, splash loading phrases, splash pacing policy, native bootstrap,
@@ -1308,7 +1309,8 @@ Primary current owners:
   retarget selection-policy ownership/behavior checks plus the shared
   reflection, option-list, and capture-mode model construction helpers for the
   selection-policy test family.
-- `tests/Sussudio.Tests/MainViewModel.Capture.PreviewStartup.Tests.cs` owns
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
+  presentation-preview startup xUnit wrappers and backing `Program` methods for
   preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
   audio-ramp, device-discovery-before-recording-capability, UI/audio preview
   reveal ordering, timeout, failure-stop, formatter assertions, preview startup
@@ -1377,16 +1379,17 @@ Primary current owners:
   warmup-state, recording-stats ownership, observed pixel telemetry, source
   telemetry backend/circuit, tick-age, and telemetry-alignment helper
   assertions.
-- `tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the
-  shared recording queue source readers, source-block extraction helpers,
-  recording/Flashback queue overload, fatal-failure, lifecycle, recording
-  backend start-policy, source-loading, buffer-cycle, LibAv/Flashback overload,
-  buffer recovery, recording backend finalization, Flashback cleanup,
-  microphone restart, post-finalize telemetry, health/automation telemetry,
-  LibAv recording sink try-enqueue, video-queue submission, audio queue,
-  queue-cleanup, output validation, video-session setup, drain-loop,
-  encoding-loop, startup sequencing, stop-lifecycle, lifetime-helper, and
-  single in-file `LibAvRecordingSink` body ownership assertions.
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording queue
+  xUnit wrappers and backing `Program` methods for the shared recording queue
+  source readers, source-block extraction helpers, recording/Flashback queue
+  overload, fatal-failure, lifecycle, recording backend start-policy,
+  source-loading, buffer-cycle, LibAv/Flashback overload, buffer recovery,
+  recording backend finalization, Flashback cleanup, microphone restart,
+  post-finalize telemetry, health/automation telemetry, LibAv recording sink
+  try-enqueue, video-queue submission, audio queue, queue-cleanup, output
+  validation, video-session setup, drain-loop, encoding-loop, startup
+  sequencing, stop-lifecycle, lifetime-helper, and single in-file
+  `LibAvRecordingSink` body ownership assertions.
   It also owns CaptureService recording lifecycle, recording-stop finalization
   failure propagation, active recording backend resource aggregate, recording
   start rollback, and recording outcome-state file-ownership assertions.
@@ -1502,17 +1505,18 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns recording
   service contract DTO checks plus xUnit temp artifact finalize/rollback
   behavior for recording output cleanup.
-- `tests/Sussudio.Tests/AutomationCommandDispatcher.CommandOwnership.Tests.cs`
-  owns the live dispatcher source-family reader, shared dispatcher/proxy
-  helpers, consolidated root dispatcher authorization and manifest behavior,
-  Flashback failure response, Flashback command placement, verification command
-  placement, command-kind handling, dispatcher JSON payload extraction helper
-  coverage, payload defaults, trivial-handler payload-field parity checks
-  against `AutomationCommandCatalog`, the custom
-  `GetAudioRampTrace.maxEntries` metadata guardrail, dispatcher readiness
-  gating, ready-independent no-hardware command coverage, window close, preview
-  health, stale wait-refresh cadence guards, UI automation
-  readiness-independent coverage, and harness payload/fake device support.
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns automation
+  dispatcher xUnit wrappers and backing `Program` methods for the live
+  dispatcher source-family reader, shared dispatcher/proxy helpers,
+  consolidated root dispatcher authorization and manifest behavior, Flashback
+  failure response, Flashback command placement, verification command placement,
+  command-kind handling, dispatcher JSON payload extraction helper coverage,
+  payload defaults, trivial-handler payload-field parity checks against
+  `AutomationCommandCatalog`, the custom `GetAudioRampTrace.maxEntries`
+  metadata guardrail, dispatcher readiness gating, ready-independent
+  no-hardware command coverage, window close, preview health, stale
+  wait-refresh cadence guards, UI automation readiness-independent coverage,
+  and harness payload/fake device support.
 - `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
   reflection helpers plus automation command kind, catalog metadata, manifest,
   path-policy, reliability-gates contract checks, and the expected command-ID
@@ -1797,16 +1801,17 @@ Primary current owners:
   validation, failure classification, segment, cancellation, output
   path/finalization, and source-ownership checks after their removal from the
   legacy harness catalog.
-- `tests/Sussudio.Tests/Flashback.Playback.SourceShape.Tests.cs` owns
-  Flashback playback root state, pre-initialize command no-ops, no-op/coalesced
-  command state, command-position clamping, saturating timestamp arithmetic,
-  segment-open recovery, near-live snap, snap-live identity cleanup,
-  pause-from-live display, paused nudge, live-preview transition, audio guard,
-  audio-master projection/source ownership, fMP4 reopen, seek-display, seek
-  recovery, in/out marker API, normalization, disposal, marker clamp,
-  frame-duration, decoded-PTS cadence projection/telemetry, decode metrics
-  reset/projection, decoded-frame submit-failure, preview frame submission,
-  held-frame ownership, and live-recovery ownership tests.
+- `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback
+  playback xUnit wrappers and backing `Program` methods for root state,
+  pre-initialize command no-ops, no-op/coalesced command state,
+  command-position clamping, saturating timestamp arithmetic, segment-open
+  recovery, near-live snap, snap-live identity cleanup, pause-from-live display,
+  paused nudge, live-preview transition, audio guard, audio-master
+  projection/source ownership, fMP4 reopen, seek-display, seek recovery, in/out
+  marker API, normalization, disposal, marker clamp, frame-duration, decoded-PTS
+  cadence projection/telemetry, decode metrics reset/projection, decoded-frame
+  submit-failure, preview frame submission, held-frame ownership, and
+  live-recovery ownership tests.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface and backing `Program` methods for the former legacy
   Flashback playback startup, command-queue, source-shape, cadence, submission,

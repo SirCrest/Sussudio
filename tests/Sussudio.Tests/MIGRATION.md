@@ -86,9 +86,10 @@ add xUnit alongside, and port incrementally.
   for Flashback playback command queue/coalescing/seek-slot/thread lifecycle
   contracts; do not recreate a separate command-queue sidecar unless those
   checks gain an independent fixture or runtime harness.
-- `Flashback.Playback.SourceShape.Tests.cs` owns the former legacy Flashback
-  playback fMP4 reopen, seek recovery, in/out marker API, normalization,
-  disposal, marker clamp, root state, transition, and audio guard checks.
+- `XUnit.FlashbackContractsTests.cs` owns the former legacy Flashback playback
+  fMP4 reopen, seek recovery, in/out marker API, normalization, disposal,
+  marker clamp, root state, transition, audio guard checks, command queue, and
+  source-shape backing `Program` methods.
 - `MainWindow.ControllerOwnership.Tests.cs` owns the former legacy MainWindow
   UI contract and stats snapshot construction/health/renderer metric projection
   checks.

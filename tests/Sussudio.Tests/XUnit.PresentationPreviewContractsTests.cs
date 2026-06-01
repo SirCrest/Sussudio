@@ -3,7 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1050,6 +1053,2451 @@ public sealed class PresentationPreviewOutputPathContractsTests
 
 static partial class Program
 {
+    internal static Task PreviewStartupSignalsOwnership_LivesInFocusedControllers()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupSignalsText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupSignalCoordinatorText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupReadinessSignalControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
+            .Replace("\r\n", "\n");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupSignalCoordinator.cs")),
+            "preview startup signal coordinator folded into PreviewStartupControllers.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupReadinessSignalController.cs")),
+            "preview startup readiness controller folded into PreviewStartupControllers.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Startup", "PreviewStartupSignalsController.cs")),
+            "preview startup signals controller folded into PreviewStartupControllers.cs");
+
+        AssertContains(mainWindowText, "InitializePreviewStartupSignalCoordinator();");
+        AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Signals.cs")),
+            "old marker-only preview startup signal partial removed");
+        AssertContains(previewStartupSignalsText, "private PreviewStartupSignalCoordinator _previewStartupSignalCoordinator = null!;");
+        AssertContains(previewStartupSignalsText, "private void InitializePreviewStartupSignalCoordinator()");
+        AssertContains(previewStartupSignalsText, "IsSignalWindowActive = IsPreviewStartupSignalWindowActive,");
+        AssertContains(previewStartupSignalsText, "ConfirmFirstVisual = ConfirmPreviewFirstVisual,");
+        AssertContains(previewStartupSignalsText, "GetPlaybackSnapshotState = GetPreviewStartupPlaybackSnapshotState");
+        AssertContains(previewStartupSignalsText, "private long PreviewStartupGpuPositionEventCount => _previewStartupSignalCoordinator.PositionEventCount;");
+        AssertContains(previewStartupSignalsText, "private bool IsPreviewStartupSignalWindowActive()");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSessionController.IsSignalWindowActive(ViewModel.IsPreviewing);");
+        AssertContains(previewStartupSignalsText, "private void ResetPreviewSignalState()");
+        AssertContains(previewStartupSignalsText, "private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
+        AssertContains(previewStartupSignalsText, "private void LogPreviewStartupPlaybackSnapshot(string reason)");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSignalCoordinator.BuildMissingSignals();");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSignalCoordinator.Configure(strategy, requiredSignals);");
+        AssertContains(previewStartupSignalsText, "=> _previewStartupSignalCoordinator.LogPlaybackSnapshot(reason);");
+        AssertContains(previewStartupSignalsText, "new PreviewStartupPlaybackSnapshotState(");
+        AssertContains(previewStartupSignalCoordinatorText, "internal sealed class PreviewStartupSignalCoordinatorContext");
+        AssertContains(previewStartupSignalCoordinatorText, "internal sealed record PreviewStartupPlaybackSnapshotState(");
+        AssertContains(previewStartupSignalCoordinatorText, "internal sealed class PreviewStartupSignalCoordinator");
+        AssertContains(previewStartupSignalCoordinatorText, "private readonly PreviewStartupReadinessSignalController _readinessSignals = new();");
+        AssertContains(previewStartupSignalCoordinatorText, "private bool _expectGpuDualSignals;");
+        AssertContains(previewStartupSignalCoordinatorText, "private long _positionEventCount;");
+        AssertContains(previewStartupSignalCoordinatorText, "public PreviewStartupReadinessSignalSnapshot Snapshot => _readinessSignals.Snapshot;");
+        AssertContains(previewStartupSignalCoordinatorText, "public long PositionEventCount => Interlocked.Read(ref _positionEventCount);");
+        AssertContains(previewStartupSignalCoordinatorText, "public void Configure(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)");
+        AssertContains(previewStartupSignalCoordinatorText, "public void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)");
+        AssertContains(previewStartupSignalCoordinatorText, "public void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)");
+        AssertContains(previewStartupSignalCoordinatorText, "private void HandleGpuStartupSignalResult(PreviewStartupReadinessSignalResult? result, string signalName)");
+        AssertContains(previewStartupSignalCoordinatorText, "private void TryConfirmFirstVisualFromGpuSignals(PreviewStartupReadinessSignalResult result)");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_STRATEGY");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_SIGNAL");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_WAITING");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_POSITION_IGNORED");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_POSITION_BASELINE");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_POSITION_CHECK");
+        AssertContains(previewStartupSignalCoordinatorText, "PREVIEW_START_PLAYBACK_SNAPSHOT");
+        AssertContains(previewStartupReadinessSignalControllerText, "internal sealed class PreviewStartupReadinessSignalController");
+        AssertContains(previewStartupReadinessSignalControllerText, "public static readonly TimeSpan PlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);");
+        AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupReadinessSignalSnapshot Snapshot => new(");
+        AssertContains(previewStartupReadinessSignalControllerText, "public string Configure(");
+        AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupReadinessSignalResult MarkSignal(");
+        AssertContains(previewStartupReadinessSignalControllerText, "public PreviewStartupPlaybackPositionResult TrackPlaybackPosition(");
+        AssertContains(previewStartupReadinessSignalControllerText, "PreviewStartupSignalFormatter.FormatMissingSignals(");
+        AssertContains(previewStartupSignalCoordinatorText, "PreviewStartupSignalFormatter.FormatSignalList(");
+        AssertEqual(
+            true,
+            previewStartupText.Split('\n').Length >= 100,
+            "preview startup adapter family remains a substantial adapter surface");
+        AssertDoesNotContain(previewStartupSignalsText, "private readonly PreviewStartupReadinessSignalController");
+        AssertDoesNotContain(previewStartupSignalsText, "private long _previewStartupPositionEventCount;");
+        AssertDoesNotContain(previewStartupSignalsText, "_readinessSignals.TrackPlaybackPosition(");
+        AssertDoesNotContain(previewStartupSignalsText, "PREVIEW_START_SIGNAL");
+        AssertDoesNotContain(previewStartupSignalsText, "PREVIEW_START_WAITING");
+        AssertDoesNotContain(previewStartupSignalsText, "private static string BuildPreviewStartupSignalList");
+        AssertDoesNotContain(previewStartupSignalsText, "CurrentPreviewStartupState is PreviewStartupState.StartingSession");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartupReadinessSignalController_PreservesSignalStateContracts()
+    {
+        var controllerType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalController");
+        var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
+        var strategyType = RequireType("Sussudio.Models.PreviewStartupStrategy");
+        var statusType = RequireType("Sussudio.Controllers.PreviewStartupReadinessSignalStatus");
+        var playbackStatusType = RequireType("Sussudio.Controllers.PreviewStartupPlaybackPositionStatus");
+
+        var controller = Activator.CreateInstance(controllerType, nonPublic: true)!;
+        var configure = controllerType.GetMethod("Configure", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.Configure was not found.");
+        var markSignal = controllerType.GetMethod("MarkSignal", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.MarkSignal was not found.");
+        var trackPlaybackPosition = controllerType.GetMethod("TrackPlaybackPosition", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.TrackPlaybackPosition was not found.");
+        var markFirstVisualConfirmed = controllerType.GetMethod("MarkFirstVisualConfirmed", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.MarkFirstVisualConfirmed was not found.");
+        var snapshotProperty = controllerType.GetProperty("Snapshot", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupReadinessSignalController.Snapshot was not found.");
+
+        object Signals(int value) => Enum.ToObject(signalType, value);
+        object Strategy(string name) => Enum.Parse(strategyType, name);
+        object Status(string name) => Enum.Parse(statusType, name);
+        object PlaybackStatus(string name) => Enum.Parse(playbackStatusType, name);
+
+        var requiredSignals = Signals(1 | 2 | 4);
+        var initialMissing = configure.Invoke(controller, new object[] { Strategy("D3D11VideoProcessor"), requiredSignals, true, false })?.ToString();
+        AssertEqual("MediaOpened+FirstCaptureFrame+PlaybackAdvancing", initialMissing, "initial missing readiness signals");
+
+        var mediaOpened = markSignal.Invoke(controller, new object[] { Signals(1), true, false })!;
+        AssertEqual(Status("Accepted"), GetPropertyValue(mediaOpened, "Status"), "media-opened accepted");
+        AssertEqual("FirstCaptureFrame+PlaybackAdvancing", GetStringProperty(mediaOpened, "MissingSignals"), "media-opened missing signals");
+        AssertEqual(false, GetBoolProperty(mediaOpened, "AllRequiredSignalsReceived"), "media-opened not ready");
+
+        var mediaSnapshot = GetPropertyValue(mediaOpened, "Snapshot")!;
+        AssertEqual(true, GetBoolProperty(mediaSnapshot, "GpuSignalMediaOpened"), "media-opened snapshot flag");
+        AssertEqual(Signals(1), GetPropertyValue(mediaSnapshot, "ReceivedSignals"), "media-opened received flags");
+
+        var duplicate = markSignal.Invoke(controller, new object[] { Signals(1), true, false })!;
+        AssertEqual(Status("Duplicate"), GetPropertyValue(duplicate, "Status"), "duplicate media-opened status");
+
+        var playback = trackPlaybackPosition.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(40), true, false })!;
+        AssertEqual(PlaybackStatus("BaselineCaptured"), GetPropertyValue(playback, "Status"), "playback baseline status");
+        var playbackSignal = GetPropertyValue(playback, "SignalResult")!;
+        AssertEqual(Status("Accepted"), GetPropertyValue(playbackSignal, "Status"), "playback advancing accepted");
+        AssertEqual("FirstCaptureFrame", GetStringProperty(playbackSignal, "MissingSignals"), "playback advancing missing signals");
+
+        var firstFrame = markSignal.Invoke(controller, new object[] { Signals(2), true, false })!;
+        AssertEqual(Status("Accepted"), GetPropertyValue(firstFrame, "Status"), "first frame accepted");
+        AssertEqual(true, GetBoolProperty(firstFrame, "AllRequiredSignalsReceived"), "all required readiness signals received");
+        AssertEqual(string.Empty, GetStringProperty(firstFrame, "MissingSignals"), "no missing readiness signals");
+
+        markFirstVisualConfirmed.Invoke(controller, Array.Empty<object>());
+        var finalSnapshot = snapshotProperty.GetValue(controller)!;
+        AssertEqual(Signals(1 | 2 | 4 | 8), GetPropertyValue(finalSnapshot, "ReceivedSignals"), "first visual signal preserved in received flags");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartupSignalFormatter_PreservesSignalStrings()
+    {
+        var formatterType = RequireType("Sussudio.Controllers.PreviewStartupSignalFormatter");
+        var signalType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
+        var formatSignalList = formatterType.GetMethod("FormatSignalList", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupSignalFormatter.FormatSignalList was not found.");
+        var formatMissingSignals = formatterType.GetMethod("FormatMissingSignals", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupSignalFormatter.FormatMissingSignals was not found.");
+
+        object Signals(int value) => Enum.ToObject(signalType, value);
+
+        AssertEqual("None", formatSignalList.Invoke(null, new[] { Signals(0) })?.ToString(), "no startup signals");
+        AssertEqual("None", formatSignalList.Invoke(null, new[] { Signals(16) })?.ToString(), "unknown startup signals");
+        AssertEqual(
+            "MediaOpened+FirstCaptureFrame+PlaybackAdvancing+FirstVisual",
+            formatSignalList.Invoke(null, new[] { Signals(1 | 2 | 4 | 8) })?.ToString(),
+            "startup signal order");
+        AssertEqual(
+            "FirstCaptureFrame+FirstVisual",
+            formatMissingSignals.Invoke(null, new object[] { Signals(1 | 2 | 4 | 8), Signals(1 | 4), false })?.ToString(),
+            "missing startup signals");
+        AssertEqual(
+            string.Empty,
+            formatMissingSignals.Invoke(null, new object[] { Signals(1 | 2), Signals(1 | 2), false })?.ToString(),
+            "no missing required startup signals");
+        AssertEqual(
+            "FirstVisual",
+            formatMissingSignals.Invoke(null, new object[] { Signals(0), Signals(0), false })?.ToString(),
+            "first visual required when no explicit startup signals exist");
+        AssertEqual(
+            string.Empty,
+            formatMissingSignals.Invoke(null, new object[] { Signals(0), Signals(0), true })?.ToString(),
+            "first visual confirmed with no explicit startup signals");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartupFailureTextFormatter_PreservesFailureStrings()
+    {
+        var watchdogType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
+        var formatTimeoutReason = watchdogType.GetMethod("FormatTimeoutReason", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.FormatTimeoutReason was not found.");
+        var formatTimeoutStatusText = watchdogType.GetMethod("FormatTimeoutStatusText", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.FormatTimeoutStatusText was not found.");
+        var formatFailureStopStatusText = watchdogType.GetMethod("FormatFailureStopStatusText", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.FormatFailureStopStatusText was not found.");
+
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, null })?.ToString(),
+            "timeout reason without missing signals");
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, string.Empty })?.ToString(),
+            "timeout reason with empty missing signals");
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, "   " })?.ToString(),
+            "timeout reason with whitespace missing signals");
+        AssertEqual(
+            "no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual",
+            formatTimeoutReason.Invoke(null, new object?[] { 10000, "FirstCaptureFrame+FirstVisual" })?.ToString(),
+            "timeout reason with missing signals");
+        AssertEqual(
+            "Preview failed to attach to UI (session started but no visual confirmation).",
+            formatTimeoutStatusText.Invoke(null, new object?[] { null })?.ToString(),
+            "timeout status without missing signals");
+        AssertEqual(
+            "Preview failed to attach to UI (session started but no visual confirmation).",
+            formatTimeoutStatusText.Invoke(null, new object?[] { "   " })?.ToString(),
+            "timeout status with whitespace missing signals");
+        AssertEqual(
+            "Preview failed to start (missing readiness signal: FirstCaptureFrame+FirstVisual).",
+            formatTimeoutStatusText.Invoke(null, new object?[] { "FirstCaptureFrame+FirstVisual" })?.ToString(),
+            "timeout status with missing signals");
+        AssertEqual(
+            "Preview startup failed: no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual",
+            formatFailureStopStatusText.Invoke(null, new object?[] { "no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual" })?.ToString(),
+            "failure stop status");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartupWatchdogOwnership_LivesInFocusedController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupWatchdogText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupWatchdogControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewStartupSignalFormatterText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(mainWindowText, "InitializePreviewStartupWatchdogController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewStartup.Watchdog.cs")),
+            "preview startup watchdog adapter folded into the preview startup session adapter");
+        AssertContains(previewStartupWatchdogText, "private PreviewStartupWatchdogController _previewStartupWatchdogController = null!;");
+        AssertContains(previewStartupWatchdogText, "private void InitializePreviewStartupWatchdogController()");
+        AssertContains(previewStartupWatchdogText, "IsWaitingForFirstVisual = () => _previewStartupSessionController.IsWaitingForFirstVisual,");
+        AssertContains(previewStartupWatchdogText, "private void StartPreviewStartupWatchdog()");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.Start();");
+        AssertContains(previewStartupWatchdogText, "private void StopPreviewStartupWatchdog()");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.Stop();");
+        AssertContains(previewStartupWatchdogText, "private void SchedulePreviewStartupFailureStop(string reason)");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.ScheduleFailureStop(reason);");
+        AssertContains(previewStartupWatchdogText, "private void ResetPreviewStartupFailureStopSchedule()");
+        AssertContains(previewStartupWatchdogText, "=> _previewStartupWatchdogController.ResetFailureStopSchedule();");
+        AssertContains(previewStartupWatchdogText, "GetTimeoutDiagnosticSnapshot = GetPreviewStartupTimeoutDiagnosticSnapshot,");
+        AssertContains(previewStartupWatchdogText, "private PreviewStartupTimeoutDiagnosticSnapshot GetPreviewStartupTimeoutDiagnosticSnapshot()");
+        AssertContains(previewStartupWatchdogControllerText, "internal sealed class PreviewStartupWatchdogControllerContext");
+        AssertContains(previewStartupWatchdogControllerText, "internal sealed class PreviewStartupWatchdogController");
+        AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupMinVisualTimeoutMs = 1000;");
+        AssertContains(previewStartupWatchdogControllerText, "private const int PreviewStartupMaxVisualTimeoutMs = 15000;");
+        AssertContains(previewStartupWatchdogControllerText, "private readonly Lazy<int> _visualTimeoutMs = new(static () =>");
+        AssertContains(previewStartupWatchdogControllerText, "private DispatcherQueueTimer? _watchdogTimer;");
+        AssertContains(previewStartupWatchdogControllerText, "private DispatcherQueueTimer? _telemetryTimer;");
+        AssertContains(previewStartupWatchdogControllerText, "private int _failureStopScheduled;");
+        AssertContains(previewStartupWatchdogControllerText, "public int VisualTimeoutMs => _visualTimeoutMs.Value;");
+        AssertContains(previewStartupWatchdogControllerText, "public void Start()");
+        AssertContains(previewStartupWatchdogControllerText, "public void Stop()");
+        AssertContains(previewStartupWatchdogControllerText, "public void ScheduleFailureStop(string reason)");
+        AssertContains(previewStartupWatchdogControllerText, "public void ResetFailureStopSchedule()");
+        AssertContains(previewStartupWatchdogControllerText, "private void TelemetryTimer_Tick(object? sender, object e)");
+        AssertContains(previewStartupWatchdogControllerText, "private async void WatchdogTimer_Tick(object? sender, object e)");
+        AssertContains(previewStartupWatchdogControllerText, "private Task HandleTimeoutAsync()");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutReason(int timeoutMs, string? missingSignals)");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatTimeoutStatusText(string? missingSignals)");
+        AssertContains(previewStartupWatchdogControllerText, "private static string FormatFailureStopStatusText(string reason)");
+        AssertContains(previewStartupWatchdogControllerText, "var timeoutReason = FormatTimeoutReason(");
+        AssertContains(previewStartupWatchdogControllerText, "PreviewStartupSignalFormatter.FormatTimeoutDiagnosticPayload(");
+        AssertContains(previewStartupWatchdogControllerText, "_context.GetTimeoutDiagnosticSnapshot()");
+        AssertContains(previewStartupWatchdogControllerText, "FormatTimeoutStatusText(_context.GetMissingSignals())");
+        AssertContains(previewStartupWatchdogControllerText, "FormatFailureStopStatusText(reason)");
+        AssertContains(previewStartupSignalFormatterText, "internal readonly record struct PreviewStartupTimeoutDiagnosticSnapshot");
+        AssertContains(previewStartupSignalFormatterText, "public static string FormatTimeoutDiagnosticPayload(PreviewStartupTimeoutDiagnosticSnapshot snapshot)");
+        AssertContains(previewStartupSignalFormatterText, "required={FormatSignalList(snapshot.RequiredSignals)}");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_WATCHDOG_STARTED");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_TIMEOUT attempt={_context.GetAttemptLabel()}");
+        AssertContains(previewStartupWatchdogControllerText, "PREVIEW_START_FAILURE_STOP begin");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(
+                GetRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "Preview",
+                "Startup",
+                "PreviewStartupFailureTextFormatter.cs")),
+            "preview startup failure text formatter helper");
+        AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
+        AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
+        AssertDoesNotContain(previewStartupWatchdogText, "DispatcherQueueTimer");
+        AssertDoesNotContain(previewStartupWatchdogText, "Interlocked");
+        AssertDoesNotContain(previewStartupWatchdogText, "EnvironmentHelpers.GetIntFromEnv");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatFailureStopStatusText(");
+        AssertDoesNotContain(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupWatchdogTimer;");
+        AssertDoesNotContain(previewStartupWatchdogText, "private DispatcherQueueTimer? _previewStartupTelemetryTimer;");
+        AssertDoesNotContain(previewStartupWatchdogText, "private int _previewStartupFailureStopScheduled;");
+        AssertDoesNotContain(previewStartupWatchdogText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupWatchdogText, "CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual");
+        AssertDoesNotContain(previewStartupWatchdogText, "placeholder={NoDevicePlaceholder.Visibility}");
+        AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupSignalFormatter.FormatSignalList(_previewStartupRequiredSignals)");
+        AssertDoesNotContain(previewStartupText, "_previewStartupFailureStopScheduled");
+        AssertEqual(
+            true,
+            previewStartupText.Split('\n').Length >= 100,
+            "preview startup adapter family remains a substantial adapter surface");
+        AssertDoesNotContain(previewStartupText, "private Task HandlePreviewStartupTimeoutAsync()");
+        AssertDoesNotContain(previewStartupText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
+        AssertDoesNotContain(previewStartupText, "private const int PreviewStartupDefaultVisualTimeoutMs = 10000;");
+        AssertDoesNotContain(previewStartupText, "no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms");
+        AssertDoesNotContain(previewStartupText, "Preview failed to attach to UI (session started but no visual confirmation).");
+        AssertDoesNotContain(previewStartupText, "Preview failed to start (missing readiness signal:");
+
+        return Task.CompletedTask;
+    }
+
+    internal static async Task PreviewStartupWatchdogController_PreservesTimeoutContracts()
+    {
+        var controllerType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
+        var formatterType = RequireType("Sussudio.Controllers.PreviewStartupSignalFormatter");
+        var formatTimeoutDiagnosticPayload = formatterType.GetMethod("FormatTimeoutDiagnosticPayload", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PreviewStartupSignalFormatter.FormatTimeoutDiagnosticPayload was not found.");
+        var timeoutDiagnosticSnapshot = CreatePreviewStartupTimeoutDiagnosticSnapshot();
+        AssertEqual(
+            "placeholder=False gpuVisible=True cpuVisible=False strategy=D3D11VideoProcessor required=FirstCaptureFrame+FirstVisual received=None missing=FirstCaptureFrame+FirstVisual",
+            formatTimeoutDiagnosticPayload.Invoke(null, new[] { timeoutDiagnosticSnapshot }),
+            "timeout diagnostic payload formatting");
+
+        var context = CreatePreviewStartupWatchdogContext(
+            isWaitingForFirstVisual: () => true,
+            isWindowClosing: () => false,
+            isPreviewStopRequestedByUser: () => false,
+            isPreviewing: () => true,
+            getElapsedMilliseconds: () => 1234.0,
+            buildMissingSignals: () => "FirstCaptureFrame+FirstVisual",
+            out var recorder);
+        var controller = Activator.CreateInstance(controllerType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new[] { context }, culture: null)!;
+
+        var timeoutTask = InvokeNonPublicInstanceMethod(controller, "HandleTimeoutAsync", null) as Task
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.HandleTimeoutAsync did not return a Task.");
+        await timeoutTask.ConfigureAwait(false);
+
+        AssertEqual("FirstCaptureFrame+FirstVisual", recorder.MissingSignals, "timeout caches missing signals");
+        AssertEqual("no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual", recorder.FailureReason, "timeout failure reason");
+        AssertEqual(true, recorder.OverlayStopped, "timeout stops startup overlay");
+        AssertEqual("timeout", recorder.PlaybackSnapshotReasons.Single(), "timeout logs playback snapshot");
+        AssertEqual("no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual", recorder.StopPreviewReasons.Single(), "timeout forces teardown");
+        AssertEqual(
+            "Preview failed to start (missing readiness signal: FirstCaptureFrame+FirstVisual).",
+            recorder.StatusTexts[0],
+            "timeout status text");
+        AssertEqual(
+            "Preview startup failed: no-visual-confirmation-within-10000ms missing:FirstCaptureFrame+FirstVisual",
+            recorder.StatusTexts[1],
+            "failure stop status text");
+
+        var ignoredContext = CreatePreviewStartupWatchdogContext(
+            isWaitingForFirstVisual: () => true,
+            isWindowClosing: () => true,
+            isPreviewStopRequestedByUser: () => false,
+            isPreviewing: () => true,
+            getElapsedMilliseconds: () => 1.0,
+            buildMissingSignals: () => "FirstVisual",
+            out var ignoredRecorder);
+        var ignoredController = Activator.CreateInstance(controllerType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new[] { ignoredContext }, culture: null)!;
+        var ignoredTask = InvokeNonPublicInstanceMethod(ignoredController, "HandleTimeoutAsync", null) as Task
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.HandleTimeoutAsync did not return a Task.");
+        await ignoredTask.ConfigureAwait(false);
+
+        AssertEqual(0, ignoredRecorder.StatusTexts.Count, "ignored timeout does not publish status");
+        AssertEqual(0, ignoredRecorder.StopPreviewReasons.Count, "ignored timeout does not stop preview");
+        AssertEqual(null, ignoredRecorder.FailureReason, "ignored timeout does not mark failed");
+    }
+
+    internal static Task PreviewStartupWatchdogController_GatesFailureStopScheduling()
+    {
+        var controllerType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogController");
+        var scheduledOperations = new List<(Func<Task> Operation, string Name)>();
+        var context = CreatePreviewStartupWatchdogContext(
+            isWaitingForFirstVisual: () => true,
+            isWindowClosing: () => false,
+            isPreviewStopRequestedByUser: () => false,
+            isPreviewing: () => true,
+            getElapsedMilliseconds: () => 1.0,
+            buildMissingSignals: () => "FirstVisual",
+            out _,
+            runUiEventHandlerAsync: (operation, name) =>
+            {
+                scheduledOperations.Add((operation, name));
+                return Task.CompletedTask;
+            });
+        var controller = Activator.CreateInstance(controllerType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new[] { context }, culture: null)!;
+        var scheduleFailureStop = controllerType.GetMethod("ScheduleFailureStop", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.ScheduleFailureStop was not found.");
+        var resetFailureStopSchedule = controllerType.GetMethod("ResetFailureStopSchedule", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PreviewStartupWatchdogController.ResetFailureStopSchedule was not found.");
+
+        scheduleFailureStop.Invoke(controller, new object[] { "first" });
+        scheduleFailureStop.Invoke(controller, new object[] { "second" });
+        AssertEqual(1, scheduledOperations.Count, "failure stop schedules once while pending");
+        AssertEqual("PreviewStartupFailureStop", scheduledOperations[0].Name, "failure stop operation name");
+
+        resetFailureStopSchedule.Invoke(controller, null);
+        scheduleFailureStop.Invoke(controller, new object[] { "third" });
+        AssertEqual(2, scheduledOperations.Count, "failure stop can schedule after reset");
+
+        return Task.CompletedTask;
+    }
+
+    private static object CreatePreviewStartupWatchdogContext(
+        Func<bool> isWaitingForFirstVisual,
+        Func<bool> isWindowClosing,
+        Func<bool> isPreviewStopRequestedByUser,
+        Func<bool> isPreviewing,
+        Func<double> getElapsedMilliseconds,
+        Func<string> buildMissingSignals,
+        out PreviewStartupWatchdogTestRecorder recorder,
+        Func<Func<Task>, string, Task>? runUiEventHandlerAsync = null)
+    {
+        var contextType = RequireType("Sussudio.Controllers.PreviewStartupWatchdogControllerContext");
+        var context = Activator.CreateInstance(contextType, nonPublic: true)!;
+        recorder = new PreviewStartupWatchdogTestRecorder();
+        var localRecorder = recorder;
+
+        SetPropertyOrBackingField(context, "DispatcherQueue", null);
+        SetPropertyOrBackingField(context, "IsWaitingForFirstVisual", isWaitingForFirstVisual);
+        SetPropertyOrBackingField(context, "IsSignalWindowActive", new Func<bool>(() => true));
+        SetPropertyOrBackingField(context, "IsWindowClosing", isWindowClosing);
+        SetPropertyOrBackingField(context, "IsPreviewStopRequestedByUser", isPreviewStopRequestedByUser);
+        SetPropertyOrBackingField(context, "IsPreviewing", isPreviewing);
+        SetPropertyOrBackingField(context, "GetElapsedMilliseconds", getElapsedMilliseconds);
+        SetPropertyOrBackingField(context, "GetAttemptLabel", new Func<string>(() => "attempt-test"));
+        SetPropertyOrBackingField(context, "BuildMissingSignals", buildMissingSignals);
+        SetPropertyOrBackingField(context, "GetMissingSignals", new Func<string?>(() => localRecorder.MissingSignals));
+        SetPropertyOrBackingField(context, "SetMissingSignals", new Action<string?>(value => localRecorder.MissingSignals = value));
+        SetPropertyOrBackingField(context, "MarkStartupFailed", new Action<string>(reason => localRecorder.FailureReason = reason));
+        SetPropertyOrBackingField(context, "GetTimeoutDiagnosticSnapshot", CreatePreviewStartupTimeoutDiagnosticSnapshotFactory());
+        SetPropertyOrBackingField(context, "LogPlaybackSnapshot", new Action<string>(reason => localRecorder.PlaybackSnapshotReasons.Add(reason)));
+        SetPropertyOrBackingField(context, "StopStartupOverlay", new Action(() => localRecorder.OverlayStopped = true));
+        SetPropertyOrBackingField(context, "SetStatusText", new Action<string>(value => localRecorder.StatusTexts.Add(value)));
+        SetPropertyOrBackingField(context, "StopPreviewForFailureAsync", new Func<string, Task>(reason =>
+        {
+            localRecorder.StopPreviewReasons.Add(reason);
+            return Task.CompletedTask;
+        }));
+        SetPropertyOrBackingField(
+            context,
+            "RunUiEventHandlerAsync",
+            runUiEventHandlerAsync ?? new Func<Func<Task>, string, Task>((operation, _) => operation()));
+        return context;
+    }
+
+    private static object CreatePreviewStartupTimeoutDiagnosticSnapshot()
+    {
+        var snapshotType = RequireType("Sussudio.Controllers.PreviewStartupTimeoutDiagnosticSnapshot");
+        var strategyType = RequireType("Sussudio.Models.PreviewStartupStrategy");
+        var signalsType = RequireType("Sussudio.Models.PreviewStartupSignalFlags");
+        return Activator.CreateInstance(
+            snapshotType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new[]
+            {
+                "False",
+                "True",
+                "False",
+                Enum.Parse(strategyType, "D3D11VideoProcessor"),
+                Enum.Parse(signalsType, "FirstCaptureFrame, FirstVisual"),
+                Enum.Parse(signalsType, "None"),
+                "FirstCaptureFrame+FirstVisual",
+            },
+            culture: null)!;
+    }
+
+    private static Delegate CreatePreviewStartupTimeoutDiagnosticSnapshotFactory()
+    {
+        var snapshot = CreatePreviewStartupTimeoutDiagnosticSnapshot();
+        var snapshotType = snapshot.GetType();
+        var delegateType = typeof(Func<>).MakeGenericType(snapshotType);
+        return Expression.Lambda(delegateType, Expression.Constant(snapshot, snapshotType)).Compile();
+    }
+
+    private sealed class PreviewStartupWatchdogTestRecorder
+    {
+        public string? MissingSignals { get; set; }
+        public string? FailureReason { get; set; }
+        public bool OverlayStopped { get; set; }
+        public List<string> PlaybackSnapshotReasons { get; } = [];
+        public List<string> StatusTexts { get; } = [];
+        public List<string> StopPreviewReasons { get; } = [];
+    }
+
+    internal static Task PreviewStartupLifecycleEventOwnership_LivesInFocusedController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewFadeInText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
+        var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
+
+        AssertContains(mainWindowText, "InitializePreviewLifecycleEventController();");
+        AssertContains(previewFadeInText, "private PreviewFadeInController _previewFadeInController = null!;");
+        AssertContains(previewFadeInText, "private void InitializePreviewFadeInController()");
+        AssertContains(previewFadeInText, "private void SchedulePreviewFadeIn()");
+        AssertContains(previewFadeInText, "private void StopPreviewFadeInTimer()");
+        AssertContains(previewFadeInControllerText, "private const int PreviewFadeInFrameThreshold = 3;");
+        AssertContains(previewFadeInControllerText, "private DispatcherQueueTimer? _timer;");
+        AssertContains(previewFadeInControllerText, "public void Schedule()");
+        AssertContains(previewFadeInControllerText, "public void Stop()");
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStartRequested();");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.HandlePreviewStopRequested();");
+        AssertContains(previewPropertyChangedText, "private PreviewLifecycleEventController _previewLifecycleEventController = null!;");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
+        AssertContains(previewLifecycleControllerText, "_context.HandlePreviewReinitializingChanged();");
+        AssertContains(previewLifecycleControllerText, "if (_context.ShouldBeginPreviewStartupAttempt())");
+        AssertContains(previewLifecycleControllerText, "_stopRequestedByUser = _stopRequestedByUser || !_context.ViewModel.IsPreviewReinitializing;");
+        AssertContains(previewLifecycleControllerText, "_context.StartPreviewStartupWatchdog();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStopPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ShowStartPreviewButtonPresentation();");
+        AssertContains(previewLifecycleControllerText, "_context.ApplyHdrToggleEnabledState();");
+        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewReinitRequested(");
+        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
+        AssertDoesNotContain(previewPropertyChangedHandler, "HandlePreviewReinitializingChanged(");
+        AssertDoesNotContain(previewReinitText, "renderer.StopRenderThread();");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStop_RampsAudioDownBeforePreviewTeardown()
+    {
+        var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
+        var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
+        var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
+            .Replace("\r\n", "\n");
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+
+        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewButtonClick = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
+        AssertContains(previewButtonClick, "var audioFadeOutTask = _context.StartPreviewAudioFadeOutAsync();");
+        AssertContains(previewButtonClick, "var previewFadeOutTask = _context.AnimatePreviewOutAsync();");
+        AssertContains(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);");
+        AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await viewModel.StopPreviewAsync(userInitiated: true);");
+
+        var uiFadeOut = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeOutAsync");
+        AssertContains(uiFadeOut, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
+        AssertContains(uiFadeOut, "To = 0,");
+        AssertContains(uiFadeOut, "_context.ViewModel.PreviewVolume = 0;");
+        AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
+
+        var vmStopRamp = ExtractMemberCode(previewVolumeTransitionText, "RampPreviewVolumeDownForStopAsync");
+        AssertContains(vmStopRamp, "_previewAudioVolumeTransitionController.RampDownForStopAsync(cancellationToken)");
+
+        var vmRampDown = ExtractMemberCode(audioVolumeTransitionText, "RampDownForAudioTransitionAsync");
+        AssertContains(vmRampDown, "VolumeSaveOverride = persistedVolume;");
+        AssertContains(vmRampDown, "_context.SetPreviewVolume(startingVolume * eased);");
+        AssertContains(vmRampDown, "_context.SetPreviewVolume(0);");
+
+        var stopPreview = ExtractTextBetween(
+            previewLifecycleControllerText,
+            "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
+            "\n}\n");
+        AssertContains(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);");
+        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "_context.RaisePreviewStopRequested();");
+        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
+
+        AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
+        var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
+        AssertContains(previewReinitStop, "=> _previewRendererHostController.StopRendererForReinitTeardownAsync();");
+        AssertDoesNotContain(previewReinitStop, "renderer.StopRenderThread();");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartup_BeginsDeviceDiscoveryBeforeRecordingCapabilityProbesFinish()
+    {
+        var settingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.SettingsPersistence.cs")
+            .Replace("\r\n", "\n");
+        var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
+            .Replace("\r\n", "\n");
+        var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs")
+            .Replace("\r\n", "\n");
+        var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
+            .Replace("\r\n", "\n");
+
+        var initialize = ExtractMemberCode(settingsText, "InitializeAsync");
+        AssertContains(initialize, "LoadSettings();");
+        AssertContains(initialize, "StartRecordingCapabilityRefresh();");
+        AssertContains(initialize, "return Task.CompletedTask;");
+        AssertDoesNotContain(initialize, "await Task.WhenAll");
+        AssertOccursBefore(initialize, "LoadSettings();", "StartRecordingCapabilityRefresh();");
+
+        var startupRefresh = ExtractMemberCode(recordingCapabilityControllerText, "Start");
+        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshRecordingFormatCapabilitiesAsync(), \"recording formats\");");
+        AssertContains(startupRefresh, "TrackStartupRefreshTask(RefreshSplitEncodeCapabilitiesAsync(), \"split encode modes\");");
+        AssertDoesNotContain(settingsText, "private void StartRecordingCapabilityRefresh()");
+        AssertDoesNotContain(recordingCapabilityControllerText, "private void StartRecordingCapabilityRefresh()");
+        AssertContains(recordingRuntimeText, "private void StartRecordingCapabilityRefresh()");
+        AssertContains(recordingRuntimeText, "=> _recordingCapabilityController.Start();");
+
+        var recordingFormatRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshRecordingFormatCapabilitiesAsync");
+        AssertContains(recordingFormatRefresh, "support.HasH264Nvenc");
+        AssertContains(recordingFormatRefresh, "support.HasHevcNvenc");
+        AssertContains(recordingFormatRefresh, "support.HasAv1Nvenc");
+        AssertDoesNotContain(recordingFormatRefresh, "support.HasAv1)");
+
+        var splitEncodeRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshSplitEncodeCapabilitiesAsync");
+        AssertContains(splitEncodeRefresh, "if (!support.Supports2Way)");
+        AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
+        AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");
+        AssertContains(splitEncodeRefresh, "modes.Remove(\"3-way\");");
+        AssertContains(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(\"Auto\");");
+
+        AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
+        AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
+        AssertContains(controllerGraphText, "viewModel._deviceService.EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes: false)");
+
+        var refreshDevices = ExtractMemberCode(deviceRefreshControllerText, "RefreshDevicesAsync");
+        AssertContains(refreshDevices, "var discovery = await _context.EnumerateCaptureDeviceDiscoveryAsync()");
+        AssertContains(refreshDevices, "ApplyStartupAudioDeviceScan(");
+        AssertOccursBefore(refreshDevices, "_context.EnumerateCaptureDeviceDiscoveryAsync()", "ApplyStartupAudioDeviceScan(");
+        AssertOccursBefore(refreshDevices, "ApplyStartupAudioDeviceScan(", "_context.ReplaceDevices(devices.ToList());");
+        AssertOccursBefore(refreshDevices, "_context.ReplaceDevices(devices.ToList());", "_context.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");
+        AssertOccursBefore(refreshDevices, "_context.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);", "ApplySuccessfulDeviceScanAsync(");
+        var successfulScan = ExtractTextBetween(
+            deviceRefreshControllerText,
+            "private async Task ApplySuccessfulDeviceScanAsync",
+            "\n    }\n}");
+        AssertOccursBefore(successfulScan, "var savedDeviceId = _context.GetPendingSavedDeviceId();", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertOccursBefore(successfulScan, "_context.SetSelectedDevice(nextSelectedDevice);", "await _previewLifecycleController.StartPreviewAsync(userInitiated: false, cancellationToken);");
+        AssertOccursBefore(refreshDevices, "_context.EnumerateCaptureDeviceDiscoveryAsync()", "ApplySuccessfulDeviceScanAsync(");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartup_PrimesUiAndAudioBeforePreviewReveal()
+    {
+        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs")
+            .Replace("\r\n", "\n");
+        var previewActionsText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewFadeInText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewFadeInControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewAudioFadeText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewAudioFadeControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewTransitionText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var launchEntranceShellText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
+            .Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var startupText = ReadMainWindowShellChromeAdapterSource();
+        var launchStartupText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
+            .Replace("\r\n", "\n");
+        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
+            .Replace("\r\n", "\n");
+
+        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
+        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
+        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
+
+        var previewStartRequested = ExtractMemberCode(previewLifecycleControllerText, "HandlePreviewStartRequested");
+        AssertContains(previewStartRequested, "_context.BeginPreviewStartupAttempt();");
+        AssertContains(previewStartRequested, "_context.PrimePreviewAudioFadeIn();");
+        AssertContains(previewStartRequested, "_context.PreparePreviewStartupPresentation();");
+        AssertOccursBefore(previewStartRequested, "_context.PrimePreviewAudioFadeIn();", "_context.PreparePreviewStartupPresentation();");
+
+        var playEntranceAnimation = ExtractMemberCode(launchEntranceShellText, "PlayEntranceAnimation");
+        AssertContains(playEntranceAnimation, "LAUNCH_PREVIEW_REVEAL_DEFERRED");
+        AssertContains(playEntranceAnimation, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
+        AssertDoesNotContain(playEntranceAnimation, "Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);");
+
+        var animatePreviewInAdapter = ExtractMemberCode(previewTransitionText, "AnimatePreviewInAsync");
+        AssertContains(animatePreviewInAdapter, "_previewTransitionAnimationController.AnimatePreviewInAsync();");
+
+        var animatePreviewIn = ExtractMemberCode(previewTransitionControllerText, "AnimatePreviewInAsync");
+        AssertContains(animatePreviewIn, "_context.FadeInVideoFrameShadow(0, 400);");
+        AssertContains(animatePreviewIn, "AnimatePreviewShellInAsync(350)");
+        AssertContains(animatePreviewIn, "AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut)");
+        AssertOccursBefore(animatePreviewIn, "_context.FadeInVideoFrameShadow(0, 400);", "AnimatePreviewShellInAsync(350)");
+
+        var preparePresentation = ExtractMemberCode(previewTransitionControllerText, "PrepareStartupPresentation");
+        AssertContains(preparePresentation, "FadeOutElement(_context.NoDevicePlaceholder);");
+        AssertContains(preparePresentation, "_context.StartPreviewStartupOverlay();");
+        AssertContains(preparePresentation, "_context.PreviewContentGrid.Opacity = 0.0;");
+
+        var revealUnavailable = ExtractMemberCode(previewTransitionControllerText, "RevealUnavailablePlaceholder");
+        AssertContains(revealUnavailable, "AnimatePreviewShellInAsync(300)");
+        AssertContains(revealUnavailable, "FadeInElement(_context.NoDevicePlaceholder);");
+
+        var primeAudioAdapter = ExtractMemberCode(previewAudioFadeText, "PrimePreviewAudioFadeIn");
+        AssertContains(primeAudioAdapter, "_previewAudioFadeController.PrimeFadeIn();");
+
+        var primeAudio = ExtractMemberCode(previewAudioFadeControllerText, "PrimeFadeIn");
+        AssertContains(primeAudio, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
+        AssertContains(primeAudio, "_context.ViewModel.PreviewVolume = 0;");
+        AssertContains(primeAudio, "_context.PreviewVolumeSlider.Value = 0;");
+
+        var startAudioFadeAdapter = ExtractMemberCode(previewAudioFadeText, "StartPreviewAudioFadeIn");
+        AssertContains(startAudioFadeAdapter, "_previewAudioFadeController.StartFadeIn(durationMs);");
+
+        var startAudioFade = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeIn");
+        AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnimation, _context.PreviewVolumeSlider);");
+        AssertContains(startAudioFade, "CompleteFadeIn(applyTarget: true)");
+
+        AssertContains(previewFadeInText, "=> _previewFadeInController.Schedule();");
+        var schedulePreviewFadeIn = ExtractMemberCode(previewFadeInControllerText, "Schedule");
+        AssertContains(schedulePreviewFadeIn, "StartPreviewAudioFadeIn();");
+        AssertOccursBefore(schedulePreviewFadeIn, "_ = _context.AnimatePreviewInAsync();", "_context.StartPreviewAudioFadeIn();");
+
+        var setupBindings = ExtractMemberCode(bindingsText, "SetupBindings");
+        AssertContains(setupBindings, "ApplyInitialAudioControlBindings();");
+
+        var initialAudioBindingsAdapter = ExtractMemberCode(audioBindingsText, "ApplyInitialAudioControlBindings");
+        AssertContains(initialAudioBindingsAdapter, "_audioControlBindingController.ApplyInitialAudioControlBindings();");
+
+        var initialAudioBindings = ExtractMemberCode(audioControlBindingControllerText, "ApplyInitialAudioControlBindings");
+        AssertContains(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();");
+        AssertContains(initialAudioBindings, "_context.CancelPreviewAudioFadeInForUser();");
+        AssertOccursBefore(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();", "_context.PreviewVolumeSlider.ValueChanged +=");
+
+        var previewButtonClick = ExtractMemberCode(previewActionsText, "PreviewButton_Click");
+        AssertContains(previewButtonClick, "RunUiEventHandlerAsync(() => TogglePreviewFromButtonAsync(), nameof(PreviewButton_Click))");
+        var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var togglePreviewAsync = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
+        AssertContains(togglePreviewAsync, "if (!viewModel.IsPreviewing)\n        {\n            _context.RevealPreviewUnavailablePlaceholder();\n        }");
+
+        var mainWindowLoaded = ExtractMemberCode(startupText, "MainWindow_Loaded");
+        AssertContains(mainWindowLoaded, "=> _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));");
+        var launchLoaded = ExtractMemberCode(launchStartupText, "HandleLoaded");
+        AssertOccursBefore(launchLoaded, "_context.PrimePreviewAudioFadeIn();", "await _context.RefreshDevicesAsync();");
+        AssertContains(launchLoaded, "_context.RevealPreviewUnavailablePlaceholder();");
+
+        AssertDoesNotContain(xamlText, "No preview available");
+
+        return Task.CompletedTask;
+    }
+    internal static Task PreviewStartupSessionReinitOwnership_LivesInFocusedControllers()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var previewStartupText = ReadMainWindowPreviewStartupAdapterSource();
+        var previewStartupSessionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Startup/PreviewStartupControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewReinitText = ReadMainWindowPreviewTransitionsAdapterSource();
+        var previewReinitTransitionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
+        var previewRuntimeSnapshotText = previewRendererText;
+        var previewRuntimeSnapshotSamplingControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(mainWindowText, "InitializePreviewStartupSessionController();");
+        AssertContains(mainWindowText, "InitializePreviewReinitTransitionController();");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
+            "preview reinit adapter folded into MainWindow.xaml.cs");
+        AssertContains(previewStartupText, "private PreviewStartupSessionController _previewStartupSessionController = null!;");
+        AssertContains(previewStartupText, "private void InitializePreviewStartupSessionController()");
+        AssertContains(previewStartupText, "private PreviewStartupState CurrentPreviewStartupState");
+        AssertContains(previewStartupText, "private string PreviewStartupAttemptLabel");
+        AssertContains(previewStartupText, "private bool ShouldBeginPreviewStartupAttempt");
+        AssertContains(previewStartupText, "new PreviewStartupSessionControllerContext");
+        AssertContains(previewStartupText, "ResetSignalState = ResetPreviewSignalState,");
+        AssertContains(previewStartupText, "StopWatchdog = StopPreviewStartupWatchdog,");
+        AssertContains(previewStartupText, "ScheduleFadeIn = SchedulePreviewFadeIn,");
+        AssertContains(previewStartupText, "=> _previewStartupSessionController.SetStartupState(state, reason);");
+        AssertContains(previewStartupText, "=> _previewStartupSessionController.BeginStartupAttempt();");
+        AssertContains(previewStartupText, "=> _previewStartupSessionController.ConfirmFirstVisual(source);");
+        AssertContains(previewStartupText, "=> _previewStartupSessionController.ResetStartupTracking(keepRecoveryCount, preserveReinitAnimation);");
+        AssertContains(previewStartupSessionControllerText, "internal enum PreviewStartupState");
+        AssertContains(previewStartupSessionControllerText, "internal sealed class PreviewStartupSessionControllerContext");
+        AssertContains(previewStartupSessionControllerText, "internal sealed class PreviewStartupSessionController");
+        AssertContains(previewStartupSessionControllerText, "public PreviewStartupState State { get; private set; } = PreviewStartupState.Idle;");
+        AssertContains(previewStartupSessionControllerText, "public string? AttemptId { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public DateTimeOffset? RequestedUtc { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public DateTimeOffset? RendererAttachedUtc { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public DateTimeOffset? FirstVisualUtc { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public string? LastFailureReason { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public string? MissingSignals { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public int RecoveryAttemptCount { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public bool FirstVisualConfirmed { get; private set; }");
+        AssertContains(previewStartupSessionControllerText, "public bool ShouldRefreshMissingSignalsForSnapshot => IsWaitingForFirstVisual || IsFailed;");
+        AssertContains(previewStartupSessionControllerText, "public bool ShouldBeginAttempt => string.IsNullOrWhiteSpace(AttemptId) || IsFailed || IsIdle;");
+        AssertContains(previewStartupSessionControllerText, "public bool IsSignalWindowActive(bool isPreviewing)");
+        AssertContains(previewStartupSessionControllerText, "public string AttemptLabel => AttemptId ?? \"none\";");
+        AssertContains(previewStartupSessionControllerText, "public void BeginStartupAttempt()");
+        AssertContains(previewStartupSessionControllerText, "public void SetStartupState(PreviewStartupState state, string? reason = null)");
+        AssertContains(previewStartupSessionControllerText, "public void ConfirmFirstVisual(string source)");
+        AssertContains(previewStartupSessionControllerText, "public void ResetStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)");
+        AssertContains(previewStartupSessionControllerText, "PREVIEW_START_STATE state={state} attempt={AttemptLabel}");
+        AssertContains(previewStartupSessionControllerText, "PREVIEW_START_REQUESTED attempt={AttemptId}");
+        AssertContains(previewStartupSessionControllerText, "PREVIEW_FIRST_VISUAL_IGNORED attempt={AttemptLabel}");
+        AssertContains(previewStartupSessionControllerText, "PREVIEW_FIRST_VISUAL_CONFIRMED attempt={AttemptLabel}");
+        AssertContains(previewStartupSessionControllerText, "public void MarkRendererAttached(DateTimeOffset attachedUtc)");
+        AssertContains(previewStartupSessionControllerText, "public bool MarkFirstVisualConfirmed(DateTimeOffset firstVisualUtc)");
+        AssertContains(previewStartupSessionControllerText, "public void SetMissingSignals(string? missingSignals)");
+        AssertContains(previewRuntimeSnapshotText, "StartupSessionController = _previewStartupSessionController,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = startupSession.State.ToString(),");
+        AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
+        AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
+        AssertContains(previewReinitText, "=> _previewReinitTransitionController.IsAnimating;");
+        AssertContains(previewReinitText, "private async Task ViewModel_PreviewReinitRequested(string reason)");
+        AssertContains(previewReinitText, "private Task ViewModel_PreviewRendererStopRequested()");
+        AssertContains(previewReinitText, "private void HandlePreviewReinitializingChanged()");
+        AssertContains(previewReinitText, "=> _previewReinitTransitionController.HandleReinitializingChanged(");
+        AssertContains(previewReinitText, "new PreviewReinitCompletionPresentationContext");
+        AssertContains(previewReinitText, "IsPreviewReinitializing = ViewModel.IsPreviewReinitializing,");
+        AssertContains(previewReinitText, "IsPreviewing = ViewModel.IsPreviewing,");
+        AssertContains(previewReinitText, "IsFirstVisualConfirmed = IsPreviewFirstVisualConfirmed,");
+        AssertContains(previewReinitText, "AttemptLabel = PreviewStartupAttemptLabel,");
+        AssertContains(previewReinitText, "CallerName = nameof(HandleViewModelPropertyChangedAsync),");
+        AssertContains(previewReinitText, "UpdateDeviceApplyButtonState = UpdateDeviceApplyButtonState,");
+        AssertContains(previewReinitText, "RevealUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,");
+        AssertContains(previewReinitText, "StopPreviewStartupOverlay = StopPreviewStartupOverlay,");
+        AssertContains(previewReinitText, "ResetPreviewContentTransform = ResetPreviewContentTransform,");
+        AssertContains(previewReinitText, "ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,");
+        AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitTransitionController");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewReinitTransitionController.cs")),
+            "preview reinit transition state lives with preview transition animation ownership");
+        AssertContains(previewReinitTransitionControllerText, "internal sealed class PreviewReinitCompletionPresentationContext");
+        AssertContains(previewReinitTransitionControllerText, "public bool IsAnimating { get; private set; }");
+        AssertContains(previewReinitTransitionControllerText, "public void BeginAnimateOut(string reason, string callerName)");
+        AssertContains(previewReinitTransitionControllerText, "public PreviewReinitCompletionPresentation GetCompletionPresentation(");
+        AssertContains(previewReinitTransitionControllerText, "public void HandleReinitializingChanged(PreviewReinitCompletionPresentationContext context)");
+        AssertContains(previewReinitTransitionControllerText, "public void CompleteFirstVisualTransition(string attemptLabel, string callerName)");
+        AssertContains(previewReinitTransitionControllerText, "public void ResetConfirmedVisualTransition(string attemptLabel, string reason, string callerName)");
+        AssertContains(previewReinitTransitionControllerText, "public void ClearForStartupReset(bool preserveReinitAnimation, string callerName)");
+        AssertContains(previewReinitTransitionControllerText, "public void Clear(string callerName, bool logWhenInactive = true, string? operationName = null)");
+        AssertDoesNotContain(previewStartupText, "_previewStartupSessionController.BeginAttempt(");
+        AssertDoesNotContain(previewStartupText, "_previewStartupSessionController.Reset(keepRecoveryCount)");
+        AssertDoesNotContain(previewStartupText, "PREVIEW_FIRST_VISUAL_CONFIRMED attempt=");
+        AssertDoesNotContain(previewRendererText, "_previewStartupState.ToString()");
+        AssertDoesNotContain(previewStartupText, "private bool _isPreviewReinitAnimating;");
+        AssertDoesNotContain(previewStartupText, "private bool _previewStopRequestedByUser;");
+        AssertDoesNotContain(previewReinitText, "private bool _isPreviewReinitAnimating;");
+        AssertDoesNotContain(mainWindowText, "private enum PreviewStartupState");
+        AssertDoesNotContain(previewStartupText, "private enum PreviewStartupState");
+        AssertDoesNotContain(previewStartupText, "private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;");
+        AssertDoesNotContain(previewStartupText, "private string? _previewStartupAttemptId;");
+        AssertDoesNotContain(previewStartupText, "private DateTimeOffset? _previewStartupRequestedUtc;");
+        AssertDoesNotContain(previewStartupText, "private DateTimeOffset? _previewRendererAttachedUtc;");
+        AssertDoesNotContain(previewStartupText, "private DateTimeOffset? _previewFirstVisualUtc;");
+        AssertDoesNotContain(previewStartupText, "private string? _previewLastFailureReason;");
+        AssertDoesNotContain(previewStartupText, "private string? _previewStartupMissingSignals;");
+        AssertDoesNotContain(previewStartupText, "private int _previewRecoveryAttemptCount;");
+        AssertDoesNotContain(previewStartupText, "private bool _previewFirstVisualConfirmed;");
+        AssertDoesNotContain(previewReinitText, "case PreviewReinitCompletionPresentation.");
+        AssertDoesNotContain(previewReinitText, "GetCompletionPresentation(");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewStartupSessionController_PreservesAttemptStateContracts()
+    {
+        var controllerType = RequireType("Sussudio.Controllers.PreviewStartupSessionController");
+        var contextType = RequireType("Sussudio.Controllers.PreviewStartupSessionControllerContext");
+        var stateType = RequireType("Sussudio.Controllers.PreviewStartupState");
+        var events = new List<string>();
+        var isPreviewing = true;
+        var isStopRequested = false;
+        var now = new DateTimeOffset(2026, 5, 15, 12, 0, 0, TimeSpan.Zero);
+        var context = Activator.CreateInstance(contextType, nonPublic: true)!;
+
+        void SetContext(string propertyName, object value)
+        {
+            var property = contextType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException($"PreviewStartupSessionControllerContext.{propertyName} was not found.");
+            property.SetValue(context, value);
+        }
+
+        SetContext("IsPreviewing", new Func<bool>(() => isPreviewing));
+        SetContext("IsPreviewStopRequestedByUser", new Func<bool>(() => isStopRequested));
+        SetContext("GetSelectedDeviceName", new Func<string?>(() => "Cam Link 4K"));
+        SetContext("ResetSignalState", new Action(() => events.Add("reset-signals")));
+        SetContext("ResetFailureStopSchedule", new Action(() => events.Add("reset-failure-stop")));
+        SetContext("MarkFirstVisualSignalConfirmed", new Action(() => events.Add("mark-signal-visual")));
+        SetContext("StopWatchdog", new Action(() => events.Add("stop-watchdog")));
+        SetContext("StopOverlay", new Action(() => events.Add("stop-overlay")));
+        SetContext("StopFadeInTimer", new Action(() => events.Add("stop-fade-timer")));
+        SetContext("ScheduleFadeIn", new Action(() => events.Add("schedule-fade")));
+        SetContext("CompleteFirstVisualTransition", new Action<string, string>((attempt, caller) => events.Add($"complete-reinit:{attempt}:{caller}")));
+        SetContext("ClearReinitTransitionForStartupReset", new Action<bool, string>((preserve, caller) => events.Add($"clear-reinit:{preserve}:{caller}")));
+        SetContext("Log", new Action<string>(message => events.Add($"log:{message}")));
+        SetContext("CreateAttemptId", new Func<string>(() => "attempt-1"));
+        SetContext("GetUtcNow", new Func<DateTimeOffset>(() => now));
+
+        var controller = Activator.CreateInstance(controllerType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, binder: null, args: new[] { context }, culture: null)!;
+        var beginStartupAttempt = controllerType.GetMethod("BeginStartupAttempt")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.BeginStartupAttempt was not found.");
+        var setStartupState = controllerType.GetMethod("SetStartupState")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.SetStartupState was not found.");
+        var markRendererAttached = controllerType.GetMethod("MarkRendererAttached")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.MarkRendererAttached was not found.");
+        var markFirstVisualConfirmed = controllerType.GetMethod("MarkFirstVisualConfirmed")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.MarkFirstVisualConfirmed was not found.");
+        var confirmFirstVisual = controllerType.GetMethod("ConfirmFirstVisual")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.ConfirmFirstVisual was not found.");
+        var setMissingSignals = controllerType.GetMethod("SetMissingSignals")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.SetMissingSignals was not found.");
+        var resetStartupTracking = controllerType.GetMethod("ResetStartupTracking")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.ResetStartupTracking was not found.");
+        var getElapsedMilliseconds = controllerType.GetMethod("GetElapsedMilliseconds")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.GetElapsedMilliseconds was not found.");
+        var isSignalWindowActive = controllerType.GetMethod("IsSignalWindowActive")
+            ?? throw new InvalidOperationException("PreviewStartupSessionController.IsSignalWindowActive was not found.");
+
+        object State(string value) => Enum.Parse(stateType, value);
+        bool SignalWindowActive(bool previewing) => (bool)isSignalWindowActive.Invoke(controller, new object[] { previewing })!;
+
+        AssertEqual(State("Idle"), GetPropertyValue(controller, "State"), "initial startup state");
+        AssertEqual(true, GetBoolProperty(controller, "ShouldBeginAttempt"), "initial attempt gate");
+        AssertEqual(false, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "idle does not refresh missing signals");
+        AssertEqual(false, SignalWindowActive(previewing: true), "idle signal window inactive");
+
+        beginStartupAttempt.Invoke(controller, Array.Empty<object>());
+        AssertEqual(State("StartingSession"), GetPropertyValue(controller, "State"), "state after begin attempt");
+        AssertEqual(true, SignalWindowActive(previewing: true), "starting session signal window active");
+        AssertEqual(false, SignalWindowActive(previewing: false), "stopped preview signal window inactive");
+        AssertEqual("attempt-1", GetStringProperty(controller, "AttemptId"), "attempt id after begin");
+        AssertEqual(now, GetPropertyValue(controller, "RequestedUtc"), "requested UTC after begin");
+        AssertEqual(false, GetBoolProperty(controller, "FirstVisualConfirmed"), "first visual reset on begin");
+        AssertEqual(false, GetBoolProperty(controller, "ShouldBeginAttempt"), "active attempt gate");
+        AssertEqual(1250.0, getElapsedMilliseconds.Invoke(controller, new object[] { now.AddMilliseconds(1250) }), "elapsed milliseconds");
+        AssertEqual(
+            "reset-signals|reset-failure-stop|log:PREVIEW_START_STATE state=StartingSession attempt=attempt-1 recovery=0 reason=-|log:PREVIEW_START_REQUESTED attempt=attempt-1 device=Cam Link 4K",
+            string.Join("|", events),
+            "begin startup orchestration order");
+
+        events.Clear();
+        setStartupState.Invoke(controller, new object?[] { State("StartingSession"), null });
+        AssertEqual(string.Empty, string.Join("|", events), "duplicate state without reason suppresses log");
+        setStartupState.Invoke(controller, new object?[] { State("Failed"), "renderer-attach-failed:test" });
+        AssertEqual(State("Failed"), GetPropertyValue(controller, "State"), "failed state");
+        AssertEqual(false, SignalWindowActive(previewing: true), "failed state signal window inactive");
+        AssertEqual(true, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "failed state refreshes missing signals");
+        AssertEqual("renderer-attach-failed:test", GetStringProperty(controller, "LastFailureReason"), "failure reason retained");
+        AssertEqual(true, GetBoolProperty(controller, "ShouldBeginAttempt"), "failed attempt gate");
+        resetStartupTracking.Invoke(controller, new object[] { false, false });
+        AssertEqual(State("Idle"), GetPropertyValue(controller, "State"), "terminal reset returns idle");
+        AssertEqual(string.Empty, GetStringProperty(controller, "AttemptId"), "terminal reset clears attempt id");
+
+        events.Clear();
+        beginStartupAttempt.Invoke(controller, Array.Empty<object>());
+        setStartupState.Invoke(controller, new object?[] { State("WaitingForFirstVisual"), null });
+        setMissingSignals.Invoke(controller, new object?[] { "FirstVisual" });
+        markRendererAttached.Invoke(controller, new object[] { now.AddMilliseconds(100) });
+        AssertEqual(true, GetBoolProperty(controller, "IsWaitingForFirstVisual"), "waiting state predicate");
+        AssertEqual(true, GetBoolProperty(controller, "ShouldRefreshMissingSignalsForSnapshot"), "waiting state refreshes missing signals");
+        AssertEqual(true, SignalWindowActive(previewing: true), "waiting state signal window active");
+        AssertEqual(now.AddMilliseconds(100), GetPropertyValue(controller, "RendererAttachedUtc"), "renderer attached UTC");
+        AssertEqual(true, markFirstVisualConfirmed.Invoke(controller, new object[] { now.AddMilliseconds(300) }), "first visual confirmation");
+        AssertEqual(false, markFirstVisualConfirmed.Invoke(controller, new object[] { now.AddMilliseconds(400) }), "duplicate first visual suppressed");
+        AssertEqual(true, GetBoolProperty(controller, "FirstVisualConfirmed"), "first visual confirmed flag");
+        AssertEqual(false, SignalWindowActive(previewing: true), "confirmed first visual signal window inactive");
+        AssertEqual(now.AddMilliseconds(300), GetPropertyValue(controller, "FirstVisualUtc"), "first visual UTC");
+        AssertEqual("FirstVisual", GetStringProperty(controller, "MissingSignals"), "missing signals cached until adapter clears them");
+
+        events.Clear();
+        beginStartupAttempt.Invoke(controller, Array.Empty<object>());
+        setStartupState.Invoke(controller, new object?[] { State("WaitingForFirstVisual"), null });
+        setMissingSignals.Invoke(controller, new object?[] { "FirstVisual" });
+        now = now.AddMilliseconds(250);
+        confirmFirstVisual.Invoke(controller, new object[] { "D3D11FirstFrame" });
+        AssertEqual(State("Rendering"), GetPropertyValue(controller, "State"), "first visual moves to rendering");
+        AssertEqual(string.Empty, GetStringProperty(controller, "MissingSignals"), "first visual clears missing signals");
+        AssertEqual(
+            "reset-signals|reset-failure-stop|log:PREVIEW_START_STATE state=StartingSession attempt=attempt-1 recovery=0 reason=-|log:PREVIEW_START_REQUESTED attempt=attempt-1 device=Cam Link 4K|log:PREVIEW_START_STATE state=WaitingForFirstVisual attempt=attempt-1 recovery=0 reason=-|mark-signal-visual|log:PREVIEW_START_STATE state=Rendering attempt=attempt-1 recovery=0 reason=-|stop-watchdog|stop-overlay|schedule-fade|complete-reinit:attempt-1:ConfirmPreviewFirstVisual|log:PREVIEW_FIRST_VISUAL_CONFIRMED attempt=attempt-1 source=D3D11FirstFrame elapsedMs=250 recovery=0",
+            string.Join("|", events),
+            "first visual orchestration order");
+
+        events.Clear();
+        beginStartupAttempt.Invoke(controller, Array.Empty<object>());
+        setStartupState.Invoke(controller, new object?[] { State("WaitingForFirstVisual"), null });
+        isStopRequested = true;
+        confirmFirstVisual.Invoke(controller, new object[] { "D3D11FirstFrame" });
+        AssertEqual(false, GetBoolProperty(controller, "FirstVisualConfirmed"), "stop request suppresses first visual");
+        AssertContains(string.Join("|", events), "log:PREVIEW_FIRST_VISUAL_IGNORED attempt=attempt-1 source=D3D11FirstFrame reason=stop-requested");
+        isStopRequested = false;
+
+        events.Clear();
+        setStartupState.Invoke(controller, new object?[] { State("WaitingForFirstVisual"), null });
+        resetStartupTracking.Invoke(controller, new object[] { false, true });
+        AssertEqual(State("Idle"), GetPropertyValue(controller, "State"), "nonterminal reset returns idle");
+        AssertEqual(string.Empty, GetStringProperty(controller, "MissingSignals"), "nonterminal reset clears missing signals");
+        AssertEqual(
+            "stop-watchdog|stop-overlay|stop-fade-timer|clear-reinit:True:ResetPreviewStartupTracking|reset-signals|reset-failure-stop|log:PREVIEW_START_STATE state=Idle attempt=none recovery=0 reason=-",
+            string.Join("|", events),
+            "reset orchestration order");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewReinitialization_WaitsForPendingFlashbackCycle()
+    {
+        var viewModelFiles = ReadMainViewModelCodeFiles();
+        var viewModelSharedStateText = viewModelFiles["MainViewModel.cs"];
+        var viewModelPreviewStateText = viewModelFiles["MainViewModel.cs"];
+        var viewModelCaptureStateText = viewModelFiles["MainViewModel.cs"];
+        var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var rawPreviewReinitializeControllerText = rawPreviewLifecycleControllerText;
+
+        AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
+        AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
+        AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertContains(rawPreviewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
+        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
+        AssertContains(rawPreviewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
+        AssertContains(rawPreviewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
+        AssertContains(rawPreviewReinitializeControllerText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
+        AssertContains(rawPreviewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
+        AssertContains(rawPreviewReinitializeControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
+        AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
+        AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
+        AssertContains(rawPreviewReinitializeControllerText, "_context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewReinitTransitionController_PreservesTransitionStateContracts()
+    {
+        var controllerType = RequireType("Sussudio.Controllers.PreviewReinitTransitionController");
+        var presentationType = RequireType("Sussudio.Controllers.PreviewReinitCompletionPresentation");
+        var contextType = RequireType("Sussudio.Controllers.PreviewReinitCompletionPresentationContext");
+        var controller = Activator.CreateInstance(controllerType, nonPublic: true)!;
+        var beginAnimateOut = controllerType.GetMethod("BeginAnimateOut")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.BeginAnimateOut was not found.");
+        var getCompletionPresentation = controllerType.GetMethod("GetCompletionPresentation")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.GetCompletionPresentation was not found.");
+        var handleReinitializingChanged = controllerType.GetMethod("HandleReinitializingChanged")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.HandleReinitializingChanged was not found.");
+        var completeFirstVisualTransition = controllerType.GetMethod("CompleteFirstVisualTransition")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.CompleteFirstVisualTransition was not found.");
+        var resetConfirmedVisualTransition = controllerType.GetMethod("ResetConfirmedVisualTransition")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.ResetConfirmedVisualTransition was not found.");
+        var clearForStartupReset = controllerType.GetMethod("ClearForStartupReset")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.ClearForStartupReset was not found.");
+        var clear = controllerType.GetMethod("Clear")
+            ?? throw new InvalidOperationException("PreviewReinitTransitionController.Clear was not found.");
+
+        object Presentation(string value) => Enum.Parse(presentationType, value);
+
+        object GetPresentation(bool isPreviewReinitializing, bool isPreviewing, bool isFirstVisualConfirmed)
+            => getCompletionPresentation.Invoke(
+                controller,
+                new object[] { isPreviewReinitializing, isPreviewing, isFirstVisualConfirmed })!;
+
+        object CreateContext(
+            bool isPreviewReinitializing,
+            bool isPreviewing,
+            bool isFirstVisualConfirmed,
+            string attemptLabel,
+            string callerName,
+            List<string> events)
+        {
+            var context = Activator.CreateInstance(contextType, nonPublic: true)!;
+            SetPropertyOrBackingField(context, "IsPreviewReinitializing", isPreviewReinitializing);
+            SetPropertyOrBackingField(context, "IsPreviewing", isPreviewing);
+            SetPropertyOrBackingField(context, "IsFirstVisualConfirmed", isFirstVisualConfirmed);
+            SetPropertyOrBackingField(context, "AttemptLabel", attemptLabel);
+            SetPropertyOrBackingField(context, "CallerName", callerName);
+            SetPropertyOrBackingField(context, "UpdateDeviceApplyButtonState", new Action(() => events.Add("update-apply")));
+            SetPropertyOrBackingField(context, "RevealUnavailablePlaceholder", new Action(() => events.Add("reveal-unavailable")));
+            SetPropertyOrBackingField(context, "StopPreviewStartupOverlay", new Action(() => events.Add("stop-overlay")));
+            SetPropertyOrBackingField(context, "ResetPreviewContentTransform", new Action(() => events.Add("reset-transform")));
+            SetPropertyOrBackingField(context, "ShowStartPreviewButtonPresentation", new Action(() => events.Add("show-start")));
+            return context;
+        }
+
+        void HandleReinitializingChanged(
+            bool isPreviewReinitializing,
+            bool isPreviewing,
+            bool isFirstVisualConfirmed,
+            List<string> events)
+            => handleReinitializingChanged.Invoke(
+                controller,
+                new[]
+                {
+                    CreateContext(
+                        isPreviewReinitializing,
+                        isPreviewing,
+                        isFirstVisualConfirmed,
+                        "attempt-3",
+                        "HandleViewModelPropertyChangedAsync",
+                        events),
+                });
+
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "initial reinit animation inactive");
+        AssertEqual(
+            Presentation("ShowStartPreviewButton"),
+            GetPresentation(isPreviewReinitializing: false, isPreviewing: false, isFirstVisualConfirmed: false),
+            "idle stopped preview shows start presentation");
+
+        beginAnimateOut.Invoke(controller, new object[] { "format-change", "ViewModel_PreviewReinitRequested" });
+        AssertEqual(true, GetBoolProperty(controller, "IsAnimating"), "begin reinit marks animation active");
+        AssertEqual(
+            Presentation("RevealUnavailablePlaceholder"),
+            GetPresentation(isPreviewReinitializing: false, isPreviewing: false, isFirstVisualConfirmed: false),
+            "completed reinit without preview reveals unavailable placeholder");
+        AssertEqual(
+            Presentation("ResetConfirmedVisual"),
+            GetPresentation(isPreviewReinitializing: false, isPreviewing: true, isFirstVisualConfirmed: true),
+            "completed reinit after first visual resets presentation");
+        AssertEqual(
+            Presentation("None"),
+            GetPresentation(isPreviewReinitializing: false, isPreviewing: true, isFirstVisualConfirmed: false),
+            "completed reinit before first visual keeps waiting");
+
+        completeFirstVisualTransition.Invoke(controller, new object[] { "attempt-1", "ConfirmPreviewFirstVisual" });
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "first visual clears active reinit animation");
+
+        beginAnimateOut.Invoke(controller, new object[] { "format-change", "ViewModel_PreviewReinitRequested" });
+        clearForStartupReset.Invoke(controller, new object[] { true, "ResetPreviewStartupTracking" });
+        AssertEqual(true, GetBoolProperty(controller, "IsAnimating"), "startup reset can preserve reinit animation");
+        clearForStartupReset.Invoke(controller, new object[] { false, "ResetPreviewStartupTracking" });
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "startup reset clears animation when not preserving");
+
+        beginAnimateOut.Invoke(controller, new object[] { "format-change", "ViewModel_PreviewReinitRequested" });
+        resetConfirmedVisualTransition.Invoke(controller, new object[] { "attempt-2", "reinit-stop-failed", "HandleViewModelPropertyChangedAsync" });
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "confirmed visual reset clears active animation");
+
+        beginAnimateOut.Invoke(controller, new object[] { "format-change", "ViewModel_PreviewReinitRequested" });
+        clear.Invoke(controller, new object?[] { "PreviewButton_Click", true, "PreviewButton_Click" });
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "explicit clear marks animation inactive");
+
+        var idleStoppedEvents = new List<string>();
+        HandleReinitializingChanged(
+            isPreviewReinitializing: false,
+            isPreviewing: false,
+            isFirstVisualConfirmed: false,
+            idleStoppedEvents);
+        AssertEqual(
+            "update-apply,show-start",
+            string.Join(",", idleStoppedEvents),
+            "idle stopped preview updates apply state then shows start presentation");
+
+        beginAnimateOut.Invoke(controller, new object[] { "format-change", "ViewModel_PreviewReinitRequested" });
+        var stoppedReinitCompletionEvents = new List<string>();
+        HandleReinitializingChanged(
+            isPreviewReinitializing: false,
+            isPreviewing: false,
+            isFirstVisualConfirmed: false,
+            stoppedReinitCompletionEvents);
+        AssertEqual(
+            "update-apply,reveal-unavailable",
+            string.Join(",", stoppedReinitCompletionEvents),
+            "completed reinit without preview updates apply state then reveals unavailable placeholder");
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "unavailable placeholder completion clears active animation");
+
+        beginAnimateOut.Invoke(controller, new object[] { "format-change", "ViewModel_PreviewReinitRequested" });
+        var confirmedReinitCompletionEvents = new List<string>();
+        HandleReinitializingChanged(
+            isPreviewReinitializing: false,
+            isPreviewing: true,
+            isFirstVisualConfirmed: true,
+            confirmedReinitCompletionEvents);
+        AssertEqual(
+            "update-apply,stop-overlay,reset-transform",
+            string.Join(",", confirmedReinitCompletionEvents),
+            "confirmed visual completion updates apply state, stops overlay, and resets content transform");
+        AssertEqual(false, GetBoolProperty(controller, "IsAnimating"), "confirmed visual completion clears active animation");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task MainViewModelPreviewLifecycle_LivesInController()
+    {
+        var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+            .Replace("\r\n", "\n");
+        var previewReinitializeControllerText = previewLifecycleControllerText;
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
+            .Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md")
+            .Replace("\r\n", "\n");
+
+        AssertContains(previewStateText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewStateText, "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Capture.cs")),
+            "MainViewModel capture lifecycle facade partial");
+        if (File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewReinitialization.cs")))
+        {
+            throw new InvalidOperationException("Preview reinitialization should not live in a tiny pass-through partial.");
+        }
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(
+                GetRepoRoot(),
+                "Sussudio",
+                "Controllers",
+                "ViewModel",
+                "MainViewModelPreviewReinitializeController.cs")),
+            "Preview reinitialize transaction controller lives with preview lifecycle owner");
+        AssertContains(previewLifecycleControllerText, "private readonly MainViewModelPreviewReinitializeController _previewReinitializeController;");
+        AssertContains(previewLifecycleControllerText, "public Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
+        AssertContains(previewLifecycleControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(previewLifecycleControllerText, "internal sealed class MainViewModelPreviewLifecycleController");
+        AssertContains(previewReinitializeControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(previewReinitializeControllerText, "internal sealed class MainViewModelPreviewReinitializeController");
+        AssertContains(previewReinitializeControllerText, "public void CancelPendingPreviewRestart()");
+        AssertContains(previewReinitializeControllerText, "public void ResetPendingPreviewRestartCancellation()");
+        AssertContains(previewReinitializeControllerText, "public async Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewReinitializeControllerText, "private readonly MainViewModelPreviewReinitializeControllerContext _context;");
+        AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");
+        AssertContains(previewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
+        AssertContains(previewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
+        AssertContains(previewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
+        AssertContains(previewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
+        AssertContains(previewReinitializeControllerText, "FlashbackCycleBeforeReinitializeTimeoutMs");
+        AssertContains(previewReinitializeControllerText, "await _context.WaitReinitializeGateAsync();");
+        AssertContains(previewReinitializeControllerText, "await _context.NotifyPreviewReinitRequestedAsync(reason);");
+        AssertContains(previewReinitializeControllerText, "await _context.NotifyRendererStopAsync();");
+        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);");
+        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync();");
+        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false);");
+        AssertContains(previewReinitializeControllerText, "_context.ReleaseReinitializeGate();");
+        AssertDoesNotContain(previewStateText, "private async Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
+        AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
+        AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
+        AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`");
+        AssertDoesNotContain(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
+        AssertDoesNotContain(cleanupPlanText, "`MainViewModel.PreviewReinitialization.cs`");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`");
+        AssertDoesNotContain(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewResizeTelemetry_LivesInController()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
+        var shutdownCleanupText = ReadMainWindowCompositionSource();
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
+        var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
+
+        AssertContains(previewRendererText, "private PreviewResizeTelemetryController _previewResizeTelemetryController = null!;");
+        AssertContains(previewRendererText, "private void InitializePreviewResizeTelemetryController()");
+        AssertContains(previewRendererText, "private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)");
+        AssertContains(previewRendererText, "_previewResizeTelemetryController.HandleSizeChanged(");
+        AssertContains(previewRendererText, "ViewModel.IsPreviewing,");
+        AssertContains(previewRendererText, "_previewRendererHostController.HasD3DRenderer,");
+        AssertContains(previewRendererText, "PreviewSwapChainPanel.Visibility);");
+        AssertContains(previewRendererText, "private void ResetPreviewResizeTelemetry()");
+        AssertContains(previewRendererText, "=> _previewResizeTelemetryController.Reset();");
+        AssertContains(mainWindowText, "InitializePreviewResizeTelemetryController();");
+        AssertContains(mainWindowText, "mainContent.SizeChanged += MainWindow_SizeChanged;");
+        AssertContains(shutdownCleanupText, "private void DetachMainContentSizeChanged()");
+        AssertContains(shutdownCleanupText, "mainContent.SizeChanged -= MainWindow_SizeChanged;");
+        AssertContains(shutdownCleanupControllerText, "_context.DetachMainContentSizeChanged();");
+        AssertContains(previewRendererText, "ResetPreviewResizeTelemetry = ResetPreviewResizeTelemetry,");
+        AssertContains(controllerText, "internal sealed class PreviewResizeTelemetryController");
+        AssertContains(controllerText, "private long _previewLastResizeLogTick;");
+        AssertContains(controllerText, "public void HandleSizeChanged(bool isPreviewing, bool hasD3dRenderer, Visibility previewVisibility)");
+        AssertContains(controllerText, "if (!isPreviewing ||");
+        AssertContains(controllerText, "!hasD3dRenderer ||");
+        AssertContains(controllerText, "previewVisibility != Visibility.Visible");
+        AssertContains(controllerText, "Interlocked.Read(ref _previewLastResizeLogTick)");
+        AssertContains(controllerText, "Interlocked.CompareExchange(ref _previewLastResizeLogTick, nowTick, lastLogTick)");
+        AssertContains(controllerText, "Preview resize active. Updating compositor transform without resizing swap-chain buffers.");
+        AssertContains(controllerText, "public void Reset()");
+        AssertContains(controllerText, "Interlocked.Exchange(ref _previewLastResizeLogTick, 0);");
+        AssertDoesNotContain(mainWindowText, "private long _previewLastResizeLogTick;");
+        AssertDoesNotContain(previewRendererText, "Interlocked.Read(ref _previewLastResizeLogTick)");
+        AssertDoesNotContain(previewRendererText, "Logger.Log(\"Preview resize active.");
+        AssertDoesNotContain(shutdownCleanupControllerText, "private void MainWindow_SizeChanged(");
+        AssertDoesNotContain(shutdownCleanupControllerText, "_previewLastResizeLogTick");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRendererStartupPlanBuilder_PreservesFallbackPolicy()
+    {
+        var builderType = RequireType("Sussudio.Controllers.PreviewRendererStartupPlanBuilder");
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
+        var captureSettingsType = RequireType("Sussudio.Models.CaptureSettings");
+        var sourceProbeType = RequireType("Sussudio.Models.VideoSourceProbeResult");
+        var hdrOutputModeType = RequireType("Sussudio.Models.HdrOutputMode");
+        var build = builderType.GetMethod("Build")
+            ?? throw new InvalidOperationException("PreviewRendererStartupPlanBuilder.Build was not found.");
+        var resolveExpectedIntervalMs = builderType.GetMethod("ResolveExpectedIntervalMs")
+            ?? throw new InvalidOperationException("PreviewRendererStartupPlanBuilder.ResolveExpectedIntervalMs was not found.");
+
+        var fallbackInterval = (double)(resolveExpectedIntervalMs.Invoke(null, new object?[] { null }) ?? 0.0);
+        AssertNearlyEqual(1000.0 / 60.0, fallbackInterval, 0.0001, "default preview renderer interval");
+
+        var selectedFormat = Activator.CreateInstance(mediaFormatType)!;
+        SetPropertyOrBackingField(selectedFormat, "FrameRate", 30.0);
+
+        var inactivePlan = build.Invoke(null, new object?[] { false, selectedFormat, null, null })!;
+        AssertEqual(false, GetBoolProperty(inactivePlan, "UseD3DRenderer"), "inactive preview plan mode");
+        AssertEqual(1920, GetIntProperty(inactivePlan, "RendererWidth"), "inactive default width");
+        AssertEqual(1080, GetIntProperty(inactivePlan, "RendererHeight"), "inactive default height");
+        AssertNearlyEqual(60.0, GetDoubleProperty(inactivePlan, "RendererFps"), 0.0001, "inactive default renderer FPS");
+        AssertNearlyEqual(1000.0 / 30.0, GetDoubleProperty(inactivePlan, "PreviewMinPresentationIntervalMs"), 0.0001, "inactive selected-format interval");
+
+        var settings = Activator.CreateInstance(captureSettingsType)!;
+        SetPropertyOrBackingField(settings, "Width", (uint)2560);
+        SetPropertyOrBackingField(settings, "Height", (uint)1440);
+        SetPropertyOrBackingField(settings, "FrameRate", 144.0);
+        var inactiveSourceProbe = Activator.CreateInstance(sourceProbeType)!;
+        SetPropertyOrBackingField(inactiveSourceProbe, "SessionActive", false);
+
+        var settingsPlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, inactiveSourceProbe })!;
+        AssertEqual(true, GetBoolProperty(settingsPlan, "UseD3DRenderer"), "active preview plan mode");
+        AssertEqual(2560, GetIntProperty(settingsPlan, "RendererWidth"), "settings fallback width");
+        AssertEqual(1440, GetIntProperty(settingsPlan, "RendererHeight"), "settings fallback height");
+        AssertNearlyEqual(144.0, GetDoubleProperty(settingsPlan, "RendererFps"), 0.0001, "settings fallback FPS");
+        AssertNearlyEqual(1000.0 / 144.0, GetDoubleProperty(settingsPlan, "PreviewMinPresentationIntervalMs"), 0.0001, "settings fallback interval");
+
+        var activeSourceProbe = Activator.CreateInstance(sourceProbeType)!;
+        SetPropertyOrBackingField(activeSourceProbe, "SessionActive", true);
+        SetPropertyOrBackingField(activeSourceProbe, "CurrentWidth", 3840);
+        SetPropertyOrBackingField(activeSourceProbe, "CurrentHeight", 2160);
+        SetPropertyOrBackingField(activeSourceProbe, "CurrentFrameRate", 119.88);
+        var sourcePlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, activeSourceProbe })!;
+        AssertEqual(3840, GetIntProperty(sourcePlan, "RendererWidth"), "active source width");
+        AssertEqual(2160, GetIntProperty(sourcePlan, "RendererHeight"), "active source height");
+        AssertNearlyEqual(119.88, GetDoubleProperty(sourcePlan, "RendererFps"), 0.0001, "active source FPS");
+        AssertNearlyEqual(1000.0 / 119.88, GetDoubleProperty(sourcePlan, "PreviewMinPresentationIntervalMs"), 0.0001, "active source interval");
+
+        var previousForceOff = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF");
+        try
+        {
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null);
+            SetPropertyOrBackingField(settings, "HdrEnabled", true);
+            SetPropertyOrBackingField(settings, "HdrOutputMode", Enum.Parse(hdrOutputModeType, "Hdr10Pq"));
+            var hdrPlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, inactiveSourceProbe })!;
+            AssertEqual(true, GetBoolProperty(hdrPlan, "IsHdr"), "HDR plan follows HDR output policy");
+
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", "true");
+            var forceOffPlan = build.Invoke(null, new object?[] { true, selectedFormat, settings, inactiveSourceProbe })!;
+            AssertEqual(false, GetBoolProperty(forceOffPlan, "IsHdr"), "HDR plan honors force-off policy");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewSurfacePresentationAndShadow_LiveInControllers()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
+        var previewSurfaceControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
+
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewSurface.cs")),
+            "preview surface XAML adapter lives with preview renderer composition");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfaceShadowController.cs")),
+            "preview surface shadow controller lives with preview surface presentation owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewSurfacePresentationController.cs")),
+            "preview surface presentation folded into PreviewLifecycleControllers.cs");
+        AssertContains(previewRendererText, "XAML-facing preview surface adapter");
+        AssertContains(previewRendererText, "private PreviewSurfacePresentationController _previewSurfacePresentationController = null!;");
+        AssertContains(previewRendererText, "private PreviewSurfaceShadowController _previewSurfaceShadowController = null!;");
+        AssertContains(previewRendererText, "private void InitializePreviewSurfacePresentationController()");
+        AssertContains(previewRendererText, "private void UpdateVideoContentOverlays()");
+        AssertContains(previewRendererText, "private void SetupVideoFrameShadow()");
+        AssertContains(previewRendererText, "private void SetupControlBarShadow()");
+        AssertContains(previewRendererText, "=> _previewSurfacePresentationController.UpdateVideoContentOverlays(ViewModel.SourceWidth, ViewModel.SourceHeight);");
+        AssertContains(previewRendererText, "=> _previewSurfacePresentationController.SetGpuPreviewVisibility(visibility);");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.SetupVideoFrameShadow();");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.SetupControlBarShadow();");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.ClearVideoFrameShadow();");
+        AssertContains(previewRendererText, "=> _previewSurfaceShadowController.FadeInVideoFrameShadow(delayMs, durationMs);");
+        AssertContains(previewRendererText, "var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;");
+        AssertContains(previewRendererText, "_previewRendererHostController.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);");
+
+        AssertContains(previewSurfaceControllerText, "internal sealed class PreviewSurfacePresentationController");
+        AssertContains(previewSurfaceControllerText, "public required Func<SwapChainPanel> GetPreviewSwapChainPanel { get; init; }");
+        AssertContains(previewSurfaceControllerText, "private readonly PreviewSurfaceShadowController _shadowController;");
+        AssertContains(previewSurfaceControllerText, "PreviewSurfaceShadowController shadowController)");
+        AssertContains(previewSurfaceControllerText, "var previewSwapChainPanel = _context.GetPreviewSwapChainPanel();");
+        AssertContains(previewSurfaceControllerText, "public void UpdateVideoContentOverlays(int? sourceWidth, int? sourceHeight)");
+        AssertContains(previewSurfaceControllerText, "_shadowController.ClearVideoFrameBounds();");
+        AssertContains(previewSurfaceControllerText, "_shadowController.UpdateVideoFrameBounds(marginH, marginV, fitW, fitH);");
+
+        AssertContains(previewSurfaceControllerText, "internal sealed class PreviewSurfaceShadowController");
+        AssertContains(previewSurfaceControllerText, "private SpriteVisual? _videoShadowVisual;");
+        AssertContains(previewSurfaceControllerText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertContains(previewSurfaceControllerText, "public void UpdateVideoFrameBounds(double marginH, double marginV, double fitW, double fitH)");
+        AssertContains(previewSurfaceControllerText, "public void ClearVideoFrameBounds()");
+        AssertContains(previewSurfaceControllerText, "_videoShadowVisual.Size = Vector2.Zero;");
+        AssertContains(previewSurfaceControllerText, "public void SetupVideoFrameShadow()");
+        AssertContains(previewSurfaceControllerText, "public void SetupControlBarShadow()");
+        AssertContains(previewSurfaceControllerText, "public void ClearVideoFrameShadow()");
+        AssertContains(previewSurfaceControllerText, "public void FadeInVideoFrameShadow(int delayMs, int durationMs)");
+        AssertContains(previewSurfaceControllerText, "public void FadeInControlBarShadow(int delayMs, int durationMs)");
+
+        AssertDoesNotContain(mainWindowText, "private SpriteVisual? _videoShadowVisual;");
+        AssertDoesNotContain(mainWindowText, "private SpriteVisual? _controlBarShadowVisual;");
+        AssertDoesNotContain(previewRendererText, "private SpriteVisual? _videoShadowVisual;");
+        AssertDoesNotContain(previewRendererText, "private SpriteVisual? _controlBarShadowVisual;");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DProjection_OwnsPolicyGroups()
+    {
+        var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+
+        AssertContains(previewRuntimeD3DProjectionText, "internal sealed class PreviewRuntimeD3DProjection");
+        AssertContains(previewRuntimeD3DProjectionText, "public bool GpuActive { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "public long D3DFramesDropped { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameCounters(PreviewRuntimeD3DFrameCounters frameCounters)");
+        AssertContains(previewRuntimeD3DProjectionText, "FramesArrived = frameCounters.FramesArrived;");
+        AssertContains(previewRuntimeD3DProjectionText, "public string RendererMode { get; private set; } = \"None\";");
+        AssertContains(previewRuntimeD3DProjectionText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; private set; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
+        AssertContains(previewRuntimeD3DProjectionText, "public string GpuPlaybackState { get; private set; } = \"None\";");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyRendererState(PreviewRuntimeD3DRendererState rendererState)");
+        AssertContains(previewRuntimeD3DProjectionText, "GpuPlaybackState = rendererState.GpuPlaybackState;");
+        AssertContains(previewRuntimeD3DProjectionText, "public double[] DisplayCadenceRecentIntervalsMs { get; private set; } = Array.Empty<double>();");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyDisplayCadence(PreviewRuntimeD3DDisplayCadence displayCadence)");
+        AssertContains(previewRuntimeD3DProjectionText, "DisplayCadenceRecentIntervalsMs = displayCadence.RecentIntervalsMs;");
+        AssertContains(previewRuntimeD3DProjectionText, "public double D3DInputUploadCpuAvgMs { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyRenderCpuTiming(PreviewRuntimeD3DRenderCpuTiming renderCpuTiming)");
+        AssertContains(previewRuntimeD3DProjectionText, "D3DInputUploadCpuAvgMs = renderCpuTiming.InputUploadAverageMs;");
+        AssertContains(previewRuntimeD3DProjectionText, "public double EstimatedPipelineLatencyMs { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyPipelineLatency(PreviewRuntimeD3DPipelineLatency pipelineLatency)");
+        AssertContains(previewRuntimeD3DProjectionText, "EstimatedPipelineLatencyMs = pipelineLatency.EstimatedPipelineLatencyMs;");
+        AssertContains(previewRuntimeD3DProjectionText, "public long D3DLastSubmittedPreviewPresentId { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameOwnership(PreviewRuntimeD3DFrameOwnership frameOwnership)");
+        AssertContains(previewRuntimeD3DProjectionText, "D3DLastSubmittedSourceSequenceNumber = frameOwnership.LastSubmittedSourceSequenceNumber;");
+        AssertContains(previewRuntimeD3DProjectionText, "public long D3DFrameStatsPresentCount { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameStatistics(PreviewRuntimeD3DFrameStatistics frameStatistics)");
+        AssertContains(previewRuntimeD3DProjectionText, "D3DFrameStatsPresentCount = frameStatistics.PresentCount;");
+        AssertContains(previewRuntimeD3DProjectionText, "public bool D3DFrameLatencyWaitEnabled { get; private set; }");
+        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameLatencyWait(PreviewRuntimeD3DFrameLatencyWait frameLatencyWait)");
+        AssertContains(previewRuntimeD3DProjectionText, "D3DFrameLatencyWaitEnabled = frameLatencyWait.Enabled;");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DProjection Build(PreviewRuntimeSnapshotInput input)");
+        AssertContains(previewRuntimeD3DProjectionText, "var frameCounters = PreviewRuntimeD3DFrameCounterPolicy.Evaluate(input);");
+        AssertContains(previewRuntimeD3DProjectionText, "var d3d = input.D3DRenderer;");
+        AssertContains(previewRuntimeD3DProjectionText, "var rendererState = PreviewRuntimeD3DRendererStatePolicy.Evaluate(d3d, input.IsPreviewing);");
+        AssertContains(previewRuntimeD3DProjectionText, "var displayCadence = PreviewRuntimeD3DDisplayCadencePolicy.Evaluate(d3d, input.PreviewMinPresentationIntervalMs);");
+        AssertContains(previewRuntimeD3DProjectionText, "var renderCpuTiming = PreviewRuntimeD3DRenderCpuTimingPolicy.Evaluate(d3d);");
+        AssertContains(previewRuntimeD3DProjectionText, "var pipelineLatency = PreviewRuntimeD3DPipelineLatencyPolicy.Evaluate(d3d);");
+        AssertContains(previewRuntimeD3DProjectionText, "var frameOwnership = PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate(d3d);");
+        AssertContains(previewRuntimeD3DProjectionText, "var frameStatistics = PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate(d3d);");
+        AssertContains(previewRuntimeD3DProjectionText, "var frameLatencyWait = PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate(d3d);");
+        AssertContains(previewRuntimeD3DProjectionText, "var projection = new PreviewRuntimeD3DProjection();");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameCounters(frameCounters);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyRendererState(rendererState);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyDisplayCadence(displayCadence);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyRenderCpuTiming(renderCpuTiming);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyPipelineLatency(pipelineLatency);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameLatencyWait(frameLatencyWait);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameStatistics(frameStatistics);");
+        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameOwnership(frameOwnership);");
+        AssertContains(previewRuntimeD3DProjectionText, "return projection;");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameCounterPolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameCounters Evaluate(PreviewRuntimeSnapshotInput input)");
+        AssertContains(previewRuntimeD3DProjectionText, "FramesArrived: gpuActive ? d3dFramesSubmitted : input.FramesArrived,");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DRendererStatePolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DRendererState Evaluate(D3D11PreviewRenderer? d3d, bool isPreviewing)");
+        AssertContains(previewRuntimeD3DProjectionText, "RendererMode: d3d?.RendererMode ?? (isPreviewing ? \"CpuSoftwareBitmap\" : \"None\"),");
+        AssertContains(previewRuntimeD3DProjectionText, "RecentSlowFrames: d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DDisplayCadencePolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DDisplayCadence Evaluate(");
+        AssertContains(previewRuntimeD3DProjectionText, "RecentIntervalsMs: displayCadence?.RecentIntervalsMs ?? Array.Empty<double>(),");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DRenderCpuTimingPolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DRenderCpuTiming Evaluate(D3D11PreviewRenderer? d3d)");
+        AssertContains(previewRuntimeD3DProjectionText, "SampleCount: renderCpuTiming?.TotalFrame.SampleCount ?? 0,");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DPipelineLatencyPolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DPipelineLatency Evaluate(D3D11PreviewRenderer? d3d)");
+        AssertContains(previewRuntimeD3DProjectionText, "EstimatedPipelineLatencyMs: pipelineLatency?.AverageMs ?? 0);");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameStatisticsPolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameStatistics Evaluate(D3D11PreviewRenderer? d3d)");
+        AssertContains(previewRuntimeD3DProjectionText, "PresentCount: frameStats?.PresentCount ?? -1,");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameLatencyWaitPolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameLatencyWait Evaluate(D3D11PreviewRenderer? d3d)");
+        AssertContains(previewRuntimeD3DProjectionText, "SampleCount: frameLatencyWait?.Timing.SampleCount ?? 0,");
+        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameOwnershipPolicy");
+        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameOwnership Evaluate(D3D11PreviewRenderer? d3d)");
+        AssertContains(previewRuntimeD3DProjectionText, "LastSubmittedSourceSequenceNumber: frameOwnership?.LastSubmittedSourceSequenceNumber ?? -1,");
+        AssertContains(previewRuntimeD3DProjectionText, "LastDroppedSourceSequenceNumber: frameOwnership?.LastDroppedSourceSequenceNumber ?? -1,");
+
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
+        AssertContains(agentMapText, "owns the renderer projection data contract, D3D policy records");
+        AssertContains(agentMapText, "assignment from evaluated policy records");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
+        AssertContains(cleanupPlanText, "renderer projection data contract, D3D policy records");
+        AssertContains(cleanupPlanText, "evaluated policy records");
+        foreach (var removedFile in new[]
+        {
+            "PreviewRuntimeD3DFrameCounterPolicy.cs",
+            "PreviewRuntimeD3DRendererStatePolicy.cs",
+            "PreviewRuntimeD3DDisplayCadencePolicy.cs",
+            "PreviewRuntimeD3DRenderCpuTimingPolicy.cs",
+            "PreviewRuntimeD3DPipelineLatencyPolicy.cs",
+            "PreviewRuntimeD3DFrameOwnershipPolicy.cs",
+            "PreviewRuntimeD3DFrameStatisticsPolicy.cs",
+            "PreviewRuntimeD3DFrameLatencyWaitPolicy.cs"
+        })
+        {
+            AssertEqual(
+                false,
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", removedFile)),
+                $"{removedFile} folded into PreviewRuntimeSnapshotControllers.cs");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRendererHostController_OwnsRuntimeState()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var mainWindowFamilyText = string.Join(
+                "\n",
+                Directory.GetFiles(Path.Combine(GetRepoRoot(), "Sussudio"), "MainWindow*.cs")
+                    .Select(File.ReadAllText))
+            .Replace("\r\n", "\n");
+        var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
+        var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
+        var previewRendererStartupPlanBuilderText = previewRendererHostControllerText;
+        var statsSnapshotText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
+        var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+
+        AssertContains(previewRendererText, "private PreviewRendererHostController _previewRendererHostController = null!;");
+        AssertContains(previewRendererText, "private void InitializePreviewRendererHostController()");
+        AssertContains(previewRendererText, "GetPreviewSwapChainPanel = () => PreviewSwapChainPanel,");
+        AssertContains(previewRendererText, "SetPreviewSwapChainPanel = panel => PreviewSwapChainPanel = panel,");
+        AssertContains(previewRendererText, "PreviewContentGridSizeChangedHandler = OnPreviewContentGridSizeChanged,");
+        AssertContains(previewRendererText, "PreviewSwapChainPanelSizeChangedHandler = OnPreviewSwapChainPanelSizeChanged,");
+        AssertContains(previewRendererText, "ClearPreviewReinitAnimatingForShutdown = () =>");
+        AssertContains(previewRendererText, "ConfirmPreviewFirstVisual = ConfirmPreviewFirstVisual,");
+        AssertContains(previewRendererText, "MarkStartupFailed = reason => SetPreviewStartupState(PreviewStartupState.Failed, reason),");
+        AssertContains(previewRendererText, "ConfigurePreviewStartupSignals = ConfigurePreviewStartupSignals,");
+        AssertContains(previewRendererText, "private Task StartPreviewRendererAsync()");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.StartAsync();");
+        AssertContains(previewRendererText, "private Task StopPreviewRendererAsync()");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.StopAsync();");
+        AssertContains(previewRendererText, "private void StopPreviewForShutdown()");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.StopForShutdown();");
+        AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
+        AssertContains(mainWindowText, "InitializePreviewRendererHostController();");
+        AssertContains(previewRendererHostControllerText, "internal sealed class PreviewRendererHostControllerContext");
+        AssertContains(previewRendererHostControllerText, "internal sealed class PreviewRendererHostController");
+        AssertDoesNotContain(previewRendererHostControllerText, "partial class PreviewRendererHostController");
+        AssertContains(previewRendererHostControllerText, "private SoftwareBitmapSource? _previewSource;");
+        AssertContains(previewRendererHostControllerText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertContains(previewRendererHostControllerText, "private long _previewFramesArrived;");
+        AssertContains(previewRendererHostControllerText, "private long _previewFramesDisplayed;");
+        AssertContains(previewRendererHostControllerText, "private long _previewFramesDropped;");
+        AssertContains(previewRendererHostControllerText, "private long _previewLastPresentedTick;");
+        AssertContains(previewRendererHostControllerText, "private double _previewMinPresentationIntervalMs;");
+        AssertContains(previewRendererHostControllerText, "private long _lastRendererStopTick;");
+        AssertContains(previewRendererHostControllerText, "private long _rendererReinitUnsafeWindows;");
+        AssertContains(previewRendererHostControllerText, "public D3D11PreviewRenderer? Renderer => _d3dRenderer;");
+        AssertContains(previewRendererHostControllerText, "public bool HasD3DRenderer => _d3dRenderer != null;");
+        AssertContains(previewRendererHostControllerText, "public bool IsCpuPreviewSourceAttached => _previewSource != null;");
+        AssertContains(previewRendererHostControllerText, "public double PreviewMinPresentationIntervalMs => _previewMinPresentationIntervalMs;");
+        AssertContains(previewRendererHostControllerText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertContains(previewRendererHostControllerText, "public int? PendingFrameCount => _d3dRenderer?.PendingFrameCount;");
+        AssertContains(previewRendererHostControllerText, "public Task StartAsync()");
+        AssertContains(previewRendererHostControllerText, "RecordPreviewRendererReinitUnsafeWindow(_d3dRenderer, _context.IsPreviewReinitAnimating());");
+        AssertContains(previewRendererHostControllerText, "var startupPlan = BuildPreviewRendererStartupPlan();");
+        AssertContains(previewRendererHostControllerText, "_previewMinPresentationIntervalMs = startupPlan.PreviewMinPresentationIntervalMs;");
+        AssertContains(previewRendererHostControllerText, "private PreviewRendererStartupPlan BuildPreviewRendererStartupPlan()");
+        AssertContains(previewRendererHostControllerText, "PreviewRendererStartupPlanBuilder.Build(");
+        AssertContains(previewRendererHostControllerText, "private void CleanupPreviewResources()");
+        AssertContains(previewRendererHostControllerText, "_d3dRenderer = null;");
+        AssertContains(previewRendererHostControllerText, "public Task StopAsync()");
+        AssertContains(previewRendererHostControllerText, "private void StartD3DRenderer(PreviewRendererStartupPlan startupPlan)");
+        AssertContains(previewRendererHostControllerText, "renderer.SetExpectedFrameRate(rendererFps);");
+        AssertContains(previewRendererHostControllerText, "renderer.Start(rendererWidth, rendererHeight, rendererFps, isHdr);");
+        AssertContains(previewRendererHostControllerText, "_context.ViewModel.SetPreviewFrameSink(_d3dRenderer);");
+        AssertContains(previewRendererHostControllerText, "PreviewStartupStrategy.D3D11VideoProcessor");
+        AssertContains(previewRendererHostControllerText, "_context.MarkPreviewRendererAttached();");
+        AssertContains(previewRendererHostControllerText, "private D3D11PreviewRenderer CreateFreshD3DPreviewRenderer(bool replaceSwapChainSurface)");
+        AssertContains(previewRendererHostControllerText, "private void OnD3DRendererFirstFrameRendered()");
+        AssertContains(previewRendererHostControllerText, "private void OnD3DRendererRenderThreadFailed(string reason)");
+        AssertContains(previewRendererHostControllerText, "private void StartCpuRenderer()");
+        AssertContains(previewRendererHostControllerText, "_context.ViewModel.SetPreviewFrameSink(null);");
+        AssertContains(previewRendererHostControllerText, "_previewSource = new SoftwareBitmapSource();");
+        AssertContains(previewRendererHostControllerText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
+        AssertContains(previewRendererHostControllerText, "private void MarkPreviewRendererStopped()");
+        AssertContains(previewRendererHostControllerText, "public Task StopRendererForReinitTeardownAsync()");
+        AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
+        AssertContains(previewRendererHostControllerText, "catch (TimeoutException ex)");
+        AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
+        AssertContains(previewRendererHostControllerText, "public void DisposeD3DPreviewRendererForReinit()");
+        AssertContains(previewRendererHostControllerText, "renderer.RetireSharedDeviceReferenceForReinit();");
+        AssertContains(previewRendererHostControllerText, "private void ReplacePreviewSwapChainPanelSurface()");
+        AssertContains(previewRendererHostControllerText, "D3D11_RENDERER_REINIT_UNSAFE_WINDOW");
+        AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
+        AssertContains(previewRendererStartupPlanBuilderText, "internal sealed record PreviewRendererStartupPlan(");
+        AssertContains(previewRendererStartupPlanBuilderText, "internal static class PreviewRendererStartupPlanBuilder");
+        AssertContains(previewRendererStartupPlanBuilderText, "private const int DefaultWidth = 1920;");
+        AssertContains(previewRendererStartupPlanBuilderText, "private const int DefaultHeight = 1080;");
+        AssertContains(previewRendererStartupPlanBuilderText, "private const double DefaultFps = 60.0;");
+        AssertContains(previewRendererStartupPlanBuilderText, "public static double ResolveExpectedIntervalMs(MediaFormat? selectedFormat)");
+        AssertContains(previewRendererStartupPlanBuilderText, "public static PreviewRendererStartupPlan Build(");
+        AssertContains(previewRendererStartupPlanBuilderText, "var negotiatedWidth = sourceProbe?.SessionActive == true ? sourceProbe.CurrentWidth : 0;");
+        AssertContains(previewRendererStartupPlanBuilderText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : settingsWidth;");
+        AssertContains(previewRendererStartupPlanBuilderText, "var rendererFps = negotiatedFps > 0 ? negotiatedFps : settingsFps;");
+        AssertContains(statsSnapshotText, "GetRenderer = () => _previewRendererHostController.Renderer,");
+        AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
+        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs())");
+        AssertContains(statsSnapshotProviderText, "GetPresentCadenceMetrics(previewMinPresentationIntervalMs)");
+        AssertDoesNotContain(agentMapText, "PreviewRendererHostController.Lifecycle.cs");
+        AssertDoesNotContain(agentMapText, "PreviewRendererHostController.D3D.cs");
+        AssertDoesNotContain(agentMapText, "PreviewRendererHostController.Reinit.cs");
+        AssertDoesNotContain(cleanupPlanText, "PreviewRendererHostController.Lifecycle.cs");
+        AssertDoesNotContain(cleanupPlanText, "PreviewRendererHostController.D3D.cs");
+        AssertDoesNotContain(cleanupPlanText, "PreviewRendererHostController.Reinit.cs");
+        AssertDoesNotContain(previewRendererText, "DisposeD3DPreviewRendererForReinit");
+        AssertDoesNotContain(previewRendererText, "var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;");
+        AssertDoesNotContain(previewRendererText, "var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;");
+        AssertDoesNotContain(previewRendererText, "var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;");
+        AssertDoesNotContain(mainWindowFamilyText, "private SoftwareBitmapSource? _previewSource;");
+        AssertDoesNotContain(mainWindowFamilyText, "private D3D11PreviewRenderer? _d3dRenderer;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewFramesArrived;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewFramesDisplayed;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewFramesDropped;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _previewLastPresentedTick;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _lastRendererStopTick;");
+        AssertDoesNotContain(mainWindowFamilyText, "private long _rendererReinitUnsafeWindows;");
+        AssertDoesNotContain(mainWindowFamilyText, "private double _previewMinPresentationIntervalMs;");
+        AssertDoesNotContain(mainWindowFamilyText, "new D3D11PreviewRenderer(");
+        AssertDoesNotContain(mainWindowFamilyText, "RetireSharedDeviceReferenceForReinit();");
+        AssertDoesNotContain(mainWindowText, "PreviewRendererStartupPlanBuilder.ResolveExpectedIntervalMs");
+        AssertDoesNotContain(mainWindowText, "private double ResolvePreviewExpectedIntervalMs()");
+        AssertDoesNotContain(previewRendererText, "private long _lastRendererStopTick;");
+        AssertDoesNotContain(previewRendererText, "private long _rendererReinitUnsafeWindows;");
+        AssertDoesNotContain(previewRendererText, "public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);");
+        AssertDoesNotContain(previewRendererText, "private void ReplacePreviewSwapChainPanelSurface()");
+        AssertDoesNotContain(mainWindowText, "private static bool IsHdrSubtype");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotController_OwnsSnapshotMapping()
+    {
+        var mainWindowText = ReadMainWindowCompositionSource();
+        var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
+        var previewRuntimeSnapshotText = previewRendererText;
+        var previewRuntimeSnapshotInitialization = ExtractMemberCode(previewRuntimeSnapshotText, "InitializePreviewRuntimeSnapshotSamplingController");
+        var previewRuntimeSnapshotControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotControllerBuildText = ExtractMemberCode(previewRuntimeSnapshotControllerText, "Build");
+        var previewRuntimeSnapshotSamplingControllerText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotMapperText = ExtractTextBetween(
+            previewRuntimeSnapshotControllerText,
+            "internal static class PreviewRuntimeSnapshotMapper",
+            "internal sealed class PreviewRuntimeSnapshotHealthInput");
+        var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotHealthPolicyText = previewRuntimeSnapshotControllerText;
+        var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
+        var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs").Replace("\r\n", "\n");
+        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+
+        AssertContains(previewRuntimeSnapshotText, "private PreviewRuntimeSnapshotSamplingController _previewRuntimeSnapshotSamplingController = null!;");
+        AssertContains(previewRuntimeSnapshotText, "private void InitializePreviewRuntimeSnapshotSamplingController()");
+        AssertContains(previewRuntimeSnapshotText, "UiDispatchController = WindowUiDispatchController,");
+        AssertContains(previewRuntimeSnapshotText, "RendererHostController = _previewRendererHostController,");
+        AssertContains(previewRuntimeSnapshotText, "StartupSessionController = _previewStartupSessionController,");
+        AssertContains(previewRuntimeSnapshotText, "StartupSignalCoordinator = _previewStartupSignalCoordinator,");
+        AssertContains(previewRuntimeSnapshotText, "IsGpuElementVisible = () => PreviewSwapChainPanel.Visibility == Visibility.Visible,");
+        AssertContains(previewRuntimeSnapshotText, "GetStartupVisualTimeoutMs = () => PreviewStartupVisualTimeoutMs");
+        AssertContains(previewRuntimeSnapshotText, "private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewRuntimeSnapshotText, "=> await _previewRuntimeSnapshotSamplingController.GetSnapshotAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(mainWindowText, "InitializePreviewRuntimeSnapshotSamplingController();");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "internal sealed class PreviewRuntimeSnapshotSamplingControllerContext");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "public required WindowUiDispatchController UiDispatchController { get; init; }");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "public required PreviewRendererHostController RendererHostController { get; init; }");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "public required PreviewStartupSessionController StartupSessionController { get; init; }");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "public required PreviewStartupSignalCoordinator StartupSignalCoordinator { get; init; }");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "internal sealed class PreviewRuntimeSnapshotSamplingController");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "public Task<PreviewRuntimeSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "_context.UiDispatchController.InvokeWithRetryAsync(");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "BuildSnapshot,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "\"Failed to enqueue preview snapshot operation.\",");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private PreviewRuntimeSnapshot BuildSnapshot()");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var startupSignalSnapshot = startupSignals.Snapshot;");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.ShouldRefreshMissingSignalsForSnapshot");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupMissingSignals = startupSignals.BuildMissingSignals();");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "D3DRenderer = rendererHost.Renderer,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewSourceAttached = rendererHost.IsCpuPreviewSourceAttached,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuElementVisible = _context.IsGpuElementVisible(),");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "FramesArrived = rendererHost.FramesArrived,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewMinPresentationIntervalMs = rendererHost.PreviewMinPresentationIntervalMs,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = startupSession.State.ToString(),");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "IsStartupWaitingForFirstVisual = startupSession.IsWaitingForFirstVisual,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupGpuSignalMediaOpened = startupSignalSnapshot.GpuSignalMediaOpened,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuPositionEventCount = startupSignals.PositionEventCount");
+        AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
+        AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
+        AssertContains(previewRuntimeSnapshotControllerText, "public D3D11PreviewRenderer? D3DRenderer { get; init; }");
+        AssertContains(previewRuntimeSnapshotControllerText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
+        AssertContains(previewRuntimeSnapshotControllerText, "public long GpuPositionEventCount { get; init; }");
+        AssertContains(previewRuntimeSnapshotControllerText, "public static PreviewRuntimeSnapshot Build(PreviewRuntimeSnapshotInput input)");
+        AssertContains(previewRuntimeSnapshotControllerText, "var d3dProjection = PreviewRuntimeD3DProjection.Build(input);");
+        AssertContains(previewRuntimeSnapshotControllerText, "var healthInput = PreviewRuntimeSnapshotHealthInputFactory.Build(");
+        AssertContains(previewRuntimeSnapshotControllerText, "Environment.TickCount64,");
+        AssertContains(previewRuntimeSnapshotControllerText, "var health = PreviewRuntimeSnapshotHealthPolicy.Evaluate(healthInput);");
+        AssertContains(previewRuntimeSnapshotControllerText, "return PreviewRuntimeSnapshotMapper.Build(input, d3dProjection, health, DateTimeOffset.UtcNow);");
+        AssertContains(previewRuntimeSnapshotMapperText, "internal static class PreviewRuntimeSnapshotMapper");
+        AssertContains(previewRuntimeSnapshotMapperText, "public static PreviewRuntimeSnapshot Build(");
+        AssertContains(previewRuntimeSnapshotMapperText, "var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);");
+        AssertContains(previewRuntimeSnapshotMapperText, "var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);");
+        AssertContains(previewRuntimeSnapshotMapperText, "var gpuPlayback = PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate(input, d3dProjection);");
+        AssertContains(previewRuntimeSnapshotMapperText, "return new PreviewRuntimeSnapshot");
+        AssertContains(previewRuntimeSnapshotMapperText, "TimestampUtc = timestampUtc,");
+        AssertContains(previewRuntimeSnapshotMapperText, "IsPreviewing = surface.IsPreviewing,");
+        AssertContains(previewRuntimeSnapshotMapperText, "FramesArrived = surface.FramesArrived,");
+        AssertContains(previewRuntimeSnapshotMapperText, "StartupState = startup.State,");
+        AssertContains(previewRuntimeSnapshotMapperText, "StartupElapsedMs = startup.ElapsedMs,");
+        AssertContains(previewRuntimeSnapshotMapperText, "BlankSuspected = surface.BlankSuspected,");
+        AssertContains(previewRuntimeSnapshotMapperText, "StallSuspected = surface.StallSuspected,");
+        AssertContains(previewRuntimeSnapshotMapperText, "GpuPlaybackState = gpuPlayback.PlaybackState,");
+        AssertContains(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = gpuPlayback.PositionEventCount");
+        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "internal static class PreviewRuntimeSnapshotSurfaceProjectionPolicy");
+        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "public static PreviewRuntimeSnapshotSurfaceProjection Evaluate(");
+        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "GpuActive: d3dProjection.GpuActive,");
+        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "BlankSuspected: health.BlankSuspected,");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "internal static class PreviewRuntimeSnapshotStartupProjectionPolicy");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "public static PreviewRuntimeSnapshotStartupProjection Evaluate(");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "ElapsedMs: health.StartupElapsedMs,");
+        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "RecoveryAttemptCount: input.StartupRecoveryAttemptCount,");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "internal static class PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "public static PreviewRuntimeSnapshotGpuPlaybackProjection Evaluate(");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PlaybackState: d3dProjection.GpuPlaybackState,");
+        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PositionEventCount: input.GpuPositionEventCount);");
+        AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "internal static class PreviewRuntimeSnapshotHealthInputFactory");
+        AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "public static PreviewRuntimeSnapshotHealthInput Build(");
+        AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "RendererAttached = d3dProjection.RendererAttached,");
+        AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "CurrentTick = currentTick,");
+        AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "UtcNow = utcNow");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "internal static class PreviewRuntimeSnapshotHealthPolicy");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "public static PreviewRuntimeSnapshotHealth Evaluate(PreviewRuntimeSnapshotHealthInput input)");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "var startupTimedOut = input.IsPreviewing");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.FramesArrived > 30");
+        AssertContains(previewRuntimeSnapshotHealthPolicyText, "input.CurrentTick - input.LastPresentedTick > 3000");
+        AssertContains(previewRuntimeSnapshotModelText, "public sealed class PreviewRuntimeSnapshot");
+        AssertContains(previewRuntimeSnapshotModelText, "public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;");
+        AssertContains(previewRuntimeSnapshotModelText, "public bool RendererAttached { get; init; }");
+        AssertContains(previewRuntimeSnapshotModelText, "public string StartupState { get; init; } = \"Idle\";");
+        AssertContains(previewRuntimeSnapshotModelText, "public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }");
+        AssertContains(previewRuntimeSnapshotModelText, "public double[] DisplayCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();");
+        AssertContains(previewRuntimeSnapshotModelText, "public string RendererMode { get; init; } = \"None\";");
+        AssertContains(previewRuntimeSnapshotModelText, "public string D3DSwapChainAddress { get; init; } = string.Empty;");
+        AssertContains(previewRuntimeSnapshotModelText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
+        AssertContains(previewRuntimeSnapshotModelText, "public string GpuPlaybackState { get; init; } = \"None\";");
+        AssertDoesNotContain(previewRuntimeSnapshotModelText, "partial class PreviewRuntimeSnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
+            "preview runtime DTO folded into AutomationRuntimeModels.cs");
+        AssertContains(agentMapText, "MainWindow.xaml.cs");
+        AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
+        AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
+        AssertContains(agentMapText, "health input factory");
+        AssertContains(cleanupPlanText, "MainWindow.xaml.cs");
+        AssertContains(cleanupPlanText, "surface/frame");
+        AssertContains(cleanupPlanText, "display cadence");
+        AssertContains(cleanupPlanText, "D3D renderer diagnostics");
+        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
+        AssertDoesNotContain(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
+        AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");
+        AssertContains(cleanupPlanText, "health input factory");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotMapper.cs")),
+            "Preview runtime snapshot mapper stays folded into the snapshot controller owner");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuActive = d3dProjection.GpuActive,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "FramesArrived = d3dProjection.FramesArrived,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "BlankSuspected = health.BlankSuspected,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StallSuspected = health.StallSuspected,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupElapsedMs = health.StartupElapsedMs,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPlaybackState = d3dProjection.GpuPlaybackState,");
+        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "return new PreviewRuntimeSnapshot\n        {");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "BlankSuspected = health.BlankSuspected,");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "StallSuspected = health.StallSuspected,");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "return new PreviewRuntimeSnapshot");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "new PreviewRuntimeSnapshotInput");
+        AssertDoesNotContain(previewRuntimeSnapshotInitialization, "BuildPreviewStartupMissingSignals()");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "FramesArrived = _previewRendererHostController.FramesArrived,");
+        AssertDoesNotContain(previewRuntimeSnapshotSamplingControllerText, "TaskCompletionSource<PreviewRuntimeSnapshot>");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "GetRenderCpuTimingMetrics()");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameOwnershipMetrics()");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "GetDxgiFrameStatisticsMetrics()");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameLatencyWaitMetrics()");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "GetPipelineLatencyMetrics()");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "_dispatcherQueue.TryEnqueue");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "const int maxAttempts = 3;");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "CurrentPreviewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed");
+        AssertDoesNotContain(previewRuntimeSnapshotText, "IsStartupWaitingForFirstVisual = CurrentPreviewStartupState == PreviewStartupState.WaitingForFirstVisual");
+        AssertDoesNotContain(previewRendererText, "private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotSamplingController.cs")),
+            "preview runtime snapshot sampling lives with the snapshot controller");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewRuntimeSnapshot.cs")),
+            "preview runtime snapshot adapter lives with the preview renderer composition");
+
+        return Task.CompletedTask;
+    }
+
+
+    internal static Task PreviewRuntimeD3DFrameCounterPolicy_PreservesCpuFallbackCounters()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameCounterPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy.Evaluate not found.");
+
+        var attachedInput = Activator.CreateInstance(inputType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(attachedInput, "D3DRenderer", null);
+        SetPropertyOrBackingField(attachedInput, "PreviewSourceAttached", true);
+        SetPropertyOrBackingField(attachedInput, "FramesArrived", 31L);
+        SetPropertyOrBackingField(attachedInput, "FramesDisplayed", 17L);
+        SetPropertyOrBackingField(attachedInput, "FramesDropped", 4L);
+
+        var attachedCounters = evaluate.Invoke(null, new[] { attachedInput })
+                               ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(attachedCounters, "GpuActive"), "CPU fallback reports GPU inactive");
+        AssertEqual(true, GetBoolProperty(attachedCounters, "RendererAttached"), "CPU fallback keeps renderer attached");
+        AssertEqual(31L, GetLongProperty(attachedCounters, "FramesArrived"), "CPU fallback frames arrived");
+        AssertEqual(17L, GetLongProperty(attachedCounters, "FramesDisplayed"), "CPU fallback frames displayed");
+        AssertEqual(4L, GetLongProperty(attachedCounters, "FramesDropped"), "CPU fallback frames dropped");
+        AssertEqual(0L, GetLongProperty(attachedCounters, "D3DFramesSubmitted"), "null D3D submitted counter");
+        AssertEqual(0L, GetLongProperty(attachedCounters, "D3DFramesRendered"), "null D3D rendered counter");
+        AssertEqual(0L, GetLongProperty(attachedCounters, "D3DFramesDropped"), "null D3D dropped counter");
+
+        var detachedInput = Activator.CreateInstance(inputType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(detachedInput, "D3DRenderer", null);
+        SetPropertyOrBackingField(detachedInput, "PreviewSourceAttached", false);
+
+        var detachedCounters = evaluate.Invoke(null, new[] { detachedInput })
+                               ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameCounterPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(detachedCounters, "RendererAttached"), "null D3D without CPU source is detached");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DProjectionBuilder_AppliesPolicyGroups()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var build = projectionType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build not found.");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "D3DRenderer", null);
+        SetPropertyOrBackingField(input, "PreviewSourceAttached", true);
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "FramesArrived", 31L);
+        SetPropertyOrBackingField(input, "FramesDisplayed", 17L);
+        SetPropertyOrBackingField(input, "FramesDropped", 4L);
+        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
+
+        var projection = build.Invoke(null, new[] { input })
+                         ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build returned null.");
+        AssertEqual(false, GetBoolProperty(projection, "GpuActive"), "builder applies frame-counter GPU state");
+        AssertEqual(true, GetBoolProperty(projection, "RendererAttached"), "builder applies CPU fallback attachment");
+        AssertEqual(31L, GetLongProperty(projection, "FramesArrived"), "builder applies frame-counter arrived value");
+        AssertEqual("CpuSoftwareBitmap", GetStringProperty(projection, "RendererMode"), "builder applies renderer-state fallback");
+        AssertEqual(0, GetIntProperty(projection, "DisplayCadenceSampleCount"), "builder applies display cadence defaults");
+        AssertEqual(0d, GetDoubleProperty(projection, "D3DInputUploadCpuAvgMs"), "builder applies render CPU timing defaults");
+        AssertEqual(0d, GetDoubleProperty(projection, "EstimatedPipelineLatencyMs"), "builder applies pipeline latency defaults");
+        AssertEqual(false, GetBoolProperty(projection, "D3DFrameLatencyWaitEnabled"), "builder applies frame-latency wait defaults");
+        AssertEqual(-1L, GetLongProperty(projection, "D3DFrameStatsPresentCount"), "builder applies frame-stat sentinels");
+        AssertEqual(-1L, GetLongProperty(projection, "D3DLastSubmittedSourceSequenceNumber"), "builder applies frame-ownership sentinels");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameStatisticsPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate not found.");
+
+        var frameStatistics = evaluate.Invoke(null, new object[] { null! })
+                              ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameStatisticsPolicy returned null.");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "SampleCount"), "null D3D frame-stat sample count");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "SuccessCount"), "null D3D frame-stat success count");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "FailureCount"), "null D3D frame-stat failure count");
+        AssertEqual(string.Empty, GetStringProperty(frameStatistics, "LastError"), "null D3D frame-stat last error");
+        AssertEqual(-1L, GetLongProperty(frameStatistics, "PresentCount"), "null D3D present-count sentinel");
+        AssertEqual(-1L, GetLongProperty(frameStatistics, "PresentRefreshCount"), "null D3D present-refresh sentinel");
+        AssertEqual(-1L, GetLongProperty(frameStatistics, "SyncRefreshCount"), "null D3D sync-refresh sentinel");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "SyncQpcTime"), "null D3D sync QPC time");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "LastPresentDelta"), "null D3D present delta");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "LastPresentRefreshDelta"), "null D3D present-refresh delta");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "LastSyncRefreshDelta"), "null D3D sync-refresh delta");
+        AssertEqual(0L, GetLongProperty(frameStatistics, "MissedRefreshCount"), "null D3D missed-refresh count");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameLatencyWaitPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate not found.");
+
+        var frameLatencyWait = evaluate.Invoke(null, new object[] { null! })
+                               ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameLatencyWaitPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(frameLatencyWait, "Enabled"), "null D3D frame-latency wait enabled");
+        AssertEqual(false, GetBoolProperty(frameLatencyWait, "HandleActive"), "null D3D frame-latency wait handle active");
+        AssertEqual(0L, GetLongProperty(frameLatencyWait, "CallCount"), "null D3D frame-latency wait call count");
+        AssertEqual(0L, GetLongProperty(frameLatencyWait, "SignaledCount"), "null D3D frame-latency wait signaled count");
+        AssertEqual(0L, GetLongProperty(frameLatencyWait, "TimeoutCount"), "null D3D frame-latency wait timeout count");
+        AssertEqual(0L, GetLongProperty(frameLatencyWait, "UnexpectedResultCount"), "null D3D frame-latency wait unexpected-result count");
+        AssertEqual(0u, GetPropertyValue(frameLatencyWait, "LastResult"), "null D3D frame-latency wait last result");
+        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "LastWaitMs"), "null D3D frame-latency wait last wait");
+        AssertEqual(0, GetIntProperty(frameLatencyWait, "SampleCount"), "null D3D frame-latency wait sample count");
+        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "AverageMs"), "null D3D frame-latency wait average");
+        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "P95Ms"), "null D3D frame-latency wait p95");
+        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "P99Ms"), "null D3D frame-latency wait p99");
+        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "MaxMs"), "null D3D frame-latency wait max");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameOwnershipPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate not found.");
+
+        var frameOwnership = evaluate.Invoke(null, new object[] { null! })
+                             ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameOwnershipPolicy returned null.");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedPreviewPresentId"), "null D3D submitted present id");
+        AssertEqual(-1L, GetLongProperty(frameOwnership, "LastSubmittedSourceSequenceNumber"), "null D3D submitted source sequence sentinel");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedSourcePtsTicks"), "null D3D submitted source PTS");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedQpc"), "null D3D submitted QPC");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedUtcUnixMs"), "null D3D submitted UTC");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedPreviewPresentId"), "null D3D rendered present id");
+        AssertEqual(-1L, GetLongProperty(frameOwnership, "LastRenderedSourceSequenceNumber"), "null D3D rendered source sequence sentinel");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedSourcePtsTicks"), "null D3D rendered source PTS");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedQpc"), "null D3D rendered QPC");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedUtcUnixMs"), "null D3D rendered UTC");
+        AssertEqual(0d, GetDoubleProperty(frameOwnership, "LastRenderedSchedulerToPresentMs"), "null D3D scheduler-to-present");
+        AssertEqual(0d, GetDoubleProperty(frameOwnership, "LastRenderedPipelineLatencyMs"), "null D3D pipeline latency");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedPreviewPresentId"), "null D3D dropped present id");
+        AssertEqual(-1L, GetLongProperty(frameOwnership, "LastDroppedSourceSequenceNumber"), "null D3D dropped source sequence sentinel");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedSourcePtsTicks"), "null D3D dropped source PTS");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedQpc"), "null D3D dropped QPC");
+        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedUtcUnixMs"), "null D3D dropped UTC");
+        AssertEqual(string.Empty, GetStringProperty(frameOwnership, "LastDropReason"), "null D3D drop reason");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRendererStatePolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy.Evaluate not found.");
+
+        var previewingState = evaluate.Invoke(null, new object[] { null!, true })
+                              ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy returned null.");
+        AssertEqual("CpuSoftwareBitmap", GetStringProperty(previewingState, "RendererMode"), "null D3D previewing renderer mode");
+        AssertEqual(0, GetIntProperty(previewingState, "PresentSyncInterval"), "null D3D present sync interval");
+        AssertEqual(0, GetIntProperty(previewingState, "MaxFrameLatency"), "null D3D max frame latency");
+        AssertEqual(0, GetIntProperty(previewingState, "SwapChainBufferCount"), "null D3D swap-chain buffer count");
+        AssertEqual(string.Empty, GetStringProperty(previewingState, "SwapChainAddress"), "null D3D swap-chain address");
+        AssertEqual(0L, GetLongProperty(previewingState, "RenderThreadFailureCount"), "null D3D render-thread failure count");
+        AssertEqual(string.Empty, GetStringProperty(previewingState, "LastRenderThreadFailureType"), "null D3D failure type");
+        AssertEqual(string.Empty, GetStringProperty(previewingState, "LastRenderThreadFailureMessage"), "null D3D failure message");
+        AssertEqual(0, GetIntProperty(previewingState, "LastRenderThreadFailureHResult"), "null D3D failure HRESULT");
+        AssertEqual(0, GetIntProperty(previewingState, "PendingFrameCount"), "null D3D pending frame count");
+        AssertEqual("None", GetStringProperty(previewingState, "InputColorSpace"), "null D3D input color space");
+        AssertEqual("None", GetStringProperty(previewingState, "OutputColorSpace"), "null D3D output color space");
+        var recentSlowFrames = GetPropertyValue(previewingState, "RecentSlowFrames") as Array
+                               ?? throw new InvalidOperationException("RecentSlowFrames was not an array.");
+        AssertEqual(0, recentSlowFrames.Length, "null D3D recent slow-frame count");
+        AssertEqual("None", GetStringProperty(previewingState, "GpuPlaybackState"), "null D3D GPU playback state");
+        AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoWidth"), "null D3D natural video width");
+        AssertEqual(0, GetIntProperty(previewingState, "NaturalVideoHeight"), "null D3D natural video height");
+        AssertEqual(0d, GetDoubleProperty(previewingState, "PositionMs"), "null D3D GPU position");
+
+        var idleState = evaluate.Invoke(null, new object[] { null!, false })
+                        ?? throw new InvalidOperationException("PreviewRuntimeD3DRendererStatePolicy returned null for idle.");
+        AssertEqual("None", GetStringProperty(idleState, "RendererMode"), "null D3D idle renderer mode");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DDisplayCadencePolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DDisplayCadencePolicy.Evaluate not found.");
+
+        var displayCadence = evaluate.Invoke(null, new object[] { null!, 8.33d })
+                             ?? throw new InvalidOperationException("PreviewRuntimeD3DDisplayCadencePolicy returned null.");
+        AssertEqual(0, GetIntProperty(displayCadence, "SampleCount"), "null D3D display cadence sample count");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "ObservedFps"), "null D3D display cadence observed fps");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "ExpectedIntervalMs"), "null D3D display cadence expected interval");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "AverageIntervalMs"), "null D3D display cadence average interval");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "P95IntervalMs"), "null D3D display cadence p95 interval");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "P99IntervalMs"), "null D3D display cadence p99 interval");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "MaxIntervalMs"), "null D3D display cadence max interval");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "OnePercentLowFps"), "null D3D display cadence one-percent low");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "FivePercentLowFps"), "null D3D display cadence five-percent low");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "SampleDurationMs"), "null D3D display cadence sample duration");
+        var recentIntervals = GetPropertyValue(displayCadence, "RecentIntervalsMs") as Array
+                              ?? throw new InvalidOperationException("RecentIntervalsMs was not an array.");
+        AssertEqual(0, recentIntervals.Length, "null D3D display cadence recent interval count");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "JitterStdDevMs"), "null D3D display cadence jitter");
+        AssertEqual(0L, GetLongProperty(displayCadence, "SlowFrameCount"), "null D3D display cadence slow-frame count");
+        AssertEqual(0d, GetDoubleProperty(displayCadence, "SlowFramePercent"), "null D3D display cadence slow-frame percent");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRenderCpuTimingPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DRenderCpuTimingPolicy.Evaluate not found.");
+
+        var renderCpuTiming = evaluate.Invoke(null, new object[] { null! })
+                              ?? throw new InvalidOperationException("PreviewRuntimeD3DRenderCpuTimingPolicy returned null.");
+        AssertEqual(0, GetIntProperty(renderCpuTiming, "SampleCount"), "null D3D render CPU timing sample count");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadAverageMs"), "null D3D input-upload average");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadP95Ms"), "null D3D input-upload p95");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadP99Ms"), "null D3D input-upload p99");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadMaxMs"), "null D3D input-upload max");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitAverageMs"), "null D3D render-submit average");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitP95Ms"), "null D3D render-submit p95");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitP99Ms"), "null D3D render-submit p99");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitMaxMs"), "null D3D render-submit max");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallAverageMs"), "null D3D present-call average");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallP95Ms"), "null D3D present-call p95");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallP99Ms"), "null D3D present-call p99");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallMaxMs"), "null D3D present-call max");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameAverageMs"), "null D3D total-frame average");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameP95Ms"), "null D3D total-frame p95");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameP99Ms"), "null D3D total-frame p99");
+        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameMaxMs"), "null D3D total-frame max");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults()
+    {
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DPipelineLatencyPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeD3DPipelineLatencyPolicy.Evaluate not found.");
+
+        var pipelineLatency = evaluate.Invoke(null, new object[] { null! })
+                              ?? throw new InvalidOperationException("PreviewRuntimeD3DPipelineLatencyPolicy returned null.");
+        AssertEqual(0, GetIntProperty(pipelineLatency, "SampleCount"), "null D3D pipeline latency sample count");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "AverageMs"), "null D3D pipeline latency average");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "P95Ms"), "null D3D pipeline latency p95");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "P99Ms"), "null D3D pipeline latency p99");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "MaxMs"), "null D3D pipeline latency max");
+        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "EstimatedPipelineLatencyMs"), "null estimated pipeline latency");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthInput");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy.Evaluate not found.");
+        var now = DateTimeOffset.UtcNow;
+
+        var cpuPathInput = Activator.CreateInstance(inputType)
+                           ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealthInput.");
+        SetPropertyOrBackingField(cpuPathInput, "IsPreviewing", true);
+        SetPropertyOrBackingField(cpuPathInput, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(cpuPathInput, "StartupRequestedUtc", now.AddMilliseconds(-2000));
+        SetPropertyOrBackingField(cpuPathInput, "StartupTimeoutMs", 1000);
+        SetPropertyOrBackingField(cpuPathInput, "RendererAttached", true);
+        SetPropertyOrBackingField(cpuPathInput, "GpuActive", false);
+        SetPropertyOrBackingField(cpuPathInput, "FramesArrived", 31L);
+        SetPropertyOrBackingField(cpuPathInput, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(cpuPathInput, "LastPresentedTick", 1000L);
+        SetPropertyOrBackingField(cpuPathInput, "CurrentTick", 4001L);
+        SetPropertyOrBackingField(cpuPathInput, "UtcNow", now);
+
+        var cpuPathHealth = evaluate.Invoke(null, new[] { cpuPathInput })
+                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy returned null.");
+        AssertEqual(true, GetDoubleProperty(cpuPathHealth, "StartupElapsedMs") >= 2000, "startup elapsed uses supplied clock");
+        AssertEqual(true, GetBoolProperty(cpuPathHealth, "BlankSuspected"), "CPU path blank suspected");
+        AssertEqual(true, GetBoolProperty(cpuPathHealth, "StallSuspected"), "CPU path stall suspected");
+
+        var gpuPathInput = Activator.CreateInstance(inputType)
+                           ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealthInput.");
+        SetPropertyOrBackingField(gpuPathInput, "IsPreviewing", true);
+        SetPropertyOrBackingField(gpuPathInput, "RendererAttached", true);
+        SetPropertyOrBackingField(gpuPathInput, "GpuActive", true);
+        SetPropertyOrBackingField(gpuPathInput, "FramesArrived", 31L);
+        SetPropertyOrBackingField(gpuPathInput, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(gpuPathInput, "LastPresentedTick", 1000L);
+        SetPropertyOrBackingField(gpuPathInput, "CurrentTick", 4001L);
+        SetPropertyOrBackingField(gpuPathInput, "UtcNow", now);
+
+        var gpuPathHealth = evaluate.Invoke(null, new[] { gpuPathInput })
+                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy returned null.");
+        AssertEqual(false, GetBoolProperty(gpuPathHealth, "BlankSuspected"), "GPU path does not use CPU blank suspicion");
+        AssertEqual(false, GetBoolProperty(gpuPathHealth, "StallSuspected"), "GPU path does not use CPU stall suspicion");
+
+        var timeoutInput = Activator.CreateInstance(inputType)
+                           ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealthInput.");
+        SetPropertyOrBackingField(timeoutInput, "IsPreviewing", true);
+        SetPropertyOrBackingField(timeoutInput, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(timeoutInput, "StartupRequestedUtc", now.AddMilliseconds(-1500));
+        SetPropertyOrBackingField(timeoutInput, "StartupTimeoutMs", 1000);
+        SetPropertyOrBackingField(timeoutInput, "RendererAttached", true);
+        SetPropertyOrBackingField(timeoutInput, "GpuActive", false);
+        SetPropertyOrBackingField(timeoutInput, "FramesArrived", 0L);
+        SetPropertyOrBackingField(timeoutInput, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(timeoutInput, "CurrentTick", 4001L);
+        SetPropertyOrBackingField(timeoutInput, "UtcNow", now);
+
+        var timeoutHealth = evaluate.Invoke(null, new[] { timeoutInput })
+                            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthPolicy returned null.");
+        AssertEqual(true, GetBoolProperty(timeoutHealth, "BlankSuspected"), "startup timeout marks blank suspected");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var factoryType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealthInputFactory");
+        var build = factoryType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthInputFactory.Build not found.");
+        var now = DateTimeOffset.UtcNow;
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(input, "StartupRequestedUtc", now.AddMilliseconds(-2500));
+        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1200);
+        SetPropertyOrBackingField(input, "LastPresentedTick", 42L);
+
+        var projection = Activator.CreateInstance(projectionType)
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+        SetPropertyOrBackingField(projection, "RendererAttached", true);
+        SetPropertyOrBackingField(projection, "GpuActive", false);
+        SetPropertyOrBackingField(projection, "FramesArrived", 55L);
+        SetPropertyOrBackingField(projection, "FramesDisplayed", 6L);
+
+        var healthInput = build.Invoke(null, new object[] { input, projection, 999L, now })
+                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotHealthInputFactory returned null.");
+        AssertEqual(true, GetBoolProperty(healthInput, "IsPreviewing"), "health input previewing");
+        AssertEqual(true, GetBoolProperty(healthInput, "IsStartupWaitingForFirstVisual"), "health input waiting for first visual");
+        AssertEqual(GetPropertyValue(input, "StartupRequestedUtc"), GetPropertyValue(healthInput, "StartupRequestedUtc"), "health input startup request time");
+        AssertEqual(1200, GetIntProperty(healthInput, "StartupTimeoutMs"), "health input startup timeout");
+        AssertEqual(true, GetBoolProperty(healthInput, "RendererAttached"), "health input renderer attached");
+        AssertEqual(false, GetBoolProperty(healthInput, "GpuActive"), "health input GPU active");
+        AssertEqual(55L, GetLongProperty(healthInput, "FramesArrived"), "health input frames arrived");
+        AssertEqual(6L, GetLongProperty(healthInput, "FramesDisplayed"), "health input frames displayed");
+        AssertEqual(42L, GetLongProperty(healthInput, "LastPresentedTick"), "health input last presented tick");
+        AssertEqual(999L, GetLongProperty(healthInput, "CurrentTick"), "health input current tick");
+        AssertEqual(now, GetPropertyValue(healthInput, "UtcNow"), "health input clock");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSurfaceProjectionPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate not found.");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "PlaceholderVisible", false);
+        SetPropertyOrBackingField(input, "GpuElementVisible", true);
+        SetPropertyOrBackingField(input, "CpuElementVisible", false);
+
+        var d3dProjection = Activator.CreateInstance(projectionType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+        SetPropertyOrBackingField(d3dProjection, "GpuActive", true);
+        SetPropertyOrBackingField(d3dProjection, "RendererAttached", true);
+        SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
+        SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
+        SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
+
+        var health = Activator.CreateInstance(healthType, new object?[] { null, true, false })
+                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+        var surface = evaluate.Invoke(null, new object?[] { input, d3dProjection, health })
+                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy returned null.");
+
+        AssertEqual(true, GetBoolProperty(surface, "IsPreviewing"), "surface projection previewing");
+        AssertEqual(true, GetBoolProperty(surface, "GpuActive"), "surface projection GPU active");
+        AssertEqual(false, GetBoolProperty(surface, "PlaceholderVisible"), "surface projection placeholder visible");
+        AssertEqual(true, GetBoolProperty(surface, "GpuElementVisible"), "surface projection GPU element visible");
+        AssertEqual(false, GetBoolProperty(surface, "CpuElementVisible"), "surface projection CPU element visible");
+        AssertEqual(true, GetBoolProperty(surface, "RendererAttached"), "surface projection renderer attached");
+        AssertEqual(101L, GetLongProperty(surface, "FramesArrived"), "surface projection frames arrived");
+        AssertEqual(99L, GetLongProperty(surface, "FramesDisplayed"), "surface projection frames displayed");
+        AssertEqual(2L, GetLongProperty(surface, "FramesDropped"), "surface projection frames dropped");
+        AssertEqual(true, GetBoolProperty(surface, "BlankSuspected"), "surface projection blank suspected");
+        AssertEqual(false, GetBoolProperty(surface, "StallSuspected"), "surface projection stall suspected");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotStartupProjectionPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate not found.");
+        var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
+        var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "MediaOpened");
+        var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "StartupState", "WaitingForFirstVisual");
+        SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-42");
+        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1250);
+        SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", true);
+        SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", false);
+        SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", true);
+        SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
+        SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
+        SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
+        SetPropertyOrBackingField(input, "StartupMissingSignals", "FirstVisual");
+        SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 5);
+        SetPropertyOrBackingField(input, "StartupLastFailureReason", "visual-timeout");
+        SetPropertyOrBackingField(input, "FirstVisualConfirmed", true);
+
+        var health = Activator.CreateInstance(healthType, new object?[] { 456.25d, true, false })
+                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+        var startup = evaluate.Invoke(null, new object?[] { input, health })
+                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy returned null.");
+
+        AssertEqual("WaitingForFirstVisual", GetStringProperty(startup, "State"), "startup projection state");
+        AssertEqual("attempt-42", GetStringProperty(startup, "AttemptId"), "startup projection attempt id");
+        AssertEqual(456.25d, GetDoubleProperty(startup, "ElapsedMs"), "startup projection elapsed");
+        AssertEqual(1250, GetIntProperty(startup, "TimeoutMs"), "startup projection timeout");
+        AssertEqual(true, GetBoolProperty(startup, "GpuSignalMediaOpened"), "startup projection media opened signal");
+        AssertEqual(false, GetBoolProperty(startup, "GpuSignalFirstFrame"), "startup projection first frame signal");
+        AssertEqual(true, GetBoolProperty(startup, "GpuSignalPlaybackAdvancing"), "startup projection playback signal");
+        AssertEqual(requiredSignals, GetPropertyValue(startup, "RequiredSignals"), "startup projection required signals");
+        AssertEqual(receivedSignals, GetPropertyValue(startup, "ReceivedSignals"), "startup projection received signals");
+        AssertEqual(startupStrategy, GetPropertyValue(startup, "Strategy"), "startup projection strategy");
+        AssertEqual("FirstVisual", GetStringProperty(startup, "MissingSignals"), "startup projection missing signals");
+        AssertEqual(5, GetIntProperty(startup, "RecoveryAttemptCount"), "startup projection recovery count");
+        AssertEqual("visual-timeout", GetStringProperty(startup, "LastFailureReason"), "startup projection failure reason");
+        AssertEqual(true, GetBoolProperty(startup, "FirstVisualConfirmed"), "startup projection first visual confirmed");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
+        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate not found.");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "GpuPositionEventCount", 42L);
+
+        var d3dProjection = Activator.CreateInstance(projectionType)
+                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+        SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", "Rendering");
+        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", 3840);
+        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", 2160);
+        SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", 1234.5d);
+
+        var gpuPlayback = evaluate.Invoke(null, new object?[] { input, d3dProjection })
+                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy returned null.");
+
+        AssertEqual("Rendering", GetStringProperty(gpuPlayback, "PlaybackState"), "GPU playback projection state");
+        AssertEqual(3840, GetIntProperty(gpuPlayback, "NaturalVideoWidth"), "GPU playback projection natural width");
+        AssertEqual(2160, GetIntProperty(gpuPlayback, "NaturalVideoHeight"), "GPU playback projection natural height");
+        AssertEqual(1234.5d, GetDoubleProperty(gpuPlayback, "PositionMs"), "GPU playback projection position");
+        AssertEqual(42L, GetLongProperty(gpuPlayback, "PositionEventCount"), "GPU playback projection event count");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotController_PreservesNullD3dProjectionPolicy()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var controllerType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotController");
+        var build = controllerType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build not found.");
+        var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
+        var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "None");
+        var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
+
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "D3DRenderer", null);
+        SetPropertyOrBackingField(input, "IsPreviewing", true);
+        SetPropertyOrBackingField(input, "PreviewSourceAttached", true);
+        SetPropertyOrBackingField(input, "GpuElementVisible", false);
+        SetPropertyOrBackingField(input, "CpuElementVisible", true);
+        SetPropertyOrBackingField(input, "PlaceholderVisible", false);
+        SetPropertyOrBackingField(input, "FramesArrived", 31L);
+        SetPropertyOrBackingField(input, "FramesDisplayed", 0L);
+        SetPropertyOrBackingField(input, "FramesDropped", 2L);
+        SetPropertyOrBackingField(input, "LastPresentedTick", Environment.TickCount64 - 4000);
+        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
+        SetPropertyOrBackingField(input, "StartupState", "WaitingForFirstVisual");
+        SetPropertyOrBackingField(input, "IsStartupWaitingForFirstVisual", true);
+        SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-1");
+        SetPropertyOrBackingField(input, "StartupRequestedUtc", DateTimeOffset.UtcNow.AddMilliseconds(-2000));
+        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1000);
+        SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", true);
+        SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", false);
+        SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", false);
+        SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
+        SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
+        SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
+        SetPropertyOrBackingField(input, "StartupMissingSignals", "FirstVisual");
+        SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 3);
+        SetPropertyOrBackingField(input, "StartupLastFailureReason", "timeout");
+        SetPropertyOrBackingField(input, "FirstVisualConfirmed", false);
+        SetPropertyOrBackingField(input, "GpuPositionEventCount", 7L);
+
+        var snapshot = build.Invoke(null, new[] { input })
+                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");
+
+        AssertEqual(true, GetBoolProperty(snapshot, "IsPreviewing"), "snapshot IsPreviewing");
+        AssertEqual(false, GetBoolProperty(snapshot, "GpuActive"), "snapshot GpuActive");
+        AssertEqual(true, GetBoolProperty(snapshot, "RendererAttached"), "snapshot RendererAttached");
+        AssertEqual(false, GetBoolProperty(snapshot, "GpuElementVisible"), "snapshot GpuElementVisible");
+        AssertEqual(true, GetBoolProperty(snapshot, "CpuElementVisible"), "snapshot CpuElementVisible");
+        AssertEqual("CpuSoftwareBitmap", GetStringProperty(snapshot, "RendererMode"), "CPU renderer mode");
+        AssertEqual("WaitingForFirstVisual", GetStringProperty(snapshot, "StartupState"), "startup state passthrough");
+        AssertEqual("attempt-1", GetStringProperty(snapshot, "StartupAttemptId"), "startup attempt passthrough");
+        AssertEqual("FirstVisual", GetStringProperty(snapshot, "StartupMissingSignals"), "missing signals passthrough");
+        AssertEqual(requiredSignals, GetPropertyValue(snapshot, "StartupRequiredSignals"), "required startup signals");
+        AssertEqual(receivedSignals, GetPropertyValue(snapshot, "StartupReceivedSignals"), "received startup signals");
+        AssertEqual(startupStrategy, GetPropertyValue(snapshot, "StartupStrategy"), "startup strategy");
+        AssertEqual(3, GetIntProperty(snapshot, "StartupRecoveryAttemptCount"), "startup recovery count");
+        AssertEqual("timeout", GetStringProperty(snapshot, "StartupLastFailureReason"), "startup failure reason");
+        AssertEqual(true, GetBoolProperty(snapshot, "StartupGpuSignalMediaOpened"), "media opened signal");
+        AssertEqual(false, GetBoolProperty(snapshot, "StartupGpuSignalFirstFrame"), "first-frame signal");
+        AssertEqual(false, GetBoolProperty(snapshot, "StartupGpuSignalPlaybackAdvancing"), "playback advancing signal");
+        AssertEqual(true, GetDoubleProperty(snapshot, "StartupElapsedMs") >= 0, "startup elapsed is non-negative");
+        AssertEqual(true, GetBoolProperty(snapshot, "BlankSuspected"), "blank suspected when CPU path receives frames but displays none");
+        AssertEqual(true, GetBoolProperty(snapshot, "StallSuspected"), "stall suspected after stale last-presented tick");
+        AssertEqual(31L, GetLongProperty(snapshot, "FramesArrived"), "frames arrived passthrough");
+        AssertEqual(0L, GetLongProperty(snapshot, "FramesDisplayed"), "frames displayed passthrough");
+        AssertEqual(2L, GetLongProperty(snapshot, "FramesDropped"), "frames dropped passthrough");
+        AssertEqual(0, GetIntProperty(snapshot, "DisplayCadenceSampleCount"), "no D3D cadence samples");
+        AssertEqual(-1L, GetLongProperty(snapshot, "D3DFrameStatsPresentCount"), "D3D present-count sentinel");
+        AssertEqual(-1L, GetLongProperty(snapshot, "D3DFrameStatsPresentRefreshCount"), "D3D present-refresh sentinel");
+        AssertEqual(-1L, GetLongProperty(snapshot, "D3DFrameStatsSyncRefreshCount"), "D3D sync-refresh sentinel");
+        AssertEqual("None", GetStringProperty(snapshot, "D3DInputColorSpace"), "D3D input color fallback");
+        AssertEqual("None", GetStringProperty(snapshot, "D3DOutputColorSpace"), "D3D output color fallback");
+        AssertEqual("None", GetStringProperty(snapshot, "GpuPlaybackState"), "GPU playback fallback");
+        AssertEqual(7L, GetLongProperty(snapshot, "GpuPositionEventCount"), "GPU position event count");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()
     {
         var mapperType = RequireType("Sussudio.ViewModels.DeviceAudioGainMapper");

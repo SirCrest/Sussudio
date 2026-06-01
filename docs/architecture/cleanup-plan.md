@@ -468,7 +468,7 @@ queue-age, A/V sync, Flashback encoder/backend, playback, and export health
 properties together unless a future change introduces a real named collaborator
 instead of another partial fragment.
 
-`tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` now owns the
+`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` now owns the
 shared recording queue source readers and source-block extraction helpers
 beside the core overload-policy checks and LibAv sink queue/lifecycle ownership
 assertions. Capture health snapshot ownership coverage is split into
@@ -1218,7 +1218,7 @@ video/GPU/CUDA enqueue entry points, hot audio/microphone WASAPI write adapters,
 caller-side validation, audio queue eviction, audio remaining-buffer cleanup,
 the audio packet DTO, shared video queue latency/backpressure tracker, and
 shared work-signal/fatal-failure/queue-depth-underflow helpers there.
-`tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs` owns the queue,
+`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the queue,
 submission, and cleanup assertions for this family alongside LibAv sink
 lifecycle checks.
 Video/GPU/CUDA queue admission policy, TryWrite depth accounting, overload
@@ -1245,7 +1245,7 @@ background loop ordering, second audio/microphone drain pass, cancellation
 cleanup, fatal encoder failure handling, bounded video/GPU/CUDA drain batches,
 unbounded LibAv audio/microphone drains, frame-encoded event dispatch, GPU
 texture release, CUDA frame free, and pooled buffer returns there.
-`tests/Sussudio.Tests/RecordingQueue.OverloadPolicy.Tests.cs`
+`tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`
 owns the LibAv sink queue, lifecycle, output-validation, drain-loop, and
 packet-drain assertions.
 
