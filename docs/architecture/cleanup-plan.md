@@ -1316,82 +1316,27 @@ InfoFrame decoding, HDR metadata decoding, scalar/ascii payload reads,
 frame-rate rational inference, confidence scoring, and boolean token helpers
 there with the frame/LRC/envelope helpers that feed them.
 
-Flashback encoder sink startup now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.cs` with the root lifetime
-state it initializes and rolls back. Keep buffer session creation, generated
-session ID formatting, encoder initialization, active-segment setup, startup
-queue allocation, session validation, frame-rate fallback/clamping, startup
-metric/counter reset, video diagnostics reset, start-failure rollback, PTS
-continuation, background task startup, and start-transaction orchestration
-there.
-
-Flashback encoder root state now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep construction,
-field ownership, public runtime counters, queue telemetry, encoder
-status/format projections, startup transaction state, saturated PTS conversion,
-non-negative byte/duration math, and best-effort eviction resume fallback
-there.
-
-Flashback encoder startup orchestration now owns generated session ID
-formatting, encoder option creation, segment extension policy, transport
-container selection, session frame-rate rational validation, `RecordingContext`
-to `FlashbackSessionContext` projection, recording-format codec mapping,
-split-encode mode wire mapping, and recording frame-rate argument parsing in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`.
-
-Flashback encoder queueing now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`. Keep
-video/audio/GPU packet DTOs, video enqueue result classification, ArrayPool
-rent/return helpers, leased video packet disposal, best-effort video packet
-cleanup, GPU texture release helpers, queued-buffer cleanup, queue
-completion/signaling, shared queue-depth accounting, cancellation waits, failure
-notification, remaining queued video/audio/microphone/GPU buffer return, depth
-reset, raw/lease/GPU video input validation, texture AddRef ownership,
-audio/microphone entry points, hot WASAPI writer adapters,
-accepted/rejected/overloaded enqueue transactions, queue-full classification,
-force-rotate audio queue guard policy, producer wakeup signaling,
-disposed/not-started/cancelled/force-rotate/failure rejection reasons, channel
-writes, queue-depth increments, max-depth updates, failed-write depth rollback,
-last-reason state, backlog-eviction accounting, rejection counters, audio-drop
-diagnostics, and throttled queue rejection logs there.
-
-Flashback encoder loop orchestration now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs`. Keep the
-background encode loop, normal drain ordering, force-rotate dispatch,
-force-rotate state, status projections, idle waits, `ForceRotateForExport`,
-request publication, timeout/cancellation result classification,
-committed-pending grace handling, pending-request cancellation, empty completion
-on stop/dispose/failure, drain abort classification, the `ForceRotateRequest`
-state machine, encoding-thread request capture, queue drain-to-rotate ordering,
-commit/rotation execution, result completion, failure logging, draining-gate
-cleanup, cancellation handling, fatal cleanup, final segment registration,
-bounded video/GPU/audio/microphone packet drains, frame-size defense,
-queue-depth accounting, encoder submission, GPU texture release, pooled buffer
-returns, encoder PTS resolution, latest-PTS and disk-byte refresh,
-frame-encoded event dispatch, segment-rotation triggering, active-segment
-completion/registration, and rotation-failure recovery there.
-
-Flashback encoder producer entry points live with queueing in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs`. Keep raw, lease,
-and GPU video enqueue entry points, frame-size validation, video/GPU input
-rejection guards, texture AddRef ownership, audio/microphone enqueue entry
-points, force-rotate input rejection guards, and hot WASAPI writer adapters
-there.
-
-Flashback encoder public runtime state now lives in
-`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep public
-frame/audio/disk counters, drop counters, rotation-failure counts, frame-encoded
-events, queue-depth/capacity/max-depth projections, queue rejection summaries,
-GPU queue projections, video queue latency/backpressure metrics, encoding
-failure status, audio/microphone enablement, fatal-error callback registration,
-encoder format summaries, HDR P010 projection, recording PTS boundary state,
-active-recording projection, begin-recording availability checks, the
-`IRecordingSink.StartAsync` adapter, recording begin/end validation,
-eviction-pause handoff/resume, start rollback, PTS clamping, ready logging,
-encoding completion task exposure, `StopAsync`, stop-drain timeout
-classification, final stop result reporting, `Dispose`/`DisposeAsync`,
-deferred cleanup, final dispose reset, cancellation/disposal helpers, and
-best-effort encoder/buffer manager disposal there.
+Flashback encoder sink startup, producer queueing, encoding-thread work, and
+public runtime state now live in
+`Sussudio/Services/Flashback/FlashbackEncoderSink.cs`. Keep construction, field
+ownership, buffer session creation, generated session ID formatting, encoder
+options/session construction, active-segment setup, queue allocation, session
+validation, frame-rate fallback/clamping, metric/counter reset, video
+diagnostics reset, start-failure rollback, PTS continuation, background task
+startup, raw/lease/GPU video input validation, texture AddRef ownership,
+audio/microphone entry points, hot WASAPI writer adapters, queue admission/write
+helpers, packet DTOs, ArrayPool packet ownership, queued-buffer cleanup, queue
+completion/signaling, depth accounting, rejection counters, force-rotate guard
+policy, background encode loop, normal drain ordering, force-rotate request
+state machine, drain-to-rotate execution, timeout/cancellation result
+classification, segment rotation, fatal/cancel cleanup, final segment
+registration, bounded video/GPU/audio/microphone packet drains, encoder PTS
+resolution, frame-encoded event dispatch, public
+frame/audio/disk counters, queue telemetry, encoding failure status, recording
+PTS boundary state, recording begin/end validation, stop/finalize, dispose, and
+best-effort resource cleanup there. Split again only if producer queues,
+force-rotation, or encoding loop become named injected collaborators with their
+own lifetime/test seam instead of private sink implementation details.
 
 Flashback decoder playback and video setup now live in the root decoder at
 `Sussudio/Services/Flashback/FlashbackDecoder.cs`. Keep file open/close and

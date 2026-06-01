@@ -4391,7 +4391,7 @@ static partial class Program
     {
         var sourceText = ReadFlashbackEncoderSinkSource();
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
-        var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
+        var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
         var forceRotateText = loopText;
 
         var loopBlock = ExtractTextBetween(
@@ -4412,12 +4412,10 @@ static partial class Program
         AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
         AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
         AssertContains(forceRotateText, "private static bool ShouldAbortForceRotateDrain(");
-        AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
-        AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
-            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
+            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.cs");
         AssertContains(loopBlock, "if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
         AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
         AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
@@ -4579,7 +4577,7 @@ static partial class Program
 
     internal static Task FlashbackEncoderSink_EncodingThreadWorkLivesInEncodingLoop()
     {
-        var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n");
+        var loopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n");
         var packetDrainText = loopText;
         var encodingProgressText = loopText;
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
@@ -4605,23 +4603,23 @@ static partial class Program
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE");
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE_FAIL");
-        AssertContains(docsText, "FlashbackEncoderSink.EncodingLoop.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "bounded video/GPU/audio/microphone packet drains");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketDrain.cs")),
-            "FlashbackEncoderSink.PacketDrain.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
+            "FlashbackEncoderSink.PacketDrain.cs folded into FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.EncodingProgress.cs")),
-            "FlashbackEncoderSink.EncodingProgress.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
+            "FlashbackEncoderSink.EncodingProgress.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
 
     internal static Task FlashbackEncoderSink_QueueingOwnsInputsAndCleanup()
     {
-        var queueingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
+        var queueingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var inputsText = queueingText;
         var queueCleanupText = queueingText;
@@ -4682,9 +4680,9 @@ static partial class Program
         AssertContains(queueingText, "private bool WaitForCancellation(TimeSpan timeout)");
         AssertContains(queueingText, "private void FailEncoding(Exception ex)");
         AssertContains(queueingText, "private static void DecrementQueueDepth(ref int target, string queueName)");
-        AssertDoesNotContain(queueingText, "private void ResetVideoDiagnostics()");
+        AssertContains(queueingText, "private void ResetVideoDiagnostics()");
 
-        AssertContains(docsText, "FlashbackEncoderSink.Queueing.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.VideoQueueSubmission.Guards.cs",
@@ -4695,24 +4693,24 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.Queueing.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.cs");
         }
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.AudioQueueSubmission.cs")),
-            "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink.AudioQueueSubmission.cs folded into FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.VideoQueueSubmission.cs")),
-            "FlashbackEncoderSink.VideoQueueSubmission.cs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink.VideoQueueSubmission.cs folded into FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.cs")),
-            "FlashbackEncoderSink.Inputs.cs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink.Inputs.cs folded into FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Queues.cs")),
-            "FlashbackEncoderSink.Queues.cs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink.Queues.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -4721,7 +4719,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs")
+        var forceRotateText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -4756,21 +4754,21 @@ static partial class Program
         AssertContains(forceRotateText, "if (!localRequest.TryBeginCommit())");
         AssertContains(forceRotateText, "if (!RotateSegment(currentPts))");
         AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));");
-        AssertDoesNotContain(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
-        AssertDoesNotContain(rootText, "public bool IsForceRotateActive =>");
-        AssertDoesNotContain(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
-        AssertDoesNotContain(rootText, "private bool _forceRotateRequested;");
-        AssertDoesNotContain(rootText, "private TimeSpan _forceRotateInPoint;");
-        AssertDoesNotContain(rootText, "private TimeSpan _forceRotateOutPoint;");
-        AssertDoesNotContain(rootText, "private bool _forceRotateDraining;");
-        AssertDoesNotContain(rootText, "private sealed class ForceRotateRequest");
-        AssertDoesNotContain(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(docsText, "FlashbackEncoderSink.EncodingLoop.cs");
+        AssertContains(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
+        AssertContains(rootText, "public bool IsForceRotateActive =>");
+        AssertContains(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
+        AssertContains(rootText, "private bool _forceRotateRequested;");
+        AssertContains(rootText, "private TimeSpan _forceRotateInPoint;");
+        AssertContains(rootText, "private TimeSpan _forceRotateOutPoint;");
+        AssertContains(rootText, "private bool _forceRotateDraining;");
+        AssertContains(rootText, "private sealed class ForceRotateRequest");
+        AssertContains(rootText, "private const int ForceRotateCommittedGraceMs = 1_000;");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertDoesNotContain(docsText, "FlashbackEncoderSink.ForceRotate.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
-            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.EncodingLoop.cs");
+            "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.cs");
         foreach (var removedFile in new[]
         {
             "FlashbackEncoderSink.ForceRotateRequests.cs",
@@ -4782,7 +4780,7 @@ static partial class Program
             AssertEqual(
                 false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", removedFile)),
-                $"{removedFile} folded into FlashbackEncoderSink.EncodingLoop.cs");
+                $"{removedFile} folded into FlashbackEncoderSink.cs");
         }
 
         return Task.CompletedTask;
@@ -4820,7 +4818,7 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
+        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -4844,17 +4842,17 @@ static partial class Program
         AssertContains(inputsText, "private bool TryEnqueueAudioPacket(");
         AssertContains(inputsText, "private void TrackVideoQueueRejected(string reason)");
 
-        AssertDoesNotContain(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
-        AssertDoesNotContain(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
-        AssertContains(docsText, "FlashbackEncoderSink.Queueing.cs");
+        AssertContains(rootText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
+        AssertContains(rootText, "public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Video.cs")),
-            "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink video producer inputs folded into FlashbackEncoderSink.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.Inputs.Audio.cs")),
-            "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink audio producer inputs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }
@@ -4961,11 +4959,11 @@ static partial class Program
         var startupText = rootText;
         var optionsText = startupText;
         var sessionContextText = optionsText;
-        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
+        var queuesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var packetBuffersText = queuesText;
         var packetTypesText = packetBuffersText;
-        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs")
+        var inputsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
         var docsText = ReadRepoFile("docs/architecture/cleanup-plan.md")
             .Replace("\r\n", "\n") + "\n" +
@@ -4977,8 +4975,8 @@ static partial class Program
         AssertContains(optionsText, "private static FlashbackSessionContext CreateSessionContext(RecordingContext context)");
         AssertContains(optionsText, "private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)");
         AssertContains(optionsText, "private static string MapCodecName(RecordingFormat format)");
-        AssertDoesNotContain(optionsText, "private readonly record struct VideoFramePacket");
-        AssertDoesNotContain(optionsText, "private static byte[] GetBuffer");
+        AssertContains(optionsText, "private readonly record struct VideoFramePacket");
+        AssertContains(optionsText, "private static byte[] GetBuffer");
 
         AssertContains(sessionContextText, "private static FlashbackSessionContext CreateSessionContext(RecordingContext context)");
         AssertContains(sessionContextText, "private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)");
@@ -5004,11 +5002,11 @@ static partial class Program
         AssertContains(inputsText, "private static long GetSampleCount(int byteLength)");
         AssertContains(inputsText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
         AssertContains(rootText, "private static FlashbackSessionContext CreateSessionContext");
-        AssertDoesNotContain(rootText, "private static byte[] GetBuffer");
+        AssertContains(rootText, "private static byte[] GetBuffer");
         AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "recording-to-Flashback session mapping");
         AssertContains(docsText, "generated session ID formatting");
-        AssertContains(docsText, "FlashbackEncoderSink.Queueing.cs");
+        AssertContains(docsText, "FlashbackEncoderSink.cs");
         AssertContains(docsText, "packet DTOs");
         AssertEqual(
             false,
@@ -5017,7 +5015,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.PacketBuffers.cs")),
-            "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.Queueing.cs");
+            "FlashbackEncoderSink.PacketBuffers.cs folded into FlashbackEncoderSink.cs");
 
         return Task.CompletedTask;
     }

@@ -383,16 +383,8 @@ static partial class Program
     }
 
     private static string ReadFlashbackEncoderSinkSource()
-    {
-        var parts = new[]
-        {
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
+        => ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
 
     private static string ReadFlashbackExporterSource()
     {
