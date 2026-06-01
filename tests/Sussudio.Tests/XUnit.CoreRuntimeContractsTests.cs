@@ -2109,7 +2109,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var hdrPipelineText = runtimeText;
         var sourceTelemetryText = runtimeText;
-        var captureRuntimeModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs")
+        var captureRuntimeModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
@@ -2167,7 +2167,7 @@ static partial class Program
         AssertContains(agentMapText, "`CaptureService.RuntimeSnapshots.cs` also owns final `CaptureRuntimeSnapshot` DTO construction");
         AssertContains(agentMapText, "from already-sampled field groups and the private runtime snapshot assembly");
         AssertContains(agentMapText, "handoff contract consumed by that map.");
-        AssertContains(agentMapText, "AutomationRuntimeModels.cs");
+        AssertContains(agentMapText, "AutomationModels.cs");
         AssertContains(agentMapText, "owns video ingest/source-reader/WASAPI playback");
         AssertContains(agentMapText, "and reader/transport projections, recording-integrity summary projection,");
         AssertContains(agentMapText, "HDR pipeline/warmup projection, source-telemetry detail/frame-rate-origin/age/");
@@ -2177,11 +2177,11 @@ static partial class Program
         AssertContains(cleanupPlanText, "final `CaptureRuntimeSnapshot` DTO construction");
         AssertContains(cleanupPlanText, "private runtime snapshot assembly handoff contract");
         AssertContains(cleanupPlanText, "snapshot sampler that consumes it.");
-        AssertContains(cleanupPlanText, "`AutomationRuntimeModels.cs`");
+        AssertContains(cleanupPlanText, "`AutomationModels.cs`");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "CaptureRuntimeSnapshot.cs")),
-            "capture runtime DTO folded into AutomationRuntimeModels.cs");
+            "capture runtime DTO folded into AutomationModels.cs");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshotAssemblyFields.cs")),

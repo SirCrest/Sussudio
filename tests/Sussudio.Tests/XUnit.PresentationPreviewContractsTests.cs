@@ -2433,7 +2433,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
     internal static Task D3D11PreviewRenderer_DiagnosticsContract_PerformanceTimelineExposesExpectedProperties()
     {
-        var rootModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs");
+        var rootModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs");
 
         AssertContains(rootModelText, "public sealed class PerformanceTimelineEntry");
         AssertContains(rootModelText, "public double PreviewCadenceSlowFramePercent { get; init; }");
@@ -2445,7 +2445,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PerformanceTimelineEntry.cs")),
-            "performance timeline DTO folded into AutomationRuntimeModels.cs");
+            "performance timeline DTO folded into AutomationModels.cs");
 
         var performanceTimelineEntryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
         foreach (var prop in new[]
@@ -4544,7 +4544,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
-        var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs").Replace("\r\n", "\n");
+        var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
 
@@ -4645,7 +4645,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Models", "Automation", "PreviewRuntimeSnapshot.cs")),
-            "preview runtime DTO folded into AutomationRuntimeModels.cs");
+            "preview runtime DTO folded into AutomationModels.cs");
         AssertContains(agentMapText, "MainWindow.xaml.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
@@ -5522,7 +5522,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var playbackVolumeText = playbackText;
         var runtimeContractsText = string.Join(
             "\n",
-            ReadRepoFile("Sussudio/Models/Automation/AutomationRuntimeModels.cs"))
+            ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs"))
             .Replace("\r\n", "\n");
         var runtimeSnapshotText = string.Join(
             "\n",
