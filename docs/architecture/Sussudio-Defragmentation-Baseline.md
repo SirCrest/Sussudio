@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: MCP test harness helper locality
+Problem: `tests/Sussudio.Tests/McpToolSurface.Helpers.cs` carried only private `Program` helper methods for MCP server process startup, JSON-RPC line IO, tool-result reflection, named-pipe request capture, and JSON assertion helpers. `tests/Sussudio.Tests/HarnessCore.cs` already owns the legacy `Program` runner, shared tool assembly loading, source readers, reflection/assertion helpers, and other cross-cutting helper families, so reviewing MCP helper setup still required a helper-only sidecar beside the actual harness owner.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Helpers.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP helper sidecar count -1; `Sussudio.Tests` `.cs` count 48 -> 47
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~McpToolSurface|FullyQualifiedName~ToolContracts"` passed (38 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); `git diff --check` passed with only LF-to-CRLF working-copy warnings; current core app `.cs` count/LoC: 119 / 89,585; current test `.cs` count/LoC: 47 / 56,044.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves private test helper methods and updates architecture ownership docs.
+Behavior preserved: MCP helper method names and callers remain private on the same legacy `Program` harness surface. MCP server process startup, JSON-RPC read/write helpers, isolated MCP type loading, tool result text/error extraction, command request assertions, named-pipe request capture, command-id checks, and JSON property assertions now live in `tests/Sussudio.Tests/HarnessCore.cs`.
+Notes for future agents: keep cross-cutting legacy `Program` helper methods in `tests/Sussudio.Tests/HarnessCore.cs` while they remain shared by multiple xUnit/Program test owners. Create a separate helper file only for a named fixture family with distinct setup state or reusable harness type. Current core app `.cs` count/LoC: 119 / 89,585; current test `.cs` count/LoC: 47 / 56,044.
+
+Date: 2026-06-01
 Area: frame-rate timing policy production locality
 Problem: `Sussudio/ViewModels/FrameRateTimingPolicy.cs` was a small pure policy file for frame-rate timing families, source-rate filtering, automatic frame-rate selection, rational parsing, and preferred-format ranking, but the policy already called `CaptureModeOptionsBuilder` and belonged to the same stateless ViewModel selection-policy surface as resolution, format, audio-device, and late device-format retarget decisions in `ViewModelSelectionPolicies.cs`. Reviewing capture-mode selection still required opening two ViewModel policy files before returning to the stateful option-rebuild controller.
 Files consolidated: `Sussudio/ViewModels/FrameRateTimingPolicy.cs`

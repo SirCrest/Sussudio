@@ -408,7 +408,8 @@ host/pipe behavior, verification formatting, Flashback tool routing, and
 diagnostic-session tool entries in xUnit after their removal from the legacy
 harness catalog.
 
-Shared Flashback source readers and buffer helper factories now live in
+Shared MCP process/JSON-RPC/tool-result/pipe-capture helpers, Flashback source
+readers, and buffer helper factories now live in
 `tests/Sussudio.Tests/HarnessCore.cs` with the rest of the legacy `Program`
 harness helpers.
 Flashback regression coverage is split into buffer, encoder-sink, exporter
