@@ -3371,7 +3371,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
         var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
 
         var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
@@ -3852,7 +3852,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var viewModelPreviewStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelCaptureStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+        var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var rawPreviewReinitializeControllerText = rawPreviewLifecycleControllerText;
 
@@ -4027,7 +4027,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var previewReinitializeControllerText = previewLifecycleControllerText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
@@ -4083,10 +4083,10 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
-        AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`");
+        AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`");
         AssertDoesNotContain(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
         AssertDoesNotContain(cleanupPlanText, "`MainViewModel.PreviewReinitialization.cs`");
-        AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`");
         AssertDoesNotContain(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
 
         return Task.CompletedTask;
@@ -6258,7 +6258,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     internal static Task MainViewModelRecordingTransition_UsesDependencyCompositionContext()
     {
         var controllerGraphText = ReadMainViewModelControllerGraphSource();
-        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs").Replace("\r\n", "\n");
+        var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerGraphText, "private static MainViewModelRecordingTransitionController CreateRecordingTransitionController(");
         AssertContains(controllerGraphText, "new MainViewModelRecordingTransitionController(\n                new MainViewModelRecordingTransitionControllerContext");
@@ -6295,7 +6295,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
     {
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var controllerGraphText = ReadMainViewModelControllerGraphSource();
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = previewLifecycleControllerText;
 
         AssertContains(controllerGraphText, "private static MainViewModelPreviewLifecycleController CreatePreviewLifecycleController(MainViewModel viewModel)");
@@ -6406,7 +6406,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
             .Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
@@ -9131,12 +9131,12 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
     {
         var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText =
-            ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
+            ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
                 .Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");

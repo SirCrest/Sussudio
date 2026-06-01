@@ -2157,7 +2157,7 @@ Primary current owners:
   rational/decimal fallbacks, requested pixel format, and MJPEG decode forcing.
   `MainViewModel.cs` keeps the compatibility facade entry points
   for device initialization, preview start/stop, selected-device apply, and
-  preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`
+  preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for the underlying preview
   lifecycle operations: device initialization, preview start/stop,
   selected-device apply, and the reinitialize facade.
@@ -2167,7 +2167,7 @@ Primary current owners:
   Sibling ViewModel controllers receive that preview lifecycle owner directly
   from `MainViewModelControllerGraph` instead of routing controller-to-controller
   calls back through the root facade.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for debounced reinitialization,
   restart-cancellation state, Flashback-cycle wait-before-reinit,
   renderer-stop handoff, teardown restart, and reinit gate release.
@@ -2179,7 +2179,7 @@ Primary current owners:
   toggle, desired-state, graceful-stop, the direct emergency-stop coordinator
   bridge, recording option selections, output path, counters, and observable
   transition flags.
-  `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`
+  `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for recording toggle
   serialization, desired-state routing, graceful stop, transition gating, and
   in-flight transition wait/error propagation, graph-port context contract,
@@ -2346,7 +2346,7 @@ Primary current owners:
   app audio enablement, audio-preview enablement, preview-volume
   clamp/persist, device-native mode/gain application, and microphone
   enablement with recording-time refusal and idempotent handling.
-  `MainViewModelCaptureLifecycleControllers.cs` owns top-level automation preview
+  `MainViewModelLifecycleController.cs` owns top-level automation preview
   enable/disable idempotence, pending-reinit cancellation, and start/stop
   routing behind the `MainViewModel.cs` compatibility facade.
   `MainViewModel.cs` owns automation HDR and true-HDR

@@ -1,16 +1,16 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T20:26:19Z
+Generated UTC: 2026-06-01T20:42:18Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 125 |
+| Production .cs files | 124 |
 | Test .cs files | 14 |
-| Core app .cs files (Sussudio/) | 90 |
-| Core app nonblank LoC (Sussudio/) | 88363 |
+| Core app .cs files (Sussudio/) | 89 |
+| Core app nonblank LoC (Sussudio/) | 88358 |
 | Sussudio.Tests .cs files | 12 |
 | Sussudio.Tests nonblank LoC | 55812 |
 | Production .cs files under 60 lines | 0 (0.0%) |
@@ -49,7 +49,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1933 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 1873 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1721 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
-| 1711 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
+| 1709 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1619 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1562 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |

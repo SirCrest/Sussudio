@@ -3063,7 +3063,7 @@ owner, fold it back into that owner and update the source-shape tests and
    points for device initialization, preview start/stop, selected-device apply,
    and preview reinitialization. Preview lifecycle
    implementation now lives in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`:
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`:
    device initialization, preview start/stop, selected-device apply, and the
    reinitialize facade. The preview lifecycle graph-port contract now lives
    with that controller for preview state/events, capture/session operations,
@@ -3072,7 +3072,7 @@ owner, fold it back into that owner and update the source-shape tests and
    Sibling ViewModel controllers receive that preview
    lifecycle owner directly from `MainViewModelControllerGraph` instead of
    routing controller-to-controller calls back through the root facade.
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
    is a top-level `Sussudio.Controllers` owner for debounced reinitialization, restart-cancellation state,
    Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
    and gate release.
@@ -3087,7 +3087,7 @@ owner, fold it back into that owner and update the source-shape tests and
    recording toggle serialization,
    desired-state routing, graceful stop, transition gating, and in-flight
    transition wait/error propagation now live in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`,
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
    along with the graph-port contract for UI dispatch, recording/session state,
    capture settings construction, coordinator start/stop calls, recording timer
    state, status/count presentation updates, concrete start/stop execution,
@@ -3292,8 +3292,8 @@ owner, fold it back into that owner and update the source-shape tests and
    refusal/idempotent handling now live in `MainViewModel.cs`.
    Automation preview enable/disable idempotence, pending-reinit cancellation,
    and preview start/stop routing now live in
-   top-level `MainViewModelCaptureLifecycleControllers.cs` plus graph-built
-   `MainViewModelCaptureLifecycleControllers.cs` reinitialize context ports, with the stable
+   top-level `MainViewModelLifecycleController.cs` plus graph-built
+   `MainViewModelLifecycleController.cs` reinitialize context ports, with the stable
    `MainViewModel.cs` compatibility facade preserving the automation surface.
    Automation HDR and true-HDR preview recording-time guard enforcement and HDR
    availability checks now live in `MainViewModel.cs`
@@ -3318,7 +3318,7 @@ owner, fold it back into that owner and update the source-shape tests and
    The automation recording desired-state bridge enters through
    `MainViewModel.cs` and is serialized by
    the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`,
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
    with graph-built context ports and start/stop execution in the same owner.
    The emergency recording-stop bridge also enters through
    `MainViewModel.cs` but routes directly to
