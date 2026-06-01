@@ -2391,7 +2391,7 @@ namespace Sussudio.Tests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsSnapshotProviderText = statsOverlayCompositionText;
         var mainWindowText = MainWindowCompositionSource.Read();
-        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
+        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
         var statsSnapshotBuilderText = statsSnapshotText;
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
 
@@ -2401,6 +2401,9 @@ namespace Sussudio.Tests
         AssertContains(statsSnapshotBuilderText, "internal readonly record struct StatsSnapshotViewState(");
         AssertContains(statsSnapshotBuilderText, "return new StatsSnapshot(");
         AssertContains(statsSnapshotText, "public sealed record StatsSnapshot(");
+        Assert.False(
+            File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "ViewModels", "StatsSnapshot.cs")),
+            "stats snapshot DTO and builder folded into StatsPresentationBuilder.cs");
         AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
         AssertContains(statsOverlayText, "private StatsSnapshot GetStatsSnapshot()");
         AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");

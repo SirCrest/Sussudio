@@ -240,7 +240,7 @@ public partial class StatsPresentationTests
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
         var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
-        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsSnapshot.cs");
+        var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
         var statsSnapshotBuilderText = statsSnapshotText;
         var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml");
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs");
@@ -318,6 +318,9 @@ public partial class StatsPresentationTests
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "ViewModels", "StatsPresentationModels.cs")),
             "stats presentation DTOs folded into StatsPresentationBuilder.cs");
+        Assert.False(
+            File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "ViewModels", "StatsSnapshot.cs")),
+            "stats snapshot DTO and builder folded into StatsPresentationBuilder.cs");
         AssertContains(statsDockRefreshControllerText, "var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);");
         AssertContains(frameTimeOverlayText, "_frameTimeOverlayPresentationController.Apply(snapshot);");
         AssertContains(frameTimeOverlayControllerText, "internal sealed class FrameTimeOverlayPresentationController");

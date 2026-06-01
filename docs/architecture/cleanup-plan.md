@@ -2046,12 +2046,11 @@ stats-window text, telemetry-detail presentation, stats dock summary
 construction, HDMI/capture/preview resolution text, shared formatting helpers,
 stats lane status classification, and the visual-repeat drift result all live in
 one pure builder instead of ten partial fragments.
-Stats presentation DTO records/enums now live with
-`Sussudio/ViewModels/StatsPresentationBuilder.cs`.
-The UI stats snapshot contract and projection from capture health, renderer
-metrics, and shell view state live in `Sussudio/ViewModels/StatsSnapshot.cs`;
-shell snapshot orchestration plus renderer cadence/recent-sample acquisition
-lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
+Stats presentation DTO records/enums, the UI stats snapshot contract, and the
+projection from capture health, renderer metrics, and shell view state now live
+with `Sussudio/ViewModels/StatsPresentationBuilder.cs`; shell snapshot
+orchestration plus renderer cadence/recent-sample acquisition lives in
+`Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 `Sussudio/MainWindow.Composition.cs` is the XAML-facing provider
 composition adapter.
 Pure capture option construction lives in
