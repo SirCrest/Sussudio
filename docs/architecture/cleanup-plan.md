@@ -683,7 +683,7 @@ shared pixel analysis, 16-bit PNG frame capture, BMP capture/header writing,
 and the 16-bit PNG file container/chunk/CRC helpers.
 
 Window geometry automation and the recordings-folder command now live in
-`Sussudio/Controllers/Window/WindowAutomationController.cs`. Display-area/AppWindow
+`Sussudio/Controllers/Window/WindowControllers.cs`. Display-area/AppWindow
 access, UI-thread dispatch, presenter restore, side effects, and pure
 snap-region rectangle math for window actions stay there.
 `MainWindow.Composition.cs` is the `IAutomationWindowControl` adapter.
@@ -720,12 +720,12 @@ bootstrap wiring.
 Automation host composition, once-only
 startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live
 with the window automation command owner in
-`Sussudio/Controllers/Window/WindowAutomationController.cs`.
+`Sussudio/Controllers/Window/WindowControllers.cs`.
 `Sussudio/Controllers/Launch/LaunchFlowController.cs` starts that
 controller after initial device refresh, and
 `Sussudio/MainWindow.xaml.cs` passes its async dispose
 delegate into the shutdown controller. Window close
-completion lives in `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`;
+completion lives in `Sussudio/Controllers/Window/WindowControllers.cs`;
 recording-aware close finalization lives there too.
 
 Top-level shell resize telemetry throttling for preview compositor transforms
@@ -774,7 +774,7 @@ keeps the XAML-facing initialization and title assignment hook because title
 refreshes are driven by status/recording presentation.
 
 Window close lifecycle and native window helpers are now explicit:
-`Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns close request
+`Sussudio/Controllers/Window/WindowControllers.cs` owns close request
 flags, completion TCS, cleanup latch, close-in-progress classification,
 automation close dispatch orchestration, actual close request execution,
 recording finalization side effects, and post-close cleanup order:
@@ -796,7 +796,7 @@ adapters.
 Native `AppWindow` lookup, ViewModel window handle handoff, minimum-size
 subclassing, DWM cloak/dark-mode setup, first-composed-frame shell reveal
 scheduling/cancellation, initial shell size, icon, and uncloaking now live in
-`Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`.
+`Sussudio/Controllers/Window/WindowControllers.cs`.
 `Sussudio/MainWindow.Composition.cs` is the XAML-facing shell
 launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
 automation paths.

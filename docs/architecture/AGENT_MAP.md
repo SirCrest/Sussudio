@@ -910,7 +910,7 @@ Primary current owners:
   automation on `MainWindow.Composition.cs` with the rest of the
   `IAutomationWindowControl` adapter; `MainWindow.xaml.cs` is the
   XAML-facing adapter for preview-frame screenshots.
-- `Sussudio/Controllers/Window/WindowAutomationController.cs` owns window geometry
+- `Sussudio/Controllers/Window/WindowControllers.cs` owns window geometry
   automation plus the recordings-folder command and shell automation host
   lifecycle: UI-thread dispatch, AppWindow and DisplayArea access, maximized
   presenter restore, side effects, pure snap-region rectangle math, automation
@@ -927,7 +927,7 @@ Primary current owners:
   callbacks, static shell elevation, shell property-change routing callbacks,
   and splash phrase start/stop callbacks. Window close routing/finalization ownership is detailed in the
   window close section below:
-  `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
+  `Sussudio/Controllers/Window/WindowControllers.cs`,
   `Sussudio/MainWindow.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
 - `Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs` owns top-level
   preview resize telemetry throttling and reset state for preview compositor
@@ -966,7 +966,7 @@ Primary current owners:
   statistics, and frame-latency wait defaults in one cohesive projection owner.
   Window close routing/finalization ownership is detailed in the window close
   section below:
-  `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs`,
+  `Sussudio/Controllers/Window/WindowControllers.cs`,
   `Sussudio/MainWindow.Composition.cs`, and `Sussudio/MainWindow.xaml.cs`.
 - `Sussudio/MainWindow.Composition.cs` keeps the XAML-facing title
   update hook; `Sussudio/Controllers/Shell/ShellChromeController.cs` owns window title
@@ -977,7 +977,7 @@ Primary current owners:
   Flashback bitrate fallback used while Flashback is enabled and recording is
   idle. `Sussudio/MainWindow.Composition.cs` is the XAML-facing
   adapter and builds the ViewModel snapshot passed into the controller.
-- `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` owns window close
+- `Sussudio/Controllers/Window/WindowControllers.cs` owns window close
   request flags, completion TCS, cleanup latch, recording-stop handoff flags,
   close-in-progress exception classification, automation close dispatch
   orchestration, actual close request execution, recording finalization side
@@ -997,7 +997,7 @@ Primary current owners:
   `WindowShutdownCleanupController`, and owns the timer,
   event-detach, stats, recording-visual, and preview-size cleanup delegate
   adapters.
-- `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` also owns native window
+- `Sussudio/Controllers/Window/WindowControllers.cs` also owns native window
   bootstrap: `AppWindow` lookup, ViewModel window handle handoff,
   minimum-size subclassing, DWM cloak/dark-mode setup, first-composed-frame
   shell reveal scheduling/cancellation, initial shell size, icon, and native

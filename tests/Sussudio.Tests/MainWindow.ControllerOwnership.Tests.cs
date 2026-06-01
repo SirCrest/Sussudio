@@ -216,7 +216,7 @@ static partial class Program
         var statsDockGraphText = statsOverlayCompositionText;
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
         var shutdownCleanupText = ReadRepoFile("Sussudio/MainWindow.xaml.cs");
-        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs");
         var mainWindowText = ReadMainWindowCompositionSource();
         var controllerText = statsOverlayCompositionText;
         var frameTimeControllerText = statsOverlayCompositionText;
@@ -1569,7 +1569,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var liveSignalAdapterText = ReadMainWindowShellChromeAdapterSource();
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Shell/ShellChromeController.cs").Replace("\r\n", "\n");
 
         AssertContains(liveSignalAdapterText, "private LiveSignalInfoController _liveSignalInfoController = null!;");
@@ -1974,7 +1974,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowCloseLifecycleController.cs").Replace("\r\n", "\n");
+        var shutdownCleanupControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var controllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
         var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
@@ -2186,7 +2186,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
             .Replace("\r\n", "\n");
         var adapterSource = ReadRepoFile("Sussudio/MainWindow.Composition.cs")
             .Replace("\r\n", "\n");
-        var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowAutomationController.cs")
+        var controllerSource = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(adapterSource, "private WindowAutomationController _windowAutomationController = null!;");

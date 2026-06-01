@@ -4301,15 +4301,15 @@ Notes for future agents: keep diagnostic-session lifecycle helper ownership chec
 
 Date: 2026-05-26
 Area: shell window automation production locality
-Problem: `WindowAutomationHostLifecycleController.cs` was a small shell automation host lifecycle file separate from `WindowAutomationController.cs`, even though both own the shell window automation surface used by `IAutomationWindowControl`: geometry/recordings-folder commands on one side, named-pipe diagnostics/dispatcher startup and shutdown on the other. Reviewing app-shell automation startup, auth fallback, and window automation command ownership required jumping across two tiny production owners.
+Problem: `WindowAutomationHostLifecycleController.cs` was a small shell automation host lifecycle file separate from `WindowControllers.cs`, even though both own the shell window automation surface used by `IAutomationWindowControl`: geometry/recordings-folder commands on one side, named-pipe diagnostics/dispatcher startup and shutdown on the other. Reviewing app-shell automation startup, auth fallback, and window automation command ownership required jumping across two tiny production owners.
 Files consolidated: `Sussudio/Controllers/Window/WindowAutomationHostLifecycleController.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: shell window automation production owner count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `tools/McpServer`, `tools/ssctl`, and automation tooling; no public automation command names, IDs, wire payloads, auth environment variables, pipe names, or XAML bindings changed
-Behavior preserved: automation token/pipe-name resolution, diagnostics hub construction, command dispatcher construction, named-pipe server construction, once-only startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live in `Sussudio/Controllers/Window/WindowAutomationController.cs` with the window automation command owner.
-Notes for future agents: keep native DWM bootstrap and recording-aware close/finalization in their existing window owners; keep shell automation host lifecycle with `WindowAutomationController.cs` unless it grows an independently executable lifecycle policy.
+Behavior preserved: automation token/pipe-name resolution, diagnostics hub construction, command dispatcher construction, named-pipe server construction, once-only startup, ready/disabled logging, and pipe-before-hub shutdown disposal now live in `Sussudio/Controllers/Window/WindowControllers.cs` with the window automation command owner.
+Notes for future agents: keep native DWM bootstrap and recording-aware close/finalization in their existing window owners; keep shell automation host lifecycle with `WindowControllers.cs` unless it grows an independently executable lifecycle policy.
 
 Date: 2026-05-26
 Area: launch flow production locality
@@ -4421,15 +4421,15 @@ Notes for future agents: keep `PreviewShaderSources` with `D3D11PreviewRenderer.
 
 Date: 2026-05-26
 Area: native window bootstrap lifecycle locality
-Problem: `NativeWindowBootstrapController.cs` was an 83-line one-use native shell startup owner used only by `MainWindow.ShellChrome.Composition.cs`, while `WindowCloseLifecycleController.cs` already owned MainWindow close lifecycle, first-frame reveal cancellation during shutdown, and window lifecycle contract tests. Reviewing startup cloak/reveal behavior and shutdown reveal cancellation required opening two window lifecycle controller files.
+Problem: `NativeWindowBootstrapController.cs` was an 83-line one-use native shell startup owner used only by `MainWindow.ShellChrome.Composition.cs`, while `WindowControllers.cs` already owned MainWindow close lifecycle, first-frame reveal cancellation during shutdown, and window lifecycle contract tests. Reviewing startup cloak/reveal behavior and shutdown reveal cancellation required opening two window lifecycle controller files.
 Files consolidated: `Sussudio/Controllers/Window/NativeWindowBootstrapController.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: window lifecycle production owner count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after ownership-doc wording fix); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds app, screenshot, automation, and shell consumers; no public automation command names, IDs, wire payloads, XAML bindings, window size, icon path, DWM attributes, or close-lifecycle behavior changed
-Behavior preserved: native window handle handoff, AppWindow lookup, min-size subclassing, DWM cloak/dark-mode setup, first-composed-frame reveal scheduling/cancellation, shell resize/icon setup, close request choreography, recording-stop close guard, and shutdown cleanup order now live in `WindowCloseLifecycleController.cs`.
-Notes for future agents: keep native shell bootstrap with `Sussudio/Controllers/Window/WindowCloseLifecycleController.cs` while first-frame reveal scheduling and shutdown cancellation remain coupled; keep `_hwnd` storage and XAML-facing adapters in `MainWindow.ShellChrome.Composition.cs`.
+Behavior preserved: native window handle handoff, AppWindow lookup, min-size subclassing, DWM cloak/dark-mode setup, first-composed-frame reveal scheduling/cancellation, shell resize/icon setup, close request choreography, recording-stop close guard, and shutdown cleanup order now live in `WindowControllers.cs`.
+Notes for future agents: keep native shell bootstrap with `Sussudio/Controllers/Window/WindowControllers.cs` while first-frame reveal scheduling and shutdown cancellation remain coupled; keep `_hwnd` storage and XAML-facing adapters in `MainWindow.ShellChrome.Composition.cs`.
 
 Date: 2026-05-26
 Area: device format probe retarget locality
