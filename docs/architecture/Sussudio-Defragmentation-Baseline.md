@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: MCP diagnostic-session test sidecar locality
+Problem: `McpToolSurface.DiagnosticSession.Runner.Tests.cs`, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`, and `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs` were remaining factless legacy `Program` sidecars for one diagnostic-session xUnit contract surface. Reviewing diagnostic-session tool artifacts, reflective runner behavior, infrastructure/helper ownership, and Flashback scenario ownership still required opening three adjacent implementation shards while all executable facts already route through `XUnit.ToolContractsTests.cs`.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
+Files added: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`
+Net production .cs delta: 0; net test .cs delta: -2
+Partial clusters reduced: legacy `Program` diagnostic-session test sidecar count -2; `Sussudio.Tests` `.cs` count 38 -> 36
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession"` passed (53 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves private test method bodies and updates architecture ownership docs.
+Behavior preserved: all `XUnit.ToolContractsTests` diagnostic-session `[Fact]` wrappers and underlying `Program.DiagnosticSession*` / `Program.McpDiagnosticSessionTool_*` method names remain unchanged. Source-family readers, helper ownership checks, runner synthetic-command tests, Flashback scenario/metric/wait/export checks, and MCP artifact contract tests now live in `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`.
+Notes for future agents: keep diagnostic-session backing `Program` methods together in `McpToolSurface.DiagnosticSession.Tests.cs` while they share the same xUnit wrapper surface and no independent fixture state. Keep `XUnit.ToolContractsTests.cs` as the public xUnit execution surface; split again only for a distinct fixture, external-process seam, or named collaborator boundary. Current counts: core app 118 `.cs` files / 89,565 nonblank LoC; `Sussudio.Tests` 36 `.cs` files / 56,042 nonblank LoC.
+
+Date: 2026-06-01
 Area: In-file partial shell cleanup for Flashback export and LibAv recording
 Problem: `CaptureService.FlashbackExportCore.cs`, `FlashbackExporter.SegmentPacketWriting.cs`, and `LibAvRecordingSink.cs` each contained two declarations for the same partial type inside one physical file. These were leftover navigation shells after earlier sidecar folds: behavior already lived in the same file, but the fake class boundaries kept partial sprawl visible and made source-shape evidence less precise.
 Files consolidated: none

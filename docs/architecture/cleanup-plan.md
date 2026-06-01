@@ -389,18 +389,14 @@ source use the shared `RuntimeContractSource` snapshot formatter source reader
 from both the legacy harness and xUnit formatter contracts.
 
 Diagnostic-session MCP surface coverage keeps
-`McpToolSurface.DiagnosticSession.Runner.Tests.cs` as the MCP tool success/failure
-artifact contract owner and focused reflective runner behavior owner,
-`McpToolSurface.DiagnosticSession.Ownership.*.Tests.cs` for
-planning, execution, teardown, and reporting helper ownership assertions,
-`McpToolSurface.DiagnosticSession.Flashback.*.Tests.cs` for Flashback
-scenario/metrics/wait/export ownership assertions,
-`McpToolSurface.DiagnosticSession.InfrastructureOwnership.*.Tests.cs` for
-focused infrastructure ownership tests. The runner behavior files now own
-final-snapshot artifact failures, sparse source-cadence health tolerance,
-Flashback export/playback command flow, unknown-initial-snapshot mutation
-safety, synthetic pipe-connect retry, and concurrent-output-directory lockout.
-Infrastructure ownership files now split runner/initial-snapshot, pipe
+`McpToolSurface.DiagnosticSession.Tests.cs` as the consolidated backing
+`Program` method owner for MCP tool success/failure artifact contracts,
+reflective runner behavior, planning, execution, teardown, reporting,
+infrastructure, and Flashback scenario/metrics/wait/export ownership
+assertions. The consolidated file owns final-snapshot artifact failures, sparse
+source-cadence health tolerance, Flashback export/playback command flow,
+unknown-initial-snapshot mutation safety, synthetic pipe-connect retry,
+concurrent-output-directory lockout, runner/initial-snapshot, pipe
 retry/command channel, run context, and scenario/completion phase assertions.
 MCP tool checks now execute through
 `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`, keeping window/preview,

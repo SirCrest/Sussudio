@@ -1241,7 +1241,7 @@ Primary current owners:
   ownership assertions, including diagnostic-evaluation, alerts,
   snapshot-projection, aggregate `SourceFamilyText` composition, and the
   corresponding diagnostics-refresh ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`
   owns shared diagnostic-session source-family readers used by refresh, MCP,
   and tool ownership assertions alongside the broad diagnostic-session
   ownership checks.
@@ -1711,21 +1711,17 @@ Primary current owners:
   `CommandRouting.Verification` owner files. Captured command-ID assertions use
   the shared `AssertAutomationCommandId` helper so the golden command table is
   the only test-owned numeric ID list.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`
-  owns MCP `run_diagnostic_session` success/failure artifact contract tests
-  alongside the focused diagnostic-session runner behavior tests.
+- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`
+  owns the consolidated backing `Program` method bodies for MCP
+  `run_diagnostic_session` success/failure artifact contract tests, focused
+  diagnostic-session runner behavior, diagnostic-session helper ownership
+  checks, shared source-family readers, and Flashback scenario/metrics/wait/export
+  ownership assertions.
   `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the xUnit
   execution surface for the general MCP tool-surface, command-routing,
   host/pipe, verification, Flashback tool, diagnostic-session tool entry,
   performance/probe, and window/preview tool contracts after their removal from
   the legacy harness catalog.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`
-  owns diagnostic-session helper ownership checks for planning/setup,
-  execution/startup/sampling, teardown/reporting, post-run snapshots,
-  recording verification, shared session metrics, runner/initial-snapshot,
-  pipe retry/command-channel, run-state/live-state/context/bootstrap/output-lock,
-  and scenario/completion phase checks after the infrastructure sidecar was
-  folded into the broader diagnostic-session ownership spec.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns diagnostic-session
   model ownership assertions, formatter ownership, builder summary-write
   failure, artifact, JSON/shared-text checks, core result-builder
@@ -1733,16 +1729,6 @@ Primary current owners:
   playback, recording, and export result projections, preview result
   projections, analysis-warning, diagnostic-health, and artifact-handoff
   ownership through the diagnostic-session result-surface wrapper class.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
-  owns diagnostic-session Flashback warmup health-policy, warning-policy,
-  snapshot polling wait, cycle, preview-cycle, rejected-export,
-  segment-playback, export, recording-settings, lifecycle, stress,
-  audio-master fallback classification, export-helper, segment wait/parsing,
-  and Flashback metric projection ownership assertions.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs` owns
-  focused diagnostic-session runner behavior coverage: reflective runner
-  setup, artifacts, health policy, Flashback playback, initial snapshot,
-  pipe retry, and concurrency checks against synthetic command delegates.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the
   xUnit execution surface for the former legacy diagnostic-session catalog
   bands: infrastructure, result surface, command/run context, scenario
@@ -1752,12 +1738,6 @@ Primary current owners:
   fixture or executable helper state.
 - `tests/Sussudio.Tests/HarnessCore.cs` keeps the compatibility runner entry
   point; diagnostic-session checks now execute through xUnit wrappers.
-- `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`
-  owns shared reflective runner setup and diagnostic-session runner behavior
-  tests: loading `ssctl`, creating `DiagnosticSessionOptions`, invoking
-  `DiagnosticSessionRunner.RunAsync`, parsing synthetic JSON responses, and
-  validating artifacts, health policy, Flashback playback, initial snapshot,
-  pipe retry, and concurrency behavior.
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns MCP performance
   timeline contract, Flashback timeline formatting, PresentMon MCP correlation
   and option precedence coverage, and frame-pacing verdict tests. Keep the
