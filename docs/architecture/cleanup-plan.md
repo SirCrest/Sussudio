@@ -1623,23 +1623,20 @@ beside native media-type selection so the selected native type and requested
 NV12/P010 output type can be reviewed together without changing negotiation
 semantics.
 
-Media Foundation source-reader initialization orchestration and active lifetime
-now live together in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
-public initialization validation, startup-reference acquisition/release, reader
+Media Foundation source-reader initialization orchestration, active lifetime,
+and frame delivery now live together in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep public
+initialization validation, startup-reference acquisition/release, reader
 attribute construction, source media-type selection, actual-output
 reconciliation, strict negotiated-output validation, runtime field reset,
 COM/startup ownership handoff, initialization success/failure logging,
 start/stop/dispose, read thread priority, `ReadSample` outstanding-state
-tracking, sample timestamp cadence handoff, frame-delivery invocation,
-frame-drop accounting, and fatal D3D output failure break behavior there.
-
-Media Foundation source-reader frame delivery now lives in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep
-sample-to-buffer conversion, compressed MJPG routing and byte extraction, raw
-CPU frame delivery, 2D buffer handling, packed-stride CPU copies, dual GPU/CPU
-delivery orchestration, dual-frame CPU payload extraction, readback fallback
-selection, and GPU texture release there.
+tracking, sample timestamp cadence handoff, sample-to-buffer conversion,
+compressed MJPG routing and byte extraction, raw CPU frame delivery, 2D buffer
+handling, packed-stride CPU copies, dual GPU/CPU delivery orchestration,
+dual-frame CPU payload extraction, readback fallback selection, GPU texture
+release, frame-drop accounting, and fatal D3D output failure break behavior
+there.
 
 Media Foundation interop declarations and shared helpers now live in
 `Sussudio/Services/Capture/MfInterop.cs`. Keep general Media Foundation COM
@@ -1650,37 +1647,25 @@ there without reopening a `MfSourceReaderVideoCapture` partial shell. Preserve
 interface method order and placeholder slots exactly; keep
 behavioral source-reader logic in the root and negotiation partials.
 
-Media Foundation source cadence metrics now live with active source-reader
-lifetime in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`.
-Keep the public cadence snapshot record, expected-rate/window sizing, stop-time
-cadence reset, timestamp interval tracking, and percentile/drop estimate
-calculations near the read loop that observes Media Foundation timestamps; keep
-sample-to-buffer delivery in the named frame/raw delivery partials.
-
-Media Foundation source-reader diagnostics now live with frame delivery in
-`Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs`. Keep
-the debug-only COM vtable diagnostic there beside the sample dispatch that
-invokes it.
-
-Media Foundation source-reader frame delivery now keeps IMFDXGIBuffer
-texture/subresource extraction, D3D texture IID lookup, DXGI fallback
-diagnostics, and dual GPU/CPU delivery orchestration in
-`MfSourceReaderVideoCapture.FrameDelivery.cs`; keep raw/compressed CPU frame
-delivery helpers in the same file with sample-to-buffer dispatch and reader
-start/stop/dispose in the root source-reader file.
+Media Foundation source cadence metrics, source-reader diagnostics, and DXGI
+texture extraction now live with active source-reader lifetime in
+`Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep the public
+cadence snapshot record, expected-rate/window sizing, stop-time cadence reset,
+timestamp interval tracking, percentile/drop estimate calculations,
+debug-only COM vtable diagnostic, IMFDXGIBuffer texture/subresource extraction,
+D3D texture IID lookup, and DXGI fallback diagnostics near the read loop and
+sample dispatch that use them.
 
 Media Foundation packed-frame layout helpers now live with the source-reader
 state in `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
 frame-size/row-byte calculation, packed-stride inference, stride-aware YUV
-copying, and source subtype labels there; keep frame delivery in
-`MfSourceReaderVideoCapture.FrameDelivery.cs` and reader start/stop/dispose in
-the root source-reader file.
+copying, and source subtype labels there beside frame delivery and reader
+start/stop/dispose.
 
 Media Foundation source-reader lifecycle now lives in
 `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`. Keep
 public start/stop/dispose, reader/source COM release, lifecycle logging, and
-fatal-error callback dispatch there; keep initialization and frame delivery in
-their named source-reader partials.
+fatal-error callback dispatch there beside initialization and frame delivery.
 
 Unified capture source-session lifecycle, frame ingress, sink fan-out, and
 diagnostic metric projection now live in

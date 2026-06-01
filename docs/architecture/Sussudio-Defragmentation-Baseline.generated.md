@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T18:29:17Z
+Generated UTC: 2026-06-01T18:40:10Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 136 |
+| Production .cs files | 135 |
 | Test .cs files | 14 |
-| Core app .cs files (Sussudio/) | 101 |
-| Core app nonblank LoC (Sussudio/) | 88461 |
+| Core app .cs files (Sussudio/) | 100 |
+| Core app nonblank LoC (Sussudio/) | 88453 |
 | Sussudio.Tests .cs files | 12 |
-| Sussudio.Tests nonblank LoC | 55832 |
+| Sussudio.Tests nonblank LoC | 55820 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.7%) |
 
@@ -29,7 +29,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | FlashbackEncoderSink | 3 | 2639 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.EncodingLoop.cs, Sussudio/Services/Flashback/FlashbackEncoderSink.Queueing.cs |
 | LibAvEncoder | 3 | 2972 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | LibAvRecordingSink | 2 | 1886 | Sussudio/Services/Recording/LibAvRecordingSink.cs, Sussudio/Services/Recording/LibAvRecordingSink.Queueing.cs |
-| MfSourceReaderVideoCapture | 2 | 2033 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs, Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs |
 | App | 1 | 260 | Sussudio/App.xaml.cs |
 | SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | MainWindow | 1 | 2421 | Sussudio/MainWindow.xaml.cs |
@@ -44,6 +43,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 6046 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 2976 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2421 | Sussudio/MainWindow.xaml.cs |
+| 2024 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 2012 | Sussudio/ViewModels/MainViewModel.cs |
 | 1933 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 1721 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
@@ -54,7 +54,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1547 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 1506 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1505 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
-| 1484 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 1472 | Sussudio/Controllers/Flashback/FlashbackUiControllers.cs |
 | 1467 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 1455 | tools/Common/DiagnosticSessionResultBuilder.cs |

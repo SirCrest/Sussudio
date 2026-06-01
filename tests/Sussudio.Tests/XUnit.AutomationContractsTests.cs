@@ -8450,7 +8450,6 @@ static partial class Program
         var sourceReaderInitializationText = sourceReaderSources.InitializationText;
         var sourceReaderInitializedSessionText = sourceReaderSources.InitializedSessionText;
         var sourceReaderReadLoopText = sourceReaderSources.ReadLoopText;
-        var sourceReaderFrameDeliveryText = sourceReaderSources.FrameDeliveryText;
         var sourceReaderText = sourceReaderSources.SourceFamilyText;
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
@@ -8460,22 +8459,19 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Cadence.cs")),
             "source-reader cadence metrics folded into active lifecycle owner");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DiagnoseVtable(IMFSample sample)");
-        AssertContains(sourceReaderFrameDeliveryText, "VTABLE_DIAG RAW slot35_GetSampleTime");
+        AssertContains(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
+        AssertContains(sourceReaderRootText, "VTABLE_DIAG RAW slot35_GetSampleTime");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.Diagnostics.cs")),
-            "source-reader vtable diagnostic folded into frame delivery");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DiagnoseVtable(IMFSample sample)");
-        AssertContains(sourceReaderFrameDeliveryText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
-        AssertContains(sourceReaderFrameDeliveryText, "private static readonly Guid ID3D11Texture2DIid");
-        AssertContains(sourceReaderFrameDeliveryText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
+            "source-reader vtable diagnostic folded into root source-reader owner");
+        AssertContains(sourceReaderRootText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
+        AssertContains(sourceReaderRootText, "private static readonly Guid ID3D11Texture2DIid");
+        AssertContains(sourceReaderRootText, "MF_SOURCE_READER_D3D_RESOURCE_FAIL");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.DxgiBuffers.cs")),
-            "MfSourceReaderVideoCapture DXGI texture extraction folded into frame delivery");
-        AssertDoesNotContain(sourceReaderRootText, "private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)");
-        AssertDoesNotContain(sourceReaderRootText, "private static readonly Guid ID3D11Texture2DIid");
+            "MfSourceReaderVideoCapture DXGI texture extraction folded into root source-reader owner");
         AssertContains(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
         AssertContains(sourceReaderFrameLayoutText, "private unsafe static void CopyYuvWithStride(");
         AssertContains(sourceReaderFrameLayoutText, "private static string SubtypeGuidToName(Guid subtype)");
@@ -8521,22 +8517,21 @@ static partial class Program
         AssertContains(sourceReaderReadLoopText, "private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)");
         AssertContains(sourceReaderReadLoopText, "reader.ReadSample(");
         AssertContains(sourceReaderReadLoopText, "DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverFrame(");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverDualFrameFromBuffer(");
-        AssertContains(sourceReaderFrameDeliveryText, "Marshal.Release(gpuTexture)");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertContains(sourceReaderFrameDeliveryText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
-        AssertContains(sourceReaderFrameDeliveryText, "ArrayPool<byte>.Shared.Rent");
+        AssertContains(sourceReaderRootText, "private unsafe void DeliverFrame(");
+        AssertContains(sourceReaderRootText, "private unsafe void DeliverDualFrameFromBuffer(");
+        AssertContains(sourceReaderRootText, "Marshal.Release(gpuTexture)");
+        AssertContains(sourceReaderRootText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
+        AssertContains(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+        AssertContains(sourceReaderRootText, "ArrayPool<byte>.Shared.Rent");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.RawFrameDelivery.cs")),
-            "raw/compressed source-reader frame extraction folded into frame delivery");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverFrame(");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe void DeliverDualFrameFromBuffer(");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)");
-        AssertDoesNotContain(sourceReaderRootText, "private unsafe bool TryDeliverDualFrameFrom2DBuffer(");
+            "raw/compressed source-reader frame extraction folded into root source-reader owner");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.FrameDelivery.cs")),
+            "source-reader frame delivery folded into root source-reader owner");
     }
 
     private static void AssertDiagnosticsSnapshotStatusProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -9468,13 +9463,13 @@ static partial class Program
     private static MfSourceReaderVideoCaptureSourceFamily ReadMfSourceReaderVideoCaptureSourceFamily()
     {
         var rootText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs");
-        var diagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
+        var diagnosticsText = rootText;
         var frameLayoutText = rootText;
         var lifecycleText = rootText;
         var initializationText = rootText;
         var initializedSessionText = initializationText;
         var readLoopText = lifecycleText;
-        var frameDeliveryText = ReadNormalizedRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.FrameDelivery.cs");
+        var frameDeliveryText = rootText;
 
         return new MfSourceReaderVideoCaptureSourceFamily(
             rootText,
@@ -9485,14 +9480,7 @@ static partial class Program
             initializedSessionText,
             readLoopText,
             frameDeliveryText,
-            string.Join(
-                "\n",
-                new[]
-                {
-                    rootText,
-                    lifecycleText,
-                    frameDeliveryText,
-                }));
+            rootText);
     }
 
     private static DiagnosticSessionSourceFamily ReadDiagnosticSessionSourceFamily()
