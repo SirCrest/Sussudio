@@ -1,6 +1,9 @@
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -1340,5 +1343,1374 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             Interlocked.Exchange(ref _playbackMaxDecodePositionMs, 0);
             Volatile.Write(ref _playbackMaxDecodePhase, string.Empty);
         }
+    }
+
+
+    // --- Decoder file lifecycle ---
+
+    private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
+
+    private string? _currentOpenFilePath;
+
+    private FlashbackDecoder CreateDecoder()
+    {
+        var useGpu = GpuDecodeEnabled;
+        Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CREATE gpu={useGpu}");
+        var decoder = new FlashbackDecoder();
+
+        // Get D3D11 device pointers for GPU-direct decode (skip if GPU decode disabled).
+        var devicePtr = IntPtr.Zero;
+        var contextPtr = IntPtr.Zero;
+        if (useGpu)
+        {
+            var d3dManager = _videoCapture?.D3DManager;
+            devicePtr = d3dManager?.Device?.NativePointer ?? IntPtr.Zero;
+            contextPtr = d3dManager?.ImmediateContext?.NativePointer ?? IntPtr.Zero;
+        }
+        decoder.Initialize(devicePtr, contextPtr);
+
+        RestoreAudioCallback(decoder);
+        return decoder;
+    }
+
+    private void EnsureFileOpen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan? targetPts = null)
+    {
+        // Determine which segment file contains the target position.
+        var filePath = targetPts.HasValue
+            ? _bufferManager.GetValidSegmentFileForPosition(targetPts.Value)
+            : _bufferManager.ActiveFilePath;
+
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_NO_FILE");
+            if (decoder.IsOpen)
+            {
+                CloseDecoderFileBestEffort(decoder, "ensure_file_open_no_file");
+            }
+
+            fileOpen = false;
+            _currentOpenFilePath = null;
+            _decoderHwAccel = "N/A";
+            return;
+        }
+
+        // If already open on the correct file, nothing to do.
+        if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))
+            return;
+
+        try
+        {
+            if (decoder.IsOpen)
+            {
+                CloseDecoderFileBestEffort(decoder, "ensure_file_open");
+                fileOpen = false;
+                _currentOpenFilePath = null;
+                _decoderHwAccel = "N/A";
+            }
+
+            decoder.OpenFile(filePath);
+            fileOpen = true;
+            _currentOpenFilePath = filePath;
+            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN path='{filePath}' hw_accel={_decoderHwAccel}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'");
+            if (decoder.IsOpen)
+            {
+                CloseDecoderFileBestEffort(decoder, "ensure_file_open_error");
+            }
+            _decoderHwAccel = "N/A";
+            fileOpen = false;
+            _currentOpenFilePath = null;
+        }
+    }
+
+    private static bool IsDecoderFileReady(FlashbackDecoder decoder, bool fileOpen)
+        => fileOpen && decoder.IsOpen;
+
+    private bool TrySeekWithActiveFmp4Reopen(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))
+        {
+            return true;
+        }
+
+        // Active fMP4 segment: demuxer fragment index is stale. Reopen and retry.
+        // MPEG-TS handles appended data via eof_reached reset and does not need reopening.
+        if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
+        {
+            if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))
+            {
+                SetReopenFailure(reason, "near_live", seekTarget);
+                return false;
+            }
+
+            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason, cancellationToken);
+        }
+
+        if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _, cancellationToken))
+        {
+            return true;
+        }
+
+        SetReopenFailure(reason, "seek_failed", seekTarget);
+        Logger.Log($"FLASHBACK_PLAYBACK_SEEK_FAIL reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
+        return false;
+    }
+
+    private bool TryReopenCurrentFileAndSeek(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var currentPath = _currentOpenFilePath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            SetReopenFailure(reason, "no_current_file", seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP reason={reason} detail=no_current_file");
+            return false;
+        }
+
+        try
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentPath,
+                ref fileOpen,
+                updateCurrentOpenPath: true,
+                closeOnlyWhenOpen: true);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (SeekToWithCapTelemetry(decoder, seekTarget, reason, cancellationToken))
+            {
+                return true;
+            }
+
+            SetReopenFailure(reason, "seek_failed", seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL reason={reason} path='{currentPath}' offset_ms={(long)seekTarget.TotalMilliseconds}");
+            return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            SetReopenFailure(reason, ex.GetType().Name, seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            MarkDecoderPlaybackFileClosed(ref fileOpen);
+            return false;
+        }
+    }
+
+    private bool TryReopenCurrentFileAndSeekKeyframe(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var currentPath = _currentOpenFilePath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            SetReopenFailure(reason, "no_current_file", seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP reason={reason} detail=no_current_file");
+            return false;
+        }
+
+        try
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
+            ReopenDecoderPlaybackFile(
+                decoder,
+                currentPath,
+                ref fileOpen,
+                updateCurrentOpenPath: true,
+                closeOnlyWhenOpen: true);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (decoder.SeekToKeyframe(seekTarget, cancellationToken))
+            {
+                return true;
+            }
+
+            SetReopenFailure(reason, "keyframe_seek_failed", seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL reason={reason} path='{currentPath}' offset_ms={(long)seekTarget.TotalMilliseconds}");
+            return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            SetReopenFailure(reason, ex.GetType().Name, seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            MarkDecoderPlaybackFileClosed(ref fileOpen);
+            return false;
+        }
+    }
+
+    private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)
+    {
+        var latestPts = _bufferManager.LatestPts;
+        if (latestPts <= TimeSpan.Zero)
+        {
+            return false;
+        }
+
+        var distanceFromLive = seekTarget >= latestPts
+            ? TimeSpan.Zero
+            : latestPts - seekTarget;
+        if (distanceFromLive > ActiveFmp4ReopenNearLiveGuard)
+        {
+            return false;
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE reason={reason} target_ms={(long)seekTarget.TotalMilliseconds} latest_ms={(long)latestPts.TotalMilliseconds} distance_ms={(long)distanceFromLive.TotalMilliseconds} guard_ms={(long)ActiveFmp4ReopenNearLiveGuard.TotalMilliseconds}");
+        return true;
+    }
+
+    private bool TrySeekAdjacentSegmentStart(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        out TimeSpan effectiveSeekTarget,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        effectiveSeekTarget = seekTarget;
+        var currentPath = _currentOpenFilePath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            return false;
+        }
+
+        var nextPath = _bufferManager.GetNextSegmentFile(currentPath);
+        if (string.IsNullOrWhiteSpace(nextPath) || IsSamePlaybackPath(nextPath, currentPath))
+        {
+            return false;
+        }
+
+        var nextStart = _bufferManager.GetSegmentStartPts(nextPath);
+        if (!nextStart.HasValue)
+        {
+            return false;
+        }
+
+        var targetGap = (nextStart.Value - seekTarget).Duration();
+        if (targetGap > AdjacentSegmentSeekFallbackWindow)
+        {
+            return false;
+        }
+
+        effectiveSeekTarget = seekTarget < nextStart.Value ? nextStart.Value : seekTarget;
+        try
+        {
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK reason={reason} " +
+                $"from='{System.IO.Path.GetFileName(currentPath)}' next='{System.IO.Path.GetFileName(nextPath)}' " +
+                $"target_ms={(long)seekTarget.TotalMilliseconds} effective_ms={(long)effectiveSeekTarget.TotalMilliseconds}");
+            ReopenDecoderPlaybackFile(
+                decoder,
+                nextPath,
+                ref fileOpen,
+                updateCurrentOpenPath: true,
+                closeOnlyWhenOpen: true);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (SeekToWithCapTelemetry(decoder, effectiveSeekTarget, reason, cancellationToken))
+            {
+                Interlocked.Increment(ref _playbackSegmentSwitches);
+                Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                ResetPlaybackPtsCadenceBaseline();
+                return true;
+            }
+
+            SetReopenFailure(reason, "adjacent_seek_failed", effectiveSeekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK_FAIL reason={reason} path='{nextPath}' offset_ms={(long)effectiveSeekTarget.TotalMilliseconds}");
+            return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            SetReopenFailure(reason, ex.GetType().Name, effectiveSeekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK_ERROR reason={reason} path='{nextPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            MarkDecoderPlaybackFileClosed(ref fileOpen);
+            return false;
+        }
+    }
+
+    private void ReopenDecoderPlaybackFile(
+        FlashbackDecoder decoder,
+        string path,
+        ref bool fileOpen,
+        bool updateCurrentOpenPath,
+        bool closeOnlyWhenOpen)
+    {
+        if (!closeOnlyWhenOpen || decoder.IsOpen)
+        {
+            decoder.CloseFile();
+        }
+
+        fileOpen = false;
+        decoder.OpenFile(path);
+        fileOpen = true;
+        if (updateCurrentOpenPath)
+        {
+            _currentOpenFilePath = path;
+        }
+
+        _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+    }
+
+    private void MarkDecoderPlaybackFileClosed(ref bool fileOpen)
+    {
+        _decoderHwAccel = "N/A";
+        fileOpen = false;
+        _currentOpenFilePath = null;
+    }
+
+    private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)
+    {
+        try
+        {
+            if (decoder.IsOpen) decoder.CloseFile();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)
+    {
+        var cleanupStarted = Stopwatch.GetTimestamp();
+        var wasOpen = decoder?.IsOpen ?? false;
+        Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP was_open={wasOpen}");
+        var releaseStarted = Stopwatch.GetTimestamp();
+        ReleasePreviousHeldFrame();
+        var releaseMs = Stopwatch.GetElapsedTime(releaseStarted).TotalMilliseconds;
+        var closeMs = 0d;
+        var disposeMs = 0d;
+        if (decoder != null)
+        {
+            var decoderToDispose = decoder;
+            decoder = null;
+            try
+            {
+                if (decoderToDispose.IsOpen)
+                {
+                    var closeStarted = Stopwatch.GetTimestamp();
+                    decoderToDispose.CloseFile();
+                    closeMs = Stopwatch.GetElapsedTime(closeStarted).TotalMilliseconds;
+                }
+            }
+            catch (Exception ex)
+            {
+                closeMs = Stopwatch.GetElapsedTime(cleanupStarted).TotalMilliseconds;
+                Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+
+            try
+            {
+                var disposeStarted = Stopwatch.GetTimestamp();
+                decoderToDispose.Dispose();
+                disposeMs = Stopwatch.GetElapsedTime(disposeStarted).TotalMilliseconds;
+            }
+            catch (Exception ex)
+            {
+                disposeMs = Stopwatch.GetElapsedTime(cleanupStarted).TotalMilliseconds;
+                Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+        }
+        fileOpen = false;
+        _currentOpenFilePath = null;
+        _decoderHwAccel = "N/A";
+        var totalMs = Stopwatch.GetElapsedTime(cleanupStarted).TotalMilliseconds;
+        Logger.Log(
+            $"FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE was_open={wasOpen} " +
+            $"release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
+    }
+
+    // --- In/Out points and playback position mapping ---
+    // --- In/Out points ---
+
+    private long _inPointTicks = long.MinValue;
+    private long _outPointTicks = long.MinValue;
+    private long _inPointFilePtsTicks = long.MinValue;
+    private long _outPointFilePtsTicks = long.MinValue;
+
+    public TimeSpan? InPoint
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _inPointTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+        set
+        {
+            var normalized = value.HasValue ? NormalizeMarkerPosition(value.Value) : (TimeSpan?)null;
+            Interlocked.Exchange(ref _inPointTicks, normalized?.Ticks ?? long.MinValue);
+            Interlocked.Exchange(ref _inPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);
+        }
+    }
+
+    public TimeSpan? OutPoint
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _outPointTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+        set
+        {
+            var normalized = value.HasValue ? NormalizeMarkerPosition(value.Value) : (TimeSpan?)null;
+            Interlocked.Exchange(ref _outPointTicks, normalized?.Ticks ?? long.MinValue);
+            Interlocked.Exchange(ref _outPointFilePtsTicks, normalized.HasValue ? SaturatingAdd(normalized.Value, _bufferManager.ValidStartPts).Ticks : long.MinValue);
+        }
+    }
+
+    public TimeSpan? InPointFilePts
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _inPointFilePtsTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+    }
+
+    public TimeSpan? OutPointFilePts
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _outPointFilePtsTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+    }
+
+    public TimeSpan SetInPoint() => SetInPointAt(null);
+
+    /// <summary>
+    /// Pin the in-point at an explicit user-intended position rather than the
+    /// controller's last decoded keyframe. The UI should pass the position the
+    /// user is visually pointing at (its FlashbackPlaybackPosition), which during
+    /// scrubbing is the user's drag target rather than the keyframe-snapped
+    /// PlaybackPosition the controller publishes after each decode. Without this
+    /// overload, mid-GOP "click In" landed on the prior keyframe and the marker
+    /// could appear hundreds of milliseconds before where the playhead sat.
+    /// </summary>
+    public TimeSpan SetInPointAt(TimeSpan position) => SetInPointAt((TimeSpan?)position);
+
+    private TimeSpan SetInPointAt(TimeSpan? overridePosition)
+    {
+        if (_disposedFlag != 0)
+        {
+            SetLastCommandFailure("disposed:SetInPoint");
+            Logger.Log("FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
+            return PlaybackPosition;
+        }
+
+        var pos = overridePosition.HasValue
+            ? NormalizeMarkerPosition(overridePosition.Value)
+            : PlaybackPosition;
+        ClearLastCommandFailure();
+        InPoint = pos;
+        var outTicks = Interlocked.Read(ref _outPointTicks);
+        if (outTicks != long.MinValue && outTicks <= pos.Ticks)
+        {
+            OutPoint = null;
+            Logger.Log("FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range");
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_SET_IN pos_ms={(long)pos.TotalMilliseconds} source={(overridePosition.HasValue ? "ui_override" : "playback")}");
+        return pos;
+    }
+
+    public TimeSpan SetOutPoint() => SetOutPointAt(null);
+
+    /// <summary>
+    /// Pin the out-point at an explicit user-intended position. See
+    /// <see cref="SetInPointAt(TimeSpan)"/> for the rationale: the UI's visual
+    /// playhead and the controller's keyframe-snapped PlaybackPosition can
+    /// differ by hundreds of milliseconds during scrubbing.
+    /// </summary>
+    public TimeSpan SetOutPointAt(TimeSpan position) => SetOutPointAt((TimeSpan?)position);
+
+    private TimeSpan SetOutPointAt(TimeSpan? overridePosition)
+    {
+        if (_disposedFlag != 0)
+        {
+            SetLastCommandFailure("disposed:SetOutPoint");
+            Logger.Log("FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
+            return PlaybackPosition;
+        }
+
+        var pos = overridePosition.HasValue
+            ? NormalizeMarkerPosition(overridePosition.Value)
+            : PlaybackPosition;
+        ClearLastCommandFailure();
+        OutPoint = pos;
+        var inTicks = Interlocked.Read(ref _inPointTicks);
+        if (inTicks != long.MinValue && inTicks >= pos.Ticks)
+        {
+            InPoint = null;
+            Logger.Log("FLASHBACK_PLAYBACK_CLEAR_IN invalid_range");
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_SET_OUT pos_ms={(long)pos.TotalMilliseconds} source={(overridePosition.HasValue ? "ui_override" : "playback")}");
+        return pos;
+    }
+
+    public void ClearInOutPoints()
+    {
+        if (_disposedFlag != 0)
+        {
+            SetLastCommandFailure("disposed:ClearInOutPoints");
+            Logger.Log("FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
+            return;
+        }
+
+        InPoint = null;
+        OutPoint = null;
+        ClearLastCommandFailure();
+        Logger.Log("FLASHBACK_PLAYBACK_CLEAR_INOUT");
+    }
+
+    public void RestoreInOutPoints(
+        TimeSpan? inPoint,
+        TimeSpan? outPoint,
+        TimeSpan? inPointFilePts,
+        TimeSpan? outPointFilePts)
+    {
+        InPoint = inPoint;
+        OutPoint = outPoint;
+
+        if (inPoint.HasValue && inPointFilePts.HasValue && inPointFilePts.Value >= TimeSpan.Zero)
+        {
+            Interlocked.Exchange(ref _inPointFilePtsTicks, inPointFilePts.Value.Ticks);
+        }
+
+        if (outPoint.HasValue && outPointFilePts.HasValue && outPointFilePts.Value >= TimeSpan.Zero)
+        {
+            Interlocked.Exchange(ref _outPointFilePtsTicks, outPointFilePts.Value.Ticks);
+        }
+    }
+
+    private bool CheckOutPoint(TimeSpan position, Stopwatch pacingStopwatch)
+    {
+        var outTicks = Interlocked.Read(ref _outPointTicks);
+        if (outTicks != long.MinValue && position >= TimeSpan.FromTicks(outTicks))
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_HIT_OUTPOINT pos_ms={(long)position.TotalMilliseconds}");
+            SafePauseRendering("out_point");
+            pacingStopwatch.Stop();
+            SetState(FlashbackPlaybackState.Paused);
+            return true;
+        }
+
+        return false;
+    }
+
+    private TimeSpan NormalizeMarkerPosition(TimeSpan position)
+    {
+        if (position <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var bufferDuration = _bufferManager.BufferedDuration;
+        return position > bufferDuration ? bufferDuration : position;
+    }
+
+    /// <summary>
+    /// Returns true if the given path is the active fMP4 segment. The reopen-and-retry
+    /// workaround only applies to fMP4 (fragment index goes stale); transport streams
+    /// handle appended data via eof_reached reset and don't need reopening.
+    /// </summary>
+    private bool IsActiveFmp4Segment(string? path)
+        => path != null
+        && IsSamePlaybackPath(path, _bufferManager.ActiveFilePath)
+        && path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
+
+    private TimeSpan ClampPosition(TimeSpan position) => ClampPosition(position, null);
+
+    /// <summary>
+    /// Clamp a scrub/seek position to the currently usable buffer range, optionally
+    /// account for segment eviction that has happened since a scrub session captured
+    /// its frozen reference. Without the eviction adjustment, a long-held scrub at
+    /// position 0 maps via SaturatingAdd(pos, frozenValidStart) to a file PTS that
+    /// has been evicted - EnsureFileOpen fails and the user gets a sudden snap-to-
+    /// live instead of clamping to the new oldest available position.
+    /// </summary>
+    private TimeSpan ClampPosition(TimeSpan position, TimeSpan? frozenValidStart)
+    {
+        var bufferDuration = _bufferManager.BufferedDuration;
+        var inTicks = Interlocked.Read(ref _inPointTicks);
+        var min = inTicks == long.MinValue ? TimeSpan.Zero : TimeSpan.FromTicks(inTicks);
+        var outTicks = Interlocked.Read(ref _outPointTicks);
+        var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);
+        if (max > bufferDuration) max = bufferDuration;
+        if (frozenValidStart.HasValue)
+        {
+            // Eviction may have advanced ValidStartPts past the scrub session's
+            // captured reference. Positions in the evicted gap (in scrub coords)
+            // would resolve to file PTS values whose segments no longer exist.
+            // Promote min so those positions clamp up to the new oldest valid
+            // position rather than failing the file lookup downstream.
+            var currentValidStart = _bufferManager.ValidStartPts;
+            if (currentValidStart > frozenValidStart.Value)
+            {
+                var evictedDelta = currentValidStart - frozenValidStart.Value;
+                if (evictedDelta > min)
+                {
+                    min = evictedDelta;
+                }
+            }
+        }
+        if (min > max) min = max;
+        if (position < min) return min;
+        if (position > max) return max;
+        return position;
+    }
+
+    private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)
+    {
+        var leftTicks = left.Ticks;
+        var rightTicks = right.Ticks;
+        if (rightTicks > 0 && leftTicks > long.MaxValue - rightTicks)
+            return TimeSpan.MaxValue;
+        if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)
+            return TimeSpan.MinValue;
+        return TimeSpan.FromTicks(leftTicks + rightTicks);
+    }
+
+    private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)
+    {
+        var leftTicks = left.Ticks;
+        var rightTicks = right.Ticks;
+        if (rightTicks < 0 && leftTicks > long.MaxValue + rightTicks)
+            return TimeSpan.MaxValue;
+        if (rightTicks > 0 && leftTicks < long.MinValue + rightTicks)
+            return TimeSpan.MinValue;
+        return TimeSpan.FromTicks(leftTicks - rightTicks);
+    }
+
+    private static bool IsSamePlaybackPath(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left),
+                Path.GetFullPath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PATH_COMPARE_WARN left='{left}' right='{right}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    // --- Audio routing and prebuffer ---
+
+    private const double PlaybackAudioPrebufferTargetMs = 180.0;
+    private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;
+    private const int PlaybackAudioPrebufferTimeoutMs = 1000;
+    private const int PlaybackAudioPrebufferRetryDelayMs = 20;
+    private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
+
+    private void ApplyAudioRoutingForState(string operation)
+    {
+        if (_disposedFlag != 0)
+        {
+            return;
+        }
+
+        switch (_state)
+        {
+            case FlashbackPlaybackState.Live:
+                RestoreLiveAudio();
+                break;
+            case FlashbackPlaybackState.Playing:
+                SuppressLiveAudio();
+                SafeResumeRendering(operation);
+                break;
+            case FlashbackPlaybackState.Paused:
+            case FlashbackPlaybackState.Scrubbing:
+                SuppressLiveAudio();
+                SafePauseRendering(operation);
+                break;
+        }
+    }
+
+    private void ApplyPreviewRoutingForState(string operation)
+    {
+        if (_disposedFlag != 0)
+        {
+            return;
+        }
+
+        if (_state == FlashbackPlaybackState.Live)
+        {
+            SafeResumePreviewSubmission(operation);
+        }
+        else
+        {
+            SafeSuppressPreviewSubmission(operation);
+        }
+    }
+
+    private void SuppressLiveAudio()
+    {
+        try
+        {
+            _audioCapture?.SetPlayback(null);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=suppress_live_set_playback type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
+        SafeFlushPlayback("suppress_live_audio");
+    }
+
+    private void RestoreLiveAudio()
+    {
+        SafeFlushPlayback("restore_live_audio");
+        // Reconnect audio feed before resuming rendering to avoid silence/stutter.
+        try
+        {
+            if (_audioCapture != null && _audioPlayback != null)
+            {
+                _audioCapture.SetPlayback(_audioPlayback);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=restore_live_set_playback type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
+        SafeResumeRendering("restore_live_audio");
+    }
+
+    private void SafeSuppressPreviewSubmission(string operation)
+    {
+        try
+        {
+            _videoCapture?.SuppressPreviewSubmission();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_WARN op=suppress operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeResumePreviewSubmission(string operation)
+    {
+        try
+        {
+            _videoCapture?.ResumePreviewSubmission();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_WARN op=resume operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafePauseRendering(string operation)
+    {
+        try
+        {
+            _audioPlayback?.PauseRendering();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=pause operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeResumeRendering(string operation)
+    {
+        try
+        {
+            _audioPlayback?.ResumeRendering();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=resume operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeResumePlaybackRendering(string operation)
+    {
+        try
+        {
+            _audioPlayback?.ResumeRendering();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=resume_playback operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeFlushPlayback(string operation)
+    {
+        try
+        {
+            _audioPlayback?.Flush();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=flush operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void PrimePlaybackAudioBuffer(
+        FlashbackDecoder decoder,
+        Queue<DecodedVideoFrame> prebufferedFrames,
+        ref bool fileOpen,
+        TimeSpan resumeTarget,
+        string operation,
+        CancellationToken cancellationToken,
+        bool logResult = true)
+    {
+        var audioPlayback = _audioPlayback;
+        if (audioPlayback == null)
+        {
+            return;
+        }
+
+        var start = Stopwatch.GetTimestamp();
+        var decodedFrames = 0;
+        var timedOut = false;
+        var reachedEnd = false;
+        var eofRetries = 0;
+        var skippedForSoftwareBudget = false;
+        var discarded = false;
+        var rewound = false;
+        var prebufferReleasedFrames = 0;
+
+        while (decodedFrames < PlaybackAudioPrebufferDecodeFrameBudget)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (audioPlayback.PlaybackBufferedDurationMs >= PlaybackAudioPrebufferTargetMs)
+            {
+                break;
+            }
+
+            var elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            if (elapsedMs >= PlaybackAudioPrebufferTimeoutMs)
+            {
+                timedOut = true;
+                break;
+            }
+
+            if (ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
+            {
+                skippedForSoftwareBudget = true;
+                break;
+            }
+
+            if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken))
+            {
+                reachedEnd = true;
+                var waitMs = Math.Min(
+                    PlaybackAudioPrebufferRetryDelayMs,
+                    Math.Max(1, PlaybackAudioPrebufferTimeoutMs - (int)Stopwatch.GetElapsedTime(start).TotalMilliseconds));
+                eofRetries++;
+                if (cancellationToken.WaitHandle.WaitOne(waitMs))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    break;
+                }
+
+                continue;
+            }
+
+            decodedFrames++;
+            ReleaseHeldFrameBestEffort(frame, $"audio_prebuffer_{operation}");
+            prebufferReleasedFrames++;
+
+            if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= PlaybackAudioPrebufferTimeoutMs)
+            {
+                timedOut = true;
+                break;
+            }
+        }
+
+        var bufferedMs = audioPlayback.PlaybackBufferedDurationMs;
+        if (bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs)
+        {
+            ClearPrebufferedFrames(prebufferedFrames, $"prebuffer_discard_{operation}");
+            try
+            {
+                audioPlayback.Flush();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=prebuffer_discard_flush operation={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+
+            bufferedMs = audioPlayback.PlaybackBufferedDurationMs;
+            discarded = true;
+        }
+
+        if (decodedFrames > 0)
+        {
+            rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, cancellationToken);
+        }
+
+        if (logResult || timedOut || reachedEnd || skippedForSoftwareBudget)
+        {
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
+        }
+    }
+
+    private bool TryRewindPlaybackAudioPrebuffer(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan resumeTarget,
+        string operation,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            decoder.AudioChunkCallback = null;
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, resumeTarget, $"prebuffer_discard_{operation}", cancellationToken))
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND_FAIL operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds}");
+                RestoreAudioCallback(decoder, resumeTarget.Ticks);
+                return false;
+            }
+
+            RestoreAudioCallback(decoder, resumeTarget.Ticks);
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds}");
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=prebuffer_rewind operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds} type={ex.GetType().Name} msg='{ex.Message}'");
+            RestoreAudioCallback(decoder, resumeTarget.Ticks);
+            return false;
+        }
+    }
+
+    private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)
+    {
+        // Audio start gate: drop any audio chunk with PTS before this value.
+        // This filters stale audio from keyframe-to-target decode after a seek.
+        var videoPtsGate = audioStartGateTicks > 0
+            ? audioStartGateTicks
+            : Interlocked.Read(ref _lastVideoPtsTicks);
+        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+
+        if (_audioPlayback == null)
+        {
+            decoder.AudioChunkCallback = null;
+            return;
+        }
+
+        decoder.AudioChunkCallback = chunk =>
+        {
+            var pb = _audioPlayback;
+            if (pb == null)
+            {
+                ReturnPlaybackAudioChunkBestEffort(chunk, "playback_missing_audio_sink");
+                return;
+            }
+
+            if (!TryValidatePlaybackAudioChunk(chunk, out var invalidReason))
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_DROP reason={invalidReason} pts_ms={(long)chunk.Pts.TotalMilliseconds} valid_bytes={chunk.ValidLength} buffer_bytes={chunk.Samples?.Length ?? 0}");
+                ReturnPlaybackAudioChunkBestEffort(chunk, $"playback_audio_{invalidReason}");
+                return;
+            }
+
+            // Skip invalid or non-monotonic PTS (L8 fix).
+            var prevPts = Interlocked.Read(ref _lastAudioPtsTicks);
+            if (chunk.Pts.Ticks <= 0 || chunk.Pts.Ticks < prevPts)
+            {
+                ReturnPlaybackAudioChunkBestEffort(chunk, "playback_audio_non_monotonic_pts");
+                return;
+            }
+
+            // Skip audio from the keyframe-to-target forward decode after a seek.
+            if (videoPtsGate > 0 && chunk.Pts.Ticks < videoPtsGate)
+            {
+                ReturnPlaybackAudioChunkBestEffort(chunk, "playback_audio_before_gate");
+                return;
+            }
+
+            Interlocked.Exchange(ref _lastAudioPtsTicks, chunk.Pts.Ticks);
+            pb.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);
+        };
+    }
+
+    private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)
+    {
+        if (chunk.Samples == null)
+        {
+            reason = "null_samples";
+            return false;
+        }
+
+        if (chunk.ValidLength <= 0)
+        {
+            reason = "invalid_length";
+            return false;
+        }
+
+        if (chunk.ValidLength > chunk.Samples.Length)
+        {
+            reason = "length_exceeds_buffer";
+            return false;
+        }
+
+        const int playbackAudioBlockAlign = 2 * sizeof(float);
+        if (chunk.ValidLength % playbackAudioBlockAlign != 0)
+        {
+            reason = "unaligned_length";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
+    }
+
+    private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)
+    {
+        try
+        {
+            if (chunk.Samples is { Length: > 0 })
+            {
+                ArrayPool<byte>.Shared.Return(chunk.Samples);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_RETURN_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    // Last sampled audio rendering PTS plus the wall-clock anchor used for
+    // extrapolated audio-master pacing between WASAPI render callbacks.
+    private long _audioClockPtsTicks;
+    private long _audioClockWallTicks;
+
+    private long _playbackAudioMasterDelayDoubles;
+    private long _playbackAudioMasterDelayShrinks;
+    private long _playbackAudioMasterFallbacks;
+    private long _playbackAudioMasterUnavailableFallbacks;
+    private long _playbackAudioMasterStaleFallbacks;
+    private long _playbackAudioMasterDriftOutlierFallbacks;
+    private string _playbackAudioMasterLastFallbackReason = string.Empty;
+    private double _playbackAudioMasterLastFallbackDriftMs;
+    private double _playbackAudioMasterLastFallbackClockAgeMs;
+    private string _pendingAudioMasterFallbackReason = string.Empty;
+    private double _pendingAudioMasterFallbackDriftMs;
+    private long _pendingAudioMasterFallbackClockAgeTicks;
+
+    private const long AudioMasterClockStaleThresholdTicks = TimeSpan.TicksPerMillisecond * 200;
+
+    public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);
+    public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);
+    public long PlaybackAudioMasterFallbacks => Interlocked.Read(ref _playbackAudioMasterFallbacks);
+    public long PlaybackAudioMasterUnavailableFallbacks => Interlocked.Read(ref _playbackAudioMasterUnavailableFallbacks);
+    public long PlaybackAudioMasterStaleFallbacks => Interlocked.Read(ref _playbackAudioMasterStaleFallbacks);
+    public long PlaybackAudioMasterDriftOutlierFallbacks => Interlocked.Read(ref _playbackAudioMasterDriftOutlierFallbacks);
+    public string PlaybackAudioMasterLastFallbackReason => Volatile.Read(ref _playbackAudioMasterLastFallbackReason);
+    public double PlaybackAudioMasterLastFallbackDriftMs => _playbackAudioMasterLastFallbackDriftMs;
+    public double PlaybackAudioMasterLastFallbackClockAgeMs => _playbackAudioMasterLastFallbackClockAgeMs;
+
+    /// <summary>
+    /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.
+    /// Uses the PTS of the chunk WASAPI is currently rendering (not just enqueued).
+    /// </summary>
+    public double AvDriftMs
+    {
+        get
+        {
+            var renderingPts = _audioPlayback?.RenderingPtsTicks ?? 0;
+            var videoPts = Interlocked.Read(ref _lastVideoPtsTicks);
+            if (renderingPts == 0 || videoPts == 0) return 0;
+            return TimeSpan.FromTicks(renderingPts - videoPts).TotalMilliseconds;
+        }
+    }
+
+    // --- Audio-master playback pacing ---
+
+    private void RefreshAudioMasterClock()
+    {
+        var audioPb = _audioPlayback;
+        var renderingPts = audioPb?.RenderingPtsTicks ?? 0;
+        if (renderingPts > 0 && renderingPts != Volatile.Read(ref _audioClockPtsTicks))
+        {
+            Interlocked.Exchange(ref _audioClockPtsTicks, renderingPts);
+            Interlocked.Exchange(ref _audioClockWallTicks, Stopwatch.GetTimestamp());
+        }
+    }
+
+    private bool TryGetFreshAudioMasterClock(
+        out long extrapolatedAudioTicks,
+        out long wallElapsedTicks,
+        out bool hasAudioClockSample)
+    {
+        RefreshAudioMasterClock();
+
+        var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
+        hasAudioClockSample = audioClockPts > 0;
+        extrapolatedAudioTicks = 0;
+        wallElapsedTicks = 0;
+        if (!hasAudioClockSample)
+        {
+            return false;
+        }
+
+        var audioClockWall = Volatile.Read(ref _audioClockWallTicks);
+        var wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
+        wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
+        if (wallElapsedTicks > AudioMasterClockStaleThresholdTicks)
+        {
+            return false;
+        }
+
+        extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
+        return true;
+    }
+
+    /// <summary>
+    /// Re-syncs the cached audio clock from WASAPI (matching the resync done by
+    /// <see cref="PaceFrameInterval"/>) and returns the extrapolated drift in
+    /// milliseconds (positive = video ahead of audio). Returns false if the audio clock
+    /// is unavailable, has never been sampled, or is stale (>200ms since last update) -
+    /// callers must fall back to wall-clock pacing in that case.
+    /// </summary>
+    private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)
+    {
+        driftMs = 0;
+        if (!TryGetFreshAudioMasterClock(out var extrapolatedAudioTicks, out _, out _))
+        {
+            return false;
+        }
+
+        driftMs = (videoPtsTicks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
+        return true;
+    }
+
+    /// <summary>
+    /// Audio-master pacing. Video and audio are decoded from the same interleaved
+    /// container on the same thread - their PTS are the source of truth.
+    /// Without suppression, audio and video start at the same file position after
+    /// seek, so the initial offset should be near-zero. This method corrects any
+    /// drift that develops over time (hardware clock vs decode rate).
+    /// Falls back to wall-clock pacing when audio is unavailable.
+    /// </summary>
+    private void PaceFrameInterval(Stopwatch pacingStopwatch, TimeSpan frameDuration, long videoPtsTicks)
+    {
+        // If the audio clock hasn't been updated in >200ms, WASAPI is likely underrunning -
+        // fall through to wall-clock pacing instead of extrapolating against a stale sample.
+        if (TryGetFreshAudioMasterClock(out var extrapolatedAudioTicks, out var wallElapsedTicks, out var hasAudioClockSample))
+        {
+            // diff > 0 = video ahead of audio, < 0 = video behind.
+            var diffTicks = videoPtsTicks - extrapolatedAudioTicks;
+            var diffMs = diffTicks / (double)TimeSpan.TicksPerMillisecond;
+            var nominalDelayMs = frameDuration.TotalMilliseconds;
+
+            // At HFR, per-frame corrections are very visible. Short fMP4
+            // fragments keep audio close, so tolerate sub-100ms drift and only
+            // correct when sync moves outside that band.
+            const double syncThresholdMs = 100.0;
+            const double MaxAudioMasterCorrectionMs = 250.0;
+
+            if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)
+            {
+                // WASAPI render PTS can lag decoded video by the endpoint buffer/device
+                // latency after resume. Do not let that stale clock halve video cadence.
+                RecordAudioMasterFallback("drift-outlier", diffMs, wallElapsedTicks);
+                WallClockPace(pacingStopwatch, frameDuration);
+                return;
+            }
+
+            ClearPendingAudioMasterFallback();
+
+            double adjustedDelayMs;
+            if (diffMs > syncThresholdMs)
+            {
+                // Video ahead: add a tiny correction without tanking HFR cadence.
+                Interlocked.Increment(ref _playbackAudioMasterDelayDoubles);
+                var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));
+                adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);
+            }
+            else if (diffMs < -syncThresholdMs)
+            {
+                // Video behind: shave a tiny correction without creating bursts.
+                Interlocked.Increment(ref _playbackAudioMasterDelayShrinks);
+                var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));
+                adjustedDelayMs = Math.Max(0, nominalDelayMs - Math.Max(0, correctionMs));
+                if (adjustedDelayMs <= 0)
+                {
+                    Interlocked.Increment(ref _playbackLateFrames);
+                }
+            }
+            else
+            {
+                // Within threshold - smooth wall-clock cadence.
+                adjustedDelayMs = nominalDelayMs;
+            }
+
+            if (adjustedDelayMs > 0)
+            {
+                var targetTicks = (long)(adjustedDelayMs / 1000.0 * Stopwatch.Frequency);
+                var remaining = targetTicks - pacingStopwatch.ElapsedTicks;
+                if (remaining > 0)
+                {
+                    var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
+                    if (remaining > spinThresholdTicks)
+                    {
+                        var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
+                        if (sleepMs > 0)
+                        {
+                            Thread.Sleep(sleepMs);
+                        }
+                    }
+
+                    while (pacingStopwatch.ElapsedTicks < targetTicks)
+                    {
+                        Thread.SpinWait(1);
+                    }
+                }
+            }
+
+            return;
+        }
+
+        // Fallback: no audio clock available - pure wall-clock pacing.
+        var fallbackReason = hasAudioClockSample ? "stale-clock" : "unavailable";
+        RecordAudioMasterFallback(fallbackReason, 0, hasAudioClockSample ? wallElapsedTicks : 0);
+        WallClockPace(pacingStopwatch, frameDuration);
+    }
+
+    private void WallClockPace(Stopwatch pacingStopwatch, TimeSpan frameDuration)
+    {
+        var targetTicks = (long)(frameDuration.TotalSeconds * Stopwatch.Frequency);
+        var remaining = targetTicks - pacingStopwatch.ElapsedTicks;
+        if (remaining > 0)
+        {
+            var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
+            if (remaining > spinThresholdTicks)
+            {
+                var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
+                if (sleepMs > 0)
+                {
+                    Thread.Sleep(sleepMs);
+                }
+            }
+
+            while (pacingStopwatch.ElapsedTicks < targetTicks)
+            {
+                Thread.SpinWait(1);
+            }
+        }
+        else
+        {
+            Interlocked.Increment(ref _playbackLateFrames);
+        }
+    }
+
+    private void RecordAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)
+    {
+        if (!IsTransientAudioMasterFallbackCandidate(reason))
+        {
+            CommitPendingAudioMasterFallback();
+            CommitAudioMasterFallback(reason, driftMs, clockAgeTicks);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))
+        {
+            _pendingAudioMasterFallbackReason = reason;
+            _pendingAudioMasterFallbackDriftMs = driftMs;
+            _pendingAudioMasterFallbackClockAgeTicks = clockAgeTicks;
+            return;
+        }
+
+        CommitPendingAudioMasterFallback();
+        CommitAudioMasterFallback(reason, driftMs, clockAgeTicks);
+    }
+
+    private static bool IsTransientAudioMasterFallbackCandidate(string reason)
+        => string.Equals(reason, "unavailable", StringComparison.Ordinal) ||
+           string.Equals(reason, "stale-clock", StringComparison.Ordinal) ||
+           string.Equals(reason, "drift-outlier", StringComparison.Ordinal);
+
+    private void ClearPendingAudioMasterFallback()
+    {
+        _pendingAudioMasterFallbackReason = string.Empty;
+        _pendingAudioMasterFallbackDriftMs = 0;
+        _pendingAudioMasterFallbackClockAgeTicks = 0;
+    }
+
+    private void CommitPendingAudioMasterFallback()
+    {
+        if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))
+        {
+            return;
+        }
+
+        CommitAudioMasterFallback(
+            _pendingAudioMasterFallbackReason,
+            _pendingAudioMasterFallbackDriftMs,
+            _pendingAudioMasterFallbackClockAgeTicks);
+        ClearPendingAudioMasterFallback();
+    }
+
+    private void CommitAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)
+    {
+        Interlocked.Increment(ref _playbackAudioMasterFallbacks);
+        switch (reason)
+        {
+            case "unavailable":
+                Interlocked.Increment(ref _playbackAudioMasterUnavailableFallbacks);
+                break;
+            case "stale-clock":
+                Interlocked.Increment(ref _playbackAudioMasterStaleFallbacks);
+                break;
+            case "drift-outlier":
+                Interlocked.Increment(ref _playbackAudioMasterDriftOutlierFallbacks);
+                break;
+        }
+
+        Volatile.Write(ref _playbackAudioMasterLastFallbackReason, reason);
+        _playbackAudioMasterLastFallbackDriftMs = driftMs;
+        _playbackAudioMasterLastFallbackClockAgeMs = clockAgeTicks <= 0
+            ? 0
+            : clockAgeTicks / (double)TimeSpan.TicksPerMillisecond;
     }
 }

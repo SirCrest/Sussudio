@@ -1962,12 +1962,12 @@ is the settings XAML-facing adapter.
 Flashback playback marker commands, in/out marker state, file-PTS restore,
 marker normalization, invalid-range clearing, and out-point pause checks now
 live in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`; keep
+`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`; keep
 decode pacing and command execution flow in the playback-frame and thread-command
 partials.
 
 Flashback playback position/file-PTS mapping now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`.
 It owns scrub/seek clamping, marker-bound range limits, saturating timestamp
 math, active fMP4 segment detection, and playback path comparison.
 
@@ -2023,7 +2023,7 @@ keep frame-step decode, no-file recovery, and seek-display failure recovery
 there. Terminal go-live/stop command execution lives with the dispatch switch in
 `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`.
 Flashback playback audio routing now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`.
 Keep live audio suppress/restore, decoder audio callback wiring, playback
 chunk validation/return, playback PTS gate handling, pooled audio-buffer return
 warnings, and playback-state audio/preview routing there alongside best-effort
@@ -2041,7 +2041,7 @@ construction, initialization, audio/preview component reference updates,
 lifecycle/dispose state, disposal, preview-detach cleanup, failed-stop detach
 timeout state, deferred preview reattach state, and deferred reattach retry
 scheduling there. Keep playback positioning/file handling in
-`FlashbackPlaybackController.Positioning.cs` and playback pacing in the
+`FlashbackPlaybackController.cs` and playback pacing in the
 playback-frame/thread-command partials.
 
 Flashback playback decoded-frame submission now lives with held playback frame
@@ -2058,7 +2058,7 @@ now live in
 keep seek commands in their named partial.
 
 Flashback playback decoder file handling now lives in
-`Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs`.
+`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`.
 Keep decoder creation, active segment file identity, file open checks, and
 decoder close/open identity transitions there, alongside best-effort decoder
 file close handling, held-frame release during teardown, decoder close/dispose

@@ -3055,8 +3055,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var metricsCollectionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var audioRoutingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.AudioRouting.cs")
-            .Replace("\r\n", "\n");
+        var audioRoutingText = rootText;
         var audioCallbackText = audioRoutingText;
         var audioPreviewGuardsText = audioRoutingText;
         var audioPrebufferText = audioRoutingText;
@@ -3075,7 +3074,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.AudioMasterPacing.cs")),
-            "audio-master pacing folded into FlashbackPlaybackController.AudioRouting.cs");
+            "audio-master pacing folded into FlashbackPlaybackController.cs");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
@@ -3099,8 +3098,6 @@ static partial class Program
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferRetryDelayMs = 20;");
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
-        AssertDoesNotContain(rootText, "private const double PlaybackAudioPrebufferTargetMs = 180.0;");
-        AssertDoesNotContain(rootText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
         AssertContains(sourceText, "var prebufferedFrames = new Queue<DecodedVideoFrame>();");
         AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"command_{cmd.Kind}\");");
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
@@ -3187,8 +3184,6 @@ static partial class Program
         AssertContains(audioMasterClockText, "public double AvDriftMs");
         AssertContains(audioMasterClockText, "var renderingPts = _audioPlayback?.RenderingPtsTicks ?? 0;");
         AssertContains(audioMasterClockText, "return TimeSpan.FromTicks(renderingPts - videoPts).TotalMilliseconds;");
-        AssertDoesNotContain(metricsCollectionText, "public double AvDriftMs");
-        AssertDoesNotContain(metricsCollectionText, "RenderingPtsTicks");
         AssertContains(audioMasterText, "public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);");
         AssertContains(audioMasterText, "public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);");
         AssertContains(audioMasterFallbacksText, "private long _playbackAudioMasterFallbacks;");
@@ -3205,12 +3200,6 @@ static partial class Program
         AssertContains(audioMasterFallbacksText, "private static bool IsTransientAudioMasterFallbackCandidate(string reason)");
         AssertContains(audioMasterFallbacksText, "private void CommitPendingAudioMasterFallback()");
         AssertContains(audioMasterFallbacksText, "private void CommitAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)");
-        AssertDoesNotContain(metricsCollectionText, "public long PlaybackAudioMasterDelayDoubles =>");
-        AssertDoesNotContain(metricsCollectionText, "public long PlaybackAudioMasterFallbacks =>");
-        AssertDoesNotContain(metricsCollectionText, "public string PlaybackAudioMasterLastFallbackReason =>");
-        AssertDoesNotContain(rootText, "private long _audioClockPtsTicks;");
-        AssertDoesNotContain(rootText, "private long _playbackAudioMasterFallbacks;");
-        AssertDoesNotContain(rootText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
         AssertContains(sourceText, "private static bool IsTransientAudioMasterFallbackCandidate(string reason)");
         AssertContains(sourceText, "string.Equals(reason, \"unavailable\", StringComparison.Ordinal)");
         AssertContains(sourceText, "string.Equals(reason, \"stale-clock\", StringComparison.Ordinal)");
@@ -3295,8 +3284,7 @@ static partial class Program
         var segmentEdgesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var segmentSwitchText = segmentEdgesText;
-        var positioningText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs")
-            .Replace("\r\n", "\n");
+        var positioningText = rootText;
         var decoderReopenText = positioningText;
         var decoderSegmentReopenText = segmentEdgesText;
         var seekDisplayText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
@@ -3325,8 +3313,6 @@ static partial class Program
         AssertContains(decoderReopenText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
         AssertContains(decoderReopenText, "private bool TrySeekAdjacentSegmentStart(");
         AssertContains(decoderReopenText, "FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK");
-        AssertDoesNotContain(rootText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
-        AssertDoesNotContain(rootText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
         AssertContains(sourceText, "private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)");
         AssertContains(sourceText, "var latestPts = _bufferManager.LatestPts;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE");
@@ -3549,7 +3535,8 @@ static partial class Program
     internal static Task FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
     {
         var sourceText = ReadFlashbackPlaybackControllerSource();
-        var markersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.Positioning.cs");
+        var markersText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(markersText, "private long _inPointFilePtsTicks = long.MinValue;");
         AssertContains(markersText, "private long _outPointFilePtsTicks = long.MinValue;");
