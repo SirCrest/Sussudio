@@ -273,12 +273,11 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task TestProject_NonXUnitFilesDoNotReopenProgramWithinSameFile()
+    internal static Task TestProject_TestOwnerFilesDoNotReopenProgramWithinSameFile()
     {
         var repoRoot = GetRepoRoot();
         var testRoot = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
         var duplicateProgramBodies = Directory.EnumerateFiles(testRoot, "*.cs", SearchOption.TopDirectoryOnly)
-            .Where(path => !Path.GetFileName(path).StartsWith("XUnit.", StringComparison.Ordinal))
             .Select(path => new
             {
                 Path = Path.GetRelativePath(repoRoot, path).Replace('\\', '/'),
@@ -294,12 +293,65 @@ static partial class Program
         if (duplicateProgramBodies.Length > 0)
         {
             throw new InvalidOperationException(
-                "Non-XUnit test owner files should keep one Program body instead of same-file partial shells: " +
+                "Test owner files should keep one Program body instead of same-file partial shells: " +
                 string.Join(", ", duplicateProgramBodies));
         }
 
         return Task.CompletedTask;
     }
+
+    internal static Task TestProject_DoesNotKeepStaleSingleFilePartials()
+    {
+        var repoRoot = GetRepoRoot();
+        var declarations = new[]
+            {
+                Path.Combine(repoRoot, "Sussudio"),
+                Path.Combine(repoRoot, "tests", "Sussudio.Tests")
+            }
+            .SelectMany(root => Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories))
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
+                           !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(path => File.ReadLines(path).Select((line, index) => new { path, line, index }))
+            .Select(item => new
+            {
+                item.path,
+                item.index,
+                Match = Regex.Match(
+                    item.line,
+                    @"^\s*(?:public|internal|private|protected|static|sealed|abstract|partial|\s)+\bpartial\s+(?:class|record|struct)\s+(?<type>[A-Za-z_][A-Za-z0-9_]*)")
+            })
+            .Where(item => item.Match.Success)
+            .Select(item => new
+            {
+                Type = item.Match.Groups["type"].Value,
+                Path = Path.GetRelativePath(repoRoot, item.path).Replace('\\', '/'),
+                Line = item.index + 1
+            })
+            .ToArray();
+
+        var stalePartials = declarations
+            .GroupBy(item => item.Type, StringComparer.Ordinal)
+            .Where(group => group.Count() == 1)
+            .Select(group => group.Single())
+            .Where(item => !IsAllowedSingleFilePartial(item.Type, item.Path))
+            .OrderBy(item => item.Path, StringComparer.Ordinal)
+            .ThenBy(item => item.Line)
+            .Select(item => $"{item.Path}:{item.Line} ({item.Type})")
+            .ToArray();
+
+        if (stalePartials.Length > 0)
+        {
+            throw new InvalidOperationException(
+                "Single-file partial declarations should be generated/XAML/source-generator companions, not stale ownership markers: " +
+                string.Join(", ", stalePartials));
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static bool IsAllowedSingleFilePartial(string typeName, string relativePath)
+        => relativePath.EndsWith(".xaml.cs", StringComparison.OrdinalIgnoreCase) ||
+           typeName.EndsWith("JsonContext", StringComparison.Ordinal);
 
     internal static Task ArchitectureDocs_ReadRepoFileLiteralPathsResolve()
     {
@@ -866,8 +918,12 @@ namespace Sussudio.Tests
             => global::Program.TestProject_DoesNotKeepEmptyPartialMarkerShells();
 
         [Fact]
-        public Task TestProjectNonXUnitFilesDoNotReopenProgramWithinSameFile()
-            => global::Program.TestProject_NonXUnitFilesDoNotReopenProgramWithinSameFile();
+        public Task TestProjectTestOwnerFilesDoNotReopenProgramWithinSameFile()
+            => global::Program.TestProject_TestOwnerFilesDoNotReopenProgramWithinSameFile();
+
+        [Fact]
+        public Task TestProjectDoesNotKeepStaleSingleFilePartials()
+            => global::Program.TestProject_DoesNotKeepStaleSingleFilePartials();
 
         [Fact]
         public Task AgentMapCoversAutomationConsumerChecklist()

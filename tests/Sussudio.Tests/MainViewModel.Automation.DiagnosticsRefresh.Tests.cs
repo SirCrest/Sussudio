@@ -1128,7 +1128,7 @@ static partial class Program
             });
     }
 
-    private sealed partial class AutomationDiagnosticsHubSourceFamily
+    private sealed class AutomationDiagnosticsHubSourceFamily
     {
         private string? _sourceFamilyText;
 

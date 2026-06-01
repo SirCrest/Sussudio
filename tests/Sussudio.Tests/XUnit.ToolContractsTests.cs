@@ -1943,11 +1943,9 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertDoesNotContain(flatteningText, "FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd");
         AssertDoesNotContain(flatteningText, "LastExportSuccessAtEnd = exportMetrics");
     }
-}
+
 
 // MCP performance tool contracts live with the tool xUnit wrappers.
-static partial class Program
-{
     internal static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
         var sources = ReadMcpPerformanceTimelineSources();
@@ -2744,11 +2742,9 @@ static partial class Program
         AssertCommandRequest(requests[0], "GetSnapshot");
         AssertCommandRequest(requests[1], "GetPerformanceTimeline", ("maxEntries", 240));
     }
-}
+
 
 // MCP window and preview tool contracts live with the tool xUnit wrappers.
-static partial class Program
-{
     internal static async Task McpPreviewTools_RoutePreviewToggle()
     {
         var pipeName = NewMcpToolPipeName("preview");
@@ -3626,11 +3622,9 @@ static partial class Program
         AssertCommandRequest(requests[0], "CapturePreviewFrame", ("outputPath", expectedOutputPath));
         return result;
     }
-}
+
 
 // ssctl command-handler routing contracts live with the tool xUnit wrappers.
-static partial class Program
-{
     internal static async Task SsctlCommandHandlers_RouteDeviceCommands()
     {
         var context = CreateSsctlCommandRoutingContext();

@@ -1344,11 +1344,9 @@ static partial class Program
             throw new InvalidOperationException($"{fieldName}: expected same object instance.");
         }
     }
-}
+
 
 // Tests for diagnostic snapshot JSON source-generation compatibility.
-static partial class Program
-{
     internal static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
         var loggerText = ReadRepoFile("Sussudio/Logger.cs");
@@ -1640,11 +1638,9 @@ static partial class Program
             return libraryPath == null ? IntPtr.Zero : LoadUnmanagedDllFromPath(libraryPath);
         }
     }
-}
+
 
 // Flashback backend preview pipeline contracts live with the automation xUnit wrappers.
-static partial class Program
-{
     internal static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
     {
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs")
@@ -1894,10 +1890,8 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
 
-static partial class Program
-{
+
     internal static Task CaptureService_FlashbackLifecycleLogs_UseOutcomeNames()
     {
         var flashbackTexts = Directory
@@ -2254,10 +2248,8 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
 
-static partial class Program
-{
+
     internal static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
@@ -3007,11 +2999,9 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
+
 
 // MainWindow Flashback automation and presentation contracts live with their xUnit wrappers.
-static partial class Program
-{
     internal static Task FlashbackPollingTimers_LiveInController()
     {
         var flashbackText = ReadMainWindowFlashbackAdapterSource();

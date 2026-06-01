@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
-public partial class StatsPresentationTests
+public class StatsPresentationTests
 {
     [Fact]
     public void FrameTimeOverlay_UsesDetectedFpsBoundedRange()
@@ -761,7 +761,7 @@ public partial class StatsPresentationTests
     }
 }
 
-public partial class StatsHardwareRowsTests
+public class StatsHardwareRowsTests
 {
     [Fact]
     public void HardwareRowsInputProvider_PreservesSamplingPolicy()

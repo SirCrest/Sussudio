@@ -1291,11 +1291,9 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
+
 
 // LibAv encoder contract implementations live with the recording xUnit wrappers.
-static partial class Program
-{
     private static string ReadLibAvEncoderSource()
     {
         var parts = new[]
@@ -1322,10 +1320,8 @@ static partial class Program
         SetPropertyBackingField(options, "HdrEnabled", false);
         return options;
     }
-}
 
-static partial class Program
-{
+
     internal static Task LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
@@ -1428,10 +1424,8 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
 
-static partial class Program
-{
+
     internal static Task LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
@@ -1501,10 +1495,8 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
 
-static partial class Program
-{
+
     internal static Task LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs()
     {
         var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
@@ -1584,10 +1576,8 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-}
 
-static partial class Program
-{
+
     // LibAvEncoder: ValidateOptions
 
     internal static Task LibAvEncoder_ValidateOptions_AcceptsValidOptions()
@@ -1670,10 +1660,8 @@ static partial class Program
         AssertEqual(true, threw, "Mismatched FrameRate parts throws ArgumentException");
         return Task.CompletedTask;
     }
-}
 
-static partial class Program
-{
+
     internal static Task LibAvEncoder_PacketWritingLivesWithVideoSubmission()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")

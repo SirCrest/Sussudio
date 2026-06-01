@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
-public sealed partial class CaptureServiceHealthSnapshotOwnershipTests
+public sealed class CaptureServiceHealthSnapshotOwnershipTests
 {
     [Fact]
     public void CaptureService_HealthSnapshotAssemblyFields_LiveWithHealthSampler()

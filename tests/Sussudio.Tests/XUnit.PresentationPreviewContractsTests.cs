@@ -1773,11 +1773,9 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
 
         return Task.CompletedTask;
     }
-}
+
 
 // MainWindow lifecycle and launch contracts live with the presentation-preview xUnit wrappers.
-static partial class Program
-{
     internal static Task MainWindowNativeBootstrap_LivesInFocusedController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
@@ -2533,11 +2531,9 @@ static partial class Program
         AssertEqual(0, integerQueue.Count, "unused policy integer responses");
         return result;
     }
-}
+
 
 // MainWindow capture option and selection contracts live with the presentation-preview xUnit wrappers.
-static partial class Program
-{
     internal static Task CaptureOptionBindings_LiveInController()
     {
         var mainWindowText = ReadMainWindowCompositionSource();
