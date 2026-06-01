@@ -5456,8 +5456,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         => ReadDiagnosticSessionMetricsSource();
 
     private static string ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource()
-        => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs");
+        => ReadDiagnosticSessionFlashbackCycleScenariosSource();
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(
@@ -7763,8 +7762,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var cyclesText = ReadDiagnosticSessionFlashbackPreviewCycleScenariosSource();
-        var flashbackCycleText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs")
-            .Replace("\r\n", "\n");
+        var flashbackCycleText = cyclesText;
         var playbackCycleText = flashbackCycleText;
         var recordingCycleText = flashbackCycleText;
 
@@ -7828,6 +7826,10 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")),
             "Flashback recording preview-cycle scenario stays with the preview-cycle scenario family");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.cs")),
+            "Flashback preview-cycle scenario family folded into the Flashback cycle scenario owner");
         AssertContains(startupText, "DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
         AssertDoesNotContain(startupText, "RunFlashbackPreviewCycleAsync(");

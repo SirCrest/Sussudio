@@ -2688,11 +2688,16 @@ Primary owners:
   names stable there. It also owns the per-output-directory exclusive lock that
   prevents concurrent diagnostic sessions from writing the same artifact set.
 - `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
-  restart/encoder/lifecycle cycle diagnostic task registration, restart-cycle
-  playback priming/restart/refill/export verification, encoder-cycle preset
-  cycling, snapshot validation, export verification, original-preset restore,
-  playback disable/re-enable command flow, post-disable playback-thread/queue
-  health checks, and post-re-enable active-state validation.
+  restart/encoder/lifecycle and preview-cycle diagnostic task registration,
+  priorities, task labels, started action strings, restart-cycle playback
+  priming/restart/refill/export verification, encoder-cycle preset cycling,
+  snapshot validation, export verification, original-preset restore, playback
+  disable/re-enable command flow, post-disable playback-thread/queue health
+  checks, post-re-enable active-state validation, normal Flashback preview-cycle
+  stop/restart command choreography, pre-stop encoded-frame capture, preview-off
+  Flashback/encoder validation, export-while-preview-off verification,
+  playback-under-preview-stop validation, recording-backed readiness/counter
+  validation, and restart frame-flow validation.
 - `tools/Common/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback
@@ -2729,13 +2734,6 @@ Primary owners:
   backend-stability assertions. Keep the scenario registration, command flows,
   verification, cleanup, and playback command-health checks together in this
   scenario-family owner.
-- `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` owns
-  Flashback preview-cycle diagnostic task registration, priorities, task labels,
-  started action strings, normal Flashback preview-cycle stop/restart command
-  choreography, pre-stop encoded-frame capture, preview-off Flashback/encoder
-  validation, export-while-preview-off verification, playback-under-preview-stop
-  validation, recording-backed readiness/counter validation, and restart
-  frame-flow validation.
 - `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs` owns deferred
   recording-settings preset state, during-recording preset mutation,
   restart/disable rejection-message policy, active-recording backend/file/

@@ -2644,12 +2644,14 @@ attempts cleanup.
 
 Diagnostic-session Flashback cycle scenarios now live in
 `DiagnosticSessionFlashbackCycleScenarios.cs`, which owns restart/encoder/
-lifecycle cycle task registration, restart-cycle playback priming/restart/
-refill/export verification, encoder-cycle preset cycling, snapshot validation,
-export verification, original-preset restore, playback disable/re-enable
-lifecycle command flow, post-disable playback-thread/queue health, and
-post-re-enable active-state validation. Startup only delegates selected cycle
-and lifecycle scenario registration.
+lifecycle and preview-cycle task registration, restart-cycle playback
+priming/restart/refill/export verification, encoder-cycle preset cycling,
+snapshot validation, export verification, original-preset restore, playback
+disable/re-enable lifecycle command flow, post-disable playback-thread/queue
+health, post-re-enable active-state validation, and the preview stop/restart
+command choreography for normal Flashback, playback, and recording-backed
+diagnostics. Startup only delegates selected cycle, lifecycle, and preview-cycle
+scenario registration.
 
 Diagnostic-session sampling now lives in
 `tools/Common/DiagnosticSessionRunner.cs` beside the scenario phase sequence
@@ -2692,11 +2694,8 @@ String command names remain only for catalog/manifest-backed dynamic batches,
 diagnostic-session command callbacks, and intentionally unconverted compatibility
 surfaces with focused coverage.
 
-Diagnostic-session Flashback preview-cycle scenarios now live in a focused
-scenario-family owner. `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-owns task registration, priority, task-label, started-action wiring, and the
-preview stop/restart command choreography for normal Flashback, playback, and
-recording-backed diagnostics. Preview-cycle scenario selection stays in the
+Diagnostic-session Flashback preview-cycle scenarios now live with the Flashback
+cycle scenario owner. Preview-cycle scenario selection stays in the
 `DiagnosticSessionScenarioCatalog` family, including grouped preview-cycle
 policy.
 
@@ -2803,7 +2802,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionFlashbackCycleScenarios.cs`
 - `DiagnosticSessionFlashbackSupport.cs`
 - `DiagnosticSessionFlashbackExportScenarios.cs`
-- `DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
 - `DiagnosticSessionFlashbackScenarioTasks.cs`
 - `DiagnosticSessionFlashbackStressScenario.cs`
 - `DiagnosticSessionHealthPolicy.cs`
