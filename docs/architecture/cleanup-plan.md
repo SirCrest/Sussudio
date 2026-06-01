@@ -803,15 +803,16 @@ scheduling/cancellation, initial shell size, icon, and uncloaking now live in
 launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
 automation paths.
 MainWindow shell ownership tests mirror these runtime owners through focused
-`MainWindow.ShellOwnership.*.Tests.cs` files for chrome, startup, preview
-runtime, native bootstrap, and window lifecycle contracts.
+legacy sidecars for shell chrome and preview runtime plus
+`tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` for startup,
+native bootstrap, and window lifecycle contracts.
 Preview runtime source-shape coverage is split across renderer-host,
 snapshot, D3D-projection, and surface test owners so failures point at the
 runtime owner that actually drifted instead of one combined harness check.
 MainWindow Flashback ownership tests mirror the Flashback controller owners
-through `MainWindow.FlashbackOwnership.Tests.cs`: polling, timeline
-presentation, scrub release/cancel/capture-lost behavior, fullscreen bridge
-hooks, timeline toggle rollback/lockout, timeline geometry, playhead/CTI
+through `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`: polling,
+timeline presentation, scrub release/cancel/capture-lost behavior, fullscreen
+bridge hooks, timeline toggle rollback/lockout, timeline geometry, playhead/CTI
 motion, playback presentation/coordinator behavior, and settings/command
 binding remain named test methods in one Flashback ownership spec.
 
@@ -2539,11 +2540,11 @@ changes.
 method names used by `SetupBindings()`.
 
 MainWindow capture ownership tests now mirror these runtime owners in
-`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs` instead
-of living in a broad shell test grab-bag. Selection bindings, selection
-normalizer policy, device actions, option presentation, option affordance
-policy, option bindings, and option tooltip formatting stay registered with
-the presentation-preview harness coverage check through that parent owner.
+`tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` instead of
+living in a broad shell test grab-bag. Selection bindings, selection normalizer
+policy, device actions, option presentation, option affordance policy, option
+bindings, and option tooltip formatting stay registered with the
+presentation-preview harness coverage check through that parent owner.
 
 Recording output-path textbox, tooltip, resize-event updates, browse, and
 open-recordings button workflows now live in

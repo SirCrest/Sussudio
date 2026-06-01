@@ -1176,22 +1176,25 @@ Primary current owners:
   recording-state presentation policy assertions, plus recording action,
   preview audio fade, preview button presentation, audio control presentation,
   and microphone control ownership assertions.
-- `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns MainWindow capture-controller ownership assertions: capture selection
-  binding XAML-adapter, controller shell, `PropertyChanged` routing,
-  collection sync, queued sync, available-option rebinding, capture
-  device/audio input/capture mode/recording selection, selection-normalizer
-  placement and fallback-policy behavior, device-audio projection,
-  capture/recording option binding controller-adapter ownership, capture
-  option presentation controller-adapter, refresh/apply button
-  controller-adapter, affordance-policy, and HDR/FPS tooltip text-policy
-  assertions.
-- `tests/Sussudio.Tests/MainWindow.FlashbackOwnership.Tests.cs` owns Flashback
-  status/playback polling, scrub release/cancel/capture-lost behavior,
-  fullscreen Flashback bridge hooks, timeline toggle rollback/lockout,
-  timeline geometry, timeline track layout, marker/export presentation,
-  playhead/CTI motion, playback presentation/coordinator, settings binding, and
-  command controller ownership assertions.
+  binding XAML-adapter, controller shell, `PropertyChanged` routing, collection
+  sync, queued sync, available-option rebinding, capture device/audio
+  input/capture mode/recording selection, selection-normalizer placement and
+  fallback-policy behavior, device-audio projection, capture/recording option
+  binding controller-adapter ownership, capture option presentation
+  controller-adapter, refresh/apply button controller-adapter, affordance-policy,
+  and HDR/FPS tooltip text-policy assertions. Keep the capture-option and
+  capture-selection wrappers plus their backing `Program` method bodies together
+  unless an independent fixture or reusable helper boundary emerges.
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns MainWindow
+  Flashback status/playback polling, scrub release/cancel/capture-lost behavior,
+  fullscreen Flashback bridge hooks, timeline toggle rollback/lockout, timeline
+  geometry, timeline track layout, marker/export presentation, playhead/CTI
+  motion, playback presentation/coordinator, settings binding, and command
+  controller ownership assertions. Keep the Flashback automation wrappers plus
+  their backing `Program` method bodies together unless an independent fixture
+  or reusable helper boundary emerges.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
   MainWindow source readers used by root, Flashback, preview, shell-chrome,
   capture-binding, and stats-overlay ownership assertions.
