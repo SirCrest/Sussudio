@@ -2011,10 +2011,10 @@ diagnostic row pooling contract checks now live in two focused owners:
 `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` covers overlay
 lifecycle and section chrome through the MainWindow controller ownership
 surface, while
-`tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` covers dock
-presentation application, diagnostic rows, hardware rows, row chrome pooling,
-stats presentation ownership, source telemetry panel projection checks, and
-executable stats presentation formatting behavior.
+`tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` covers dock presentation
+application, diagnostic rows, hardware rows, row chrome pooling, stats
+presentation ownership, source telemetry panel projection checks, and executable
+stats presentation formatting behavior.
 Frame-time overlay compact text application and graph-line mutation now live in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`, along with
 frame-time canvas sizing, sample projection, and expected-line geometry;
@@ -2037,8 +2037,8 @@ chrome, group-header chrome, diagnostic row pooling, and diagnostic row style
 application also live in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 `StatsDockRefreshController` owns when decode/GPU rows refresh.
 Stats presentation contract checks now live in
-`tests/Sussudio.Tests/XUnit.StatsPresentation.Formatting.Tests.cs` for builder
-ownership, source telemetry, stats dock, row chrome, frame-time overlay policy,
+`tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` for builder ownership,
+source telemetry, stats dock, row chrome, frame-time overlay policy,
 detached-window, encoder, expected-display-repeat, compact preview summary,
 frame-time range, frame-time graph geometry behavior, hardware decode/GPU row,
 and input-provider behavior instead of expanding the legacy harness body in

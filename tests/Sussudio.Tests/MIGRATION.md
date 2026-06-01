@@ -25,11 +25,6 @@ add xUnit alongside, and port incrementally.
   stats overlay lifecycle and section chrome wiring, with xUnit wrappers in
   `XUnit.PresentationPreviewContractsTests.cs`. The remaining stats
   presentation checks still migrate incrementally from the legacy catalog.
-- `XUnit.StatsPresentation.Formatting.Tests.cs` owns the former legacy
-  detached-window, encoder formatting, expected-display-repeat, compact preview
-  summary, frame-time range, frame-time geometry, stats dock, row chrome,
-  builder ownership, HDMI source telemetry panel checks, hardware decode/GPU
-  row formatting behavior checks, and hardware-row input sampling policy checks.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy HdrOutputPolicy
   behavior, HDR output environment-switch, and disabled telemetry-provider
   checks.
@@ -45,8 +40,13 @@ add xUnit alongside, and port incrementally.
   telemetry automation projection contract checks, plus AutomationSnapshot CPU
   MJPEG, MJPEG preview, preview diagnostics, capture-command, recording,
   Flashback recording/playback/export, visual cadence, and AutomationOptions DTO
-  shape checks. Shared AutomationSnapshot property assertions and
-  snapshot-model reflection/spec helpers live in that same source file.
+  shape checks. It also owns the former legacy detached-window, encoder
+  formatting, expected-display-repeat, compact preview summary, frame-time range,
+  frame-time geometry, stats dock, row chrome, builder ownership, HDMI source
+  telemetry panel checks, hardware decode/GPU row formatting behavior checks,
+  and hardware-row input sampling policy checks. Shared AutomationSnapshot
+  property assertions and snapshot-model reflection/spec helpers live in that
+  same source file.
 - `XUnit.CoreRuntimeContractsTests.cs` owns the former legacy audio input, audio
   level event, capture device, and automation window action small contracts
   through the `SmallContractsTests` wrapper.
