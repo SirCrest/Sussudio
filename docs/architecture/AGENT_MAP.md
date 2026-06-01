@@ -1656,7 +1656,8 @@ Primary current owners:
   groups: pacing, geometry/screenshot, present cadence, device-lost,
   diagnostics, contracts/metrics ownership, runtime capture, render setup, and
   render pipeline checks.
-- `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs` owns preview pacing
+- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
+  owns automation diagnostics projection ownership plus preview pacing
   classifier source ownership, automation-snapshot wiring assertions, and
   behavioral classifier cases.
 - `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` also owns the former

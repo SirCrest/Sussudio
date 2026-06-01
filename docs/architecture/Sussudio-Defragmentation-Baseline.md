@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-05-31
+Area: Preview pacing diagnostics xUnit test locality
+Problem: `PreviewPacingClassifier.Tests.cs` was a small standalone xUnit shard for the preview pacing classifier source-shape, automation snapshot wiring, and behavioral classifier cases while `MainViewModel.Automation.DiagnosticsProjection.Tests.cs` already owned automation diagnostics projection checks for preview pacing fields and snapshot flattening. Reviewing the preview pacing diagnostics path still required opening a sidecar before returning to the projection owner.
+Files consolidated: `tests/Sussudio.Tests/PreviewPacingClassifier.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: preview pacing classifier xUnit sidecar count -1; `Sussudio.Tests` `.cs` count 52 -> 51
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PreviewPacingClassifier|FullyQualifiedName~AutomationDiagnosticsSnapshotEvaluationProjection|FullyQualifiedName~AutomationDiagnosticsPreview"` passed (16 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); current core app `.cs` count/LoC: 126 / 89,621; current test `.cs` count/LoC: 51 / 56,022.
+CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves test method bodies and updates architecture ownership docs.
+Behavior preserved: `Sussudio.Tests.PreviewPacingClassifierTests` keeps the same xUnit class name, `[Fact]` methods, display names, reflection helpers, source-shape assertions, automation snapshot wiring assertions, and classifier behavior cases while living in `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`.
+Notes for future agents: keep preview pacing classifier source-shape, automation snapshot wiring, and behavior cases with the diagnostics projection test parent while they share the preview pacing automation snapshot review path. Split only if the classifier gains an independent runtime fixture or a non-automation consumer contract.
+
+Date: 2026-05-31
 Area: Diagnostic-session result xUnit test locality
 Problem: `McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs` was a legacy `Program` sidecar for diagnostic-session model, formatter, result-builder, artifact, JSON/shared-text, projection, analysis-warning, diagnostic-health, and artifact-handoff ownership assertions while every fact already executed through diagnostic-session wrapper classes in `XUnit.ToolContractsTests.cs`. Reviewing the diagnostic-session result surface still required opening the wrapper owner plus a separate implementation sidecar.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.ResultOwnership.Tests.cs`
