@@ -1760,12 +1760,13 @@ Primary current owners:
   coverage, and frame-pacing verdict source-shape plus behavior checks together
   in this tool-contract owner unless a distinct fixture or reusable helper
   boundary emerges.
-- `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` owns MCP wait,
-  window action, preview toggle, Flashback toggle, screenshot,
-  preview-frame-capture, and probe tests. `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
-  owns the xUnit execution surface for the wait/window/screenshot/
-  preview-frame/preview-toggle/probe checks after their removal from the
-  legacy harness catalog.
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns MCP wait, window
+  action, preview toggle, Flashback toggle, screenshot, preview-frame-capture,
+  and probe tests. Keep the `McpWindowPreviewToolContractsTests` wrappers and
+  backing `Program` method bodies for wait/window/screenshot/preview-frame/
+  preview-toggle/probe source-shape and pipe-routing checks together in this
+  tool-contract owner unless a distinct fixture or reusable helper boundary
+  emerges.
 - `tests/Sussudio.Tests/HarnessCore.cs` owns shared MCP process/JSON-RPC,
   reflection/tool-result, pipe-capture, and JSON assertion helpers, plus shared
   Flashback test helper source readers, helper methods, buffer test factories,

@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: MCP window and preview tool contract locality
+Problem: `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs` contained only private `Program` method bodies for MCP wait, window action, screenshot, preview-frame capture, preview toggle, Flashback toggle, and probe checks whose executable facts already live in `McpWindowPreviewToolContractsTests` in `XUnit.ToolContractsTests.cs`. Reviewing this MCP surface still required opening a second sidecar with no independent fixture or public facts.
+Files consolidated: `tests/Sussudio.Tests/McpToolSurface.WindowPreview.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: legacy `Program` MCP window/preview tool sidecar count -1; `Sussudio.Tests` `.cs` count 43 -> 42
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~McpWindowPreviewToolContractsTests"` passed (8 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed; `git diff --check` passed.
+CLI/MCP/pipe checks, if applicable: no production code, public MCP tool names, automation command names/IDs, wire payloads, CLI flags, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves private test method bodies, normalizes one moved exact-text assertion across source file newline style, and updates architecture ownership docs.
+Behavior preserved: `McpWindowPreviewToolContractsTests` keeps the same `[Fact]` wrappers and underlying `Program` method names. MCP wait/window/screenshot/preview-frame/preview-toggle/Flashback/probe source-shape, JSON/pipe routing, and report-format assertions now live with the tool xUnit owner in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`.
+Notes for future agents: keep MCP wait, window, screenshot, preview-frame capture, preview toggle, Flashback toggle, preview color probe, and video source probe checks in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` while they share the same MCP/xUnit tool-contract harness. Current counts: core app 119 `.cs` files / 89,585 nonblank LoC; `Sussudio.Tests` 42 `.cs` files / 56,037 nonblank LoC.
+
+Date: 2026-06-01
 Area: MCP performance tool contract locality
 Problem: `tests/Sussudio.Tests/McpToolSurface.Performance.Tools.Tests.cs` contained only private `Program` method bodies for MCP performance timeline, PresentMon correlation/options, Flashback timeline formatting, and frame-pacing verdict facts whose executable surface already lives in `McpPerformanceToolContractsTests` in `XUnit.ToolContractsTests.cs`. Reviewing performance MCP contracts still required opening an extra sidecar with no independent fixture or public facts.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.Performance.Tools.Tests.cs`
