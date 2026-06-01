@@ -65,7 +65,7 @@ static partial class Program
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
-        var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs").Replace("\r\n", "\n");
+        var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingRuntimeText, "private void RebuildRecordingFormatOptions()");
         AssertContains(recordingRuntimeText, "=> _recordingCapabilityController.RebuildRecordingFormatOptions();");
@@ -746,13 +746,17 @@ static partial class Program
                 .Replace("\r\n", "\n");
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var captureSettingsBuilderText = ReadRepoFile("Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs")
+        var captureSettingsBuilderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs")
             .Replace("\r\n", "\n");
 
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.CaptureSettings.cs")),
             "MainViewModel capture-settings adapter folded into MainViewModel.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "CaptureSettingsProjectionBuilder.cs")),
+            "capture settings projection builder folded into ViewModelBuilders.cs");
         AssertContains(captureStateText, "private CaptureSettings BuildCaptureSettings()");
         AssertContains(captureStateText, "var runtime = _captureService.GetRuntimeSnapshot();");
         AssertContains(captureStateText, "var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();");

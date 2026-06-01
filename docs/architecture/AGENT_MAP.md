@@ -2202,7 +2202,7 @@ Primary current owners:
   `Sussudio/ViewModels/ViewModelBuilders.cs`.
   `MainViewModel.cs` owns the impure capture-settings adapter that
   samples UI selection and observed runtime/source state.
-  `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`
+  `Sussudio/ViewModels/ViewModelBuilders.cs`
   owns final `CaptureSettings` assembly, audio/microphone device application,
   pure projection policy/input DTOs, selected frame-rate option seed,
   auto-resolved effective FPS, negotiated rational/source-telemetry overrides,
@@ -2320,7 +2320,7 @@ Primary current owners:
   `MainViewModel.CaptureSelection.cs`
   owns HDR toggle side effects: recording-time revert/status, mode option
   rebuilds, immediate reinitialize scheduling, and settings persistence.
-  `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs` also owns pure recording
+  `Sussudio/ViewModels/ViewModelBuilders.cs` also owns pure recording
   codec filtering, selected-codec fallback policy, string-to-model format/quality
   parsing, and custom bitrate clamp policy shared by UI and automation.
   the root `MainViewModel.cs` keeps the public capture-device refresh facade,

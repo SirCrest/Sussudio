@@ -3239,7 +3239,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `Sussudio/ViewModels/ViewModelBuilders.cs`. Capture
    settings projection from UI/runtime state is sampled by the capture-state
    owner in `MainViewModel.cs` and projected by
-   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, which owns final
+   `Sussudio/ViewModels/ViewModelBuilders.cs`, which owns final
    `CaptureSettings` assembly, audio/microphone device application, pure
    projection policy, and input DTOs:
    selected-option seeding, auto-resolved effective FPS, runtime/source rational
@@ -3368,7 +3368,7 @@ owner, fold it back into that owner and update the source-shape tests and
    lives in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. Pure
    recording codec filtering, selected-codec fallback policy, string-to-model
    format/quality parsing, and custom bitrate clamp policy now live in
-   `Sussudio/ViewModels/CaptureSettingsProjectionBuilder.cs`, while startup
+   `Sussudio/ViewModels/ViewModelBuilders.cs`, while startup
    FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
    with source telemetry readiness in the top-level
    `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`. `MainViewModel.CaptureSelection.cs`
