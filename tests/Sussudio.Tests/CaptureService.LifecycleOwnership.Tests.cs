@@ -464,7 +464,7 @@ static partial class Program
     private static readonly string[] CaptureServiceAudioFiles =
     {
         "Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs",
-        "Sussudio/Services/Capture/CapturePipelineResources.cs"
+        "Sussudio/Services/Capture/CaptureService.cs"
     };
 
     private static string ReadCaptureServiceAudioSource()
@@ -570,7 +570,7 @@ static partial class Program
             startText,
             "private async Task StartFreshPreviewPipelineAsync(",
             "private async Task DisposePreviewPipelineAsync(");
-        var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs").Replace("\r\n", "\n");
+        var videoPipelineResourcesText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var flashbackPreviewBackendText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackControls.cs").Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
         var libAvFinalizeText = (
@@ -637,7 +637,11 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureVideoPipelineResources.cs")),
-            "video pipeline resources folded into CapturePipelineResources.cs");
+            "video pipeline resources folded into CaptureService.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CapturePipelineResources.cs")),
+            "capture pipeline resources folded into CaptureService.cs");
         AssertContains(videoPipelineResourcesText, "public UnifiedVideoCapture? Capture { get; set; }");
         AssertContains(videoPipelineResourcesText, "public IPreviewFrameSink? PreviewFrameSink { get; set; }");
         AssertContains(videoPipelineResourcesText, "public UnifiedVideoCapture.MjpegPipelineTimingMetrics LastMjpegPipelineTimingMetrics { get; private set; }");
@@ -691,15 +695,19 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
         var audioPreviewText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs");
-        var resourceText = ReadRepoFile("Sussudio/Services/Capture/CapturePipelineResources.cs");
+        var resourceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
 
         AssertContains(rootText, "private readonly PreviewAudioGraphResources _previewAudioGraph = new();");
-        AssertDoesNotContain(rootText, "private sealed class PreviewAudioGraphResources");
+        AssertContains(rootText, "internal sealed class PreviewAudioGraphResources");
         AssertContains(resourceText, "internal sealed class PreviewAudioGraphResources");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "PreviewAudioGraphResources.cs")),
-            "preview audio graph resources folded into CapturePipelineResources.cs");
+            "preview audio graph resources folded into CaptureService.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CapturePipelineResources.cs")),
+            "capture pipeline resources folded into CaptureService.cs");
         AssertContains(resourceText, "public WasapiAudioCapture? ProgramCapture;");
         AssertContains(resourceText, "public WasapiAudioCapture? MicrophoneCapture;");
         AssertContains(resourceText, "public WasapiAudioPlayback? Playback;");

@@ -854,7 +854,7 @@ directly. The policy/state-machine pair is a transition-entry gate plus steady-s
 mutations may pass the current state to the transition lock, while
 lifecycle-changing operations should pass an explicit target
 `CaptureSessionState`. Active recording backend resource ownership now lives in
-`Sussudio/Services/Capture/CapturePipelineResources.cs`.
+`Sussudio/Services/Capture/CaptureService.cs`.
 Capture session coordinator command enums, queue receipt records, session
 snapshots, queued Flashback mutations, read-only Flashback status, Flashback
 playback/buffer status projections, export and segment query forwarding,
@@ -925,7 +925,7 @@ restart/reattachment.
 Flashback preview/recording backend audio input restoration is folded into
 `Sussudio/Services/Capture/CaptureService.FlashbackRecording.cs` beside
 Flashback audio attachment and recording topology validation.
-`Sussudio/Services/Capture/CapturePipelineResources.cs` owns the live
+`Sussudio/Services/Capture/CaptureService.cs` owns the live
 program WASAPI capture, microphone capture, playback startup/shutdown,
 audio-monitor attach/detach order, preview volume/mute application, playback
 cleanup helpers, capture-fault telemetry, active recording backend resources,
@@ -975,7 +975,7 @@ now live with the Flashback controls owner in
 `Sussudio/Services/Capture/CaptureService.FlashbackControls.cs`.
 Deferred unified-video cleanup after LibAv drains lives with the video pipeline
 resource owner. Pending LibAv drain task state and reentry policy live in
-`Sussudio/Services/Capture/CapturePipelineResources.cs`. Flashback backend
+`Sussudio/Services/Capture/CaptureService.cs`. Flashback backend
 artifact cleanup request/retry/dispose/purge mechanics live in
 `Sussudio/Services/Flashback/FlashbackBackendResources.cs`.
 
@@ -1104,7 +1104,7 @@ fatal/pixel callback attach/detach.
 Active video capture storage, preview-frame sink storage, negotiated video
 getters, cached MJPEG pipeline timing snapshots, and deferred unified-video
 cleanup after LibAv drains now live in
-`Sussudio/Services/Capture/CapturePipelineResources.cs`; CaptureService
+`Sussudio/Services/Capture/CaptureService.cs`; CaptureService
 callers use that aggregate directly instead of private root resource shims.
 
 Preview lifecycle now lives in one CaptureService owner:
@@ -3551,7 +3551,7 @@ owner, fold it back into that owner and update the source-shape tests and
    `CaptureService.FlashbackControls.cs` stays the transition coordinator for
    AV1 probing, readiness waiting, cleanup handoff, and preview backend disposal
    request construction.
-   `CapturePipelineResources.cs` now owns active capture resource holders:
+   `CaptureService.cs` now owns active capture resource holders:
    preview audio graph resources, recording backend resources, and video
    pipeline resources. Recording start, finalization, rollback, snapshot,
    cleanup, preview lifecycle, and audio preview paths use those aggregates
