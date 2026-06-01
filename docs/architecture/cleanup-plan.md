@@ -2575,8 +2575,13 @@ requirement metadata.
 visible run phase sequence around context creation, initial snapshot, scenario
 execution, cleanup, and completion handoff. `DiagnosticSessionRunContext.cs`
 owns the cohesive mutable per-run context: bootstrap, actions, warnings,
-samples, run state, command channel, scenario cancellation source, initial
-snapshot state and capture, live-state writer handoff, disposal, and
+samples, run state, command channel, serialized command execution, command
+failure accounting, enum-backed command-name resolution for fixed
+diagnostic-session commands, raw command send overloads, connect-retry wrapping,
+local failure-response fallback when connect retry returns no response, pipe
+retry/error classification, access-denied permanent failure policy, connect
+failed/timeout retry policy, wait command helper payload shaping, scenario
+cancellation source, initial snapshot state and capture, live-state writer handoff, disposal, and
 scenario/completion context construction with the callback/token handoffs passed
 into those phases.
 `DiagnosticSessionRunner.cs` owns the post-cleanup evidence/result sequence
@@ -2716,13 +2721,9 @@ Shared option precedence and preview-present field extraction belong to
 `tools/Common/PresentMon/PresentMonProbe.cs`.
 
 Diagnostic-session command sending now lives in
-`tools/Common/DiagnosticSessionCommandChannel.cs`. It owns serialized command
-execution, command failure accounting, and enum-backed command-name resolution
-for fixed diagnostic-session commands, raw command send overloads,
-connect-retry wrapping, local failure-response fallback when connect retry
-returns no response, pipe retry/error classification, access-denied permanent
-failure policy, connect failed/timeout retry policy, and wait command helper
-payload shaping. Scenario setup and cleanup pass the channel itself for lifecycle mutations so
+`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run
+infrastructure that constructs, owns, and disposes the channel. Scenario setup
+and cleanup pass the channel itself for lifecycle mutations so
 `SetFlashbackEnabled`, `SetPreviewEnabled`, `SetRecordingEnabled`, and
 `FlashbackAction` flow through `AutomationCommandKind` overloads; the runner
 keeps phase orchestration and its public string delegate compatibility.
@@ -2992,7 +2993,6 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionHealthPolicy.cs`
 - `DiagnosticSessionMetrics.cs`
 - `DiagnosticSessionResult.cs`
-- `DiagnosticSessionCommandChannel.cs`
 - `DiagnosticSessionResultBuilder.cs`
 - `DiagnosticSessionRunContext.cs`
 - `DiagnosticSessionScenarioCatalog.cs`

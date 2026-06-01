@@ -620,9 +620,8 @@ static partial class Program
 
     internal static Task DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification()
     {
-        var runnerText = ReadDiagnosticSessionRunnerSource();
-        var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
-            .Replace("\r\n", "\n");
+        var executionText = ReadDiagnosticSessionRunExecutionRootSource();
+        var channelText = ReadDiagnosticSessionRunContextSource();
         var retryText = channelText;
 
         AssertContains(retryText, "internal static class DiagnosticSessionPipeRetryPolicy");
@@ -635,22 +634,20 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionPipeRetryPolicy.cs")),
-            "diagnostic-session pipe retry policy lives with the command channel transport owner");
-        AssertDoesNotContain(runnerText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
-        AssertDoesNotContain(runnerText, "private static bool IsSyntheticPipeConnectFailure(");
-        AssertDoesNotContain(runnerText, "private static bool IsPermanentPipeConnectFailure(");
-        AssertDoesNotContain(runnerText, "private static JsonElement BuildLocalFailureResponse(");
+            "diagnostic-session pipe retry policy lives with the run-context command-channel transport owner");
+        AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
+        AssertDoesNotContain(executionText, "private static bool IsSyntheticPipeConnectFailure(");
+        AssertDoesNotContain(executionText, "private static bool IsPermanentPipeConnectFailure(");
+        AssertDoesNotContain(executionText, "private static JsonElement BuildLocalFailureResponse(");
 
         return Task.CompletedTask;
     }
 
     internal static Task DiagnosticSessionCommandChannel_OwnsSerializedCommandSending()
     {
-        var runnerText = ReadDiagnosticSessionRunnerSource();
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var contextText = ReadDiagnosticSessionRunContextSource();
-        var channelText = ReadRepoFile("tools/Common/DiagnosticSessionCommandChannel.cs")
-            .Replace("\r\n", "\n");
+        var channelText = contextText;
 
         AssertContains(channelText, "internal sealed class DiagnosticSessionCommandChannel : IDisposable");
         AssertContains(channelText, "using Sussudio.Models;");
@@ -680,15 +677,19 @@ static partial class Program
         AssertContains(channelText, "$\"wait {condition}: {Get(response, \"Message\", \"not met\")}\"");
         AssertDoesNotContain(channelText, "\"WaitForCondition\"");
         AssertDoesNotContain(channelText, "\"GetSnapshot\"");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionCommandChannel.cs")),
+            "diagnostic-session command channel lives with DiagnosticSessionRunContext.cs");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
-        AssertContains(runnerText, "context.CommandChannel,");
-        AssertContains(runnerText, "runContext.CommandChannel,");
+        AssertContains(executionText, "context.CommandChannel,");
+        AssertContains(executionText, "runContext.CommandChannel,");
         AssertContains(contextText, "CommandChannel.FailureCount");
         AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
-        AssertDoesNotContain(runnerText, "var commandFailureCount = 0;");
-        AssertDoesNotContain(runnerText, "var commandSendGate = new SemaphoreSlim(1, 1);");
-        AssertDoesNotContain(runnerText, "async Task<JsonElement> SendAsync(");
-        AssertDoesNotContain(runnerText, "async Task TryWaitAsync(");
+        AssertDoesNotContain(executionText, "var commandFailureCount = 0;");
+        AssertDoesNotContain(executionText, "var commandSendGate = new SemaphoreSlim(1, 1);");
+        AssertDoesNotContain(executionText, "async Task<JsonElement> SendAsync(");
+        AssertDoesNotContain(executionText, "async Task TryWaitAsync(");
 
         return Task.CompletedTask;
     }

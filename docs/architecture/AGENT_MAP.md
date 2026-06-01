@@ -2688,9 +2688,14 @@ Primary owners:
   clamping, session identity, output-directory creation, runner process
   metadata, actions, warnings, samples, terminal exception state, last-stage
   tracking, best-effort artifact write failure recording, command channel,
-  best-effort `session-live.json` breadcrumb path, payload shape, health
-  projection, warning projection, terminal override mapping, and sampling
-  live-state write throttle,
+  serialized diagnostic-session automation command sending, command failure
+  accounting, `AutomationCommandKind`-to-catalog command-name resolution for
+  fixed channel-owned commands, raw command send overloads, connect-retry
+  wrapping, local failure-response fallback when connect retry returns no
+  response, pipe connect retry classification, local failure-response
+  envelopes, fixed wait command payload shaping, best-effort
+  `session-live.json` breadcrumb path, payload shape, health projection,
+  warning projection, terminal override mapping, and sampling live-state write throttle,
   scenario cancellation source, initial snapshot state, baseline snapshot capture,
   automation response shape helpers for snapshot and verification envelopes,
   unknown-state warning, live-state handoff, run-context disposal, and
@@ -2809,14 +2814,6 @@ Primary owners:
   diagnostic millisecond formatting, automation response-success detection,
   tolerant JSON string/bool/numeric accessors, and shared byte, number,
   interval, frame-budget, and tick-age display helpers.
-- `tools/Common/DiagnosticSessionCommandChannel.cs` owns serialized
-  diagnostic-session automation command sending, command failure accounting,
-  and `AutomationCommandKind`-to-catalog command-name resolution for fixed
-  channel-owned commands, including setup and cleanup lifecycle mutations, raw
-  command send overloads, connect-retry wrapping, local failure-response
-  fallback when connect retry returns no response, pipe connect retry
-  classification, local failure-response envelopes, and fixed wait command
-  payload shaping. Keep the underlying runner delegate string-compatible.
 - Keep new scenario booleans and grouped derivations with
   `DiagnosticSessionScenarioPlan` in
   `tools/Common/DiagnosticSessionScenarioCatalog.cs` instead of adding string
