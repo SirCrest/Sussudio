@@ -1826,7 +1826,8 @@ static partial class Program
 
     private static void AssertServiceNamespaceMainViewModelRuntimeSourceOwnership(string repoRoot)
     {
-        var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
+        var mainViewModelText = RemoveMainViewModelControllerGraphSource(
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs")));
         var mainViewModelAudioCapturePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelAudioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
@@ -2067,7 +2068,8 @@ static partial class Program
 
     private static void AssertServiceNamespaceMainViewModelDeviceAndCaptureSourceOwnership(string repoRoot)
     {
-        var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
+        var mainViewModelText = RemoveMainViewModelControllerGraphSource(
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs")));
         var deviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
         var mainViewModelDeviceFormatProbeControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
         var mainViewModelDeviceFormatProbeRetargetApplierText = mainViewModelDeviceFormatProbeControllerText;
@@ -2075,7 +2077,7 @@ static partial class Program
         var mainViewModelDisposalText = mainViewModelText;
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
         var deviceRefreshControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
-        var deviceSelectionText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
+        var deviceSelectionText = mainViewModelText;
         var audioStateText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioState.cs"));
         var audioDeviceSelectionPolicyText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "ViewModelSelectionPolicies.cs"));
         AssertEqual(false, File.Exists(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceSelection.cs")), "old device selection partial folded into capture selection owner");
@@ -2209,6 +2211,24 @@ static partial class Program
             + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Resources.cs"))
             + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.cs")),
             "D3D11 preview swap chain unbind enqueue failed during cleanup.");
+    }
+
+    private static string RemoveMainViewModelControllerGraphSource(string source)
+    {
+        var start = source.IndexOf("    private sealed class MainViewModelControllerGraph", StringComparison.Ordinal);
+        if (start < 0)
+        {
+            return source;
+        }
+
+        var openBrace = source.IndexOf('{', start);
+        if (openBrace < 0)
+        {
+            return source;
+        }
+
+        var closeBrace = FindMatchingBrace(source, openBrace);
+        return source.Remove(start, closeBrace - start + 1);
     }
 
     private static void AssertServiceNamespaceServicesLayerOwnership(string repoRoot)

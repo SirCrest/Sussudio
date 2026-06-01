@@ -490,6 +490,15 @@ static partial class Program
                 StringComparer.OrdinalIgnoreCase);
     }
 
+    private static string ReadMainViewModelControllerGraphSource()
+    {
+        var source = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        return ExtractTextBetween(
+            source,
+            "private sealed class MainViewModelControllerGraph",
+            "/// <summary>\n/// Owns bounded byte-sample smoothing");
+    }
+
     private static string ReadRepoCodeWithoutCommentsOrStrings(string relativePath)
         => StripCSharpCommentsAndStringContents(ReadRepoFile(relativePath).Replace("\r\n", "\n"));
 

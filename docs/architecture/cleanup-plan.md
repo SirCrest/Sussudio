@@ -3010,7 +3010,7 @@ owner, fold it back into that owner and update the source-shape tests and
    UI projection. Keep `MainViewModel.cs` focused on the public compatibility-facade
    shell, construction seam, dependency assignment, collaborator fields,
    controller graph handoff, startup lifecycle kick-off, and small bridge methods.
-   `Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs`
+   `Sussudio/ViewModels/MainViewModel.cs`
    owns controller graph construction order plus UI-dispatch, device-audio,
    device-refresh, capture-settings automation, source telemetry, runtime
    event-ingress, recording, preview lifecycle/reinitialize, capture option

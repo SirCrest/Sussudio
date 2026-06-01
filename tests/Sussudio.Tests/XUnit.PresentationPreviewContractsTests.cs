@@ -3439,8 +3439,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
         var rootViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs")
-            .Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
             .Replace("\r\n", "\n");
 
@@ -6091,8 +6090,12 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var captureStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var flashbackStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs").Replace("\r\n", "\n");
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var dependenciesText = compositionText;
+        var constructorText = ExtractTextBetween(
+            compositionText,
+            "internal MainViewModel(MainViewModelDependencies dependencies)",
+            "public Task InitializeAsync()");
 
         AssertContains(rootText, "public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel");
         AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
@@ -6102,6 +6105,10 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Composition.cs")),
             "MainViewModel.Composition.cs folded into MainViewModel.cs");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "ViewModel", "MainViewModelControllerGraph.cs")),
+            "MainViewModelControllerGraph folded into MainViewModel.cs");
         AssertContains(compositionText, "public MainViewModel()\n        : this(MainViewModelDependencies.CreateDefault())");
         AssertContains(compositionText, "internal MainViewModel(MainViewModelDependencies dependencies)");
         AssertContains(compositionText, "private readonly DeviceService _deviceService;");
@@ -6131,16 +6138,16 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(compositionText, "_disposalController = controllerGraph.DisposalController;");
         AssertContains(compositionText, "_runtimeLifecycleController.Start();");
         AssertContains(compositionText, "_runtimeLifecycleController.InitializePresentation();");
-        AssertDoesNotContain(compositionText, "new MainViewModelUiDispatchController(");
-        AssertDoesNotContain(compositionText, "new MainViewModelRecordingTransitionController(this)");
-        AssertDoesNotContain(compositionText, "new MainViewModelRuntimeLifecycleController(this)");
-        AssertDoesNotContain(compositionText, "_deviceService = new DeviceService();");
-        AssertDoesNotContain(compositionText, "_captureService = new CaptureService();");
-        AssertDoesNotContain(compositionText, "_sessionCoordinator = new CaptureSessionCoordinator(_captureService);");
-        AssertDoesNotContain(compositionText, "_deviceAudioControlService = new NativeXuAudioControlService();");
-        AssertDoesNotContain(compositionText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
-        AssertDoesNotContain(compositionText, "new AudioRampTraceRecorderContext");
-        AssertDoesNotContain(compositionText, "new PreviewAudioVolumeTransitionControllerContext");
+        AssertDoesNotContain(constructorText, "new MainViewModelUiDispatchController(");
+        AssertDoesNotContain(constructorText, "new MainViewModelRecordingTransitionController(this)");
+        AssertDoesNotContain(constructorText, "new MainViewModelRuntimeLifecycleController(this)");
+        AssertDoesNotContain(constructorText, "_deviceService = new DeviceService();");
+        AssertDoesNotContain(constructorText, "_captureService = new CaptureService();");
+        AssertDoesNotContain(constructorText, "_sessionCoordinator = new CaptureSessionCoordinator(_captureService);");
+        AssertDoesNotContain(constructorText, "_deviceAudioControlService = new NativeXuAudioControlService();");
+        AssertDoesNotContain(constructorText, "_audioDeviceWatcher = new AudioDeviceWatcher();");
+        AssertDoesNotContain(constructorText, "new AudioRampTraceRecorderContext");
+        AssertDoesNotContain(constructorText, "new PreviewAudioVolumeTransitionControllerContext");
         AssertDoesNotContain(compositionText, "_captureService.StatusChanged += OnCaptureStatusChanged;");
         AssertDoesNotContain(compositionText, "_captureService.AudioLevelUpdated += OnAudioLevelUpdated;");
         AssertDoesNotContain(compositionText, "SystemEvents.PowerModeChanged += OnSystemPowerModeChanged;");
@@ -6245,7 +6252,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
     internal static Task MainViewModelUiDispatchController_UsesDependencyCompositionContext()
     {
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerGraphText, "private sealed class MainViewModelControllerGraph");
@@ -6267,7 +6274,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
     internal static Task MainViewModelRecordingTransition_UsesDependencyCompositionContext()
     {
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var recordingTransitionControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerGraphText, "private static MainViewModelRecordingTransitionController CreateRecordingTransitionController(");
@@ -6304,7 +6311,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 internal static Task MainViewModelPresentationControllers_UseDependencyCompositionContexts()
     {
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs").Replace("\r\n", "\n");
         var previewReinitializeControllerText = previewLifecycleControllerText;
 
@@ -6454,7 +6461,7 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
 
 internal static Task MainViewModelCaptureDeviceControllers_UseDependencyCompositionContexts()
     {
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var deviceAudioStateText = audioStateText;
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
@@ -6644,7 +6651,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
 
 internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionContexts()
     {
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var sourceTelemetryControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var runtimeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
         var runtimeEventIngressControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
@@ -9843,7 +9850,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var timingResolverText = captureModeOptionsControllerText;
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
+        var controllerGraphText = ReadMainViewModelControllerGraphSource();
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var compositionText = rootText;
         var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");

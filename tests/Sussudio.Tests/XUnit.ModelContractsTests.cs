@@ -2383,7 +2383,10 @@ public sealed class ViewModelBuildersTests
     public void SourceTelemetryPresentationBuilder_LivesInFocusedHelper()
     {
         var telemetryText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs");
-        var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs");
+        var controllerGraphText = ExtractTextBetween(
+            ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n"),
+            "private sealed class MainViewModelControllerGraph",
+            "/// <summary>\n/// Owns bounded byte-sample smoothing");
         var capturePresentationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs");
         var builderText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs");
         var sourceTelemetryBuilderText = ExtractTextBetween(
