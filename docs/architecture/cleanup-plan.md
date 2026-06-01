@@ -1065,20 +1065,20 @@ best-effort teardown for partially started sinks, WASAPI capture, unified-video
 capture, and deferred LibAv drain cleanup after a failed recording start.
 
 Flashback export failure classification now lives with export diagnostics in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Keep the export failure-kind taxonomy there because automation responses and
 capture diagnostics both consume the diagnostic result classification.
 
 Flashback export entry points now live in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Keep range export, last-N export, lock-scoped backend reference capture,
 session/backend lock release before native export, and routing into
 range-resolution and shared-core owners there. Flashback export range
 resolution now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Keep range and last-N post-eviction range resolution, buffer position clamps,
 and PTS offset math there. The shared export lifetime now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`; keep
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`; keep
 export-operation locking, eviction pause/resume, diagnostics completion,
 exporter execution, active-file fallback, `FlashbackExportRequest`
 construction, throttle-provider wiring, partial-fallback result marking, and
@@ -1092,7 +1092,7 @@ body so range entry points and shared export-core helpers stay together without
 fake partial shells.
 
 Flashback export diagnostics now lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Keep export attempt lifecycle, result, rejection, completion diagnostic state,
 progress forwarding/normalization, force-rotate fallback counters, and
 failure-kind classification there.
@@ -1761,7 +1761,7 @@ with active recording backend selection, LibAv-vs-Flashback fallback, and
 backend-specific queue/counter normalization;
 Flashback export diagnostics and derived health progress/throughput projection
 lives in
-`Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs`.
+`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Flashback playback health snapshot orchestration now lives in
 `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`
 with the aggregate playback field record, state/frame/segment/PTS/seek-cap/

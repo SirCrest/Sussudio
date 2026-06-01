@@ -3267,11 +3267,11 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n");
         var flashbackBackendResourcesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs")
             .Replace("\r\n", "\n");
@@ -6065,9 +6065,9 @@ static partial class Program
 
     internal static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
     {
-        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
-        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
         var captureServiceText = exportOperationsText
             + "\n" + exportCoreText
@@ -9448,9 +9448,9 @@ static partial class Program
         return ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             + "\n" + ReadCaptureServiceAudioSource()
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
-            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
+            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
+            + "\n" + ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadCaptureServiceRecordingFinalizationSource();
     }
@@ -9838,9 +9838,9 @@ static partial class Program
     {
         var captureServiceText = ReadCaptureServiceDiagnosticsRefreshSource();
         var flashbackBackendText = ReadFlashbackBackendResourcesSource();
-        var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
-        var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
-        var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
+        var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
+        var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
+        var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");

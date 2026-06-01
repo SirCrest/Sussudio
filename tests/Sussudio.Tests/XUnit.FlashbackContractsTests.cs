@@ -838,9 +838,9 @@ static partial class Program
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
-        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
-        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
         var exportPlanningText = exportCoreText;
         var sourceText = exportOperationsText
@@ -871,11 +871,15 @@ static partial class Program
         AssertEqual(
             1,
             exportCoreText.Split("public partial class CaptureService", StringSplitOptions.None).Length - 1,
-            "CaptureService.FlashbackExportCore.cs stays one in-file CaptureService body");
+            "CaptureService.Flashback.cs stays one in-file CaptureService body after export fold");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportCore.cs")),
+            "CaptureService.FlashbackExportCore.cs folded into CaptureService.Flashback.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportPlanning.cs")),
-            "CaptureService.FlashbackExportPlanning.cs folded into CaptureService.FlashbackExportCore.cs");
+            "CaptureService.FlashbackExportPlanning.cs folded into CaptureService.Flashback.cs");
 
         return Task.CompletedTask;
     }
@@ -1149,9 +1153,9 @@ static partial class Program
             "ClassifyFlashbackExportFailureKind",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
-        var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(exportText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
@@ -1335,11 +1339,11 @@ static partial class Program
 
     internal static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
     {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
                 .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: CreateFlashbackExportRangeResolver(");

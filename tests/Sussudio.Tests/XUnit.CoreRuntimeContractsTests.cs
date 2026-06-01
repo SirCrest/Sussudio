@@ -1331,7 +1331,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");

@@ -1463,9 +1463,9 @@ static partial class Program
             + "\n" + ReadCaptureServiceFlashbackOrchestrationSource()
             + "\n" + ReadCaptureServiceRecordingFinalizationSource()
             + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.FlashbackExportCore.cs");
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
+            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var captureHealthSnapshotRootSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs");
         var captureSnapshotsSource = captureHealthSnapshotRootSource;
         var unifiedVideoCaptureSource = ReadUnifiedVideoCaptureSource();
