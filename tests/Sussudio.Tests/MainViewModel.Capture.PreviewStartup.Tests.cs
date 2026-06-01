@@ -569,7 +569,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
             .Replace("\r\n", "\n");
 
         var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
@@ -1052,7 +1052,7 @@ static partial class Program
         var viewModelPreviewStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelCaptureStateText = viewModelFiles["MainViewModel.cs"];
         var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
+        var rawPreviewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var rawPreviewReinitializeControllerText = rawPreviewLifecycleControllerText;
 
@@ -1227,7 +1227,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var previewStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs")
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var previewReinitializeControllerText = previewLifecycleControllerText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
@@ -1283,10 +1283,10 @@ static partial class Program
         AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
         AssertContains(previewStateText, "public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)");
-        AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`");
+        AssertContains(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`");
         AssertDoesNotContain(agentMapText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
         AssertDoesNotContain(cleanupPlanText, "`MainViewModel.PreviewReinitialization.cs`");
-        AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewLifecycleController.cs`");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs`");
         AssertDoesNotContain(cleanupPlanText, "`Sussudio/Controllers/ViewModel/MainViewModelPreviewReinitializeController.cs`");
 
         return Task.CompletedTask;

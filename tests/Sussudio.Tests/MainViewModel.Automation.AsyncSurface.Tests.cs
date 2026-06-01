@@ -226,7 +226,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingLifecycleText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = recordingTransitionControllerRootText;
         var automationText = recordingLifecycleText
@@ -434,7 +434,7 @@ static partial class Program
 
     internal static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
     {
-        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs")
+        var recordingTransitionControllerRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var recordingTransitionControllerText = recordingTransitionControllerRootText;
 
@@ -469,7 +469,7 @@ static partial class Program
         // so LibAvRecordingSink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s).
         AssertContains(recordingStateText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
         AssertContains(rootViewModelText, "internal Task StopRecordingForEmergencyAsync");
-        AssertDoesNotContain(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingTransitionController.cs"), "StopRecordingForEmergencyAsync");
+        AssertDoesNotContain(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureLifecycleControllers.cs"), "StopRecordingForEmergencyAsync");
         AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
         AssertContains(appText, "if (e.IsTerminating || !recoverable)");
         AssertDoesNotContain(appText, "Task.Run(async () =>");
