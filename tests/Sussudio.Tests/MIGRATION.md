@@ -107,7 +107,7 @@ add xUnit alongside, and port incrementally.
   unsafe-native-path contract checks. The public wrapper classes remain
   separate inside this file so existing test identities stay stable while the
   backing snapshot formatter, PresentMon, pipe transport, KS audio-node, and
-  EGAVDS probe checks live together in `AutomationToolContracts.Tests.cs`.
+  EGAVDS probe checks live together in `XUnit.ToolContractsTests.cs`.
 - `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
@@ -183,7 +183,7 @@ add xUnit alongside, and port incrementally.
   architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
   `XUnit.AutomationContractsTests.cs`,
-  `AutomationToolContracts.Tests.cs` (automation client timeout policy,
+  `XUnit.ToolContractsTests.cs` (automation client timeout policy,
   advanced command-map alignment, and pipe/tool protocol contracts through
   `AutomationToolContractsProtocolXunitTests`),
   `XUnit.CoreRuntimeContractsTests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,

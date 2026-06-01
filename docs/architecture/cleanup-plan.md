@@ -482,15 +482,15 @@ diagnostics contract, device-lost behavior, and frame-flow/shared-device
 assertions. Source ownership coverage lives in focused RenderPipeline,
 RenderThread, and RuntimeCapture owner files.
 
-`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` keeps shared reflection
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` keeps shared reflection
 helpers plus automation command kind, catalog metadata, manifest/path-policy,
 and reliability-gates contract checks. Pure `Sussudio.Automation.Contracts`
 command ID, manifest ID, protocol resolution, timeout/auth/envelope, and
 `CommandMap` checks now have fast xUnit coverage in
 `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`, backed by the
-expected command-ID table now owned by `AutomationToolContracts.Tests.cs`
+expected command-ID table now owned by `XUnit.ToolContractsTests.cs`
 beside the legacy automation contract helpers. The legacy protocol
-harness file has been retired; `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs`
+harness file has been retired; `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`
 also owns the direct `AutomationToolContractsProtocolXunitTests` coverage for
 automation client timeout policy, advanced command-map alignment,
 pipe-failure contracts, tool delegation, script freshness, and response-state
@@ -505,7 +505,7 @@ execution surface for the PresentMon parser, ssctl pipe transport, KS
 audio-node, EGAVDS probe, RTK I2C unsafe-native-path guard, and former legacy
 NVML snapshot/CaptureSessionSnapshot tool-model checks; the public wrapper
 classes remain separate inside that file so test identities stay stable. The
-matching `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` implementation
+matching `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` implementation
 owner keeps the PresentMon parser, ssctl pipe transport, KS audio-node, and
 EGAVDS probe checks together unless one gains an independent fixture or
 executable helper state. The legacy `HarnessCheckCatalog.ToolContracts.cs`
@@ -514,7 +514,7 @@ Shared formatter tests now mirror the formatter owners: the root
 snapshot-formatter test owns accessors, invalid-response handling, section
 ordering, core section formatting, and the Flashback opt-in gate; Flashback
 output, Preview D3D output, and source ownership live in
-`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs`, with
+`tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`, with
 `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owning their xUnit execution
 surface after removal from the legacy offline harness catalog. ssctl
 formatter output smoke checks, timeline output contracts, and ssctl formatter
@@ -1867,7 +1867,6 @@ loading, device-name lookup, and P/Invoke declarations. Keep the monitor
 diagnostic-only and do not let missing NVML support affect capture, preview, or
 recording startup. NVML snapshot/unit conversion and monitor interop ownership
 checks now live with the tool-model contract group in
-`tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` and
 `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`.
 
 Automation snapshot contracts now live in named model files under

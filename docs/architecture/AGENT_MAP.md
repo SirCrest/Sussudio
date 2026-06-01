@@ -138,7 +138,7 @@ Entry points:
   taxonomy, tolerant response-state parsing, synthetic error-envelope factory,
   exception-to-error-code mapping, and throw-vs-synthetic unknown-command
   policy shared by command transports and retry policy.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns the golden
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the golden
   numeric command-ID adapter plus shared automation/tool contract legacy
   `Program` implementations for catalog/manifest/path-policy reliability,
   shared snapshot formatter behavior/source ownership, PresentMon parser and
@@ -1474,8 +1474,7 @@ Primary current owners:
   present-accounting source-ownership, screenshot and frame-capture
   cancellation, shared D3D device reference lifecycle, black-edge counting,
   preview PNG encoder CRC, and preview PNG capture assertions.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` and
-  `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` own NVML snapshot
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns NVML snapshot
   computed-property/unit-conversion checks and `NvmlMonitor` native interop
   ownership assertions alongside the tool-model contract group.
 - `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns RuntimePaths,
@@ -1518,7 +1517,7 @@ Primary current owners:
   no-hardware command coverage, window close, preview health, stale
   wait-refresh cadence guards, UI automation readiness-independent coverage,
   and harness payload/fake device support.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns shared
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns shared
   reflection helpers plus automation command kind, catalog metadata, manifest,
   path-policy, reliability-gates contract checks, and the expected command-ID
   table used by automation protocol/tool tests.
@@ -1526,10 +1525,10 @@ Primary current owners:
   coverage for pure `Sussudio.Automation.Contracts` command IDs, manifest IDs,
   pipe protocol command resolution, timeout, auth-token, envelope, and
   `CommandMap` contracts.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns legacy harness
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns legacy harness
   coverage for window action enum membership and keeps the
   `ExpectedAutomationCommands()` adapter used by protocol/MCP helpers.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` also owns shared
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` also owns shared
   implementations for automation command catalog metadata, manifest projection,
   path policy validation, manifest serialization, reliability-gates script
   contract tests, and the direct `AutomationToolContractsProtocolXunitTests`
@@ -1553,7 +1552,7 @@ Primary current owners:
   coverage, ownership-file discovery, exact code-span policy, xUnit inventory
   helpers, and the xUnit execution surface for those architecture-doc checks
   after their removal from the legacy offline harness catalog.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns the shared/ssctl
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns the shared/ssctl
   snapshot formatter contract family: typed accessors, core section formatting,
   section-order, Flashback opt-in smoke checks, source ownership, Flashback
   output rendering, and Preview D3D output rendering.
@@ -1577,7 +1576,7 @@ Primary current owners:
   table instead of per-test numeric IDs. Keep the `SsctlCommandHandlerContractsTests`
   wrappers and backing `Program` method bodies together in this tool-contract
   owner unless the routing harness gains independent fixture state.
-- `tests/Sussudio.Tests/AutomationToolContracts.Tests.cs` owns tool-probe
+- `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns tool-probe
   behavior and source-ownership contracts for PresentMon parser swap-chain
   selection, artifact filtering, CSV field versions, app-present correlation,
   ssctl pipe transport command/retry/error shaping, KS audio-node probe
