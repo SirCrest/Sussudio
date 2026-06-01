@@ -3091,9 +3091,10 @@ owner, fold it back into that owner and update the source-shape tests and
    capture/device controller dependency-context assertions in a focused
    capture-device owner, and source-telemetry, runtime lifecycle/event-ingress,
    and disposal controller dependency-context assertions in a focused runtime
-   owner instead of the root composition catch-all. Flashback buffer segment
-   tests are split between validation, accounting, disposal/recovery, and
-   segment lookup/list projection coverage. Preview startup session/reinit
+   owner instead of the root composition catch-all. Flashback buffer manager
+   segment, accounting, disposal/recovery, retention, and lookup/list projection
+   coverage now executes through
+   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`. Preview startup session/reinit
    harness coverage is split between source ownership, session controller,
    reinit transition controller, and pending Flashback-cycle wait owners.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`

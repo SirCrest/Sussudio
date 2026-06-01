@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: Flashback buffer manager xUnit owner locality
+Problem: `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` was the smallest remaining fixture-free Flashback buffer `Program` sidecar. Almost all executable wrappers already lived in `XUnit.RecordingContractsTests.cs`, with the remaining presentation-preview startup wrappers still calling the same `Program.FlashbackBufferManager_*` methods. Reviewing Flashback buffer segment mutation, retention, byte accounting, purge, and startup cleanup contracts still required opening the recording xUnit owner plus a separate backing-method file with no independent fixture or process boundary.
+Files consolidated: `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs`
+Files added: none
+Net production .cs delta: 0; net test .cs delta: -1
+Partial clusters reduced: no production partial cluster change; Flashback buffer manager backing `Program` methods now live with the `XUnit.RecordingContractsTests.cs` owner that contains the recording/Flashback buffer wrapper surface.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackBufferManager|FullyQualifiedName~RecordingContracts"` passed (95 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; focused architecture-doc tests passed; `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+CLI/MCP/pipe checks, if applicable: no production runtime, automation, CLI, MCP, XAML, capture, recording, Flashback, preview, HDR, or hot-path code changed; full solution build rebuilt app, tools, MCP server, and harnesses.
+Behavior preserved: `XUnit.RecordingContractsTests` and presentation-preview Flashback buffer wrapper classes keep the same `[Fact]` names and underlying `Program.FlashbackBufferManager_*` method names. Segment metadata/outside-path validation, disposed-state no-ops, recovery-preserve behavior, segment diagnostics, PTS clamping, byte accounting, same-path extension, segment lookup/list projection, source-shape assertions, startup cleanup, session scanning, retention, eviction, purge, and active-byte accounting assertions moved intact.
+Notes for future agents: keep Flashback buffer manager wrapper facts and backing methods with `XUnit.RecordingContractsTests.cs` while they share the same reflected buffer-manager fixture/helpers and no independent runtime harness. Split again only for a real fixture, external process lifecycle, or a new named production collaborator. Current counts: core app 115 `.cs` files / 89,534 nonblank LoC; `Sussudio.Tests` 18 `.cs` files / 55,953 nonblank LoC; all tests 20 `.cs` files / 56,803 nonblank LoC.
+
+Date: 2026-06-01
 Area: MCP diagnostic-session xUnit owner locality
 Problem: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs` was a fixture-free backing `Program` sidecar while every executable diagnostic-session MCP fact already lived in `XUnit.ToolContractsTests.cs`. Reviewing MCP diagnostic-session artifact contracts, runner behavior, source-family readers, helper ownership, and Flashback scenario/metric/wait/export assertions still required opening the xUnit parent plus a separate backing file with no independent fixture boundary.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Tests.cs`

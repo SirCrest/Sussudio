@@ -1757,19 +1757,21 @@ Primary current owners:
   Flashback test helper source readers, helper methods, buffer test factories,
   completed-segment insertion, and sized-file helpers used across focused
   Flashback test files.
-- `tests/Sussudio.Tests/Flashback.Buffer.Segments.Validation.Tests.cs` owns
-  Flashback buffer segment completion metadata, outside-path rejection,
-  disposed-state no-op, recovery-preserve, segment diagnostics, PTS clamp, byte
-  accounting, same-path extension tests, segment position lookup, next-segment
-  path lookup, path normalization, segment-start PTS, segment range query,
-  active path, segment-count, segment-list behavior, and buffer-manager source
-  ownership assertions for root state, segment mutation/query, lifecycle,
-  purge, and eviction-pause placement. It also owns Flashback buffer
-  startup-generated segment cleanup, legacy root cleanup, stale session
-  directory cleanup, session-recovery scanner ownership, unrelated temp-directory
-  preservation, startup-cache budget, session-id and segment-extension
-  validation, eviction accounting, purge retention, active-byte accounting,
-  eviction-pause behavior, and initialization recording-PTS reset tests.
+- `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` owns the
+  Flashback buffer manager xUnit wrappers and backing `Program` methods for
+  segment completion metadata, outside-path rejection, disposed-state no-op,
+  recovery-preserve, segment diagnostics, PTS clamp, byte accounting,
+  same-path extension tests, segment position lookup, next-segment path lookup,
+  path normalization, segment-start PTS, segment range query, active path,
+  segment-count, segment-list behavior, and buffer-manager source ownership
+  assertions for root state, segment mutation/query, lifecycle, purge, and
+  eviction-pause placement. It also owns Flashback buffer startup-generated
+  segment cleanup, legacy root cleanup, stale session directory cleanup,
+  session-recovery scanner ownership, unrelated temp-directory preservation,
+  startup-cache budget, session-id and segment-extension validation, eviction
+  accounting, purge retention, active-byte accounting, eviction-pause behavior,
+  and initialization recording-PTS reset tests after their removal from the
+  legacy segment-validation sidecar.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback encoder
   sink xUnit wrappers and consolidated backing `Program` methods for frame-rate,
   option, startup rollback, runtime counter, PTS guard, queue rejection,
