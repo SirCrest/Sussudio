@@ -1843,19 +1843,12 @@ joins, fatal-callback dispatch, remaining-timeout helpers, decoder disposal,
 queued work-item return, remaining reorder-frame disposal, and emit-signal
 disposal with the root pipeline owner.
 
-The unused CUDA/D3D11 preview interop bridge was removed after live source
-search showed no production construction or caller path. Current GPU MJPEG
-preview behavior stays with the active pipeline and `NvdecMjpegDecoder` CPU
-download/copy path; reintroduce a CUDA/D3D11 bridge only with a live pipeline
-caller, behavior tests, and runtime validation for the zero-copy/staging path.
-
-NVDEC MJPEG decoder ownership now lives in
-`Sussudio/Services/Gpu/NvdecMjpegDecoder.cs`: shared decoder state, standalone
-CUDA device and hardware-frame pool initialization, caller-provided CUDA
-device/frame context adoption, packet decode, CUDA context access, CPU
-download/packed-buffer copies, disposal, and FFmpeg error text. Keep
-shared-context ownership, hot-path decode/download behavior, and disposal order
-unchanged when touching this file.
+The unused CUDA/D3D11 preview interop bridge and standalone NVDEC MJPEG decoder
+were removed after live source search showed no production construction or
+caller path. Current MJPEG preview behavior stays with the active
+`ParallelMjpegDecodePipeline` software decode/copy path; reintroduce a
+CUDA/D3D11 bridge or NVDEC decoder only with a live pipeline caller, behavior
+tests, and runtime validation for the zero-copy/staging or CUDA decode path.
 
 NVML telemetry ownership now lives in `Sussudio/Services/Gpu/NvmlMonitor.cs`,
 which owns optional diagnostic polling, snapshot publication, timer/lifetime

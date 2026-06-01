@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: GPU MJPEG dead NVDEC cleanup
+Problem: `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs` was a 492-nonblank-line production file with no construction or caller path in live source; only source-shape tests and architecture docs referenced it. Keeping the standalone NVDEC decoder as an apparent MJPEG pipeline owner made the active decode boundary look broader than the callable `ParallelMjpegDecodePipeline` behavior.
+Files consolidated: none; removed unwired `Sussudio/Services/Gpu/NvdecMjpegDecoder.cs`
+Files added: none
+Net production .cs delta: -1; net core app .cs delta: -1; net test .cs delta: 0
+Partial clusters reduced: n/a; removed a dead standalone decoder owner rather than changing a live partial cluster.
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture guardrails passed (19 passed); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with LF-to-CRLF working-copy warnings only.
+CLI/MCP/pipe checks, if applicable: no public automation command names/IDs, pipe protocol, MCP/tool source, CLI payloads, XAML bindings, capture, recording, Flashback, preview, HDR, or hot-path behavior changed; the removed file had no production callers.
+Behavior preserved: current MJPEG preview/decode behavior remains in `ParallelMjpegDecodePipeline.cs`: software decoder initialization/lifetime, compressed work admission, worker decode/copy, decoded-frame ordering, emitter lifecycle, preview notification, timing metrics, and packet-hash metrics. The deleted NVDEC decoder had no live entry point, so runtime behavior is unchanged.
+Notes for future agents: do not recreate a standalone NVDEC MJPEG decoder as source-shape scaffolding. Reintroduce it only with a live pipeline caller, behavior tests, and runtime validation for the CUDA decode/download path. Current counts: core app 107 `.cs` files / 88,522 nonblank LoC; `Sussudio.Tests` 12 `.cs` files / 55,881 nonblank LoC; all tests 14 `.cs` files / 56,731 nonblank LoC.
+
+Date: 2026-06-01
 Area: GPU MJPEG dead bridge cleanup
 Problem: `Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs` was a 490-nonblank-line production file with no construction or caller path in live source; only source-shape tests and architecture docs referenced it. Keeping the planned CUDA/D3D11 bridge as an apparent pipeline owner made the MJPEG decode boundary look broader than the code that actually runs.
 Files consolidated: none; removed unwired `Sussudio/Services/Gpu/CudaD3D11InteropBridge.cs`
@@ -57,7 +69,7 @@ Net production .cs delta: -1; net core app .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; removed a dead standalone bridge owner rather than changing a live partial cluster.
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture guardrails passed (19 passed); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with LF-to-CRLF working-copy warnings only.
 CLI/MCP/pipe checks, if applicable: no public automation command names/IDs, pipe protocol, MCP/tool source, CLI payloads, XAML bindings, capture, recording, Flashback, preview, HDR, or hot-path behavior changed; the removed file had no production callers.
-Behavior preserved: current GPU MJPEG decode behavior remains in `ParallelMjpegDecodePipeline.cs` and `NvdecMjpegDecoder.cs`, including NVDEC initialization, shared CUDA context adoption, CPU download/packed-buffer copies, pipeline ordering, worker/emitter lifecycle, and preview notification. The deleted bridge had no live entry point, so runtime behavior is unchanged.
+Behavior preserved: current active MJPEG preview/decode behavior remains in `ParallelMjpegDecodePipeline.cs`, including pipeline ordering, worker/emitter lifecycle, and preview notification. The deleted bridge had no live entry point, so runtime behavior is unchanged.
 Notes for future agents: do not recreate a CUDA/D3D11 bridge as source-shape scaffolding. Reintroduce it only with a live pipeline caller, behavior tests, and runtime validation for the zero-copy/staging path. Current counts: core app 108 `.cs` files / 89,014 nonblank LoC; `Sussudio.Tests` 12 `.cs` files / 55,894 nonblank LoC; all tests 14 `.cs` files / 56,744 nonblank LoC.
 
 Date: 2026-06-01

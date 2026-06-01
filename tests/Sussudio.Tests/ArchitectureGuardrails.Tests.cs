@@ -2300,43 +2300,30 @@ static partial class Program
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "CudaD3D11Interop.Native.cs")),
             "CUDA/D3D11 native declarations folded into bridge initialization");
 
-        var nvdecText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs"));
-        AssertContains(nvdecText, "internal sealed unsafe class NvdecMjpegDecoder : IDisposable");
-        AssertContains(nvdecText, "private AVCodecContext* _decoderCtx;");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Initialization.cs")),
-            "NVDEC decoder initialization folded into cohesive decoder owner");
+            "unused NVDEC decoder initialization partial remains absent");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.SharedInitialization.cs")),
-            "NVDEC shared-context initialization folded into cohesive decoder owner");
+            "unused NVDEC shared-context initialization partial remains absent");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Decode.cs")),
-            "NVDEC packet decode folded into cohesive decoder owner");
+            "unused NVDEC packet decode partial remains absent");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Download.cs")),
-            "NVDEC CPU download folded into cohesive decoder owner");
+            "unused NVDEC CPU download partial remains absent");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.Lifetime.cs")),
-            "NVDEC decoder lifetime folded into initialization/resource ownership");
-        AssertContains(nvdecText, "public void Initialize(int width, int height)");
-        AssertContains(nvdecText, "av_hwdevice_ctx_create(&hwDeviceCtx");
-        AssertContains(nvdecText, "NVDEC_MJPEG_FRAMES_CTX_OK");
-        AssertContains(nvdecText, "public void Initialize(int width, int height, AVBufferRef* sharedHwDeviceCtx");
-        AssertContains(nvdecText, "ffmpeg.av_buffer_ref(sharedHwDeviceCtx)");
-        AssertContains(nvdecText, "NVDEC_MJPEG_DECODER_INIT_SHARED");
-        AssertContains(nvdecText, "FfmpegRuntimeInit.EnsureInitialized");
-        AssertContains(nvdecText, "public AVFrame* DecodeFrame(");
-        AssertContains(nvdecText, "public IntPtr GetCudaContext()");
-        AssertContains(nvdecText, "public bool TryDownloadToCpu(");
-        AssertContains(nvdecText, "private void EnsurePackedBufferCapacity");
-        AssertContains(nvdecText, "private static void CopyPlane");
-        AssertContains(nvdecText, "public void Dispose()");
-        AssertContains(nvdecText, "private static string GetErrorString");
+            "unused NVDEC decoder lifetime partial remains absent");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(repoRoot, "Sussudio", "Services", "Gpu", "NvdecMjpegDecoder.cs")),
+            "unused NVDEC MJPEG decoder removed until a live pipeline caller owns the path");
 
         var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         var captureServiceTelemetryText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.RuntimeSnapshots.cs"));
