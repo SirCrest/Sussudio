@@ -1723,8 +1723,9 @@ Media Foundation interop declarations and shared helpers now live in
 `Sussudio/Services/Capture/MfInterop.cs`. Keep general Media Foundation COM
 interfaces, flattened `IMFSample` vtable layout, MF buffer interfaces,
 MFStartup/MFShutdown ref-counting, typed `IMFAttributes` accessors, symbolic-link
-matching, MF P/Invoke declarations, constants/HRESULTs, and GUIDs together
-there. Preserve interface method order and placeholder slots exactly; keep
+matching, top-level MF P/Invoke holders, constants/HRESULTs, and GUIDs together
+there without reopening a `MfSourceReaderVideoCapture` partial shell. Preserve
+interface method order and placeholder slots exactly; keep
 behavioral source-reader logic in the root and negotiation partials.
 
 Media Foundation source cadence metrics now live with active source-reader

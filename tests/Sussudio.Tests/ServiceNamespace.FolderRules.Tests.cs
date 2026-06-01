@@ -1569,11 +1569,12 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfInteropHelpers.cs")),
             "MF startup and attribute helpers folded into shared MF interop owner");
-        AssertContains(mfInteropText, "private static class MfInterop");
+        AssertContains(mfInteropText, "internal static class MfInterop");
         AssertContains(mfInteropText, "DllImport(\"mfplat.dll\", ExactSpelling = true)");
-        AssertContains(mfInteropText, "private static class MfConstants");
-        AssertContains(mfInteropText, "private static class MfHResults");
-        AssertContains(mfInteropText, "private static class MfGuids");
+        AssertContains(mfInteropText, "internal static class MfConstants");
+        AssertContains(mfInteropText, "internal static class MfHResults");
+        AssertContains(mfInteropText, "internal static class MfGuids");
+        AssertDoesNotContain(mfInteropText, "public sealed partial class MfSourceReaderVideoCapture");
         AssertContains(mfInteropText, "internal interface IMFSourceReader");
         AssertContains(mfInteropText, "internal interface IMFMediaBuffer");
         AssertContains(mfInteropText, "internal interface IMFDXGIBuffer");

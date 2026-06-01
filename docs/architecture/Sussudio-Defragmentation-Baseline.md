@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: Media Foundation interop partial-shell cleanup
+Problem: `MfInterop.cs` was the shared Media Foundation ABI/helper owner, but it still reopened `MfSourceReaderVideoCapture` only to hold source-reader P/Invoke, constant, HRESULT, and GUID helper classes. That made `MfInterop.cs` show up as a source-reader partial in generated cluster evidence even though it is an interop boundary shared with device discovery, not a source-reader behavior fragment.
+Files consolidated: none
+Files added: none
+Net production .cs delta: 0; net test .cs delta: 0
+Partial clusters reduced: `MfSourceReaderVideoCapture` production partial source set 3 -> 2 files (`MfSourceReaderVideoCapture.cs`, `MfSourceReaderVideoCapture.FrameDelivery.cs`) by removing the stale partial declaration from `MfInterop.cs`
+Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ServiceNamespace|FullyQualifiedName~MfSourceReader|FullyQualifiedName~DiagnosticsRefresh|FullyQualifiedName~CaptureDiscovery"` passed (2 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed (17 passed); `git diff --check` passed with only LF-to-CRLF working-copy warnings.
+CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot-path logic changed; this slice only changes the static containment of MF interop holder classes and source-shape docs/tests.
+Behavior preserved: `MfInterop`, `MfConstants`, `MfHResults`, and `MfGuids` keep the same names and members in `Sussudio.Services.Capture`, and source-reader call sites still use the same unqualified helper names. General MF COM interfaces, flattened sample/buffer contracts, startup helpers, P/Invokes, HRESULTs, constants, and GUIDs stay in `Sussudio/Services/Capture/MfInterop.cs`.
+Notes for future agents: keep MF ABI declarations and helper primitives in `MfInterop.cs` as top-level interop owners; do not reopen `MfSourceReaderVideoCapture` there just to share private constants. Current counts: core app 118 `.cs` files / 89,562 nonblank LoC; `Sussudio.Tests` 36 `.cs` files / 56,043 nonblank LoC.
+
+Date: 2026-06-01
 Area: MCP diagnostic-session test sidecar locality
 Problem: `McpToolSurface.DiagnosticSession.Runner.Tests.cs`, `McpToolSurface.DiagnosticSession.Ownership.Tests.cs`, and `McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs` were remaining factless legacy `Program` sidecars for one diagnostic-session xUnit contract surface. Reviewing diagnostic-session tool artifacts, reflective runner behavior, infrastructure/helper ownership, and Flashback scenario ownership still required opening three adjacent implementation shards while all executable facts already route through `XUnit.ToolContractsTests.cs`.
 Files consolidated: `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Runner.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Ownership.Tests.cs`; `tests/Sussudio.Tests/McpToolSurface.DiagnosticSession.Flashback.Scenarios.Tests.cs`
