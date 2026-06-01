@@ -23,8 +23,6 @@ public sealed class SnapshotModelsTests
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"),
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"),
             sourceSignalProjectionText);
 
         Assert.Contains("public string? SourceFirmware { get; init; }", contractsText);

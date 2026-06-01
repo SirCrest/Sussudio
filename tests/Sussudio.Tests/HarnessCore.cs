@@ -776,26 +776,36 @@ static partial class Program
     }
 
     private static string ReadAutomationSnapshotFlatteningFamilyText()
-        => string.Join(
-            "\n",
-            ReadAutomationSnapshotFlatteningOrchestrationText(),
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"))
-            .Replace("\r\n", "\n");
-
-    private static string ReadAutomationSnapshotFlatteningOrchestrationText()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
-        const string startToken = "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(";
-        const string endToken = "private SnapshotStatusProjection BuildSnapshotStatusProjection(";
-        var startIndex = snapshotProjectionText.IndexOf(startToken, StringComparison.Ordinal);
-        var endIndex = snapshotProjectionText.IndexOf(endToken, StringComparison.Ordinal);
-        if (startIndex < 0 || endIndex <= startIndex)
+
+        return string.Join(
+            "\n",
+            ExtractMemberCodeFromDeclaration(
+                snapshotProjectionText,
+                "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet("),
+            ExtractMemberCodeFromDeclaration(
+                snapshotProjectionText,
+                "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections("));
+    }
+
+    private static string ExtractMemberCodeFromDeclaration(string source, string declarationToken)
+    {
+        var startIndex = source.IndexOf(declarationToken, StringComparison.Ordinal);
+        if (startIndex < 0)
         {
-            throw new InvalidOperationException("Unable to locate automation snapshot flattening orchestration in the root snapshot projection file.");
+            throw new InvalidOperationException($"Declaration '{declarationToken}' was not found.");
         }
 
-        return snapshotProjectionText[startIndex..endIndex];
+        var openBrace = source.IndexOf('{', startIndex);
+        if (openBrace < 0)
+        {
+            throw new InvalidOperationException($"Declaration '{declarationToken}' has no body.");
+        }
+
+        var closeBrace = FindMatchingBrace(source, openBrace);
+        return source.Substring(startIndex, closeBrace - startIndex + 1);
     }
 
     private static object BuildRecordingContext(

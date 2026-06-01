@@ -917,11 +917,14 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionText, "AutomationSnapshotProjectionSet projections");
         AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFlattenedProjectionSet(projections)");
         AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromFlattenedProjections(flattened)");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "return new AutomationSnapshot\n        {");
         AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionText, "private readonly record struct AutomationSnapshotFlattenedProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningAutomationSnapshotText, "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningAutomationSnapshotText, "return new AutomationSnapshot");
+        AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections(");
+        AssertContains(diagnostics.SnapshotProjectionText, "return new AutomationSnapshot");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")),
+            "final automation snapshot DTO initialization folded into AutomationDiagnosticsHub.SnapshotProjection.cs");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
         AssertContains(diagnostics.SnapshotProjectionText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
@@ -1086,7 +1089,6 @@ static partial class Program
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionFlatteningText = ReadAutomationSnapshotFlatteningFamilyText(),
-            SnapshotProjectionFlatteningAutomationSnapshotText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"),
             SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
             SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
             SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.Media.cs"),
@@ -1148,7 +1150,6 @@ static partial class Program
         public string SnapshotsCoreText { get; init; } = string.Empty;
         public string SnapshotProjectionText { get; init; } = string.Empty;
         public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningAutomationSnapshotText { get; init; } = string.Empty;
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;

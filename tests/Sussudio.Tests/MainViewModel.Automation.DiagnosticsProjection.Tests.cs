@@ -1477,10 +1477,7 @@ public sealed class PreviewPacingClassifierTests
             "\n",
             ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"));
         var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        var diagnosticsSnapshotProjectionFlatteningText = string.Join(
-            "\n",
-            diagnosticsSnapshotProjectionText,
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs"));
+        var diagnosticsSnapshotProjectionFlatteningText = diagnosticsSnapshotProjectionText;
         var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
         var diagnosticsSnapshotProjectionCaptureCadenceText = diagnosticsSnapshotProjectionText;
         var diagnosticsPreviewPacingText = diagnosticsSnapshotsText;
@@ -1524,6 +1521,7 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("PreviewPacingSlowStageConfidence = preview.PacingSlowStageConfidence", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageEvidence = preview.PacingSlowStageEvidence", diagnosticsHubText);
         Assert.Contains("PacingLikelySlowStage: snapshot.PreviewPacingLikelySlowStage", diagnosticsHubText);
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")));
     }
 
     [Fact(DisplayName = "Preview pacing classifier rejects weak samples")]

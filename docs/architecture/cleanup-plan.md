@@ -82,12 +82,12 @@ set dispatch, invocation of every focused final-domain flattener, the private
 flattened projection set handoff, plus live A/V sync drift and encoder
 correction projection and final A/V sync projection-to-`AutomationSnapshot`
 field flattening.
-`AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`
-owns the final `AutomationSnapshot` DTO initializer that flattens the named
-projection records into the automation wire snapshot. This final initializer is
-intentionally a single `init`-property map: do not split it by adding mutable
-setters or shallow fragment records unless a deliberate snapshot construction
-pattern is introduced first. `AutomationDiagnosticsHub.Snapshots.cs` owns
+The final `AutomationSnapshot` DTO initializer also lives in
+`AutomationDiagnosticsHub.SnapshotProjection.cs`, beside the projection-set
+composition that feeds it. This final initializer is intentionally a single
+`init`-property map: do not split it by adding mutable setters or shallow
+fragment records unless a deliberate snapshot construction pattern is
+introduced first. `AutomationDiagnosticsHub.Snapshots.cs` owns
 stateful snapshot bookkeeping for audio mute suspicion and recording file growth
 tracking. `AutomationDiagnosticsHub.cs` owns performance-timeline ring
 reads, append mechanics, final `AutomationSnapshot` to
