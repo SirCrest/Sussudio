@@ -49,6 +49,18 @@ Notes for future agents:
 ## Slice Evidence
 
 Date: 2026-06-01
+Area: Automation dispatcher in-file partial cleanup
+Problem: `AutomationCommandDispatcher.cs` still contained three `partial` declarations inside one physical file after earlier sidecar consolidation. That kept artificial class-body boundaries around command routing/helpers and left the dispatcher in the generated partial-cluster evidence even though there was no generated, platform, or collaborator boundary.
+Files consolidated: none
+Files added: none
+Net production .cs delta: 0; net test .cs delta: 0
+Partial clusters reduced: `AutomationCommandDispatcher` class declarations 3 in-file partial bodies -> 1 non-partial class body; the generated baseline no longer reports `AutomationCommandDispatcher` as a partial-type cluster. Core app `.cs` count unchanged at 118; core app nonblank LoC 89,580 -> 89,574. `Sussudio.Tests` `.cs` count unchanged at 38; test nonblank LoC 56,039 -> 56,040.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AutomationDispatcherContractsTests"` passed (29 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed (17 passed); `git diff --check` passed. An initial build caught the helper record still sitting between former partial bodies; the final layout moves that top-level helper after the root dispatcher class.
+CLI/MCP/pipe checks, if applicable: no live app automation session was run; full solution build rebuilds app, automation contracts, ssctl, AutomationClient, MCP server, NativeXuAudioProbe, and console harnesses. Public automation command names, command IDs, wire payloads, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, and hot paths are unchanged.
+Behavior preserved: command routing, payload extraction, custom command bodies, assert/wait/window/probe/verification/Flashback paths, response creation, and trivial-handler payload validation are mechanically unchanged. `AutomationCommandHandler<TTarget>` remains a top-level helper, now placed after the single dispatcher body instead of between former partial sections.
+Notes for future agents: keep `AutomationCommandDispatcher` as one non-partial class body unless a command group becomes a named injected collaborator with its own behavior seam. Current counts: core app 118 `.cs` files / 89,574 nonblank LoC; `Sussudio.Tests` 38 `.cs` files / 56,040 nonblank LoC.
+
+Date: 2026-06-01
 Area: Automation diagnostics snapshot projection locality
 Problem: `AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs` split the final `AutomationSnapshot` DTO initializer from the projection-set assembly and flattening orchestration in `AutomationDiagnosticsHub.SnapshotProjection.cs`. Reviewing the automation wire snapshot map required opening both files even though the initializer is only called by the projection owner.
 Files consolidated: `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs`

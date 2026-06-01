@@ -177,7 +177,9 @@ Automation diagnostics ownership:
   recording-enable command bodies it dispatches, plus Flashback action/export/
   segment/restart/enable command bodies. Construct it with
   `AutomationViewModelPorts`; this dispatcher root should not expose or store
-  the aggregate automation ViewModel dependency.
+  the aggregate automation ViewModel dependency. Keep the dispatcher in a
+  single non-partial class body unless a command group becomes a named injected
+  collaborator rather than an in-file section.
 - `Sussudio/Services/Automation/IAutomationViewModel.cs` owns the aggregate
   automation ViewModel contract plus feature-shaped ports for readiness,
   snapshot queries, device selection, capture settings, audio, preview/recording,

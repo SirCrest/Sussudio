@@ -240,6 +240,7 @@ static partial class Program
         AssertContains(rootText, "var preflightResponse = TryCreatePreflightResponse(request, correlationId);");
         AssertContains(rootText, "var portMappedResponse = await TryExecutePortMappedCommandAsync(");
         AssertContains(rootText, "return await ExecuteCustomCommandAsync(request, payload, correlationId, cancellationToken)");
+        AssertDoesNotContain(rootText, "partial class AutomationCommandDispatcher");
 
         AssertContains(preflightText, "private AutomationCommandResponse? TryCreatePreflightResponse(");
         AssertContains(preflightText, "AUTOMATION_MANIFEST_MISMATCH");

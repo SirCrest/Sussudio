@@ -21,7 +21,7 @@ namespace Sussudio.Services.Automation;
 // requests, validates payloads, delegates mutations to the view model, and
 // shapes every response with correlation and lifecycle fields for external
 // harnesses.
-public sealed partial class AutomationCommandDispatcher : IAutomationCommandDispatcher
+public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
     // Trivial one-property capture and pipeline commands live with the ordered
     // port-mapped dispatcher that consumes them.
@@ -625,120 +625,6 @@ public sealed partial class AutomationCommandDispatcher : IAutomationCommandDisp
             status: AutomationResponseStatus.Error,
             snapshot: snapshot);
     }
-}
-
-// Holds a single trivial-handler delegate and the payload property name needed to
-// extract the typed argument for the dispatcher tables above.
-internal sealed record AutomationCommandHandler<TTarget>(
-    Func<TTarget, JsonElement, CancellationToken, Task> Invoke,
-    Func<AutomationCommandKind, JsonElement, string> AcknowledgeMessage,
-    string PayloadFieldName,
-    AutomationPayloadFieldType PayloadFieldType)
-{
-    public Task InvokeAsync(TTarget target, JsonElement payload, CancellationToken cancellationToken)
-        => Invoke(target, payload, cancellationToken);
-
-    public static AutomationCommandHandler<TTarget> Bool(
-        Func<TTarget, bool, CancellationToken, Task> action,
-        string propertyName)
-        => new(
-            (target, payload, ct) =>
-            {
-                var value = GetBoolRequired(payload, propertyName);
-                return action(target, value, ct);
-            },
-            (command, _) => $"{command} acknowledged.",
-            propertyName,
-            AutomationPayloadFieldType.Boolean);
-
-    public static AutomationCommandHandler<TTarget> String(
-        Func<TTarget, string, CancellationToken, Task> action,
-        string propertyName)
-        => new(
-            (target, payload, ct) =>
-            {
-                var value = GetStringRequired(payload, propertyName);
-                return action(target, value, ct);
-            },
-            (command, _) => $"{command} acknowledged.",
-            propertyName,
-            AutomationPayloadFieldType.String);
-
-    public static AutomationCommandHandler<TTarget> Double(
-        Func<TTarget, double, CancellationToken, Task> action,
-        string propertyName)
-        => new(
-            (target, payload, ct) =>
-            {
-                var value = GetDoubleRequired(payload, propertyName);
-                return action(target, value, ct);
-            },
-            (command, _) => $"{command} acknowledged.",
-            propertyName,
-            AutomationPayloadFieldType.Number);
-
-    private static bool GetBoolRequired(JsonElement payload, string propertyName)
-    {
-        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
-        {
-            throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
-        }
-
-        var result = property.ValueKind switch
-        {
-            JsonValueKind.True => (bool?)true,
-            JsonValueKind.False => false,
-            JsonValueKind.String when bool.TryParse(property.GetString(), out var parsed) => parsed,
-            JsonValueKind.Number when property.TryGetInt32(out var number) => number != 0,
-            _ => null
-        };
-
-        return result ?? throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
-    }
-
-    private static string GetStringRequired(JsonElement payload, string propertyName)
-    {
-        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
-        {
-            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
-        }
-
-        var value = property.ValueKind == JsonValueKind.String
-            ? property.GetString()
-            : property.ValueKind != JsonValueKind.Null ? property.ToString() : null;
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
-        }
-
-        return value;
-    }
-
-    private static double GetDoubleRequired(JsonElement payload, string propertyName)
-    {
-        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
-        {
-            throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
-        }
-
-        if (property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var numeric))
-        {
-            return numeric;
-        }
-
-        if (property.ValueKind == JsonValueKind.String &&
-            double.TryParse(property.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-        {
-            return parsed;
-        }
-
-        throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
-    }
-}
-
-public sealed partial class AutomationCommandDispatcher
-{
     private async Task<AutomationCommandResponse> ExecuteCustomCommandAsync(
         AutomationCommandRequest request,
         JsonElement payload,
@@ -1202,10 +1088,6 @@ public sealed partial class AutomationCommandDispatcher
                 throw new InvalidOperationException($"Unknown window action: {action}");
         }
     }
-}
-
-public sealed partial class AutomationCommandDispatcher
-{
     private static readonly ConcurrentDictionary<string, PropertyInfo?> SnapshotPropertyCache = new(StringComparer.OrdinalIgnoreCase);
 
     private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(
@@ -1623,5 +1505,115 @@ public sealed partial class AutomationCommandDispatcher
             success: succeeded,
             status: succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
             errorCode: succeeded ? null : "capture-failed");
+    }
+}
+
+// Holds a single trivial-handler delegate and the payload property name needed to
+// extract the typed argument for the dispatcher tables above.
+internal sealed record AutomationCommandHandler<TTarget>(
+    Func<TTarget, JsonElement, CancellationToken, Task> Invoke,
+    Func<AutomationCommandKind, JsonElement, string> AcknowledgeMessage,
+    string PayloadFieldName,
+    AutomationPayloadFieldType PayloadFieldType)
+{
+    public Task InvokeAsync(TTarget target, JsonElement payload, CancellationToken cancellationToken)
+        => Invoke(target, payload, cancellationToken);
+
+    public static AutomationCommandHandler<TTarget> Bool(
+        Func<TTarget, bool, CancellationToken, Task> action,
+        string propertyName)
+        => new(
+            (target, payload, ct) =>
+            {
+                var value = GetBoolRequired(payload, propertyName);
+                return action(target, value, ct);
+            },
+            (command, _) => $"{command} acknowledged.",
+            propertyName,
+            AutomationPayloadFieldType.Boolean);
+
+    public static AutomationCommandHandler<TTarget> String(
+        Func<TTarget, string, CancellationToken, Task> action,
+        string propertyName)
+        => new(
+            (target, payload, ct) =>
+            {
+                var value = GetStringRequired(payload, propertyName);
+                return action(target, value, ct);
+            },
+            (command, _) => $"{command} acknowledged.",
+            propertyName,
+            AutomationPayloadFieldType.String);
+
+    public static AutomationCommandHandler<TTarget> Double(
+        Func<TTarget, double, CancellationToken, Task> action,
+        string propertyName)
+        => new(
+            (target, payload, ct) =>
+            {
+                var value = GetDoubleRequired(payload, propertyName);
+                return action(target, value, ct);
+            },
+            (command, _) => $"{command} acknowledged.",
+            propertyName,
+            AutomationPayloadFieldType.Number);
+
+    private static bool GetBoolRequired(JsonElement payload, string propertyName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
+        }
+
+        var result = property.ValueKind switch
+        {
+            JsonValueKind.True => (bool?)true,
+            JsonValueKind.False => false,
+            JsonValueKind.String when bool.TryParse(property.GetString(), out var parsed) => parsed,
+            JsonValueKind.Number when property.TryGetInt32(out var number) => number != 0,
+            _ => null
+        };
+
+        return result ?? throw new InvalidOperationException($"Missing required boolean property '{propertyName}'.");
+    }
+
+    private static string GetStringRequired(JsonElement payload, string propertyName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
+        }
+
+        var value = property.ValueKind == JsonValueKind.String
+            ? property.GetString()
+            : property.ValueKind != JsonValueKind.Null ? property.ToString() : null;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"Missing required string property '{propertyName}'.");
+        }
+
+        return value;
+    }
+
+    private static double GetDoubleRequired(JsonElement payload, string propertyName)
+    {
+        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
+        {
+            throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
+        }
+
+        if (property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var numeric))
+        {
+            return numeric;
+        }
+
+        if (property.ValueKind == JsonValueKind.String &&
+            double.TryParse(property.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
     }
 }

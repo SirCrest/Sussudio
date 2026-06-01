@@ -304,7 +304,9 @@ audio ramp trace, verification, visual probe/capture, and the small
 device-selection, audio-control, capture-control, output-path, and
 recording-enable command bodies it dispatches, including the recording-response
 snapshot refresh, plus Flashback action, export, segment, restart, and enable
-command bodies.
+command bodies. Keep this as one non-partial class body now that the former
+sidecar files have been folded in; use regions or comments for navigation before
+reintroducing partial shells.
 `AutomationCommandDispatcher.cs` owns manifest revision, auth-token, and
 readiness gating beside shared response shaping and Flashback rejection
 diagnostics, UI/settings command application, the show-all compatibility no-op,
