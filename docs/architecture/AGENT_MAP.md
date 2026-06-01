@@ -1225,7 +1225,7 @@ Primary current owners:
   export-operation lock assertions, ViewModel export routing, and export CTS
   lifecycle assertions. A few presentation-preview wrappers still call these
   same backing methods when the contract belongs to preview/HDR presentation.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
   evaluation-policy, diagnostic evaluation, realtime and Flashback diagnostic
@@ -1240,7 +1240,7 @@ Primary current owners:
   health-policy, stress, and warning-tolerance assertions, initial snapshot
   construction, BuildAutomationSnapshot composition, and snapshot flattening
   ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns diagnostics refresh source/fixture readers for the diagnostics hub,
   capture service, source reader, and tool-surface source text used by refresh
   ownership assertions, including diagnostic-evaluation, alerts,
@@ -1256,7 +1256,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns xUnit execution for the former legacy diagnostics-loop polling catalog
   check.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns focused automation diagnostics projection ownership assertions for
   snapshot root, audio/ingest, capture commands/settings, capture
   format/transport, source/cadence, MJPEG, recording, preview, and Flashback
@@ -1664,7 +1664,7 @@ Primary current owners:
   groups: pacing, geometry/screenshot, present cadence, device-lost,
   diagnostics, contracts/metrics ownership, runtime capture, render setup, and
   render pipeline checks.
-- `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsProjection.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns automation diagnostics projection ownership plus preview pacing
   classifier source ownership, automation-snapshot wiring assertions, and
   behavioral classifier cases.

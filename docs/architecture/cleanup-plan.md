@@ -419,19 +419,19 @@ split into capacity/drop policy, scrub coalescing, and seek-slot barrier
 owners. Keep new Flashback tests in the closest owner file instead of
 regrowing the root helper shell.
 
-Automation view-model regression coverage is split into preview-volume persistence, recording
-transition routing, async `IAutomationViewModel` surface plus Flashback/probe
-dispatcher routing, diagnostics refresh, diagnostics projection ownership,
-dispatch cancellation/timeouts under the relevant async-surface, pipe-server,
-coordinator-queue, and dispatcher-readiness owners, audio command guards,
-preview lifecycle routing, UI settings, capture-mode/device routing, and
-Flashback cleanup ownership partials. Keep new automation tests in the closest
-owner file instead of regrowing the root catch-all.
-The diagnostics-refresh source-family helper now lives in
-`tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
-with the diagnostics-refresh ownership assertions that consume it. Keep grouped
-diagnostic evaluation, alert, snapshot-projection, and aggregate text helpers
-there unless a new executable fixture needs a separate owner.
+Automation view-model regression coverage now routes through
+`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` for preview-volume
+persistence, recording transition routing, async `IAutomationViewModel` surface
+plus Flashback/probe dispatcher routing, diagnostics refresh, diagnostics
+projection ownership, dispatch cancellation/timeouts, pipe-server,
+coordinator-queue, dispatcher-readiness, audio command guards, preview lifecycle
+routing, UI settings, capture-mode/device routing, and Flashback cleanup
+ownership contracts. Keep new automation tests in the closest wrapper group in
+that owner file instead of regrowing separate sidecars. The diagnostics-refresh
+source-family helper now lives there with the diagnostics-refresh ownership
+assertions that consume it. Keep grouped diagnostic evaluation, alert,
+snapshot-projection, and aggregate text helpers there unless a new executable
+fixture needs a separate owner.
 
 `tests/Sussudio.Tests/HarnessCore.cs` owns shared source-inspection helpers,
 including MainViewModel source readers, member extraction, comment/string
@@ -3057,14 +3057,13 @@ owner, fold it back into that owner and update the source-shape tests and
    session coordinator tests
    are split into API/contracts, queue behavior, Flashback behavior,
    transition policy, ownership, and harness-helper owners. MainViewModel
-   automation tests are split into surface, diagnostics refresh, diagnostics projection,
-   runtime-safety, and Flashback cleanup owners. The diagnostics-refresh
-   snapshot-projection test is now a compact integration wiring smoke; detailed
-   projection source-shape contracts live in the focused
-   `MainViewModel.Automation.DiagnosticsProjection.*.Tests.cs` files, with
-   capture diagnostics projection ownership split across command/settings,
-   format/transport/HDR, source/cadence, MJPEG, recording, system, preview, and
-   Flashback owners. MainViewModel capture tests are split into preview startup,
+   automation tests execute through `XUnit.AutomationContractsTests.cs` across
+   surface, diagnostics refresh, diagnostics projection, runtime-safety, and
+   Flashback cleanup wrapper groups. The diagnostics-refresh snapshot-projection
+   test is now a compact integration wiring smoke; detailed projection
+   source-shape contracts live in the same automation xUnit owner across
+   command/settings, format/transport/HDR, source/cadence, MJPEG, recording,
+   system, preview, and Flashback wrappers. MainViewModel capture tests are split into preview startup,
    Flashback export, Flashback routing,
    Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
    low-risk contract groups first. Snapshot-model contract tests are split by
