@@ -400,18 +400,8 @@ static partial class Program
     }
 
     private static string ReadFlashbackDecoderSource()
-    {
-        var parts = new[]
-        {
-            // Keep playback before video setup/output so source-shape checks still see
-            // inline audio delivery before decoded video frame output.
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs").Replace("\r\n", "\n"),
-            ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs").Replace("\r\n", "\n")
-        };
-
-        return string.Join("\n", parts);
-    }
+        => ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
 
     private static string ReadFlashbackBufferManagerSource()
         => ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")

@@ -386,24 +386,24 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_LifetimeCleanupLivesWithRootLifecycle();
 
     [Fact]
-    public Task FlashbackDecoderStateGuardsAndTimingLiveWithOwners()
-        => global::Program.FlashbackDecoder_StateGuardsAndTimingLiveWithOwners();
+    public Task FlashbackDecoderStateGuardsTimingAndErrorsLiveWithDecoderRoot()
+        => global::Program.FlashbackDecoder_StateGuardsTimingAndErrorsLiveWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderOutputTypesLiveWithDecoderRoot()
         => global::Program.FlashbackDecoder_OutputTypesLiveWithDecoderRoot();
 
     [Fact]
-    public Task FlashbackDecoderVideoSetupOwnsHardwareAndSoftwareSetup()
-        => global::Program.FlashbackDecoder_VideoSetupOwnsHardwareAndSoftwareSetup();
+    public Task FlashbackDecoderVideoSetupLivesWithDecoderRoot()
+        => global::Program.FlashbackDecoder_VideoSetupLivesWithDecoderRoot();
 
     [Fact]
-    public Task FlashbackDecoderPlaybackOwnsSeekingAndDecodeLoop()
-        => global::Program.FlashbackDecoder_PlaybackOwnsSeekingAndDecodeLoop();
+    public Task FlashbackDecoderPlaybackFlowLivesWithDecoderRoot()
+        => global::Program.FlashbackDecoder_PlaybackFlowLivesWithDecoderRoot();
 
     [Fact]
-    public Task FlashbackDecoderDecodeLoopLivesWithPlayback()
-        => global::Program.FlashbackDecoder_DecodeLoopLivesWithPlayback();
+    public Task FlashbackDecoderDecodeLoopLivesWithDecoderRoot()
+        => global::Program.FlashbackDecoder_DecodeLoopLivesWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderDefaultsToClosedState()
@@ -434,8 +434,8 @@ public sealed class FlashbackDecoderContractsTests
         => global::Program.FlashbackDecoder_AudioOutputBuffersAreBounded();
 
     [Fact]
-    public Task FlashbackDecoderAudioSetupLivesWithPlaybackPacketFeed()
-        => global::Program.FlashbackDecoder_AudioSetupLivesWithPlaybackPacketFeed();
+    public Task FlashbackDecoderAudioSetupLivesWithDecoderRoot()
+        => global::Program.FlashbackDecoder_AudioSetupLivesWithDecoderRoot();
 
     [Fact]
     public Task FlashbackDecoderSoftwareFramePlanesAreValidated()
@@ -6050,26 +6050,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_AudioSetupLivesWithPlaybackPacketFeed()
+    internal static Task FlashbackDecoder_AudioSetupLivesWithDecoderRoot()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
-            .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
+        var decoderText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
-        AssertDoesNotContain(rootText, "private void InitializeAudioDecoder()");
-        AssertDoesNotContain(rootText, "private void InitializeAudioResampler()");
-        AssertContains(playbackText, "private void InitializeAudioDecoder()");
-        AssertContains(playbackText, "private void InitializeAudioResampler()");
-        AssertContains(playbackText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
-        AssertContains(playbackText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
-        AssertContains(playbackText, "FLASHBACK_DECODER_AUDIO codec=");
-        AssertContains(playbackText, "swr_alloc_set_opts2");
-        AssertContains(playbackText, "DecodeAndDeliverAudioPacket(_packet);");
+        AssertContains(decoderText, "private void InitializeAudioDecoder()");
+        AssertContains(decoderText, "private void InitializeAudioResampler()");
+        AssertContains(decoderText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
+        AssertContains(decoderText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
+        AssertContains(decoderText, "FLASHBACK_DECODER_AUDIO codec=");
+        AssertContains(decoderText, "swr_alloc_set_opts2");
+        AssertContains(decoderText, "DecodeAndDeliverAudioPacket(_packet);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.AudioOutput.cs")),
-            "Flashback decoder audio output folded into playback packet feed owner");
+            "Flashback decoder audio output folded into decoder root");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Playback.cs")),
+            "Flashback decoder playback packet feed folded into decoder root");
 
         return Task.CompletedTask;
     }
@@ -6136,8 +6136,6 @@ static partial class Program
     internal static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
     {
         var sourceText = ReadFlashbackDecoderSource();
-        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
@@ -6155,8 +6153,8 @@ static partial class Program
         AssertContains(seekToBlock, "cancellationToken.ThrowIfCancellationRequested();");
         AssertOccursBefore(seekToBlock, "cancellationToken.ThrowIfCancellationRequested();\n                if (!TryDecodeNextVideoFrame", "if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))");
 
-        AssertContains(decodeLoopText, "cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(decodeLoopText, "if (!FeedNextVideoPacket(cancellationToken))");
+        AssertContains(sourceText, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(sourceText, "if (!FeedNextVideoPacket(cancellationToken))");
 
         return Task.CompletedTask;
     }
@@ -6181,13 +6179,12 @@ static partial class Program
 
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs")
-            .Replace("\r\n", "\n");
-        AssertDoesNotContain(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
+        var d3d11Text = rootText;
+        AssertContains(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
-            "Flashback decoder D3D11VA initialization lives with video decoder setup.");
+            "Flashback decoder D3D11VA initialization lives with the decoder root.");
         var initializeBlock = ExtractTextBetween(
             d3d11Text,
             "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",
@@ -6229,7 +6226,7 @@ static partial class Program
     internal static Task FlashbackSuppressedExceptionsUseAppLogs()
     {
         var decoderText = ReadFlashbackDecoderSource();
-        var d3d11Text = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs").Replace("\r\n", "\n");
+        var d3d11Text = decoderText;
         var d3d11DiscoveryText = d3d11Text;
 
         var openFileBlock = ExtractTextBetween(
@@ -6322,8 +6319,6 @@ static partial class Program
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var videoOutputText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs")
-            .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static int CalculateFrameBufferSize(int width, int height, bool isHdr)");
         AssertContains(rootText, "private static void ValidateVideoDimensions(int width, int height)");
@@ -6332,21 +6327,22 @@ static partial class Program
         AssertContains(rootText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
         AssertContains(rootText, "private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)");
         AssertContains(rootText, "private static bool IsValidStreamIndex(int streamIndex, int streamCount)");
-        AssertDoesNotContain(videoOutputText, "private static bool TryValidateSoftwareVideoFrame(");
-        AssertDoesNotContain(videoOutputText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
-        AssertDoesNotContain(videoOutputText, "private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)");
-        AssertContains(videoOutputText, "private void CopyFramePlanesToBuffer(");
-        AssertContains(videoOutputText, "private void ConvertYuv420pToNv12(");
-        AssertContains(videoOutputText, "private void ConvertYuv420p10leToP010(");
-        AssertContains(videoOutputText, "private static void InterleaveUvRow(");
+        AssertContains(rootText, "private void CopyFramePlanesToBuffer(");
+        AssertContains(rootText, "private void ConvertYuv420pToNv12(");
+        AssertContains(rootText, "private void ConvertYuv420p10leToP010(");
+        AssertContains(rootText, "private static void InterleaveUvRow(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoSetup.cs")),
+            "FlashbackDecoder.VideoSetup.cs folded into FlashbackDecoder.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoConversion.cs")),
-            "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.VideoSetup.cs");
+            "FlashbackDecoder.VideoConversion.cs folded into FlashbackDecoder.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoOutput.cs")),
-            "FlashbackDecoder.VideoOutput.cs folded into FlashbackDecoder.VideoSetup.cs");
+            "FlashbackDecoder.VideoOutput.cs folded into FlashbackDecoder.cs");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Validation.cs")),
@@ -6371,25 +6367,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_StateGuardsAndTimingLiveWithOwners()
+    internal static Task FlashbackDecoder_StateGuardsTimingAndErrorsLiveWithDecoderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var decodeLoopText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(decodeLoopText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
-        AssertContains(decodeLoopText, "private static double ElapsedMsSince(long startTimestamp)");
+        AssertContains(rootText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
+        AssertContains(rootText, "private static double ElapsedMsSince(long startTimestamp)");
         AssertContains(rootText, "private static void ThrowIfError(int errorCode, string operation)");
         AssertContains(rootText, "private static string GetErrorString(int errorCode)");
         AssertContains(rootText, "private static InvalidOperationException CreateException(string message)");
         AssertContains(rootText, "private void ThrowIfNotInitialized()");
         AssertContains(rootText, "private void ThrowIfNotOpen()");
         AssertContains(rootText, "private void ThrowIfDisposed()");
-        AssertDoesNotContain(rootText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
-        AssertDoesNotContain(rootText, "private static double ElapsedMsSince(long startTimestamp)");
-        AssertDoesNotContain(decodeLoopText, "private static void ThrowIfError(int errorCode, string operation)");
-        AssertDoesNotContain(decodeLoopText, "private void ThrowIfNotInitialized()");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Playback.cs")),
+            "Flashback decoder playback/timing folded into decoder root");
 
         return Task.CompletedTask;
     }
@@ -6409,81 +6403,72 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_VideoSetupOwnsHardwareAndSoftwareSetup()
+    internal static Task FlashbackDecoder_VideoSetupLivesWithDecoderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var videoSetupText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(videoSetupText, "private void InitializeVideoDecoder()");
-        AssertContains(videoSetupText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
-        AssertContains(videoSetupText, "private bool TryInitializeD3D11VADecoder(AVCodecParameters* codecPar)");
-        AssertContains(videoSetupText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
-        AssertContains(videoSetupText, "private void AllocateVideoOutputBuffers()");
-        AssertContains(videoSetupText, "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
-        AssertContains(videoSetupText, "private void CopyFramePlanesToBuffer(");
-        AssertContains(videoSetupText, "private void ConvertYuv420pToNv12(");
-        AssertContains(videoSetupText, "private void ConvertYuv420p10leToP010(");
-        AssertDoesNotContain(rootText, "private void InitializeVideoDecoder()");
-        AssertDoesNotContain(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
-        AssertDoesNotContain(rootText, "private void AllocateVideoOutputBuffers()");
+        AssertContains(rootText, "private void InitializeVideoDecoder()");
+        AssertContains(rootText, "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)");
+        AssertContains(rootText, "private bool TryInitializeD3D11VADecoder(AVCodecParameters* codecPar)");
+        AssertContains(rootText, "private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)");
+        AssertContains(rootText, "private void AllocateVideoOutputBuffers()");
+        AssertContains(rootText, "private DecodedVideoFrame ConvertAndOutputVideoFrame()");
+        AssertContains(rootText, "private void CopyFramePlanesToBuffer(");
+        AssertContains(rootText, "private void ConvertYuv420pToNv12(");
+        AssertContains(rootText, "private void ConvertYuv420p10leToP010(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.VideoSetup.cs")),
+            "FlashbackDecoder video setup folded into decoder root");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.D3D11.cs")),
-            "FlashbackDecoder D3D11VA setup folded into video setup owner");
+            "FlashbackDecoder D3D11VA setup folded into decoder root");
 
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_PlaybackOwnsSeekingAndDecodeLoop()
+    internal static Task FlashbackDecoder_PlaybackFlowLivesWithDecoderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(playbackText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertContains(playbackText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertContains(playbackText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
-        AssertContains(playbackText, "FLASHBACK_DECODER_SEEK_CAP_HIT");
-        AssertContains(playbackText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertContains(playbackText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
-        AssertContains(playbackText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
-        AssertContains(playbackText, "private static double ElapsedMsSince(long startTimestamp)");
+        AssertContains(rootText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "FLASHBACK_DECODER_SEEK_FALLBACK_OK");
+        AssertContains(rootText, "FLASHBACK_DECODER_SEEK_CAP_HIT");
+        AssertContains(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "private void AddLastDecodeReceiveMs(double elapsedMs)");
+        AssertContains(rootText, "private static double ElapsedMsSince(long startTimestamp)");
         AssertOccursBefore(
-            playbackText,
+            rootText,
             "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)",
             "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackDecoder.Playback.cs")),
+            "FlashbackDecoder playback flow folded into decoder root");
 
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackDecoder_DecodeLoopLivesWithPlayback()
+    internal static Task FlashbackDecoder_DecodeLoopLivesWithDecoderRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(playbackText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
-        AssertContains(playbackText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
-        AssertContains(playbackText, "public readonly record struct PlaybackDecodePhaseTimings(");
-        AssertContains(playbackText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertContains(playbackText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
-        AssertContains(playbackText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
-        AssertContains(playbackText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
-        AssertContains(playbackText, "private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)");
-        AssertContains(playbackText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
-        AssertContains(playbackText, "DecodeAndDeliverAudioPacket(_packet);");
-        AssertDoesNotContain(rootText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
-        AssertDoesNotContain(rootText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
-        AssertDoesNotContain(rootText, "public readonly record struct PlaybackDecodePhaseTimings(");
-        AssertDoesNotContain(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
-        AssertDoesNotContain(rootText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
+        AssertContains(rootText, "private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;");
+        AssertContains(rootText, "public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;");
+        AssertContains(rootText, "public readonly record struct PlaybackDecodePhaseTimings(");
+        AssertContains(rootText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "private void DecodeAndDeliverAudioPacket(AVPacket* packet)");
+        AssertContains(rootText, "private DecodedAudioChunk ConvertAndOutputAudioFrame()");
+        AssertContains(rootText, "private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)");
+        AssertContains(rootText, "ffmpeg.av_read_frame(_formatCtx, _packet)");
+        AssertContains(rootText, "DecodeAndDeliverAudioPacket(_packet);");
 
         return Task.CompletedTask;
     }

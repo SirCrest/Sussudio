@@ -1393,35 +1393,16 @@ classification, final stop result reporting, `Dispose`/`DisposeAsync`,
 deferred cleanup, final dispose reset, cancellation/disposal helpers, and
 best-effort encoder/buffer manager disposal there.
 
-Flashback decoder audio output now lives with the playback packet feed in
-`Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`. Keep audio packet
-delivery, audio codec/resampler initialization, audio callback failure handling,
-resampler output conversion, bounded audio sample/byte sizing, inline audio
-interleave during video reads, and decode phase timing there. Decoded video frame
-output, PTS-to-TimeSpan conversion, and best-effort frame timestamp selection now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs` with software
-plane copies and YUV-to-NV12/P010 conversion kernels. Keep file
-  open/close and disposal lifecycle in the root decoder. Keyframe/exact seek
-  control flow, pending-frame transfer, seek-cap diagnostics, seek-buffer
-  flushing, seek timestamp conversion helpers, video frame receive, packet
-  feeding, recoverable seek log suppression, and decode phase timing state now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`.
-Decoded frame-size calculation, video-dimension validation, D3D11/software
-decoded-frame validation, input stream-count bounds, and stream-index bounds now live in
-the root decoder at `Sussudio/Services/Flashback/FlashbackDecoder.cs`.
-File-close native cleanup, software buffer returns, pending held-frame release,
-decoder state reset, held-frame best-effort release helpers, open/disposed
-state guards, and FFmpeg decoder error formatting now live in the root decoder;
-  decode phase timing accumulation lives with
-`Sussudio/Services/Flashback/FlashbackDecoder.Playback.cs`.
-Decoded video/audio output DTOs now live in the root decoder beside the
-decoder's public output surface, instead of a sub-40-line output-type fragment.
-Video codec setup, D3D11 device-context initialization, get-format callback
-behavior, hardware decoder context setup, D3D11VA/software fallback selection,
-D3D11VA decoder selection, hardware-configuration diagnostics, frame-rate
-metadata initialization, MJPEG single-thread decode policy, and software
-output-buffer allocation, decoded video output, and software conversion kernels now live in
-`Sussudio/Services/Flashback/FlashbackDecoder.VideoSetup.cs`.
+Flashback decoder playback and video setup now live in the root decoder at
+`Sussudio/Services/Flashback/FlashbackDecoder.cs`. Keep file open/close and
+disposal lifecycle, state/error guards, decoded output DTOs, stream/frame
+validation, keyframe/exact seek control flow, packet feeding, inline audio
+delivery/conversion, bounded audio output, recoverable seek log suppression,
+decode phase timing, video codec setup, D3D11VA/software fallback selection,
+hardware-config diagnostics, decoded video output, timestamp helpers, software
+buffer allocation, plane copies, and YUV-to-NV12/P010 conversion kernels there.
+Split again only if a named decoder collaborator with an independent fixture,
+lifetime boundary, or reusable contract replaces the former private partials.
 
 Flashback buffer lifecycle, live accounting, segment mutation/query, purge, and
 retention now live in `Sussudio/Services/Flashback/FlashbackBufferManager.cs`.

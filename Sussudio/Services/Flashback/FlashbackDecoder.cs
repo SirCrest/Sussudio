@@ -1,8 +1,14 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Threading;
 using FFmpeg.AutoGen;
+using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Flashback;
 
@@ -42,7 +48,7 @@ internal readonly struct DecodedAudioChunk
 /// and AAC audio to f32le interleaved stereo 48kHz.
 /// This type is NOT thread-safe — all calls must come from the playback controller's thread.
 /// </summary>
-internal sealed unsafe partial class FlashbackDecoder : IDisposable
+internal sealed unsafe class FlashbackDecoder : IDisposable
 {
     private const int OutputAudioSampleRate = 48000;
     private const int OutputAudioChannels = 2;
@@ -608,6 +614,1320 @@ internal sealed unsafe partial class FlashbackDecoder : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_DECODER_RELEASE_HELD_FRAME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private PlaybackDecodePhaseTimings _lastDecodePhaseTimings;
+
+    public PlaybackDecodePhaseTimings LastDecodePhaseTimings => _lastDecodePhaseTimings;
+
+    public readonly record struct PlaybackDecodePhaseTimings(
+        double ReceiveMs,
+        double FeedMs,
+        double ReadMs,
+        double SendMs,
+        double AudioMs,
+        double ConvertMs);
+
+    /// <summary>
+    /// Seeks to the nearest keyframe at or before <paramref name="target"/>.
+    /// Fast seek suitable for scrubbing.
+    /// </summary>
+    public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)
+    {
+        ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);
+        var result = ffmpeg.av_seek_frame(
+            _formatCtx, _videoStreamIndex, streamTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (result < 0)
+        {
+            var streamSeekResult = result;
+            var timestampUs = ToAvTimeBaseTimestamp(target);
+            result = ffmpeg.av_seek_frame(
+                _formatCtx, -1, timestampUs, ffmpeg.AVSEEK_FLAG_BACKWARD);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (result < 0)
+            {
+                Logger.Log(
+                    $"FLASHBACK_DECODER_SEEK_WARN keyframe_seek_failed code={result} " +
+                    $"stream_code={streamSeekResult} target_ms={(long)target.TotalMilliseconds} stream_ts={streamTimestamp}");
+                return false;
+            }
+
+            Logger.Log(
+                $"FLASHBACK_DECODER_SEEK_FALLBACK_OK target_ms={(long)target.TotalMilliseconds} " +
+                $"stream_ts={streamTimestamp} us_ts={timestampUs}");
+        }
+
+        if (_videoCodecCtx != null)
+        {
+            ffmpeg.avcodec_flush_buffers(_videoCodecCtx);
+        }
+
+        if (_audioCodecCtx != null)
+        {
+            ffmpeg.avcodec_flush_buffers(_audioCodecCtx);
+        }
+
+        // Clear any stashed pending frame - it's from before the seek point.
+        if (_hasPendingVideoFrame)
+        {
+            ReleaseHeldFrameBestEffort(_pendingVideoFrame, "seek_keyframe_pending");
+            _pendingVideoFrame = default;
+            _hasPendingVideoFrame = false;
+        }
+
+        _suppressRecoverableSeekLogsForNextVideoFrame = true;
+
+        Logger.Log(
+            $"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds} " +
+            $"stream_index={_videoStreamIndex} stream_ts={streamTimestamp}");
+        return true;
+    }
+
+    /// <summary>
+    /// Seeks to the exact frame at <paramref name="target"/> by first seeking to the
+    /// nearest preceding keyframe, then decoding forward until the target PTS is reached.
+    /// </summary>
+    public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)
+    {
+        ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
+        _lastSeekHitForwardDecodeCap = false;
+
+        if (!SeekToKeyframe(target, cancellationToken))
+        {
+            return false;
+        }
+
+        // Decode forward until we reach (or pass) the target PTS.
+        // Stash the target frame so the next TryDecodeNextVideoFrame() returns it
+        // instead of skipping past it (fixes off-by-one on seek).
+        // Cap at 960 frames (8s at 120fps) to prevent CPU saturation on scrub.
+        const int maxForwardFrames = 960;
+        var targetTicks = target.Ticks;
+        DecodedVideoFrame? bestFrame = null;
+        var bestFrameTransferred = false;
+        try
+        {
+            for (var i = 0; i < maxForwardFrames; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))
+                {
+                    // Reached EOF before target - return best frame if we have one.
+                    if (bestFrame != null)
+                    {
+                        _currentPosition = bestFrame.Value.Pts;
+                        _pendingVideoFrame = bestFrame.Value;
+                        _hasPendingVideoFrame = true;
+                        bestFrameTransferred = true;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                if (frame.Pts.Ticks >= targetTicks)
+                {
+                    _currentPosition = frame.Pts;
+                    _pendingVideoFrame = frame;
+                    _hasPendingVideoFrame = true;
+                    if (bestFrame != null)
+                    {
+                        ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_replace_best");
+                        bestFrame = null;
+                    }
+
+                    return true;
+                }
+
+                // Keep the closest frame in case we hit the limit.
+                if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_superseded");
+                bestFrame = frame;
+            }
+
+            // Hit frame limit - return the closest frame we decoded.
+            if (bestFrame != null)
+            {
+                var bestMs = (long)bestFrame.Value.Pts.TotalMilliseconds;
+                var targetMs = (long)target.TotalMilliseconds;
+                var gapMs = targetMs - bestMs;
+                // One frame interval in ms (guard against zero/negative frame rate)
+                var frameIntervalMs = _frameRate > 0.0 ? (long)(1000.0 / _frameRate) : 0L;
+                if (gapMs > frameIntervalMs)
+                {
+                    _lastSeekHitForwardDecodeCap = true;
+                    Interlocked.Increment(ref _seekToCapHits);
+                    Logger.Log($"FLASHBACK_DECODER_SEEK_CAP_HIT target_ms={targetMs} best_ms={bestMs} gap_ms={gapMs} frames_decoded={maxForwardFrames}");
+                }
+                else
+                {
+                    Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={targetMs} best_ms={bestMs} frames={maxForwardFrames}");
+                }
+
+                _currentPosition = bestFrame.Value.Pts;
+                _pendingVideoFrame = bestFrame.Value;
+                _hasPendingVideoFrame = true;
+                bestFrameTransferred = true;
+                return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            if (!bestFrameTransferred && bestFrame != null)
+            {
+                ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_abandoned");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Decodes the next video frame.
+    /// For D3D11VA: returns a <see cref="DecodedVideoFrame"/> with <see cref="DecodedVideoFrame.IsD3D11Texture"/> = true.
+    /// For software: returns raw NV12/P010 data in <see cref="DecodedVideoFrame.Data"/>.
+    /// </summary>
+    public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)
+    {
+        frame = default;
+        ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
+        _lastDecodePhaseTimings = default;
+
+        // Return stashed frame from SeekTo() before decoding new ones.
+        if (_hasPendingVideoFrame)
+        {
+            frame = _pendingVideoFrame;
+            _pendingVideoFrame = default;
+            _hasPendingVideoFrame = false;
+            return true;
+        }
+
+        using var recoverableSeekLogScope = BeginRecoverableSeekLogSuppressionIfNeeded();
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            // First try to receive a frame from the decoder (may have buffered frames).
+            var receiveStart = Stopwatch.GetTimestamp();
+            var receiveResult = ffmpeg.avcodec_receive_frame(_videoCodecCtx, _videoFrame);
+            AddLastDecodeReceiveMs(ElapsedMsSince(receiveStart));
+            if (receiveResult == 0)
+            {
+                // Got a decoded frame: convert and return.
+                var convertStart = Stopwatch.GetTimestamp();
+                frame = ConvertAndOutputVideoFrame();
+                AddLastDecodeConvertMs(ElapsedMsSince(convertStart));
+                if (frame.Width <= 0)
+                    return false; // clone failed, treat as decode failure
+                return true;
+            }
+
+            if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+            {
+                // Decoder needs more packets.
+                var feedStart = Stopwatch.GetTimestamp();
+                if (!FeedNextVideoPacket(cancellationToken))
+                {
+                    // Temporary EOF on live fMP4: do not enter drain mode.
+                    // The encoder is still appending; drain mode is permanent and
+                    // would prevent decoding any future frames.
+                    AddLastDecodeFeedMs(ElapsedMsSince(feedStart));
+                    return false;
+                }
+
+                AddLastDecodeFeedMs(ElapsedMsSince(feedStart));
+                continue;
+            }
+
+            if (receiveResult == ffmpeg.AVERROR_EOF)
+            {
+                // Decoder was previously drained; reset so it can accept new packets.
+                ffmpeg.avcodec_flush_buffers(_videoCodecCtx);
+                return false;
+            }
+
+            // Unexpected error.
+            Logger.Log($"FLASHBACK_DECODER_VIDEO_ERROR receive_frame code={receiveResult}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Reads packets until a video packet is sent to the decoder.
+    /// Audio packets are decoded inline via AudioChunkCallback.
+    /// </summary>
+    private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ffmpeg.av_packet_unref(_packet);
+            var readStart = Stopwatch.GetTimestamp();
+            var readResult = ffmpeg.av_read_frame(_formatCtx, _packet);
+            AddLastDecodeReadMs(ElapsedMsSince(readStart));
+            if (readResult < 0)
+            {
+                // Clear AVIO EOF flag so subsequent reads can see newly appended data.
+                // Without this, C stdio's fread EOF is cached and av_read_frame keeps
+                // returning EOF even after the encoder writes more to the file.
+                if (_formatCtx->pb != null)
+                    _formatCtx->pb->eof_reached = 0;
+                return false;
+            }
+
+            if (_packet->stream_index == _videoStreamIndex)
+            {
+                var sendStart = Stopwatch.GetTimestamp();
+                var sendResult = ffmpeg.avcodec_send_packet(_videoCodecCtx, _packet);
+                AddLastDecodeSendMs(ElapsedMsSince(sendStart));
+                ffmpeg.av_packet_unref(_packet);
+                if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
+                {
+                    Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN send_packet code={sendResult}");
+                    continue;
+                }
+
+                return true;
+            }
+
+            // Decode audio inline; keeps A/V naturally interleaved.
+            try
+            {
+                if (_packet->stream_index == _audioStreamIndex && _audioCodecCtx != null)
+                {
+                    var audioStart = Stopwatch.GetTimestamp();
+                    DecodeAndDeliverAudioPacket(_packet);
+                    AddLastDecodeAudioMs(ElapsedMsSince(audioStart));
+                }
+            }
+            finally
+            {
+                ffmpeg.av_packet_unref(_packet);
+            }
+        }
+    }
+
+    private void InitializeAudioDecoder()
+    {
+        var audioStream = _formatCtx->streams[_audioStreamIndex];
+        _audioTimeBase = audioStream->time_base;
+
+        var codecPar = audioStream->codecpar;
+
+        var codec = ffmpeg.avcodec_find_decoder(codecPar->codec_id);
+        if (codec == null)
+        {
+            Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN no decoder for codec_id={codecPar->codec_id}, audio disabled");
+            _audioStreamIndex = -1;
+            return;
+        }
+
+        _audioCodecCtx = ffmpeg.avcodec_alloc_context3(codec);
+        if (_audioCodecCtx == null)
+        {
+            throw CreateException("Failed to allocate audio codec context.");
+        }
+
+        ThrowIfError(
+            ffmpeg.avcodec_parameters_to_context(_audioCodecCtx, codecPar),
+            "avcodec_parameters_to_context(audio)");
+
+        ThrowIfError(
+            ffmpeg.avcodec_open2(_audioCodecCtx, codec, null),
+            "avcodec_open2(audio)");
+
+        _audioFrame = ffmpeg.av_frame_alloc();
+        if (_audioFrame == null)
+        {
+            throw CreateException("Failed to allocate audio frame.");
+        }
+
+        InitializeAudioResampler();
+
+        var audioCodecName = codec->name != null ? Marshal.PtrToStringAnsi((IntPtr)codec->name) : "?";
+        Logger.Log($"FLASHBACK_DECODER_AUDIO codec={audioCodecName} " +
+                   $"sample_rate={_audioCodecCtx->sample_rate} sample_fmt={_audioCodecCtx->sample_fmt} " +
+                   $"channels={_audioCodecCtx->ch_layout.nb_channels}");
+    }
+
+    private void InitializeAudioResampler()
+    {
+        AVChannelLayout outputLayout = default;
+        ffmpeg.av_channel_layout_default(&outputLayout, OutputAudioChannels);
+
+        var swrCtx = _swrCtx;
+
+        try
+        {
+            var result = ffmpeg.swr_alloc_set_opts2(
+                &swrCtx,
+                &outputLayout,
+                AVSampleFormat.AV_SAMPLE_FMT_FLT,
+                OutputAudioSampleRate,
+                &_audioCodecCtx->ch_layout,
+                _audioCodecCtx->sample_fmt,
+                _audioCodecCtx->sample_rate,
+                0,
+                null);
+            _swrCtx = swrCtx;
+            ThrowIfError(result, "swr_alloc_set_opts2(decode)");
+
+            if (_swrCtx == null)
+            {
+                throw CreateException("Failed to allocate audio resampler.");
+            }
+
+            ThrowIfError(ffmpeg.swr_init(_swrCtx), "swr_init(decode)");
+        }
+        finally
+        {
+            ffmpeg.av_channel_layout_uninit(&outputLayout);
+        }
+    }
+
+    /// <summary>
+    /// Sends an audio packet to the decoder and delivers any resulting chunks
+    /// via <see cref="AudioChunkCallback"/>. If no callback is set, audio is
+    /// silently decoded so audio and video codec state advance together.
+    /// </summary>
+    private void DecodeAndDeliverAudioPacket(AVPacket* packet)
+    {
+        var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, packet);
+        if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
+        {
+            return;
+        }
+
+        while (ffmpeg.avcodec_receive_frame(_audioCodecCtx, _audioFrame) == 0)
+        {
+            var callback = AudioChunkCallback;
+            if (callback == null)
+            {
+                ffmpeg.av_frame_unref(_audioFrame);
+                continue; // Codec advanced, but no delivery during seek/scrub
+            }
+
+            var chunk = ConvertAndOutputAudioFrame();
+            if (chunk.ValidLength > 0)
+            {
+                try
+                {
+                    callback(chunk);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_DECODE_AUDIO_CALLBACK_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                    if (chunk.Samples != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(chunk.Samples);
+                    }
+                }
+            }
+            else if (chunk.Samples != null && chunk.Samples.Length > 0)
+            {
+                ArrayPool<byte>.Shared.Return(chunk.Samples);
+            }
+        }
+    }
+
+    private DecodedAudioChunk ConvertAndOutputAudioFrame()
+    {
+        var inputSamples = _audioFrame->nb_samples;
+        var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_audioFrame), _audioTimeBase);
+        byte[]? result = null;
+        var returnResultToPool = true;
+
+        try
+        {
+            if (inputSamples <= 0)
+            {
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            var maxOutputSamples = ffmpeg.swr_get_out_samples(_swrCtx, inputSamples);
+            if (maxOutputSamples < 0)
+            {
+                maxOutputSamples = ToBoundedAudioSampleCount((long)inputSamples * 2);
+            }
+
+            if (!TryCalculateAudioBufferBytes(maxOutputSamples, out var outputBytesNeeded))
+            {
+                Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_output_size input_samples={inputSamples} max_output_samples={maxOutputSamples}");
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            result = ArrayPool<byte>.Shared.Rent(outputBytesNeeded);
+
+            int outputSamplesProduced;
+            fixed (byte* outputPtr = result)
+            {
+                var outputPlanes = stackalloc byte*[1];
+                outputPlanes[0] = outputPtr;
+
+                outputSamplesProduced = ffmpeg.swr_convert(
+                    _swrCtx,
+                    outputPlanes, maxOutputSamples,
+                    _audioFrame->extended_data, inputSamples);
+            }
+
+            if (outputSamplesProduced <= 0)
+            {
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            if (!TryCalculateAudioBufferBytes(outputSamplesProduced, out var validBytes) || validBytes > result.Length)
+            {
+                Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_converted_size output_samples={outputSamplesProduced} buffer_bytes={result.Length}");
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            returnResultToPool = false;
+            return new DecodedAudioChunk
+            {
+                Samples = result,
+                ValidLength = validBytes,
+                Pts = pts
+            };
+        }
+        finally
+        {
+            ffmpeg.av_frame_unref(_audioFrame);
+            if (returnResultToPool && result is { Length: > 0 })
+            {
+                ArrayPool<byte>.Shared.Return(result);
+            }
+        }
+    }
+
+    private static int ToBoundedAudioSampleCount(long sampleCount)
+    {
+        var maxSamples = MaxDecodedAudioFrameBytes / (OutputAudioChannels * sizeof(float));
+        if (sampleCount <= 0)
+        {
+            return 0;
+        }
+
+        if (sampleCount > maxSamples)
+        {
+            return maxSamples;
+        }
+
+        return (int)sampleCount;
+    }
+
+    private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)
+    {
+        bytes = 0;
+        if (sampleCount <= 0)
+        {
+            return false;
+        }
+
+        var calculated = (long)sampleCount * OutputAudioChannels * sizeof(float);
+        if (calculated <= 0 || calculated > MaxDecodedAudioFrameBytes || calculated > int.MaxValue)
+        {
+            return false;
+        }
+
+        bytes = (int)calculated;
+        return true;
+    }
+
+    private void AddLastDecodeReceiveMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { ReceiveMs = _lastDecodePhaseTimings.ReceiveMs + elapsedMs };
+
+    private void AddLastDecodeFeedMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { FeedMs = _lastDecodePhaseTimings.FeedMs + elapsedMs };
+
+    private void AddLastDecodeReadMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { ReadMs = _lastDecodePhaseTimings.ReadMs + elapsedMs };
+
+    private void AddLastDecodeSendMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { SendMs = _lastDecodePhaseTimings.SendMs + elapsedMs };
+
+    private void AddLastDecodeAudioMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { AudioMs = _lastDecodePhaseTimings.AudioMs + elapsedMs };
+
+    private void AddLastDecodeConvertMs(double elapsedMs)
+        => _lastDecodePhaseTimings = _lastDecodePhaseTimings with { ConvertMs = _lastDecodePhaseTimings.ConvertMs + elapsedMs };
+
+    private static double ElapsedMsSince(long startTimestamp)
+        => (Stopwatch.GetTimestamp() - startTimestamp) * 1000.0 / Stopwatch.Frequency;
+
+    private IDisposable? BeginRecoverableSeekLogSuppressionIfNeeded()
+    {
+        if (!_suppressRecoverableSeekLogsForNextVideoFrame)
+        {
+            return null;
+        }
+
+        _suppressRecoverableSeekLogsForNextVideoFrame = false;
+        return LibAvEncoder.SuppressRecoverableSeekFfmpegLogs();
+    }
+
+    private static long ToAvTimeBaseTimestamp(TimeSpan value)
+    {
+        if (value <= TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        var microseconds = value.TotalMilliseconds * 1000.0;
+        if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)microseconds;
+    }
+
+    private static long ToStreamTimestamp(TimeSpan value, AVRational timeBase)
+    {
+        if (value <= TimeSpan.Zero || timeBase.num <= 0 || timeBase.den <= 0)
+        {
+            return 0;
+        }
+
+        var timestamp = value.TotalSeconds * timeBase.den / timeBase.num;
+        if (!double.IsFinite(timestamp) || timestamp >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)timestamp;
+    }
+
+    // get_format callback: tells the decoder to use D3D11VA when available.
+    // Must be stored as a field to prevent GC collection while the decoder is alive.
+    private static readonly AVCodecContext_get_format GetFormatD3D11Callback = GetFormatD3D11;
+
+    /// <summary>
+    /// Initializes the decoder with D3D11 device pointers for GPU-direct decode.
+    /// Must be called before <see cref="OpenFile"/>.
+    /// </summary>
+    public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)
+    {
+        ThrowIfDisposed();
+
+        if (_initialized)
+        {
+            return;
+        }
+
+        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+
+        _d3dDevicePtr = d3dDevicePtr;
+        _d3dContextPtr = d3dContextPtr;
+
+        // Create persistent D3D11VA hw device context (reused across all file opens)
+        if (d3dDevicePtr != IntPtr.Zero && d3dContextPtr != IntPtr.Zero)
+        {
+            try
+            {
+                var hwDeviceCtx = ffmpeg.av_hwdevice_ctx_alloc(AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA);
+                if (hwDeviceCtx != null)
+                {
+                    var hwCtx = (AVHWDeviceContext*)hwDeviceCtx->data;
+                    var d3d11vaCtx = (AVD3D11VADeviceContext*)hwCtx->hwctx;
+                    d3d11vaCtx->device = (FFmpeg.AutoGen.ID3D11Device*)d3dDevicePtr;
+                    d3d11vaCtx->device_context = (FFmpeg.AutoGen.ID3D11DeviceContext*)d3dContextPtr;
+
+                    var initResult = ffmpeg.av_hwdevice_ctx_init(hwDeviceCtx);
+                    if (initResult >= 0)
+                    {
+                        _d3d11HwDeviceCtx = hwDeviceCtx;
+                        Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=true device=0x{d3dDevicePtr:X}");
+                    }
+                    else
+                    {
+                        ffmpeg.av_buffer_unref(&hwDeviceCtx);
+                        Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=false reason=init_fail code={initResult}");
+                    }
+                }
+                else
+                {
+                    Logger.Log("FLASHBACK_DECODER_INIT d3d11va=false reason=alloc_fail");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=false reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+        }
+        else
+        {
+            Logger.Log("FLASHBACK_DECODER_INIT d3d11va=false reason=no_device");
+        }
+
+        _initialized = true;
+    }
+
+    private static AVPixelFormat GetFormatD3D11(AVCodecContext* ctx, AVPixelFormat* fmt)
+    {
+        for (var p = fmt; *p != AVPixelFormat.AV_PIX_FMT_NONE; p++)
+        {
+            if (*p == AVPixelFormat.AV_PIX_FMT_D3D11)
+                return AVPixelFormat.AV_PIX_FMT_D3D11;
+        }
+
+        var offered = new StringBuilder();
+        for (var p = fmt; *p != AVPixelFormat.AV_PIX_FMT_NONE; p++)
+        {
+            if (offered.Length > 0) offered.Append(',');
+            offered.Append((int)*p);
+        }
+
+        Logger.Log($"FLASHBACK_DECODER_D3D11VA_NOT_OFFERED formats=[{offered}] fallback={(int)*fmt}");
+        return *fmt;
+    }
+
+    /// <summary>
+    /// Attempts to initialize a D3D11VA hardware decoder using the persistent device context.
+    /// Returns true on success. Output textures live on the same D3D11 device as the renderer.
+    /// </summary>
+    private bool TryInitializeD3D11VADecoder(AVCodecParameters* codecPar)
+    {
+        if (_d3d11HwDeviceCtx == null)
+            return false;
+
+        if (codecPar->codec_id != AVCodecID.AV_CODEC_ID_H264 &&
+            codecPar->codec_id != AVCodecID.AV_CODEC_ID_HEVC &&
+            codecPar->codec_id != AVCodecID.AV_CODEC_ID_AV1)
+        {
+            return false;
+        }
+
+        var codec = FindD3D11VADecoder(codecPar->codec_id, out var codecName);
+        if (codec == null)
+        {
+            Logger.Log($"FLASHBACK_DECODER_D3D11VA_SKIP reason=no_d3d11_device_ctx_decoder id={codecPar->codec_id}");
+            return false;
+        }
+
+        AVCodecContext* decoderCtx = null;
+
+        try
+        {
+            decoderCtx = ffmpeg.avcodec_alloc_context3(codec);
+            if (decoderCtx == null)
+            {
+                Logger.Log("FLASHBACK_DECODER_D3D11VA_SKIP reason=alloc_context_fail");
+                return false;
+            }
+
+            var paramsResult = ffmpeg.avcodec_parameters_to_context(decoderCtx, codecPar);
+            if (paramsResult < 0)
+            {
+                Logger.Log($"FLASHBACK_DECODER_D3D11VA_SKIP reason=params_to_ctx_fail code={paramsResult}");
+                goto cleanup;
+            }
+
+            // D3D11VA is activated by attaching the device context and selecting
+            // AV_PIX_FMT_D3D11 from get_format during avcodec_open2.
+            decoderCtx->hw_device_ctx = ffmpeg.av_buffer_ref(_d3d11HwDeviceCtx);
+            if (decoderCtx->hw_device_ctx == null)
+            {
+                Logger.Log("FLASHBACK_DECODER_D3D11VA_SKIP reason=hw_device_ref_fail");
+                goto cleanup;
+            }
+
+            decoderCtx->get_format = GetFormatD3D11Callback;
+            decoderCtx->extra_hw_frames = 4;
+
+            var openResult = ffmpeg.avcodec_open2(decoderCtx, codec, null);
+            if (openResult < 0)
+            {
+                Logger.Log($"FLASHBACK_DECODER_D3D11VA_SKIP reason=open_fail code={openResult} codec={codecName}");
+                goto cleanup;
+            }
+
+            _videoCodecCtx = decoderCtx;
+            _isD3D11HwAccelerated = true;
+            _needsConvert = false;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
+    cleanup:
+        if (decoderCtx != null) ffmpeg.avcodec_free_context(&decoderCtx);
+        return false;
+    }
+
+    private const int MaxHardwareConfigCount = 64;
+    private const int AvCodecHwConfigMethodHwDeviceCtx = 0x01;
+    private const int AvCodecHwConfigMethodHwFramesCtx = 0x02;
+    private const int AvCodecHwConfigMethodInternal = 0x04;
+    private const int AvCodecHwConfigMethodAdHoc = 0x08;
+
+    private static AVCodec* FindD3D11VADecoder(AVCodecID codecId, out string codecName)
+    {
+        codecName = codecId.ToString();
+        var preferredName = GetPreferredD3D11DecoderName(codecId);
+        if (!string.IsNullOrWhiteSpace(preferredName))
+        {
+            var preferred = ffmpeg.avcodec_find_decoder_by_name(preferredName);
+            if (preferred != null &&
+                TryDescribeD3D11DecoderCandidate(preferred, codecId, "preferred", out codecName))
+            {
+                Logger.Log($"FLASHBACK_DECODER_D3D11VA_SELECT source=preferred codec={codecName}");
+                return preferred;
+            }
+        }
+
+        var generic = ffmpeg.avcodec_find_decoder(codecId);
+        if (generic != null &&
+            TryDescribeD3D11DecoderCandidate(generic, codecId, "generic", out codecName))
+        {
+            Logger.Log($"FLASHBACK_DECODER_D3D11VA_SELECT source=generic codec={codecName}");
+            return generic;
+        }
+
+        return null;
+    }
+
+    private static string? GetPreferredD3D11DecoderName(AVCodecID codecId)
+        => codecId switch
+        {
+            AVCodecID.AV_CODEC_ID_AV1 => "av1",
+            AVCodecID.AV_CODEC_ID_HEVC => "hevc",
+            AVCodecID.AV_CODEC_ID_H264 => "h264",
+            _ => null
+        };
+
+    private static bool TryDescribeD3D11DecoderCandidate(
+        AVCodec* codec,
+        AVCodecID codecId,
+        string source,
+        out string codecName)
+    {
+        codecName = GetCodecName(codec, codecId);
+        var hardwareConfigSummary = DescribeHardwareConfigs(codec, out var hasD3D11DeviceConfig);
+        Logger.Log(
+            $"FLASHBACK_DECODER_D3D11VA_CANDIDATE source={source} codec={codecName} configs=[{hardwareConfigSummary}] d3d11_device_ctx={hasD3D11DeviceConfig}");
+        return hasD3D11DeviceConfig;
+    }
+
+    private static string DescribeHardwareConfigs(AVCodec* codec, out bool hasD3D11DeviceConfig)
+    {
+        hasD3D11DeviceConfig = false;
+        var parts = new List<string>();
+
+        for (var i = 0; i < MaxHardwareConfigCount; i++)
+        {
+            var config = ffmpeg.avcodec_get_hw_config(codec, i);
+            if (config == null)
+            {
+                break;
+            }
+
+            var pixelFormat = config->pix_fmt;
+            var deviceType = config->device_type;
+            var methods = config->methods;
+            var supportsD3D11DeviceCtx =
+                pixelFormat == AVPixelFormat.AV_PIX_FMT_D3D11 &&
+                deviceType == AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA &&
+                (methods & AvCodecHwConfigMethodHwDeviceCtx) != 0;
+
+            hasD3D11DeviceConfig |= supportsD3D11DeviceCtx;
+            parts.Add(
+                $"idx={i}:pix_fmt={GetPixelFormatName(pixelFormat)} device={GetHardwareDeviceName(deviceType)} methods={FormatHardwareConfigMethods(methods)}");
+        }
+
+        return parts.Count == 0 ? "none" : string.Join(";", parts);
+    }
+
+    private static string FormatHardwareConfigMethods(int methods)
+    {
+        var parts = new List<string>(4);
+        if ((methods & AvCodecHwConfigMethodHwDeviceCtx) != 0) parts.Add("HW_DEVICE_CTX");
+        if ((methods & AvCodecHwConfigMethodHwFramesCtx) != 0) parts.Add("HW_FRAMES_CTX");
+        if ((methods & AvCodecHwConfigMethodInternal) != 0) parts.Add("INTERNAL");
+        if ((methods & AvCodecHwConfigMethodAdHoc) != 0) parts.Add("AD_HOC");
+        var knownMask = AvCodecHwConfigMethodHwDeviceCtx |
+                        AvCodecHwConfigMethodHwFramesCtx |
+                        AvCodecHwConfigMethodInternal |
+                        AvCodecHwConfigMethodAdHoc;
+        var unknown = methods & ~knownMask;
+        if (unknown != 0) parts.Add($"UNKNOWN_0x{unknown:X}");
+        return parts.Count == 0 ? "none" : string.Join("+", parts);
+    }
+
+    private static string GetCodecName(AVCodec* codec, AVCodecID codecId)
+    {
+        if (codec != null && codec->name != null)
+        {
+            return Marshal.PtrToStringAnsi((IntPtr)codec->name) ?? codecId.ToString();
+        }
+
+        return ffmpeg.avcodec_get_name(codecId) ?? codecId.ToString();
+    }
+
+    private static string GetPixelFormatName(AVPixelFormat pixelFormat)
+    {
+        return ffmpeg.av_get_pix_fmt_name(pixelFormat) ?? pixelFormat.ToString();
+    }
+
+    private static string GetHardwareDeviceName(AVHWDeviceType deviceType)
+    {
+        return ffmpeg.av_hwdevice_get_type_name(deviceType) ?? deviceType.ToString();
+    }
+
+    private void InitializeVideoDecoder()
+    {
+        // Reset hw accel flag; it persists across file opens but must reflect
+        // the decoder chosen for this file.
+        _isD3D11HwAccelerated = false;
+
+        var videoStream = _formatCtx->streams[_videoStreamIndex];
+        _videoTimeBase = videoStream->time_base;
+
+        var codecPar = videoStream->codecpar;
+        _videoWidth = codecPar->width;
+        _videoHeight = codecPar->height;
+        ValidateVideoDimensions(_videoWidth, _videoHeight);
+
+        _decodedPixelFormat = (AVPixelFormat)codecPar->format;
+        _isHdr = (codecPar->codec_id == AVCodecID.AV_CODEC_ID_HEVC ||
+                  codecPar->codec_id == AVCodecID.AV_CODEC_ID_AV1) &&
+                 (_decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P10LE ||
+                  _decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_P010LE);
+
+        if (videoStream->avg_frame_rate.den > 0 && videoStream->avg_frame_rate.num > 0)
+        {
+            _frameRate = (double)videoStream->avg_frame_rate.num / videoStream->avg_frame_rate.den;
+        }
+        else if (videoStream->r_frame_rate.den > 0 && videoStream->r_frame_rate.num > 0)
+        {
+            _frameRate = (double)videoStream->r_frame_rate.num / videoStream->r_frame_rate.den;
+        }
+        else
+        {
+            _frameRate = 30.0;
+            Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=framerate_fallback default=30.0 path='{_currentFilePath}'");
+        }
+
+        Logger.Log($"FLASHBACK_DECODER_STREAM_INFO " +
+                   $"avg_frame_rate={{num={videoStream->avg_frame_rate.num}, den={videoStream->avg_frame_rate.den}}} " +
+                   $"r_frame_rate={{num={videoStream->r_frame_rate.num}, den={videoStream->r_frame_rate.den}}} " +
+                   $"time_base={{num={videoStream->time_base.num}, den={videoStream->time_base.den}}} " +
+                   $"computed_fps={_frameRate:F4}");
+
+        _metadataFrameRate = _frameRate;
+        _ptsCalibrationCount = 0;
+        _firstCalibrationPtsTicks = 0;
+        _lastCalibrationPtsTicks = 0;
+
+        if (TryInitializeD3D11VADecoder(codecPar))
+        {
+            _videoFrame = ffmpeg.av_frame_alloc();
+            if (_videoFrame == null)
+            {
+                throw CreateException("Failed to allocate video frame.");
+            }
+
+            Logger.Log($"FLASHBACK_DECODER_VIDEO hw_accel=D3D11VA " +
+                       $"sw_fmt={(_isHdr ? "P010" : "NV12")} {_videoWidth}x{_videoHeight}");
+            return;
+        }
+
+        var codec = ffmpeg.avcodec_find_decoder(codecPar->codec_id);
+        if (codec == null)
+        {
+            throw CreateException($"No decoder found for codec_id={codecPar->codec_id}.");
+        }
+
+        _videoCodecCtx = ffmpeg.avcodec_alloc_context3(codec);
+        if (_videoCodecCtx == null)
+        {
+            throw CreateException("Failed to allocate video codec context.");
+        }
+
+        ThrowIfError(
+            ffmpeg.avcodec_parameters_to_context(_videoCodecCtx, codecPar),
+            "avcodec_parameters_to_context(video)");
+
+        // MJPEG frames are independently decodable; FFmpeg auto-threading can add
+        // avoidable per-frame latency spikes at 4K120 playback.
+        if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)
+        {
+            _videoCodecCtx->thread_count = 1;
+        }
+
+        ThrowIfError(
+            ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),
+            "avcodec_open2(video)");
+
+        _videoFrame = ffmpeg.av_frame_alloc();
+        if (_videoFrame == null)
+        {
+            throw CreateException("Failed to allocate video frame.");
+        }
+
+        var targetFormat = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
+
+        var actualDecodedFormat = _videoCodecCtx->pix_fmt;
+        if (actualDecodedFormat != AVPixelFormat.AV_PIX_FMT_NONE)
+        {
+            _decodedPixelFormat = actualDecodedFormat;
+        }
+
+        _needsConvert = _decodedPixelFormat != targetFormat;
+
+        if (_needsConvert)
+        {
+            var canConvert =
+                _decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P ||
+                _decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P10LE;
+
+            if (!canConvert)
+            {
+                throw CreateException($"Unsupported decoded format {_decodedPixelFormat} -> {targetFormat}");
+            }
+        }
+
+        AllocateVideoOutputBuffers();
+
+        var videoCodecName = codec->name != null ? Marshal.PtrToStringAnsi((IntPtr)codec->name) : "?";
+        Logger.Log($"FLASHBACK_DECODER_VIDEO codec={videoCodecName} hw_accel=Software " +
+                   $"pix_fmt={_decodedPixelFormat} target={targetFormat} " +
+                   $"needs_convert={_needsConvert}");
+    }
+
+    private void AllocateVideoOutputBuffers()
+    {
+        var outputFrameSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);
+        for (var i = 0; i < VideoFrameBufferCount; i++)
+        {
+            _videoFrameBuffers[i] = ArrayPool<byte>.Shared.Rent(outputFrameSize);
+            _videoFrameHandles[i] = GCHandle.Alloc(_videoFrameBuffers[i], GCHandleType.Pinned);
+        }
+
+        _currentVideoBufferIndex = 0;
+    }
+
+    private DecodedVideoFrame ConvertAndOutputVideoFrame()
+    {
+        // Calculate PTS first (used by both paths). MPEG-TS frames can have
+        // AV_NOPTS_VALUE in pts even when FFmpeg recovered a usable timestamp.
+        var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);
+
+        _currentPosition = pts;
+
+        if (_ptsCalibrationCount < PtsCalibrationFrames && pts > TimeSpan.Zero)
+        {
+            if (_ptsCalibrationCount == 0)
+                _firstCalibrationPtsTicks = pts.Ticks;
+            _lastCalibrationPtsTicks = pts.Ticks;
+            _ptsCalibrationCount++;
+
+            if (_ptsCalibrationCount == PtsCalibrationFrames && _lastCalibrationPtsTicks > _firstCalibrationPtsTicks)
+            {
+                var elapsedSec = (_lastCalibrationPtsTicks - _firstCalibrationPtsTicks) / (double)TimeSpan.TicksPerSecond;
+                if (elapsedSec > 0.001)
+                {
+                    var measuredFps = (PtsCalibrationFrames - 1) / elapsedSec;
+                    if (_metadataFrameRate > measuredFps * 1.5 && measuredFps > 10)
+                    {
+                        Logger.Log($"FLASHBACK_DECODER_FPS_OVERRIDE metadata={_metadataFrameRate:F2} measured={measuredFps:F2}");
+                        _frameRate = measuredFps;
+                    }
+                }
+            }
+        }
+
+        // Check actual frame format; D3D11VA may silently fall back to software
+        // (get_format callback runs on first decode, not during avcodec_open2).
+        var actualFormat = (AVPixelFormat)_videoFrame->format;
+        if (_isD3D11HwAccelerated && actualFormat != AVPixelFormat.AV_PIX_FMT_D3D11)
+        {
+            Logger.Log($"FLASHBACK_DECODER_D3D11VA_FALLBACK actual_fmt={actualFormat} switching_to=software");
+            _isD3D11HwAccelerated = false;
+            _decodedPixelFormat = actualFormat;
+            var targetFmt = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
+            _needsConvert = actualFormat != targetFmt;
+            AllocateVideoOutputBuffers();
+        }
+
+        if (_isD3D11HwAccelerated)
+        {
+            // D3D11VA path: frame->data[0] is ID3D11Texture2D*, data[1] is subresource index.
+            // Clone the AVFrame to hold the D3D11VA surface reference; _videoFrame is reused
+            // by the next avcodec_receive_frame call, which can release the surface back to the
+            // pool before the renderer copies it. The cloned frame must be freed after the
+            // texture is consumed (via HeldFrame).
+            var clonedFrame = ffmpeg.av_frame_clone(_videoFrame);
+            ffmpeg.av_frame_unref(_videoFrame); // release pool slot immediately
+            if (clonedFrame == null)
+            {
+                Logger.Log("FLASHBACK_DECODE_CLONE_FAIL reason='av_frame_clone returned null'");
+                return default;
+            }
+
+            if (!TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight, out var d3dFrameFailure))
+            {
+                Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_d3d11_frame detail='{d3dFrameFailure}' w={_videoWidth} h={_videoHeight}");
+                ffmpeg.av_frame_free(&clonedFrame);
+                return default;
+            }
+
+            var texturePtr = (IntPtr)clonedFrame->data[0];
+            var subresource = (int)(long)clonedFrame->data[1];
+
+            return new DecodedVideoFrame
+            {
+                TexturePtr = texturePtr,
+                SubresourceIndex = subresource,
+                Width = _videoWidth,
+                Height = _videoHeight,
+                IsHdr = _isHdr,
+                Pts = pts,
+                IsD3D11Texture = true,
+                HeldFrame = (IntPtr)clonedFrame
+            };
+        }
+
+        // Software decode path
+        if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)
+        {
+            _decodedPixelFormat = actualFormat;
+            var targetFmt = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
+            _needsConvert = _decodedPixelFormat != targetFmt;
+        }
+
+        if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))
+        {
+            Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame detail='{frameFailure}' fmt={_decodedPixelFormat} w={_videoWidth} h={_videoHeight}");
+            ffmpeg.av_frame_unref(_videoFrame);
+            return default;
+        }
+
+        try
+        {
+            var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);
+
+            // Select the next buffer in the double-buffer ring.
+            var bufferIndex = _currentVideoBufferIndex;
+            _currentVideoBufferIndex = (_currentVideoBufferIndex + 1) % VideoFrameBufferCount;
+
+            var buffer = _videoFrameBuffers[bufferIndex]!;
+            if (buffer.Length < outputSize)
+            {
+                Logger.Log($"FLASHBACK_DECODER_VIDEO_REALLOC old={buffer.Length} new={outputSize}");
+                if (_videoFrameHandles[bufferIndex].IsAllocated)
+                {
+                    _videoFrameHandles[bufferIndex].Free();
+                }
+
+                ArrayPool<byte>.Shared.Return(buffer);
+                buffer = ArrayPool<byte>.Shared.Rent(outputSize);
+                _videoFrameBuffers[bufferIndex] = buffer;
+                _videoFrameHandles[bufferIndex] = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+            }
+
+            var dataPtr = _videoFrameHandles[bufferIndex].AddrOfPinnedObject();
+
+            if (_needsConvert)
+            {
+                if (!_isHdr)
+                    ConvertYuv420pToNv12((byte*)dataPtr);
+                else
+                    ConvertYuv420p10leToP010((byte*)dataPtr);
+            }
+            else
+            {
+                CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);
+            }
+
+            return new DecodedVideoFrame
+            {
+                Data = dataPtr,
+                DataLength = outputSize,
+                Width = _videoWidth,
+                Height = _videoHeight,
+                IsHdr = _isHdr,
+                Pts = pts,
+                IsD3D11Texture = false,
+                HeldFrame = IntPtr.Zero
+            };
+        }
+        finally
+        {
+            ffmpeg.av_frame_unref(_videoFrame);
+        }
+    }
+
+    private static TimeSpan DecodePtsToTimeSpan(long pts, AVRational timeBase)
+    {
+        if (pts == ffmpeg.AV_NOPTS_VALUE || timeBase.num <= 0 || timeBase.den <= 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var seconds = (double)pts * timeBase.num / timeBase.den;
+        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return TimeSpan.FromSeconds(seconds);
+    }
+
+    private static long ResolveBestEffortFrameTimestamp(AVFrame* frame)
+    {
+        if (frame == null)
+        {
+            return ffmpeg.AV_NOPTS_VALUE;
+        }
+
+        if (frame->best_effort_timestamp != ffmpeg.AV_NOPTS_VALUE)
+        {
+            return frame->best_effort_timestamp;
+        }
+
+        return frame->pts;
+    }
+
+    private void CopyFramePlanesToBuffer(byte* dest, int destSize)
+    {
+        if (_isHdr)
+        {
+            var yLinesize = _videoWidth * 2;
+            var yPlaneSize = yLinesize * _videoHeight;
+            var uvLinesize = _videoWidth * 2;
+
+            CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0],
+                      dest, yLinesize, _videoHeight);
+            CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
+                      dest + yPlaneSize, uvLinesize, _videoHeight / 2);
+        }
+        else
+        {
+            var yPlaneSize = _videoWidth * _videoHeight;
+
+            CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0],
+                      dest, _videoWidth, _videoHeight);
+            CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
+                      dest + yPlaneSize, _videoWidth, _videoHeight / 2);
+        }
+    }
+
+    private static void CopyPlane(byte* src, int srcLinesize, byte* dst, int dstLinesize, int height)
+    {
+        if (srcLinesize == dstLinesize)
+        {
+            Buffer.MemoryCopy(src, dst, (long)dstLinesize * height, (long)srcLinesize * height);
+            return;
+        }
+
+        var copyWidth = Math.Min(srcLinesize, dstLinesize);
+        for (var y = 0; y < height; y++)
+        {
+            Buffer.MemoryCopy(
+                src + y * srcLinesize,
+                dst + y * dstLinesize,
+                dstLinesize, copyWidth);
+        }
+    }
+
+    private void ConvertYuv420pToNv12(byte* dest)
+    {
+        var w = _videoWidth;
+        var h = _videoHeight;
+
+        CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0], dest, w, h);
+
+        var uvDest = dest + w * h;
+        var halfW = w / 2;
+        var uStride = _videoFrame->linesize[1];
+        var vStride = _videoFrame->linesize[2];
+
+        for (var row = 0; row < h / 2; row++)
+        {
+            var uRow = _videoFrame->data[1] + row * uStride;
+            var vRow = _videoFrame->data[2] + row * vStride;
+            var destRow = uvDest + row * w;
+
+            InterleaveUvRow(uRow, vRow, destRow, halfW);
+        }
+    }
+
+    private void ConvertYuv420p10leToP010(byte* dest)
+    {
+        var w = _videoWidth;
+        var h = _videoHeight;
+
+        CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0], dest, w * 2, h);
+
+        var uvDest = (ushort*)(dest + w * h * 2);
+        var halfW = w / 2;
+        var uStride = _videoFrame->linesize[1];
+        var vStride = _videoFrame->linesize[2];
+
+        for (var row = 0; row < h / 2; row++)
+        {
+            var uRow = (ushort*)(_videoFrame->data[1] + row * uStride);
+            var vRow = (ushort*)(_videoFrame->data[2] + row * vStride);
+            var destRow = uvDest + row * w;
+
+            for (var col = 0; col < halfW; col++)
+            {
+                destRow[col * 2] = uRow[col];
+                destRow[col * 2 + 1] = vRow[col];
+            }
+        }
+    }
+
+    private static void InterleaveUvRow(byte* uRow, byte* vRow, byte* dest, int halfW)
+    {
+        var col = 0;
+
+        if (Avx2.IsSupported)
+        {
+            for (; col + 32 <= halfW; col += 32)
+            {
+                var u = Avx.LoadVector256(uRow + col);
+                var v = Avx.LoadVector256(vRow + col);
+
+                var lo = Avx2.UnpackLow(u, v);
+                var hi = Avx2.UnpackHigh(u, v);
+
+                var out0 = Avx2.Permute2x128(lo, hi, 0x20);
+                var out1 = Avx2.Permute2x128(lo, hi, 0x31);
+
+                Avx.Store(dest + col * 2, out0);
+                Avx.Store(dest + col * 2 + 32, out1);
+            }
+        }
+        else if (Sse2.IsSupported)
+        {
+            for (; col + 16 <= halfW; col += 16)
+            {
+                var u = Sse2.LoadVector128(uRow + col);
+                var v = Sse2.LoadVector128(vRow + col);
+
+                var lo = Sse2.UnpackLow(u, v);
+                var hi = Sse2.UnpackHigh(u, v);
+
+                Sse2.Store(dest + col * 2, lo);
+                Sse2.Store(dest + col * 2 + 16, hi);
+            }
+        }
+
+        for (; col < halfW; col++)
+        {
+            dest[col * 2] = uRow[col];
+            dest[col * 2 + 1] = vRow[col];
         }
     }
 }
