@@ -437,11 +437,12 @@ there unless a new executable fixture needs a separate owner.
 including MainViewModel source readers, member extraction, comment/string
 stripping, regex assertions, and token-order assertions used across capture,
 Flashback, automation, MCP, recording, stats, and docs tests. Capture
-regression coverage is split across the
-`tests/Sussudio.Tests/MainViewModel.Capture.*.cs` family, including preview
-startup, Flashback export locking, Flashback coordinator/UI routing, Flashback
-backend lifecycle, capture selection policy, output path, audio monitoring,
-reinitialization, and Flashback frame-rate/enable-disable owner files.
+regression coverage now runs through the consolidated xUnit owner files,
+especially `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
+for preview startup, capture selection policy, output path, audio monitoring,
+reinitialization, and Flashback frame-rate/enable-disable contracts, plus
+`tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` for Flashback export
+locking and coordinator/UI routing contracts.
 
 `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` owns the model-contract
 xUnit source owner. Snapshot model coverage for CaptureDiagnosticsSnapshot,
@@ -3324,7 +3325,7 @@ owner, fold it back into that owner and update the source-shape tests and
    frame-rate source filtering, automatic selection, always-on capture options,
    timing-policy placement, automatic-selection behavior, and pure timing-policy
    behavior checks live together in
-   `MainViewModel.Capture.SelectionPolicy.Tests.cs`.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
    owns xUnit execution for those frame-rate selection/timing checks after
    their removal from the legacy presentation-preview capture catalog.
@@ -3396,11 +3397,11 @@ owner, fold it back into that owner and update the source-shape tests and
     behavior, and application checks after their removal from the legacy
     presentation-preview capture catalog.
     The presentation-preview ownership tests for this capture selection policy
-    area are split across the
-    `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.*.cs` family so
+    area now live in
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, keeping
     frame-rate, resolution, mode-selection, late-probe, recording-format,
-    capture-settings projection, and runtime-flag assertions stay near their
-    matching policy owners.
+    capture-settings projection, and runtime-flag assertions with their xUnit
+    execution owner.
     `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
     owns xUnit execution for the mode-selection, capture-format,
     recording-settings selection, and capture-settings projection checks after
@@ -3428,7 +3429,7 @@ owner, fold it back into that owner and update the source-shape tests and
    frame-rate support checks, nearest-resolution ranking, and the request/result
    records stay together with the broader pure ViewModel selection-policy owner.
    Resolution and frame-rate selection harness coverage lives in
-   `MainViewModel.Capture.SelectionPolicy.Tests.cs`, which
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, which
    owns source-shape placement assertions plus HDR, SDR, auto-capture,
    source-filter, automatic frame-rate, and timing-policy behavior contracts.
    State-backed delegates for callers that still live across the partial family

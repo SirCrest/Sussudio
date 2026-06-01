@@ -1204,7 +1204,8 @@ Primary current owners:
 - `tests/Sussudio.Tests/HarnessCore.cs` owns the shared
   MainWindow source readers used by root, Flashback, preview, shell-chrome,
   capture-binding, and stats-overlay ownership assertions.
-- `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs` owns
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the
+  MainViewModel automation xUnit wrappers and backing `Program` methods for
   the `IAutomationViewModel` async surface contract plus Flashback/probe
   dispatcher routing, UI-dispatch cancellation disposal assertions,
   automation audio/microphone command entry points, microphone monitor
@@ -1222,7 +1223,8 @@ Primary current owners:
   `_captureService` access guards, Flashback settings owner checks for
   automation enable/restart entry points, Flashback export backend-lease and
   export-operation lock assertions, ViewModel export routing, and export CTS
-  lifecycle assertions.
+  lifecycle assertions. A few presentation-preview wrappers still call these
+  same backing methods when the contract belongs to preview/HDR presentation.
 - `tests/Sussudio.Tests/MainViewModel.Automation.DiagnosticsRefresh.Tests.cs`
   owns the serialized diagnostics refresh ownership check, core ownership
   orchestration, runtime/HDR verification checks, refresh pipeline/gate,
@@ -1247,7 +1249,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs` owns shared
   diagnostic-session source-family readers used by refresh, MCP, and tool
   ownership assertions alongside the broad diagnostic-session ownership checks.
-- `tests/Sussudio.Tests/MainViewModel.Automation.AsyncSurface.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
   owns automation async surface and automation snapshot/options source-shape
   assertions, including the diagnostics-loop contract that keeps options
   snapshots out of hot diagnostics refresh paths.
@@ -1277,8 +1279,9 @@ Primary current owners:
   including MainViewModel source readers, member extraction, comment/string
   stripping, regex assertions, and token-order assertions used by capture,
   Flashback, automation, MCP, recording, stats, and docs tests.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
-  resolution-selection source-shape assertions for option rebuild,
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns the
+  MainViewModel capture selection-policy xUnit wrappers and backing `Program`
+  methods for resolution-selection source-shape assertions for option rebuild,
   auto-selection state, pure policy placement, and policy behavior assertions
   including HDR and SDR source retarget behavior, plus frame-rate source-filter,
   automatic-selection, always-on capture-option, timing-policy ownership,
@@ -1286,7 +1289,7 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
   selection/timing and resolution-selection catalog groups.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs`
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns selected capture-format and mode-tuple video-format filtering policy
   assertions plus compact selection-policy ownership assertions for
   mode-selection reset, resolved automatic frame-rate application, and
@@ -1303,12 +1306,13 @@ Primary current owners:
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview
   mode-selection, capture-format, and recording-settings selection catalog group.
-- `tests/Sussudio.Tests/MainViewModel.Capture.SelectionPolicy.Tests.cs` owns
+- `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
   capture format, resolution, frame-rate timing/auto/source-filtering,
   recording settings, capture settings projection, and late device-format probe
   retarget selection-policy ownership/behavior checks plus the shared
   reflection, option-list, and capture-mode model construction helpers for the
-  selection-policy test family.
+  selection-policy test family after their removal from the legacy
+  selection-policy sidecar.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
   presentation-preview startup xUnit wrappers and backing `Program` methods for
   preview startup signal, watchdog, lifecycle-event, fade-in, preview-stop
