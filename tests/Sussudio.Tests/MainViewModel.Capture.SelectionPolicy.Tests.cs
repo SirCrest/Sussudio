@@ -1333,7 +1333,7 @@ internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
         var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
-        var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
+        var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "=> _captureModeOptionRebuildController.RebuildFrameRateOptions();");
         AssertContains(frameRateRebuildControllerText, "FrameRateSourceFilterPolicy.Apply(");
@@ -1354,7 +1354,7 @@ internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = captureModeOptionsControllerText;
-        var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
+        var sourceFilterPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var repoRoot = GetRepoRoot();
 
@@ -1401,7 +1401,7 @@ internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
         var frameRateOptionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var frameRateRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
-        var autoSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
+        var autoSelectionPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
         var modeSelectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var repoRoot = GetRepoRoot();
 
@@ -1439,7 +1439,7 @@ internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
         return Task.CompletedTask;
     }
 
-    internal static Task FrameRateTimingPolicy_LivesInFocusedPartial()
+    internal static Task FrameRateTimingPolicy_LivesWithViewModelSelectionPolicies()
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.CaptureSelection.cs").Replace("\r\n", "\n");
         var captureModeOptionsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs").Replace("\r\n", "\n");
@@ -1447,7 +1447,7 @@ internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
         var controllerGraphText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelControllerGraph.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var compositionText = rootText;
-        var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/FrameRateTimingPolicy.cs").Replace("\r\n", "\n");
+        var timingPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelSelectionPolicies.cs").Replace("\r\n", "\n");
 
         AssertContains(captureModeTransactionsText, "private void UpdateSelectedFormat()");
         AssertContains(captureModeTransactionsText, "private void RebuildVideoFormatOptions()");
@@ -1497,6 +1497,10 @@ internal static Task ResolutionSelectionPolicy_LivesInFocusedPartial()
         AssertContains(timingPolicyText, "internal static MediaFormat SelectPreferredFrameRateFormat(");
         AssertContains(timingPolicyText, "internal static bool TryInferFrameRateTimingFamily(");
         AssertContains(timingPolicyText, "internal static bool TryParseFrameRateRational(");
+        AssertEqual(
+            false,
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "FrameRateTimingPolicy.cs")),
+            "pure frame-rate timing policy folded into ViewModelSelectionPolicies.cs");
 
         return Task.CompletedTask;
     }

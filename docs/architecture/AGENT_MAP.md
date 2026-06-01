@@ -2278,19 +2278,19 @@ Primary current owners:
   frame-rate option rebuilding, source-rate filtering handoff, auto/source
   option selection, observable frame-rate collection mutation, and selected
   frame-rate application through graph-built context ports.
-  `Sussudio/ViewModels/FrameRateTimingPolicy.cs`
-  owns pure frame-rate option choice: pending SDR bucket preference,
-  Source-rate nearest match with timing-family tie-break, generic auto fallback,
-  and previous/manual selection fallback.
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure frame-rate
+  option choice: pending SDR bucket preference, Source-rate nearest match with
+  timing-family tie-break, generic auto fallback, and previous/manual selection
+  fallback.
   `MainViewModel.cs` owns shared frame-rate selection reset,
   resolved automatic frame-rate application, disabled frame-rate reason
   projection, and capture-mode reset flags.
-  `Sussudio/ViewModels/FrameRateTimingPolicy.cs` also owns source-rate filtering
-  with capture options always visible. `MainViewModel.CaptureSelection.cs`
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` also owns source-rate
+  filtering with capture options always visible. `MainViewModel.CaptureSelection.cs`
   owns deferred rebuild behavior, capture-mode reinitialization serialization,
   and duplicate-reinit suppression.
-  `Sussudio/ViewModels/FrameRateTimingPolicy.cs` owns pure frame-rate timing
-  family and variant models, rational parsing, friendly/exact frame-rate
+  `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns pure frame-rate
+  timing family and variant models, rational parsing, friendly/exact frame-rate
   matching, timing-family ranking, and preferred-format ranking helpers used by
   frame-rate, resolution, capture-settings, and automation projections.
   `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`

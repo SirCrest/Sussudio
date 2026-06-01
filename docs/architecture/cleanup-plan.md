@@ -3323,7 +3323,7 @@ owner, fold it back into that owner and update the source-shape tests and
    frame-rate option choice, including pending SDR bucket preference,
    Source-rate nearest match with timing-family tie-break, generic auto fallback,
    and previous/manual selection fallback, now lives in
-   `Sussudio/ViewModels/FrameRateTimingPolicy.cs`. The ownership checks for
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. The ownership checks for
    frame-rate source filtering, automatic selection, always-on capture options,
    timing-policy placement, automatic-selection behavior, and pure timing-policy
    behavior checks live together in
@@ -3336,13 +3336,13 @@ owner, fold it back into that owner and update the source-shape tests and
    projection, and capture-mode reset flags live in
    `MainViewModel.cs`. Source-rate filtering now assumes
    capture options are always visible in
-   `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while deferred rebuild
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`, while deferred rebuild
    behavior, duplicate-reinit suppression, and the active capture-mode automation
    gate live in
    `MainViewModel.CaptureSelection.cs`. Pure frame-rate timing family,
    timing-variant projection, rational parsing, friendly/exact frame-rate
    matching, and preferred-format ranking now live in
-   `Sussudio/ViewModels/FrameRateTimingPolicy.cs`, while
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`, while
    `Sussudio/Controllers/ViewModel/MainViewModelCaptureModeOptionRebuildController.cs`
    owns the stateful resolver over resolution capabilities, runtime snapshots,
    source telemetry, selected formats, UI selection state, and its graph-built

@@ -535,8 +535,8 @@ public sealed class PresentationPreviewFrameRateSelectionContractsTests
         => global::Program.FrameRateAutoSelectionPolicy_PreservesSelectionBehavior();
 
     [Fact]
-    public Task FrameRateTimingPolicyLivesInFocusedPartial()
-        => global::Program.FrameRateTimingPolicy_LivesInFocusedPartial();
+    public Task FrameRateTimingPolicyLivesWithViewModelSelectionPolicies()
+        => global::Program.FrameRateTimingPolicy_LivesWithViewModelSelectionPolicies();
 
     [Fact]
     public Task FrameRateTimingPolicyPreservesPureTimingBehavior()

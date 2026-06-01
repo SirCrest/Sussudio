@@ -1,18 +1,18 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-01T03:12:29Z
+Generated UTC: 2026-06-01T03:29:47Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 161 |
+| Production .cs files | 160 |
 | Test .cs files | 50 |
-| Core app .cs files (Sussudio/) | 120 |
-| Core app nonblank LoC (Sussudio/) | 89590 |
+| Core app .cs files (Sussudio/) | 119 |
+| Core app nonblank LoC (Sussudio/) | 89585 |
 | Sussudio.Tests .cs files | 48 |
-| Sussudio.Tests nonblank LoC | 56044 |
+| Sussudio.Tests nonblank LoC | 56048 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.6%) |
 
@@ -50,6 +50,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1627 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1562 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
+| 1552 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1547 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
 | 1506 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1484 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
@@ -71,7 +72,6 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 1197 | tools/Common/PresentMon/PresentMonProbe.cs |
 | 1193 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 1174 | Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs |
-| 1166 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1144 | Sussudio/Services/Flashback/FlashbackExporter.SegmentPacketWriting.cs |
 | 1143 | Sussudio/Controllers/Capture/CaptureBindingControllers.cs |
 | 1122 | Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs |
