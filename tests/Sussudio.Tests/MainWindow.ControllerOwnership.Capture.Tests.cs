@@ -13,13 +13,14 @@ static partial class Program
         var setupBindingsText = ExtractMemberCode(bindingsText, "SetupBindings");
         var captureOptionBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerRootText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
+        var controllerRootText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
         var controllerText = controllerRootText;
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
-        var selectionBindingFamilyText = string.Join(
-            "\n",
-            ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n"));
+        var selectionBindingFamilyText = ExtractTextBetween(
+            controllerRootText,
+            "internal sealed class CaptureSelectionBindingController",
+            "internal static class CaptureComboBoxSelectionNormalizer");
         var captureOptionBindingsWithoutVideoFormat = captureOptionBindingsText.Replace("VideoFormatComboBox.SelectionChanged +=", string.Empty);
         var captureOptionPropertyChangedMethod = ExtractMemberCode(captureOptionBindingsText, "TryHandleCaptureOptionPropertyChanged");
 
@@ -135,7 +136,7 @@ static partial class Program
         AssertDoesNotContain(selectionBindingFamilyText, "AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);");
         AssertDoesNotContain(selectionBindingFamilyText, "private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)");
 
-        AssertContains(agentMapText, "`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the");
+        AssertContains(agentMapText, "`Sussudio/Controllers/Capture/CaptureBindingControllers.cs` owns the");
         AssertContains(agentMapText, "capture option binding adapter context, setup, UI event attachment");
         AssertContains(agentMapText, "capture-option/source-signal property-change routing");
         AssertContains(agentMapText, "`Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter");
@@ -147,7 +148,7 @@ static partial class Program
         AssertDoesNotContain(agentMapText, "CaptureOptionBindingController.Context.cs");
         AssertDoesNotContain(agentMapText, "CaptureOptionBindingController.Bindings.cs");
         AssertDoesNotContain(agentMapText, "CaptureOptionBindingController.PropertyChanges.cs");
-        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Capture/CaptureOptionBindingController.cs`. It keeps the");
+        AssertContains(cleanupPlanText, "`Sussudio/Controllers/Capture/CaptureBindingControllers.cs`. It keeps the");
         AssertContains(cleanupPlanText, "capture-option binding adapter context, video-format and initial decoder");
         AssertContains(cleanupPlanText, "video-format and initial decoder");
         AssertContains(cleanupPlanText, "projection, initial selection projection");
@@ -206,7 +207,7 @@ static partial class Program
         var mainWindowText = ReadMainWindowCompositionSource();
         var adapterText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var captureDeviceActionInit = ExtractMemberCode(adapterText, "InitializeCaptureDeviceActionController");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureDeviceActionController _captureDeviceActionController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureDeviceActionController()");
@@ -248,13 +249,13 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var setupBindingsText = ExtractMemberCode(bindingsText, "SetupBindings");
         var captureOptionText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureOptionBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
         var policyText = controllerText;
         const string tooltipFormatterMarker = "internal static class CaptureOptionTooltipFormatter";
         var tooltipFormatterStart = controllerText.IndexOf(tooltipFormatterMarker, System.StringComparison.Ordinal);
         if (tooltipFormatterStart < 0)
         {
-            throw new System.InvalidOperationException("CaptureOptionTooltipFormatter was not found in CaptureOptionBindingController.cs.");
+            throw new System.InvalidOperationException("CaptureOptionTooltipFormatter was not found in CaptureBindingControllers.cs.");
         }
 
         var tooltipFormatterText = controllerText[tooltipFormatterStart..];
@@ -322,7 +323,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Capture", "CaptureOptionPresentationController.cs")),
-            "capture option presentation policy and controller folded into CaptureOptionBindingController.cs");
+            "capture option presentation policy and controller folded into CaptureBindingControllers.cs");
         AssertContains(propertyChangedText, "TryHandleOutput = TryHandleOutputPropertyChanged,");
         AssertContains(propertyChangedText, "TryHandleCaptureOption = TryHandleCaptureOptionPropertyChanged,");
         AssertContains(outputPathDisplayText, "=> _outputPathController.TryHandlePropertyChanged(propertyName);");
@@ -499,7 +500,7 @@ static partial class Program
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(adapterText, "private CaptureSelectionBindingController _captureSelectionBindingController = null!;");
         AssertContains(adapterText, "private void InitializeCaptureSelectionBindingController()");
@@ -560,7 +561,7 @@ static partial class Program
 
     internal static Task CaptureSelectionBindingDeviceAudioProjection_LivesInFocusedPartial()
     {
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
         AssertContains(controllerText, "public void ApplyDeviceAudioControlState()");
@@ -573,7 +574,7 @@ static partial class Program
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerText, "internal sealed class CaptureSelectionBindingController");
         AssertContains(controllerText, "public void AttachCollectionBindings()");
@@ -592,10 +593,22 @@ static partial class Program
         AssertContains(controllerText, "public void HandleAvailableSplitEncodeModesPropertyChanged()");
         AssertContains(controllerText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;");
         AssertContains(controllerText, "EnsureSplitEncodeModeSelection();");
-        AssertOccursBefore(controllerText, "_context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;", "EnsureResolutionSelection();");
-        AssertOccursBefore(controllerText, "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;", "EnsureFrameRateSelection();");
-        AssertOccursBefore(controllerText, "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;", "EnsurePresetSelection();");
-        AssertOccursBefore(controllerText, "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;", "EnsureSplitEncodeModeSelection();");
+        AssertOccursBefore(
+            ExtractMemberCode(controllerText, "HandleAvailableResolutionsPropertyChanged"),
+            "_context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;",
+            "EnsureResolutionSelection();");
+        AssertOccursBefore(
+            ExtractMemberCode(controllerText, "HandleAvailableFrameRatesPropertyChanged"),
+            "_context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;",
+            "EnsureFrameRateSelection();");
+        AssertOccursBefore(
+            ExtractMemberCode(controllerText, "HandleAvailablePresetsPropertyChanged"),
+            "_context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;",
+            "EnsurePresetSelection();");
+        AssertOccursBefore(
+            ExtractMemberCode(controllerText, "HandleAvailableSplitEncodeModesPropertyChanged"),
+            "_context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;",
+            "EnsureSplitEncodeModeSelection();");
         AssertContains(controllerText, "_context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;");
         AssertContains(controllerText, "AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);");
 
@@ -616,7 +629,7 @@ static partial class Program
         var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var propertyChangedRouteText = ExtractMemberCode(propertyChangedText, "RouteAsync");
         var adapterText = ReadMainWindowCaptureSelectionBindingsAdapterSource();
-        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var propertyChangesText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(propertyChangesText, "public bool TryHandlePropertyChanged(string? propertyName)");
         AssertContains(propertyChangesText, "case nameof(MainViewModel.SelectedDevice):");
@@ -679,7 +692,7 @@ static partial class Program
     internal static Task CaptureSelectionBindingSelectionOwners_LiveInFocusedPartials()
     {
         var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs").Replace("\r\n", "\n");
+        var controllerText = ReadRepoFile("Sussudio/Controllers/Capture/CaptureBindingControllers.cs").Replace("\r\n", "\n");
         var selectionNormalizerText = controllerText.Substring(
             controllerText.IndexOf("internal static class CaptureComboBoxSelectionNormalizer", System.StringComparison.Ordinal));
         var bindingControllerText = controllerText.Substring(

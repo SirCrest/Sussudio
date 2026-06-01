@@ -2045,7 +2045,7 @@ Primary current owners:
   visibility for the complete control-bar label set, and capture-settings grid
   placement to XAML elements beside shell chrome animation/status/title owners.
   `MainWindow.Composition.cs` is the XAML-facing adapter.
-- `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns
+- `Sussudio/Controllers/Capture/CaptureBindingControllers.cs` owns
   the capture-selection binding controller shell, context lifetime, XAML
   control dependency bag, capture/audio/microphone/encoder collection source
   wiring, collection-change debounce/queued sync, available-option
@@ -2057,7 +2057,7 @@ Primary current owners:
   ComboBox selection application, device-audio mode/gain control projection,
   and the capture-selection `PropertyChanged` router. The local
   `CaptureComboBoxSelectionNormalizer` in
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns pure
+  `Sussudio/Controllers/Capture/CaptureBindingControllers.cs` owns pure
   capture/audio/microphone/resolution/frame-rate/string ComboBox selection and
   fallback matching.
   `Sussudio/MainWindow.xaml.cs` owns controller
@@ -2075,14 +2075,14 @@ Primary current owners:
   save triggers, shelf enablement, and mic-meter row animation state because
   those are driven only by the audio-control binding/presentation flow.
   Device-audio mode/gain control projection stays in
-  `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs`.
+  `Sussudio/Controllers/Capture/CaptureBindingControllers.cs`.
   `Sussudio/MainWindow.xaml.cs` is its XAML-facing adapter.
-- `Sussudio/Controllers/Capture/CaptureSelectionBindingController.cs` owns the capture-
+- `Sussudio/Controllers/Capture/CaptureBindingControllers.cs` owns the capture-
   device refresh/apply button workflows and preserves the explicit apply/reinit
   path alongside capture-device selection synchronization.
   `MainWindow.xaml.cs` is the XAML-facing adapter for recording,
   capture-device, and output-path button/display bridges.
-- `Sussudio/Controllers/Capture/CaptureOptionBindingController.cs` owns the
+- `Sussudio/Controllers/Capture/CaptureBindingControllers.cs` owns the
   capture option binding adapter context, setup, UI event attachment,
   initialization, resolution/frame-rate selection, recording option event
   bindings, show-all binding, HDR/true-HDR click binding,

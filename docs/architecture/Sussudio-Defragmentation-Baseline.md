@@ -4013,7 +4013,7 @@ Notes for future agents: keep MainWindow responsive layout and snap-region polic
 
 Date: 2026-05-26
 Area: MainWindow capture selection normalizer test locality
-Problem: `MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs` was a small standalone legacy `Program` partial shard for the helper that already lives inside `CaptureSelectionBindingController.cs`, while `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs` already owns the selection binding controller shell, selection helper placement, and selection owner assertions. Reviewing capture ComboBox fallback behavior required one extra tiny file beside the real parent test owner.
+Problem: `MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs` was a small standalone legacy `Program` partial shard for the helper that already lives inside `CaptureBindingControllers.cs`, while `MainWindow.ControllerOwnership.Capture.SelectionBindings.Tests.cs` already owns the selection binding controller shell, selection helper placement, and selection owner assertions. Reviewing capture ComboBox fallback behavior required one extra tiny file beside the real parent test owner.
 Files consolidated: `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Capture.SelectionNormalizer.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
