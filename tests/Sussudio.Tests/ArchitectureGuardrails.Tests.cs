@@ -1699,6 +1699,7 @@ static partial class Program
             AssertDoesNotContain(code, "typeof(NativeXuAudioControlService)");
         }
         var probeProgramText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs"));
+        var coreAudioEndpointProbeText = File.ReadAllText(Path.Combine(repoRoot, "tools", "CoreAudioEndpointProbe", "Program.cs"));
         AssertContains(probeProgramText, "Probe-local runtime shims used by linked app service sources.");
         AssertContains(probeProgramText, "NativeXuInterfacePath");
         AssertContains(probeProgramText, "EnumerateKsInterfaces(ElgatoVendorId");
@@ -1750,6 +1751,9 @@ static partial class Program
         AssertContains(probeProgramText, "public static async Task<int> RunAtSetInputAsync");
         AssertContains(probeProgramText, "Usage: at-write <opcode_hex>");
         AssertContains(probeProgramText, "Before: InputSource=");
+        AssertContains(probeProgramText, "Refusing AT SetInputSource without a readable original InputSource");
+        AssertContains(probeProgramText, "var restoreRequired = !noRestore && beforeInput?.Length > 0;");
+        AssertContains(probeProgramText, "return ok && !restoreFailed ? 0 : 1;");
         AssertContains(probeDefaultExperimentText, "public const int CmdAudioFormat = 0x04;");
         AssertContains(probeDefaultExperimentText, "public const int CmdSetAuxOutVolume = 0x82;");
         AssertContains(probeDefaultExperimentText, "static class NativeXuProbeFormatting");
@@ -1766,10 +1770,25 @@ static partial class Program
         AssertContains(probeDefaultExperimentReportingText, "sealed record AtReadResult");
         AssertContains(probeDefaultExperimentReportingText, "sealed record ChangedValue");
         AssertContains(probeDefaultExperimentReportingText, "sealed class ExperimentResult");
+        AssertContains(probeDefaultExperimentText, "readonly record struct RestoreTarget(long Value, byte[] Payload);");
+        AssertContains(probeDefaultExperimentText, "TryBuildRestoreTarget(before, experiment.Setter, out var restoreTarget)");
+        AssertContains(probeDefaultExperimentText, "Skipping {experiment.Setter.Name}: original 0x{experiment.Setter.ReadbackCmd:X2} value was not readable.");
+        AssertContains(probeDefaultExperimentText, "restored = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, restoreTarget.Payload);");
+        AssertContains(probeDefaultExperimentText, "readbackBefore.Payload is { Length: > 0 }");
+        AssertContains(probeDefaultExperimentText, ".ToArray()");
+        AssertDoesNotContain(probeDefaultExperimentText, "BuildPayload(setter.PayloadWidth, byteValue)");
+        AssertDoesNotContain(probeDefaultExperimentText, "BuildPayload(setter.PayloadWidth, shortValue)");
+        AssertDoesNotContain(probeDefaultExperimentText, "BuildPayload(setter.PayloadWidth, intValue)");
+        AssertContains(probeDefaultExperimentText, "return runFailed ? 1 : 0;");
         AssertContains(probeDefaultExperimentReportingText, "private static async Task<Dictionary<int, AtReadResult>> ReadAllAsync");
         AssertContains(probeDefaultExperimentReportingText, "private static AtReadResult Decode");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintInterestingChanges");
         AssertContains(probeDefaultExperimentReportingText, "private static void PrintSnapshot");
+        AssertContains(probeDefaultExperimentText, "private static async Task<bool> RunAnalogGainSequenceAsync");
+        AssertContains(probeDefaultExperimentText, "Skipping analog gain sequence: required baseline input/adc state was not readable.");
+        AssertContains(probeDefaultExperimentText, "var baselineAdcGainValue = BitConverter.ToInt32(PadToFourBytes(baselineAdcGain), 0);");
+        AssertContains(probeDefaultExperimentText, "sequenceSucceeded &= restoredGain && restoredAdcOn && restoredInput;");
+        AssertContains(probeDefaultExperimentText, "private static bool TryBuildRestoreTarget");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.DefaultExperiment.Reporting.cs")),
@@ -1787,8 +1806,30 @@ static partial class Program
         AssertDoesNotContain(probeI2cCommandsText, "static partial class NativeXuProbeI2cCommands");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunAsync");
         AssertContains(probeI2cCommandsText, "Usage: i2c-cmd get|set|scan");
+        AssertContains(probeI2cCommandsText, "return ok ? 0 : 1;");
         AssertContains(probeI2cCommandsText, "RunVerifyAsync(dev)");
         AssertContains(probeI2cCommandsText, "I2C SET/verify via AT envelope");
+        AssertContains(probeI2cCommandsText, "TryExtractI2cValue(readBefore, out var originalAudioSourceValue)");
+        AssertContains(probeI2cCommandsText, "original I2C 0x04 value was not readable");
+        AssertContains(probeI2cCommandsText, "restoreRequired = true;");
+        AssertContains(probeI2cCommandsText, "0x04, originalAudioSourceValue");
+        AssertContains(probeI2cCommandsText, "&& restoredAudioSourceValue == originalAudioSourceValue");
+        AssertContains(probeI2cCommandsText, "return setResp != null && restoreSucceeded ? 0 : 1;");
+        AssertContains(probeI2cCommandsText, "Restored I2C 0x04 to original value");
+        AssertContains(probeI2cCommandsText, "Restore verification failed for I2C 0x04 original value");
+        AssertContains(probeI2cCommandsText, "private static bool TryExtractI2cValue");
+        AssertContains(probeI2cCommandsText, "public static bool TryUnwrapAtEnvelopePayload");
+        AssertContains(probeI2cCommandsText, "const int commandSize = 4;");
+        AssertContains(probeI2cCommandsText, "const int payloadOffset = 8;");
+        AssertContains(probeI2cCommandsText, "var payloadLength = dataLength - commandSize;");
+        AssertContains(probeI2cCommandsText, "Array.Copy(response, payloadOffset, payload, 0, payloadLength);");
+        AssertDoesNotContain(probeI2cCommandsText, "envLen - 2");
+        AssertContains(probeI2cCommandsText, "static class NativeXuProbeMutationGuard");
+        AssertContains(probeI2cCommandsText, "NATIVEXU_PROBE_ALLOW_UNRESTORED_MUTATION");
+        AssertContains(probeI2cCommandsText, "AllowUnrestoredMutation(\"i2c-cmd sel-probe\")");
+        AssertContains(probeI2cCommandsText, "AllowUnrestoredMutation(\"i2c-cmd high-sel\")");
+        AssertContains(probeI2cCommandsText, "AllowUnrestoredMutation(\"i2c-probe\")");
+        AssertOccursBefore(probeI2cCommandsText, "AllowUnrestoredMutation(\"i2c-cmd sel-probe\")", "TryXuSetViaOutput(h, nid, xuGuid2, 3, padded");
         AssertContains(probeI2cCommandsText, "RunTopologyProbe(dev)");
         AssertContains(probeI2cCommandsText, "Testing with own GUID as property set");
         AssertContains(probeI2cCommandsText, "RunSelectorProbeAsync(dev)");
@@ -1835,6 +1876,17 @@ static partial class Program
         AssertContains(probeProgramText, "public static async Task<int> RunAsync");
         AssertContains(probeProgramText, "Current I2C AT state");
         AssertContains(probeProgramText, "Sending audio switch sequence");
+        AssertContains(probeProgramText, "AllowUnrestoredMutation(\"i2c-switch\")");
+        AssertOccursBefore(probeProgramText, "AllowUnrestoredMutation(\"i2c-switch\")", "Current I2C AT state");
+        AssertContains(probeProgramText, "var switchSucceeded = set04 && set0E && set10 && set5B;");
+        AssertContains(probeProgramText, "return switchSucceeded ? 0 : 1;");
+        AssertContains(probeProgramText, "Refusing service mode mutation without a readable initial mode.");
+        AssertContains(probeProgramText, "Refusing service gain mutation without a readable initial analog gain.");
+        AssertContains(probeProgramText, "Restore gain '{initial.AnalogGainPercent.Value:0}'");
+        AssertContains(probeProgramText, "Restore mode '{initial.Mode}'");
+        AssertContains(probeProgramText, "Refusing service smoke mutation without readable initial mode and gain.");
+        AssertContains(probeProgramText, "Restore service gain '{initial.AnalogGainPercent.Value:0}'");
+        AssertContains(probeProgramText, "Restore service mode '{initial.Mode}'");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.I2cTransport.cs")),
@@ -1846,6 +1898,13 @@ static partial class Program
         AssertContains(probeProgramText, "static class RtkI2cProbe");
         AssertContains(probeProgramText, "Run(string[] args, CaptureDevice device)");
         AssertContains(probeProgramText, "RTK I2C switch is disabled");
+        AssertContains(probeProgramText, "private static bool CleanupRtkSession()");
+        AssertContains(probeProgramText, "if (cleanupRequired && !CleanupRtkSession())");
+        AssertContains(probeProgramText, "private static bool IsRtkSuccess(long result) => result >= 0;");
+        AssertContains(probeProgramText, "rtk_closePort returned failure");
+        AssertContains(probeProgramText, "rtk_uninitialize returned failure");
+        AssertContains(probeProgramText, "rtk_closePort failed");
+        AssertContains(probeProgramText, "rtk_uninitialize failed");
         AssertDoesNotContain(probeProgramText, "rtk_setCurrentDevice(\"Elgato 4K X\"");
         AssertEqual(
             false,
@@ -1857,6 +1916,13 @@ static partial class Program
             var code = StripCSharpCommentsPreserveLiterals(File.ReadAllText(file));
             AssertDoesNotContain(code, "InternalsVisibleTo(\"NativeXuAudioProbe\")");
         }
+
+        AssertContains(coreAudioEndpointProbeText, "ThrowIfFailed(target.Activate(ref endpointVolumeGuid, 23, IntPtr.Zero, out var endpointVolumeObj), \"activate endpoint volume\")");
+        AssertContains(coreAudioEndpointProbeText, "ThrowIfFailed(endpointVolume.GetMasterVolumeLevelScalar(out var originalScalar), \"read original endpoint volume\")");
+        AssertContains(coreAudioEndpointProbeText, "ThrowIfFailed(endpointVolume.SetMasterVolumeLevelScalar(targetScalar, Guid.Empty), \"set endpoint volume\")");
+        AssertContains(coreAudioEndpointProbeText, "ThrowIfFailed(endpointVolume.SetMasterVolumeLevelScalar(originalScalar, Guid.Empty), \"restore endpoint volume\")");
+        AssertContains(coreAudioEndpointProbeText, "return restoreFailed ? 1 : 0;");
+        AssertContains(coreAudioEndpointProbeText, "static void ThrowIfFailed(int hresult, string operation)");
     }
 
     private static object CreateNativeXuProbeDevice(

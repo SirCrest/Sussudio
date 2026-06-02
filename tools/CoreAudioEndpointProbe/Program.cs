@@ -29,12 +29,12 @@ if (target == null)
 }
 
 var endpointVolumeGuid = typeof(IAudioEndpointVolume).GUID;
-target.Activate(ref endpointVolumeGuid, 23, IntPtr.Zero, out var endpointVolumeObj);
+ThrowIfFailed(target.Activate(ref endpointVolumeGuid, 23, IntPtr.Zero, out var endpointVolumeObj), "activate endpoint volume");
 var endpointVolume = (IAudioEndpointVolume)endpointVolumeObj;
 
-endpointVolume.GetMasterVolumeLevelScalar(out var originalScalar);
-endpointVolume.GetVolumeRange(out var minDb, out var maxDb, out var incrementDb);
-endpointVolume.GetMute(out var originalMute);
+ThrowIfFailed(endpointVolume.GetMasterVolumeLevelScalar(out var originalScalar), "read original endpoint volume");
+ThrowIfFailed(endpointVolume.GetVolumeRange(out var minDb, out var maxDb, out var incrementDb), "read endpoint volume range");
+ThrowIfFailed(endpointVolume.GetMute(out var originalMute), "read endpoint mute state");
 
 Console.WriteLine();
 Console.WriteLine("== Endpoint volume ==");
@@ -43,14 +43,42 @@ Console.WriteLine($"Range dB: {minDb:0.##} .. {maxDb:0.##} step {incrementDb:0.#
 Console.WriteLine($"Mute: {originalMute}");
 
 var targetScalar = originalScalar > 0.55f ? 0.35f : 0.75f;
-endpointVolume.SetMasterVolumeLevelScalar(targetScalar, Guid.Empty);
-endpointVolume.GetMasterVolumeLevelScalar(out var afterScalar);
-Console.WriteLine($"After set -> {afterScalar:0.000}");
-endpointVolume.SetMasterVolumeLevelScalar(originalScalar, Guid.Empty);
-endpointVolume.GetMasterVolumeLevelScalar(out var restoredScalar);
-Console.WriteLine($"Restored -> {restoredScalar:0.000}");
+var restoreRequired = false;
+var restoreFailed = false;
+try
+{
+    restoreRequired = true;
+    ThrowIfFailed(endpointVolume.SetMasterVolumeLevelScalar(targetScalar, Guid.Empty), "set endpoint volume");
+    ThrowIfFailed(endpointVolume.GetMasterVolumeLevelScalar(out var afterScalar), "read endpoint volume after set");
+    Console.WriteLine($"After set -> {afterScalar:0.000}");
+}
+finally
+{
+    if (restoreRequired)
+    {
+        try
+        {
+            ThrowIfFailed(endpointVolume.SetMasterVolumeLevelScalar(originalScalar, Guid.Empty), "restore endpoint volume");
+            ThrowIfFailed(endpointVolume.GetMasterVolumeLevelScalar(out var restoredScalar), "read endpoint volume after restore");
+            Console.WriteLine($"Restored -> {restoredScalar:0.000}");
+        }
+        catch (Exception ex)
+        {
+            restoreFailed = true;
+            Console.Error.WriteLine($"Restore failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+}
 
-return 0;
+return restoreFailed ? 1 : 0;
+
+static void ThrowIfFailed(int hresult, string operation)
+{
+    if (hresult < 0)
+    {
+        throw new COMException($"{operation} failed.", hresult);
+    }
+}
 
 static string GetFriendlyName(IMMDevice device)
 {

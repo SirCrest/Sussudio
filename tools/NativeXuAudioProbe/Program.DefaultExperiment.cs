@@ -22,6 +22,8 @@ sealed record AtReadResult(string Label, byte[]? Payload, string DisplayValue, o
 
 sealed record ChangedValue(string Label, string Before, string After);
 
+readonly record struct RestoreTarget(long Value, byte[] Payload);
+
 sealed class ExperimentResult
 {
     public ExperimentResult(SetExperiment experiment, bool writeOk, IReadOnlyDictionary<int, AtReadResult> before, IReadOnlyDictionary<int, AtReadResult> after)
@@ -155,55 +157,54 @@ static class NativeXuProbeDefaultExperiment
             new[] { 0, 64, 128, 192, 255 }));
 
         var results = new List<ExperimentResult>();
+        var runFailed = false;
         foreach (var experiment in experiments)
         {
             Console.WriteLine();
             Console.WriteLine($"== {experiment.Group} :: {experiment.Setter.Name} -> {experiment.DisplayValue} ==");
 
             var before = await ReadAllAsync(device, getterSpecs);
-            var writeOk = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, experiment.Payload);
-            await Task.Delay(200);
-            var after = await ReadAllAsync(device, getterSpecs);
-
-            PrintDiff(before, after);
-            results.Add(new ExperimentResult(experiment, writeOk, before, after));
-
-            if (before.TryGetValue(experiment.Setter.ReadbackCmd, out var readbackBefore) &&
-                readbackBefore.TypedValue is byte byteValue)
+            if (!TryBuildRestoreTarget(before, experiment.Setter, out var restoreTarget))
             {
-                var restorePayload = BuildPayload(experiment.Setter.PayloadWidth, byteValue);
-                var restored = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, restorePayload);
-                await Task.Delay(150);
-                Console.WriteLine($"Restore to {byteValue}: {(restored ? "ok" : "failed")}");
+                runFailed = true;
+                Console.Error.WriteLine($"Skipping {experiment.Setter.Name}: original 0x{experiment.Setter.ReadbackCmd:X2} value was not readable.");
+                continue;
             }
-            else if (before.TryGetValue(experiment.Setter.ReadbackCmd, out readbackBefore) &&
-                     readbackBefore.TypedValue is short shortValue)
+
+            var writeOk = false;
+            var restored = false;
+            try
             {
-                var restorePayload = BuildPayload(experiment.Setter.PayloadWidth, shortValue);
-                var restored = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, restorePayload);
-                await Task.Delay(150);
-                Console.WriteLine($"Restore to {shortValue}: {(restored ? "ok" : "failed")}");
+                writeOk = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, experiment.Payload);
+                await Task.Delay(200);
+                var after = await ReadAllAsync(device, getterSpecs);
+
+                PrintDiff(before, after);
+                results.Add(new ExperimentResult(experiment, writeOk, before, after));
             }
-            else if (before.TryGetValue(experiment.Setter.ReadbackCmd, out readbackBefore) &&
-                     readbackBefore.TypedValue is int intValue)
+            finally
             {
-                var restorePayload = BuildPayload(experiment.Setter.PayloadWidth, intValue);
-                var restored = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, restorePayload);
+                restored = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, experiment.Setter.SetCmd, restoreTarget.Payload);
                 await Task.Delay(150);
-                Console.WriteLine($"Restore to {intValue}: {(restored ? "ok" : "failed")}");
+                Console.WriteLine($"Restore to {restoreTarget.Value}: {(restored ? "ok" : "failed")}");
+            }
+
+            if (!writeOk || !restored)
+            {
+                runFailed = true;
             }
         }
 
         PrintInterestingChanges(results);
 
-        await RunAnalogGainSequenceAsync(device);
+        runFailed |= !await RunAnalogGainSequenceAsync(device);
 
         var finalSnapshot = await new NativeXuAtCommandProvider().ReadAsync(device);
         PrintSnapshot("Final snapshot", finalSnapshot);
-        return 0;
+        return runFailed ? 1 : 0;
     }
 
-    private static async Task RunAnalogGainSequenceAsync(CaptureDevice device)
+    private static async Task<bool> RunAnalogGainSequenceAsync(CaptureDevice device)
     {
         Console.WriteLine();
         Console.WriteLine("== Analog gain sequence ==");
@@ -212,44 +213,51 @@ static class NativeXuProbeDefaultExperiment
         var baselineAdcOn = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, CmdAudioGetAdcOnOff, "AdcOnOff");
         var baselineAdcGain = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, CmdAudioGetAdcVolumeGain, "AdcVolumeGain");
         Console.WriteLine($"Baseline: input={FormatRaw(baselineInput)} adcOn={FormatRaw(baselineAdcOn)} adcGain={FormatRaw(baselineAdcGain)}");
-
-        var inputOk = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdSetInputSource, BuildPayload(1, 1));
-        var adcOnOk = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdAudioSetAdcOnOff, BuildPayload(4, 1));
-        await Task.Delay(200);
-        var afterAdcOn = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, CmdAudioGetAdcOnOff, "AdcOnOff");
-        Console.WriteLine($"Set input=1 ok={inputOk}; set adc-on=1 ok={adcOnOk}; adcOnNow={FormatRaw(afterAdcOn)}");
-
-        foreach (var width in new[] { 1, 2, 4 })
+        if (baselineInput is not { Length: > 0 } ||
+            baselineAdcOn is not { Length: > 0 } ||
+            baselineAdcGain is not { Length: > 0 })
         {
-            foreach (var value in new[] { 0, 64, 128, 192, 255 })
+            Console.Error.WriteLine("Skipping analog gain sequence: required baseline input/adc state was not readable.");
+            return false;
+        }
+
+        var baselineAdcGainValue = BitConverter.ToInt32(PadToFourBytes(baselineAdcGain), 0);
+        var baselineAdcOnValue = baselineAdcOn[0];
+        var baselineInputValue = baselineInput[0];
+        var sequenceSucceeded = true;
+        try
+        {
+            var inputOk = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdSetInputSource, BuildPayload(1, 1));
+            var adcOnOk = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdAudioSetAdcOnOff, BuildPayload(4, 1));
+            sequenceSucceeded &= inputOk && adcOnOk;
+            await Task.Delay(200);
+            var afterAdcOn = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, CmdAudioGetAdcOnOff, "AdcOnOff");
+            Console.WriteLine($"Set input=1 ok={inputOk}; set adc-on=1 ok={adcOnOk}; adcOnNow={FormatRaw(afterAdcOn)}");
+
+            foreach (var width in new[] { 1, 2, 4 })
             {
-                var ok = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdAudioSetAdcVolumeGain, BuildPayload(width, value));
-                await Task.Delay(150);
-                var gain = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, CmdAudioGetAdcVolumeGain, "AdcVolumeGain");
-                Console.WriteLine($"  width={width} value={value} ok={ok} gain={FormatRaw(gain)}");
+                foreach (var value in new[] { 0, 64, 128, 192, 255 })
+                {
+                    var ok = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdAudioSetAdcVolumeGain, BuildPayload(width, value));
+                    sequenceSucceeded &= ok;
+                    await Task.Delay(150);
+                    var gain = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, CmdAudioGetAdcVolumeGain, "AdcVolumeGain");
+                    Console.WriteLine($"  width={width} value={value} ok={ok} gain={FormatRaw(gain)}");
+                }
             }
         }
-
-        if (baselineAdcGain?.Length > 0)
+        finally
         {
-            var baselineAdcGainValue = BitConverter.ToInt32(PadToFourBytes(baselineAdcGain), 0);
             var restoredGain = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdAudioSetAdcVolumeGain, BuildPayload(4, baselineAdcGainValue));
             Console.WriteLine($"Restore adc gain to baseline={baselineAdcGainValue} ok={restoredGain}");
-        }
-
-        if (baselineAdcOn?.Length > 0)
-        {
-            var baselineAdcOnValue = baselineAdcOn[0];
             var restoredAdcOn = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdAudioSetAdcOnOff, BuildPayload(4, baselineAdcOnValue));
             Console.WriteLine($"Restore adc on/off to baseline={baselineAdcOnValue} ok={restoredAdcOn}");
-        }
-
-        if (baselineInput?.Length > 0)
-        {
-            var baselineInputValue = baselineInput[0];
             var restoredInput = await NativeXuAtCommandProvider.SendAtSetCommandAsync(device, CmdSetInputSource, BuildPayload(1, baselineInputValue));
             Console.WriteLine($"Restore input source to baseline={baselineInputValue} ok={restoredInput}");
+            sequenceSucceeded &= restoredGain && restoredAdcOn && restoredInput;
         }
+
+        return sequenceSucceeded;
     }
 
     private static byte[] PadToFourBytes(byte[] value)
@@ -262,6 +270,39 @@ static class NativeXuProbeDefaultExperiment
         var padded = new byte[4];
         Array.Copy(value, padded, value.Length);
         return padded;
+    }
+
+    private static bool TryBuildRestoreTarget(
+        IReadOnlyDictionary<int, AtReadResult> before,
+        SetterSpec setter,
+        out RestoreTarget restoreTarget)
+    {
+        if (before.TryGetValue(setter.ReadbackCmd, out var readbackBefore) &&
+            readbackBefore.TypedValue is byte byteValue &&
+            readbackBefore.Payload is { Length: > 0 } bytePayload)
+        {
+            restoreTarget = new RestoreTarget(byteValue, bytePayload.ToArray());
+            return true;
+        }
+
+        if (before.TryGetValue(setter.ReadbackCmd, out readbackBefore) &&
+            readbackBefore.TypedValue is short shortValue &&
+            readbackBefore.Payload is { Length: > 0 } shortPayload)
+        {
+            restoreTarget = new RestoreTarget(shortValue, shortPayload.ToArray());
+            return true;
+        }
+
+        if (before.TryGetValue(setter.ReadbackCmd, out readbackBefore) &&
+            readbackBefore.TypedValue is int intValue &&
+            readbackBefore.Payload is { Length: > 0 } intPayload)
+        {
+            restoreTarget = new RestoreTarget(intValue, intPayload.ToArray());
+            return true;
+        }
+
+        restoreTarget = default;
+        return false;
     }
 
     private static IEnumerable<SetExperiment> BuildShortExperiments(string group, IReadOnlyList<SetterSpec> setters, IReadOnlyList<short> values)

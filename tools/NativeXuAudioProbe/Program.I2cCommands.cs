@@ -64,7 +64,7 @@ static class NativeXuProbeI2cCommands
             Console.WriteLine($"I2C SET opcode=0x{i2cOp:X2} value=0x{value:X2}");
             var ok = await SendI2cAtSetAsync(dev, i2cFrame);
             Console.WriteLine($"  Result: {(ok ? "OK" : "failed")}");
-            return 0;
+            return ok ? 0 : 1;
         }
 
         if (subCmd == "sel-probe")
@@ -109,6 +109,10 @@ static class NativeXuProbeI2cCommands
         var devNode = (ns ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>()).FirstOrDefault(n => n.IsDevSpecific);
         int nid = devNode.NodeId;
         Console.WriteLine($"Node: {nid}");
+        if (!NativeXuProbeMutationGuard.AllowUnrestoredMutation("i2c-cmd sel-probe"))
+        {
+            return 1;
+        }
 
         // Probe selectors 1-30 with multiple buffer sizes
         foreach (int bufSize in new[] { 2, 8, 16, 32, 64, 128, 256, 512 })
@@ -213,34 +217,61 @@ static class NativeXuProbeI2cCommands
 
             // Try I2C SET: opcode 0x04, value 0x01 (audio source = analog)
             Console.WriteLine("\n  --- I2C SET test: opcode 0x04 = 0x01 ---");
-            var setI2c = new byte[150];
-            new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x01 }.CopyTo(setI2c, 0);
-            if (KsExtensionUnitNative.TryXuSetViaOutput(h, nid, xuGuid2, 3, setI2c, out _))
+            var originalAudioSource = await SendI2cAtGetAsync(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 });
+            if (!TryExtractI2cValue(originalAudioSource, out var originalAudioSourceValue))
             {
-                Console.WriteLine("    SET OK");
-                await Task.Delay(50);
-                if (KsExtensionUnitNative.TryXuGetDirect(h, nid, xuGuid2, 3, 256, out var rs3, out var rs3l, out _))
-                    Console.WriteLine($"    S3 ({rs3l}B): {BitConverter.ToString(rs3, 0, Math.Min(rs3l, 32))}");
-
-                // Readback via I2C GET to verify
-                var verifyI2c = new byte[150];
-                new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x0E }.CopyTo(verifyI2c, 0);
-                if (KsExtensionUnitNative.TryXuSetViaOutput(h, nid, xuGuid2, 3, verifyI2c, out _))
-                {
-                    await Task.Delay(50);
-                    if (KsExtensionUnitNative.TryXuGetDirect(h, nid, xuGuid2, 3, 256, out var vr3, out var vr3l, out _))
-                        Console.WriteLine($"    Verify S3 ({vr3l}B): {BitConverter.ToString(vr3, 0, Math.Min(vr3l, 32))}");
-                }
-
-                // Restore: I2C SET opcode 0x04 = 0x00 (HDMI)
-                var restoreI2c = new byte[150];
-                new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x00 }.CopyTo(restoreI2c, 0);
-                KsExtensionUnitNative.TryXuSetViaOutput(h, nid, xuGuid2, 3, restoreI2c, out _);
-                Console.WriteLine("    Restored to HDMI (0x04=0x00)");
+                Console.WriteLine("    Skipping mutating I2C SET test: original opcode 0x04 value was not readable.");
+                return 1;
             }
             else
             {
-                Console.WriteLine("    SET failed");
+                var restoreRequired = false;
+                var restoreSucceeded = true;
+                var setI2c = new byte[150];
+                new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x01 }.CopyTo(setI2c, 0);
+                try
+                {
+                    restoreRequired = true;
+                    if (!KsExtensionUnitNative.TryXuSetViaOutput(h, nid, xuGuid2, 3, setI2c, out _))
+                    {
+                        Console.WriteLine("    SET failed");
+                        return 1;
+                    }
+
+                    Console.WriteLine("    SET OK");
+                    await Task.Delay(50);
+                    if (KsExtensionUnitNative.TryXuGetDirect(h, nid, xuGuid2, 3, 256, out var rs3, out var rs3l, out _))
+                        Console.WriteLine($"    S3 ({rs3l}B): {BitConverter.ToString(rs3, 0, Math.Min(rs3l, 32))}");
+
+                    // Readback via I2C GET to verify
+                    var verifyI2c = new byte[150];
+                    new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x0E }.CopyTo(verifyI2c, 0);
+                    if (KsExtensionUnitNative.TryXuSetViaOutput(h, nid, xuGuid2, 3, verifyI2c, out _))
+                    {
+                        await Task.Delay(50);
+                        if (KsExtensionUnitNative.TryXuGetDirect(h, nid, xuGuid2, 3, 256, out var vr3, out var vr3l, out _))
+                            Console.WriteLine($"    Verify S3 ({vr3l}B): {BitConverter.ToString(vr3, 0, Math.Min(vr3l, 32))}");
+                    }
+
+                }
+                finally
+                {
+                    if (restoreRequired)
+                    {
+                        // Restore: I2C SET opcode 0x04 to the captured pre-probe value.
+                        var restoreI2c = new byte[150];
+                        new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, originalAudioSourceValue }.CopyTo(restoreI2c, 0);
+                        restoreSucceeded = KsExtensionUnitNative.TryXuSetViaOutput(h, nid, xuGuid2, 3, restoreI2c, out _);
+                        Console.WriteLine(restoreSucceeded
+                            ? $"    Restored I2C 0x04 to original value 0x{originalAudioSourceValue:X2}"
+                            : $"    Restore failed for I2C 0x04 original value 0x{originalAudioSourceValue:X2}");
+                    }
+                }
+
+                if (!restoreSucceeded)
+                {
+                    return 1;
+                }
             }
 
             // Phase 5: Try TryXuSetViaInput (data in input buffer) on selector 3
@@ -363,6 +394,11 @@ static class NativeXuProbeI2cCommands
         }
 
         // Focused test on selectors 0x1B(27) and 0x1C(28)
+        if (!NativeXuProbeMutationGuard.AllowUnrestoredMutation("i2c-cmd high-sel"))
+        {
+            return 1;
+        }
+
         Console.WriteLine("\n--- Focused test: selectors 0x1B(27) and 0x1C(28) ---");
         foreach (int sel in new[] { 0x1B, 0x1C })
         {
@@ -537,43 +573,86 @@ static class NativeXuProbeI2cCommands
             Console.WriteLine($"  I2C GET 0x{i2cOp:X2}: AT={BitConverter.ToString(atFrame)} -> {(resp != null ? BitConverter.ToString(resp) : "(null)")}");
         }
 
-        // Test 2: I2C SET via AT 0x1B: set opcode 0x04 to 0x01, read back, restore to 0x00
+        // Test 2: I2C SET via AT 0x1B: set opcode 0x04 to 0x01, read back, restore the captured value.
         Console.WriteLine("\n--- I2C SET/verify via AT envelope ---");
         // Read before
         var readBefore = SendAtAndGetResponse(BuildAtFrameWithPayload(0x1C, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 }));
         Console.WriteLine($"  BEFORE I2C GET 0x04: {(readBefore != null ? BitConverter.ToString(readBefore) : "(null)")}");
+        if (!TryExtractI2cValue(readBefore, out var originalAudioSourceValue))
+        {
+            Console.Error.WriteLine("  Refusing mutating verify: original I2C 0x04 value was not readable.");
+            return 1;
+        }
 
-        // SET I2C 0x04 = 0x01 via AT 0x1B
-        var setFrame = BuildAtFrameWithPayload(0x1B, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x01 });
-        Console.WriteLine($"  SET frame: {BitConverter.ToString(setFrame)}");
-        var setResp = SendAtAndGetResponse(setFrame);
-        Console.WriteLine($"  SET response: {(setResp != null ? BitConverter.ToString(setResp) : "(null)")}");
+        byte[]? setResp = null;
+        byte[]? readAfter = null;
+        var restoreRequired = false;
+        var restoreSucceeded = true;
+        try
+        {
+            // SET I2C 0x04 = 0x01 via AT 0x1B
+            var setFrame = BuildAtFrameWithPayload(0x1B, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x01 });
+            Console.WriteLine($"  SET frame: {BitConverter.ToString(setFrame)}");
+            restoreRequired = true;
+            setResp = SendAtAndGetResponse(setFrame);
+            Console.WriteLine($"  SET response: {(setResp != null ? BitConverter.ToString(setResp) : "(null)")}");
 
-        await Task.Delay(200);
+            await Task.Delay(200);
 
-        // Read after
-        var readAfter = SendAtAndGetResponse(BuildAtFrameWithPayload(0x1C, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 }));
-        Console.WriteLine($"  AFTER I2C GET 0x04: {(readAfter != null ? BitConverter.ToString(readAfter) : "(null)")}");
+            // Read after
+            readAfter = SendAtAndGetResponse(BuildAtFrameWithPayload(0x1C, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 }));
+            Console.WriteLine($"  AFTER I2C GET 0x04: {(readAfter != null ? BitConverter.ToString(readAfter) : "(null)")}");
 
-        // Check if value changed
-        var beforeHex = readBefore != null ? BitConverter.ToString(readBefore) : "";
-        var afterHex = readAfter != null ? BitConverter.ToString(readAfter) : "";
-        Console.WriteLine(beforeHex != afterHex ? "  *** VALUE CHANGED! I2C SET via AT envelope WORKS! ***" : "  Value unchanged - SET may not have been dispatched");
-
-        // Restore: SET I2C 0x04 = 0x00
-        var restoreFrame = BuildAtFrameWithPayload(0x1B, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, 0x00 });
-        var restoreResp = SendAtAndGetResponse(restoreFrame);
-        Console.WriteLine($"  RESTORE response: {(restoreResp != null ? BitConverter.ToString(restoreResp) : "(null)")}");
-        await Task.Delay(200);
-        var readRestored = SendAtAndGetResponse(BuildAtFrameWithPayload(0x1C, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 }));
-        Console.WriteLine($"  RESTORED I2C GET 0x04: {(readRestored != null ? BitConverter.ToString(readRestored) : "(null)")}");
+            // Check if value changed
+            var beforeHex = readBefore != null ? BitConverter.ToString(readBefore) : "";
+            var afterHex = readAfter != null ? BitConverter.ToString(readAfter) : "";
+            Console.WriteLine(beforeHex != afterHex ? "  *** VALUE CHANGED! I2C SET via AT envelope WORKS! ***" : "  Value unchanged - SET may not have been dispatched");
+        }
+        finally
+        {
+            if (restoreRequired)
+            {
+                // Restore: SET I2C 0x04 to the captured pre-probe value.
+                var restoreFrame = BuildAtFrameWithPayload(0x1B, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, originalAudioSourceValue });
+                var restoreResp = SendAtAndGetResponse(restoreFrame);
+                restoreSucceeded = restoreResp != null;
+                Console.WriteLine($"  RESTORE response: {(restoreResp != null ? BitConverter.ToString(restoreResp) : "(null)")}");
+                await Task.Delay(200);
+                var readRestored = SendAtAndGetResponse(BuildAtFrameWithPayload(0x1C, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 }));
+                Console.WriteLine($"  RESTORED I2C GET 0x04: {(readRestored != null ? BitConverter.ToString(readRestored) : "(null)")}");
+                restoreSucceeded = restoreSucceeded
+                    && TryExtractI2cValue(readRestored, out var restoredAudioSourceValue)
+                    && restoredAudioSourceValue == originalAudioSourceValue;
+                if (!restoreSucceeded)
+                {
+                    Console.Error.WriteLine($"  Restore verification failed for I2C 0x04 original value 0x{originalAudioSourceValue:X2}.");
+                }
+            }
+        }
 
         // Test 3: Also check if regular AT 0x35 (InputSource) changed
         var atInputBefore = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, 0x35, "InputSource");
         Console.WriteLine($"\n  UVC AT 0x35 InputSource: {(atInputBefore != null ? BitConverter.ToString(atInputBefore) : "(null)")}");
 
-        return 0;
+        return setResp != null && restoreSucceeded ? 0 : 1;
     }
+
+    private static bool TryExtractI2cValue(byte[]? response, out byte value)
+    {
+        var payload = TryUnwrapAtEnvelopePayload(response, out var unwrapped)
+            ? unwrapped
+            : response;
+
+        if (payload is { Length: > 0 })
+        {
+            value = payload[0];
+            return true;
+        }
+
+        value = 0;
+        return false;
+    }
+
 }
 
 static class NativeXuProbeI2cTransport
@@ -643,16 +722,9 @@ static class NativeXuProbeI2cTransport
                     continue;
                 }
 
-                if (respBytes >= 5 && respData[0] == 0xA1)
+                if (TryUnwrapAtEnvelopePayload(respData[..respBytes], out var payload))
                 {
-                    var envLen = respData[1];
-                    var payloadLen = envLen - 2;
-                    if (payloadLen > 0 && 4 + payloadLen <= respBytes)
-                    {
-                        var result = new byte[payloadLen];
-                        Array.Copy(respData, 4, result, 0, payloadLen);
-                        return result;
-                    }
+                    return payload;
                 }
 
                 var raw = new byte[respBytes];
@@ -662,6 +734,29 @@ static class NativeXuProbeI2cTransport
         }
 
         return null;
+    }
+
+    public static bool TryUnwrapAtEnvelopePayload(byte[]? response, out byte[] payload)
+    {
+        const int commandSize = 4;
+        const int payloadOffset = 8;
+
+        payload = Array.Empty<byte>();
+        if (response is not { Length: > payloadOffset } || response[0] != 0xA1)
+        {
+            return false;
+        }
+
+        var dataLength = response[1];
+        var payloadLength = dataLength - commandSize;
+        if (payloadLength <= 0 || payloadOffset + payloadLength > response.Length)
+        {
+            return false;
+        }
+
+        payload = new byte[payloadLength];
+        Array.Copy(response, payloadOffset, payload, 0, payloadLength);
+        return true;
     }
 
     public static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> GetSelectedKsInterfaces(CaptureDevice device)
@@ -700,6 +795,25 @@ static class NativeXuProbeI2cTransport
     }
 }
 
+static class NativeXuProbeMutationGuard
+{
+    private const string AllowUnrestoredMutationVariable = "NATIVEXU_PROBE_ALLOW_UNRESTORED_MUTATION";
+
+    public static bool AllowUnrestoredMutation(string commandName)
+    {
+        if (string.Equals(
+            Environment.GetEnvironmentVariable(AllowUnrestoredMutationVariable),
+            "1",
+            StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        Console.Error.WriteLine($"{commandName} contains unrestored exploratory native mutations; set {AllowUnrestoredMutationVariable}=1 to run it deliberately.");
+        return false;
+    }
+}
+
 static class NativeXuProbeI2cLegacyProbe
 {
     public static int Run()
@@ -720,6 +834,10 @@ static class NativeXuProbeI2cLegacyProbe
         var xuGuid = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
         var interfaces = GetSelectedKsInterfaces(dev);
         Console.WriteLine($"Found {interfaces.Count} KS interfaces");
+        if (!NativeXuProbeMutationGuard.AllowUnrestoredMutation("i2c-probe"))
+        {
+            return 1;
+        }
 
         foreach (var ksIf in interfaces)
         {

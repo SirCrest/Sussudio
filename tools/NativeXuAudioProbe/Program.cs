@@ -197,10 +197,14 @@ static class RtkI2cProbe
         Console.WriteLine($"Selected device: {device.Name}");
         Console.WriteLine($"Selected XU path: {device.NativeXuInterfacePath}");
 
+        var cleanupRequired = false;
+        var exitCode = 0;
+
         try
         {
             Console.WriteLine("\n--- rtk_initialize ---");
             var initResult = rtk_initialize(-1, 0, 0, 0);
+            cleanupRequired = true;
             Console.WriteLine($"  Result: {initResult}");
 
             Console.WriteLine("\n--- rtk_setUVCExtension ---");
@@ -268,26 +272,72 @@ static class RtkI2cProbe
                 }
             }
 
-            Console.WriteLine("\n--- Cleanup ---");
-            rtk_closePort();
-            rtk_uninitialize();
-            Console.WriteLine("  Done");
         }
         catch (DllNotFoundException ex)
         {
             Console.Error.WriteLine($"RTK_IO_x64.dll not found: {ex.Message}");
             Console.Error.WriteLine("Copy RTK_IO_x64.dll to the probe's output directory.");
-            return 1;
+            exitCode = 1;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error: {ex.GetType().Name}: {ex.Message}");
             Console.Error.WriteLine(ex.StackTrace);
-            return 1;
+            exitCode = 1;
+        }
+        finally
+        {
+            if (cleanupRequired && !CleanupRtkSession())
+            {
+                exitCode = 1;
+            }
         }
 
-        return 0;
+        return exitCode;
     }
+
+    private static bool CleanupRtkSession()
+    {
+        var ok = true;
+        Console.WriteLine("\n--- Cleanup ---");
+
+        try
+        {
+            var closeResult = rtk_closePort();
+            Console.WriteLine($"  rtk_closePort: {closeResult}");
+            if (!IsRtkSuccess(closeResult))
+            {
+                ok = false;
+                Console.Error.WriteLine($"  rtk_closePort returned failure: {closeResult}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ok = false;
+            Console.Error.WriteLine($"  rtk_closePort failed: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        try
+        {
+            var uninitializeResult = rtk_uninitialize();
+            Console.WriteLine($"  rtk_uninitialize: {uninitializeResult}");
+            if (!IsRtkSuccess(uninitializeResult))
+            {
+                ok = false;
+                Console.Error.WriteLine($"  rtk_uninitialize returned failure: {uninitializeResult}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ok = false;
+            Console.Error.WriteLine($"  rtk_uninitialize failed: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        Console.WriteLine(ok ? "  Done" : "  Cleanup failed");
+        return ok;
+    }
+
+    private static bool IsRtkSuccess(long result) => result >= 0;
 
     private static string GetRtkDeviceName(CaptureDevice device)
     {
@@ -532,22 +582,38 @@ static class NativeXuProbeAtCommands
         Console.WriteLine($"Device: {dev.Name}");
         var beforeInput = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, NativeXuProbeCommands.CmdInputSource, "InputSource");
         Console.WriteLine($"Before: InputSource={NativeXuProbeFormatting.FormatRaw(beforeInput)}");
-        Console.WriteLine($"Sending AT SetInputSource(0x34) = {atVal} (1 byte)...");
-        var ok = await NativeXuAtCommandProvider.SetInputSourceAsync(dev, atVal);
-        Console.WriteLine($"Result: {ok}");
-        await Task.Delay(500);
-        var afterInput = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, NativeXuProbeCommands.CmdInputSource, "InputSource");
-        Console.WriteLine($"After: InputSource={NativeXuProbeFormatting.FormatRaw(afterInput)}");
-        if (!noRestore && beforeInput?.Length > 0)
+        if (!noRestore && beforeInput is not { Length: > 0 })
         {
-            Console.WriteLine($"Restoring to {beforeInput[0]}...");
-            await NativeXuAtCommandProvider.SetInputSourceAsync(dev, beforeInput[0]);
-            await Task.Delay(300);
-            var restored = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, NativeXuProbeCommands.CmdInputSource, "InputSource");
-            Console.WriteLine($"Restored: InputSource={NativeXuProbeFormatting.FormatRaw(restored)}");
+            Console.Error.WriteLine("Refusing AT SetInputSource without a readable original InputSource; pass --no-restore to make the mutation explicit.");
+            return 1;
         }
 
-        return ok ? 0 : 1;
+        var ok = false;
+        var restoreFailed = false;
+        var restoreRequired = !noRestore && beforeInput?.Length > 0;
+        try
+        {
+            Console.WriteLine($"Sending AT SetInputSource(0x34) = {atVal} (1 byte)...");
+            ok = await NativeXuAtCommandProvider.SetInputSourceAsync(dev, atVal);
+            Console.WriteLine($"Result: {ok}");
+            await Task.Delay(500);
+            var afterInput = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, NativeXuProbeCommands.CmdInputSource, "InputSource");
+            Console.WriteLine($"After: InputSource={NativeXuProbeFormatting.FormatRaw(afterInput)}");
+        }
+        finally
+        {
+            if (restoreRequired)
+            {
+                Console.WriteLine($"Restoring to {beforeInput![0]}...");
+                var restoredOk = await NativeXuAtCommandProvider.SetInputSourceAsync(dev, beforeInput[0]);
+                restoreFailed = !restoredOk;
+                await Task.Delay(300);
+                var restored = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, NativeXuProbeCommands.CmdInputSource, "InputSource");
+                Console.WriteLine($"Restored: InputSource={NativeXuProbeFormatting.FormatRaw(restored)} ok={restoredOk}");
+            }
+        }
+
+        return ok && !restoreFailed ? 0 : 1;
     }
 }
 
@@ -565,6 +631,10 @@ static class NativeXuProbeI2cSwitch
 
         Console.WriteLine($"Device: {dev.Name}");
         Console.WriteLine($"Target: {target}");
+        if (!NativeXuProbeMutationGuard.AllowUnrestoredMutation("i2c-switch"))
+        {
+            return 1;
+        }
 
         Console.WriteLine("\n--- Current I2C AT state ---");
         foreach (var (label, op, param) in new[] {
@@ -645,7 +715,11 @@ static class NativeXuProbeI2cSwitch
             Console.WriteLine($"  {label}: {(raw != null ? BitConverter.ToString(raw) : "(null)")}");
         }
 
-        return 0;
+        var switchSucceeded = set04 && set0E && set10 && set5B;
+        Console.WriteLine(switchSucceeded
+            ? "Switch sequence completed."
+            : "Switch sequence failed; one or more write steps did not report success.");
+        return switchSucceeded ? 0 : 1;
     }
 }
 
@@ -701,39 +775,100 @@ static class NativeXuProbeServiceProbe
             return 2;
         }
 
-        if (!string.IsNullOrWhiteSpace(targetMode))
+        var serviceSucceeded = true;
+        var restoreMode = !string.IsNullOrWhiteSpace(targetMode);
+        var restoreGain = targetGain.HasValue;
+        if (restoreMode && string.IsNullOrWhiteSpace(initial.Mode))
         {
-            var applied = await service.SetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
-            Console.WriteLine($"Set mode '{targetMode}': {(applied ? "ok" : "failed")}");
+            Console.Error.WriteLine("Refusing service mode mutation without a readable initial mode.");
+            return 1;
         }
 
-        if (targetGain.HasValue)
+        if (restoreGain && !initial.AnalogGainPercent.HasValue)
         {
-            var applied = await service.SetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
-            Console.WriteLine($"Set gain '{targetGain.Value:0}': {(applied ? "ok" : "failed")}");
+            Console.Error.WriteLine("Refusing service gain mutation without a readable initial analog gain.");
+            return 1;
+        }
+
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(targetMode))
+            {
+                var applied = await service.SetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
+                serviceSucceeded &= applied;
+                Console.WriteLine($"Set mode '{targetMode}': {(applied ? "ok" : "failed")}");
+            }
+
+            if (targetGain.HasValue)
+            {
+                var applied = await service.SetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
+                serviceSucceeded &= applied;
+                Console.WriteLine($"Set gain '{targetGain.Value:0}': {(applied ? "ok" : "failed")}");
+            }
+        }
+        finally
+        {
+            if (restoreGain)
+            {
+                var restored = await service.SetAnalogGainPercentAsync(device, initial.AnalogGainPercent!.Value, CancellationToken.None).ConfigureAwait(false);
+                serviceSucceeded &= restored;
+                Console.WriteLine($"Restore gain '{initial.AnalogGainPercent.Value:0}': {(restored ? "ok" : "failed")}");
+            }
+
+            if (restoreMode)
+            {
+                var restored = await service.SetAudioModeAsync(device, initial.Mode!, CancellationToken.None).ConfigureAwait(false);
+                serviceSucceeded &= restored;
+                Console.WriteLine($"Restore mode '{initial.Mode}': {(restored ? "ok" : "failed")}");
+            }
         }
 
         var final = await ReadServiceStateAsync(service, device).ConfigureAwait(false);
         PrintServiceState("Final", final);
-        return 0;
+        return serviceSucceeded ? 0 : 1;
     }
 
     public static async Task<int> RunServiceSmokeAsync(CaptureDevice device)
     {
         var service = new NativeXuAudioControlService();
 
-        await PrintServiceStateAsync(service, device, "Before");
+        var initial = await ReadServiceStateAsync(service, device).ConfigureAwait(false);
+        PrintServiceState("Before", initial);
+        if (!initial.IsSupported ||
+            string.IsNullOrWhiteSpace(initial.Mode) ||
+            !initial.AnalogGainPercent.HasValue)
+        {
+            Console.Error.WriteLine("Refusing service smoke mutation without readable initial mode and gain.");
+            return 1;
+        }
 
-        var setModeResult = await service.SetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
-        Console.WriteLine($"SetAudioModeAsync('Analog') => {setModeResult}");
+        var succeeded = true;
+        try
+        {
+            var setModeResult = await service.SetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
+            succeeded &= setModeResult;
+            Console.WriteLine($"SetAudioModeAsync('Analog') => {setModeResult}");
 
-        await PrintServiceStateAsync(service, device, "After mode");
+            await PrintServiceStateAsync(service, device, "After mode");
 
-        var setGainResult = await service.SetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
-        Console.WriteLine($"SetAnalogGainPercentAsync(50) => {setGainResult}");
+            var setGainResult = await service.SetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
+            succeeded &= setGainResult;
+            Console.WriteLine($"SetAnalogGainPercentAsync(50) => {setGainResult}");
 
-        await PrintServiceStateAsync(service, device, "After gain");
-        return 0;
+            await PrintServiceStateAsync(service, device, "After gain");
+        }
+        finally
+        {
+            var restoredGain = await service.SetAnalogGainPercentAsync(device, initial.AnalogGainPercent.Value, CancellationToken.None).ConfigureAwait(false);
+            succeeded &= restoredGain;
+            Console.WriteLine($"Restore service gain '{initial.AnalogGainPercent.Value:0}' => {restoredGain}");
+
+            var restoredMode = await service.SetAudioModeAsync(device, initial.Mode, CancellationToken.None).ConfigureAwait(false);
+            succeeded &= restoredMode;
+            Console.WriteLine($"Restore service mode '{initial.Mode}' => {restoredMode}");
+        }
+
+        return succeeded ? 0 : 1;
     }
 
     private static Task<NativeXuAudioControlService.DeviceAudioControlState> ReadServiceStateAsync(
