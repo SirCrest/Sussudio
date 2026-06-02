@@ -513,7 +513,25 @@ static partial class Program
         var coreNonBlankLines = coreFiles.Sum(CountNonBlankSourceLines);
         var sussudioTestNonBlankLines = sussudioTestFiles.Sum(CountNonBlankSourceLines);
 
-        AssertContains(scriptText, "Get-NonBlankLineCount");
+        AssertContains(scriptText, "function Get-RepositoryStatusSnapshot");
+        AssertContains(scriptText, "git -C $RepoRoot status --porcelain");
+        AssertContains(scriptText, "function Get-InputFingerprint");
+        AssertContains(scriptText, "function Get-CapturedSourceInput");
+        AssertContains(scriptText, "function Split-CapturedSourceLines");
+        AssertContains(scriptText, "function Sum-NonBlankLines");
+        AssertContains(scriptText, "[System.Security.Cryptography.SHA256]::Create()");
+        AssertContains(scriptText, "$sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($raw))");
+        AssertContains(scriptText, "$capturedInputs = @($allCs | ForEach-Object { Get-CapturedSourceInput $_ })");
+        AssertContains(scriptText, "$entries = foreach ($input in $capturedInputs)");
+        AssertContains(scriptText, "[regex]::Matches($input.Raw");
+        AssertContains(scriptText, "$lines = @(Split-CapturedSourceLines $input.Raw)");
+        AssertContains(scriptText, "if ($beforeFingerprint -cne $afterFingerprint)");
+        AssertContains(scriptText, "Baseline input files changed while capturing baseline");
+        AssertContains(scriptText, "if ($beforeStatus -cne $afterStatus)");
+        AssertContains(scriptText, "Repository changed while capturing baseline");
+        AssertContains(scriptText, "[System.IO.Path]::IsPathRooted($Output)");
+        AssertContains(scriptText, "Move-Item -LiteralPath $tmpOutPath -Destination $outPath -Force");
+        AssertContains(scriptText, "Remove-Item -LiteralPath $tmpOutPath -Force");
         AssertContains(scriptText, "Core app .cs files (Sussudio/)");
         AssertContains(scriptText, "Sussudio.Tests nonblank LoC");
         AssertContains(baselineText, $"| Core app .cs files (Sussudio/) | {coreFiles.Length} |");

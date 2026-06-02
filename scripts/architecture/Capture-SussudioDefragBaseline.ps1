@@ -14,10 +14,28 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$Root = (Resolve-Path -LiteralPath $Root).Path
 
 $excludeDirs = @(
     ".git", ".vs", ".vscode", "bin", "obj", "packages", "TestResults", "artifacts", "node_modules"
 )
+
+function Get-RepositoryStatusSnapshot {
+    param([string]$RepoRoot)
+    $status = & git -C $RepoRoot status --porcelain
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to capture repository status for baseline generation."
+    }
+
+    return (@($status) -join "`n")
+}
+
+function Get-InputFingerprint {
+    param([object[]]$Inputs)
+    return (@($Inputs | Sort-Object FullName | ForEach-Object {
+        "{0}|{1}|{2}|{3}" -f $_.FullName, $_.Length, $_.LastWriteTimeUtc.Ticks, $_.Hash
+    }) -join "`n")
+}
 
 function Test-ExcludedPath {
     param([string]$Path)
@@ -28,42 +46,72 @@ function Test-ExcludedPath {
     return $false
 }
 
-function Get-LineCount {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) { return 0 }
-    $content = Get-Content -LiteralPath $Path -ErrorAction Stop
-    return @($content).Count
+function Get-CapturedSourceInput {
+    param([System.IO.FileInfo]$File)
+    $raw = Get-Content -LiteralPath $File.FullName -Raw -ErrorAction Stop
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($raw))
+    }
+    finally {
+        $sha256.Dispose()
+    }
+    [pscustomobject]@{
+        FullName = $File.FullName
+        Length = $File.Length
+        LastWriteTimeUtc = $File.LastWriteTimeUtc
+        Hash = [System.BitConverter]::ToString($hashBytes).Replace('-', '')
+        Raw = $raw
+    }
 }
 
-function Get-NonBlankLineCount {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) { return 0 }
-    $content = Get-Content -LiteralPath $Path -ErrorAction Stop
-    return @($content | Where-Object { $_.Trim().Length -gt 0 }).Count
+function Split-CapturedSourceLines {
+    param([string]$Raw)
+    if ($Raw.Length -eq 0) { return @() }
+    $lines = @($Raw -split "`r`n|`n|`r")
+    if ($lines.Count -gt 0 -and $lines[$lines.Count - 1].Length -eq 0) {
+        return @($lines | Select-Object -First ($lines.Count - 1))
+    }
+
+    return $lines
+}
+
+function Sum-NonBlankLines {
+    param([object[]]$Entries)
+    $sum = 0
+    foreach ($entry in $Entries) {
+        $sum += [int]$entry.NonBlankLines
+    }
+
+    return $sum
 }
 
 function Convert-ToRepoPath {
     param([string]$Path)
-    $rootPath = (Resolve-Path -LiteralPath $Root).Path.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+    $rootPath = $Root.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
     $rootUri = [Uri]::new($rootPath)
     $pathUri = [Uri]::new((Resolve-Path -LiteralPath $Path).Path)
     $relative = [Uri]::UnescapeDataString($rootUri.MakeRelativeUri($pathUri).ToString())
     return $relative -replace '\\','/'
 }
 
+$beforeStatus = Get-RepositoryStatusSnapshot $Root
+
 $allCs = Get-ChildItem -LiteralPath $Root -Recurse -Filter *.cs -File |
     Where-Object { -not (Test-ExcludedPath $_.FullName) }
+$capturedInputs = @($allCs | ForEach-Object { Get-CapturedSourceInput $_ })
+$beforeFingerprint = Get-InputFingerprint $capturedInputs
 
-$entries = foreach ($file in $allCs) {
-    $repoPath = Convert-ToRepoPath $file.FullName
+$entries = foreach ($input in $capturedInputs) {
+    $repoPath = Convert-ToRepoPath $input.FullName
     $isTest = $repoPath -match '(^|/)(test|tests|.*\.Tests?)(/|$)' -or $repoPath -match '(Test|Tests)\.cs$'
     $isGenerated = $repoPath -match '(\.g\.cs$|\.Designer\.cs$|\.generated\.cs$|/Generated/|/obj/)'
-    $raw = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction Stop
-    $partialMatches = [regex]::Matches($raw, '\bpartial\s+(?:class|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)')
+    $partialMatches = [regex]::Matches($input.Raw, '\bpartial\s+(?:class|record|struct)\s+([A-Za-z_][A-Za-z0-9_]*)')
+    $lines = @(Split-CapturedSourceLines $input.Raw)
     [pscustomobject]@{
         Path = $repoPath
-        Lines = Get-LineCount $file.FullName
-        NonBlankLines = Get-NonBlankLineCount $file.FullName
+        Lines = $lines.Count
+        NonBlankLines = @($lines | Where-Object { $_.Trim().Length -gt 0 }).Count
         IsTest = $isTest
         IsGenerated = $isGenerated
         PartialTypes = @($partialMatches | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
@@ -74,10 +122,8 @@ $production = @($entries | Where-Object { -not $_.IsTest -and -not $_.IsGenerate
 $tests = @($entries | Where-Object { $_.IsTest })
 $coreApp = @($entries | Where-Object { -not $_.IsGenerated -and $_.Path -like 'Sussudio/*' })
 $sussudioTests = @($entries | Where-Object { -not $_.IsGenerated -and $_.Path -like 'tests/Sussudio.Tests/*' })
-$coreAppNonBlank = ($coreApp | Measure-Object NonBlankLines -Sum).Sum
-$sussudioTestsNonBlank = ($sussudioTests | Measure-Object NonBlankLines -Sum).Sum
-if ($null -eq $coreAppNonBlank) { $coreAppNonBlank = 0 }
-if ($null -eq $sussudioTestsNonBlank) { $sussudioTestsNonBlank = 0 }
+$coreAppNonBlank = Sum-NonBlankLines $coreApp
+$sussudioTestsNonBlank = Sum-NonBlankLines $sussudioTests
 $under60 = @($production | Where-Object { $_.Lines -lt 60 })
 $under80 = @($production | Where-Object { $_.Lines -lt 80 })
 
@@ -111,8 +157,9 @@ function Format-Percent {
 }
 
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-$outPath = Join-Path $Root $Output
+$outPath = if ([System.IO.Path]::IsPathRooted($Output)) { $Output } else { Join-Path $Root $Output }
 $outDir = Split-Path $outPath -Parent
+if ([string]::IsNullOrWhiteSpace($outDir)) { $outDir = $Root }
 if ($outDir -and -not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir -Force | Out-Null }
 
 $lines = New-Object System.Collections.Generic.List[string]
@@ -163,5 +210,27 @@ $lines.Add("## Notes")
 $lines.Add("")
 $lines.Add("Use this as the before/after reference for the active defragmentation goal. A lower file count is not sufficient by itself; each slice should also improve behavioral locality, ownership, or deterministic testability.")
 
-$lines | Set-Content -LiteralPath $outPath -Encoding UTF8
+$afterStatus = Get-RepositoryStatusSnapshot $Root
+if ($beforeStatus -cne $afterStatus) {
+    throw "Repository changed while capturing baseline; discard this run and retry from a stable tree."
+}
+
+$afterCs = Get-ChildItem -LiteralPath $Root -Recurse -Filter *.cs -File |
+    Where-Object { -not (Test-ExcludedPath $_.FullName) }
+$afterInputs = @($afterCs | ForEach-Object { Get-CapturedSourceInput $_ })
+$afterFingerprint = Get-InputFingerprint $afterInputs
+if ($beforeFingerprint -cne $afterFingerprint) {
+    throw "Baseline input files changed while capturing baseline; discard this run and retry from a stable tree."
+}
+
+$tmpOutPath = Join-Path $outDir (".{0}.{1}.tmp" -f ([System.IO.Path]::GetFileName($outPath)), ([Guid]::NewGuid().ToString("N")))
+try {
+    $lines | Set-Content -LiteralPath $tmpOutPath -Encoding UTF8
+    Move-Item -LiteralPath $tmpOutPath -Destination $outPath -Force
+}
+finally {
+    if (Test-Path -LiteralPath $tmpOutPath) {
+        Remove-Item -LiteralPath $tmpOutPath -Force
+    }
+}
 Write-Host "Wrote $outPath"
