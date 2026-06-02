@@ -186,12 +186,20 @@ public static class WindowTools
         var normalizedAction = string.Join("", action.Trim().Split('_').Select(p =>
             p.Length > 0 ? char.ToUpperInvariant(p[0]) + p.Substring(1).ToLowerInvariant() : p));
 
+        var actionPayload = new Dictionary<string, object?>
+        {
+            ["action"] = normalizedAction
+        };
+
         if (armClose && string.Equals(normalizedAction, "Close", StringComparison.Ordinal))
         {
+            var actionId = Guid.NewGuid().ToString("N");
             var armPayload = new Dictionary<string, object?>
             {
-                ["armed"] = true
+                ["armed"] = true,
+                ["actionId"] = actionId
             };
+            actionPayload["actionId"] = actionId;
             var armResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.ArmClose, armPayload).ConfigureAwait(false);
             results.Add(ToolCommandFormatter.FormatCommandResponse(armResponse, "ArmClose"));
             if (!Sussudio.Tools.AutomationSnapshotFormatter.IsSuccess(armResponse))
@@ -199,11 +207,6 @@ public static class WindowTools
                 return McpToolResultFactory.FromText(string.Join(Environment.NewLine, results), isError: true);
             }
         }
-
-        var actionPayload = new Dictionary<string, object?>
-        {
-            ["action"] = normalizedAction
-        };
 
         if (x.HasValue) actionPayload["x"] = x.Value;
         if (y.HasValue) actionPayload["y"] = y.Value;

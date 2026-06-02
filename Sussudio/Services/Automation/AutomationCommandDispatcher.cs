@@ -106,7 +106,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     private readonly IAutomationWindowControl _windowControl;
     private readonly string? _authToken;
     private readonly object _closeArmLock = new();
-    private bool _closeArmed;
+    private string? _closeArmActionId;
 
     private const int DefaultWaitTimeoutMs = 10_000;
     private const int DefaultWaitPollMs = 250;
@@ -547,6 +547,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
 
         throw new InvalidOperationException($"Invalid wait condition: '{raw}'.");
+    }
+
+    private static string? NormalizeCloseActionId(JsonElement payload)
+    {
+        var actionId = GetString(payload, "actionId")?.Trim();
+        return string.IsNullOrWhiteSpace(actionId) ? null : actionId;
     }
 
     private AutomationCommandResponse CreateResponse(
@@ -1005,9 +1011,20 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId)
     {
         var armed = GetBool(payload, "armed") ?? true;
+        var actionId = NormalizeCloseActionId(payload);
+        if (armed && actionId == null)
+        {
+            return CreateResponse(
+                correlationId,
+                "ArmClose requires an actionId so the close request can prove it belongs to this arm.",
+                errorCode: "window-close-action-id-required",
+                success: false,
+                status: AutomationResponseStatus.Error);
+        }
+
         lock (_closeArmLock)
         {
-            _closeArmed = armed;
+            _closeArmActionId = armed ? actionId : null;
         }
 
         return CreateAcknowledgedResponse(correlationId, $"Window close arm state requested: {(armed ? "armed" : "disarmed")}.");
@@ -1021,19 +1038,43 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var action = ParseWindowAction(payload);
         if (action == AutomationWindowAction.Close)
         {
-            var armed = false;
-            lock (_closeArmLock)
+            var actionId = NormalizeCloseActionId(payload);
+            if (actionId == null)
             {
-                armed = _closeArmed;
-                _closeArmed = false;
+                return CreateResponse(
+                    correlationId,
+                    "Window close requires the actionId sent with the matching ArmClose request.",
+                    errorCode: "window-close-action-id-required",
+                    success: false,
+                    status: AutomationResponseStatus.Error);
             }
 
-            if (!armed)
+            string? armedActionId;
+            lock (_closeArmLock)
+            {
+                armedActionId = _closeArmActionId;
+                if (string.Equals(armedActionId, actionId, StringComparison.Ordinal))
+                {
+                    _closeArmActionId = null;
+                }
+            }
+
+            if (armedActionId == null)
             {
                 return CreateResponse(
                     correlationId,
                     "Window close is disallowed until ArmClose is requested.",
                     errorCode: "window-close-not-armed",
+                    success: false,
+                    status: AutomationResponseStatus.Error);
+            }
+
+            if (!string.Equals(armedActionId, actionId, StringComparison.Ordinal))
+            {
+                return CreateResponse(
+                    correlationId,
+                    "Window close actionId does not match the armed close request.",
+                    errorCode: "window-close-action-id-mismatch",
                     success: false,
                     status: AutomationResponseStatus.Error);
             }

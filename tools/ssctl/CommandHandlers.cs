@@ -738,9 +738,14 @@ internal static class CommandHandlers
             case "close":
             {
                 EnsureArgCount(context.Rest, 1, "window close");
+                var actionId = Guid.NewGuid().ToString("N");
                 var armResponse = await context.SendCommandAsync(
                     Sussudio.Models.AutomationCommandKind.ArmClose,
-                    new Dictionary<string, object?> { ["armed"] = true }).ConfigureAwait(false);
+                    new Dictionary<string, object?>
+                    {
+                        ["armed"] = true,
+                        ["actionId"] = actionId
+                    }).ConfigureAwait(false);
                 if (!IsSuccess(armResponse))
                 {
                     return WriteResponse(armResponse, context.GlobalJson, response => Formatters.FormatResult(response, includeData: false));
@@ -749,7 +754,11 @@ internal static class CommandHandlers
                 return await HandleSimpleCommandAsync(
                     context,
                     Sussudio.Models.AutomationCommandKind.WindowAction,
-                    new Dictionary<string, object?> { ["action"] = "Close" },
+                    new Dictionary<string, object?>
+                    {
+                        ["action"] = "Close",
+                        ["actionId"] = actionId
+                    },
                     includeData: false).ConfigureAwait(false);
             }
             case "minimize":

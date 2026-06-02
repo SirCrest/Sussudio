@@ -1417,6 +1417,9 @@ static partial class Program
         AssertContains(videoSourceProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbeVideoSource)");
         AssertDoesNotContain(videoSourceProbeToolsText, "SendCommandAsync(\"ProbeVideoSource\"");
         AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.ArmClose, armPayload)");
+        AssertContains(windowToolsText, "var actionId = Guid.NewGuid().ToString(\"N\");");
+        AssertContains(windowToolsText, "[\"actionId\"] = actionId");
+        AssertContains(windowToolsText, "actionPayload[\"actionId\"] = actionId;");
         AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload)");
         AssertContains(windowToolsText, "AutomationCommandKind.SetFullScreenEnabled");
         AssertContains(windowToolsText, "AutomationCommandKind.OpenRecordingsFolder");
@@ -3863,10 +3866,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertCommandRequest(requests[0], "WindowAction", ("action", "SnapTopLeft"));
         AssertCommandRequest(requests[1], "WindowAction", ("action", "Resize"), ("width", 1024), ("height", 768));
         AssertCommandRequest(requests[2], "WindowAction", ("action", "Move"), ("x", 42), ("y", 84));
-        AssertCommandRequest(requests[3], "ArmClose", ("armed", true));
-        AssertCommandRequest(requests[4], "WindowAction", ("action", "Close"));
-        AssertCommandRequest(requests[5], "ArmClose", ("armed", true));
-        AssertCommandRequest(requests[6], "WindowAction", ("action", "Close"));
+        AssertWindowCloseActionIdPair(requests[3], requests[4], "mcp close");
+        AssertWindowCloseActionIdPair(requests[5], requests[6], "mcp trimmed close");
         AssertCommandRequest(requests[7], "SetFullScreenEnabled", ("enabled", true));
         AssertCommandRequest(requests[8], "OpenRecordingsFolder");
         AssertEqual(
@@ -3883,6 +3884,53 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 "[OK] OpenRecordingsFolder: window command 8 ok"),
             result,
             "window_action ordered formatted output");
+
+        var failedArmPipeName = NewMcpToolPipeName("window-close-arm-failed");
+        var failedArmPipeClient = CreateMcpPipeClient(failedArmPipeName);
+        var failedArmResult = string.Empty;
+        var failedArmRequests = await CapturePipeRequestsAsync(
+                failedArmPipeName,
+                expectedCount: 1,
+                async () =>
+                {
+                    failedArmResult = await InvokeMcpToolStringAsync(
+                            windowTools,
+                            "window_action",
+                            failedArmPipeClient,
+                            "close",
+                            true,
+                            null,
+                            null,
+                            null,
+                            null)
+                        .ConfigureAwait(false);
+                },
+                _ => "{\"Success\":false,\"Message\":\"arm rejected\"}")
+            .ConfigureAwait(false);
+
+        AssertAutomationCommandId(failedArmRequests[0], "ArmClose");
+        var failedArmPayload = failedArmRequests[0].GetProperty("payload");
+        AssertJsonObjectPropertyNames(failedArmPayload, "armed", "actionId");
+        AssertJsonPropertyEquals(failedArmPayload, "armed", true, "mcp failed ArmClose.armed");
+        AssertEqual(32, failedArmPayload.GetProperty("actionId").GetString()?.Length ?? 0, "mcp failed actionId length");
+        AssertEqual("[ERROR] ArmClose: arm rejected", failedArmResult, "window_action stops after failed ArmClose");
+    }
+
+    private static void AssertWindowCloseActionIdPair(JsonElement armRequest, JsonElement closeRequest, string scenario)
+    {
+        AssertAutomationCommandId(armRequest, "ArmClose");
+        AssertAutomationCommandId(closeRequest, "WindowAction");
+
+        var armPayload = armRequest.GetProperty("payload");
+        var closePayload = closeRequest.GetProperty("payload");
+        AssertJsonObjectPropertyNames(armPayload, "armed", "actionId");
+        AssertJsonObjectPropertyNames(closePayload, "action", "actionId");
+        AssertJsonPropertyEquals(armPayload, "armed", true, $"{scenario} ArmClose.armed");
+        AssertJsonPropertyEquals(closePayload, "action", "Close", $"{scenario} WindowAction.action");
+
+        var actionId = armPayload.GetProperty("actionId").GetString();
+        AssertEqual(32, actionId?.Length ?? 0, $"{scenario} actionId length");
+        AssertEqual(actionId, closePayload.GetProperty("actionId").GetString(), $"{scenario} actionId match");
     }
 
     internal static Task McpWaitTools_UsesCatalogResponseTimeoutForConditionWaits()
@@ -4666,8 +4714,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             .ConfigureAwait(false);
 
         AssertEqual(0, windowCloseExitCode, "window close exit code");
-        AssertSsctlCommandRequest(windowCloseRequests[0], "ArmClose", ("armed", true));
-        AssertSsctlCommandRequest(windowCloseRequests[1], "WindowAction", ("action", "Close"));
+        AssertWindowCloseActionIdPair(windowCloseRequests[0], windowCloseRequests[1], "ssctl close");
 
         var windowCloseDeniedPipeName = $"ssctl-window-close-denied-{Guid.NewGuid():N}";
         var windowCloseDeniedArguments = new List<string> { "window", "close" };
@@ -4680,7 +4727,11 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             .ConfigureAwait(false);
 
         AssertEqual(3, windowCloseDeniedExitCode, "window close denied exit code");
-        AssertSsctlCommandRequest(windowCloseDeniedRequests[0], "ArmClose", ("armed", true));
+        AssertAutomationCommandId(windowCloseDeniedRequests[0], "ArmClose");
+        var deniedArmPayload = windowCloseDeniedRequests[0].GetProperty("payload");
+        AssertJsonObjectPropertyNames(deniedArmPayload, "armed", "actionId");
+        AssertJsonPropertyEquals(deniedArmPayload, "armed", true, "ssctl denied ArmClose.armed");
+        AssertEqual(32, deniedArmPayload.GetProperty("actionId").GetString()?.Length ?? 0, "ssctl denied actionId length");
     }
 
     internal static async Task SsctlCommandHandlers_RouteManifestCommand()
@@ -4989,6 +5040,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.VerifyLastRecording");
         AssertContains(commandHandlersRootSource, "ConsumeFlag(context.Rest, \"--json\")");
         AssertContains(commandHandlersRootSource, "ParseOptionalStringFlag(context.Rest, \"--verification-profile\")");
+        AssertContains(commandHandlersRootSource, "var actionId = Guid.NewGuid().ToString(\"N\");");
+        AssertContains(commandHandlersRootSource, "[\"actionId\"] = actionId");
 
         AssertContains(commandHandlersRootSource, "// Flashback command family.");
         AssertContains(commandHandlersRootSource, "HandleFlashbackAsync");
@@ -8575,8 +8628,16 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             requiresReadyDevices: false,
             pathPolicy: "None",
             payloadShapeContains: "{}");
+        AssertOptionalPayloadField(entries, "ArmClose", "actionId");
         AssertOptionalPayloadField(entries, "WindowAction", "action");
+        AssertOptionalPayloadField(entries, "WindowAction", "actionId");
         AssertOptionalPayloadField(entries, "WaitForCondition", "condition");
+        var armCloseEntry = entries.Single(candidate =>
+            string.Equals((string)GetMetadataProperty(candidate, "Name")!, "ArmClose", StringComparison.Ordinal));
+        var windowActionEntry = entries.Single(candidate =>
+            string.Equals((string)GetMetadataProperty(candidate, "Name")!, "WindowAction", StringComparison.Ordinal));
+        AssertContains((string)GetMetadataProperty(armCloseEntry, "McpDescription")!, "actionId is required");
+        AssertContains((string)GetMetadataProperty(windowActionEntry, "McpDescription")!, "Close requires the actionId");
 
         return Task.CompletedTask;
     }
@@ -8690,7 +8751,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "971C6B6C613CBEC5F9D72F86A1F15745C1D8C46BF8F663940C4B9F307803EA35";
+        const string ExpectedManifestSha256 = "BACAB32C533218A600BF0458C60D9BBB44ECBC8E64D274E5A5F10C598755C385";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

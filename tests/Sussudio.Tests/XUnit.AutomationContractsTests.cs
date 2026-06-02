@@ -371,6 +371,10 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion();
 
     [Fact]
+    public Task AutomationDispatcherWindowCloseRequiresMatchingArmActionId()
+        => global::Program.AutomationCommandDispatcher_WindowClose_RequiresMatchingArmActionId();
+
+    [Fact]
     public Task AutomationDispatcherWindowCommandsLiveInFocusedPartial()
         => global::Program.AutomationCommandDispatcher_WindowCommands_LiveInFocusedPartial();
 
@@ -1183,10 +1187,15 @@ static partial class Program
         AssertContains(windowCommandsText, "_windowControl.OpenRecordingsFolderAsync(cancellationToken)");
         AssertContains(windowCommandsText, "Recordings folder open requested.");
         AssertContains(windowCommandsText, "var armed = GetBool(payload, \"armed\") ?? true;");
-        AssertContains(windowCommandsText, "_closeArmed = armed;");
+        AssertContains(windowCommandsText, "var actionId = NormalizeCloseActionId(payload);");
+        AssertContains(windowCommandsText, "if (armed && actionId == null)");
+        AssertContains(windowCommandsText, "_closeArmActionId = armed ? actionId : null;");
         AssertContains(windowCommandsText, "Window close arm state requested: {(armed ? \"armed\" : \"disarmed\")}.");
         AssertContains(windowCommandsText, "if (action == AutomationWindowAction.Close)");
         AssertContains(windowCommandsText, "window-close-not-armed");
+        AssertContains(windowCommandsText, "window-close-action-id-required");
+        AssertContains(windowCommandsText, "window-close-action-id-mismatch");
+        AssertContains(windowCommandsText, "_closeArmActionId = null;");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);");
 
@@ -2094,6 +2103,75 @@ static partial class Program
         AssertDoesNotContain(closeBlock, "CancellationToken.None");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task AutomationCommandDispatcher_WindowClose_RequiresMatchingArmActionId()
+    {
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var closeCalls = 0;
+
+        var dispatcher = CreateAutomationCommandDispatcher(
+            CreateConfiguredProxy(viewModelType, (method, _) => GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(
+                diagnosticsType,
+                (method, _) => method?.Name == "GetLatestSnapshot" ? snapshot : GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(
+                windowControlType,
+                (method, _) =>
+                {
+                    if (method?.Name == "CloseAsync")
+                    {
+                        closeCalls++;
+                        return Task.CompletedTask;
+                    }
+
+                    return GetDefaultReturnValue(method);
+                }),
+            authToken: null);
+
+        var missingArmIdResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("ArmClose", authToken: null, payloadJson: "{\"armed\":true}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(missingArmIdResponse, success: false, errorCode: "window-close-action-id-required", status: "error", "ArmClose requires actionId");
+        AssertEqual(0, closeCalls, "missing ArmClose actionId does not close");
+
+        var armResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("ArmClose", authToken: null, payloadJson: "{\"armed\":true,\"actionId\":\"close-1\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(armResponse, success: true, errorCode: null, status: "ok", "ArmClose accepts actionId");
+
+        var missingCloseIdResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("WindowAction", authToken: null, payloadJson: "{\"action\":\"Close\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(missingCloseIdResponse, success: false, errorCode: "window-close-action-id-required", status: "error", "WindowAction close requires actionId");
+        AssertEqual(0, closeCalls, "missing close actionId does not close");
+
+        var mismatchResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("WindowAction", authToken: null, payloadJson: "{\"action\":\"Close\",\"actionId\":\"close-2\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(mismatchResponse, success: false, errorCode: "window-close-action-id-mismatch", status: "error", "WindowAction close rejects mismatched actionId");
+        AssertEqual(0, closeCalls, "mismatched close actionId does not close");
+
+        var closeResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("WindowAction", authToken: null, payloadJson: "{\"action\":\"Close\",\"actionId\":\"close-1\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(closeResponse, success: true, errorCode: null, status: "ok", "WindowAction close accepts matching actionId");
+        AssertEqual(1, closeCalls, "matching close actionId closes once");
+
+        var replayResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("WindowAction", authToken: null, payloadJson: "{\"action\":\"Close\",\"actionId\":\"close-1\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(replayResponse, success: false, errorCode: "window-close-not-armed", status: "error", "WindowAction close actionId is single-use");
+        AssertEqual(1, closeCalls, "replayed close actionId does not close twice");
     }
 
     internal static Task AutomationCommandDispatcher_PreviewRendererHealthy_RequiresFirstVisual()
