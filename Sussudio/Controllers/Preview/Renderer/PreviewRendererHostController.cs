@@ -114,6 +114,14 @@ internal sealed class PreviewRendererHostControllerContext
     public required Action<string> Log { get; init; }
 }
 
+internal sealed class PreviewRendererReinitStopTimeoutException : TimeoutException
+{
+    public PreviewRendererReinitStopTimeoutException(string message, TimeoutException innerException)
+        : base(message, innerException)
+    {
+    }
+}
+
 internal sealed class PreviewRendererHostController
 {
     private readonly PreviewRendererHostControllerContext _context;
@@ -216,11 +224,11 @@ internal sealed class PreviewRendererHostController
             }
             catch (TimeoutException ex)
             {
-                // Render thread did not exit before its stop timeout. The renderer's
-                // stop path has already logged details and the fresh attach path will
-                // replace the panel surface if needed. Swallow the exception so reinit
-                // can continue rather than crashing the UI thread mid-resolution-change.
-                _context.Log($"PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
+                MarkPreviewRendererStopped();
+                _context.Log($"PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; aborting reinit until renderer ownership is resolved.");
+                throw new PreviewRendererReinitStopTimeoutException(
+                    "D3D preview renderer did not stop before reinitialize teardown.",
+                    ex);
             }
         }
 
@@ -235,11 +243,13 @@ internal sealed class PreviewRendererHostController
             return;
         }
 
+        // Keep the live sink and event wiring intact until Stop succeeds; a
+        // timeout aborts reinit with the existing preview state still coherent.
+        renderer.Stop();
+        renderer.RetireSharedDeviceReferenceForReinit();
         _context.ViewModel.SetPreviewFrameSink(null);
         renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
         renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;
-        renderer.Stop();
-        renderer.RetireSharedDeviceReferenceForReinit();
         // Do not call Dispose() on the retired renderer in the reinit path.
         // Stop() has already unbound the panel and released the render-thread
         // D3D resources. Disposing the remaining shared-device COM wrapper while

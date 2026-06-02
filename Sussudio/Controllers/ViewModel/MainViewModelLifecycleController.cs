@@ -957,6 +957,13 @@ internal sealed class MainViewModelPreviewReinitializeController
                  _context.CancelPreviewRestartAfterReinitialize() ||
                  _context.IsPreviewing());
         }
+        catch (PreviewRendererReinitStopTimeoutException ex)
+        {
+            Logger.LogException(ex);
+            Logger.Log($"REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}' msg='{ex.InnerException?.Message ?? ex.Message}'");
+            _context.SetStatusText($"Failed to apply format: {ex.Message}");
+            success = false;
+        }
         catch (Exception ex)
         {
             Logger.LogException(ex);

@@ -4203,6 +4203,14 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewReinitializeControllerText, "await _context.NotifyPreviewReinitRequestedAsync(reason);");
         AssertContains(previewReinitializeControllerText, "await _context.NotifyRendererStopAsync();");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);");
+        AssertContains(previewReinitializeControllerText, "catch (PreviewRendererReinitStopTimeoutException ex)");
+        AssertContains(previewReinitializeControllerText, "REINIT_ABORT_RENDERER_STOP_TIMEOUT reason='{reason}'");
+        var rendererStopTimeoutCatch = ExtractTextBetween(
+            previewReinitializeControllerText,
+            "catch (PreviewRendererReinitStopTimeoutException ex)",
+            "        catch (Exception ex)");
+        AssertDoesNotContain(rendererStopTimeoutCatch, "CleanupFailedPreviewRestartAsync");
+        AssertContains(rendererStopTimeoutCatch, "success = false;");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync();");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false);");
         AssertContains(previewReinitializeControllerText, "_context.ReleaseReinitializeGate();");
@@ -4514,6 +4522,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             .Replace("\r\n", "\n");
         var previewRendererText = ReadMainWindowPreviewRendererAdapterSource();
         var previewRendererHostControllerText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRendererHostController.cs").Replace("\r\n", "\n");
+        var rendererReinitStop = ExtractMemberCode(previewRendererHostControllerText, "StopRendererForReinitTeardownAsync");
+        var rendererReinitDispose = ExtractMemberCode(previewRendererHostControllerText, "DisposeD3DPreviewRendererForReinit");
         var previewRendererStartupPlanBuilderText = previewRendererHostControllerText;
         var statsSnapshotText = Sussudio.Tests.MainWindowStatsOverlaySource.Read();
         var statsSnapshotProviderText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
@@ -4580,11 +4590,23 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRendererHostControllerText, "private void RecordPreviewRendererReinitUnsafeWindow(D3D11PreviewRenderer? previousRenderer, bool reinitAnimating)");
         AssertContains(previewRendererHostControllerText, "private void MarkPreviewRendererStopped()");
         AssertContains(previewRendererHostControllerText, "public Task StopRendererForReinitTeardownAsync()");
-        AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
-        AssertContains(previewRendererHostControllerText, "catch (TimeoutException ex)");
-        AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
+        AssertContains(rendererReinitStop, "PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
+        AssertContains(rendererReinitStop, "catch (TimeoutException ex)");
+        AssertContains(rendererReinitStop, "MarkPreviewRendererStopped();");
+        AssertContains(rendererReinitStop, "PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; aborting reinit until renderer ownership is resolved.");
+        AssertContains(rendererReinitStop, "throw new PreviewRendererReinitStopTimeoutException(");
+        AssertDoesNotContain(rendererReinitStop, "_d3dRenderer = null;");
         AssertContains(previewRendererHostControllerText, "public void DisposeD3DPreviewRendererForReinit()");
+        AssertContains(rendererReinitDispose, "renderer.Stop();");
         AssertContains(previewRendererHostControllerText, "renderer.RetireSharedDeviceReferenceForReinit();");
+        AssertContains(rendererReinitDispose, "_context.ViewModel.SetPreviewFrameSink(null);");
+        AssertContains(rendererReinitDispose, "renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;");
+        AssertContains(rendererReinitDispose, "renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;");
+        AssertContains(rendererReinitDispose, "_d3dRenderer = null;");
+        AssertOccursBefore(rendererReinitDispose, "renderer.Stop();", "_context.ViewModel.SetPreviewFrameSink(null);");
+        AssertOccursBefore(rendererReinitDispose, "renderer.Stop();", "renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;");
+        AssertOccursBefore(rendererReinitDispose, "renderer.Stop();", "renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;");
+        AssertOccursBefore(rendererReinitDispose, "renderer.Stop();", "_d3dRenderer = null;");
         AssertContains(previewRendererHostControllerText, "private void ReplacePreviewSwapChainPanelSurface()");
         AssertContains(previewRendererHostControllerText, "D3D11_RENDERER_REINIT_UNSAFE_WINDOW");
         AssertContains(previewRendererHostControllerText, "PREVIEW_REINIT_SWAPCHAIN_PANEL_REPLACED");
