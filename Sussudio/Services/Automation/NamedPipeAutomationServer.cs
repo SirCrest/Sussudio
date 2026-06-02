@@ -291,7 +291,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             AutomationCommandResponse response;
             var requestTimeout = new CancellationTokenSource(_owner._requestTimeoutMs);
             var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);
-            var disposeRequestCancellation = true;
 
             using var reader = new StreamReader(_server, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 4096, leaveOpen: true);
             using var writer = new StreamWriter(_server, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 4096, leaveOpen: true)
@@ -314,12 +313,11 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
                 {
                     LogReceivedRequest(request);
 
-                    var execution = await ExecuteCommandWithTimeoutAsync(
-                        request,
-                        requestTimeout,
-                        requestCancellation).ConfigureAwait(false);
-                    response = execution.Response;
-                    disposeRequestCancellation = !execution.DispatchContinues;
+                    response = await ExecuteCommandWithTimeoutAsync(
+                            request,
+                            requestTimeout,
+                            requestCancellation)
+                        .ConfigureAwait(false);
                 }
             }
             catch (JsonException ex)
@@ -339,11 +337,8 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             finally
             {
-                if (disposeRequestCancellation)
-                {
-                    requestCancellation.Dispose();
-                    requestTimeout.Dispose();
-                }
+                requestCancellation.Dispose();
+                requestTimeout.Dispose();
             }
 
             var responseLine = JsonSerializer.Serialize(response, _owner._jsonOptions);
@@ -375,7 +370,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             return 0;
         }
 
-        private async Task<CommandExecutionResult> ExecuteCommandWithTimeoutAsync(
+        private async Task<AutomationCommandResponse> ExecuteCommandWithTimeoutAsync(
             AutomationCommandRequest request,
             CancellationTokenSource requestTimeout,
             CancellationTokenSource requestCancellation)
@@ -390,7 +385,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
                     response = _owner.CreateRequestTimeoutResponse();
                 }
 
-                return new CommandExecutionResult(response, DispatchContinues: false);
+                return response;
             }
 
             if (_serverCancellation.IsCancellationRequested && !requestTimeout.IsCancellationRequested)
@@ -403,8 +398,20 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
                 requestTimeout.Cancel();
             }
 
-            ObserveTimedOutDispatch(dispatchTask, request.Command, requestTimeout, requestCancellation);
-            return new CommandExecutionResult(_owner.CreateRequestTimeoutResponse(), DispatchContinues: true);
+            requestCancellation.Cancel();
+            Logger.Log($"Automation command exceeded request timeout; waiting for dispatch to stop: command={request.Command}");
+            if (await WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None).ConfigureAwait(false))
+            {
+                var response = await dispatchTask.ConfigureAwait(false);
+                if (string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
+                {
+                    response = _owner.CreateRequestTimeoutResponse();
+                }
+
+                return response;
+            }
+
+            return _owner.CreateRequestTimeoutResponse();
         }
 
         private static async Task<bool> WaitForDispatchCompletionAsync(
@@ -424,49 +431,8 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             return ReferenceEquals(completedTask, dispatchTask);
         }
 
-        private void ObserveTimedOutDispatch(
-            Task<AutomationCommandResponse> dispatchTask,
-            AutomationCommandKind command,
-            CancellationTokenSource requestTimeout,
-            CancellationTokenSource requestCancellation)
-        {
-            _ = ObserveTimedOutDispatchAsync(dispatchTask, command, requestTimeout, requestCancellation);
-        }
-
-        private async Task ObserveTimedOutDispatchAsync(
-            Task<AutomationCommandResponse> dispatchTask,
-            AutomationCommandKind command,
-            CancellationTokenSource requestTimeout,
-            CancellationTokenSource requestCancellation)
-        {
-            try
-            {
-                var response = await dispatchTask.ConfigureAwait(false);
-                Logger.Log(
-                    $"Automation command completed after request timeout: command={command} success={response.Success} error={response.ErrorCode ?? "(none)"}");
-            }
-            catch (OperationCanceledException ex)
-            {
-                Logger.Log($"Automation command canceled after request timeout: command={command} message={ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Automation command failed after request timeout: command={command} error={ex.Message}");
-                Logger.LogException(ex);
-            }
-            finally
-            {
-                requestCancellation.Dispose();
-                requestTimeout.Dispose();
-            }
-        }
-
         private AutomationCommandResponse CreateErrorResponse(string message, string errorCode)
             => NamedPipeAutomationServer.CreateErrorResponse(message, errorCode);
-
-        private readonly record struct CommandExecutionResult(
-            AutomationCommandResponse Response,
-            bool DispatchContinues);
     }
 
     private const uint PipeAccessDuplex = 0x00000003;

@@ -2370,7 +2370,7 @@ static partial class Program
         AssertContains(pipeServerRootText, "new ConnectionSession(this, server, cancellationToken);");
         AssertContains(pipeServerRootText, "private sealed class ConnectionSession");
         AssertContains(pipeServerRootText, "public async Task RunAsync()");
-        AssertContains(pipeServerRootText, "private async Task<CommandExecutionResult> ExecuteCommandWithTimeoutAsync(");
+        AssertContains(pipeServerRootText, "private async Task<AutomationCommandResponse> ExecuteCommandWithTimeoutAsync(");
         AssertContains(pipeServerRootText, "AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(");
         AssertContains(pipeServerRootText, "_explicitSecurityFailed = true;");
         AssertContains(pipeServerRootText, "if (!_authTokenRequired)\n                {\n                    throw new AutomationPipeSecurityException(");
@@ -2500,7 +2500,12 @@ static partial class Program
         AssertContains(pipeServerText, "var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);");
         AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
         AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
-        AssertContains(pipeServerText, "ObserveTimedOutDispatch(dispatchTask, request.Command, requestTimeout, requestCancellation);");
+        AssertContains(pipeServerText, "requestCancellation.Cancel();");
+        AssertContains(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
+        AssertContains(pipeServerText, "Automation command exceeded request timeout; waiting for dispatch to stop");
+        AssertContains(pipeServerText, "return _owner.CreateRequestTimeoutResponse();");
+        AssertDoesNotContain(pipeServerText, "DispatchContinues");
+        AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
         AssertContains(pipeServerText, "\"request-timeout\"");
 
