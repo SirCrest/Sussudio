@@ -67,7 +67,12 @@ internal static class ToolCommandFormatter
                 continue;
             }
 
-            results.Add(await ExecuteAndFormatAsync(pipeClient, command.Kind, command.Label, command.Payload).ConfigureAwait(false));
+            var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload).ConfigureAwait(false);
+            results.Add(FormatCommandResponse(response, command.Label));
+            if (!AutomationSnapshotFormatter.IsSuccess(response))
+            {
+                break;
+            }
         }
 
         return results.Count == 0
@@ -90,8 +95,12 @@ internal static class ToolCommandFormatter
             }
 
             var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload).ConfigureAwait(false);
-            isError |= !AutomationSnapshotFormatter.IsSuccess(response);
             results.Add(FormatCommandResponse(response, command.Label));
+            if (!AutomationSnapshotFormatter.IsSuccess(response))
+            {
+                isError = true;
+                break;
+            }
         }
 
         return McpToolResultFactory.FromText(

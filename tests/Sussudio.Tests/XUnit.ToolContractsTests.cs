@@ -1316,6 +1316,8 @@ static partial class Program
 
         AssertContains(formatterText, "AutomationCommandKind Kind,");
         AssertContains(formatterText, "pipeClient.SendCommandAsync(command.Kind, command.Payload)");
+        AssertContains(formatterText, "if (!AutomationSnapshotFormatter.IsSuccess(response))");
+        AssertContains(formatterText, "isError = true;\n                break;");
         AssertDoesNotContain(formatterText, "string CommandName");
         AssertDoesNotContain(formatterText, "SendCommandAsync(command.CommandName");
         AssertDoesNotContain(formatterText, "pipeClient.SendCommandAsync(commandName");
@@ -1791,6 +1793,23 @@ static partial class Program
             "[OK] SetStatsVisible: stats updated" + Environment.NewLine + "[ERROR] SetSettingsVisible: settings blocked",
             result,
             "ToolCommandFormatter ordered joined batch result");
+
+        string failFastResult = string.Empty;
+        var failFastRequests = await CapturePipeRequestsAsync(
+                pipeName,
+                expectedCount: 1,
+                async () =>
+                {
+                    failFastResult = await InvokeFormatterBatchAsync(executeBatch, pipeClient, "nothing to do", commands).ConfigureAwait(false);
+                },
+                _ => "{\"Success\":false,\"Message\":\"stats blocked\"}")
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(failFastRequests[0], "SetStatsVisible", ("visible", true));
+        AssertEqual(
+            "[ERROR] SetStatsVisible: stats blocked",
+            failFastResult,
+            "ToolCommandFormatter stops batch after first failed mutation");
     }
 
     internal static async Task McpHostToolSchema_UsesPipeClientAsService()
