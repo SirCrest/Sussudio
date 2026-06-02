@@ -85,25 +85,38 @@ public static class SettingsService
         }
     }
 
-    public static void Save(UserSettings settings)
+    public static bool Save(UserSettings settings, out string failure)
     {
-        var settingsDirectory = GetSettingsDirectory();
         var settingsFilePath = GetSettingsFilePath();
         lock (_lock)
         {
-            try
+            return SaveToFile(settings, settingsFilePath, out failure);
+        }
+    }
+
+    internal static bool SaveToFile(UserSettings settings, string settingsFilePath, out string failure)
+    {
+        failure = string.Empty;
+        try
+        {
+            var settingsDirectory = Path.GetDirectoryName(settingsFilePath);
+            if (!string.IsNullOrWhiteSpace(settingsDirectory))
             {
                 Directory.CreateDirectory(settingsDirectory);
-                var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.UserSettings);
-                var tempPath = settingsFilePath + ".tmp";
-                File.WriteAllText(tempPath, json);
-                File.Move(tempPath, settingsFilePath, overwrite: true);
-                Logger.Log($"SETTINGS_SAVE: saved to {settingsFilePath}");
             }
-            catch (Exception ex)
-            {
-                Logger.Log($"SETTINGS_SAVE: failed ({ex.GetType().Name}: {ex.Message})");
-            }
+
+            var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.UserSettings);
+            var tempPath = settingsFilePath + ".tmp";
+            File.WriteAllText(tempPath, json);
+            File.Move(tempPath, settingsFilePath, overwrite: true);
+            Logger.Log($"SETTINGS_SAVE: saved to {settingsFilePath}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            failure = $"{ex.GetType().Name}: {ex.Message}";
+            Logger.Log($"SETTINGS_SAVE: failed ({failure})");
+            return false;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-02T15:17:49Z
+Generated UTC: 2026-06-02T15:56:20Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Production .cs files | 122 |
 | Test .cs files | 13 |
 | Core app .cs files (Sussudio/) | 88 |
-| Core app nonblank LoC (Sussudio/) | 89385 |
+| Core app nonblank LoC (Sussudio/) | 89445 |
 | Sussudio.Tests .cs files | 12 |
-| Sussudio.Tests nonblank LoC | 56301 |
+| Sussudio.Tests nonblank LoC | 56386 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.8%) |
 
@@ -25,9 +25,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | D3D11PreviewRenderer | 3 | 4862 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | FlashbackPlaybackController | 3 | 4855 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | LibAvEncoder | 3 | 2972 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
-| MainViewModel | 3 | 4708 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
+| MainViewModel | 3 | 4765 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 545 | Sussudio/AppRuntime.cs |
-| SettingsJsonContext | 1 | 690 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
+| SettingsJsonContext | 1 | 703 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 263 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 697 | Sussudio/Services/Capture/DeviceService.cs |
 | StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
@@ -39,7 +39,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | ---: | --- |
 | 5049 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 3410 | Sussudio/Services/Flashback/FlashbackExporter.cs |
-| 2859 | Sussudio/ViewModels/MainViewModel.cs |
+| 2916 | Sussudio/ViewModels/MainViewModel.cs |
 | 2716 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs |
 | 2636 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
 | 2617 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |

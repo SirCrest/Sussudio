@@ -308,11 +308,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
-    private void SaveSettings()
+    private bool SaveSettings()
     {
         if (_isLoadingSettings)
         {
-            return;
+            return true;
         }
 
         try
@@ -341,12 +341,31 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     FlashbackGpuDecode,
                     FlashbackBufferMinutes));
 
-            SettingsService.Save(settings);
+            if (SettingsService.Save(settings, out var settingsSaveFailure))
+            {
+                return true;
+            }
+
+            StatusText = $"Settings save failed: {settingsSaveFailure}. Changes may revert after restart.";
+            return false;
         }
         catch (Exception ex)
         {
-            Logger.Log($"SETTINGS_SAVE: unexpected error: {ex.Message}");
+            var failure = $"{ex.GetType().Name}: {ex.Message}";
+            Logger.Log($"SETTINGS_SAVE: unexpected error: {failure}");
+            StatusText = $"Settings save failed: {failure}. Changes may revert after restart.";
+            return false;
         }
+    }
+
+    private void SaveSettingsOrThrow()
+    {
+        if (SaveSettings())
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(StatusText);
     }
 
     private void ApplySettingsLoadPlan(MainViewModelSettingsLoadPlan loadPlan)
@@ -1116,6 +1135,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     throw new InvalidOperationException($"Failed to apply automation HDR toggle; {rollbackStatus}.");
                 }
             }
+
+            SaveSettingsOrThrow();
         }, cancellationToken);
     }
 
@@ -1228,6 +1249,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return InvokeOnUiThreadAsync(() =>
         {
             IsStatsVisible = visible;
+            SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
     }
@@ -1444,6 +1466,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 throw new InvalidOperationException("Capture device selection did not initialize; rollback was skipped if a newer selection superseded this request.");
             }
+
+            SaveSettingsOrThrow();
         }, cancellationToken);
     }
 
@@ -1458,6 +1482,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             SelectedAudioInputDevice = target;
+            SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
     }
@@ -1472,6 +1497,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             IsCustomAudioInputEnabled = enabled;
+            SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
     }
@@ -1481,6 +1507,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return InvokeOnUiThreadAsync(() =>
         {
             IsAudioEnabled = enabled;
+            SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
     }
@@ -1490,6 +1517,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return InvokeOnUiThreadAsync(() =>
         {
             IsAudioPreviewEnabled = enabled;
+            SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
     }
@@ -1499,7 +1527,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return InvokeOnUiThreadAsync(() =>
         {
             PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);
-            SavePreviewVolume();
+            SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
     }
@@ -1518,6 +1546,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 throw new InvalidOperationException($"Device audio mode change failed ({normalizedMode}).");
             }
+
+            SaveSettingsOrThrow();
         }, cancellationToken);
     }
 
@@ -1535,6 +1565,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 throw new InvalidOperationException($"Analog audio gain change failed ({clampedGain:0}%).");
             }
+
+            SaveSettingsOrThrow();
         }, cancellationToken);
     }
 
@@ -1556,22 +1588,46 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         => _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);
 
     public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)
-        => _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken),
+            cancellationToken);
 
     public Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
-        => _recordingSettingsAutomationController.SetQualityAsync(quality, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _recordingSettingsAutomationController.SetQualityAsync(quality, cancellationToken),
+            cancellationToken);
 
     public Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
-        => _recordingSettingsAutomationController.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _recordingSettingsAutomationController.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken),
+            cancellationToken);
 
     public Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
-        => _recordingSettingsAutomationController.SetCustomBitrateAsync(bitrateMbps, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _recordingSettingsAutomationController.SetCustomBitrateAsync(bitrateMbps, cancellationToken),
+            cancellationToken);
 
     public Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
-        => _recordingSettingsAutomationController.SetPresetAsync(preset, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _recordingSettingsAutomationController.SetPresetAsync(preset, cancellationToken),
+            cancellationToken);
 
     public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)
-        => _recordingSettingsAutomationController.SetOutputPathAsync(outputPath, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _recordingSettingsAutomationController.SetOutputPathAsync(outputPath, cancellationToken),
+            cancellationToken);
+
+    private async Task RunPersistedSettingsAutomationAsync(Task operation, CancellationToken cancellationToken)
+    {
+        await operation.ConfigureAwait(false);
+        await InvokeOnUiThreadAsync(
+            () =>
+            {
+                SaveSettingsOrThrow();
+                return Task.CompletedTask;
+            },
+            cancellationToken).ConfigureAwait(false);
+    }
 
     private CaptureDevice? ResolveDevice(string? deviceId, string? deviceName)
     {
@@ -1659,6 +1715,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     _suppressMicrophoneMonitorUpdate = false;
                 }
 
+                SaveSettingsOrThrow();
                 return true;
             },
             cancellationToken).ConfigureAwait(false);
@@ -2239,7 +2296,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     IsRecording = () => viewModel.IsRecording,
                     GetSelectedDeviceAudioMode = () => viewModel.SelectedDeviceAudioMode,
                     GetSelectedDevice = () => viewModel.SelectedDevice,
-                    SaveSettings = viewModel.SaveSettings,
+                    SaveSettings = () => { _ = viewModel.SaveSettings(); },
                     RefreshDeviceAudioControlsAsync = viewModel.RefreshDeviceAudioControlsAsync,
                     ApplyDeviceAudioModeAsync = (reason, targetDevice, cancellationToken) =>
                         viewModel.ApplyDeviceAudioModeAsync(reason, targetDevice: targetDevice, cancellationToken: cancellationToken),

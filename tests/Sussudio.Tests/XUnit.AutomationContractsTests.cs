@@ -5491,6 +5491,7 @@ static partial class Program
         AssertContains(rawFlashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
         AssertContains(viewModelFlashbackStateText, "private bool _suppressFlashbackFormatCycle;");
         AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken)");
+        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "RunPersistedSettingsAutomationAsync(");
         AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
         AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
         AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
@@ -5689,7 +5690,7 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
+        AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SaveSettingsOrThrow();");
         AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
@@ -5702,7 +5703,7 @@ static partial class Program
         AssertContains(automationAudioText, "_suppressMicrophoneMonitorUpdate = true;");
         AssertContains(automationAudioText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
         AssertContains(automationAudioText, "cancellationToken).ConfigureAwait(false);");
-        AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                SaveSettingsOrThrow();\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
         AssertContains(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
         AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
@@ -6376,7 +6377,7 @@ static partial class Program
         var automationAudioText = automationUiText;
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
 
-        AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
+        AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SaveSettingsOrThrow();");
         AssertContains(settingsProjectionText, "PreviewVolume = input.PreviewVolume,");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
         AssertContains(automationUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
@@ -6412,9 +6413,51 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Runtime", "SettingsService.cs")),
             "SettingsService.cs folded into RuntimeHelpers.cs");
         AssertContains(settingsPersistenceText, "private void LoadSettings()");
-        AssertContains(settingsPersistenceText, "private void SaveSettings()");
+        AssertContains(settingsPersistenceText, "private bool SaveSettings()");
         AssertContains(settingsPersistenceText, "SettingsService.Load()");
-        AssertContains(settingsPersistenceText, "SettingsService.Save(settings)");
+        AssertContains(settingsPersistenceText, "SettingsService.Save(settings, out var settingsSaveFailure)");
+        AssertContains(settingsPersistenceText, "StatusText = $\"Settings save failed: {settingsSaveFailure}. Changes may revert after restart.\";");
+        AssertContains(settingsPersistenceText, "return false;");
+        AssertContains(settingsServiceText, "public static bool Save(UserSettings settings, out string failure)");
+        AssertContains(settingsServiceText, "internal static bool SaveToFile(UserSettings settings, string settingsFilePath, out string failure)");
+        AssertContains(settingsServiceText, "failure = $\"{ex.GetType().Name}: {ex.Message}\";");
+        AssertContains(settingsServiceText, "return false;");
+        AssertContains(settingsPersistenceText, "SaveSettings = () => { _ = viewModel.SaveSettings(); }");
+        AssertContains(settingsPersistenceText, "private void SaveSettingsOrThrow()");
+        AssertContains(settingsPersistenceText, "throw new InvalidOperationException(StatusText);");
+        AssertContains(settingsPersistenceText, "private async Task RunPersistedSettingsAutomationAsync(Task operation, CancellationToken cancellationToken)");
+        AssertContains(settingsPersistenceText, "await operation.ConfigureAwait(false);");
+        foreach (var persistedAutomationMember in new[]
+        {
+            "SelectDeviceAsync",
+            "SelectAudioInputDeviceAsync",
+            "SetCustomAudioInputEnabledAsync",
+            "SetAudioEnabledAsync",
+            "SetAudioPreviewEnabledAsync",
+            "SetPreviewVolumeAsync",
+            "SetDeviceAudioModeAsync",
+            "SetAnalogAudioGainAsync",
+            "SetStatsVisibleAsync"
+        })
+        {
+            AssertMemberContains(settingsPersistenceText, persistedAutomationMember, "SaveSettingsOrThrow();");
+        }
+
+        AssertContains(settingsPersistenceText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
+        AssertContains(settingsPersistenceText, "_suppressMicrophoneMonitorUpdate = false;\n                }\n\n                SaveSettingsOrThrow();");
+        foreach (var delegatedPersistedAutomationMember in new[]
+        {
+            "SetRecordingFormatAsync",
+            "SetQualityAsync",
+            "SetSplitEncodeModeAsync",
+            "SetCustomBitrateAsync",
+            "SetPresetAsync",
+            "SetOutputPathAsync"
+        })
+        {
+            AssertMemberContains(settingsPersistenceText, delegatedPersistedAutomationMember, "RunPersistedSettingsAutomationAsync(");
+        }
+
         AssertContains(settingsPersistenceText, "Directory.Exists");
         AssertContains(settingsPersistenceText, "_isLoadingSettings = true;");
         AssertContains(settingsPersistenceText, "_isLoadingSettings = false;");
@@ -6493,6 +6536,52 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Settings.cs")),
             "old settings pass-through partial removed");
         AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
+
+        var settingsServiceType = RequireType("Sussudio.Services.Runtime.SettingsService");
+        var userSettingsType = RequireType("Sussudio.Services.Runtime.UserSettings");
+        var publicSave = settingsServiceType.GetMethod(
+            "Save",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[] { userSettingsType, typeof(string).MakeByRefType() },
+            null);
+        AssertNotNull(publicSave, "SettingsService.Save(UserSettings, out string)");
+        var saveToFile = settingsServiceType.GetMethod(
+            "SaveToFile",
+            BindingFlags.NonPublic | BindingFlags.Static,
+            null,
+            new[] { userSettingsType, typeof(string), typeof(string).MakeByRefType() },
+            null);
+        AssertNotNull(saveToFile, "SettingsService.SaveToFile");
+
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"sussudio_settings_test_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempRoot);
+        try
+        {
+            var settings = Activator.CreateInstance(userSettingsType)
+                ?? throw new InvalidOperationException("UserSettings instance was not created.");
+            SetPropertyOrBackingField(settings, "OutputPath", "C:\\SettingsTest");
+            var successPath = Path.Combine(tempRoot, "ok", "settings.json");
+            var successArgs = new object?[] { settings, successPath, string.Empty };
+            AssertEqual(true, (bool)saveToFile!.Invoke(null, successArgs)!, "SettingsService.SaveToFile succeeds");
+            AssertEqual(string.Empty, (string)successArgs[2]!, "successful settings save failure text");
+            AssertEqual(true, File.Exists(successPath), "successful settings save writes JSON");
+
+            var blockedDirectory = Path.Combine(tempRoot, "blocked");
+            File.WriteAllText(blockedDirectory, "not a directory");
+            var failureArgs = new object?[]
+            {
+                settings,
+                Path.Combine(blockedDirectory, "settings.json"),
+                string.Empty
+            };
+            AssertEqual(false, (bool)saveToFile.Invoke(null, failureArgs)!, "SettingsService.SaveToFile reports filesystem failure");
+            AssertContains((string)failureArgs[2]!, "IOException");
+        }
+        finally
+        {
+            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }
