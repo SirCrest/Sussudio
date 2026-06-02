@@ -1549,20 +1549,57 @@ static partial class Program
             "rtk_sendI2CATCommand",
             "rtk_getCurrentDeviceName"
         };
+        var verifiedRtkAbiImplementations = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["rtk_initialize"] = "VERIFIED_FORWARD4(rtk_initialize)",
+            ["rtk_uninitialize"] = "VERIFIED_FORWARD0(rtk_uninitialize)",
+            ["rtk_openPort"] = "RESOLVE_TYPED_OR_RETURN(rtk_openPort, RtkFourArgsFn, -1);",
+            ["rtk_closePort"] = "VERIFIED_FORWARD0(rtk_closePort)",
+            ["rtk_isOpen"] = "VERIFIED_FORWARD4(rtk_isOpen)",
+            ["rtk_setUVCExtension"] = "RESOLVE_TYPED_OR_RETURN(rtk_setUVCExtension, RtkFourArgsFn, -1);",
+            ["rtk_setCurrentDevice"] = "RESOLVE_TYPED_OR_RETURN(rtk_setCurrentDevice, RtkSetCurrentDeviceFn, -1);",
+            ["rtk_sendI2CATCommand"] = "RESOLVE_TYPED_OR_RETURN(rtk_sendI2CATCommand, RtkEightArgsFn, -1);",
+            ["rtk_getCurrentDeviceName"] = "RESOLVE_TYPED_OR_RETURN(rtk_getCurrentDeviceName, RtkGetCurrentDeviceNameFn, nullptr);"
+        };
+        var mutatingRtkExports = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "rtk_writeRbus",
+            "rtk_rescueWriteRbus",
+            "rtk_enterDebugMode",
+            "rtk_exitDebugMode",
+            "rtk_burnDPEDID",
+            "rtk_burnEDID",
+            "rtk_burnHDCP",
+            "rtk_burnMultiFiles",
+            "rtk_burnToFlash",
+            "rtk_burnToFlashWithLog",
+            "rtk_burnUSBDesription"
+        };
 
         AssertContains(rtkShimSource, "RTK_SHIM_ALLOW_UNVERIFIED_ABI");
+        AssertContains(rtkShimSource, "RTK_SHIM_ALLOW_REPEAT_MUTATION");
+        AssertContains(rtkShimSource, "CreateMutexW(nullptr, FALSE, L\"Local\\\\Sussudio.RtkIoShim.Mutation.v1\")");
+        AssertContains(rtkShimSource, "WaitForSingleObject(lock, 0)");
+        AssertContains(rtkShimSource, "static bool TryBeginRtkMutationAttempt(const char* name, volatile LONG* attempted)");
         AssertContains(rtkShimSource, "static long long BlockUnverifiedAbiCall(const char* name)");
         AssertContains(rtkShimSource, "if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall(\"rtk_sendATCommand\");");
         AssertContains(rtkShimSource, "RESOLVE_TYPED_OR_RETURN(rtk_sendI2CATCommand, RtkEightArgsFn, -1);");
         AssertContains(rtkShimSource, "__declspec(dllexport) long long __cdecl rtk_sendI2CATCommand(\n    long long a1, long long a2, long long a3, long long a4,\n    long long a5, long long a6, long long a7, long long a8)");
         AssertContains(rtkShimSource, "__declspec(dllexport) const char* __cdecl rtk_getCurrentDeviceName()");
-        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_burnToFlash)");
-        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_enterDebugMode)");
+        AssertContains(rtkShimSource, "MUTATING_UNVERIFIED_FORWARD(rtk_burnToFlash)");
+        AssertContains(rtkShimSource, "MUTATING_UNVERIFIED_FORWARD(rtk_enterDebugMode)");
         AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_readRbus)");
-        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_writeRbus)");
+        AssertContains(rtkShimSource, "MUTATING_UNVERIFIED_FORWARD(rtk_writeRbus)");
         AssertDoesNotContain(rtkShimSource, "#define FORWARD(name)");
         AssertDoesNotContain(rtkShimSource, "SIMPLE_FORWARD(");
         AssertOccursBefore(rtkShimSource, "if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall(\"rtk_sendATCommand\");", "Log(\"rtk_sendATCommand");
+        foreach (var verifiedExport in verifiedRtkAbiExports)
+        {
+            AssertContains(rtkShimSource, verifiedRtkAbiImplementations[verifiedExport]);
+            AssertDoesNotContain(rtkShimSource, $"UNVERIFIED_FORWARD({verifiedExport})");
+            AssertDoesNotContain(rtkShimSource, $"MUTATING_UNVERIFIED_FORWARD({verifiedExport})");
+        }
+
         foreach (var exportName in EnumerateRtkDefExports(rtkShimDef))
         {
             if (verifiedRtkAbiExports.Contains(exportName))
@@ -1576,7 +1613,11 @@ static partial class Program
                 continue;
             }
 
-            AssertContains(rtkShimSource, $"UNVERIFIED_FORWARD({exportName})");
+            AssertContains(
+                rtkShimSource,
+                mutatingRtkExports.Contains(exportName)
+                    ? $"MUTATING_UNVERIFIED_FORWARD({exportName})"
+                    : $"UNVERIFIED_FORWARD({exportName})");
         }
 
         var trimmedName = getRtkDeviceName.Invoke(null, [selectedPathDevice]) as string;

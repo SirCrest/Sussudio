@@ -507,10 +507,10 @@ typedef long long (__cdecl *RtkEightArgsFn)(
 typedef long long (__cdecl *RtkSetCurrentDeviceFn)(const char* deviceName, long long a2);
 typedef const char* (__cdecl *RtkGetCurrentDeviceNameFn)();
 
-static bool AllowUnverifiedAbiForwarding() {
+static bool ReadTruthyEnvironmentFlag(const wchar_t* name) {
     wchar_t value[32] = {};
     DWORD length = GetEnvironmentVariableW(
-        L"RTK_SHIM_ALLOW_UNVERIFIED_ABI",
+        name,
         value,
         (DWORD)(sizeof(value) / sizeof(value[0])));
     if (length == 0) {
@@ -523,10 +523,59 @@ static bool AllowUnverifiedAbiForwarding() {
            _wcsicmp(value, L"no") != 0;
 }
 
+static bool AllowUnverifiedAbiForwarding() {
+    return ReadTruthyEnvironmentFlag(L"RTK_SHIM_ALLOW_UNVERIFIED_ABI");
+}
+
+static bool AllowRepeatedRtkMutations() {
+    return ReadTruthyEnvironmentFlag(L"RTK_SHIM_ALLOW_REPEAT_MUTATION");
+}
+
 static long long BlockUnverifiedAbiCall(const char* name) {
     Log("blocked unverified ABI call %s; set RTK_SHIM_ALLOW_UNVERIFIED_ABI=1 to forward with the legacy generic ABI", name);
     SetLastError(ERROR_INVALID_FUNCTION);
     return -1;
+}
+
+static HANDLE AcquireRtkMutationLock(const char* name) {
+    HANDLE lock = CreateMutexW(nullptr, FALSE, L"Local\\Sussudio.RtkIoShim.Mutation.v1");
+    if (!lock) {
+        Log("%s blocked: mutation mutex create failed, error=%lu", name, GetLastError());
+        return nullptr;
+    }
+
+    DWORD wait = WaitForSingleObject(lock, 0);
+    if (wait != WAIT_OBJECT_0 && wait != WAIT_ABANDONED) {
+        Log("%s blocked: RTK mutation already in progress, wait=%lu", name, wait);
+        SetLastError(ERROR_BUSY);
+        CloseHandle(lock);
+        return nullptr;
+    }
+
+    return lock;
+}
+
+static void ReleaseRtkMutationLock(HANDLE lock) {
+    if (!lock) {
+        return;
+    }
+
+    ReleaseMutex(lock);
+    CloseHandle(lock);
+}
+
+static bool TryBeginRtkMutationAttempt(const char* name, volatile LONG* attempted) {
+    if (AllowRepeatedRtkMutations()) {
+        return true;
+    }
+
+    if (InterlockedCompareExchange(attempted, 1, 0) == 0) {
+        return true;
+    }
+
+    Log("%s blocked: repeated RTK mutation call; set RTK_SHIM_ALLOW_REPEAT_MUTATION=1 to allow repeated lab calls", name);
+    SetLastError(ERROR_ALREADY_INITIALIZED);
+    return false;
 }
 
 #define RESOLVE_TYPED_OR_RETURN(name, type, failure) \
@@ -569,6 +618,27 @@ __declspec(dllexport) long long __cdecl name( \
     Log(#name "(a1=%llX, a2=%llX, a3=%llX, a4=%llX)", a1, a2, a3, a4); \
     RESOLVE_UNVERIFIED_OR_RETURN(name); \
     long long r = real_##name(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12); \
+    Log("  -> %lld", r); \
+    return r; \
+}
+
+#define MUTATING_UNVERIFIED_FORWARD(name) \
+__declspec(dllexport) long long __cdecl name( \
+    long long a1, long long a2, long long a3, long long a4, \
+    long long a5, long long a6, long long a7, long long a8, \
+    long long a9, long long a10, long long a11, long long a12) \
+{ \
+    static volatile LONG attempted_##name = 0; \
+    if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall(#name); \
+    HANDLE mutationLock = AcquireRtkMutationLock(#name); \
+    if (!mutationLock) return -1; \
+    if (!TryBeginRtkMutationAttempt(#name, &attempted_##name)) { ReleaseRtkMutationLock(mutationLock); return -1; } \
+    Log(#name "(a1=%llX, a2=%llX, a3=%llX, a4=%llX)", a1, a2, a3, a4); \
+    static GenericFn real_##name = nullptr; \
+    if (!real_##name) real_##name = (GenericFn)GetReal(#name); \
+    if (!real_##name) { Log("ERROR: " #name " not found"); ReleaseRtkMutationLock(mutationLock); return -1; } \
+    long long r = real_##name(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12); \
+    ReleaseRtkMutationLock(mutationLock); \
     Log("  -> %lld", r); \
     return r; \
 }
@@ -707,18 +777,18 @@ UNVERIFIED_FORWARD(rtk_uninitialize_ex)
 UNVERIFIED_FORWARD(rtk_setDevice)
 UNVERIFIED_FORWARD(rtk_enableLog)
 UNVERIFIED_FORWARD(rtk_readRbus)
-UNVERIFIED_FORWARD(rtk_writeRbus)
-UNVERIFIED_FORWARD(rtk_enterDebugMode)
-UNVERIFIED_FORWARD(rtk_exitDebugMode)
+MUTATING_UNVERIFIED_FORWARD(rtk_writeRbus)
+MUTATING_UNVERIFIED_FORWARD(rtk_enterDebugMode)
+MUTATING_UNVERIFIED_FORWARD(rtk_exitDebugMode)
 UNVERIFIED_FORWARD(rtk_rescueReadRbus)
-UNVERIFIED_FORWARD(rtk_rescueWriteRbus)
-UNVERIFIED_FORWARD(rtk_burnDPEDID)
-UNVERIFIED_FORWARD(rtk_burnEDID)
-UNVERIFIED_FORWARD(rtk_burnHDCP)
-UNVERIFIED_FORWARD(rtk_burnMultiFiles)
-UNVERIFIED_FORWARD(rtk_burnToFlash)
-UNVERIFIED_FORWARD(rtk_burnToFlashWithLog)
-UNVERIFIED_FORWARD(rtk_burnUSBDesription)
+MUTATING_UNVERIFIED_FORWARD(rtk_rescueWriteRbus)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnDPEDID)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnEDID)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnHDCP)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnMultiFiles)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnToFlash)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnToFlashWithLog)
+MUTATING_UNVERIFIED_FORWARD(rtk_burnUSBDesription)
 UNVERIFIED_FORWARD(rtk_readMultiFiles)
 UNVERIFIED_FORWARD(rtk_get_HDCP_Version_ByFile)
 UNVERIFIED_FORWARD(rtk_setBeforeBurnCallBack)
