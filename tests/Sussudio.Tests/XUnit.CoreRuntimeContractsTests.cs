@@ -1874,7 +1874,7 @@ static partial class Program
 
     internal static Task SharedFormatter_RendersRecordingIntegrity()
     {
-        var toolAssembly = LoadToolAssembly(System.IO.Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var toolAssembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
         var formatterType = toolAssembly.GetType("Sussudio.Tools.AutomationSnapshotFormatter")
             ?? throw new InvalidOperationException("Sussudio.Tools.AutomationSnapshotFormatter type not found.");
         var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.NonPublic | BindingFlags.Static)

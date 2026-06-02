@@ -33,10 +33,11 @@ static partial class Program
         if (!File.Exists(assemblyPath))
         {
             Console.Error.WriteLine($"Target assembly not found: {assemblyPath}");
-            Console.Error.WriteLine("Build the app first: dotnet build Sussudio/Sussudio.csproj -c Debug -p:Platform=x64");
+            Console.Error.WriteLine($"Build the app first: {GetSussudioBuildCommand()}");
             return 2;
         }
 
+        RequireFreshSussudioAssembly(assemblyPath);
         _assembly = Assembly.LoadFrom(assemblyPath);
 
         var results = await RunAllChecksAsync().ConfigureAwait(false);
@@ -66,16 +67,67 @@ static partial class Program
             return Path.GetFullPath(args[0]);
         }
 
-        var root = GetRepoRoot();
-        return Path.Combine(
-            root,
+        return Path.GetFullPath(Path.Combine(GetRepoRoot(), SussudioAppAssemblyRelativePath));
+    }
+
+    internal static string ActiveTestConfiguration
+    {
+        get
+        {
+            var configured = Environment.GetEnvironmentVariable("SUSSUDIO_TEST_CONFIGURATION");
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return configured.Trim();
+            }
+
+            return InferConfigurationFromOutputPath(AppContext.BaseDirectory) ?? "Debug";
+        }
+    }
+
+    internal static string SussudioAppAssemblyRelativePath => Path.Combine(
             "Sussudio",
             "bin",
             "x64",
-            "Debug",
+            ActiveTestConfiguration,
             "net8.0-windows10.0.19041.0",
             "win-x64",
             "Sussudio.dll");
+
+    internal static string SsctlAssemblyRelativePath
+        => GetToolAssemblyRelativePath("ssctl", "net8.0", "ssctl.dll");
+
+    internal static string McpServerAssemblyRelativePath
+        => GetToolAssemblyRelativePath("McpServer", "net8.0", "McpServer.dll");
+
+    internal static string AutomationClientAssemblyRelativePath
+        => GetToolAssemblyRelativePath("AutomationClient", "net8.0", "AutomationClient.dll");
+
+    internal static string NativeXuAudioProbeAssemblyRelativePath => Path.Combine(
+        "tools",
+        "NativeXuAudioProbe",
+        "bin",
+        ActiveTestConfiguration,
+        "net8.0-windows10.0.19041.0",
+        "win-x64",
+        "NativeXuAudioProbe.dll");
+
+    private static string GetToolAssemblyRelativePath(string toolName, string targetFramework, string assemblyName)
+        => Path.Combine("tools", toolName, "bin", ActiveTestConfiguration, targetFramework, assemblyName);
+
+    private static string? InferConfigurationFromOutputPath(string path)
+    {
+        var directory = new DirectoryInfo(path);
+        while (directory != null)
+        {
+            if (directory.Parent?.Name.Equals("bin", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return directory.Name;
+            }
+
+            directory = directory.Parent;
+        }
+
+        return null;
     }
 
     private static Task<List<CheckResult>> RunAllChecksAsync()
@@ -1303,7 +1355,25 @@ static partial class Program
         }
     }
 
-    private static void RequireFreshToolAssembly(string relativeAssemblyPath, string fullPath)
+    internal static void RequireFreshSussudioAssembly(string assemblyPath)
+    {
+        var fullPath = Path.GetFullPath(assemblyPath);
+        if (!File.Exists(fullPath))
+        {
+            throw new InvalidOperationException(
+                $"Required Sussudio app assembly was not found: {assemblyPath}. Build it first with: {GetSussudioBuildCommand()}");
+        }
+
+        var assemblyWriteTime = File.GetLastWriteTimeUtc(fullPath);
+        var newestInputWriteTime = GetNewestSussudioInputWriteTimeUtc();
+        if (newestInputWriteTime > assemblyWriteTime)
+        {
+            throw new InvalidOperationException(
+                $"Required Sussudio app assembly is stale: {assemblyPath}. Build it again with: {GetSussudioBuildCommand()}");
+        }
+    }
+
+    internal static void RequireFreshToolAssembly(string relativeAssemblyPath, string fullPath)
     {
         if (!File.Exists(fullPath))
         {
@@ -1320,20 +1390,67 @@ static partial class Program
         }
     }
 
-    private static DateTime GetNewestToolInputWriteTimeUtc(string relativeAssemblyPath)
+    private static DateTime GetNewestSussudioInputWriteTimeUtc()
     {
         var root = GetRepoRoot();
-        var projectDirectory = GetToolProjectDirectory(relativeAssemblyPath);
-        var inputDirectories = EnumerateToolInputDirectories(projectDirectory)
-            .Concat(UsesCommonToolSources(projectDirectory)
-                ? EnumerateToolInputDirectories(Path.Combine(root, "tools", "Common"))
-                : Array.Empty<string>())
+        var inputDirectories = new[]
+            {
+                Path.Combine(root, "Sussudio"),
+                Path.Combine(root, "Sussudio.Automation.Contracts")
+            }
+            .SelectMany(EnumerateToolInputDirectories)
+            .Concat(new[] { root })
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var inputFiles = inputDirectories
             .SelectMany(Directory.EnumerateFiles)
-            .Concat(EnumerateToolProjectCompileIncludes(projectDirectory))
-            .Concat(Directory.EnumerateFiles(Path.Combine(root, "Sussudio.Automation.Contracts"), "*.cs"))
+            .Concat(Directory.EnumerateFiles(root, "*.props"))
+            .Concat(Directory.EnumerateFiles(root, "*.targets"))
+            .Where(file => File.Exists(file) && IsBuildInputFile(file))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        var newest = DateTime.MinValue;
+        foreach (var file in inputFiles)
+        {
+            var writeTime = File.GetLastWriteTimeUtc(file);
+            if (writeTime > newest)
+            {
+                newest = writeTime;
+            }
+        }
+
+        foreach (var directory in inputDirectories)
+        {
+            var writeTime = Directory.GetLastWriteTimeUtc(directory);
+            if (writeTime > newest)
+            {
+                newest = writeTime;
+            }
+        }
+
+        return newest;
+    }
+
+    private static DateTime GetNewestToolInputWriteTimeUtc(string relativeAssemblyPath)
+    {
+        var root = GetRepoRoot();
+        var projectDirectory = GetToolProjectDirectory(relativeAssemblyPath);
+        var contractsInputDirectories = EnumerateToolInputDirectories(Path.Combine(root, "Sussudio.Automation.Contracts"));
+        var linkedCompileInputs = EnumerateToolProjectCompileIncludes(projectDirectory).ToArray();
+        var inputDirectories = EnumerateToolInputDirectories(projectDirectory)
+            .Concat(UsesCommonToolSources(projectDirectory)
+                ? EnumerateToolInputDirectories(Path.Combine(root, "tools", "Common"))
+                : Array.Empty<string>())
+            .Concat(contractsInputDirectories)
+            .Concat(EnumerateExistingCompileIncludeDirectories(linkedCompileInputs))
+            .Concat(new[] { root })
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var inputFiles = inputDirectories
+            .SelectMany(Directory.EnumerateFiles)
+            .Concat(linkedCompileInputs)
+            .Concat(Directory.EnumerateFiles(root, "*.props"))
+            .Concat(Directory.EnumerateFiles(root, "*.targets"))
             .Where(file => File.Exists(file) && IsToolInputFile(file))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
@@ -1387,6 +1504,24 @@ static partial class Program
                 }
 
                 yield return Path.GetFullPath(Path.Combine(projectFileDirectory, expanded));
+            }
+        }
+    }
+
+    private static IEnumerable<string> EnumerateExistingCompileIncludeDirectories(IEnumerable<string> compileIncludes)
+    {
+        foreach (var include in compileIncludes)
+        {
+            var directory = Path.GetDirectoryName(include);
+            while (!string.IsNullOrWhiteSpace(directory))
+            {
+                if (Directory.Exists(directory))
+                {
+                    yield return directory;
+                    break;
+                }
+
+                directory = Path.GetDirectoryName(directory);
             }
         }
     }
@@ -1448,36 +1583,44 @@ static partial class Program
         throw new InvalidOperationException($"No tool project mapping is configured for '{relativeAssemblyPath}'.");
     }
 
+    private static string GetSussudioBuildCommand()
+        => $"dotnet build Sussudio.slnx -p:Platform=x64 -c {ActiveTestConfiguration} --no-restore";
+
     private static string GetToolBuildCommand(string relativeAssemblyPath)
     {
         var normalized = relativeAssemblyPath.Replace('\\', '/');
         if (normalized.StartsWith("tools/ssctl/", StringComparison.OrdinalIgnoreCase))
         {
-            return "dotnet build tools/ssctl/ssctl.csproj -c Debug --no-restore";
+            return $"dotnet build tools/ssctl/ssctl.csproj -c {ActiveTestConfiguration} --no-restore";
         }
 
         if (normalized.StartsWith("tools/McpServer/", StringComparison.OrdinalIgnoreCase))
         {
-            return "dotnet build tools/McpServer/McpServer.csproj -c Debug --no-restore";
+            return $"dotnet build tools/McpServer/McpServer.csproj -c {ActiveTestConfiguration} --no-restore";
         }
 
         if (normalized.StartsWith("tools/AutomationClient/", StringComparison.OrdinalIgnoreCase))
         {
-            return "dotnet build tools/AutomationClient/AutomationClient.csproj -c Debug --no-restore";
+            return $"dotnet build tools/AutomationClient/AutomationClient.csproj -c {ActiveTestConfiguration} --no-restore";
         }
 
         if (normalized.StartsWith("tools/NativeXuAudioProbe/", StringComparison.OrdinalIgnoreCase))
         {
-            return "dotnet build tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj -c Debug --no-restore";
+            return $"dotnet build tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj -c {ActiveTestConfiguration} --no-restore";
         }
 
         return "dotnet build";
     }
 
     private static bool IsToolInputFile(string file)
+        => IsBuildInputFile(file);
+
+    private static bool IsBuildInputFile(string file)
     {
         var extension = Path.GetExtension(file);
         return extension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".xaml", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".resw", StringComparison.OrdinalIgnoreCase) ||
                extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase) ||
                extension.Equals(".props", StringComparison.OrdinalIgnoreCase) ||
                extension.Equals(".targets", StringComparison.OrdinalIgnoreCase);
@@ -1621,7 +1764,7 @@ static partial class Program
 
     private static Type RequireMcpType(string typeName)
     {
-        var assembly = LoadToolAssemblyIsolated(Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll"));
+        var assembly = LoadToolAssemblyIsolated(global::Program.McpServerAssemblyRelativePath);
         return assembly.GetType(typeName)
                ?? throw new InvalidOperationException($"{typeName} was not found in McpServer.dll.");
     }

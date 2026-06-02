@@ -42,7 +42,7 @@ public sealed class SsctlFormatterContractsTests
     [Fact]
     public Task EmitsCoreSnapshotSections()
     {
-        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = ToolFormatterTestAssembly.Load(assemblyPath);
         var formatterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.Formatters")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters type not found.");
@@ -202,7 +202,7 @@ public sealed class SsctlFormatterContractsTests
     [Fact]
     public Task TimelineOutputPreservesTableAndSummary()
     {
-        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = ToolFormatterTestAssembly.Load(assemblyPath);
         var formatterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.Formatters")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters type not found.");
@@ -664,7 +664,7 @@ public sealed class ToolFormatterContractsTests
 
     private static Type RequireSharedToolType(string typeName)
     {
-        var assembly = ToolFormatterTestAssembly.Load(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = ToolFormatterTestAssembly.Load(global::Program.SsctlAssemblyRelativePath);
         return assembly.GetType(typeName)
                ?? throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly.");
     }
@@ -858,6 +858,7 @@ internal static class ToolFormatterTestAssembly
                 throw new InvalidOperationException($"Required tool assembly was not found: {relativeAssemblyPath}.");
             }
 
+            global::Program.RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
             var loadContext = new ToolFormatterTestAssemblyLoadContext(fullPath);
             var assembly = loadContext.LoadFromAssemblyPath(fullPath);
             Cache[fullPath] = assembly;
@@ -1814,7 +1815,7 @@ static partial class Program
 
     internal static async Task McpHostToolSchema_UsesPipeClientAsService()
     {
-        var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
+        var assemblyPath = global::Program.McpServerAssemblyRelativePath;
         LoadToolAssemblyIsolated(assemblyPath);
 
         using var process = StartMcpServerProcess(
@@ -1902,7 +1903,7 @@ static partial class Program
 
     internal static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
     {
-        var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
+        var assemblyPath = global::Program.McpServerAssemblyRelativePath;
         LoadToolAssemblyIsolated(assemblyPath);
 
         using var process = StartMcpServerProcess(
@@ -5153,7 +5154,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             .Replace("\r\n", "\n");
         var flashbackHandlersText = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
-        var ssctlAssembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var ssctlAssembly = LoadToolAssemblyIsolated(global::Program.SsctlAssemblyRelativePath);
         var helpWriterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.SsctlHelpWriter")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.SsctlHelpWriter type not found.");
         var diagnosticSessionOptionsType = ssctlAssembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
@@ -5319,7 +5320,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     private static SsctlCommandRoutingContext CreateSsctlCommandRoutingContext()
     {
-        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = LoadToolAssemblyIsolated(assemblyPath);
         var transportType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport type not found.");
@@ -6424,7 +6425,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     private static Assembly LoadDiagnosticSessionRunnerAssembly()
     {
-        return LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        return LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
     }
 
     private static object CreateDiagnosticSessionOptions(
@@ -6540,7 +6541,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops()
     {
-        var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
         var healthPolicyType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthPolicy")
             ?? throw new InvalidOperationException("DiagnosticSessionHealthPolicy type was not found.");
         var observationType = assembly.GetType("Sussudio.Tools.DiagnosticHealthObservation")
@@ -7362,7 +7363,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task DiagnosticSessionRunner_IgnoresTransientFlashbackWarmupWarnings()
     {
-        var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
         var healthPolicyType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthPolicy")
             ?? throw new InvalidOperationException("DiagnosticSessionHealthPolicy type was not found.");
         var sampleType = assembly.GetType("Sussudio.Tools.DiagnosticSessionSample")
@@ -7539,7 +7540,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task DiagnosticSessionFlashbackStressScenario_ClassifiesAudioMasterFallbacks()
     {
-        var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
         var stressScenarioType = assembly.GetType("Sussudio.Tools.DiagnosticSessionFlashbackStressScenario")
             ?? throw new InvalidOperationException("DiagnosticSessionFlashbackStressScenario type was not found.");
         var classify = stressScenarioType.GetMethod(
@@ -8102,7 +8103,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task DiagnosticSessionFlashbackMetrics_ExportForceRotateCountersIgnoreRelevanceGate()
     {
-        var assembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = LoadToolAssemblyIsolated(global::Program.SsctlAssemblyRelativePath);
         var metricsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionFlashbackMetrics")
             ?? throw new InvalidOperationException("Sussudio.Tools.DiagnosticSessionFlashbackMetrics was not found.");
         var sampleType = assembly.GetType("Sussudio.Tools.DiagnosticSessionSample")
@@ -8204,7 +8205,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     private static Type RequireSharedToolType(string typeName)
     {
-        var assembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = LoadToolAssemblyIsolated(global::Program.SsctlAssemblyRelativePath);
         return assembly.GetType(typeName)
                ?? throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly.");
     }
@@ -9603,7 +9604,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task PresentMonParser_SelectsDominantNonArtifactSwapChain()
     {
-        var toolAssembly = LoadToolAssemblyIsolated(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var toolAssembly = LoadToolAssemblyIsolated(global::Program.SsctlAssemblyRelativePath);
         var probeType = toolAssembly.GetType("Sussudio.Tools.PresentMonProbe")
             ?? throw new InvalidOperationException("Sussudio.Tools.PresentMonProbe type not found.");
         var parseCsv = probeType.GetMethod(
@@ -9780,7 +9781,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static async Task SsctlPipeTransport_ExposesAdvancedAutomationCommandIds()
     {
-        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = LoadToolAssemblyIsolated(assemblyPath);
 
         // Verify PipeTransport exposes expected command routing.
@@ -10100,6 +10101,83 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"", scriptText);
         Assert.DoesNotContain("Sussudio\\Models\\AutomationCommandKind.cs", scriptText);
         Assert.DoesNotContain("Models\\AutomationCommandKind.cs", scriptText);
+    }
+
+    [Fact]
+    public void ContractTests_LoadActiveFreshBuildArtifacts()
+    {
+        var harnessText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/HarnessCore.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var toolContractsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/XUnit.ToolContractsTests.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var recordingContractsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var coreRuntimeContractsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var architectureGuardrailsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains("SUSSUDIO_TEST_CONFIGURATION", harnessText);
+        Assert.Contains("internal static string ActiveTestConfiguration", harnessText);
+        Assert.Contains("InferConfigurationFromOutputPath(AppContext.BaseDirectory)", harnessText);
+        Assert.Contains("internal static string SussudioAppAssemblyRelativePath", harnessText);
+        Assert.Contains("internal static string SsctlAssemblyRelativePath", harnessText);
+        Assert.Contains("internal static string McpServerAssemblyRelativePath", harnessText);
+        Assert.Contains("internal static string NativeXuAudioProbeAssemblyRelativePath", harnessText);
+        Assert.Contains("RequireFreshSussudioAssembly(assemblyPath);", harnessText);
+        Assert.Contains("internal static void RequireFreshToolAssembly(string relativeAssemblyPath, string fullPath)", harnessText);
+        Assert.Contains("GetNewestSussudioInputWriteTimeUtc()", harnessText);
+        Assert.Contains("GetNewestToolInputWriteTimeUtc(relativeAssemblyPath)", harnessText);
+        Assert.Contains("Directory.EnumerateFiles(root, \"*.props\")", harnessText);
+        Assert.Contains("Directory.EnumerateFiles(root, \"*.targets\")", harnessText);
+        Assert.Equal(2, CountOccurrences(harnessText, ".Concat(new[] { root })"));
+        Assert.Contains("var contractsInputDirectories = EnumerateToolInputDirectories(Path.Combine(root, \"Sussudio.Automation.Contracts\"));", harnessText);
+        Assert.Contains("var linkedCompileInputs = EnumerateToolProjectCompileIncludes(projectDirectory).ToArray();", harnessText);
+        Assert.Contains(".Concat(contractsInputDirectories)", harnessText);
+        Assert.Contains(".Concat(EnumerateExistingCompileIncludeDirectories(linkedCompileInputs))", harnessText);
+        Assert.Contains(".Concat(linkedCompileInputs)", harnessText);
+        Assert.Contains("private static IEnumerable<string> EnumerateExistingCompileIncludeDirectories(IEnumerable<string> compileIncludes)", harnessText);
+        Assert.Contains("Path.Combine(root, \"Sussudio.Automation.Contracts\")", harnessText);
+        Assert.Contains("-c {ActiveTestConfiguration}", harnessText);
+
+        Assert.Contains("global::Program.SussudioAppAssemblyRelativePath", recordingContractsText);
+        Assert.Contains("global::Program.RequireFreshSussudioAssembly(path);", recordingContractsText);
+        Assert.Contains("global::Program.RequireFreshToolAssembly(relativeAssemblyPath, fullPath);", toolContractsText);
+        Assert.Contains("global::Program.SsctlAssemblyRelativePath", toolContractsText);
+        Assert.Contains("global::Program.McpServerAssemblyRelativePath", toolContractsText);
+        Assert.Contains("global::Program.NativeXuAudioProbeAssemblyRelativePath", architectureGuardrailsText);
+        Assert.Contains("LoadToolAssembly(global::Program.SsctlAssemblyRelativePath)", coreRuntimeContractsText);
+
+        foreach (var relativePath in Directory.GetFiles(
+                     Path.Combine(RuntimeContractSource.GetRepoRoot(), "tests", "Sussudio.Tests"),
+                     "*.cs"))
+        {
+            var text = File.ReadAllText(relativePath).Replace("\r\n", "\n", StringComparison.Ordinal);
+            var directToolDebugArtifactPattern =
+                "Path\\.Combine\\(\\s*\"tools\"[\\s\\S]*?\"bin\"\\s*,\\s*" + "\"Debug\"";
+            Assert.False(
+                System.Text.RegularExpressions.Regex.IsMatch(text, directToolDebugArtifactPattern),
+                $"{relativePath} must not load tool assemblies from a hard-coded Debug artifact path.");
+            Assert.DoesNotContain("Path.Combine(\"tools\", \"ssctl\", \"bin\", " + "\"Debug\"", text);
+            Assert.DoesNotContain("Path.Combine(\"tools\", \"McpServer\", \"bin\", " + "\"Debug\"", text);
+            Assert.DoesNotContain("Path.Combine(\"tools\", \"NativeXuAudioProbe\", \"bin\", " + "\"Debug\"", text);
+            Assert.DoesNotContain("Path.Combine(\"tools\", \"AutomationClient\", \"bin\", " + "\"Debug\"", text);
+            Assert.DoesNotContain("Sussudio/bin/x64/" + "Debug", text);
+            Assert.DoesNotContain("Sussudio\\bin\\x64\\" + "Debug", text);
+        }
+    }
+
+    private static int CountOccurrences(string text, string value)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
     }
 
     [Fact]
@@ -10466,7 +10544,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
 
     private static Type RequireSharedToolType(string typeName)
     {
-        var assembly = ToolFormatterTestAssembly.Load(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var assembly = ToolFormatterTestAssembly.Load(global::Program.SsctlAssemblyRelativePath);
         var type = assembly.GetType(typeName);
         if (type != null)
         {

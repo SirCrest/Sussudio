@@ -943,13 +943,15 @@ internal static class SussudioAssembly
     {
         if (_cached != null) return _cached;
         var path = System.Environment.GetEnvironmentVariable("SUSSUDIO_TEST_ASSEMBLY")
-            ?? "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll";
-        if (!System.IO.File.Exists(path))
+            ?? global::Program.SussudioAppAssemblyRelativePath;
+        if (!System.IO.Path.IsPathRooted(path))
         {
             var repoRoot = FindRepoRoot();
-            var rooted = System.IO.Path.Combine(repoRoot, path.Replace('/', System.IO.Path.DirectorySeparatorChar));
-            if (System.IO.File.Exists(rooted)) path = rooted;
+            path = System.IO.Path.Combine(repoRoot, path.Replace('/', System.IO.Path.DirectorySeparatorChar));
         }
+
+        path = System.IO.Path.GetFullPath(path);
+        global::Program.RequireFreshSussudioAssembly(path);
         _cached = Assembly.LoadFrom(path);
         return _cached;
     }

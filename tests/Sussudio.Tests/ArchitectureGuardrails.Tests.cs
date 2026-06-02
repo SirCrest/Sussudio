@@ -1492,14 +1492,7 @@ static partial class Program
 
     internal static Task RtkI2cProbe_GuardsUnsafeNativePaths()
     {
-        var assembly = LoadToolAssemblyIsolated(Path.Combine(
-            "tools",
-            "NativeXuAudioProbe",
-            "bin",
-            "Debug",
-            "net8.0-windows10.0.19041.0",
-            "win-x64",
-            "NativeXuAudioProbe.dll"));
+        var assembly = LoadToolAssemblyIsolated(global::Program.NativeXuAudioProbeAssemblyRelativePath);
         var probeType = assembly.GetType("RtkI2cProbe")
             ?? throw new InvalidOperationException("RtkI2cProbe type not found.");
         var run = probeType.GetMethod("Run", BindingFlags.Public | BindingFlags.Static)
