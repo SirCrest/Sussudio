@@ -4745,7 +4745,7 @@ Notes for future agents: keep native DWM bootstrap and recording-aware close/fin
 
 Date: 2026-05-26
 Area: launch flow production locality
-Problem: `LaunchStartupController.cs` was a 54-line loaded-time startup owner split away from `LaunchEntranceAnimationController.cs`, even though startup immediately schedules shell reveal/device refresh, starts automation in the finally path, and triggers the splash/entrance sequence owned by the adjacent launch entrance controller. Reviewing first-load startup, no-preview fallback, automation start timing, and launch entrance choreography required two production files plus the same shell adapter/tests.
+Problem: `LaunchStartupController.cs` was a 54-line loaded-time startup owner split away from `LaunchEntranceAnimationController.cs`, even though startup immediately schedules shell reveal/device refresh, gates automation startup after successful launch refresh, and triggers the splash/entrance sequence owned by the adjacent launch entrance controller. Reviewing first-load startup, no-preview fallback, automation start timing, and launch entrance choreography required two production files plus the same shell adapter/tests.
 Files consolidated: `Sussudio/Controllers/Launch/LaunchStartupController.cs`; `Sussudio/Controllers/Launch/Entrance/LaunchEntranceAnimationController.cs`
 Files added: `Sussudio/Controllers/Launch/LaunchFlowController.cs` (renamed from `LaunchEntranceAnimationController.cs`)
 Net production .cs delta: -1; net test .cs delta: 0

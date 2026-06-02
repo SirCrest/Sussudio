@@ -1398,7 +1398,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             RunUiEventHandlerAsync = RunUiEventHandlerAsync,
             InitializeViewModelAsync = ViewModel.InitializeAsync,
             PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
-            RefreshDevicesAsync = () => ViewModel.RefreshDevicesAsync(),
+            RefreshDevicesAsync = () => ViewModel.RefreshDevicesForStartupAsync(),
             IsPreviewing = () => ViewModel.IsPreviewing,
             IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
             RevealPreviewUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,

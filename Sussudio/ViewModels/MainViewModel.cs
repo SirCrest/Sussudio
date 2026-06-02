@@ -479,6 +479,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
         => _deviceRefreshController.RefreshDevicesAsync(cancellationToken);
 
+    internal Task RefreshDevicesForStartupAsync(CancellationToken cancellationToken = default)
+        => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true);
+
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
         _captureService.SetPreviewFrameSink(sink);

@@ -2134,7 +2134,10 @@ static partial class Program
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
-        AssertContains(deviceRefreshControllerText, "public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
+        AssertContains(deviceRefreshControllerText, "public async Task RefreshDevicesAsync(");
+        AssertContains(deviceRefreshControllerText, "CancellationToken cancellationToken = default,");
+        AssertContains(deviceRefreshControllerText, "bool throwOnScanFailure = false");
+        AssertContains(deviceRefreshControllerText, "if (throwOnScanFailure)");
         AssertContains(deviceRefreshControllerText, "_context.EnumerateCaptureDeviceDiscoveryAsync()");
         AssertContains(deviceRefreshControllerText, "_context.ReplaceDevices(devices.ToList());");
         AssertContains(deviceRefreshControllerText, "_context.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);");

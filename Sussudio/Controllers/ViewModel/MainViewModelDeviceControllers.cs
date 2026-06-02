@@ -316,7 +316,9 @@ internal sealed class MainViewModelDeviceRefreshController
         _previewLifecycleController = previewLifecycleController ?? throw new ArgumentNullException(nameof(previewLifecycleController));
     }
 
-    public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
+    public async Task RefreshDevicesAsync(
+        CancellationToken cancellationToken = default,
+        bool throwOnScanFailure = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         _context.SetStatusText("Scanning for devices...");
@@ -373,6 +375,10 @@ internal sealed class MainViewModelDeviceRefreshController
         catch (Exception ex)
         {
             _context.SetStatusText($"Error scanning devices: {ex.Message}");
+            if (throwOnScanFailure)
+            {
+                throw;
+            }
         }
     }
 

@@ -43,22 +43,17 @@ internal sealed class LaunchStartupController
         _ = _context.RunUiEventHandlerAsync(async () =>
         {
             _context.Log("=== MainWindow_Loaded - Starting device enumeration ===");
-            try
+            await _context.InitializeViewModelAsync();
+            // LoadSettings just pushed saved volume to CaptureService; re-prime it
+            // so WASAPI playback starts silent and fades in only after live frames render.
+            _context.PrimePreviewAudioFadeIn();
+            await _context.RefreshDevicesAsync();
+            if (!_context.IsPreviewing() && !_context.IsPreviewFirstVisualConfirmed())
             {
-                await _context.InitializeViewModelAsync();
-                // LoadSettings just pushed saved volume to CaptureService; re-prime it
-                // so WASAPI playback starts silent and fades in only after live frames render.
-                _context.PrimePreviewAudioFadeIn();
-                await _context.RefreshDevicesAsync();
-                if (!_context.IsPreviewing() && !_context.IsPreviewFirstVisualConfirmed())
-                {
-                    _context.RevealPreviewUnavailablePlaceholder();
-                }
+                _context.RevealPreviewUnavailablePlaceholder();
             }
-            finally
-            {
-                _context.StartAutomationHost();
-            }
+
+            _context.StartAutomationHost();
         }, operationName);
 
         _context.PlaySplashAndEntrance();

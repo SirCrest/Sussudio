@@ -7422,6 +7422,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var automationHostControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs").Replace("\r\n", "\n");
+        var launchStartupHandleLoadedText = ExtractMemberCode(launchStartupControllerText, "HandleLoaded");
+        var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
+        var refreshDevices = ExtractMemberCode(deviceRefreshControllerText, "RefreshDevicesAsync");
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
         var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
@@ -7435,7 +7439,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(startupText, "RunUiEventHandlerAsync = RunUiEventHandlerAsync,");
         AssertContains(startupText, "InitializeViewModelAsync = ViewModel.InitializeAsync,");
         AssertContains(startupText, "PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,");
-        AssertContains(startupText, "RefreshDevicesAsync = () => ViewModel.RefreshDevicesAsync(),");
+        AssertContains(startupText, "RefreshDevicesAsync = () => ViewModel.RefreshDevicesForStartupAsync(),");
         AssertContains(startupText, "StartAutomationHost = _automationHostLifecycleController.Start,");
         AssertContains(startupText, "PlaySplashAndEntrance = PlaySplashAndEntrance,");
         AssertContains(startupText, "private void MainWindow_Loaded(object sender, RoutedEventArgs e)");
@@ -7451,6 +7455,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(launchStartupControllerText, "await _context.RefreshDevicesAsync();");
         AssertContains(launchStartupControllerText, "_context.RevealPreviewUnavailablePlaceholder();");
         AssertContains(launchStartupControllerText, "_context.StartAutomationHost();");
+        AssertDoesNotContain(launchStartupHandleLoadedText, "finally");
         AssertContains(launchStartupControllerText, "_context.PlaySplashAndEntrance();");
         AssertContains(agentMapText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
         AssertContains(cleanupPlanText, "Sussudio/Controllers/Launch/LaunchFlowController.cs");
@@ -7505,12 +7510,17 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertOccursBefore(controllerInitializationText, "private void InitializeShellPresentationControllers()", "private void InitializePreviewControllers()");
         AssertOccursBefore(controllerInitializationText, "private void InitializePreviewControllers()", "private void InitializeRecordingControllers()");
         AssertOccursBefore(launchStartupControllerText, "await _context.InitializeViewModelAsync();", "_context.StartAutomationHost();");
+        AssertOccursBefore(launchStartupHandleLoadedText, "await _context.RefreshDevicesAsync();", "_context.StartAutomationHost();");
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "_ = _context.RunUiEventHandlerAsync(async () =>");
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "await _context.InitializeViewModelAsync();");
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "_context.PlaySplashAndEntrance();");
         AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
         AssertDoesNotContain(startupText, "await ViewModel.InitializeAsync();");
         AssertDoesNotContain(startupText, "await ViewModel.RefreshDevicesAsync();");
+        AssertContains(rootText, "internal Task RefreshDevicesForStartupAsync(CancellationToken cancellationToken = default)");
+        AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true);");
+        AssertContains(deviceRefreshControllerText, "bool throwOnScanFailure = false");
+        AssertContains(refreshDevices, "if (throwOnScanFailure)");
         AssertDoesNotContain(startupText, "_automationHostLifecycleController.Start();");
         AssertDoesNotContain(mainWindowText, "private int _automationServicesStarted;");
         AssertDoesNotContain(startupText, "private int _automationServicesStarted;");

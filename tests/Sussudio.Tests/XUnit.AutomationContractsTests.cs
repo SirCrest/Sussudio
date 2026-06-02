@@ -2516,6 +2516,7 @@ static partial class Program
         var startupText = ReadMainWindowShellChromeAdapterSource();
         var launchStartupControllerText = ReadRepoFile("Sussudio/Controllers/Launch/LaunchFlowController.cs")
             .Replace("\r\n", "\n");
+        var launchStartupHandleLoadedText = ExtractMemberCode(launchStartupControllerText, "HandleLoaded");
 
         AssertContains(mainWindowText, "_automationHostLifecycleController = new WindowAutomationHostLifecycleController(");
         AssertContains(mainWindowText, "GetPreviewRuntimeSnapshotAsync,\n            this);");
@@ -2535,8 +2536,11 @@ static partial class Program
         AssertDoesNotContain(mainWindowText, "Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar)");
         AssertDoesNotContain(mainWindowText, "new NamedPipeAutomationServer(");
         AssertDoesNotContain(startupText, "new NamedPipeAutomationServer(");
+        AssertContains(startupText, "RefreshDevicesAsync = () => ViewModel.RefreshDevicesForStartupAsync(),");
         AssertContains(startupText, "StartAutomationHost = _automationHostLifecycleController.Start,");
         AssertContains(launchStartupControllerText, "_context.StartAutomationHost();");
+        AssertDoesNotContain(launchStartupHandleLoadedText, "finally");
+        AssertOccursBefore(launchStartupHandleLoadedText, "await _context.RefreshDevicesAsync();", "_context.StartAutomationHost();");
         AssertContains(automationHostControllerText, "if (_pipeServer.Start())\n        {\n            _diagnosticsHub.Start();");
         AssertContains(automationHostControllerText, "Automation control ready on pipe '{_pipeName}' (token required={_tokenRequired}).");
         AssertContains(automationHostControllerText, "Automation control disabled on pipe '{_pipeName}' (token required={_tokenRequired}).");

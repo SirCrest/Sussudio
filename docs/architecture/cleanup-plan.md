@@ -2107,8 +2107,8 @@ shelf adapter.
 Loaded-time startup ordering now lives in
 `Sussudio/Controllers/Launch/LaunchFlowController.cs`: native shell reveal
 scheduling, initial ViewModel settings load, preview audio fade priming before
-device refresh, no-preview placeholder fallback, automation host start in the
-finally path, and splash/entrance trigger.
+device refresh, no-preview placeholder fallback, fail-closed automation host
+start after successful startup refresh, and splash/entrance trigger.
 `Sussudio/MainWindow.xaml.cs` preserves the XAML event
 handler and shell launch context wiring.
 
