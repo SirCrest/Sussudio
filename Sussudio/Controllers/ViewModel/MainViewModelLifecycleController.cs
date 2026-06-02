@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,91 @@ using Sussudio.Services.Capture;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Controllers;
+
+internal readonly record struct MainViewModelCaptureSelectionSnapshot(
+    CaptureDevice? SelectedDevice,
+    MediaFormat[] AvailableFormats,
+    KeyValuePair<string, MediaFormat[]>[] ResolutionToFormats,
+    ResolutionOption[] AvailableResolutions,
+    FrameRateOption[] AvailableFrameRates,
+    string[] AvailableVideoFormats,
+    string? SelectedResolution,
+    uint? AutoResolvedWidth,
+    uint? AutoResolvedHeight,
+    double SelectedFrameRate,
+    double? AutoResolvedFrameRate,
+    string SelectedVideoFormat,
+    int MjpegDecoderCount,
+    MediaFormat? SelectedFormat,
+    bool IsHdrAvailable,
+    bool IsHdrEnabled,
+    bool IsAutoFrameRateSelected,
+    double? SelectedFriendlyFrameRate,
+    double? SelectedExactFrameRate,
+    string? SelectedExactFrameRateArg,
+    string DisabledResolutionReason,
+    string DisabledFrameRateReason,
+    string HdrResolutionSupportHint,
+    string[] AvailableRecordingFormats,
+    string SelectedRecordingFormat,
+    SourceSignalTelemetrySnapshot LatestSourceTelemetry,
+    int? SourceWidth,
+    int? SourceHeight,
+    bool? SourceIsHdr,
+    string SourceTelemetryAvailability,
+    string SourceTelemetryOriginDetail,
+    string SourceTelemetryConfidence,
+    string? SourceTelemetryDiagnosticSummary,
+    DateTimeOffset? SourceTelemetryTimestampUtc,
+    double? DetectedSourceFrameRate,
+    string? DetectedSourceFrameRateArg,
+    string SourceFrameRateOrigin,
+    string SourceTelemetrySummaryText,
+    string SourceTargetSummaryText,
+    bool HasUserOverriddenResolutionForCurrentMode,
+    bool HasUserOverriddenFrameRateForCurrentMode,
+    bool PendingSdrAutoSelectionForDeviceChange,
+    int? PendingSdrAutoFriendlyFrameRateBucket,
+    bool ForceSourceAutoRetarget,
+    string? LastKnownResolutionKey,
+    string? LastSourceModeKey,
+    bool PendingModeOptionsRefresh)
+{
+    public bool MatchesSelectionState(MainViewModelCaptureSelectionSnapshot other)
+        => ReferenceEquals(SelectedDevice, other.SelectedDevice) &&
+           string.Equals(SelectedResolution, other.SelectedResolution, StringComparison.Ordinal) &&
+           AutoResolvedWidth == other.AutoResolvedWidth &&
+           AutoResolvedHeight == other.AutoResolvedHeight &&
+           AreEqual(SelectedFrameRate, other.SelectedFrameRate) &&
+           AreNullableEqual(AutoResolvedFrameRate, other.AutoResolvedFrameRate) &&
+           string.Equals(SelectedVideoFormat, other.SelectedVideoFormat, StringComparison.Ordinal) &&
+           MjpegDecoderCount == other.MjpegDecoderCount &&
+           Equals(SelectedFormat, other.SelectedFormat) &&
+           IsHdrAvailable == other.IsHdrAvailable &&
+           IsHdrEnabled == other.IsHdrEnabled &&
+           IsAutoFrameRateSelected == other.IsAutoFrameRateSelected &&
+           AreNullableEqual(SelectedFriendlyFrameRate, other.SelectedFriendlyFrameRate) &&
+           AreNullableEqual(SelectedExactFrameRate, other.SelectedExactFrameRate) &&
+           string.Equals(SelectedExactFrameRateArg, other.SelectedExactFrameRateArg, StringComparison.Ordinal) &&
+           string.Equals(DisabledResolutionReason, other.DisabledResolutionReason, StringComparison.Ordinal) &&
+           string.Equals(DisabledFrameRateReason, other.DisabledFrameRateReason, StringComparison.Ordinal) &&
+           string.Equals(HdrResolutionSupportHint, other.HdrResolutionSupportHint, StringComparison.Ordinal) &&
+           string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal) &&
+           HasUserOverriddenResolutionForCurrentMode == other.HasUserOverriddenResolutionForCurrentMode &&
+           HasUserOverriddenFrameRateForCurrentMode == other.HasUserOverriddenFrameRateForCurrentMode &&
+           PendingSdrAutoSelectionForDeviceChange == other.PendingSdrAutoSelectionForDeviceChange &&
+           PendingSdrAutoFriendlyFrameRateBucket == other.PendingSdrAutoFriendlyFrameRateBucket &&
+           ForceSourceAutoRetarget == other.ForceSourceAutoRetarget &&
+           string.Equals(LastKnownResolutionKey, other.LastKnownResolutionKey, StringComparison.Ordinal) &&
+           string.Equals(LastSourceModeKey, other.LastSourceModeKey, StringComparison.Ordinal) &&
+           PendingModeOptionsRefresh == other.PendingModeOptionsRefresh;
+
+    private static bool AreNullableEqual(double? left, double? right)
+        => left.HasValue == right.HasValue && (!left.HasValue || AreEqual(left.Value, right!.Value));
+
+    private static bool AreEqual(double left, double right)
+        => Math.Abs(left - right) < 0.0001;
+}
 
 internal sealed class MainViewModelRuntimeLifecycleControllerContext
 {
@@ -469,7 +555,9 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
     public required Func<CancellationToken, Task> RampPreviewVolumeDownForStopAsync { get; init; }
     public required Func<MainViewModelPreviewLifecycleController, MainViewModelPreviewReinitializeController> CreateReinitializeController { get; init; }
     public required Func<CaptureDevice?> SelectedDevice { get; init; }
-    public required Action<CaptureDevice> SetSelectedDevice { get; init; }
+    public required Action<CaptureDevice?> SetSelectedDevice { get; init; }
+    public required Func<MainViewModelCaptureSelectionSnapshot> CaptureSelectionSnapshot { get; init; }
+    public required Func<MainViewModelCaptureSelectionSnapshot, MainViewModelCaptureSelectionSnapshot, bool> RestoreCaptureSelectionSnapshotIfUnchanged { get; init; }
     public required Func<bool> IsInitialized { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
@@ -607,32 +695,43 @@ internal sealed class MainViewModelPreviewLifecycleController
     }
 
     public async Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
+        => await ApplySelectedDeviceWithResultAsync(device, cancellationToken).ConfigureAwait(true);
+
+    public async Task<bool> ApplySelectedDeviceWithResultAsync(CaptureDevice device, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (_context.IsRecording())
         {
             _context.SetStatusText("Stop recording before switching capture devices.");
-            return;
+            return false;
         }
 
         var selectedDevice = _context.SelectedDevice();
         if (selectedDevice != null &&
             string.Equals(selectedDevice.Id, device.Id, StringComparison.OrdinalIgnoreCase))
         {
-            return;
+            return true;
         }
 
         Logger.Log($"DEVICE_APPLY_REQUEST device='{device.Name}' id='{device.Id}' preview={_context.IsPreviewing()} initialized={_context.IsInitialized()}");
+        var rollback = _context.CaptureSelectionSnapshot();
         _context.SetSelectedDevice(device);
+        var attempted = _context.CaptureSelectionSnapshot();
 
         if (_context.IsPreviewing())
         {
-            await ReinitializeDeviceAsync("device selection apply").ConfigureAwait(true);
-            return;
+            var reinitialized = await ReinitializeDeviceWithResultAsync("device selection apply").ConfigureAwait(true);
+            if (!reinitialized)
+            {
+                _context.RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);
+            }
+
+            return reinitialized;
         }
 
         _context.SetIsInitialized(false);
         _context.SetStatusText($"Selected device: {device.Name}");
+        return true;
     }
 
     public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
@@ -700,6 +799,9 @@ internal sealed class MainViewModelPreviewLifecycleController
 
     public Task ReinitializeDeviceAsync(string reason)
         => _previewReinitializeController.ReinitializeDeviceAsync(reason);
+
+    public Task<bool> ReinitializeDeviceWithResultAsync(string reason)
+        => _previewReinitializeController.ReinitializeDeviceWithResultAsync(reason);
 }
 
 /// <summary>
@@ -713,6 +815,7 @@ internal sealed class MainViewModelPreviewReinitializeControllerContext
     public required Func<bool> IsInitialized { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
+    public required Action<bool> SetIsPreviewing { get; init; }
     public required Func<bool> IsPreviewReinitializing { get; init; }
     public required Action<bool> SetIsPreviewReinitializing { get; init; }
     public required Action<string> SetStatusText { get; init; }
@@ -761,17 +864,23 @@ internal sealed class MainViewModelPreviewReinitializeController
     }
 
     public async Task ReinitializeDeviceAsync(string reason)
+        => await ReinitializeDeviceCoreAsync(reason, treatCoalescedAsSuccess: true).ConfigureAwait(true);
+
+    public async Task<bool> ReinitializeDeviceWithResultAsync(string reason)
+        => await ReinitializeDeviceCoreAsync(reason, treatCoalescedAsSuccess: false).ConfigureAwait(true);
+
+    private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)
     {
         if (_context.SelectedDevice() == null || _context.SelectedFormat() == null)
         {
-            return;
+            return false;
         }
 
         if (_context.IsRecording())
         {
             Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' - stop recording before changing capture settings.");
             _context.SetStatusText("Stop recording before changing capture settings.");
-            return;
+            return false;
         }
 
         var reinitializeGeneration = _context.IncrementReinitializeGeneration();
@@ -779,7 +888,7 @@ internal sealed class MainViewModelPreviewReinitializeController
         if (_context.ReadReinitializeGeneration() != reinitializeGeneration)
         {
             Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
-            return;
+            return treatCoalescedAsSuccess;
         }
 
         var pendingCycle = _context.PendingFlashbackCycleTask();
@@ -796,7 +905,7 @@ internal sealed class MainViewModelPreviewReinitializeController
             {
                 Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
                 _context.SetStatusText($"Failed to apply format: {ex.Message}");
-                return;
+                return false;
             }
             catch (Exception ex)
             {
@@ -808,6 +917,7 @@ internal sealed class MainViewModelPreviewReinitializeController
 
         await _context.WaitReinitializeGateAsync();
         var shouldRestartPreview = _context.IsPreviewing();
+        var success = false;
         try
         {
             _context.SetStatusText("Applying new settings...");
@@ -821,7 +931,7 @@ internal sealed class MainViewModelPreviewReinitializeController
                 await _context.NotifyRendererStopAsync();
             }
 
-            if (_context.IsPreviewing())
+            if (_context.IsInitialized())
             {
                 await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);
             }
@@ -840,11 +950,23 @@ internal sealed class MainViewModelPreviewReinitializeController
                 var selectedFormat = _context.SelectedFormat()!;
                 _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
             }
+
+            success =
+                _context.IsInitialized() &&
+                (!shouldRestartPreview ||
+                 _context.CancelPreviewRestartAfterReinitialize() ||
+                 _context.IsPreviewing());
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
+            if (shouldRestartPreview)
+            {
+                await CleanupFailedPreviewRestartAsync(reason).ConfigureAwait(true);
+            }
+
             _context.SetStatusText($"Failed to apply format: {ex.Message}");
+            success = false;
         }
         finally
         {
@@ -855,6 +977,30 @@ internal sealed class MainViewModelPreviewReinitializeController
             }
 
             _context.ReleaseReinitializeGate();
+        }
+
+        return success;
+    }
+
+    private async Task CleanupFailedPreviewRestartAsync(string reason)
+    {
+        try
+        {
+            Logger.Log($"REINIT_FAILED_CLEANUP reason='{reason}' previewing={_context.IsPreviewing()} initialized={_context.IsInitialized()}");
+            await _previewLifecycleController.StopPreviewAsync(
+                    userInitiated: false,
+                    teardownPipeline: true,
+                    CancellationToken.None)
+                .ConfigureAwait(true);
+        }
+        catch (Exception cleanupEx)
+        {
+            Logger.Log($"REINIT_FAILED_CLEANUP_FAULT reason='{reason}' type={cleanupEx.GetType().Name} msg='{cleanupEx.Message}'");
+        }
+        finally
+        {
+            _context.SetIsPreviewing(false);
+            _context.SetIsInitialized(false);
         }
     }
 }

@@ -6357,7 +6357,9 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewLifecycleControllerText, "public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Func<MainViewModelPreviewLifecycleController, MainViewModelPreviewReinitializeController> CreateReinitializeController { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Func<CaptureDevice?> SelectedDevice { get; init; }");
-        AssertContains(previewLifecycleControllerText, "public required Action<CaptureDevice> SetSelectedDevice { get; init; }");
+        AssertContains(previewLifecycleControllerText, "public required Action<CaptureDevice?> SetSelectedDevice { get; init; }");
+        AssertContains(previewLifecycleControllerText, "public required Func<MainViewModelCaptureSelectionSnapshot> CaptureSelectionSnapshot { get; init; }");
+        AssertContains(previewLifecycleControllerText, "public required Func<MainViewModelCaptureSelectionSnapshot, MainViewModelCaptureSelectionSnapshot, bool> RestoreCaptureSelectionSnapshotIfUnchanged { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Func<bool> IsInitialized { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Action<bool> SetIsInitialized { get; init; }");
         AssertContains(previewLifecycleControllerText, "public required Func<bool> IsPreviewing { get; init; }");
@@ -6535,8 +6537,10 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(controllerGraphText, "private static MainViewModelCaptureSettingsAutomationController CreateCaptureSettingsAutomationController(MainViewModel viewModel)");
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationControllerContext");
+        AssertContains(controllerGraphText, "CaptureSelectionSnapshot = viewModel.CaptureSelectionSnapshot,");
+        AssertContains(controllerGraphText, "RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,");
         AssertContains(controllerGraphText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
-        AssertContains(controllerGraphText, "ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,");
+        AssertContains(controllerGraphText, "ReinitializeDeviceWithResultAsync = viewModel.ReinitializeDeviceWithResultAsync,");
 
         AssertContains(recordingSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");

@@ -511,8 +511,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task ApplySelectedDeviceAsync(CaptureDevice device, CancellationToken cancellationToken = default)
         => _previewLifecycleController.ApplySelectedDeviceAsync(device, cancellationToken);
 
+    private Task<bool> ApplySelectedDeviceWithResultAsync(CaptureDevice device, CancellationToken cancellationToken = default)
+        => _previewLifecycleController.ApplySelectedDeviceWithResultAsync(device, cancellationToken);
+
     private Task ReinitializeDeviceAsync(string reason)
         => _previewLifecycleController.ReinitializeDeviceAsync(reason);
+
+    private Task<bool> ReinitializeDeviceWithResultAsync(string reason)
+        => _previewLifecycleController.ReinitializeDeviceWithResultAsync(reason);
 
     public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
         => _previewLifecycleController.StopPreviewAsync(userInitiated, teardownPipeline, cancellationToken);
@@ -576,6 +582,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private bool _pendingModeOptionsRefresh;
     private bool _suppressFormatChangeReinitialize;
+    private bool _suppressHdrToggleReinitialize;
     private bool _isRevertingHdrToggle;
 
     /// <summary>
@@ -594,6 +601,174 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void RebuildVideoFormatOptions()
         => _captureModeOptionRebuildController.RebuildVideoFormatOptions();
+
+    private MainViewModelCaptureSelectionSnapshot CaptureSelectionSnapshot()
+        => new(
+            SelectedDevice,
+            AvailableFormats.ToArray(),
+            _resolutionToFormats
+                .Select(pair => new KeyValuePair<string, MediaFormat[]>(pair.Key, pair.Value.ToArray()))
+                .ToArray(),
+            AvailableResolutions.ToArray(),
+            AvailableFrameRates.ToArray(),
+            AvailableVideoFormats.ToArray(),
+            SelectedResolution,
+            AutoResolvedWidth,
+            AutoResolvedHeight,
+            SelectedFrameRate,
+            AutoResolvedFrameRate,
+            SelectedVideoFormat,
+            MjpegDecoderCount,
+            SelectedFormat,
+            IsHdrAvailable,
+            IsHdrEnabled,
+            IsAutoFrameRateSelected,
+            SelectedFriendlyFrameRate,
+            SelectedExactFrameRate,
+            SelectedExactFrameRateArg,
+            DisabledResolutionReason,
+            DisabledFrameRateReason,
+            HdrResolutionSupportHint,
+            AvailableRecordingFormats.ToArray(),
+            SelectedRecordingFormat,
+            _latestSourceTelemetry,
+            SourceWidth,
+            SourceHeight,
+            SourceIsHdr,
+            SourceTelemetryAvailability,
+            SourceTelemetryOriginDetail,
+            SourceTelemetryConfidence,
+            SourceTelemetryDiagnosticSummary,
+            SourceTelemetryTimestampUtc,
+            DetectedSourceFrameRate,
+            DetectedSourceFrameRateArg,
+            SourceFrameRateOrigin,
+            SourceTelemetrySummaryText,
+            SourceTargetSummaryText,
+            _hasUserOverriddenResolutionForCurrentMode,
+            _hasUserOverriddenFrameRateForCurrentMode,
+            _pendingSdrAutoSelectionForDeviceChange,
+            _pendingSdrAutoFriendlyFrameRateBucket,
+            _forceSourceAutoRetarget,
+            _lastKnownResolutionKey,
+            _lastSourceModeKey,
+            _pendingModeOptionsRefresh);
+
+    private bool RestoreCaptureSelectionSnapshotIfUnchanged(
+        MainViewModelCaptureSelectionSnapshot snapshot,
+        MainViewModelCaptureSelectionSnapshot expectedCurrent)
+    {
+        if (!CaptureSelectionSnapshot().MatchesSelectionState(expectedCurrent))
+        {
+            return false;
+        }
+
+        RestoreCaptureSelectionSnapshot(snapshot);
+        return true;
+    }
+
+    private void RestoreCaptureSelectionSnapshot(MainViewModelCaptureSelectionSnapshot snapshot)
+    {
+        var previousSuppressFormatChangeReinitialize = _suppressFormatChangeReinitialize;
+        var previousSuppressHdrToggleReinitialize = _suppressHdrToggleReinitialize;
+        var previousRevertingHdrToggle = _isRevertingHdrToggle;
+        var previousChangingDevice = _isChangingDevice;
+        var previousRebuildingModeOptions = _isRebuildingModeOptions;
+        var previousApplyingAutomaticResolutionSelection = _isApplyingAutomaticResolutionSelection;
+        var previousApplyingAutomaticFrameRateSelection = _isApplyingAutomaticFrameRateSelection;
+        var previousSuppressFlashbackFormatCycle = _suppressFlashbackFormatCycle;
+        _suppressFormatChangeReinitialize = true;
+        _suppressHdrToggleReinitialize = true;
+        _isRevertingHdrToggle = true;
+        _isChangingDevice = true;
+        _isRebuildingModeOptions = true;
+        _isApplyingAutomaticResolutionSelection = true;
+        _isApplyingAutomaticFrameRateSelection = true;
+        _suppressFlashbackFormatCycle = true;
+        try
+        {
+            if (!ReferenceEquals(SelectedDevice, snapshot.SelectedDevice))
+            {
+                SelectedDevice = snapshot.SelectedDevice;
+            }
+
+            _isChangingDevice = true;
+            RestoreCollection(AvailableFormats, snapshot.AvailableFormats);
+            _resolutionToFormats.Clear();
+            foreach (var pair in snapshot.ResolutionToFormats)
+            {
+                _resolutionToFormats[pair.Key] = pair.Value.ToList();
+            }
+
+            RestoreCollection(AvailableResolutions, snapshot.AvailableResolutions);
+            RestoreCollection(AvailableFrameRates, snapshot.AvailableFrameRates);
+            RestoreCollection(AvailableVideoFormats, snapshot.AvailableVideoFormats);
+            RestoreCollection(AvailableRecordingFormats, snapshot.AvailableRecordingFormats);
+
+            IsHdrAvailable = snapshot.IsHdrAvailable;
+            IsHdrEnabled = snapshot.IsHdrEnabled;
+            SelectedResolution = snapshot.SelectedResolution;
+            AutoResolvedWidth = snapshot.AutoResolvedWidth;
+            AutoResolvedHeight = snapshot.AutoResolvedHeight;
+            SelectedFrameRate = snapshot.SelectedFrameRate;
+            AutoResolvedFrameRate = snapshot.AutoResolvedFrameRate;
+            SelectedVideoFormat = snapshot.SelectedVideoFormat;
+            MjpegDecoderCount = snapshot.MjpegDecoderCount;
+            SelectedFormat = snapshot.SelectedFormat;
+            IsAutoFrameRateSelected = snapshot.IsAutoFrameRateSelected;
+            SelectedFriendlyFrameRate = snapshot.SelectedFriendlyFrameRate;
+            SelectedExactFrameRate = snapshot.SelectedExactFrameRate;
+            SelectedExactFrameRateArg = snapshot.SelectedExactFrameRateArg;
+            DisabledResolutionReason = snapshot.DisabledResolutionReason;
+            DisabledFrameRateReason = snapshot.DisabledFrameRateReason;
+            HdrResolutionSupportHint = snapshot.HdrResolutionSupportHint;
+            SelectedRecordingFormat = snapshot.SelectedRecordingFormat;
+            _latestSourceTelemetry = snapshot.LatestSourceTelemetry;
+            SourceWidth = snapshot.SourceWidth;
+            SourceHeight = snapshot.SourceHeight;
+            SourceIsHdr = snapshot.SourceIsHdr;
+            SourceTelemetryAvailability = snapshot.SourceTelemetryAvailability;
+            SourceTelemetryOriginDetail = snapshot.SourceTelemetryOriginDetail;
+            SourceTelemetryConfidence = snapshot.SourceTelemetryConfidence;
+            SourceTelemetryDiagnosticSummary = snapshot.SourceTelemetryDiagnosticSummary;
+            SourceTelemetryTimestampUtc = snapshot.SourceTelemetryTimestampUtc;
+            DetectedSourceFrameRate = snapshot.DetectedSourceFrameRate;
+            DetectedSourceFrameRateArg = snapshot.DetectedSourceFrameRateArg;
+            SourceFrameRateOrigin = snapshot.SourceFrameRateOrigin;
+            SourceTelemetrySummaryText = snapshot.SourceTelemetrySummaryText;
+            SourceTargetSummaryText = snapshot.SourceTargetSummaryText;
+            _hasUserOverriddenResolutionForCurrentMode = snapshot.HasUserOverriddenResolutionForCurrentMode;
+            _hasUserOverriddenFrameRateForCurrentMode = snapshot.HasUserOverriddenFrameRateForCurrentMode;
+            _pendingSdrAutoSelectionForDeviceChange = snapshot.PendingSdrAutoSelectionForDeviceChange;
+            _pendingSdrAutoFriendlyFrameRateBucket = snapshot.PendingSdrAutoFriendlyFrameRateBucket;
+            _forceSourceAutoRetarget = snapshot.ForceSourceAutoRetarget;
+            _lastKnownResolutionKey = snapshot.LastKnownResolutionKey;
+            _lastSourceModeKey = snapshot.LastSourceModeKey;
+            _pendingModeOptionsRefresh = snapshot.PendingModeOptionsRefresh;
+            UpdateTargetSummary();
+            SaveSettings();
+        }
+        finally
+        {
+            _suppressFlashbackFormatCycle = previousSuppressFlashbackFormatCycle;
+            _isApplyingAutomaticFrameRateSelection = previousApplyingAutomaticFrameRateSelection;
+            _isApplyingAutomaticResolutionSelection = previousApplyingAutomaticResolutionSelection;
+            _isRebuildingModeOptions = previousRebuildingModeOptions;
+            _isChangingDevice = previousChangingDevice;
+            _isRevertingHdrToggle = previousRevertingHdrToggle;
+            _suppressHdrToggleReinitialize = previousSuppressHdrToggleReinitialize;
+            _suppressFormatChangeReinitialize = previousSuppressFormatChangeReinitialize;
+        }
+    }
+
+    private static void RestoreCollection<T>(ObservableCollection<T> target, IEnumerable<T> values)
+    {
+        target.Clear();
+        foreach (var value in values)
+        {
+            target.Add(value);
+        }
+    }
 
     partial void OnSelectedDeviceChanged(CaptureDevice? value)
     {
@@ -899,7 +1074,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return InvokeOnUiThreadAsync(async () =>
         {
             if (IsRecording)
             {
@@ -911,8 +1086,36 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 throw new InvalidOperationException("HDR is not available on the selected device.");
             }
 
-            IsHdrEnabled = enabled;
-            return Task.CompletedTask;
+            if (IsHdrEnabled == enabled)
+            {
+                return;
+            }
+
+            var rollback = CaptureSelectionSnapshot();
+            var shouldReinitialize = IsInitialized && SelectedDevice != null && SelectedFormat != null;
+            _suppressHdrToggleReinitialize = true;
+            try
+            {
+                IsHdrEnabled = enabled;
+            }
+            finally
+            {
+                _suppressHdrToggleReinitialize = false;
+            }
+
+            var attempted = CaptureSelectionSnapshot();
+            if (shouldReinitialize && SelectedFormat != null)
+            {
+                var reinitialized = await ReinitializeDeviceWithResultAsync("automation HDR toggle").ConfigureAwait(true);
+                if (!reinitialized)
+                {
+                    var restored = RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);
+                    var rollbackStatus = restored
+                        ? "restored previous capture selection"
+                        : "a newer capture selection superseded this request";
+                    throw new InvalidOperationException($"Failed to apply automation HDR toggle; {rollbackStatus}.");
+                }
+            }
         }, cancellationToken);
     }
 
@@ -973,7 +1176,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 _suppressFormatChangeReinitialize = false;
             }
 
-            if (IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)
+            if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)
             {
                 Logger.Log($"HDR toggle changed to {(value ? "On" : "Off")} - forcing immediate device renegotiation");
                 EnqueueUiOperation(() => ReinitializeDeviceAsync("HDR toggle"), "hdr toggle reinitialize");
@@ -1236,7 +1439,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 throw new InvalidOperationException($"Capture device not found. Id='{deviceId ?? "(null)"}', Name='{deviceName ?? "(null)"}'.");
             }
 
-            await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);
+            var applied = await ApplySelectedDeviceWithResultAsync(target, cancellationToken).ConfigureAwait(true);
+            if (!applied)
+            {
+                throw new InvalidOperationException("Capture device selection did not initialize; rollback was skipped if a newer selection superseded this request.");
+            }
         }, cancellationToken);
     }
 
@@ -2092,8 +2299,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     IsInitialized = () => viewModel.IsInitialized,
                     GetSelectedDevice = () => viewModel.SelectedDevice,
                     GetSelectedFormat = () => viewModel.SelectedFormat,
+                    CaptureSelectionSnapshot = viewModel.CaptureSelectionSnapshot,
+                    RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,
                     SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
-                    ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,
+                    ReinitializeDeviceWithResultAsync = viewModel.ReinitializeDeviceWithResultAsync,
                 });
         }
 
@@ -2448,6 +2657,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                             IsInitialized = () => viewModel.IsInitialized,
                             SetIsInitialized = value => viewModel.IsInitialized = value,
                             IsPreviewing = () => viewModel.IsPreviewing,
+                            SetIsPreviewing = value => viewModel.IsPreviewing = value,
                             IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
                             SetIsPreviewReinitializing = value => viewModel.IsPreviewReinitializing = value,
                             SetStatusText = value => viewModel.StatusText = value,
@@ -2474,6 +2684,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                         controller),
                     SelectedDevice = () => viewModel.SelectedDevice,
                     SetSelectedDevice = device => viewModel.SelectedDevice = device,
+                    CaptureSelectionSnapshot = viewModel.CaptureSelectionSnapshot,
+                    RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,
                     IsInitialized = () => viewModel.IsInitialized,
                     SetIsInitialized = value => viewModel.IsInitialized = value,
                     IsPreviewing = () => viewModel.IsPreviewing,

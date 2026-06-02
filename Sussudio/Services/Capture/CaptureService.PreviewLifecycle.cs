@@ -77,7 +77,16 @@ public partial class CaptureService
     private Task StopVideoPreviewCoreAsync(bool teardownPipeline, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
-            if (!_isVideoPreviewActive) return;
+            if (!_isVideoPreviewActive)
+            {
+                if (teardownPipeline)
+                {
+                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);
+                }
+
+                return;
+            }
+
             transitionToken.ThrowIfCancellationRequested();
 
             var commitStoppedState = false;

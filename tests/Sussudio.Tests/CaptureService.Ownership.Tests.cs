@@ -1272,6 +1272,7 @@ static partial class Program
 
         AssertContains(captureServiceText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
         AssertContains(captureServiceText, "public Task StopVideoPreviewWithTeardownAsync(CancellationToken cancellationToken = default)");
+        AssertContains(captureServiceText, "if (!_isVideoPreviewActive)\n            {\n                if (teardownPipeline)\n                {\n                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);\n                }\n\n                return;\n            }");
         AssertContains(captureServiceText, "public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)");
         AssertContains(captureServiceText, "public Task StopAudioPreviewWithTeardownAsync(CancellationToken cancellationToken = default)");
         AssertDoesNotContain(captureServiceText, "public Task StopVideoPreviewAsync(bool");

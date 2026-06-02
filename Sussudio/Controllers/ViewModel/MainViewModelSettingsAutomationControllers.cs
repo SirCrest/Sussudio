@@ -29,8 +29,10 @@ internal sealed class MainViewModelCaptureSettingsAutomationControllerContext
     public required Func<bool> IsInitialized { get; init; }
     public required Func<CaptureDevice?> GetSelectedDevice { get; init; }
     public required Func<MediaFormat?> GetSelectedFormat { get; init; }
+    public required Func<MainViewModelCaptureSelectionSnapshot> CaptureSelectionSnapshot { get; init; }
+    public required Func<MainViewModelCaptureSelectionSnapshot, MainViewModelCaptureSelectionSnapshot, bool> RestoreCaptureSelectionSnapshotIfUnchanged { get; init; }
     public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
-    public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
+    public required Func<string, Task<bool>> ReinitializeDeviceWithResultAsync { get; init; }
 }
 
 /// <summary>
@@ -155,9 +157,12 @@ internal sealed class MainViewModelCaptureSettingsAutomationController
         await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            MainViewModelCaptureSelectionSnapshot rollback = default;
+            MainViewModelCaptureSelectionSnapshot attempted = default;
             var shouldReinitialize = await _context.InvokeBooleanOnUiThreadAsync(() =>
             {
                 var wasPreviewing = _context.IsPreviewing() && _context.IsInitialized() && _context.GetSelectedDevice() != null;
+                rollback = _context.CaptureSelectionSnapshot();
                 _context.SetSuppressFormatChangeReinitialize(true);
                 try
                 {
@@ -168,21 +173,59 @@ internal sealed class MainViewModelCaptureSettingsAutomationController
                     _context.SetSuppressFormatChangeReinitialize(false);
                 }
 
+                attempted = _context.CaptureSelectionSnapshot();
                 return wasPreviewing && _context.GetSelectedFormat() != null;
             }, cancellationToken).ConfigureAwait(false);
 
             if (shouldReinitialize)
             {
-                await _context.InvokeOnUiThreadAsync(
-                        () => _context.ReinitializeDeviceAsync($"automation {reason}"),
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                var reinitialized = false;
+                try
+                {
+                    await _context.InvokeOnUiThreadAsync(
+                            async () =>
+                            {
+                                reinitialized = await _context.ReinitializeDeviceWithResultAsync($"automation {reason}")
+                                    .ConfigureAwait(true);
+                            },
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch
+                {
+                    await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);
+                    throw;
+                }
+
+                if (!reinitialized)
+                {
+                    var restored = await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);
+                    var rollbackStatus = restored
+                        ? "restored previous capture selection"
+                        : "a newer capture selection superseded this request";
+                    throw new InvalidOperationException($"Failed to apply automation {reason}; {rollbackStatus}.");
+                }
             }
         }
         finally
         {
             _captureModeGate.Release();
         }
+    }
+
+    private async Task<bool> RestoreCaptureSelectionSnapshotIfUnchangedAsync(
+        MainViewModelCaptureSelectionSnapshot rollback,
+        MainViewModelCaptureSelectionSnapshot attempted)
+    {
+        var restored = false;
+        await _context.InvokeOnUiThreadAsync(
+            () =>
+            {
+                restored = _context.RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);
+                return Task.CompletedTask;
+            },
+            CancellationToken.None).ConfigureAwait(false);
+        return restored;
     }
 }
 

@@ -6544,6 +6544,7 @@ static partial class Program
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs").Replace("\r\n", "\n");
 
         AssertDoesNotContain(viewModelStateText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
         AssertContains(automationSettingsText, "public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)");
@@ -6580,11 +6581,40 @@ static partial class Program
         AssertContains(captureSettingsAutomationControllerText, "_context.SetMjpegDecoderCount(Math.Clamp(decoderCount, 1, 8));");
         AssertContains(captureSettingsAutomationControllerText, "private async Task SetAutomationCaptureModeAsync(");
         AssertContains(captureSettingsAutomationControllerText, "await _captureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(captureSettingsAutomationControllerText, "MainViewModelCaptureSelectionSnapshot rollback = default;");
+        AssertContains(captureSettingsAutomationControllerText, "MainViewModelCaptureSelectionSnapshot attempted = default;");
+        AssertContains(captureSettingsAutomationControllerText, "rollback = _context.CaptureSelectionSnapshot();");
+        AssertContains(captureSettingsAutomationControllerText, "attempted = _context.CaptureSelectionSnapshot();");
+        AssertContains(captureModeTransactionsText, "AvailableResolutions.ToArray()");
+        AssertContains(captureModeTransactionsText, "AvailableFrameRates.ToArray()");
+        AssertContains(captureModeTransactionsText, "AvailableVideoFormats.ToArray()");
+        AssertContains(captureModeTransactionsText, "AvailableRecordingFormats.ToArray()");
+        AssertContains(captureModeTransactionsText, "_latestSourceTelemetry");
         AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(true);");
         AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(false);");
         AssertContains(captureSettingsAutomationControllerText, "return wasPreviewing && _context.GetSelectedFormat() != null;");
-        AssertContains(captureSettingsAutomationControllerText, "ReinitializeDeviceAsync($\"automation {reason}\")");
+        AssertContains(captureSettingsAutomationControllerText, "reinitialized = await _context.ReinitializeDeviceWithResultAsync($\"automation {reason}\")");
+        AssertContains(captureSettingsAutomationControllerText, "var restored = await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);");
+        AssertContains(captureSettingsAutomationControllerText, "a newer capture selection superseded this request");
         AssertContains(captureSettingsAutomationControllerText, "_captureModeGate.Release();");
+        AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)");
+        AssertContains(previewLifecycleControllerText, "return treatCoalescedAsSuccess;");
+        AssertContains(previewLifecycleControllerText, "if (_context.IsInitialized())\n            {\n                await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);\n            }");
+        AssertContains(previewLifecycleControllerText, "await CleanupFailedPreviewRestartAsync(reason).ConfigureAwait(true);");
+        AssertContains(previewLifecycleControllerText, "private async Task CleanupFailedPreviewRestartAsync(string reason)");
+        AssertContains(previewLifecycleControllerText, "teardownPipeline: true");
+        AssertContains(previewLifecycleControllerText, "_context.SetIsPreviewing(false);");
+        AssertContains(previewLifecycleControllerText, "_context.SetIsInitialized(false);");
+        AssertContains(previewLifecycleControllerText, "_context.RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);");
+        AssertContains(captureModeTransactionsText, "private bool RestoreCaptureSelectionSnapshotIfUnchanged(");
+        AssertContains(captureModeTransactionsText, "if (!CaptureSelectionSnapshot().MatchesSelectionState(expectedCurrent))");
+        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableResolutions, snapshot.AvailableResolutions);");
+        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableFrameRates, snapshot.AvailableFrameRates);");
+        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableVideoFormats, snapshot.AvailableVideoFormats);");
+        AssertContains(captureModeTransactionsText, "RestoreCollection(AvailableRecordingFormats, snapshot.AvailableRecordingFormats);");
+        AssertContains(captureModeTransactionsText, "_latestSourceTelemetry = snapshot.LatestSourceTelemetry;");
+        AssertContains(captureModeTransactionsText, "SaveSettings();");
+        AssertContains(previewLifecycleControllerText, "string.Equals(SelectedRecordingFormat, other.SelectedRecordingFormat, StringComparison.Ordinal)");
         AssertDoesNotContain(captureModeTransactionsText, "_automationCaptureModeGate");
         AssertDoesNotContain(captureModeTransactionsText, "SetAutomationCaptureModeAsync(");
         foreach (var stalePath in new[]
@@ -6655,7 +6685,8 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationDeviceSelection.cs")),
             "MainViewModel device selection automation partial folded into MainViewModel.cs");
         AssertContains(selectDevice, "return InvokeOnUiThreadAsync(async () =>");
-        AssertContains(selectDevice, "await ApplySelectedDeviceAsync(target, cancellationToken).ConfigureAwait(true);");
+        AssertContains(selectDevice, "var applied = await ApplySelectedDeviceWithResultAsync(target, cancellationToken).ConfigureAwait(true);");
+        AssertContains(selectDevice, "throw new InvalidOperationException(\"Capture device selection did not initialize; rollback was skipped if a newer selection superseded this request.\");");
         AssertDoesNotContain(selectDevice, "SelectedDevice = target;");
         AssertContains(selectAudioDevice, "SelectedAudioInputDevice = target;");
 
@@ -6666,15 +6697,29 @@ static partial class Program
     {
         var captureModeTransactionsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
+        var setHdrBlock = ExtractTextBetween(
+            captureModeTransactionsText,
+            "public Task SetHdrEnabledAsync",
+            "public Task SetTrueHdrPreviewEnabledAsync");
         var hdrChangeBlock = ExtractMemberCode(
             captureModeTransactionsText,
             "OnIsHdrEnabledChanged");
 
         AssertContains(captureModeTransactionsText, "public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
+        AssertContains(setHdrBlock, "return InvokeOnUiThreadAsync(async () =>");
         AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);");
         AssertContains(captureModeTransactionsText, "if (enabled && !IsHdrAvailable)");
         AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(\"HDR is not available on the selected device.\");");
-        AssertContains(captureModeTransactionsText, "IsHdrEnabled = enabled;");
+        AssertContains(setHdrBlock, "var rollback = CaptureSelectionSnapshot();");
+        AssertContains(setHdrBlock, "var shouldReinitialize = IsInitialized && SelectedDevice != null && SelectedFormat != null;");
+        AssertContains(setHdrBlock, "_suppressHdrToggleReinitialize = true;");
+        AssertContains(setHdrBlock, "IsHdrEnabled = enabled;");
+        AssertContains(setHdrBlock, "var attempted = CaptureSelectionSnapshot();");
+        AssertContains(setHdrBlock, "if (shouldReinitialize && SelectedFormat != null)");
+        AssertContains(setHdrBlock, "var reinitialized = await ReinitializeDeviceWithResultAsync(\"automation HDR toggle\").ConfigureAwait(true);");
+        AssertContains(setHdrBlock, "var restored = RestoreCaptureSelectionSnapshotIfUnchanged(rollback, attempted);");
+        AssertContains(setHdrBlock, "throw new InvalidOperationException($\"Failed to apply automation HDR toggle; {rollbackStatus}.\");");
+        AssertDoesNotContain(setHdrBlock, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
         AssertContains(captureModeTransactionsText, "public Task SetTrueHdrPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(captureModeTransactionsText, "throw new InvalidOperationException(\"True HDR preview cannot be changed while recording.\");");
         AssertContains(captureModeTransactionsText, "IsTrueHdrPreviewEnabled = enabled;");
@@ -6687,6 +6732,7 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "ResetModeSelectionState();");
         AssertContains(captureModeTransactionsText, "RebuildResolutionOptions();");
         AssertContains(captureModeTransactionsText, "RebuildRecordingFormatOptions();");
+        AssertContains(hdrChangeBlock, "if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)");
         AssertContains(captureModeTransactionsText, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
         AssertContains(captureModeTransactionsText, "SaveSettings();");
         AssertOccursBefore(hdrChangeBlock, "if (_isRevertingHdrToggle)", "if (value)");
@@ -6694,7 +6740,8 @@ static partial class Program
         AssertOccursBefore(hdrChangeBlock, "StatusText = HdrToggleBlockedWhileRecordingMessage;", "if (!_isChangingDevice)");
         AssertOccursBefore(hdrChangeBlock, "ResetModeSelectionState();", "RebuildResolutionOptions();");
         AssertOccursBefore(hdrChangeBlock, "RebuildResolutionOptions();", "RebuildRecordingFormatOptions();");
-        AssertOccursBefore(hdrChangeBlock, "RebuildRecordingFormatOptions();", "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
+        AssertOccursBefore(hdrChangeBlock, "RebuildRecordingFormatOptions();", "if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)");
+        AssertOccursBefore(hdrChangeBlock, "if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)", "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");");
         AssertOccursBefore(hdrChangeBlock, "EnqueueUiOperation(() => ReinitializeDeviceAsync(\"HDR toggle\"), \"hdr toggle reinitialize\");", "SaveSettings();");
         AssertEqual(
             false,
