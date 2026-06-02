@@ -215,10 +215,13 @@ namespace Sussudio
             }
             catch (Exception ex)
             {
-                // Mutex creation should not fail under normal conditions. If it does
-                // (e.g. ACL denial), log and continue rather than blocking launch -
-                // the cleanup-corruption hazard is rare and a hard fail would be worse.
-                Logger.Log($"SINGLE_INSTANCE_GUARD mutex setup failed; proceeding without guard. msg={ex.Message}");
+                Logger.LogFatalBreadcrumb(
+                    $"SINGLE_INSTANCE_GUARD mutex setup failed; refusing launch. msg={ex.Message}",
+                    ex);
+                try { _singleInstanceMutex?.Dispose(); } catch { /* best-effort */ }
+                _singleInstanceMutex = null;
+                Environment.Exit(1);
+                return;
             }
 
             try

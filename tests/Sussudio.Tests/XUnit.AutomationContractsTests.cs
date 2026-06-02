@@ -2162,6 +2162,9 @@ static partial class Program
         AssertContains(appRootSource, "private const string SingleInstanceMutexName");
         AssertContains(appRootSource, "protected override void OnLaunched(");
         AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD second instance detected");
+        AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD mutex setup failed; refusing launch.");
+        AssertContains(appRootSource, "Environment.Exit(1);");
+        AssertDoesNotContain(appRootSource, "proceeding without guard");
         AssertContains(appRootSource, "\"APP_START \" +");
         AssertContains(appRootSource, "public partial class App : Application");
         AssertEqual(
