@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
+using Microsoft.Win32.SafeHandles;
 using Sussudio.Models;
 using Sussudio.Services.Recording;
 
@@ -25,6 +27,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private const int MaxSupportedInputStreams = 64;
     private const int ProgressHeartbeatIntervalMs = 1_000;
     private const int ExportLockWaitTimeoutSeconds = 30;
+    private const int TempOutputCreationAttempts = 16;
+    private const int ErrorFileNotFound = 2;
+    private const int ErrorPathNotFound = 3;
+    private const int ErrorSharingViolation = 32;
+    private const int ErrorFileExists = 80;
+    private const int ErrorAlreadyExists = 183;
+    private const uint NativeFileReadAttributes = 0x00000080;
+    private const uint NativeDeleteAccess = 0x00010000;
+    private const uint NativeFileShareRead = 0x00000001;
+    private const uint NativeFileShareWrite = 0x00000002;
+    private const uint NativeOpenExisting = 3;
+    private const uint NativeFileAttributeNormal = 0x00000080;
     private static readonly TimeSpan OrphanTempFileMinimumAge = TimeSpan.FromMinutes(15);
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
@@ -34,6 +48,88 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private AVFormatContext* _activeOutputContext;
     private string? _activeTempPath;
     private bool _disposed;
+
+    [DllImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern SafeFileHandle CreateFile(
+        string fileName,
+        uint desiredAccess,
+        uint shareMode,
+        IntPtr securityAttributes,
+        uint creationDisposition,
+        uint flagsAndAttributes,
+        IntPtr templateFile);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetFileInformationByHandle(
+        SafeFileHandle file,
+        out ByHandleFileInformation fileInformation);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool SetFileInformationByHandle(
+        SafeFileHandle file,
+        FileInformationClass fileInformationClass,
+        IntPtr fileInformation,
+        uint bufferSize);
+
+    private enum FileInformationClass
+    {
+        FileRenameInfo = 3,
+        FileDispositionInfo = 4
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct ByHandleFileInformation
+    {
+        public uint FileAttributes;
+        public long CreationTime;
+        public long LastAccessTime;
+        public long LastWriteTime;
+        public uint VolumeSerialNumber;
+        public uint FileSizeHigh;
+        public uint FileSizeLow;
+        public uint NumberOfLinks;
+        public uint FileIndexHigh;
+        public uint FileIndexLow;
+    }
+
+    private readonly record struct TempFileIdentity(
+        uint VolumeSerialNumber,
+        uint FileIndexHigh,
+        uint FileIndexLow)
+    {
+        public static TempFileIdentity From(in ByHandleFileInformation info)
+            => new(info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow);
+    }
+
+    private sealed class TempOutputLease : IDisposable
+    {
+        private FileStream? _reservationStream;
+
+        public TempOutputLease(string path, TempFileIdentity identity, FileStream reservationStream)
+        {
+            Path = path;
+            Identity = identity;
+            _reservationStream = reservationStream;
+        }
+
+        public string Path { get; }
+        public TempFileIdentity Identity { get; }
+
+        public void ReleaseReservation()
+        {
+            var stream = _reservationStream;
+            if (stream == null)
+            {
+                return;
+            }
+
+            _reservationStream = null;
+            stream.Dispose();
+        }
+
+        public void Dispose()
+            => ReleaseReservation();
+    }
 
     public void Dispose()
     {
@@ -719,12 +815,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
-        var tmpPath = outputPath + ".tmp";
-        if (IsSamePath(inputTsPath, tmpPath))
+        if (!TryValidateDestinationDoesNotExist(outputPath, out var destinationFailure))
         {
-            var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tmpPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{destinationFailure}'");
+            return FinalizeResult.Failure(outputPath, destinationFailure);
         }
 
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
@@ -734,14 +828,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
-            _activeTempPath = tmpPath;
+            TempOutputLease? tempLease = null;
 
             try
             {
-                if (!TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure))
+                if (!TryCreateUniqueTempOutputPath(outputPath, out tempLease, out var tempOutputFailure))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{tempOutputFailure}'");
                     return FinalizeResult.Failure(outputPath, tempOutputFailure);
+                }
+
+                _activeTempPath = tempLease.Path;
+                if (IsSamePath(inputTsPath, tempLease.Path))
+                {
+                    var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tempLease.Path}'.";
+                    Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                    return FinalizeResult.Failure(outputPath, message);
                 }
 
                 LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
@@ -767,10 +869,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     }
                 }
 
-                CreateOutputContext(tmpPath, fastStart);
+                CreateOutputContext(tempLease.Path, fastStart);
                 var videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
                 var streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount);
-                OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
+                OpenOutputIoAndWriteHeader(_activeOutputContext, tempLease.Path, fastStart);
 
                 var packetWriteResult = WriteSingleFilePacketsToActiveOutput(
                     streamCount,
@@ -786,7 +888,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 var totalPackets = packetWriteResult.TotalPackets;
-                if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
+                if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
                 {
                     return FinalizeResult.Failure(outputPath, outputFailure);
                 }
@@ -811,7 +913,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             finally
             {
                 CleanupNativeState();
-                DeleteTempFileIfPresent(tmpPath);
+                if (tempLease != null)
+                {
+                    DeleteTempFileIfPresent(tempLease);
+                }
                 _activeTempPath = null;
             }
         }
@@ -1382,37 +1487,250 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed_sharing_violation' path='{tmpPath}'");
     }
 
-    private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)
+    private static void DeleteTempFileIfPresent(TempOutputLease tempLease)
     {
-        if (Directory.Exists(tmpPath))
+        const int MaxRetries = 3;
+        const int RetryDelayMs = 200;
+
+        for (var attempt = 0; attempt <= MaxRetries; attempt++)
         {
-            failureMessage = $"Flashback export failed: temporary output path is a directory '{tmpPath}'.";
+            if (!File.Exists(tempLease.Path))
+            {
+                tempLease.Dispose();
+                return;
+            }
+
+            if (TryDeleteTempLeaseFile(tempLease, out var failureMessage, out var lastError))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_TMP_DELETE path='{tempLease.Path}'");
+                return;
+            }
+
+            if (lastError == ErrorSharingViolation && attempt < MaxRetries)
+            {
+                Thread.Sleep(RetryDelayMs);
+                continue;
+            }
+
+            Logger.Log(
+                $"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tempLease.Path}' " +
+                $"win32={lastError} msg='{failureMessage}'");
+            return;
+        }
+
+        Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed_sharing_violation' path='{tempLease.Path}'");
+    }
+
+    private static bool TryCreateUniqueTempOutputPath(string outputPath, out TempOutputLease tempLease, out string failureMessage)
+    {
+        tempLease = null!;
+        var outputDirectory = Path.GetDirectoryName(outputPath);
+        if (string.IsNullOrWhiteSpace(outputDirectory))
+        {
+            failureMessage = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
             return false;
         }
 
+        var outputBaseName = Path.GetFileNameWithoutExtension(outputPath);
+        if (string.IsNullOrWhiteSpace(outputBaseName))
+        {
+            outputBaseName = "flashback_export";
+        }
+
+        if (outputBaseName.Length > 80)
+        {
+            outputBaseName = outputBaseName[..80];
+        }
+
+        for (var attempt = 0; attempt < TempOutputCreationAttempts; attempt++)
+        {
+            var candidate = Path.Combine(
+                outputDirectory,
+                $"{outputBaseName}.{Guid.NewGuid():N}.mp4.tmp");
+            if (Directory.Exists(candidate))
+            {
+                continue;
+            }
+
+            try
+            {
+                var reservationStream = new FileStream(
+                    candidate,
+                    FileMode.CreateNew,
+                    FileAccess.ReadWrite,
+                    FileShare.ReadWrite);
+
+                if (!TryGetFileIdentity(reservationStream.SafeFileHandle, out var identity, out var identityFailure, out var identityError))
+                {
+                    reservationStream.Dispose();
+                    failureMessage = $"Flashback export failed: could not identify temporary output file before writing '{outputPath}'.";
+                    Logger.Log($"FLASHBACK_EXPORT_TMP_IDENTITY_WARN path='{candidate}' win32={identityError} msg='{identityFailure}'");
+                    return false;
+                }
+
+                tempLease = new TempOutputLease(candidate, identity, reservationStream);
+                failureMessage = string.Empty;
+                return true;
+            }
+            catch (IOException ex)
+            {
+                Logger.Log($"FLASHBACK_EXPORT_TMP_CREATE_RETRY path='{candidate}' attempt={attempt + 1} type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+            catch (Exception ex)
+            {
+                failureMessage = $"Flashback export failed: could not create temporary output file before writing '{outputPath}'.";
+                Logger.Log($"FLASHBACK_EXPORT_TMP_CREATE_WARN path='{candidate}' type={ex.GetType().Name} msg='{ex.Message}'");
+                return false;
+            }
+        }
+
+        failureMessage = $"Flashback export failed: could not create a unique temporary output file before writing '{outputPath}'.";
+        return false;
+    }
+
+    private static bool TryOpenExistingTempOutputLease(string tmpPath, out TempOutputLease tempLease, out string failureMessage)
+    {
+        tempLease = null!;
+
+        FileStream reservationStream;
         try
         {
-            if (File.Exists(tmpPath))
-            {
-                File.Delete(tmpPath);
-            }
+            reservationStream = new FileStream(
+                tmpPath,
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.ReadWrite);
         }
         catch (Exception ex)
         {
-            failureMessage = $"Flashback export failed: could not remove stale temporary output file before replacing '{outputPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_TMP_PREPARE_WARN path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            failureMessage = $"Flashback export failed: temporary output file was not created: '{tmpPath}' ({ex.GetType().Name}: {ex.Message}).";
             return false;
         }
 
-        if (File.Exists(tmpPath) || Directory.Exists(tmpPath))
+        if (!TryGetFileIdentity(reservationStream.SafeFileHandle, out var identity, out var identityFailure, out var identityError))
         {
-            failureMessage = $"Flashback export failed: stale temporary output path could not be cleared '{tmpPath}'.";
+            reservationStream.Dispose();
+            failureMessage = $"Flashback export failed: could not identify temporary output file '{tmpPath}' (Win32 error {identityError}: {identityFailure}).";
             return false;
         }
 
+        tempLease = new TempOutputLease(tmpPath, identity, reservationStream);
         failureMessage = string.Empty;
         return true;
     }
+
+    private static bool TryOpenVerifiedTempLeaseHandle(
+        TempOutputLease tempLease,
+        out SafeFileHandle? handle,
+        out string failureMessage,
+        out int lastError)
+    {
+        tempLease.ReleaseReservation();
+        handle = CreateFile(
+            tempLease.Path,
+            NativeDeleteAccess | NativeFileReadAttributes,
+            NativeFileShareRead | NativeFileShareWrite,
+            IntPtr.Zero,
+            NativeOpenExisting,
+            NativeFileAttributeNormal,
+            IntPtr.Zero);
+        if (handle.IsInvalid)
+        {
+            lastError = Marshal.GetLastWin32Error();
+            handle.Dispose();
+            handle = null;
+            failureMessage = IsPathMissingError(lastError)
+                ? string.Empty
+                : $"Flashback export failed: could not lock temporary output file '{tempLease.Path}' safely (Win32 error {lastError}).";
+            return false;
+        }
+
+        if (!TryGetFileIdentity(handle, out var currentIdentity, out var identityFailure, out var identityError))
+        {
+            lastError = identityError;
+            handle.Dispose();
+            handle = null;
+            failureMessage = $"Flashback export failed: could not verify temporary output file identity for '{tempLease.Path}' ({identityFailure}).";
+            return false;
+        }
+
+        if (currentIdentity != tempLease.Identity)
+        {
+            lastError = 0;
+            handle.Dispose();
+            handle = null;
+            failureMessage = $"Flashback export failed: temporary output path was replaced before finalizing '{tempLease.Path}'.";
+            return false;
+        }
+
+        lastError = 0;
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    private static bool TryGetFileIdentity(
+        SafeFileHandle handle,
+        out TempFileIdentity identity,
+        out string failureMessage,
+        out int lastError)
+    {
+        identity = default;
+        if (handle.IsInvalid || handle.IsClosed)
+        {
+            lastError = 0;
+            failureMessage = "invalid file handle";
+            return false;
+        }
+
+        if (!GetFileInformationByHandle(handle, out var info))
+        {
+            lastError = Marshal.GetLastWin32Error();
+            failureMessage = $"GetFileInformationByHandle failed with Win32 error {lastError}";
+            return false;
+        }
+
+        identity = TempFileIdentity.From(in info);
+        lastError = 0;
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    private static bool TryDeleteTempLeaseFile(TempOutputLease tempLease, out string failureMessage, out int lastError)
+    {
+        if (!TryOpenVerifiedTempLeaseHandle(tempLease, out var handle, out failureMessage, out lastError))
+        {
+            return IsPathMissingError(lastError);
+        }
+
+        using (handle)
+        {
+            var disposition = Marshal.AllocHGlobal(1);
+            try
+            {
+                Marshal.WriteByte(disposition, 1);
+                if (SetFileInformationByHandle(handle!, FileInformationClass.FileDispositionInfo, disposition, 1))
+                {
+                    failureMessage = string.Empty;
+                    lastError = 0;
+                    return true;
+                }
+
+                lastError = Marshal.GetLastWin32Error();
+                failureMessage = $"SetFileInformationByHandle(FileDispositionInfo) failed with Win32 error {lastError}";
+                return false;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(disposition);
+            }
+        }
+    }
+
+    private static bool IsPathMissingError(int lastError)
+        => lastError == ErrorFileNotFound || lastError == ErrorPathNotFound;
+
+    private static bool IsDestinationExistsError(int lastError)
+        => lastError == ErrorFileExists || lastError == ErrorAlreadyExists;
 
     internal static void CleanupOrphanedTempFiles(string directory)
     {
@@ -1466,31 +1784,102 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
     }
 
-    private static void AtomicMoveTempFile(string tmpPath, string outputPath, bool allowOverwrite)
+    private static void MoveTempFileToOutputPath(TempOutputLease tempLease, string outputPath)
     {
-        if (!File.Exists(tmpPath))
+        if (!TryMoveTempFileToOutputPath(tempLease, outputPath, out var failureMessage))
         {
-            throw new IOException($"Temporary export file was not created: '{tmpPath}'.");
+            DeleteTempFileIfPresent(tempLease);
+            throw new IOException(failureMessage);
+        }
+    }
+
+    private static bool TryMoveTempFileToOutputPath(
+        TempOutputLease tempLease,
+        string outputPath,
+        out string failureMessage)
+    {
+        if (!File.Exists(tempLease.Path))
+        {
+            failureMessage = $"Temporary export file was not created: '{tempLease.Path}'.";
+            return false;
         }
 
-        var destinationExists = File.Exists(outputPath);
-        if (destinationExists && !allowOverwrite)
+        if (!TryOpenVerifiedTempLeaseHandle(tempLease, out var handle, out var ownershipFailure, out var lastError))
         {
-            Logger.Log(
-                $"FLASHBACK_EXPORT_REFUSED_DESTINATION_EXISTS path='{outputPath}' " +
-                "reason='destination_exists' force=false");
-            DeleteTempFileIfPresent(tmpPath);
-            throw new IOException(
-                $"Flashback export failed: destination file already exists at '{outputPath}'. " +
-                "Pass force=true to overwrite an existing export.");
+            failureMessage = string.IsNullOrWhiteSpace(ownershipFailure)
+                ? $"Temporary export file was not created: '{tempLease.Path}'."
+                : ownershipFailure;
+            return false;
         }
 
-        if (destinationExists)
+        using (handle)
         {
-            Logger.Log($"FLASHBACK_EXPORT_OVERWRITE path='{outputPath}' force=true");
+            if (File.Exists(outputPath) || Directory.Exists(outputPath))
+            {
+                failureMessage = CreateDestinationExistsMessage(outputPath);
+                return false;
+            }
+
+            if (TryRenameTempHandle(handle!, outputPath, out var renameFailure, out lastError))
+            {
+                failureMessage = string.Empty;
+                return true;
+            }
+
+            failureMessage =
+                IsDestinationExistsError(lastError) || File.Exists(outputPath) || Directory.Exists(outputPath)
+                    ? CreateDestinationExistsMessage(outputPath)
+                    : $"Flashback export failed: could not move temporary output file to '{outputPath}' safely ({renameFailure}).";
+            return false;
+        }
+    }
+
+    private static bool TryRenameTempHandle(
+        SafeFileHandle handle,
+        string outputPath,
+        out string failureMessage,
+        out int lastError)
+    {
+        var renameInfo = CreateFileRenameInfo(outputPath, replaceIfExists: false, out var renameInfoSize);
+        try
+        {
+            if (SetFileInformationByHandle(handle, FileInformationClass.FileRenameInfo, renameInfo, (uint)renameInfoSize))
+            {
+                failureMessage = string.Empty;
+                lastError = 0;
+                return true;
+            }
+
+            lastError = Marshal.GetLastWin32Error();
+            failureMessage = $"SetFileInformationByHandle(FileRenameInfo) failed with Win32 error {lastError}";
+            return false;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(renameInfo);
+        }
+    }
+
+    private static IntPtr CreateFileRenameInfo(string outputPath, bool replaceIfExists, out int bufferSize)
+    {
+        var fullOutputPath = Path.GetFullPath(outputPath);
+        var outputPathBytes = Encoding.Unicode.GetBytes(fullOutputPath);
+        var rootDirectoryOffset = IntPtr.Size == 8 ? 8 : 4;
+        var fileNameLengthOffset = rootDirectoryOffset + IntPtr.Size;
+        var fileNameOffset = fileNameLengthOffset + sizeof(int);
+        bufferSize = fileNameOffset + outputPathBytes.Length + sizeof(char);
+
+        var buffer = Marshal.AllocHGlobal(bufferSize);
+        for (var i = 0; i < bufferSize; i++)
+        {
+            Marshal.WriteByte(buffer, i, 0);
         }
 
-        File.Move(tmpPath, outputPath, overwrite: true);
+        Marshal.WriteInt32(buffer, 0, replaceIfExists ? 1 : 0);
+        Marshal.WriteIntPtr(buffer, rootDirectoryOffset, IntPtr.Zero);
+        Marshal.WriteInt32(buffer, fileNameLengthOffset, outputPathBytes.Length);
+        Marshal.Copy(outputPathBytes, 0, IntPtr.Add(buffer, fileNameOffset), outputPathBytes.Length);
+        return buffer;
     }
 
     private static bool TryFinalizeTempOutputFile(
@@ -1508,7 +1897,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             TryValidateCompletedOutputFile);
 
     private bool TryFinalizeActiveOutputFile(
-        string tmpPath,
+        TempOutputLease tempLease,
         string outputPath,
         bool allowOverwrite,
         out long outputBytes,
@@ -1517,7 +1906,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
         CloseOutputIo();
 
-        if (!TryFinalizeTempOutputFile(tmpPath, outputPath, allowOverwrite, out outputBytes, out failureMessage))
+        if (!TryFinalizeTempOutputLeaseFile(tempLease, outputPath, allowOverwrite, out outputBytes, out failureMessage))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'");
             return false;
@@ -1535,18 +1924,60 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         out string failureMessage,
         CompletedOutputValidator validateOutput)
     {
-        if (!validateOutput(tmpPath, out outputBytes, out _))
+        if (!TryOpenExistingTempOutputLease(tmpPath, out var tempLease, out failureMessage))
+        {
+            outputBytes = 0;
+            return false;
+        }
+
+        using (tempLease)
+        {
+            return TryFinalizeTempOutputLeaseFileCore(
+                tempLease,
+                outputPath,
+                allowOverwrite,
+                out outputBytes,
+                out failureMessage,
+                validateOutput);
+        }
+    }
+
+    private static bool TryFinalizeTempOutputLeaseFile(
+        TempOutputLease tempLease,
+        string outputPath,
+        bool allowOverwrite,
+        out long outputBytes,
+        out string failureMessage)
+        => TryFinalizeTempOutputLeaseFileCore(
+            tempLease,
+            outputPath,
+            allowOverwrite,
+            out outputBytes,
+            out failureMessage,
+            TryValidateCompletedOutputFile);
+
+    private static bool TryFinalizeTempOutputLeaseFileCore(
+        TempOutputLease tempLease,
+        string outputPath,
+        bool allowOverwrite,
+        out long outputBytes,
+        out string failureMessage,
+        CompletedOutputValidator validateOutput)
+    {
+        _ = allowOverwrite;
+
+        if (!validateOutput(tempLease.Path, out outputBytes, out _))
         {
             failureMessage = outputBytes == 0
                 ? $"Flashback export failed: temporary output file is empty before replacing '{outputPath}'."
                 : $"Flashback export failed: temporary output file length unavailable before replacing '{outputPath}'.";
-            DeleteTempFileIfPresent(tmpPath);
+            DeleteTempFileIfPresent(tempLease);
             return false;
         }
 
         try
         {
-            AtomicMoveTempFile(tmpPath, outputPath, allowOverwrite);
+            MoveTempFileToOutputPath(tempLease, outputPath);
         }
         catch (IOException ex)
         {
@@ -1557,29 +1988,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (!validateOutput(outputPath, out outputBytes, out failureMessage))
         {
             Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN path='{outputPath}' reason='{failureMessage}'");
-            DeleteInvalidFinalOutputIfPresent(outputPath, failureMessage);
             return false;
         }
 
         return true;
-    }
-
-    private static void DeleteInvalidFinalOutputIfPresent(string outputPath, string reason)
-    {
-        try
-        {
-            if (!File.Exists(outputPath))
-            {
-                return;
-            }
-
-            File.Delete(outputPath);
-            Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_DELETE_INVALID path='{outputPath}' reason='{reason}'");
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_DELETE_INVALID_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'");
-        }
     }
 
     private static bool TryValidateSegmentExportInputs(
@@ -1642,17 +2054,30 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return false;
         }
 
-        var tempOutputPath = fullOutputPath + ".tmp";
-        if (segments.Any(segment => IsSamePath(segment.Path, tempOutputPath)))
+        if (!TryValidateDestinationDoesNotExist(fullOutputPath, out var destinationFailure))
         {
-            var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tempOutputPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            failure = FinalizeResult.Failure(fullOutputPath, message);
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{destinationFailure}'");
+            failure = FinalizeResult.Failure(fullOutputPath, destinationFailure);
             return false;
         }
 
         return true;
     }
+
+    private static bool TryValidateDestinationDoesNotExist(string outputPath, out string failureMessage)
+    {
+        if (File.Exists(outputPath) || Directory.Exists(outputPath))
+        {
+            failureMessage = CreateDestinationExistsMessage(outputPath);
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    private static string CreateDestinationExistsMessage(string outputPath)
+        => $"Flashback export failed: destination file already exists at '{outputPath}'. Choose a path that does not exist; Flashback export does not overwrite existing files.";
 
     private static bool TryEstimateSegmentExportReadableBytes(
         IReadOnlyList<FlashbackExportSegment> segments,
@@ -1874,8 +2299,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         outputPath = normalizedOutputPath;
 
-        var tmpPath = outputPath + ".tmp";
-
         if (!TryEstimateSegmentExportReadableBytes(
                 segments,
                 outputPath,
@@ -1892,14 +2315,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
-            _activeTempPath = tmpPath;
+            TempOutputLease? tempLease = null;
 
             try
             {
-                if (!TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure))
+                if (!TryCreateUniqueTempOutputPath(outputPath, out tempLease, out var tempOutputFailure))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{tempOutputFailure}'");
                     return FinalizeResult.Failure(outputPath, tempOutputFailure);
+                }
+
+                _activeTempPath = tempLease.Path;
+                if (segments.Any(segment => IsSamePath(segment.Path, tempLease.Path)))
+                {
+                    var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tempLease.Path}'.";
+                    Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                    return FinalizeResult.Failure(outputPath, message);
                 }
 
                 LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
@@ -1911,7 +2342,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     segments,
                     inPoint,
                     outPoint,
-                    tmpPath,
+                    tempLease.Path,
                     outputPath,
                     fastStart,
                     totalEstimatedBytes,
@@ -1923,7 +2354,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 var totalPackets = packetWriteResult.TotalPackets;
-                if (!TryFinalizeActiveOutputFile(tmpPath, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
+                if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))
                 {
                     return FinalizeResult.Failure(outputPath, outputFailure);
                 }
@@ -1947,7 +2378,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             finally
             {
                 CleanupNativeState();
-                DeleteTempFileIfPresent(tmpPath);
+                if (tempLease != null)
+                {
+                    DeleteTempFileIfPresent(tempLease);
+                }
                 _activeTempPath = null;
             }
         }

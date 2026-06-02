@@ -864,7 +864,8 @@ Invariants:
 
 - Disable means the timeline should be hidden/locked out.
 - Scrub frames must not contaminate live/playback cadence metrics.
-- Export must not overwrite without the explicit force path.
+- Export must refuse existing destinations; the force flag is compatibility-only
+  and must not enable overwrite.
 
 ## UI Shell And Presentation
 
@@ -1773,8 +1774,9 @@ Primary current owners:
   source-ownership tests, task-wrapper infrastructure, disposal timeout/native
   state lifetime guards, stream-count/template stream-copy owner/call-site
   tests, segment path, duplicate path, missing segment, output path validation,
-  source-overwrite guard, blocked temp-path tests, final-output replacement,
-  overwrite refusal/force behavior, final validation cleanup, orphan temp-file
+  source-overwrite guard, unique/identity-checked temp-output tests,
+  no-overwrite refusal/force compatibility behavior, final validation
+  preservation, orphan temp-file
   cleanup, and output-directory scan guard tests after their removal from the
   legacy harness catalog.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns Flashback

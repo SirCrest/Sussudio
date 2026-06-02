@@ -24,12 +24,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var exportPathA = Path.Combine(outputDirectory, "flashback-concurrent-a.mp4");
-        var exportPathB = Path.Combine(outputDirectory, "flashback-concurrent-b.mp4");
-        // Diagnostic runs may execute against the same output directory across sessions;
-        // pass force=true so the destination-exists guard does not break the diagnostic.
-        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA, ["force"] = true };
-        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB, ["force"] = true };
+        var exportPathA = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-concurrent-a.mp4");
+        var exportPathB = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-concurrent-b.mp4");
+        var exportPayloadA = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathA };
+        var exportPayloadB = new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPathB };
 
         var exportTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport");
         var exportTaskA = sendCommandAsync("FlashbackExport", exportPayloadA, exportTimeoutMs);
@@ -488,15 +486,14 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var exportPath = Path.Combine(outputDirectory, exportFileName);
+        var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, exportFileName);
         var exportTask = sendCommandAsync(
                 "FlashbackExport",
                 new Dictionary<string, object?>
                 {
                     ["seconds"] = 1,
                     ["outputPath"] = exportPath,
-                    ["useSelectionRange"] = true,
-                    ["force"] = true
+                    ["useSelectionRange"] = true
                 },
                 60_000)
             ;
@@ -739,10 +736,10 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var exportPath = Path.Combine(outputDirectory, "flashback-disable-during-export.mp4");
+        var exportPath = ResolveFlashbackExportOutputPath(outputDirectory, "flashback-disable-during-export.mp4");
         var exportTask = sendCommandAsync(
             "FlashbackExport",
-            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath, ["force"] = true },
+            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
             AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
@@ -903,6 +900,19 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                     cancellationToken)
                 .ConfigureAwait(false);
         }
+    }
+
+    private static string ResolveFlashbackExportOutputPath(string outputDirectory, string fileName)
+    {
+        var outputPath = Path.Combine(outputDirectory, fileName);
+        if (!File.Exists(outputPath) && !Directory.Exists(outputPath))
+        {
+            return outputPath;
+        }
+
+        var name = Path.GetFileNameWithoutExtension(fileName);
+        var extension = Path.GetExtension(fileName);
+        return Path.Combine(outputDirectory, $"{name}-{Guid.NewGuid():N}{extension}");
     }
 
     private static async Task RunFlashbackExportRejectedAsync(

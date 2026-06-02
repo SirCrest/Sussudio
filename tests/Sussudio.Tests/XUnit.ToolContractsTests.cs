@@ -5147,7 +5147,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         writeHelp.Invoke(null, new object[] { writer });
         var helpOutput = writer.ToString().Replace("\r\n", "\n");
 
-        AssertContains(catalogEntriesText, "\"flashback export [seconds] [path] [--range] [--force]\"");
+        AssertContains(catalogEntriesText, "\"flashback export [seconds] [path] [--range]\"");
         AssertContains(flashbackHandlersText, "ConsumeFlag(context.Rest, \"--force\")");
         AssertContains(ssctlProgramText, "SsctlHelpWriter.Write(Console.Out);");
         AssertContains(ssctlProgramText, "AutomationCommandCatalog.Get(kind).CliHelp");
@@ -5179,7 +5179,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetFrameTimeOverlayVisible).CliHelp}");
         AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetFlashbackTimelineVisible).CliHelp}");
 
-        AssertEqual("flashback export [seconds] [path] [--range] [--force]",
+        AssertEqual("flashback export [seconds] [path] [--range]",
             AutomationCommandCatalog.Get(AutomationCommandKind.FlashbackExport).CliHelp,
             "catalog Flashback export CLI help");
         AssertEqual("flashback segments",
@@ -8669,7 +8669,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "2BBEEDA3AE61170E9BAC7A544069B7760640E598F69BF3012373B0ACB94997C4";
+        const string ExpectedManifestSha256 = "971C6B6C613CBEC5F9D72F86A1F15745C1D8C46BF8F663940C4B9F307803EA35";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;

@@ -438,10 +438,10 @@ internal sealed record FlashbackExportRequest
     public bool FastStart { get; init; } = true;
 
     /// <summary>
-    /// When true, the exporter is allowed to overwrite an existing file at
-    /// <see cref="OutputPath"/>. When false (the default), the export is refused
-    /// if the destination already exists. This guards automation harnesses from
-    /// silently destroying previous exports by re-using the same output path.
+    /// Compatibility flag accepted from older UI, CLI, and automation callers.
+    /// Flashback export now refuses an existing <see cref="OutputPath"/> even when
+    /// this flag is true; callers that need repeatable diagnostics should choose
+    /// a fresh output path before dispatch.
     /// </summary>
     public bool Force { get; init; }
 

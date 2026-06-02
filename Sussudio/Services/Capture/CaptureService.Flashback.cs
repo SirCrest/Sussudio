@@ -2328,6 +2328,8 @@ public partial class CaptureService
 
         if (ContainsFlashbackExportFailureText(statusMessage, "output path") ||
             ContainsFlashbackExportFailureText(statusMessage, "output directory") ||
+            ContainsFlashbackExportFailureText(statusMessage, "destination file already exists") ||
+            ContainsFlashbackExportFailureText(statusMessage, "does not overwrite existing files") ||
             ContainsFlashbackExportFailureText(statusMessage, "overwrite source"))
         {
             return "InvalidOutputPath";

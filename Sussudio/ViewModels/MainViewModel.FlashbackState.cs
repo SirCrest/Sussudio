@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -578,19 +579,18 @@ public partial class MainViewModel
         var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
         var inPoint = playback.InPoint;
         var outPoint = playback.OutPoint;
+        var exportPath = ResolveUnusedFlashbackExportPath(file.Path);
 
-        // UI flow: the file picker already confirmed any overwrite with the user.
-        // Pass force=true so the exporter does not refuse the user-chosen path.
         var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackRangeAsync(
                 inPoint,
                 outPoint,
-                file.Path,
+                exportPath,
                 progress,
                 ct,
                 playback.InPointFilePts,
                 playback.OutPointFilePts,
-                force: true));
+                force: false));
         switch (outcome)
         {
             case ExportFlashbackOutcome.Stale:
@@ -600,7 +600,7 @@ public partial class MainViewModel
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
-                    ? $"Export complete: {file.Path}"
+                    ? $"Export complete: {exportPath}"
                     : $"Export failed: {succeeded.Result.StatusMessage}";
                 break;
         }
@@ -616,9 +616,9 @@ public partial class MainViewModel
         var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
 
-        // UI flow: the file picker already confirmed any overwrite with the user.
+        var exportPath = ResolveUnusedFlashbackExportPath(file.Path);
         var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
-            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct, force: true));
+            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, exportPath, progress, ct, force: false));
         switch (outcome)
         {
             case ExportFlashbackOutcome.Stale:
@@ -628,7 +628,7 @@ public partial class MainViewModel
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
-                    ? $"Saved last 5 minutes: {file.Path}"
+                    ? $"Saved last 5 minutes: {exportPath}"
                     : $"Save failed: {succeeded.Result.StatusMessage}";
                 break;
         }
@@ -642,6 +642,43 @@ public partial class MainViewModel
         picker.SuggestedFileName = suggestedFileName;
         WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
         return await picker.PickSaveFileAsync();
+    }
+
+    private static string ResolveUnusedFlashbackExportPath(string selectedPath)
+    {
+        if (!File.Exists(selectedPath) && !Directory.Exists(selectedPath))
+        {
+            return selectedPath;
+        }
+
+        var directory = Path.GetDirectoryName(selectedPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            return selectedPath;
+        }
+
+        var baseName = Path.GetFileNameWithoutExtension(selectedPath);
+        if (string.IsNullOrWhiteSpace(baseName))
+        {
+            baseName = "Flashback";
+        }
+
+        var extension = Path.GetExtension(selectedPath);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".mp4";
+        }
+
+        for (var suffix = 1; suffix <= 999; suffix++)
+        {
+            var candidate = Path.Combine(directory, $"{baseName} ({suffix}){extension}");
+            if (!File.Exists(candidate) && !Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return Path.Combine(directory, $"{baseName}.{Guid.NewGuid():N}{extension}");
     }
 
     private bool EnsureFlashbackActiveForExport(string operation)
