@@ -1537,6 +1537,8 @@ static partial class Program
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var rtkShimDef = ReadRepoFile("tools/RtkIoShim/rtk_io_shim.def")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var rtkShimBuildScript = ReadRepoFile("tools/RtkIoShim/build.bat")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
         var verifiedRtkAbiExports = new HashSet<string>(StringComparer.Ordinal)
         {
             "rtk_initialize",
@@ -1619,6 +1621,22 @@ static partial class Program
                     ? $"MUTATING_UNVERIFIED_FORWARD({exportName})"
                     : $"UNVERIFIED_FORWARD({exportName})");
         }
+
+        AssertContains(rtkShimBuildScript, "if /I not \"%VSCMD_ARG_TGT_ARCH%\"==\"x64\"");
+        AssertContains(rtkShimBuildScript, "where cl.exe");
+        AssertContains(rtkShimBuildScript, "where dumpbin.exe");
+        AssertContains(rtkShimBuildScript, "del /q RTK_IO_x64.dll RTK_IO_x64.lib RTK_IO_x64.exp rtk_io_shim.obj");
+        AssertContains(rtkShimBuildScript, "/MACHINE:X64");
+        AssertContains(rtkShimBuildScript, "dumpbin /headers RTK_IO_x64.dll | findstr /C:\"machine (x64)\"");
+        AssertContains(rtkShimBuildScript, "$ErrorActionPreference = 'Stop'");
+        AssertContains(rtkShimBuildScript, "Get-FileHash -Algorithm SHA256 -LiteralPath 'RTK_IO_x64.dll'");
+        AssertContains(rtkShimBuildScript, "Get-FileHash -Algorithm SHA256 -LiteralPath 'RTK_IO_x64.dll' -ErrorAction Stop");
+        AssertContains(rtkShimBuildScript, "if ([string]::IsNullOrWhiteSpace($dll.Hash)) { throw 'RTK_IO_x64.dll hash was empty.' }");
+        AssertContains(rtkShimBuildScript, "Get-FileHash -Algorithm SHA256 -LiteralPath 'RTK_IO_x64_real.dll' -ErrorAction Stop");
+        AssertContains(rtkShimBuildScript, "if ([string]::IsNullOrWhiteSpace($real.Hash)) { throw 'RTK_IO_x64_real.dll hash was empty.' }");
+        AssertContains(rtkShimBuildScript, "RTK_IO_x64_real.dll SHA256=");
+        AssertContains(rtkShimBuildScript, "rename the vendor RTK_IO_x64.dll to RTK_IO_x64_real.dll first");
+        AssertDoesNotContain(rtkShimBuildScript, "/MACHINE:X86");
 
         var trimmedName = getRtkDeviceName.Invoke(null, [selectedPathDevice]) as string;
         AssertEqual("Elgato 4K X", trimmedName, "RtkI2cProbe strips PID suffix for RTK device name");
