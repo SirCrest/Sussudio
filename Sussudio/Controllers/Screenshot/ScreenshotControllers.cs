@@ -37,7 +37,8 @@ internal sealed class PreviewScreenshotController
         var plan = PreviewScreenshotPlanPolicy.Create(
             _context.ViewModel.OutputPath,
             Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
-            DateTime.Now);
+            DateTime.Now,
+            Guid.NewGuid());
         Directory.CreateDirectory(plan.OutputDirectory);
 
         _context.ScreenshotButton.IsEnabled = false;
@@ -67,17 +68,18 @@ internal static class PreviewScreenshotPlanPolicy
     public const string PreviewRequiredStatusText = "Start preview before capturing a screenshot";
 
     private const string DefaultOutputFolderName = "Sussudio";
-    private const string TimestampFormat = "yyyy-MM-dd_HH-mm-ss";
+    private const string TimestampFormat = "yyyy-MM-dd_HH-mm-ss_fff";
 
     public static PreviewScreenshotPlan Create(
         string? configuredOutputPath,
         string picturesFolder,
-        DateTime timestamp)
+        DateTime timestamp,
+        Guid captureId)
     {
         var outputDirectory = string.IsNullOrWhiteSpace(configuredOutputPath)
             ? Path.Combine(picturesFolder, DefaultOutputFolderName)
             : configuredOutputPath;
-        var filePath = Path.Combine(outputDirectory, $"Screenshot_{timestamp.ToString(TimestampFormat)}.png");
+        var filePath = Path.Combine(outputDirectory, $"Screenshot_{timestamp.ToString(TimestampFormat)}_{captureId:N}.png");
 
         return new PreviewScreenshotPlan(outputDirectory, filePath);
     }
@@ -259,7 +261,7 @@ internal sealed class WindowScreenshotController
         GetDIBits(hdcScreen, hBitmap, 0, (uint)height, pixelData, ref bmi, 0);
         ReleaseDC(IntPtr.Zero, hdcScreen);
 
-        using var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+        using var stream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
         WindowScreenshotImageEncoder.WriteToStream(
             stream,
             width,

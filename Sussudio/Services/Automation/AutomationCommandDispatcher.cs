@@ -1473,7 +1473,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationCommandKind.CapturePreviewFrame,
             "outputPath",
             GetString(payload, "outputPath")
-                ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp"));
+                ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.bmp"));
         var result = await _probePort.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
     }
@@ -1487,7 +1487,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationCommandKind.CaptureWindowScreenshot,
             "outputPath",
             GetString(payload, "outputPath")
-                ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png"));
+                ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.png"));
         var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
         return CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded);
     }

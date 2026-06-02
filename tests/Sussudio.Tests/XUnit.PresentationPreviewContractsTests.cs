@@ -192,6 +192,14 @@ public sealed class PresentationPreviewD3DGeometryContractsTests
     [Fact]
     public Task PreviewPngCaptureWrites16BitRgbPng()
         => global::Program.D3D11PreviewRenderer_PreviewPngCapture_Writes16BitRgbPng();
+
+    [Fact]
+    public Task PreviewPngCaptureRefusesExistingFile()
+        => global::Program.D3D11PreviewRenderer_PreviewPngCapture_RefusesExistingFile();
+
+    [Fact]
+    public Task PreviewBmpCaptureRefusesExistingFile()
+        => global::Program.D3D11PreviewRenderer_PreviewBmpCapture_RefusesExistingFile();
 }
 
 public sealed class PresentationPreviewD3DCadenceContractsTests
@@ -1770,6 +1778,7 @@ static partial class Program
         AssertContains(captureText, "LogFrameCaptureFailure(ex, rendererMode);");
         AssertContains(captureText, "PreviewScreenshotCapture.CopyMappedFrameToBuffer(");
         AssertContains(captureText, "PreviewScreenshotCapture.CaptureMappedFrameToBmp(");
+        AssertContains(captureText, "preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.bmp");
         AssertContains(captureText, "private void BeginPngFrameCaptureCompletion(");
         AssertContains(captureText, "private int _frameCaptureEncodeInProgress;");
         AssertContains(captureText, "private bool IsPngFrameCaptureCompletionInProgress()");
@@ -1788,6 +1797,11 @@ static partial class Program
         AssertContains(previewScreenshotCaptureText, "private sealed class PreviewScreenshotPixelAnalysis");
         AssertContains(previewScreenshotCaptureText, "analysis.AnalyzePixel(");
         AssertContains(previewScreenshotCaptureText, "private static void WriteBitmapHeaders(");
+        AssertContains(previewScreenshotCaptureText, "new FileStream(outputPath, FileMode.CreateNew");
+        AssertEqual(
+            2,
+            Regex.Matches(previewScreenshotCaptureText, "new FileStream\\(outputPath, FileMode\\.CreateNew").Count,
+            "preview screenshot BMP and PNG writers refuse existing output files");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.ScreenshotEncoding.cs")),
@@ -1928,6 +1942,119 @@ static partial class Program
         }
         finally
         {
+            if (Directory.Exists(outputRoot))
+            {
+                Directory.Delete(outputRoot, recursive: true);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_PreviewPngCapture_RefusesExistingFile()
+    {
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+        var method = captureType.GetMethod(
+            "CaptureFrameBufferTo16BitPng",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CaptureFrameBufferTo16BitPng not found.");
+
+        var outputRoot = Path.Combine(Path.GetTempPath(), "sussudio-preview-png-existing-test-" + Guid.NewGuid().ToString("N"));
+        var outputPath = Path.Combine(outputRoot, "preview", "frame.png");
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+            File.WriteAllText(outputPath, "existing screenshot");
+            var originalBytes = File.ReadAllBytes(outputPath);
+            var format = ParseEnum("Vortice.DXGI.Format", "B8G8R8A8_UNorm");
+            var refusedExistingFile = false;
+            try
+            {
+                method.Invoke(
+                    null,
+                    new object[]
+                    {
+                        new byte[] { 0x30, 0x20, 0x10, 0xFF },
+                        4,
+                        1,
+                        1,
+                        outputPath,
+                        "UnitTest",
+                        format
+                    });
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is IOException)
+            {
+                refusedExistingFile = true;
+            }
+
+            AssertEqual(true, refusedExistingFile, "PNG capture refuses existing output path");
+            AssertSequenceEqual(originalBytes, File.ReadAllBytes(outputPath), "existing PNG output remains unchanged");
+        }
+        finally
+        {
+            if (Directory.Exists(outputRoot))
+            {
+                Directory.Delete(outputRoot, recursive: true);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_PreviewBmpCapture_RefusesExistingFile()
+    {
+        var captureType = RequireType("Sussudio.Services.Preview.PreviewScreenshotCapture");
+        var method = captureType.GetMethod(
+            "CaptureMappedFrameToBmp",
+            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CaptureMappedFrameToBmp not found.");
+        var mappedType = RequireType("Vortice.Direct3D11.MappedSubresource");
+
+        var outputRoot = Path.Combine(Path.GetTempPath(), "sussudio-preview-bmp-existing-test-" + Guid.NewGuid().ToString("N"));
+        var outputPath = Path.Combine(outputRoot, "preview", "frame.bmp");
+        var pixelPointer = IntPtr.Zero;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+            File.WriteAllText(outputPath, "existing screenshot");
+            var originalBytes = File.ReadAllBytes(outputPath);
+            var pixelBytes = new byte[] { 0x30, 0x20, 0x10, 0xFF };
+            pixelPointer = System.Runtime.InteropServices.Marshal.AllocHGlobal(pixelBytes.Length);
+            System.Runtime.InteropServices.Marshal.Copy(pixelBytes, 0, pixelPointer, pixelBytes.Length);
+            var mapped = Activator.CreateInstance(mappedType, pixelPointer, 4u, 4u)
+                ?? throw new InvalidOperationException("MappedSubresource constructor returned null.");
+            var format = ParseEnum("Vortice.DXGI.Format", "B8G8R8A8_UNorm");
+            var refusedExistingFile = false;
+            try
+            {
+                method.Invoke(
+                    null,
+                    new object[]
+                    {
+                        mapped,
+                        1,
+                        1,
+                        outputPath,
+                        "UnitTest",
+                        format
+                    });
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is IOException)
+            {
+                refusedExistingFile = true;
+            }
+
+            AssertEqual(true, refusedExistingFile, "BMP capture refuses existing output path");
+            AssertSequenceEqual(originalBytes, File.ReadAllBytes(outputPath), "existing BMP output remains unchanged");
+        }
+        finally
+        {
+            if (pixelPointer != IntPtr.Zero)
+            {
+                System.Runtime.InteropServices.Marshal.FreeHGlobal(pixelPointer);
+            }
+
             if (Directory.Exists(outputRoot))
             {
                 Directory.Delete(outputRoot, recursive: true);

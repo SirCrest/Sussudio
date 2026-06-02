@@ -601,7 +601,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
 
         var resolvedOutputPath = string.IsNullOrWhiteSpace(outputPath)
-            ? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}.bmp")
+            ? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.bmp")
             : outputPath;
 
         var request = new TaskCompletionSource<PreviewFrameCaptureResult>(
@@ -682,7 +682,7 @@ internal sealed partial class D3D11PreviewRenderer
         var requestedOutputPath = request.Task.AsyncState as string;
         Interlocked.Exchange(ref _frameCaptureOutputPath, null);
         var outputPath = string.IsNullOrWhiteSpace(requestedOutputPath)
-            ? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}.bmp")
+            ? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.bmp")
             : requestedOutputPath;
 
         try

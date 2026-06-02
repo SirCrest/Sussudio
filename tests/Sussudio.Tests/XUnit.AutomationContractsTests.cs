@@ -1253,9 +1253,9 @@ static partial class Program
         AssertContains(customCommandsText, "_probePort.ProbePreviewColorAsync(cancellationToken)");
         AssertContains(customCommandsText, "AutomationCommandKind.CapturePreviewFrame");
         AssertContains(customCommandsText, "_probePort.CapturePreviewFrameAsync(outputPath, cancellationToken)");
-        AssertContains(customCommandsText, "preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
+        AssertContains(customCommandsText, "preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.bmp");
         AssertContains(customCommandsText, "AutomationCommandKind.CaptureWindowScreenshot");
-        AssertContains(customCommandsText, "window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
+        AssertContains(customCommandsText, "window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.png");
         AssertContains(customCommandsText, "_windowControl.CaptureWindowScreenshotAsync");
         AssertContains(customCommandsText, "CreateCaptureResponse(correlationId, result.Message, result, result.Succeeded)");
         AssertContains(customCommandsText, "errorCode: succeeded ? null : \"capture-failed\"");

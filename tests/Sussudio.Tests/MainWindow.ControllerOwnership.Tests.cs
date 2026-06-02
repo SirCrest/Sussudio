@@ -1250,7 +1250,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(policyText, "internal static class PreviewScreenshotPlanPolicy");
         AssertContains(policyText, "PreviewRequiredStatusText = \"Start preview before capturing a screenshot\"");
         AssertContains(policyText, "Path.Combine(picturesFolder, DefaultOutputFolderName)");
-        AssertContains(policyText, "$\"Screenshot_{timestamp.ToString(TimestampFormat)}.png\"");
+        AssertContains(policyText, "$\"Screenshot_{timestamp.ToString(TimestampFormat)}_{captureId:N}.png\"");
         AssertContains(policyText, "=> $\"Screenshot saved: {Path.GetFileName(filePath)}\";");
         AssertContains(policyText, "=> $\"Screenshot failed: {message}\";");
         AssertContains(policyText, "=> $\"SCREENSHOT_SAVED path={filePath} width={capturedWidth} height={capturedHeight}\";");
@@ -1299,9 +1299,10 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
             ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.PreviewRequiredStatusText was not found.");
 
         var timestamp = new System.DateTime(2026, 5, 16, 14, 3, 4);
-        var fallbackPlan = create.Invoke(null, new object?[] { "   ", "C:\\Users\\crest\\Pictures", timestamp })
+        var captureId = new Guid("01234567-89ab-cdef-0123-456789abcdef");
+        var fallbackPlan = create.Invoke(null, new object?[] { "   ", "C:\\Users\\crest\\Pictures", timestamp, captureId })
             ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.Create returned null.");
-        var configuredPlan = create.Invoke(null, new object?[] { "D:\\Captures", "C:\\Users\\crest\\Pictures", timestamp })
+        var configuredPlan = create.Invoke(null, new object?[] { "D:\\Captures", "C:\\Users\\crest\\Pictures", timestamp, captureId })
             ?? throw new InvalidOperationException("PreviewScreenshotPlanPolicy.Create returned null.");
         var fallbackPath = GetStringProperty(fallbackPlan, "FilePath");
         var configuredPath = GetStringProperty(configuredPlan, "FilePath");
@@ -1315,7 +1316,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
             GetStringProperty(fallbackPlan, "OutputDirectory"),
             "preview screenshot fallback output directory");
         AssertEqual(
-            "C:\\Users\\crest\\Pictures\\Sussudio\\Screenshot_2026-05-16_14-03-04.png",
+            "C:\\Users\\crest\\Pictures\\Sussudio\\Screenshot_2026-05-16_14-03-04_000_0123456789abcdef0123456789abcdef.png",
             fallbackPath,
             "preview screenshot fallback path");
         AssertEqual(
@@ -1323,15 +1324,15 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
             GetStringProperty(configuredPlan, "OutputDirectory"),
             "preview screenshot configured output directory");
         AssertEqual(
-            "D:\\Captures\\Screenshot_2026-05-16_14-03-04.png",
+            "D:\\Captures\\Screenshot_2026-05-16_14-03-04_000_0123456789abcdef0123456789abcdef.png",
             configuredPath,
             "preview screenshot configured path");
         AssertEqual(
-            "Screenshot saved: Screenshot_2026-05-16_14-03-04.png",
+            "Screenshot saved: Screenshot_2026-05-16_14-03-04_000_0123456789abcdef0123456789abcdef.png",
             savedStatus.Invoke(null, new object[] { configuredPath })?.ToString(),
             "preview screenshot saved status");
         AssertEqual(
-            "SCREENSHOT_SAVED path=D:\\Captures\\Screenshot_2026-05-16_14-03-04.png width=1280 height=720",
+            "SCREENSHOT_SAVED path=D:\\Captures\\Screenshot_2026-05-16_14-03-04_000_0123456789abcdef0123456789abcdef.png width=1280 height=720",
             savedLog.Invoke(null, new object[] { configuredPath, 1280, 720 })?.ToString(),
             "preview screenshot saved log");
         AssertEqual(
@@ -1406,6 +1407,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var encoderText = controllerText;
 
         AssertContains(controllerText, "private static void SaveHBitmapAsImage(");
+        AssertContains(controllerText, "new FileStream(outputPath, FileMode.CreateNew");
         AssertContains(controllerText, "WindowScreenshotImageEncoder.WriteToStream(");
         AssertContains(controllerText, "internal static void WritePngToStream");
         AssertContains(controllerText, "internal static void WriteBmpToStream");

@@ -74,7 +74,7 @@ internal static class PreviewScreenshotCapture
         var rowBuffer = ArrayPool<byte>.Shared.Rent(rowBytes);
         try
         {
-            using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using var fileStream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
             using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
             WriteBitmapHeaders(writer, fileSize, pixelDataOffset, width, height, imageSize);
 
@@ -397,7 +397,7 @@ internal static class PreviewPng16Encoder
             Directory.CreateDirectory(directory);
         }
 
-        using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+        using var fileStream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
         using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
 
         writer.Write(PngSignature);
