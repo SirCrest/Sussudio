@@ -594,6 +594,27 @@ static partial class Program
     private static int CountNonBlankSourceLines(string path)
         => File.ReadLines(path).Count(line => line.Trim().Length > 0);
 
+    private static IEnumerable<string> EnumerateRtkDefExports(string defText)
+    {
+        var inExports = false;
+        foreach (var line in defText.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0 || trimmed.StartsWith(";", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (!inExports)
+            {
+                inExports = trimmed.Equals("EXPORTS", StringComparison.OrdinalIgnoreCase);
+                continue;
+            }
+
+            yield return trimmed.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)[0];
+        }
+    }
+
     private static IEnumerable<string> ExtractReadmeAutomationConsumers(string readmeText)
     {
         const string marker = "Then keep these consumers in sync:";
@@ -1511,6 +1532,52 @@ static partial class Program
         AssertEqual(1, disabledSwitch.ExitCode, "RtkI2cProbe disabled switch exit code");
         AssertContains(rtkProbeSource, "RTK I2C switch is disabled");
         AssertContains(rtkProbeSource, "Use the native XU service/probe path");
+
+        var rtkShimSource = ReadRepoFile("tools/RtkIoShim/rtk_io_shim.cpp")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var rtkShimDef = ReadRepoFile("tools/RtkIoShim/rtk_io_shim.def")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var verifiedRtkAbiExports = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "rtk_initialize",
+            "rtk_uninitialize",
+            "rtk_openPort",
+            "rtk_closePort",
+            "rtk_isOpen",
+            "rtk_setUVCExtension",
+            "rtk_setCurrentDevice",
+            "rtk_sendI2CATCommand",
+            "rtk_getCurrentDeviceName"
+        };
+
+        AssertContains(rtkShimSource, "RTK_SHIM_ALLOW_UNVERIFIED_ABI");
+        AssertContains(rtkShimSource, "static long long BlockUnverifiedAbiCall(const char* name)");
+        AssertContains(rtkShimSource, "if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall(\"rtk_sendATCommand\");");
+        AssertContains(rtkShimSource, "RESOLVE_TYPED_OR_RETURN(rtk_sendI2CATCommand, RtkEightArgsFn, -1);");
+        AssertContains(rtkShimSource, "__declspec(dllexport) long long __cdecl rtk_sendI2CATCommand(\n    long long a1, long long a2, long long a3, long long a4,\n    long long a5, long long a6, long long a7, long long a8)");
+        AssertContains(rtkShimSource, "__declspec(dllexport) const char* __cdecl rtk_getCurrentDeviceName()");
+        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_burnToFlash)");
+        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_enterDebugMode)");
+        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_readRbus)");
+        AssertContains(rtkShimSource, "UNVERIFIED_FORWARD(rtk_writeRbus)");
+        AssertDoesNotContain(rtkShimSource, "#define FORWARD(name)");
+        AssertDoesNotContain(rtkShimSource, "SIMPLE_FORWARD(");
+        AssertOccursBefore(rtkShimSource, "if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall(\"rtk_sendATCommand\");", "Log(\"rtk_sendATCommand");
+        foreach (var exportName in EnumerateRtkDefExports(rtkShimDef))
+        {
+            if (verifiedRtkAbiExports.Contains(exportName))
+            {
+                continue;
+            }
+
+            if (exportName == "rtk_sendATCommand")
+            {
+                AssertContains(rtkShimSource, "BlockUnverifiedAbiCall(\"rtk_sendATCommand\")");
+                continue;
+            }
+
+            AssertContains(rtkShimSource, $"UNVERIFIED_FORWARD({exportName})");
+        }
 
         var trimmedName = getRtkDeviceName.Invoke(null, [selectedPathDevice]) as string;
         AssertEqual("Elgato 4K X", trimmedName, "RtkI2cProbe strips PID suffix for RTK device name");

@@ -5,15 +5,17 @@
 // V2: IAT hooks on CreateFileW/ReadFile/WriteFile to capture the USB wire protocol
 // that RTK_IO uses internally for I2C AT commands.
 //
-// On x64 Windows, all calling conventions collapse to the Microsoft x64 ABI:
-// rcx, rdx, r8, r9, stack. So __cdecl == __stdcall == __fastcall.
-// The issue is we don't know how many args each function takes.
-// Solution: forward ALL 4 register args + 16 stack args (covers up to 20 params).
+// On x64 Windows, calling conventions collapse to the Microsoft x64 ABI, but
+// argument count, pointer shape, and return type still matter. Only exports
+// verified against the local NativeXuAudioProbe P/Invoke surface are forwarded
+// by default; generic forwarding requires an explicit unsafe environment opt-in.
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <wchar.h>
 
 static HMODULE g_realDll = nullptr;
 static FILE* g_log = nullptr;
@@ -497,10 +499,79 @@ typedef long long (__cdecl *GenericFn)(
     long long a5, long long a6, long long a7, long long a8,
     long long a9, long long a10, long long a11, long long a12);
 
-#define FORWARD(name) \
+typedef long long (__cdecl *RtkNoArgsFn)();
+typedef long long (__cdecl *RtkFourArgsFn)(long long a1, long long a2, long long a3, long long a4);
+typedef long long (__cdecl *RtkEightArgsFn)(
+    long long a1, long long a2, long long a3, long long a4,
+    long long a5, long long a6, long long a7, long long a8);
+typedef long long (__cdecl *RtkSetCurrentDeviceFn)(const char* deviceName, long long a2);
+typedef const char* (__cdecl *RtkGetCurrentDeviceNameFn)();
+
+static bool AllowUnverifiedAbiForwarding() {
+    wchar_t value[32] = {};
+    DWORD length = GetEnvironmentVariableW(
+        L"RTK_SHIM_ALLOW_UNVERIFIED_ABI",
+        value,
+        (DWORD)(sizeof(value) / sizeof(value[0])));
+    if (length == 0) {
+        return false;
+    }
+
+    value[(sizeof(value) / sizeof(value[0])) - 1] = 0;
+    return _wcsicmp(value, L"0") != 0 &&
+           _wcsicmp(value, L"false") != 0 &&
+           _wcsicmp(value, L"no") != 0;
+}
+
+static long long BlockUnverifiedAbiCall(const char* name) {
+    Log("blocked unverified ABI call %s; set RTK_SHIM_ALLOW_UNVERIFIED_ABI=1 to forward with the legacy generic ABI", name);
+    SetLastError(ERROR_INVALID_FUNCTION);
+    return -1;
+}
+
+#define RESOLVE_TYPED_OR_RETURN(name, type, failure) \
+    static type real_##name = nullptr; \
+    if (!real_##name) real_##name = (type)GetReal(#name); \
+    if (!real_##name) { Log("ERROR: " #name " not found"); return failure; }
+
+#define RESOLVE_UNVERIFIED_OR_RETURN(name) \
     static GenericFn real_##name = nullptr; \
     if (!real_##name) real_##name = (GenericFn)GetReal(#name); \
     if (!real_##name) { Log("ERROR: " #name " not found"); return -1; }
+
+#define VERIFIED_FORWARD0(name) \
+__declspec(dllexport) long long __cdecl name() \
+{ \
+    Log(#name "()"); \
+    RESOLVE_TYPED_OR_RETURN(name, RtkNoArgsFn, -1); \
+    long long r = real_##name(); \
+    Log("  -> %lld", r); \
+    return r; \
+}
+
+#define VERIFIED_FORWARD4(name) \
+__declspec(dllexport) long long __cdecl name(long long a1, long long a2, long long a3, long long a4) \
+{ \
+    Log(#name "(a1=%llX, a2=%llX, a3=%llX, a4=%llX)", a1, a2, a3, a4); \
+    RESOLVE_TYPED_OR_RETURN(name, RtkFourArgsFn, -1); \
+    long long r = real_##name(a1, a2, a3, a4); \
+    Log("  -> %lld", r); \
+    return r; \
+}
+
+#define UNVERIFIED_FORWARD(name) \
+__declspec(dllexport) long long __cdecl name( \
+    long long a1, long long a2, long long a3, long long a4, \
+    long long a5, long long a6, long long a7, long long a8, \
+    long long a9, long long a10, long long a11, long long a12) \
+{ \
+    if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall(#name); \
+    Log(#name "(a1=%llX, a2=%llX, a3=%llX, a4=%llX)", a1, a2, a3, a4); \
+    RESOLVE_UNVERIFIED_OR_RETURN(name); \
+    long long r = real_##name(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12); \
+    Log("  -> %lld", r); \
+    return r; \
+}
 
 extern "C" {
 
@@ -511,6 +582,8 @@ __declspec(dllexport) long long __cdecl rtk_sendATCommand(
     long long a1, long long a2, long long a3, long long a4, long long a5,
     long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
 {
+    if (!AllowUnverifiedAbiForwarding()) return BlockUnverifiedAbiCall("rtk_sendATCommand");
+
     Log("rtk_sendATCommand(a1=%llX, a2=%llX, a3=%llX, a4=%llX, a5=%llX, a6=%llX, a7=%llX, a8=%llX)",
         a1, a2, a3, a4, a5, a6, a7, a8);
 
@@ -526,7 +599,7 @@ __declspec(dllexport) long long __cdecl rtk_sendATCommand(
         }
     }
 
-    FORWARD(rtk_sendATCommand);
+    RESOLVE_UNVERIFIED_OR_RETURN(rtk_sendATCommand);
     long long r = real_rtk_sendATCommand(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 
     Log("  -> %lld (0x%llX)", r, r);
@@ -546,10 +619,10 @@ __declspec(dllexport) long long __cdecl rtk_sendATCommand(
     return r;
 }
 
-// rtk_sendI2CATCommand — unknown signature, dump all args
+// rtk_sendI2CATCommand — verified against NativeXuAudioProbe P/Invoke declarations.
 __declspec(dllexport) long long __cdecl rtk_sendI2CATCommand(
-    long long a1, long long a2, long long a3, long long a4, long long a5,
-    long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
+    long long a1, long long a2, long long a3, long long a4,
+    long long a5, long long a6, long long a7, long long a8)
 {
     Log("rtk_sendI2CATCommand(a1=%llX, a2=%llX, a3=%llX, a4=%llX, a5=%llX, a6=%llX, a7=%llX, a8=%llX)",
         a1, a2, a3, a4, a5, a6, a7, a8);
@@ -566,8 +639,8 @@ __declspec(dllexport) long long __cdecl rtk_sendI2CATCommand(
         }
     }
 
-    FORWARD(rtk_sendI2CATCommand);
-    long long r = real_rtk_sendI2CATCommand(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
+    RESOLVE_TYPED_OR_RETURN(rtk_sendI2CATCommand, RtkEightArgsFn, -1);
+    long long r = real_rtk_sendI2CATCommand(a1, a2, a3, a4, a5, a6, a7, a8);
 
     Log("  -> %lld (0x%llX)", r, r);
 
@@ -586,43 +659,9 @@ __declspec(dllexport) long long __cdecl rtk_sendI2CATCommand(
     return r;
 }
 
-// rtk_readRbus(handle, addr, data, len) — direct register read
-__declspec(dllexport) long long __cdecl rtk_readRbus(
-    long long handle, long long addr, long long data, long long len,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
-{
-    Log("rtk_readRbus(handle=%llX, addr=0x%llX, data=%llX, len=%lld)",
-        handle, addr, data, len);
-
-    FORWARD(rtk_readRbus);
-    long long r = real_rtk_readRbus(handle, addr, data, len, a5, a6, a7, a8, a9, a10, a11, a12);
-
-    if (r >= 0 && data && len > 0 && len < 1024)
-        LogHex("data", (const void*)data, (int)len);
-    Log("  -> %lld", r);
-    return r;
-}
-
-// rtk_writeRbus(handle, addr, data, len) — direct register write
-__declspec(dllexport) long long __cdecl rtk_writeRbus(
-    long long handle, long long addr, long long data, long long len,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
-{
-    Log("rtk_writeRbus(handle=%llX, addr=0x%llX, data=%llX, len=%lld)",
-        handle, addr, data, len);
-    if (data && len > 0 && len < 1024)
-        LogHex("data", (const void*)data, (int)len);
-
-    FORWARD(rtk_writeRbus);
-    long long r = real_rtk_writeRbus(handle, addr, data, len, a5, a6, a7, a8, a9, a10, a11, a12);
-    Log("  -> %lld", r);
-    return r;
-}
-
 // rtk_setUVCExtension(handle, selector, data, len)
 __declspec(dllexport) long long __cdecl rtk_setUVCExtension(
-    long long a1, long long a2, long long a3, long long a4,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
+    long long a1, long long a2, long long a3, long long a4)
 {
     Log("rtk_setUVCExtension(a1=%llX, a2=%llX, a3=%llX, a4=%lld)",
         a1, a2, a3, a4);
@@ -630,16 +669,15 @@ __declspec(dllexport) long long __cdecl rtk_setUVCExtension(
     if (a3 > 0x10000 && a4 > 0 && a4 < 1024)
         LogHex("data", (const void*)a3, (int)a4);
 
-    FORWARD(rtk_setUVCExtension);
-    long long r = real_rtk_setUVCExtension(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
+    RESOLVE_TYPED_OR_RETURN(rtk_setUVCExtension, RtkFourArgsFn, -1);
+    long long r = real_rtk_setUVCExtension(a1, a2, a3, a4);
     Log("  -> %lld", r);
     return r;
 }
 
 // rtk_openPort
 __declspec(dllexport) long long __cdecl rtk_openPort(
-    long long a1, long long a2, long long a3, long long a4,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
+    long long a1, long long a2, long long a3, long long a4)
 {
     Log("rtk_openPort(a1=%llX, a2=%llX, a3=%llX, a4=%llX)", a1, a2, a3, a4);
     // a1 or a2 might be a string (device path)
@@ -650,101 +688,70 @@ __declspec(dllexport) long long __cdecl rtk_openPort(
         __try { Log("  a2 as string: %s", (const char*)a2); } __except(1) {}
     }
 
-    FORWARD(rtk_openPort);
-    long long r = real_rtk_openPort(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
+    RESOLVE_TYPED_OR_RETURN(rtk_openPort, RtkFourArgsFn, -1);
+    long long r = real_rtk_openPort(a1, a2, a3, a4);
     Log("  -> %lld", r);
     return r;
 }
 
-// --- Simple forwarders for remaining functions ---
+// --- Verified simple forwarders used by NativeXuAudioProbe ---
 
-#define SIMPLE_FORWARD(name) \
-__declspec(dllexport) long long __cdecl name( \
-    long long a1, long long a2, long long a3, long long a4, \
-    long long a5, long long a6, long long a7, long long a8, \
-    long long a9, long long a10, long long a11, long long a12) \
-{ \
-    Log(#name "(a1=%llX, a2=%llX, a3=%llX, a4=%llX)", a1, a2, a3, a4); \
-    FORWARD(name); \
-    long long r = real_##name(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12); \
-    Log("  -> %lld", r); \
-    return r; \
-}
+VERIFIED_FORWARD4(rtk_initialize)
+VERIFIED_FORWARD0(rtk_uninitialize)
+VERIFIED_FORWARD0(rtk_closePort)
+VERIFIED_FORWARD4(rtk_isOpen)
 
-SIMPLE_FORWARD(rtk_initialize)
-SIMPLE_FORWARD(rtk_uninitialize)
-SIMPLE_FORWARD(rtk_uninitialize_ex)
-SIMPLE_FORWARD(rtk_closePort)
-SIMPLE_FORWARD(rtk_isOpen)
-SIMPLE_FORWARD(rtk_setDevice)
-SIMPLE_FORWARD(rtk_enableLog)
-SIMPLE_FORWARD(rtk_enterDebugMode)
-SIMPLE_FORWARD(rtk_exitDebugMode)
-SIMPLE_FORWARD(rtk_rescueReadRbus)
-SIMPLE_FORWARD(rtk_rescueWriteRbus)
-SIMPLE_FORWARD(rtk_burnDPEDID)
-SIMPLE_FORWARD(rtk_burnEDID)
-SIMPLE_FORWARD(rtk_burnHDCP)
-SIMPLE_FORWARD(rtk_burnMultiFiles)
-SIMPLE_FORWARD(rtk_burnToFlash)
-SIMPLE_FORWARD(rtk_burnToFlashWithLog)
-SIMPLE_FORWARD(rtk_burnUSBDesription)
-SIMPLE_FORWARD(rtk_readMultiFiles)
-SIMPLE_FORWARD(rtk_get_HDCP_Version_ByFile)
-SIMPLE_FORWARD(rtk_setBeforeBurnCallBack)
+// --- Unverified exports fail closed unless explicitly enabled for lab use ---
+
+UNVERIFIED_FORWARD(rtk_uninitialize_ex)
+UNVERIFIED_FORWARD(rtk_setDevice)
+UNVERIFIED_FORWARD(rtk_enableLog)
+UNVERIFIED_FORWARD(rtk_readRbus)
+UNVERIFIED_FORWARD(rtk_writeRbus)
+UNVERIFIED_FORWARD(rtk_enterDebugMode)
+UNVERIFIED_FORWARD(rtk_exitDebugMode)
+UNVERIFIED_FORWARD(rtk_rescueReadRbus)
+UNVERIFIED_FORWARD(rtk_rescueWriteRbus)
+UNVERIFIED_FORWARD(rtk_burnDPEDID)
+UNVERIFIED_FORWARD(rtk_burnEDID)
+UNVERIFIED_FORWARD(rtk_burnHDCP)
+UNVERIFIED_FORWARD(rtk_burnMultiFiles)
+UNVERIFIED_FORWARD(rtk_burnToFlash)
+UNVERIFIED_FORWARD(rtk_burnToFlashWithLog)
+UNVERIFIED_FORWARD(rtk_burnUSBDesription)
+UNVERIFIED_FORWARD(rtk_readMultiFiles)
+UNVERIFIED_FORWARD(rtk_get_HDCP_Version_ByFile)
+UNVERIFIED_FORWARD(rtk_setBeforeBurnCallBack)
 
 // setCurrentDevice — log the name string
 __declspec(dllexport) long long __cdecl rtk_setCurrentDevice(
-    long long a1, long long a2, long long a3, long long a4,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
+    const char* deviceName, long long a2)
 {
-    Log("rtk_setCurrentDevice(a1=%llX, a2=%llX)", a1, a2);
-    if (a1 > 0x10000) {
-        __try { Log("  a1 as string: %s", (const char*)a1); } __except(1) {}
+    Log("rtk_setCurrentDevice(deviceName=%p, a2=%llX)", deviceName, a2);
+    if (deviceName) {
+        __try { Log("  deviceName: %s", deviceName); } __except(1) {}
     }
-    if (a2 > 0x10000) {
-        __try { Log("  a2 as string: %s", (const char*)a2); } __except(1) {}
-    }
-    FORWARD(rtk_setCurrentDevice);
-    long long r = real_rtk_setCurrentDevice(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
+
+    RESOLVE_TYPED_OR_RETURN(rtk_setCurrentDevice, RtkSetCurrentDeviceFn, -1);
+    long long r = real_rtk_setCurrentDevice(deviceName, a2);
     Log("  -> %lld", r);
     return r;
 }
 
 // getCurrentDeviceName — returns a string
-__declspec(dllexport) long long __cdecl rtk_getCurrentDeviceName(
-    long long a1, long long a2, long long a3, long long a4,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
+__declspec(dllexport) const char* __cdecl rtk_getCurrentDeviceName()
 {
-    FORWARD(rtk_getCurrentDeviceName);
-    long long r = real_rtk_getCurrentDeviceName(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
-    if (r > 0x10000) {
-        __try { Log("rtk_getCurrentDeviceName -> %s", (const char*)r); } __except(1) { Log("rtk_getCurrentDeviceName -> %llX", r); }
+    RESOLVE_TYPED_OR_RETURN(rtk_getCurrentDeviceName, RtkGetCurrentDeviceNameFn, nullptr);
+    const char* r = real_rtk_getCurrentDeviceName();
+    if (r) {
+        __try { Log("rtk_getCurrentDeviceName -> %s", r); } __except(1) { Log("rtk_getCurrentDeviceName -> %p", r); }
     } else {
-        Log("rtk_getCurrentDeviceName -> %lld", r);
+        Log("rtk_getCurrentDeviceName -> null");
     }
     return r;
 }
 
-// Get_Customer_version
-__declspec(dllexport) long long __cdecl rtk_Get_Customer_version(
-    long long a1, long long a2, long long a3, long long a4,
-    long long a5, long long a6, long long a7, long long a8, long long a9, long long a10, long long a11, long long a12)
-{
-    Log("rtk_Get_Customer_version(a1=%llX, a2=%llX, a3=%llX)", a1, a2, a3);
-    FORWARD(rtk_Get_Customer_version);
-    long long r = real_rtk_Get_Customer_version(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
-    // Try to dump result buffer
-    if (r >= 0 && a2 > 0x10000 && a3 > 0x10000) {
-        __try {
-            int len = *(int*)a3;
-            if (len > 0 && len < 256)
-                LogHex("version", (const void*)a2, len);
-        } __except(1) {}
-    }
-    Log("  -> %lld", r);
-    return r;
-}
+UNVERIFIED_FORWARD(rtk_Get_Customer_version)
 
 } // extern "C"
 
