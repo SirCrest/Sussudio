@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-06-02T10:19:41Z
+Generated UTC: 2026-06-02T10:37:11Z
 Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | Production .cs files | 122 |
 | Test .cs files | 13 |
 | Core app .cs files (Sussudio/) | 88 |
-| Core app nonblank LoC (Sussudio/) | 88903 |
+| Core app nonblank LoC (Sussudio/) | 88912 |
 | Sussudio.Tests .cs files | 12 |
-| Sussudio.Tests nonblank LoC | 55887 |
+| Sussudio.Tests nonblank LoC | 55927 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 1 (0.8%) |
 
@@ -43,7 +43,7 @@ Root: C:\Users\crest\source\repos\Sussudio-cleanup-architecture
 | 2644 | Sussudio/ViewModels/MainViewModel.cs |
 | 2617 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2614 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
-| 2517 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
+| 2527 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2421 | Sussudio/MainWindow.xaml.cs |
 | 2396 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 2024 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |

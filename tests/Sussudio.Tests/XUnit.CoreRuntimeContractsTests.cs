@@ -62,6 +62,10 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.NativeXuAtCommandProvider_RootOwnsTransportAndPayloadDecoding();
 
     [Fact]
+    public Task NativeXuHdrMetadataDecodesEotfFromDataByte()
+        => global::Program.NativeXuAtCommandProvider_HdrMetadataDecodesEotfFromDataByte();
+
+    [Fact]
     public Task NativeXuTelemetryDetailsLiveInFocusedPartials()
         => global::Program.NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials();
 
@@ -1223,6 +1227,11 @@ static partial class Program
         AssertContains(providerRootText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
         AssertContains(providerRootText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
         AssertContains(providerRootText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertContains(providerRootText, "const int HdrStaticMetadataChecksumOffset = 3;");
+        AssertContains(providerRootText, "const int HdrStaticMetadataDataStartOffset = HdrStaticMetadataChecksumOffset + 1;");
+        AssertContains(providerRootText, "const int HdrStaticMetadataEotfOffset = HdrStaticMetadataDataStartOffset;");
+        AssertContains(providerRootText, "buffer[InfoFrameLengthOffset] < 1");
+        AssertContains(providerRootText, "var eotf = buffer[HdrStaticMetadataEotfOffset];");
         AssertContains(providerRootText, "private static string? InferFrameRateRational(double? frameRate)");
         AssertContains(providerRootText, "private static SourceTelemetryConfidence ResolveConfidence(");
         AssertContains(providerRootText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
@@ -1241,6 +1250,44 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    internal static Task NativeXuAtCommandProvider_HdrMetadataDecodesEotfFromDataByte()
+    {
+        var providerType = RequireType("Sussudio.Services.Telemetry.NativeXuAtCommandProvider");
+        var decodeHdrMetadata = providerType.GetMethod(
+            "DecodeHdrMetadata",
+            BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("NativeXuAtCommandProvider.DecodeHdrMetadata not found.");
+
+        var checksumLooksHdrButDataByteIsSdr = DecodeHdrMetadata(
+            decodeHdrMetadata,
+            new byte[] { 0x87, 0x01, 0x1A, 0x02, 0x00 });
+        AssertEqual(true, GetPropertyValue(checksumLooksHdrButDataByteIsSdr, "HasMetadata"), "HDR metadata presence");
+        AssertEqual((byte?)0, GetPropertyValue(checksumLooksHdrButDataByteIsSdr, "Eotf"), "HDR metadata EOTF from DB1");
+        AssertEqual((bool?)false, GetPropertyValue(checksumLooksHdrButDataByteIsSdr, "IsHdr"), "HDR metadata SDR classification");
+
+        var dataByteIsHdr = DecodeHdrMetadata(
+            decodeHdrMetadata,
+            new byte[] { 0x87, 0x01, 0x1A, 0x00, 0x02 });
+        AssertEqual(true, GetPropertyValue(dataByteIsHdr, "HasMetadata"), "HDR metadata presence with HDR EOTF");
+        AssertEqual((byte?)2, GetPropertyValue(dataByteIsHdr, "Eotf"), "HDR metadata HDR EOTF from DB1");
+        AssertEqual((bool?)true, GetPropertyValue(dataByteIsHdr, "IsHdr"), "HDR metadata HDR classification");
+
+        var noDataByte = DecodeHdrMetadata(
+            decodeHdrMetadata,
+            new byte[] { 0x87, 0x01, 0x1A, 0x03 });
+        AssertEqual(false, GetPropertyValue(noDataByte, "HasMetadata"), "HDR metadata truncated payload rejected");
+
+        var declaredNoData = DecodeHdrMetadata(
+            decodeHdrMetadata,
+            new byte[] { 0x87, 0x01, 0x00, 0x00, 0x02 });
+        AssertEqual(false, GetPropertyValue(declaredNoData, "HasMetadata"), "HDR metadata zero-length payload rejected");
+        return Task.CompletedTask;
+    }
+
+    private static object DecodeHdrMetadata(MethodInfo decodeHdrMetadata, byte[] payload)
+        => decodeHdrMetadata.Invoke(null, new object[] { payload })
+            ?? throw new InvalidOperationException("DecodeHdrMetadata returned null.");
 
     internal static Task NativeXuAtCommandProvider_TelemetryDetailsLiveInFocusedPartials()
     {

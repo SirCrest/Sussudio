@@ -846,12 +846,22 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
     private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)
     {
-        if (buffer.Length < 4 || !HasNonZeroData(buffer) || buffer[0] != 0x87)
+        const int InfoFrameTypeOffset = 0;
+        const int InfoFrameLengthOffset = 2;
+        const int HdrStaticMetadataInfoFrameType = 0x87;
+        const int HdrStaticMetadataChecksumOffset = 3;
+        const int HdrStaticMetadataDataStartOffset = HdrStaticMetadataChecksumOffset + 1;
+        const int HdrStaticMetadataEotfOffset = HdrStaticMetadataDataStartOffset;
+
+        if (buffer.Length <= HdrStaticMetadataEotfOffset ||
+            !HasNonZeroData(buffer) ||
+            buffer[InfoFrameTypeOffset] != HdrStaticMetadataInfoFrameType ||
+            buffer[InfoFrameLengthOffset] < 1)
         {
             return new HdrMetadataInfo(false, null, null);
         }
 
-        var eotf = buffer[3];
+        var eotf = buffer[HdrStaticMetadataEotfOffset];
         var isHdr = eotf switch
         {
             2 or 3 => true,
