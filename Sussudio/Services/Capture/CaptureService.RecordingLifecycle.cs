@@ -416,6 +416,28 @@ public partial class CaptureService
         _lastPreservedArtifacts = result.PreservedArtifacts;
     }
 
+    internal void MarkRecordingFinalizationUnresolved(string statusMessage)
+    {
+        if (_lastFinalizeUtc.HasValue &&
+            !string.Equals(_lastFinalizeStatus, "Recording", StringComparison.Ordinal) &&
+            !string.Equals(_lastFinalizeStatus, "None", StringComparison.Ordinal))
+        {
+            Logger.Log(
+                "RECORDING_FINALIZE_UNRESOLVED_SKIPPED " +
+                $"reason=existing_finalization_status status='{_lastFinalizeStatus}'");
+            return;
+        }
+
+        var fallbackOutputPath = _recordingBackend.Context?.FinalOutputPath ?? _lastOutputPath ?? string.Empty;
+        var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(
+            _recordingBackend.Context,
+            fallbackOutputPath,
+            statusMessage);
+        PublishRecordingFinalizedOutcome(
+            FinalizeResult.Failure(fallbackOutputPath, statusMessage, preservedArtifacts),
+            updateOutputPath: false);
+    }
+
     // Recording finalization router: choose the active recording backend and delegate
     // backend-specific stop/dispose work to the focused owners.
     private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, bool emergency, CancellationToken cancellationToken)

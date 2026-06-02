@@ -245,3 +245,103 @@ public sealed class RecordingArtifactManager
         return preserved;
     }
 }
+
+internal static class RecordingFinalizationRecoveryArtifacts
+{
+    private const string UnresolvedMarkerSuffix = ".recording-finalization-unresolved.txt";
+
+    public static IReadOnlyList<string> PreserveUnresolved(
+        RecordingContext? context,
+        string outputPath,
+        string reason)
+    {
+        var preserved = new List<string>();
+        AddExistingFile(preserved, outputPath);
+        AddExistingFile(preserved, context?.VideoOutputPath);
+        AddExistingFile(preserved, context?.FinalOutputPath);
+        AddExistingFile(preserved, context?.AudioTempPath);
+
+        var markerPath = TryWriteUnresolvedMarker(context, outputPath, reason);
+        AddExistingFile(preserved, markerPath);
+        return preserved;
+    }
+
+    private static string? TryWriteUnresolvedMarker(
+        RecordingContext? context,
+        string outputPath,
+        string reason)
+    {
+        var anchorPath = ResolveMarkerAnchor(context, outputPath);
+        if (string.IsNullOrWhiteSpace(anchorPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            var directory = Path.GetDirectoryName(anchorPath);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return null;
+            }
+
+            var fileName = Path.GetFileName(anchorPath);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                fileName = "recording";
+            }
+
+            var markerPath = Path.Combine(directory, fileName + UnresolvedMarkerSuffix);
+            File.WriteAllLines(markerPath, new[]
+            {
+                "status=unresolved",
+                "utc=" + DateTimeOffset.UtcNow.ToString("O"),
+                "reason=" + reason,
+                "final_output=" + (context?.FinalOutputPath ?? outputPath),
+                "video_output=" + (context?.VideoOutputPath ?? string.Empty),
+                "audio_temp=" + (context?.AudioTempPath ?? string.Empty),
+            });
+            return markerPath;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to write recording finalization recovery marker for '{anchorPath}': {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string? ResolveMarkerAnchor(RecordingContext? context, string outputPath)
+    {
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            return outputPath;
+        }
+
+        if (!string.IsNullOrWhiteSpace(context?.FinalOutputPath))
+        {
+            return context.FinalOutputPath;
+        }
+
+        return !string.IsNullOrWhiteSpace(context?.VideoOutputPath)
+            ? context.VideoOutputPath
+            : null;
+    }
+
+    private static void AddExistingFile(List<string> preserved, string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        foreach (var existing in preserved)
+        {
+            if (string.Equals(existing, path, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        preserved.Add(path);
+    }
+}

@@ -7109,7 +7109,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var shutdownCleanupText = ReadMainWindowCompositionSource();
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
         var stopBeforeCloseMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<bool> StopBeforeCloseAsync(");
-        var stopAfterClosedMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task StopAfterClosedBestEffortAsync(");
+        var stopAfterClosedMethodOffset = closeRecordingFinalizationControllerText.IndexOf("public async Task<RecordingStopWaitResult> StopAfterClosedBestEffortAsync(");
         var waitForStopMethodOffset = closeRecordingFinalizationControllerText.IndexOf("private static async Task<RecordingStopWaitResult> WaitForRecordingStopAsync(");
 
         if (stopBeforeCloseMethodOffset < 0)
@@ -7141,11 +7141,14 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(closeRecordingFinalizationControllerText, "internal sealed class WindowCloseRecordingFinalizationController");
         AssertContains(closeRecordingFinalizationControllerText, "private const int StopBudgetMs = 120_000;");
         AssertContains(closeRecordingFinalizationControllerText, "public async Task<bool> StopBeforeCloseAsync(");
-        AssertContains(closeRecordingFinalizationControllerText, "public async Task StopAfterClosedBestEffortAsync(");
-        AssertContains(closeRecordingFinalizationControllerText, "private enum RecordingStopWaitResult");
+        AssertContains(closeRecordingFinalizationControllerText, "public async Task<RecordingStopWaitResult> StopAfterClosedBestEffortAsync(");
+        AssertContains(closeRecordingFinalizationControllerText, "internal enum RecordingStopWaitStatus");
+        AssertContains(closeRecordingFinalizationControllerText, "internal readonly record struct RecordingStopWaitResult");
         AssertContains(closeRecordingFinalizationControllerText, "private static async Task<RecordingStopWaitResult> WaitForRecordingStopAsync(MainViewModel viewModel)");
         AssertContains(stopBeforeCloseMethodText, "var stopResult = await WaitForRecordingStopAsync(viewModel);");
         AssertContains(stopAfterClosedMethodText, "var stopResult = await WaitForRecordingStopAsync(viewModel);");
+        AssertContains(stopAfterClosedMethodText, "viewModel.MarkRecordingFinalizationUnresolved(");
+        AssertContains(stopAfterClosedMethodText, "return RecordingStopWaitResult.Failed(ex.Message);");
         AssertDoesNotContain(stopBeforeCloseMethodText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
         AssertDoesNotContain(stopAfterClosedMethodText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
         AssertContains(waitForStopMethodText, "var stopTask = viewModel.StopRecordingAndWaitAsync();");
@@ -7216,7 +7219,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(shutdownCleanupControllerText, "_context.DetachViewModelEventHandlers();");
         AssertContains(shutdownCleanupControllerText, "_context.StopPreviewForShutdown();");
         AssertContains(shutdownCleanupControllerText, "_context.ResetPreviewStartupTracking();");
-        AssertContains(shutdownCleanupControllerText, "await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);");
+        AssertContains(shutdownCleanupControllerText, "var recordingStopResult = await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);");
+        AssertContains(shutdownCleanupControllerText, "WINDOW_CLOSE_RECORDING_STOP_UNRESOLVED ");
         AssertContains(shutdownCleanupControllerText, "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);");
         AssertContains(shutdownCleanupControllerText, "_context.DisposeNvmlMonitor();");
         AssertContains(shutdownCleanupControllerText, "await _context.DisposeViewModelAsync().ConfigureAwait(false);");
@@ -7224,8 +7228,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertOccursBefore(shutdownCleanupControllerText, "_context.CompleteWindowCloseRequest();", "_context.LifecycleController.MarkClosing();");
         AssertOccursBefore(shutdownCleanupControllerText, "_context.LifecycleController.MarkClosing();", "_context.DetachMeterActivationHandlers();");
         AssertOccursBefore(shutdownCleanupControllerText, "_context.DetachViewModelEventHandlers();", "_context.StopPreviewForShutdown();");
-        AssertOccursBefore(shutdownCleanupControllerText, "_context.ResetPreviewStartupTracking();", "await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);");
-        AssertOccursBefore(shutdownCleanupControllerText, "await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);", "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);");
+        AssertOccursBefore(shutdownCleanupControllerText, "_context.ResetPreviewStartupTracking();", "var recordingStopResult = await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);");
+        AssertOccursBefore(shutdownCleanupControllerText, "var recordingStopResult = await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);", "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);");
         AssertOccursBefore(shutdownCleanupControllerText, "await _context.DisposeAutomationHostAsync().ConfigureAwait(false);", "_context.DisposeNvmlMonitor();");
 
         AssertContains(shutdownCleanupText, "StopLiveSignalInfoTimers();");

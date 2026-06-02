@@ -573,7 +573,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     Logger.Log("LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
                 }
 
-                return FinalizeResult.Failure(outputPath, "Stopped (libav encode drain timed out; emergency flush attempted)");
+                const string timeoutStatus = "Stopped (libav encode drain timed out; recovery artifacts preserved)";
+                var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(
+                    context,
+                    outputPath,
+                    timeoutStatus);
+                return FinalizeResult.Failure(outputPath, timeoutStatus, preservedArtifacts);
             }
 
             try

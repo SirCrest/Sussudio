@@ -997,6 +997,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)
         => _recordingTransitionController.StopRecordingAndWaitAsync(cancellationToken);
 
+    internal void MarkRecordingFinalizationUnresolved(string statusMessage)
+        => _captureService.MarkRecordingFinalizationUnresolved(statusMessage);
+
     internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
         => _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);
 

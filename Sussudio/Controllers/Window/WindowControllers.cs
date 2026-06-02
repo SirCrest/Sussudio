@@ -693,12 +693,6 @@ internal sealed class WindowCloseRecordingFinalizationController
 {
     private const int StopBudgetMs = 120_000;
 
-    private enum RecordingStopWaitResult
-    {
-        Completed,
-        TimedOut,
-    }
-
     public async Task<bool> StopBeforeCloseAsync(
         MainViewModel viewModel,
         FrameworkElement? shutdownContent,
@@ -719,7 +713,7 @@ internal sealed class WindowCloseRecordingFinalizationController
         try
         {
             var stopResult = await WaitForRecordingStopAsync(viewModel);
-            if (stopResult == RecordingStopWaitResult.Completed)
+            if (stopResult.Status == RecordingStopWaitStatus.Completed)
             {
                 Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
                 return true;
@@ -748,7 +742,7 @@ internal sealed class WindowCloseRecordingFinalizationController
         }
     }
 
-    public async Task StopAfterClosedBestEffortAsync(
+    public async Task<RecordingStopWaitResult> StopAfterClosedBestEffortAsync(
         MainViewModel viewModel,
         FrameworkElement? shutdownContent)
     {
@@ -756,7 +750,7 @@ internal sealed class WindowCloseRecordingFinalizationController
 
         if (!viewModel.IsRecording)
         {
-            return;
+            return RecordingStopWaitResult.Completed;
         }
 
         Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
@@ -771,21 +765,28 @@ internal sealed class WindowCloseRecordingFinalizationController
         try
         {
             var stopResult = await WaitForRecordingStopAsync(viewModel);
-            if (stopResult == RecordingStopWaitResult.Completed)
+            if (stopResult.Status == RecordingStopWaitStatus.Completed)
             {
                 Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
             }
             else
             {
+                viewModel.MarkRecordingFinalizationUnresolved(
+                    $"Recording finalization unresolved after window close timeout ({StopBudgetMs} ms).");
                 Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_TIMEOUT "
                     + $"budget_ms={StopBudgetMs}; window already closed; continuing shutdown cleanup.");
             }
+
+            return stopResult;
         }
         catch (Exception ex)
         {
+            viewModel.MarkRecordingFinalizationUnresolved(
+                $"Recording finalization failed after window close: {ex.Message}");
             Logger.Log($"WINDOW_CLOSE_RECORDING_STOP: stop failed: {ex.Message}");
             Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_FAILED_AFTER_CLOSE "
                 + $"window already closed; continuing shutdown cleanup. error='{ex.Message}'");
+            return RecordingStopWaitResult.Failed(ex.Message);
         }
     }
 
@@ -801,6 +802,21 @@ internal sealed class WindowCloseRecordingFinalizationController
 
         return RecordingStopWaitResult.TimedOut;
     }
+}
+
+internal enum RecordingStopWaitStatus
+{
+    Completed,
+    TimedOut,
+    Failed,
+}
+
+internal readonly record struct RecordingStopWaitResult(RecordingStopWaitStatus Status, string? ErrorMessage = null)
+{
+    public static RecordingStopWaitResult Completed { get; } = new(RecordingStopWaitStatus.Completed);
+    public static RecordingStopWaitResult TimedOut { get; } = new(RecordingStopWaitStatus.TimedOut);
+    public static RecordingStopWaitResult Failed(string errorMessage) =>
+        new(RecordingStopWaitStatus.Failed, errorMessage);
 }
 
 internal sealed class WindowShutdownCleanupControllerContext
@@ -831,7 +847,7 @@ internal sealed class WindowShutdownCleanupControllerContext
 
     public required Action ResetPreviewStartupTracking { get; init; }
 
-    public required Func<Task> StopRecordingAfterClosedBestEffortAsync { get; init; }
+    public required Func<Task<RecordingStopWaitResult>> StopRecordingAfterClosedBestEffortAsync { get; init; }
 
     public required Func<ValueTask> DisposeAutomationHostAsync { get; init; }
 
@@ -880,7 +896,15 @@ internal sealed class WindowShutdownCleanupController
             Logger.Log($"Preview shutdown cleanup failed: {ex.Message}");
         }
 
-        await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);
+        var recordingStopResult = await _context.StopRecordingAfterClosedBestEffortAsync().ConfigureAwait(false);
+        if (recordingStopResult.Status != RecordingStopWaitStatus.Completed)
+        {
+            Logger.Log(
+                "WINDOW_CLOSE_RECORDING_STOP_UNRESOLVED " +
+                $"status={recordingStopResult.Status} " +
+                $"error='{recordingStopResult.ErrorMessage ?? string.Empty}'");
+        }
+
         await _context.DisposeAutomationHostAsync().ConfigureAwait(false);
 
         _context.DisposeNvmlMonitor();

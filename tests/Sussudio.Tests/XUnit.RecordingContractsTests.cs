@@ -504,6 +504,10 @@ public class RecordingArtifactManagerTests
         AssertContains(rootText, "public Task RollbackAsync(");
         AssertContains(rootText, "private static bool TryValidateFinalOutput(");
         AssertContains(rootText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
+        AssertContains(rootText, "internal static class RecordingFinalizationRecoveryArtifacts");
+        AssertContains(rootText, "private const string UnresolvedMarkerSuffix = \".recording-finalization-unresolved.txt\";");
+        AssertContains(rootText, "AddExistingFile(preserved, outputPath);");
+        AssertContains(rootText, "string.Equals(existing, path, StringComparison.OrdinalIgnoreCase)");
     }
 
     [Fact]
@@ -890,6 +894,37 @@ public class RecordingContractsTests
         Assert.Equal(new[] { "/path/a.mp4", "/path/b.m4a" }, preserved.Cast<object>().Select(value => (string)value).ToArray());
     }
 
+    [Fact]
+    public void RecordingFinalizationRecoveryArtifacts_PreservesFallbackOutputWithoutContext()
+    {
+        var asm = SussudioAssembly.Load();
+        var helperType = asm.GetType("Sussudio.Services.Recording.RecordingFinalizationRecoveryArtifacts", throwOnError: true)!;
+        var preserveUnresolved = helperType.GetMethod("PreserveUnresolved", BindingFlags.Public | BindingFlags.Static)!;
+
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "sussudio-recording-recovery-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDirectory);
+        try
+        {
+            var outputPath = Path.Combine(tempDirectory, "capture.mp4");
+            File.WriteAllBytes(outputPath, new byte[] { 1, 2, 3 });
+
+            var result = (IEnumerable)preserveUnresolved.Invoke(
+                null,
+                new object?[] { null, outputPath, "timeout" })!;
+            var artifacts = result.Cast<object>().Select(value => (string)value).ToArray();
+            var markerPath = outputPath + ".recording-finalization-unresolved.txt";
+
+            Assert.Contains(outputPath, artifacts);
+            Assert.Contains(markerPath, artifacts);
+            Assert.True(File.Exists(markerPath));
+            Assert.Contains("reason=timeout", File.ReadAllText(markerPath));
+        }
+        finally
+        {
+            Directory.Delete(tempDirectory, recursive: true);
+        }
+    }
+
     private static bool GetBoolProperty(object instance, string propertyName)
         => (bool)instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.GetValue(instance)!;
 
@@ -1237,7 +1272,9 @@ static partial class Program
         AssertContains(stopText, "var drainTimeoutMs = emergency ? EmergencyStopTimeoutMs : StopTimeoutMs;");
         AssertContains(stopText, "_cts?.Cancel();");
         AssertContains(stopText, "LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
-        AssertContains(stopText, "return FinalizeResult.Failure(outputPath, \"Stopped (libav encode drain timed out; emergency flush attempted)\");");
+        AssertContains(stopText, "const string timeoutStatus = \"Stopped (libav encode drain timed out; recovery artifacts preserved)\";");
+        AssertContains(stopText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(");
+        AssertContains(stopText, "return FinalizeResult.Failure(outputPath, timeoutStatus, preservedArtifacts);");
         AssertContains(stopText, "TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure)");
         AssertContains(stopText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(stopText, "if (context?.HdrPipelineActive == true)");
@@ -4209,6 +4246,10 @@ static partial class Program
         AssertContains(lifecycleText, "_lastFinalizeStatus = result.StatusMessage;");
         AssertContains(lifecycleText, "_lastFinalizeUtc = DateTimeOffset.UtcNow;");
         AssertContains(lifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
+        AssertContains(lifecycleText, "internal void MarkRecordingFinalizationUnresolved(string statusMessage)");
+        AssertContains(lifecycleText, "reason=existing_finalization_status");
+        AssertContains(lifecycleText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(");
+        AssertContains(lifecycleText, "FinalizeResult.Failure(fallbackOutputPath, statusMessage, preservedArtifacts)");
 
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
