@@ -508,6 +508,17 @@ public partial class MainViewModel
         }
     }
 
+    private static string FormatSuccessfulFlashbackExportStatus(
+        string successPrefix,
+        string exportPath,
+        FinalizeResult result)
+    {
+        var statusMessage = result.StatusMessage?.Trim();
+        return string.IsNullOrWhiteSpace(statusMessage)
+            ? $"{successPrefix}: {exportPath}"
+            : $"{successPrefix}: {exportPath} - {statusMessage}";
+    }
+
     private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync(
         Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
     {
@@ -600,7 +611,7 @@ public partial class MainViewModel
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
-                    ? $"Export complete: {exportPath}"
+                    ? FormatSuccessfulFlashbackExportStatus("Export complete", exportPath, succeeded.Result)
                     : $"Export failed: {succeeded.Result.StatusMessage}";
                 break;
         }
@@ -628,7 +639,7 @@ public partial class MainViewModel
                 break;
             case ExportFlashbackOutcome.Succeeded succeeded:
                 StatusText = succeeded.Result.Succeeded
-                    ? $"Saved last 5 minutes: {exportPath}"
+                    ? FormatSuccessfulFlashbackExportStatus("Saved last 5 minutes", exportPath, succeeded.Result)
                     : $"Save failed: {succeeded.Result.StatusMessage}";
                 break;
         }

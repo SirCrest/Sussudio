@@ -6274,6 +6274,21 @@ static partial class Program
         AssertContains(rawFlashbackExportText, "Flashback export unavailable: flashback is not active.");
         AssertMemberContains(flashbackExportText, "ExportFlashbackAsync", "case ExportFlashbackOutcome.Stale:");
         AssertMemberContains(flashbackExportText, "SaveFlashbackLast5mAsync", "case ExportFlashbackOutcome.Stale:");
+        AssertContains(rawFlashbackExportText, "private static string FormatSuccessfulFlashbackExportStatus(");
+        AssertMemberContains(
+            flashbackExportText,
+            "ExportFlashbackAsync",
+            "FormatSuccessfulFlashbackExportStatus(");
+        AssertMemberContains(
+            flashbackExportText,
+            "SaveFlashbackLast5mAsync",
+            "FormatSuccessfulFlashbackExportStatus(");
+        AssertContains(
+            rawFlashbackExportText,
+            "FormatSuccessfulFlashbackExportStatus(\"Export complete\", exportPath, succeeded.Result)");
+        AssertContains(
+            rawFlashbackExportText,
+            "FormatSuccessfulFlashbackExportStatus(\"Saved last 5 minutes\", exportPath, succeeded.Result)");
         AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
         AssertContains(disposalText, "Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
@@ -6316,6 +6331,40 @@ static partial class Program
         AssertDoesNotContain(
             flashbackExportText + "\n" + flashbackExportOperationText + "\n" + flashbackExportAutomationText,
             "exportCts.Dispose();");
+
+        var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
+        var finalizeResultType = RequireType("Sussudio.Services.Contracts.FinalizeResult");
+        var successFactory = finalizeResultType.GetMethod(
+            "Success",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[] { typeof(string), typeof(string) },
+            null);
+        AssertNotNull(successFactory, "FinalizeResult.Success(string, string)");
+        var formatter = viewModelType.GetMethod(
+            "FormatSuccessfulFlashbackExportStatus",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        AssertNotNull(formatter, "MainViewModel.FormatSuccessfulFlashbackExportStatus");
+
+        var partialSuccess = successFactory!.Invoke(
+            null,
+            new object[]
+            {
+                "clip.mp4",
+                "Exported 42 packets (live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames)"
+            });
+        var partialStatus = (string)formatter!.Invoke(
+            null,
+            new object?[] { "Export complete", "clip.mp4", partialSuccess })!;
+        AssertContains(partialStatus, "Export complete: clip.mp4 - Exported 42 packets");
+        AssertContains(partialStatus, "live-edge partial fallback");
+        AssertContains(partialStatus, "export may omit the newest frames");
+
+        var blankSuccess = successFactory.Invoke(null, new object[] { "clip.mp4", "" });
+        var blankStatus = (string)formatter.Invoke(
+            null,
+            new object?[] { "Export complete", "clip.mp4", blankSuccess })!;
+        AssertEqual("Export complete: clip.mp4", blankStatus, "blank Flashback export success detail");
 
         return Task.CompletedTask;
     }
