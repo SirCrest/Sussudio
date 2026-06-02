@@ -62,7 +62,7 @@ public partial class CaptureService
             if (!enabled)
             {
                 _pendingFlashbackEnableAfterRecording = false;
-                await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+                await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false).ConfigureAwait(false);
                 if (!_isVideoPreviewActive && !_isAudioPreviewActive && !_isRecording)
                 {
                     await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);
@@ -112,8 +112,8 @@ public partial class CaptureService
 
     /// <summary>
     /// Tears down the running flashback encoder and buffer, then rebuilds
-    /// with current settings. Purges all existing segments because encoding
-    /// parameters (bitrate, codec, etc.) may have changed.
+    /// with current settings. Retires the old session for bounded startup
+    /// cleanup instead of purging history as an implicit settings side effect.
     /// </summary>
     public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
         => RunTransitionAsync(CurrentSessionState, async transitionToken =>
@@ -145,7 +145,7 @@ public partial class CaptureService
 
     private async Task RestartFlashbackCoreAsync(CancellationToken cancellationToken)
     {
-        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false).ConfigureAwait(false);
 
         var committedRestartToken = CancellationToken.None;
         var unifiedVideoCapture = _videoPipeline.Capture;
@@ -395,7 +395,7 @@ public partial class CaptureService
             {
                 try
                 {
-                    await CycleFlashbackBufferAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+                    await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
                 {
@@ -515,7 +515,7 @@ public partial class CaptureService
             {
                 try
                 {
-                    await CycleFlashbackBufferAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+                    await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
                 {
@@ -539,6 +539,28 @@ public partial class CaptureService
                 Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode}");
             }
         }, cancellationToken);
+
+    /// <summary>
+    /// Retires the current Flashback history for bounded startup cleanup and
+    /// starts a fresh buffer so incompatible setting changes do not mix segments.
+    /// </summary>
+    private async Task RebuildFlashbackPreviewBackendForSettingsChangeAsync(CancellationToken cancellationToken)
+    {
+        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false).ConfigureAwait(false);
+
+        var committedRebuildToken = CancellationToken.None;
+        var unifiedVideoCapture = _videoPipeline.Capture;
+        var currentSettings = _currentSettings;
+        if (!_flashbackEnabled || unifiedVideoCapture == null || currentSettings == null)
+        {
+            Logger.Log($"FLASHBACK_SETTINGS_REBUILD_TEARDOWN_ONLY enabled={_flashbackEnabled} capture={unifiedVideoCapture != null} settings={currentSettings != null}");
+            return;
+        }
+
+        await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedRebuildToken).ConfigureAwait(false);
+        Logger.Log("FLASHBACK_SETTINGS_REBUILD_OK");
+        cancellationToken.ThrowIfCancellationRequested();
+    }
 
     /// <summary>
     /// Coordinates cycling the Flashback encoder sink after recording stops.
@@ -746,7 +768,7 @@ public partial class CaptureService
                 $"audio={settings.AudioEnabled} " +
                 $"mic={settings.MicrophoneEnabled}");
 
-            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false).ConfigureAwait(false);
 
             videoCapture = _videoPipeline.Capture;
             if (videoCapture != null)
@@ -1345,7 +1367,7 @@ public partial class CaptureService
             {
                 _pendingFlashbackSettingsChange = false;
                 Logger.Log("FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING");
-                await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+                await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false).ConfigureAwait(false);
                 var unifiedVideoCapture = _videoPipeline.Capture;
                 var settings = _currentSettings;
                 if (_flashbackEnabled && unifiedVideoCapture != null && settings != null)

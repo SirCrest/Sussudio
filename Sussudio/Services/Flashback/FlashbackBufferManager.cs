@@ -18,6 +18,7 @@ namespace Sussudio.Services.Flashback;
 internal sealed class FlashbackBufferManager : IDisposable
 {
     private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
+    private const string RetiredSessionMarkerFileName = ".flashback-retired-session";
     private readonly object _indexLock = new();
     private readonly FlashbackBufferOptions _options;
     private string? _sessionId;
@@ -36,6 +37,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private int _startupCacheDeletedSessionCount;
     private volatile bool _disposed;
     private bool _preserveSessionForRecovery;
+    private bool _retireSessionForStartupCleanup;
     private int _evictionPauseCount;
     private TimeSpan _recordingStartPts;
     private TimeSpan _recordingEndPts;
@@ -409,6 +411,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             _preserveSessionForRecovery = false;
+            _retireSessionForStartupCleanup = false;
             _sessionId = sessionId;
             _sessionDirectory = sessionDirectory;
 
@@ -432,6 +435,13 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 _disposed = true;
                 Logger.Log($"FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY dir='{_sessionDirectory}' segments={_completedSegments.Count} active_file={_activeSegmentPath != null}");
+                return;
+            }
+
+            if (IsSessionRetiredForStartupCleanupUnsafe())
+            {
+                _disposed = true;
+                Logger.Log($"FLASHBACK_BUFFER_DISPOSE_RETIRE_SESSION dir='{_sessionDirectory}' segments={_completedSegments.Count} active_file={_activeSegmentPath != null}");
                 return;
             }
 
@@ -498,6 +508,42 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
+    public void MarkSessionRetiredForStartupCleanup(string reason)
+    {
+        lock (_indexLock)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_sessionDirectory))
+            {
+                return;
+            }
+
+            if (_completedSegments.Count == 0 && string.IsNullOrWhiteSpace(_activeSegmentPath))
+            {
+                Logger.Log($"FLASHBACK_RETIRE_MARKER_SKIP reason='{reason}' cause=no_segments dir='{_sessionDirectory}'");
+                return;
+            }
+
+            _retireSessionForStartupCleanup = true;
+
+            try
+            {
+                Directory.CreateDirectory(_sessionDirectory);
+                var markerPath = Path.Combine(_sessionDirectory, RetiredSessionMarkerFileName);
+                File.WriteAllText(markerPath, DateTimeOffset.UtcNow.ToString("O"));
+                Logger.Log($"FLASHBACK_RETIRE_MARKER reason='{reason}' dir='{_sessionDirectory}'");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_RETIRE_MARKER_WARN reason='{reason}' dir='{_sessionDirectory}' type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+    }
+
     private bool IsSessionPreservedForRecoveryUnsafe()
     {
         if (_preserveSessionForRecovery)
@@ -517,6 +563,29 @@ internal sealed class FlashbackBufferManager : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_RECOVERY_PRESERVE_MARKER_CHECK_WARN dir='{_sessionDirectory}' type={ex.GetType().Name} msg={ex.Message}");
+            return true;
+        }
+    }
+
+    private bool IsSessionRetiredForStartupCleanupUnsafe()
+    {
+        if (_retireSessionForStartupCleanup)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_sessionDirectory))
+        {
+            return false;
+        }
+
+        try
+        {
+            return File.Exists(Path.Combine(_sessionDirectory, RetiredSessionMarkerFileName));
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_RETIRE_MARKER_CHECK_WARN dir='{_sessionDirectory}' type={ex.GetType().Name} msg={ex.Message}");
             return true;
         }
     }

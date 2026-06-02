@@ -154,7 +154,7 @@ public partial class CaptureService
             !CanReuseVideoCaptureForPreview(unifiedVideoCapture, settings))
         {
             Logger.Log("PREVIEW_START recycle_pipeline=1 reason=settings_changed");
-            await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: true).ConfigureAwait(false);
+            await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);
         }
 
         unifiedVideoCapture = _videoPipeline.Capture;
@@ -173,7 +173,7 @@ public partial class CaptureService
             flashbackBackendSettingsChanged)
         {
             Logger.Log("PREVIEW_START recycle_flashback=1 reason=flashback_settings_changed");
-            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false).ConfigureAwait(false);
         }
     }
 

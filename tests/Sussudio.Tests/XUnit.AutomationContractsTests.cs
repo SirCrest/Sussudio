@@ -3103,7 +3103,7 @@ static partial class Program
         AssertContains(startVideoPreview, "CanReuseVideoCaptureForPreview(unifiedVideoCapture, settings)");
         AssertRegex(
             startVideoPreview,
-            @"var\s+unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*!CanReuseVideoCaptureForPreview\(unifiedVideoCapture,\s*settings\)\s*\)\s*\{[^{}]*DisposePreviewPipelineAsync\(transitionToken,\s*purgeFlashbackSegments:\s*true\)",
+            @"var\s+unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*!CanReuseVideoCaptureForPreview\(unifiedVideoCapture,\s*settings\)\s*\)\s*\{[^{}]*DisposePreviewPipelineAsync\(transitionToken,\s*purgeFlashbackSegments:\s*false\)",
             "preview settings-change recycle branch");
         AssertRegex(
             startVideoPreview,
@@ -3111,7 +3111,7 @@ static partial class Program
             "preview flashback-disabled recycle branch");
         AssertRegex(
             startVideoPreview,
-            @"unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*_flashbackBackend\.Sink\s*!=\s*null\s*&&\s*flashbackBackendSettingsChanged\s*\)\s*\{[^{}]*DisposeFlashbackPreviewBackendAsync\(transitionToken,\s*purgeSegments:\s*true\)",
+            @"unifiedVideoCapture\s*=\s*_videoPipeline\.Capture;\s*if\s*\(\s*unifiedVideoCapture\s*!=\s*null\s*&&\s*!_isRecording\s*&&\s*_flashbackBackend\.Sink\s*!=\s*null\s*&&\s*flashbackBackendSettingsChanged\s*\)\s*\{[^{}]*DisposeFlashbackPreviewBackendAsync\(transitionToken,\s*purgeSegments:\s*false\)",
             "preview flashback-backend recycle branch");
 
         AssertContains(retainedPreviewFastPath, "unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink)");
@@ -3336,6 +3336,7 @@ static partial class Program
         AssertContains(encoderSettingsChange, "_currentSettings = previousSettings;");
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
         AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
+        AssertContains(encoderSettingsChange, "await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken)");
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
         AssertContains(encoderSettingsChange, "string? splitEncodeMode = null");
         AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = parsedSplitMode;");
@@ -3354,8 +3355,18 @@ static partial class Program
         AssertContains(formatChange, "_currentSettings = previousSettings;");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_ROLLBACK");
         AssertContains(formatChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
+        AssertContains(formatChange, "await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken)");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
+
+        var settingsRebuild = ExtractTextBetween(
+            captureServiceText,
+            "private async Task RebuildFlashbackPreviewBackendForSettingsChangeAsync",
+            "    private async Task CycleFlashbackBufferAsync");
+        AssertContains(settingsRebuild, "await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false)");
+        AssertContains(settingsRebuild, "var committedRebuildToken = CancellationToken.None;");
+        AssertContains(settingsRebuild, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedRebuildToken)");
+        AssertContains(settingsRebuild, "FLASHBACK_SETTINGS_REBUILD_OK");
 
         var cycleBuffer = ExtractTextBetween(
             captureServiceText,
@@ -3560,6 +3571,7 @@ static partial class Program
         AssertContains(
             setFlashbackEnabled,
             "if (!_isVideoPreviewActive && !_isAudioPreviewActive && !_isRecording)\n                {\n                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);");
+        AssertContains(setFlashbackEnabled, "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)");
         AssertContains(setFlashbackEnabled, "if (_isRecording)\n            {\n                _pendingFlashbackEnableAfterRecording = true;");
         AssertContains(setFlashbackEnabled, "FLASHBACK_ENABLE_DEFERRED");
         var recordingActiveEnableBranch = ExtractTextBetween(
@@ -6184,6 +6196,10 @@ static partial class Program
         AssertContains(backendCleanup, "request.Reason");
         AssertContains(backendCleanup, "request.FlashbackExporter.Dispose();");
         AssertContains(backendCleanup, "request.BufferManager.PurgeAllSegments();");
+        AssertContains(backendCleanup, "request.BufferManager.IsSessionPreservedForRecovery");
+        AssertContains(backendCleanup, "FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
+        AssertContains(backendCleanup, "FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");
+        AssertContains(backendCleanup, "request.BufferManager.MarkSessionRetiredForStartupCleanup(request.Reason);");
         AssertContains(backendCleanup, "FLASHBACK_BACKEND_CLEANUP_LOCK_REUSED");
         AssertContains(backendCleanup, "if (lockAcquired && releaseLockOnExit)");
         AssertContains(backendCleanup, "releaseExportOperationLock(mode);");

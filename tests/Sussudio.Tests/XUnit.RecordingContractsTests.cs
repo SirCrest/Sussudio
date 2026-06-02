@@ -1375,6 +1375,7 @@ static partial class Program
             captureServiceSource,
             "private async Task RestartFlashbackCoreAsync",
             "    private async Task EnsureFlashbackAudioInputsAsync");
+        AssertContains(restartFlashbackCore, "await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false)");
         AssertContains(restartFlashbackCore, "var committedRestartToken = CancellationToken.None;");
         AssertContains(restartFlashbackCore, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, committedRestartToken).ConfigureAwait(false);");
         AssertContains(restartFlashbackCore, "Logger.Log(\"FLASHBACK_RESTART_OK\");\n        cancellationToken.ThrowIfCancellationRequested();");
@@ -1398,7 +1399,7 @@ static partial class Program
         AssertOccursBefore(
             flashbackRecordingStartMismatch,
             "EnsureFlashbackRecordingTopologyMatches(",
-            "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true)");
+            "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)");
         AssertContains(captureServiceSource, "bool requireCompleteLiveEdge = false");
         AssertContains(captureServiceSource, "requireCompleteLiveEdge: true");
         AssertContains(captureServiceSource, "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL");
@@ -1696,12 +1697,18 @@ static partial class Program
             "private void ThrowIfDisposed()");
         AssertDoesNotContain(flashbackBufferDispose, "PurgeAllSegments()");
         AssertContains(flashbackBufferSource, "RecoveryPreserveMarkerFileName");
+        AssertContains(flashbackBufferSource, "RetiredSessionMarkerFileName");
         AssertContains(flashbackBufferSource, "MarkSessionPreservedForRecovery");
+        AssertContains(flashbackBufferSource, "MarkSessionRetiredForStartupCleanup");
         AssertContains(flashbackBufferSource, "public bool IsSessionPreservedForRecovery");
         AssertContains(flashbackBufferSource, "private bool _preserveSessionForRecovery;");
+        AssertContains(flashbackBufferSource, "private bool _retireSessionForStartupCleanup;");
         AssertContains(flashbackBufferSource, "private bool IsSessionPreservedForRecoveryUnsafe()");
+        AssertContains(flashbackBufferSource, "private bool IsSessionRetiredForStartupCleanupUnsafe()");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_RETIRE_SESSION");
+        AssertContains(flashbackBufferSource, "FLASHBACK_RETIRE_MARKER");
         AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
         AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
         AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\")");
@@ -3775,6 +3782,7 @@ static partial class Program
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendAsync(");
         AssertContains(previewBackendText, "private async Task DisposeFlashbackPreviewBackendCoreAsync(");
         AssertContains(previewBackendText, "CreateFlashbackPreviewBackendDisposalRequest(");
+        AssertContains(previewBackendText, "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackPreviewBackendDisposal.cs")),
@@ -3787,11 +3795,19 @@ static partial class Program
         AssertContains(settingsText, "_currentSettings.FlashbackBufferMinutes = bufferMinutes;");
         AssertContains(settingsText, "_flashbackBackend.PlaybackController.GpuDecodeEnabled = gpuDecode;");
         AssertContains(settingsText, "public Task UpdateRecordingFormatAsync(");
+        AssertContains(settingsText, "await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken)");
+        AssertContains(settingsText, "private async Task RebuildFlashbackPreviewBackendForSettingsChangeAsync(");
+        AssertContains(settingsText, "await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false)");
+        AssertContains(settingsText, "var committedRebuildToken = CancellationToken.None;");
+        AssertContains(settingsText, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedRebuildToken)");
         AssertContains(settingsText, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(settingsText, "FLASHBACK_FORMAT_CHANGE_ROLLBACK");
         AssertContains(settingsText, "private void UpdateEncodingSettings(CaptureSettings source)");
         AssertContains(settingsText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
+        AssertContains(backendResourcesText, "FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
+        AssertContains(backendResourcesText, "FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");
+        AssertContains(backendResourcesText, "request.BufferManager.MarkSessionRetiredForStartupCleanup(request.Reason);");
         AssertContains(agentMapText, "CaptureService.Flashback.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackEnable.cs");
         AssertDoesNotContain(agentMapText, "CaptureService.FlashbackRestart.cs");
@@ -6052,14 +6068,21 @@ static partial class Program
         {
             var currentSession = Path.Combine(tempDir, Guid.NewGuid().ToString("N"));
             var staleFlashbackSession = Path.Combine(tempDir, Guid.NewGuid().ToString("N"));
+            var retiredFlashbackSession = Path.Combine(tempDir, Guid.NewGuid().ToString("N"));
             var unrelatedEmptyDirectory = Path.Combine(tempDir, "empty-but-not-flashback");
 
             Directory.CreateDirectory(currentSession);
             Directory.CreateDirectory(staleFlashbackSession);
+            Directory.CreateDirectory(retiredFlashbackSession);
             Directory.CreateDirectory(unrelatedEmptyDirectory);
+            var retiredSegment = Path.Combine(retiredFlashbackSession, "fb_retired_0001.ts");
+            File.WriteAllText(retiredSegment, "retired");
+            File.WriteAllText(Path.Combine(retiredFlashbackSession, ".flashback-retired-session"), "retired");
 
             var staleTime = DateTime.UtcNow - TimeSpan.FromHours(13);
             Directory.SetLastWriteTimeUtc(staleFlashbackSession, staleTime);
+            File.SetLastWriteTimeUtc(retiredSegment, staleTime);
+            Directory.SetLastWriteTimeUtc(retiredFlashbackSession, staleTime);
             Directory.SetLastWriteTimeUtc(unrelatedEmptyDirectory, staleTime);
 
             var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupCacheCleanup");
@@ -6070,6 +6093,7 @@ static partial class Program
 
             AssertEqual(true, Directory.Exists(currentSession), "Current empty session directory preserved");
             AssertEqual(false, Directory.Exists(staleFlashbackSession), "Plausible stale empty flashback session removed");
+            AssertEqual(false, Directory.Exists(retiredFlashbackSession), "Retired stale flashback session removed");
             AssertEqual(true, Directory.Exists(unrelatedEmptyDirectory), "Unrelated stale empty directory preserved");
 
             var cleanupSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackStartupCacheCleanup.cs")
@@ -6097,25 +6121,33 @@ static partial class Program
             var currentSession = Path.Combine(tempDir, "current-session");
             var oldSession = Path.Combine(tempDir, "old-session");
             var recentSession = Path.Combine(tempDir, "recent-session");
+            var retiredSession = Path.Combine(tempDir, "retired-session");
             var preservedSession = Path.Combine(tempDir, "preserved-session");
             var nonFlashbackDirectory = Path.Combine(tempDir, "not-flashback");
 
             Directory.CreateDirectory(currentSession);
             Directory.CreateDirectory(oldSession);
             Directory.CreateDirectory(recentSession);
+            Directory.CreateDirectory(retiredSession);
             Directory.CreateDirectory(preservedSession);
             Directory.CreateDirectory(nonFlashbackDirectory);
 
             WriteSizedFile(Path.Combine(currentSession, "fb_current_0001.ts"), 1);
             WriteSizedFile(Path.Combine(oldSession, "fb_old_0001.ts"), 20);
             WriteSizedFile(Path.Combine(recentSession, "fb_recent_0001.ts"), 10);
+            WriteSizedFile(Path.Combine(retiredSession, "fb_retired_0001.ts"), 30);
+            File.WriteAllText(Path.Combine(retiredSession, ".flashback-retired-session"), "retired");
             WriteSizedFile(Path.Combine(preservedSession, "fb_preserved_0001.ts"), 100);
             File.WriteAllText(Path.Combine(preservedSession, ".flashback-recovery-preserve"), "keep");
             File.WriteAllText(Path.Combine(nonFlashbackDirectory, "notes.txt"), "keep");
 
             var now = DateTime.UtcNow;
             File.SetLastWriteTimeUtc(Path.Combine(oldSession, "fb_old_0001.ts"), now - TimeSpan.FromHours(2));
+            Directory.SetLastWriteTimeUtc(oldSession, now - TimeSpan.FromHours(2));
             File.SetLastWriteTimeUtc(Path.Combine(recentSession, "fb_recent_0001.ts"), now - TimeSpan.FromMinutes(5));
+            Directory.SetLastWriteTimeUtc(recentSession, now - TimeSpan.FromMinutes(5));
+            File.SetLastWriteTimeUtc(Path.Combine(retiredSession, "fb_retired_0001.ts"), now - TimeSpan.FromHours(3));
+            Directory.SetLastWriteTimeUtc(retiredSession, now - TimeSpan.FromHours(3));
 
             var cleanupType = RequireType("Sussudio.Services.Flashback.FlashbackStartupSessionCacheBudget");
             var cleanup = cleanupType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
@@ -6125,6 +6157,7 @@ static partial class Program
 
             AssertEqual(true, Directory.Exists(currentSession), "Current session preserved");
             AssertEqual(false, Directory.Exists(oldSession), "Oldest session removed to satisfy budget");
+            AssertEqual(false, Directory.Exists(retiredSession), "Retired session participates in startup cache budget");
             AssertEqual(true, Directory.Exists(recentSession), "Recent session preserved once budget is satisfied");
             AssertEqual(true, Directory.Exists(preservedSession), "Recovery-preserved session skipped");
             AssertEqual(true, Directory.Exists(nonFlashbackDirectory), "Non-flashback directory preserved");

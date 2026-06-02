@@ -759,6 +759,18 @@ internal sealed class FlashbackBackendResources
                     try { request.BufferManager.PurgeAllSegments(); }
                     catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_CLEANUP_PURGE_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}"); }
                 }
+                else
+                {
+                    if (request.BufferManager.IsSessionPreservedForRecovery)
+                    {
+                        Logger.Log($"FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
+                    }
+                    else
+                    {
+                        Logger.Log($"FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");
+                        request.BufferManager.MarkSessionRetiredForStartupCleanup(request.Reason);
+                    }
+                }
 
                 try { request.BufferManager.Dispose(); }
                 catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_CLEANUP_DISPOSE_WARN mode={mode} reason='{request.Reason}' type={ex.GetType().Name} msg={ex.Message}"); }
