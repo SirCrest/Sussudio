@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Globalization;
+using System.Threading;
 using Sussudio.Models;
 using Sussudio.Tools;
 
@@ -11,9 +12,13 @@ namespace Sussudio.Tools.Ssctl;
 // AutomationPipeClient.
 internal static class CommandHandlers
 {
-    public static Task<int> ExecuteAsync(PipeTransport transport, IReadOnlyList<string> arguments, bool globalJson)
+    public static Task<int> ExecuteAsync(
+        PipeTransport transport,
+        IReadOnlyList<string> arguments,
+        bool globalJson,
+        CancellationToken cancellationToken = default)
     {
-        var context = new CommandContext(transport, arguments, globalJson);
+        var context = new CommandContext(transport, arguments, globalJson, cancellationToken);
         return arguments[0].ToLowerInvariant() switch
         {
             "state" => HandleStateAsync(context),
@@ -47,16 +52,34 @@ internal static class CommandHandlers
 
     private sealed class CommandContext
     {
-        public CommandContext(PipeTransport transport, IReadOnlyList<string> arguments, bool globalJson)
+        public CommandContext(
+            PipeTransport transport,
+            IReadOnlyList<string> arguments,
+            bool globalJson,
+            CancellationToken cancellationToken)
         {
             Transport = transport;
             GlobalJson = globalJson;
             Rest = arguments.Skip(1).ToList();
+            RequestCancellationToken = cancellationToken;
         }
 
         public PipeTransport Transport { get; }
         public bool GlobalJson { get; }
         public List<string> Rest { get; }
+        private CancellationToken RequestCancellationToken { get; }
+
+        public Task<JsonElement> SendCommandAsync(
+            string commandName,
+            Dictionary<string, object?>? payload = null,
+            int? responseTimeoutMs = null)
+            => Transport.SendCommandAsync(commandName, payload, responseTimeoutMs, RequestCancellationToken);
+
+        public Task<JsonElement> SendCommandAsync(
+            AutomationCommandKind kind,
+            Dictionary<string, object?>? payload = null,
+            int? responseTimeoutMs = null)
+            => Transport.SendCommandAsync(kind, payload, responseTimeoutMs, RequestCancellationToken);
     }
 
     private static async Task<int> HandleSimpleCommandAsync(
@@ -65,7 +88,7 @@ internal static class CommandHandlers
         Dictionary<string, object?>? payload = null,
         bool includeData = false)
     {
-        var response = await context.Transport.SendCommandAsync(kind, payload).ConfigureAwait(false);
+        var response = await context.SendCommandAsync(kind, payload).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, value => Formatters.FormatResult(value, includeData));
     }
 
@@ -331,7 +354,7 @@ internal static class CommandHandlers
         }
 
         var responseTimeoutMs = Math.Max(timeoutMs.GetValueOrDefault(0) + 5000, 60000);
-        var response = await context.Transport.SendCommandAsync(
+        var response = await context.SendCommandAsync(
             AutomationCommandKind.WaitForCondition,
             payload,
             responseTimeoutMs).ConfigureAwait(false);
@@ -365,7 +388,7 @@ internal static class CommandHandlers
             assertionsPayload = document.RootElement.Clone();
         }
 
-        var response = await context.Transport.SendCommandAsync(
+        var response = await context.SendCommandAsync(
             AutomationCommandKind.AssertSnapshot,
             new Dictionary<string, object?> { ["assertions"] = assertionsPayload }).ConfigureAwait(false);
         return WriteResponse(response, context.GlobalJson, responseValue => Formatters.FormatResult(responseValue, includeData: true));
@@ -398,7 +421,7 @@ internal static class CommandHandlers
                 payload["verificationProfile"] = verificationProfile;
             }
 
-            var response = await context.Transport.SendCommandAsync(
+            var response = await context.SendCommandAsync(
                 AutomationCommandKind.VerifyFile,
                 payload,
                 60000).ConfigureAwait(false);
@@ -407,7 +430,7 @@ internal static class CommandHandlers
         else
         {
             // Verify last recording.
-            var response = await context.Transport.SendCommandAsync(AutomationCommandKind.VerifyLastRecording).ConfigureAwait(false);
+            var response = await context.SendCommandAsync(AutomationCommandKind.VerifyLastRecording).ConfigureAwait(false);
             return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
         }
     }
@@ -416,7 +439,7 @@ internal static class CommandHandlers
     private static async Task<int> HandleStateAsync(CommandContext context)
     {
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
-        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatSnapshot);
     }
 
@@ -426,7 +449,7 @@ internal static class CommandHandlers
         var max = ParseOptionalIntFlag(context.Rest, "--max") ?? 100;
         EnsureNoArgs(context.Rest, "diagnostics [--max N] [--json]");
 
-        var response = await context.Transport.SendCommandAsync(
+        var response = await context.SendCommandAsync(
             Sussudio.Models.AutomationCommandKind.GetDiagnostics,
             new Dictionary<string, object?> { ["maxEvents"] = max }).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatDiagnostics);
@@ -437,7 +460,7 @@ internal static class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "options [--json]");
 
-        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatOptions);
     }
 
@@ -446,7 +469,7 @@ internal static class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "manifest [--json]");
 
-        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetAutomationManifest).ConfigureAwait(false);
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetAutomationManifest).ConfigureAwait(false);
         return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
@@ -456,7 +479,7 @@ internal static class CommandHandlers
         var max = ParseOptionalIntFlag(context.Rest, "--max") ?? 240;
         EnsureNoArgs(context.Rest, "timeline [--max N] [--json]");
 
-        var response = await context.Transport.SendCommandAsync(
+        var response = await context.SendCommandAsync(
             Sussudio.Models.AutomationCommandKind.GetPerformanceTimeline,
             new Dictionary<string, object?> { ["maxEntries"] = max }).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatTimeline);
@@ -467,7 +490,7 @@ internal static class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "memory [--json]");
 
-        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatMemory);
     }
 
@@ -476,7 +499,7 @@ internal static class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         EnsureNoArgs(context.Rest, "audio-ramp-trace [--json]");
 
-        var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetAudioRampTrace).ConfigureAwait(false);
+        var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetAudioRampTrace).ConfigureAwait(false);
         return WriteResponse(response, json, responseValue => Formatters.FormatResult(responseValue, includeData: true));
     }
 
@@ -521,7 +544,7 @@ internal static class CommandHandlers
     {
         try
         {
-            var response = await context.Transport.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+            var response = await context.SendCommandAsync(Sussudio.Models.AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(response) ||
                 !response.TryGetProperty("Snapshot", out var snapshot))
             {
@@ -561,7 +584,7 @@ internal static class CommandHandlers
                     VerifyRecording = verify,
                     LeaveRunning = leaveRunning
                 },
-                (command, payload, responseTimeoutMs) => context.Transport.SendCommandAsync(command, payload, responseTimeoutMs))
+                (command, payload, responseTimeoutMs) => context.SendCommandAsync(command, payload, responseTimeoutMs))
             .ConfigureAwait(false);
 
         Console.WriteLine(json ? PrettyJson(result) : DiagnosticSessionRunner.Format(result));
@@ -616,13 +639,13 @@ internal static class CommandHandlers
             case "list":
             {
                 EnsureArgCount(context.Rest, 1, "device list");
-                var refreshResponse = await context.Transport.SendCommandAsync(AutomationCommandKind.RefreshDevices).ConfigureAwait(false);
+                var refreshResponse = await context.SendCommandAsync(AutomationCommandKind.RefreshDevices).ConfigureAwait(false);
                 if (!IsSuccess(refreshResponse))
                 {
                     return WriteResponse(refreshResponse, context.GlobalJson, response => Formatters.FormatResult(response, includeData: false));
                 }
 
-                var optionsResponse = await context.Transport.SendCommandAsync(AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
+                var optionsResponse = await context.SendCommandAsync(AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
                 return WriteResponse(optionsResponse, context.GlobalJson, Formatters.FormatDeviceList);
             }
             case "select":
@@ -715,7 +738,7 @@ internal static class CommandHandlers
             case "close":
             {
                 EnsureArgCount(context.Rest, 1, "window close");
-                var armResponse = await context.Transport.SendCommandAsync(
+                var armResponse = await context.SendCommandAsync(
                     Sussudio.Models.AutomationCommandKind.ArmClose,
                     new Dictionary<string, object?> { ["armed"] = true }).ConfigureAwait(false);
                 if (!IsSuccess(armResponse))
@@ -1019,7 +1042,8 @@ internal sealed class PipeTransport
     public async Task<JsonElement> SendCommandAsync(
         string commandName,
         Dictionary<string, object?>? payload = null,
-        int? responseTimeoutMs = null)
+        int? responseTimeoutMs = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -1029,7 +1053,8 @@ internal sealed class PipeTransport
                     payload,
                     responseTimeoutOverrideMs: _responseTimeoutOverrideMs,
                     responseTimeoutMs: responseTimeoutMs,
-                    unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException)
+                    unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (ArgumentException ex)
@@ -1043,12 +1068,14 @@ internal sealed class PipeTransport
     public Task<JsonElement> SendCommandAsync(
         AutomationCommandKind kind,
         Dictionary<string, object?>? payload = null,
-        int? responseTimeoutMs = null)
+        int? responseTimeoutMs = null,
+        CancellationToken cancellationToken = default)
         => AutomationCommandTransport.SendCommandAsync(
             _pipeName,
             kind,
             payload,
             responseTimeoutOverrideMs: _responseTimeoutOverrideMs,
             responseTimeoutMs: responseTimeoutMs,
-            unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException);
+            unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
+            cancellationToken: cancellationToken);
 }

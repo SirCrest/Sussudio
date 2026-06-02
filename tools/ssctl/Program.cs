@@ -68,7 +68,8 @@ internal static class Program
             return await CommandHandlers.ExecuteAsync(
                 transport,
                 options.Arguments,
-                options.Json).ConfigureAwait(false);
+                options.Json,
+                cts.Token).ConfigureAwait(false);
         }
         catch (UsageException ex)
         {

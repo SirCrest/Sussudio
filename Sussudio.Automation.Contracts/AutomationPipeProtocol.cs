@@ -583,7 +583,8 @@ internal static class AutomationCommandTransport
         object? payload = null,
         int? responseTimeoutOverrideMs = null,
         int? responseTimeoutMs = null,
-        AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError)
+        AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
+        CancellationToken cancellationToken = default)
     {
         var effectiveResponseTimeoutMs = responseTimeoutMs
             ?? responseTimeoutOverrideMs
@@ -597,7 +598,8 @@ internal static class AutomationCommandTransport
                     payload,
                     AutomationPipeProtocol.DefaultConnectTimeoutMs,
                     effectiveResponseTimeoutMs,
-                    includeResponseElement: true)
+                    includeResponseElement: true,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             return result.ResponseElement
@@ -619,7 +621,8 @@ internal static class AutomationCommandTransport
         object? payload = null,
         int? responseTimeoutOverrideMs = null,
         int? responseTimeoutMs = null,
-        AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError)
+        AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
+        CancellationToken cancellationToken = default)
     {
         var effectiveResponseTimeoutMs = responseTimeoutMs
             ?? responseTimeoutOverrideMs
@@ -633,7 +636,8 @@ internal static class AutomationCommandTransport
                     payload,
                     AutomationPipeProtocol.DefaultConnectTimeoutMs,
                     effectiveResponseTimeoutMs,
-                    includeResponseElement: true)
+                    includeResponseElement: true,
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             return result.ResponseElement

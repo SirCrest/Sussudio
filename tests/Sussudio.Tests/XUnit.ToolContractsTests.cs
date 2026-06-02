@@ -4931,8 +4931,9 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertEqual(commandHandlersRootSource, commandHandlersSource, "ssctl command-handler source family is consolidated into CommandHandlers.cs");
         AssertContains(commandHandlersRootSource, "private sealed class CommandContext");
         AssertContains(commandHandlersRootSource, "Rest = arguments.Skip(1).ToList();");
+        AssertContains(commandHandlersRootSource, "RequestCancellationToken = cancellationToken;");
         AssertContains(commandHandlersRootSource, "private static async Task<int> HandleSimpleCommandAsync(");
-        AssertContains(commandHandlersRootSource, "context.Transport.SendCommandAsync(kind, payload)");
+        AssertContains(commandHandlersRootSource, "context.SendCommandAsync(kind, payload)");
         AssertContains(commandHandlersRootSource, "private static int WriteResponse(JsonElement response, bool json, Func<JsonElement, string> formatter)");
         AssertContains(commandHandlersRootSource, "private static string JoinRemaining(IReadOnlyList<string> args, int startIndex)");
         AssertContains(commandHandlersRootSource, "private static bool ConsumeFlag(List<string> args, string flag)");
@@ -5056,7 +5057,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
         AssertContains(
             commandHandlersSource,
-            "(command, payload, responseTimeoutMs) => context.Transport.SendCommandAsync(command, payload, responseTimeoutMs)");
+            "(command, payload, responseTimeoutMs) => context.SendCommandAsync(command, payload, responseTimeoutMs)");
         AssertDoesNotContain(
             ReadRepoFile("tools/ssctl/CommandHandlers.cs"),
             "private static async Task<int> HandleSimpleCommandAsync(\n        CommandContext context,\n        string commandName,");
@@ -5140,7 +5141,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
         AssertContains(captureControlsSource, "private static Task<int> SendSetValueAsync(\n        CommandContext context,\n        AutomationCommandKind kind,");
         AssertContains(captureControlsSource, "HandleSimpleCommandAsync(\n            context,\n            kind,");
-        AssertContains(rootSource, "context.Transport.SendCommandAsync(kind, payload)");
+        AssertContains(rootSource, "context.SendCommandAsync(kind, payload)");
     }
 
     internal static Task SsctlHelp_UsesCatalogCliHelpForAutomationCommands()
@@ -5345,7 +5346,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 pipeName,
                 async () =>
                 {
-                    var task = context.ExecuteAsync.Invoke(null, new object?[] { transport, arguments, false }) as Task<int>
+                    var task = context.ExecuteAsync.Invoke(null, new object?[] { transport, arguments, false, CancellationToken.None }) as Task<int>
                         ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
                     exitCode = await task.ConfigureAwait(false);
                 })
@@ -5368,7 +5369,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 expectedCount,
                 async () =>
                 {
-                    var task = context.ExecuteAsync.Invoke(null, new object?[] { transport, arguments, false }) as Task<int>
+                    var task = context.ExecuteAsync.Invoke(null, new object?[] { transport, arguments, false, CancellationToken.None }) as Task<int>
                         ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
                     exitCode = await task.ConfigureAwait(false);
                 },
@@ -9789,7 +9790,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 "SendCommandAsync",
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                types: new[] { typeof(string), typeof(Dictionary<string, object?>), typeof(int?) },
+                types: new[] { typeof(string), typeof(Dictionary<string, object?>), typeof(int?), typeof(CancellationToken) },
                 modifiers: null)
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.PipeTransport.SendCommandAsync not found.");
 
@@ -9806,7 +9807,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                     {
                         "SetPreviewVolume",
                         new Dictionary<string, object?> { ["previewVolumePercent"] = 55.5 },
-                        null
+                        null,
+                        CancellationToken.None
                     }) as Task
                     ?? throw new InvalidOperationException("PipeTransport.SendCommandAsync did not return a Task.");
                 await task.ConfigureAwait(false);
@@ -10017,7 +10019,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 {
                     commandName,
                     payload,
-                    responseTimeoutMs
+                    responseTimeoutMs,
+                    CancellationToken.None
                 }) as Task<JsonElement>
             ?? throw new InvalidOperationException("PipeTransport.SendCommandAsync did not return Task<JsonElement>.");
         return await task.ConfigureAwait(false);
@@ -10097,6 +10100,29 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"", scriptText);
         Assert.DoesNotContain("Sussudio\\Models\\AutomationCommandKind.cs", scriptText);
         Assert.DoesNotContain("Models\\AutomationCommandKind.cs", scriptText);
+    }
+
+    [Fact]
+    public void CliCancellationTokens_FlowIntoAutomationPipeTransport()
+    {
+        var ssctlProgramText = RuntimeContractSource.ReadRepoFile("tools/ssctl/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var ssctlCommandHandlersText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var automationClientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
+            .Replace("\r\n", "\n", StringComparison.Ordinal);
+        var sharedClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
+
+        Assert.Contains("CommandHandlers.ExecuteAsync(\n                transport,\n                options.Arguments,\n                options.Json,\n                cts.Token)", ssctlProgramText);
+        Assert.Contains("CancellationToken cancellationToken = default", ssctlCommandHandlersText);
+        Assert.Contains("RequestCancellationToken = cancellationToken;", ssctlCommandHandlersText);
+        Assert.Contains("=> Transport.SendCommandAsync(commandName, payload, responseTimeoutMs, RequestCancellationToken);", ssctlCommandHandlersText);
+        Assert.Contains("=> Transport.SendCommandAsync(kind, payload, responseTimeoutMs, RequestCancellationToken);", ssctlCommandHandlersText);
+        Assert.Contains("cancellationToken: cancellationToken", ssctlCommandHandlersText);
+        Assert.DoesNotContain("context.Transport.SendCommandAsync", ssctlCommandHandlersText);
+        Assert.Contains("options.AuthToken,\n                    cancellationToken: cts.Token)", automationClientText);
+        Assert.Contains("CancellationToken cancellationToken = default", sharedClientText);
+        Assert.Contains("cancellationToken: cancellationToken", sharedClientText);
     }
 
     [Fact]

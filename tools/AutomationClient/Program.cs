@@ -74,7 +74,8 @@ internal static class Program
                     payload,
                     options.ConnectTimeoutMs,
                     responseTimeoutMs,
-                    options.AuthToken)
+                    options.AuthToken,
+                    cancellationToken: cts.Token)
                 .ConfigureAwait(false);
             var responseLine = result.ResponseJson;
 
