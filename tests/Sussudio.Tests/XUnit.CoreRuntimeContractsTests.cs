@@ -194,6 +194,10 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.RecordingIntegritySummary_ToleratesSingleActiveInFlightFrame();
 
     [Fact]
+    public Task RecordingIntegritySurfacesActiveQueueAndAudioDrops()
+        => global::Program.RecordingIntegritySummary_SurfacesActiveQueueAndAudioDrops();
+
+    [Fact]
     public Task CaptureServiceRecordingIntegrityOwnershipLivesWithRecordingLifecycle()
         => global::Program.CaptureService_RecordingIntegrityLivesWithRecordingLifecycle();
 }
@@ -1794,6 +1798,40 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task RecordingIntegritySummary_SurfacesActiveQueueAndAudioDrops()
+    {
+        var queueRejected = InvokeBuildRecordingIntegritySummary(
+            audioDiscontinuities: 0,
+            avSyncDriftMs: 0.0,
+            encoderAvSyncDriftMs: 0.0,
+            recordingActive: true,
+            sourceFrames: 121,
+            acceptedFrames: 120,
+            queueDroppedFrames: 1,
+            recordingBoundaryRejectedFrames: 1,
+            recordingQueueRejectedFrames: 1);
+
+        AssertEqual("Incomplete", GetStringProperty(queueRejected, "Status"), "Known active queue rejection should affect live integrity.");
+        AssertEqual(1L, GetLongProperty(queueRejected, "PipelineDroppedFrames"), "Known active rejection should surface the first pipeline drop.");
+        var queueReason = GetStringProperty(queueRejected, "Reason");
+        AssertContains(queueReason, "pipeline_drops=1");
+        AssertContains(queueReason, "queue_drops=1");
+        AssertContains(queueReason, "queue_rejections=1");
+
+        var audioDropped = InvokeBuildRecordingIntegritySummary(
+            audioDiscontinuities: 0,
+            avSyncDriftMs: 0.0,
+            encoderAvSyncDriftMs: 0.0,
+            recordingActive: true,
+            audioDropEvents: 1);
+
+        AssertEqual("Incomplete", GetStringProperty(audioDropped, "Status"), "Audio drops should affect live integrity.");
+        AssertEqual("Incomplete", GetStringProperty(audioDropped, "AudioStatus"), "Audio drop events should affect live audio integrity.");
+        AssertContains(GetStringProperty(audioDropped, "Reason"), "audio_drops=1");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
     {
         var unifiedText = ReadUnifiedVideoCaptureSource();
@@ -1836,7 +1874,9 @@ static partial class Program
         AssertContains(rootText, "private readonly record struct RecordingIntegritySummaryVideoFields");
         AssertContains(rootText, "private readonly record struct RecordingIntegritySummaryAudioFields");
         AssertContains(rootText, "private static RecordingIntegritySummaryVideoFields BuildRecordingIntegritySummaryVideoFields(");
-        AssertContains(rootText, "PipelineDroppedFrames = recordingActive");
+        AssertContains(rootText, "var activePipelineDroppedFrames = recordingActive");
+        AssertContains(rootText, "RecordingBoundaryRejectedFrames = normalizedBoundaryRejectedFrames");
+        AssertContains(rootText, "queue_rejections=");
         AssertContains(rootText, "private static RecordingIntegritySummaryEvaluation EvaluateRecordingIntegritySummary(");
         AssertContains(rootText, "private static string EvaluateRecordingIntegrityAudioStatus(");
         AssertContains(rootText, "RecordingIntegrityAvSyncDriftWarningMs");
@@ -1902,7 +1942,11 @@ static partial class Program
         double encoderAvSyncDriftMs,
         bool recordingActive = false,
         long sourceFrames = 120,
-        long acceptedFrames = 120)
+        long acceptedFrames = 120,
+        long queueDroppedFrames = 0,
+        long audioDropEvents = 0,
+        long recordingBoundaryRejectedFrames = 0,
+        long recordingQueueRejectedFrames = 0)
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var counterType = serviceType.GetNestedType("RecordingIntegrityCounterSnapshot", BindingFlags.NonPublic)
@@ -1921,7 +1965,7 @@ static partial class Program
                 120L,
                 120L,
                 0L,
-                0L,
+                queueDroppedFrames,
                 0L,
                 2,
                 0L,
@@ -1946,7 +1990,7 @@ static partial class Program
                 48000L,
                 48000L,
                 48000L,
-                0L,
+                audioDropEvents,
                 audioDiscontinuities,
                 0L,
                 0L,
@@ -1973,7 +2017,9 @@ static partial class Program
                 sourceFrames,
                 acceptedFrames,
                 counters,
-                audioCounters
+                audioCounters,
+                recordingBoundaryRejectedFrames,
+                recordingQueueRejectedFrames
             })
             ?? throw new InvalidOperationException("BuildRecordingIntegritySummary returned null.");
     }

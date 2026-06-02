@@ -64,6 +64,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private long _livePreviewPresentId;
     private long _videoFramesWrittenToSink;
     private long _recordingFramesDelivered;
+    private long _recordingFramesRejected;
+    private long _recordingQueueRejectedFrames;
     private long _lastVideoFrameArrivedTick;
     private Action<string>? _pixelFormatDetectedCallback;
     private int _pixelFormatObserverFired;
@@ -88,6 +90,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     }
     public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
     public long RecordingFramesDelivered => Interlocked.Read(ref _recordingFramesDelivered);
+    public long RecordingFramesRejected => Interlocked.Read(ref _recordingFramesRejected);
+    public long RecordingQueueRejectedFrames => Interlocked.Read(ref _recordingQueueRejectedFrames);
     public long FlashbackRecordingSequenceGaps => Interlocked.Read(ref _flashbackRecordingSequenceGaps);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
     public event EventHandler<Exception>? FatalErrorOccurred;
@@ -143,7 +147,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _recordingSink = sink;
             Volatile.Write(ref _recordingEncoder, encoder);
             Volatile.Write(ref _gpuRecordingEncoder, gpuEncoder);
+            Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+            Interlocked.Exchange(ref _recordingFramesRejected, 0);
+            Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
             Volatile.Write(ref _recordingActive, true);
         }
 
@@ -154,6 +161,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     {
         Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
         Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+        Interlocked.Exchange(ref _recordingFramesRejected, 0);
+        Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
         Interlocked.Exchange(ref _flashbackRecordingLastAcceptedSequence, -1);
         Interlocked.Exchange(ref _flashbackRecordingSequenceGaps, 0);
         Volatile.Write(ref _flashbackRecordingAccountingActive, true);
@@ -343,6 +352,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+            Interlocked.Exchange(ref _recordingFramesRejected, 0);
+            Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
             Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
@@ -1041,6 +1052,15 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
     private void RecordRecordingEnqueue(long sourceSequence, bool accepted, string? reason)
     {
+        if (!accepted)
+        {
+            Interlocked.Increment(ref _recordingFramesRejected);
+            if (string.Equals(reason, "queue_rejected", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref _recordingQueueRejectedFrames);
+            }
+        }
+
         _frameLedger.RecordEvent(
             sourceSequence,
             FrameLedgerStage.RecordingEnqueued,
@@ -1225,17 +1245,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
             if (frameData.Length < expectedSize)
             {
-                RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence);
+                RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "frame_size_mismatch");
                 RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "frame_size_mismatch");
                 return;
             }
 
             var accepted = sink.TryEnqueueRawVideoFrame(frameData, expectedSize);
-            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence);
+            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : "queue_rejected");
             RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
         }
         catch (Exception ex)
         {
+            RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "exception");
             RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
@@ -1260,7 +1281,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                         ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
                         : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
                     lease = null;
-                    RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber);
+                    RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber, accepted ? null : "queue_rejected");
                     RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");
                 }
                 finally
@@ -1274,17 +1295,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
             if (frame.Length < expectedSize)
             {
-                RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber);
+                RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "frame_size_mismatch");
                 RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "frame_size_mismatch");
                 return;
             }
 
             var rawAccepted = sink.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize);
-            RecordFlashbackRecordingAccounting(sink, rawAccepted, frame.SequenceNumber);
+            RecordFlashbackRecordingAccounting(sink, rawAccepted, frame.SequenceNumber, rawAccepted ? null : "queue_rejected");
             RecordFlashbackEnqueue(frame.SequenceNumber, rawAccepted, rawAccepted ? null : "queue_rejected");
         }
         catch (Exception ex)
         {
+            RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "exception");
             RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "exception");
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
@@ -1301,17 +1323,22 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         try
         {
             var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
-            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence);
+            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : "queue_rejected");
             RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
         }
         catch (Exception ex)
         {
+            RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "exception");
             RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_GPU_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
 
-    private void RecordFlashbackRecordingAccounting(FlashbackEncoderSink sink, bool accepted, long sourceSequence)
+    private void RecordFlashbackRecordingAccounting(
+        FlashbackEncoderSink sink,
+        bool accepted,
+        long sourceSequence,
+        string? rejectedReason)
     {
         if (!Volatile.Read(ref _flashbackRecordingAccountingActive) ||
             !sink.IsRecordingActive)
@@ -1324,6 +1351,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         {
             TrackFlashbackRecordingAcceptedSequence(sourceSequence);
             Interlocked.Increment(ref _videoFramesWrittenToSink);
+            return;
+        }
+
+        Interlocked.Increment(ref _recordingFramesRejected);
+        if (string.Equals(rejectedReason, "queue_rejected", StringComparison.Ordinal))
+        {
+            Interlocked.Increment(ref _recordingQueueRejectedFrames);
         }
     }
 

@@ -1205,6 +1205,8 @@ public partial class CaptureService
         public bool Captured { get; set; }
         public long RecordingFramesDelivered { get; set; }
         public long RecordingFramesEnqueued { get; set; }
+        public long RecordingFramesRejected { get; set; }
+        public long RecordingQueueRejectedFrames { get; set; }
         public RecordingIntegrityCounterSnapshot? Counters { get; set; }
         public RecordingAudioIntegrityCounterSnapshot? AudioCounters { get; set; }
     }
@@ -1227,10 +1229,14 @@ public partial class CaptureService
             _lastMfSourceReaderNegotiatedFormat = flashbackVideoCapture.NegotiatedFormat;
             recordingBoundary.RecordingFramesDelivered = flashbackVideoCapture.RecordingFramesDelivered;
             recordingBoundary.RecordingFramesEnqueued = flashbackVideoCapture.VideoFramesWrittenToSink;
+            recordingBoundary.RecordingFramesRejected = flashbackVideoCapture.RecordingFramesRejected;
+            recordingBoundary.RecordingQueueRejectedFrames = flashbackVideoCapture.RecordingQueueRejectedFrames;
             Logger.Log(
                 "VIDEO_DIAG flashback_recording_pipeline " +
                 $"source_frames_during_recording={recordingBoundary.RecordingFramesDelivered} " +
                 $"frames_accepted_by_flashback={recordingBoundary.RecordingFramesEnqueued} " +
+                $"frames_rejected_by_boundary={recordingBoundary.RecordingFramesRejected} " +
+                $"queue_rejections={recordingBoundary.RecordingQueueRejectedFrames} " +
                 $"pipeline_drops={recordingBoundary.RecordingFramesDelivered - recordingBoundary.RecordingFramesEnqueued}");
         }
 
@@ -1295,7 +1301,9 @@ public partial class CaptureService
             acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
             counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _videoPipeline.Capture),
             audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot)));
+                CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot)),
+            recordingBoundaryRejectedFrames: recordingBoundary.RecordingFramesRejected,
+            recordingQueueRejectedFrames: recordingBoundary.RecordingQueueRejectedFrames);
         _recordingIntegrityCounterBaseline = null;
         _recordingIntegrityAudioBaseline = null;
         LogRecordingIntegritySummary(_lastRecordingIntegrity);

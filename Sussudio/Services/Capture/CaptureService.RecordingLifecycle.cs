@@ -555,7 +555,9 @@ public partial class CaptureService
             sourceFrames: videoBoundary.RecordingFramesDeliveredToBoundary,
             acceptedFrames: videoBoundary.RecordingFramesAcceptedByBoundary,
             counters: GetRecordingIntegrityCountersSinceBaseline(CaptureRecordingIntegrityCounters(libAvSink)),
-            audioCounters: libAvFinalAudioCounters);
+            audioCounters: libAvFinalAudioCounters,
+            recordingBoundaryRejectedFrames: videoBoundary.RecordingFramesRejectedByBoundary,
+            recordingQueueRejectedFrames: videoBoundary.RecordingQueueRejectedByBoundary);
         _recordingIntegrityCounterBaseline = null;
         _recordingIntegrityAudioBaseline = null;
         LogRecordingIntegritySummary(_lastRecordingIntegrity);
@@ -620,6 +622,8 @@ public partial class CaptureService
         public long SourceFrames { get; init; }
         public long AcceptedFrames { get; init; }
         public long PipelineDroppedFrames { get; init; }
+        public long RecordingBoundaryRejectedFrames { get; init; }
+        public long RecordingQueueRejectedFrames { get; init; }
         public long QueueDroppedFrames { get; init; }
         public long SubmittedFrames { get; init; }
         public long EncodedFrames { get; init; }
@@ -682,7 +686,9 @@ public partial class CaptureService
                 sourceFrames: unifiedVideoCapture?.RecordingFramesDelivered ?? 0,
                 acceptedFrames: unifiedVideoCapture?.VideoFramesWrittenToSink ?? 0,
                 counters: counters,
-                audioCounters: audioCounters);
+                audioCounters: audioCounters,
+                recordingBoundaryRejectedFrames: unifiedVideoCapture?.RecordingFramesRejected ?? 0,
+                recordingQueueRejectedFrames: unifiedVideoCapture?.RecordingQueueRejectedFrames ?? 0);
         }
 
         if (sink != null)
@@ -699,7 +705,9 @@ public partial class CaptureService
                 sourceFrames: unifiedVideoCapture?.RecordingFramesDelivered ?? 0,
                 acceptedFrames: unifiedVideoCapture?.VideoFramesWrittenToSink ?? 0,
                 counters: counters,
-                audioCounters: audioCounters);
+                audioCounters: audioCounters,
+                recordingBoundaryRejectedFrames: unifiedVideoCapture?.RecordingFramesRejected ?? 0,
+                recordingQueueRejectedFrames: unifiedVideoCapture?.RecordingQueueRejectedFrames ?? 0);
         }
 
         return new RecordingIntegritySummary
@@ -888,14 +896,18 @@ public partial class CaptureService
         long sourceFrames,
         long acceptedFrames,
         RecordingIntegrityCounterSnapshot counters,
-        RecordingAudioIntegrityCounterSnapshot? audioCounters = null)
+        RecordingAudioIntegrityCounterSnapshot? audioCounters = null,
+        long recordingBoundaryRejectedFrames = 0,
+        long recordingQueueRejectedFrames = 0)
     {
         audioCounters ??= RecordingAudioIntegrityCounterSnapshot.Disabled;
         var videoFields = BuildRecordingIntegritySummaryVideoFields(
             recordingActive,
             sourceFrames,
             acceptedFrames,
-            counters);
+            counters,
+            recordingBoundaryRejectedFrames,
+            recordingQueueRejectedFrames);
         var audioFields = BuildRecordingIntegritySummaryAudioFields(audioCounters);
         var evaluation = EvaluateRecordingIntegritySummary(
             recordingActive,
@@ -946,19 +958,28 @@ public partial class CaptureService
         bool recordingActive,
         long sourceFrames,
         long acceptedFrames,
-        RecordingIntegrityCounterSnapshot counters)
+        RecordingIntegrityCounterSnapshot counters,
+        long recordingBoundaryRejectedFrames,
+        long recordingQueueRejectedFrames)
     {
         var normalizedSourceFrames = Math.Max(0, sourceFrames);
         var normalizedAcceptedFrames = Math.Max(0, acceptedFrames);
+        var normalizedBoundaryRejectedFrames = Math.Max(0, recordingBoundaryRejectedFrames);
+        var normalizedQueueRejectedFrames = Math.Min(
+            normalizedBoundaryRejectedFrames,
+            Math.Max(0, recordingQueueRejectedFrames));
         var rawPipelineDroppedFrames = Math.Max(0, normalizedSourceFrames - normalizedAcceptedFrames);
+        var activePipelineDroppedFrames = recordingActive
+            ? Math.Max(normalizedBoundaryRejectedFrames, rawPipelineDroppedFrames - 1)
+            : rawPipelineDroppedFrames;
 
         return new RecordingIntegritySummaryVideoFields
         {
             SourceFrames = normalizedSourceFrames,
             AcceptedFrames = normalizedAcceptedFrames,
-            PipelineDroppedFrames = recordingActive
-                ? Math.Max(0, rawPipelineDroppedFrames - 1)
-                : rawPipelineDroppedFrames,
+            PipelineDroppedFrames = activePipelineDroppedFrames,
+            RecordingBoundaryRejectedFrames = normalizedBoundaryRejectedFrames,
+            RecordingQueueRejectedFrames = normalizedQueueRejectedFrames,
             QueueDroppedFrames = Math.Max(0, counters.QueueDroppedFrames),
             SubmittedFrames = Math.Max(0, counters.SubmittedFrames),
             EncodedFrames = Math.Max(0, counters.EncodedFrames),
@@ -1024,6 +1045,16 @@ public partial class CaptureService
         if (videoFields.QueueDroppedFrames > 0)
         {
             reasons.Add($"queue_drops={videoFields.QueueDroppedFrames}");
+        }
+
+        if (videoFields.RecordingQueueRejectedFrames > 0)
+        {
+            reasons.Add($"queue_rejections={videoFields.RecordingQueueRejectedFrames}");
+        }
+
+        if (videoFields.RecordingBoundaryRejectedFrames > videoFields.RecordingQueueRejectedFrames)
+        {
+            reasons.Add($"recording_boundary_rejections={videoFields.RecordingBoundaryRejectedFrames}");
         }
 
         if (videoFields.EncoderDroppedFrames > 0)
@@ -1198,6 +1229,8 @@ public partial class CaptureService
         var unifiedVideoCapture = _videoPipeline.Capture;
         var recordingFramesDeliveredToBoundary = 0L;
         var recordingFramesAcceptedByBoundary = 0L;
+        var recordingFramesRejectedByBoundary = 0L;
+        var recordingQueueRejectedByBoundary = 0L;
         if (unifiedVideoCapture != null)
         {
             try
@@ -1227,6 +1260,8 @@ public partial class CaptureService
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
             recordingFramesDeliveredToBoundary = unifiedVideoCapture.RecordingFramesDelivered;
             recordingFramesAcceptedByBoundary = unifiedVideoCapture.VideoFramesWrittenToSink;
+            recordingFramesRejectedByBoundary = unifiedVideoCapture.RecordingFramesRejected;
+            recordingQueueRejectedByBoundary = unifiedVideoCapture.RecordingQueueRejectedFrames;
             Logger.Log(
                 "VIDEO_DIAG mf_source_reader " +
                 $"frames_delivered={_lastMfSourceReaderFramesDelivered} " +
@@ -1236,6 +1271,8 @@ public partial class CaptureService
                 "VIDEO_DIAG recording_pipeline " +
                 $"source_frames_during_recording={recordingFramesDeliveredToBoundary} " +
                 $"frames_enqueued_to_encoder={recordingFramesAcceptedByBoundary} " +
+                $"frames_rejected_by_boundary={recordingFramesRejectedByBoundary} " +
+                $"queue_rejections={recordingQueueRejectedByBoundary} " +
                 $"pipeline_drops={recordingFramesDeliveredToBoundary - recordingFramesAcceptedByBoundary}");
         }
 
@@ -1243,7 +1280,9 @@ public partial class CaptureService
             result,
             cancellationException,
             recordingFramesDeliveredToBoundary,
-            recordingFramesAcceptedByBoundary);
+            recordingFramesAcceptedByBoundary,
+            recordingFramesRejectedByBoundary,
+            recordingQueueRejectedByBoundary);
     }
 
     private async Task DetachLibAvRecordingAudioBeforeSinkStopAsync()
@@ -1489,7 +1528,9 @@ public partial class CaptureService
         FinalizeResult Result,
         OperationCanceledException? CancellationException,
         long RecordingFramesDeliveredToBoundary,
-        long RecordingFramesAcceptedByBoundary);
+        long RecordingFramesAcceptedByBoundary,
+        long RecordingFramesRejectedByBoundary,
+        long RecordingQueueRejectedByBoundary);
 
     private async Task RollbackRecordingStartAsync(RecordingStartRollbackState rollback, Exception ex)
     {
