@@ -266,7 +266,6 @@ internal static class DiagnosticSessionFlashbackWaits
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
-        JsonElement? lastSnapshot = null;
         var started = Stopwatch.GetTimestamp();
         while (Stopwatch.GetElapsedTime(started) < timeout)
         {
@@ -274,18 +273,17 @@ internal static class DiagnosticSessionFlashbackWaits
             var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(response, out var snapshot))
             {
-                lastSnapshot = snapshot;
                 var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
                 if (string.Equals(state, expectedState, StringComparison.OrdinalIgnoreCase))
                 {
-                    return snapshot;
+                    return snapshot.Clone();
                 }
             }
 
             await Task.Delay(250, cancellationToken).ConfigureAwait(false);
         }
 
-        return lastSnapshot;
+        return null;
     }
 
     internal static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(

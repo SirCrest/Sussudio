@@ -155,7 +155,8 @@ public partial class CaptureService
                 EffectiveHeight = _actualHeight ?? settings.Height,
                 VideoInputPixelFormat = _videoPipeline.Capture?.IsP010 == true ? "p010le" : "nv12",
                 IsFullRangeInput = _videoPipeline.Capture?.IsSoftwareMjpegPipelineActive == true,
-                GpuHandles = GpuPipelineHandles.None
+                GpuHandles = GpuPipelineHandles.None,
+                ReserveFinalOutputFile = false
             }).ConfigureAwait(false);
 
     private async Task StartLibAvRecordingAsync(

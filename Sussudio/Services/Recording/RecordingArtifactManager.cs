@@ -27,19 +27,21 @@ public sealed class RecordingArtifactManager
         var outputFileName = request.FileNameFormatOverride is { } fileNameFormatOverride
             ? settings.GetOutputFileNameForFormat(fileNameFormatOverride)
             : settings.GetOutputFileName();
-        var finalOutputFile = await outputFolder.CreateFileAsync(
-            outputFileName,
-            CreationCollisionOption.GenerateUniqueName);
+        var finalOutputPath = request.ReserveFinalOutputFile
+            ? (await outputFolder.CreateFileAsync(
+                    outputFileName,
+                    CreationCollisionOption.GenerateUniqueName)).Path
+            : ResolveUniqueOutputPath(outputFolder, outputFileName);
 
         var hdrPipelineActive = string.Equals(request.VideoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
 
         if (!request.UsePostMuxAudio)
         {
-            return BuildContext(request, finalOutputFile.Path, finalOutputFile.Path, null, hdrPipelineActive);
+            return BuildContext(request, finalOutputPath, finalOutputPath, null, hdrPipelineActive);
         }
 
-        var baseName = Path.GetFileNameWithoutExtension(finalOutputFile.Name);
-        var extension = Path.GetExtension(finalOutputFile.Name);
+        var baseName = Path.GetFileNameWithoutExtension(finalOutputPath);
+        var extension = Path.GetExtension(finalOutputPath);
 
         var tempVideoFile = await outputFolder.CreateFileAsync(
             $"{baseName}_video{extension}",
@@ -49,7 +51,28 @@ public sealed class RecordingArtifactManager
             $"{baseName}_audio.m4a",
             CreationCollisionOption.GenerateUniqueName);
 
-        return BuildContext(request, tempVideoFile.Path, finalOutputFile.Path, tempAudioFile.Path, hdrPipelineActive);
+        return BuildContext(request, tempVideoFile.Path, finalOutputPath, tempAudioFile.Path, hdrPipelineActive);
+    }
+
+    private static string ResolveUniqueOutputPath(StorageFolder outputFolder, string outputFileName)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(outputFileName);
+        var extension = Path.GetExtension(outputFileName);
+        var directory = outputFolder.Path;
+
+        for (var i = 0; i < 10000; i++)
+        {
+            var candidateName = i == 0
+                ? outputFileName
+                : $"{baseName} ({i + 1}){extension}";
+            var candidatePath = Path.Combine(directory, candidateName);
+            if (!File.Exists(candidatePath))
+            {
+                return candidatePath;
+            }
+        }
+
+        return Path.Combine(directory, $"{baseName}_{Guid.NewGuid():N}{extension}");
     }
 
     private static RecordingContext BuildContext(

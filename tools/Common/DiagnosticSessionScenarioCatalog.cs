@@ -382,13 +382,36 @@ internal readonly record struct DiagnosticSessionScenarioPlan(
            RunFlashbackDisableDuringExport ||
            RunFlashbackRotatedExport;
 
+    internal bool ToleratesStrictArtifactDiagnosticHealthWarning
+        => RunFlashbackRangeExport ||
+           RunFlashbackRangeExportAudioSwitch ||
+           RunFlashbackExportPlayback ||
+           RunFlashbackRestartCycle ||
+           RunFlashbackEncoderCycle ||
+           RunFlashbackExportConcurrent ||
+           RunFlashbackDisableDuringExport ||
+           RunFlashbackRotatedExport ||
+           RunFlashbackPreviewCycle ||
+           RunFlashbackPlaybackPreviewCycle ||
+           RunFlashbackRecording ||
+           RunFlashbackRecordingPreviewCycle ||
+           RunFlashbackRecordingSettingsDeferred ||
+           RunFlashbackRecordingExportRejected;
+
+    internal bool ToleratesControlOnlyDiagnosticHealthWarning
+        => RunFlashbackLifecycle ||
+           RunFlashbackExportRejected;
+
     internal bool IsPreviewCycleScenario
         => RunFlashbackPreviewCycle ||
            RunFlashbackPlaybackPreviewCycle ||
            RunFlashbackRecordingPreviewCycle;
 
     internal bool ToleratesSparsePreviewSchedulerStressTransitions
-        => RunFlashbackScrubStress || RunFlashbackSegmentPlayback;
+        => RunFlashbackScrubStress ||
+           RunFlashbackSegmentPlayback ||
+           RunFlashbackRestartCycle ||
+           RunFlashbackEncoderCycle;
 }
 
 internal static class DiagnosticSessionScenarioStartup
@@ -435,6 +458,7 @@ internal static class DiagnosticSessionScenarioStartup
 
         var startedFlashbackPlayback = await TryStartFlashbackPlaybackAsync(
                 scenarioPlan,
+                outputDirectory,
                 actions,
                 warnings,
                 sendAsync,
@@ -557,6 +581,7 @@ internal static class DiagnosticSessionScenarioStartup
 
     private static async Task<bool> TryStartFlashbackPlaybackAsync(
         DiagnosticSessionScenarioPlan scenarioPlan,
+        string outputDirectory,
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
@@ -569,12 +594,40 @@ internal static class DiagnosticSessionScenarioStartup
 
         if (!await WaitForFlashbackStressBufferReadyAsync(sendAsync, cancellationToken).ConfigureAwait(false))
         {
-            warnings.Add("flashback playback: Flashback buffer did not become playback-ready within 30s");
+            warnings.Add("flashback playback: Flashback buffer did not become export-ready within 30s");
+            return false;
         }
 
+        var prerollExportPath = Path.Combine(outputDirectory, "flashback-playback-preroll.mp4");
+        var prerollExportResponse = await sendAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = prerollExportPath },
+                AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"))
+            .ConfigureAwait(false);
+        if (!IsSuccess(prerollExportResponse))
+        {
+            warnings.Add($"flashback playback: preroll export failed - {Get(prerollExportResponse, "Message", "unknown error")}");
+            return false;
+        }
+
+        actions.Add("flashback playback preroll export completed");
+
+        var playbackTarget = await DiagnosticSessionFlashbackSegments.WaitForFlashbackPlayableCompletedSegmentAsync(
+                sendAsync,
+                TimeSpan.FromSeconds(45),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (playbackTarget is null)
+        {
+            warnings.Add("flashback playback: Flashback buffer did not produce a playable completed segment within 45s");
+            return false;
+        }
+
+        var target = playbackTarget.Value;
+        var playPositionMs = Math.Max(0, target.BoundaryPositionMs - 500);
         var playResponse = await sendAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = 1000 },
+                new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = playPositionMs },
                 null)
             .ConfigureAwait(false);
         if (!IsSuccess(playResponse))
@@ -583,7 +636,9 @@ internal static class DiagnosticSessionScenarioStartup
             return false;
         }
 
-        actions.Add("flashback playback started at 1000ms");
+        actions.Add(
+            "flashback playback started at completed segment " +
+            $"segment={target.Segment.SequenceNumber} positionMs={playPositionMs}");
         var playingSnapshot = await WaitForFlashbackPlaybackStateAsync(
                 sendAsync,
                 "Playing",
@@ -593,6 +648,7 @@ internal static class DiagnosticSessionScenarioStartup
         if (playingSnapshot is null)
         {
             warnings.Add("flashback playback: playback did not report Playing within 5s");
+            return false;
         }
 
         return true;

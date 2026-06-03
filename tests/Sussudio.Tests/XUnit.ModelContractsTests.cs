@@ -2852,6 +2852,54 @@ public sealed class CaptureConfigurationModelsTests
     }
 
     [Fact]
+    public void DeviceModeSupportPolicy_AppliesElgato4KXHdrUsbLimits()
+    {
+        var asm = SussudioAssembly.Load();
+        var policyType = RequireType(asm, "Sussudio.ViewModels.DeviceModeSupportPolicy");
+        var deviceType = RequireType(asm, "Sussudio.Models.CaptureDevice");
+        var mediaFormatType = RequireType(asm, "Sussudio.Models.MediaFormat");
+        var isSupported = RequireMethod(policyType, "IsSupported", ReflectionFlags.Static);
+        var describeUnsupported = RequireMethod(policyType, "DescribeUnsupported", ReflectionFlags.Static);
+
+        var device = CreateInstance(deviceType);
+        Set(device, "Id", @"\\?\usb#vid_0fd9&pid_009b&mi_00#unit-test");
+        Set(device, "Name", "Game Capture 4K X");
+
+        Assert.True((bool)isSupported.Invoke(null, new[]
+        {
+            device,
+            CreateMediaFormat(mediaFormatType, 3840, 2160, 30, "P010", isHdr: true)
+        })!);
+        Assert.True((bool)isSupported.Invoke(null, new[]
+        {
+            device,
+            CreateMediaFormat(mediaFormatType, 2560, 1440, 60, "P010", isHdr: true)
+        })!);
+        Assert.False((bool)isSupported.Invoke(null, new[]
+        {
+            device,
+            CreateMediaFormat(mediaFormatType, 3840, 2160, 120, "P010", isHdr: true)
+        })!);
+        Assert.False((bool)isSupported.Invoke(null, new[]
+        {
+            device,
+            CreateMediaFormat(mediaFormatType, 2560, 1440, 120, "P010", isHdr: true)
+        })!);
+        Assert.True((bool)isSupported.Invoke(null, new[]
+        {
+            device,
+            CreateMediaFormat(mediaFormatType, 3840, 2160, 120, "MJPG", isHdr: false)
+        })!);
+
+        var reason = (string)describeUnsupported.Invoke(null, new[]
+        {
+            device,
+            CreateMediaFormat(mediaFormatType, 3840, 2160, 120, "P010", isHdr: true)
+        })!;
+        Assert.Contains("4K30 or 1440p60", reason);
+    }
+
+    [Fact]
     public void CaptureSettings_DefaultsAndOutputContracts()
     {
         var asm = SussudioAssembly.Load();

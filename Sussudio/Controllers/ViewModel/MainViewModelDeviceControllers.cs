@@ -1101,7 +1101,9 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             return;
         }
 
-        var allowSourceAutoSelect = _context.IsHdrEnabled() && (_context.IsForceSourceAutoRetarget() || !_context.HasUserOverriddenResolutionForCurrentMode());
+        var allowSourceAutoSelect =
+            string.Equals(previousSelection, _context.AutoResolutionValue, StringComparison.OrdinalIgnoreCase) ||
+            (_context.IsHdrEnabled() && (_context.IsForceSourceAutoRetarget() || !_context.HasUserOverriddenResolutionForCurrentMode()));
         var selection = CaptureResolutionSelectionPolicy.Select(new CaptureResolutionSelectionRequest(
             options,
             _context.GetResolutionToFormats(),

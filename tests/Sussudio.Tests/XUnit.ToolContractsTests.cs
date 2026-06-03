@@ -1173,6 +1173,10 @@ public sealed class McpDiagnosticSessionResultSurfaceContractsTests
         => global::Program.DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesWithAnalysis();
 
     [Fact]
+    public Task ResultBuilderToleratesVerifiedRecordingOnlyWarnings()
+        => global::Program.DiagnosticSessionResultBuilder_ToleratesVerifiedRecordingOnlyWarnings();
+
+    [Fact]
     public Task ResultBuilderOwnsSummaryWriteFailures()
         => global::Program.DiagnosticSessionResultBuilder_OwnsSummaryWriteFailures();
 
@@ -2523,6 +2527,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
         AssertContains(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs"), "RunFlashbackEncoderCycle");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
         AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
@@ -2569,11 +2574,60 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
         AssertContains(healthText, "snapshot epoch consistency warning tolerated");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
+        AssertContains(healthText, "present/display warning tolerated for strict artifact verification scenario");
+        AssertContains(healthText, "present/display warning tolerated for flashback control scenario");
+        AssertContains(
+            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            "diagnostic health degraded during session: health=Warning stage=present_display");
+        AssertContains(
+            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            "diagnostic health degraded during session: health=Warning stage=audio");
+        AssertContains(
+            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            "diagnostic health degraded during session: health=Warning stage=source_capture");
+        AssertContains(healthText, "scenarioPlan.ToleratesStrictArtifactDiagnosticHealthWarning");
+        AssertContains(healthText, "scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning");
+        AssertContains(healthText, "scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning &&\n             IsPresentDisplayDiagnosticHealthObservation(diagnosticHealthObservation)");
+        var overviewText = ReadDiagnosticSessionResultBuilderSource();
+        AssertContains(overviewText, "(analysis.DiagnosticHealthSucceeded ||");
+        AssertContains(overviewText, "IsFunctionallyVerifiedRecordingWarning(request, analysis, verificationSucceeded) ||");
+        AssertContains(overviewText, "IsVisuallyVerifiedPreviewWarning(request, analysis)) &&");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
             "diagnostic health verdict helpers folded into analysis owner");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task DiagnosticSessionResultBuilder_ToleratesVerifiedRecordingOnlyWarnings()
+    {
+        var builderText = ReadDiagnosticSessionResultBuilderSource();
+
+        AssertContains(builderText, "private static bool IsFunctionallyVerifiedRecordingWarning(");
+        AssertContains(builderText, "IsStrictArtifactVerificationScenario(request.Scenario)");
+        AssertContains(builderText, "private static bool IsStrictArtifactVerificationScenario(string scenario)");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.RecordingOnly");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackRangeExport");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackRestartCycle");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackEncoderCycle");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackExportConcurrent");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackPreviewCycle");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackPlaybackPreviewCycle");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackRecording");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackRecordingSettingsDeferred");
+        AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackRecordingExportRejected");
+        AssertContains(builderText, "verificationSucceeded == true");
+        AssertContains(builderText, "string.Equals(analysis.HealthSummary.HealthStatus, \"Warning\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(builderText, "private static bool IsVisuallyVerifiedPreviewWarning(");
+        AssertContains(builderText, "string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.PreviewOnly, StringComparison.OrdinalIgnoreCase)");
+        AssertContains(builderText, "string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.Observe, StringComparison.OrdinalIgnoreCase)");
+        AssertContains(builderText, "string.Equals(analysis.HealthSummary.LikelyStage, \"present_display\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(builderText, "return IsVisualCadenceSessionHealthy(analysis.VisualCadenceMetrics, targetFps);");
+        AssertContains(builderText, "(request.PresentMon is null || request.PresentMon.Success) &&");
+        AssertContains(builderText, "(!verificationSucceeded.HasValue || verificationSucceeded.Value) &&");
+        AssertDoesNotContain(builderText, "analysis.DiagnosticHealthSucceeded &&\n        (request.PresentMon is null || request.PresentMon.Success)");
 
         return Task.CompletedTask;
     }
@@ -2662,6 +2716,13 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
         AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
+        AssertContains(analysisText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions));");
+        AssertContains(
+            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            "\"flashback preview: scheduler deadline drops increased delta=\"");
+        AssertContains(
+            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            "\"flashback preview: present/display pressure \"");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Analysis.cs")),
@@ -2771,7 +2832,9 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(overviewResultText, "private static bool DetermineDiagnosticSessionSuccess(");
         AssertContains(overviewResultText, "request.CommandFailureCount == 0 &&");
         AssertContains(overviewResultText, "runState.TerminalException is null &&");
-        AssertContains(overviewResultText, "analysis.DiagnosticHealthSucceeded &&");
+        AssertContains(overviewResultText, "(analysis.DiagnosticHealthSucceeded ||");
+        AssertContains(overviewResultText, "IsFunctionallyVerifiedRecordingWarning(request, analysis, verificationSucceeded) ||");
+        AssertContains(overviewResultText, "IsVisuallyVerifiedPreviewWarning(request, analysis)) &&");
         AssertContains(overviewResultText, "(request.PresentMon is null || request.PresentMon.Success) &&");
         AssertContains(overviewResultText, "(!verificationSucceeded.HasValue || verificationSucceeded.Value) &&");
         AssertContains(overviewResultText, "analysis.FlashbackWarningsSucceeded");
@@ -5636,6 +5699,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerStressRun(");
         AssertContains(policyText, "internal static bool IsToleratedFlashbackScenarioWarning(");
+        AssertContains(policyText, "toleratesControlOnlyDiagnosticHealthWarning");
+        AssertContains(policyText, "diagnostic health present/display warning tolerated for flashback control scenario:");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionHealthPolicy;");
         AssertDoesNotContain(builderText, "using static Sussudio.Tools.DiagnosticSessionHealthTolerances;");
         AssertDoesNotContain(runnerText, "private readonly record struct DiagnosticHealthObservation");
@@ -5701,6 +5766,12 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(catalogText, "internal bool ToleratesFlashbackForceRotateDrainWarning");
         AssertContains(catalogText, "internal bool IsPreviewCycleScenario");
         AssertContains(catalogText, "internal bool ToleratesSparsePreviewSchedulerStressTransitions");
+        AssertContains(catalogText, "internal bool ToleratesStrictArtifactDiagnosticHealthWarning");
+        AssertContains(catalogText, "internal bool ToleratesControlOnlyDiagnosticHealthWarning");
+        AssertContains(catalogText, "RunFlashbackLifecycle ||");
+        AssertContains(catalogText, "RunFlashbackExportRejected;");
+        AssertContains(catalogText, "RunFlashbackPreviewCycle ||");
+        AssertContains(catalogText, "RunFlashbackPlaybackPreviewCycle ||");
         AssertContains(catalogText, "RunFlashbackSegmentPlayback");
         AssertEqual(
             false,
@@ -6698,6 +6769,9 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 new object?[]
                 {
                     "diagnostic health snapshot epoch consistency warning tolerated: health=Warning stage=snapshot_epoch",
+                    false,
+                    false,
+                    false,
                     false,
                     false,
                     false
@@ -7725,6 +7799,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(disableDuringExportText, "private static async Task ValidateFlashbackReenabledAfterDisableDuringExportAsync(");
         AssertContains(scenariosText, "internal static async Task RunFlashbackRotatedExportAsync(");
         AssertContains(scenariosText, "TryParseFlashbackExportSegmentCount(exportMessage)");
+        AssertContains(scenariosText, "flashback rotated export requested via live-edge force rotation");
+        AssertContains(scenariosText, "flashback rotated export: expected segment export");
         AssertContains(scenariosText, "internal static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(scenariosText, "flashback export during playback verified");
         AssertContains(playbackText, "CaptureFlashbackExportPlaybackFrameCountBeforeExportAsync(");
@@ -8074,6 +8150,10 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(recordingSettingsText, "Flashback recording backend did not remain active after mutations");
         AssertContains(recordingSettingsText, "recording counters did not advance after mutation attempts");
         AssertContains(recordingSettingsText, "internal static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(");
+        AssertContains(recordingSettingsText, "TryEnableFlashbackForPostStopSettingsVerificationAsync(");
+        AssertContains(recordingSettingsText, "RestoreTemporarilyEnabledFlashbackAsync(");
+        AssertContains(recordingSettingsText, "flashback recording settings deferred post-stop flashback re-enabled");
+        AssertContains(recordingSettingsText, "flashback recording settings deferred post-stop flashback restored off");
         AssertContains(recordingSettingsText, "flashback recording settings deferred post-stop buffer verified");
         AssertContains(recordingSettingsText, "private static async Task RestoreFlashbackRecordingSettingsOriginalPresetAsync(");
         AssertContains(recordingSettingsText, "\"SetPreset\"");

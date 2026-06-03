@@ -88,46 +88,111 @@ internal static class DiagnosticSessionFlashbackRecordingSettingsScenarios
             return;
         }
 
-        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
-        {
-            warnings.Add("flashback recording settings deferred: Flashback buffer did not become ready after recording stop");
-            return;
-        }
-
-        var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        if (!TryGetSnapshot(snapshotResponse, out var snapshot))
-        {
-            warnings.Add("flashback recording settings deferred: no post-stop snapshot returned");
-            return;
-        }
-
-        if (!string.Equals(GetString(snapshot, "SelectedPreset"), presetState.DeferredPreset, StringComparison.OrdinalIgnoreCase))
-        {
-            warnings.Add(
-                "flashback recording settings deferred: selected preset was not preserved after stop " +
-                $"expected={presetState.DeferredPreset} actual={GetString(snapshot, "SelectedPreset") ?? "<null>"}");
-        }
-
-        if (!GetBool(snapshot, "FlashbackActive"))
-        {
-            warnings.Add("flashback recording settings deferred: Flashback inactive after recording stop");
-            return;
-        }
-
-        if (GetNullableLong(snapshot, "FlashbackEncodedFrames") is not > 0)
-        {
-            warnings.Add("flashback recording settings deferred: post-stop Flashback encoder did not produce frames");
-        }
-
-        actions.Add("flashback recording settings deferred post-stop buffer verified");
-
-        await RestoreFlashbackRecordingSettingsOriginalPresetAsync(
+        var temporarilyEnabledFlashback = await TryEnableFlashbackForPostStopSettingsVerificationAsync(
                 actions,
                 warnings,
-                presetState,
                 sendCommandAsync,
                 cancellationToken)
             .ConfigureAwait(false);
+
+        try
+        {
+            if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+            {
+                warnings.Add("flashback recording settings deferred: Flashback buffer did not become ready after recording stop");
+                return;
+            }
+
+            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (!TryGetSnapshot(snapshotResponse, out var snapshot))
+            {
+                warnings.Add("flashback recording settings deferred: no post-stop snapshot returned");
+                return;
+            }
+
+            if (!string.Equals(GetString(snapshot, "SelectedPreset"), presetState.DeferredPreset, StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add(
+                    "flashback recording settings deferred: selected preset was not preserved after stop " +
+                    $"expected={presetState.DeferredPreset} actual={GetString(snapshot, "SelectedPreset") ?? "<null>"}");
+            }
+
+            if (!GetBool(snapshot, "FlashbackActive"))
+            {
+                warnings.Add("flashback recording settings deferred: Flashback inactive after recording stop");
+                return;
+            }
+
+            if (GetNullableLong(snapshot, "FlashbackEncodedFrames") is not > 0)
+            {
+                warnings.Add("flashback recording settings deferred: post-stop Flashback encoder did not produce frames");
+            }
+
+            actions.Add("flashback recording settings deferred post-stop buffer verified");
+
+            await RestoreFlashbackRecordingSettingsOriginalPresetAsync(
+                    actions,
+                    warnings,
+                    presetState,
+                    sendCommandAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            if (temporarilyEnabledFlashback)
+            {
+                await RestoreTemporarilyEnabledFlashbackAsync(actions, warnings, sendCommandAsync).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static async Task<bool> TryEnableFlashbackForPostStopSettingsVerificationAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        if (!TryGetSnapshot(snapshotResponse, out var snapshot) ||
+            GetBool(snapshot, "FlashbackActive"))
+        {
+            return false;
+        }
+
+        var enableResponse = await sendCommandAsync(
+                "SetFlashbackEnabled",
+                new Dictionary<string, object?> { ["enabled"] = true },
+                305_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback recording settings deferred post-stop flashback re-enabled");
+        if (!AutomationSnapshotFormatter.IsSuccess(enableResponse))
+        {
+            warnings.Add(
+                $"flashback recording settings deferred: post-stop Flashback re-enable failed - {AutomationSnapshotFormatter.Get(enableResponse, "Message", "unknown error")}");
+            return false;
+        }
+
+        await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
+    private static async Task RestoreTemporarilyEnabledFlashbackAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
+    {
+        var disableResponse = await sendCommandAsync(
+                "SetFlashbackEnabled",
+                new Dictionary<string, object?> { ["enabled"] = false },
+                305_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback recording settings deferred post-stop flashback restored off");
+        if (!AutomationSnapshotFormatter.IsSuccess(disableResponse))
+        {
+            warnings.Add(
+                $"flashback recording settings deferred: post-stop Flashback restore-off failed - {AutomationSnapshotFormatter.Get(disableResponse, "Message", "unknown error")}");
+        }
     }
 
     private static async Task VerifyFlashbackRestartRejectedDuringRecordingAsync(

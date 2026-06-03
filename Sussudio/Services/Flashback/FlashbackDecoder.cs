@@ -253,7 +253,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                    TryValidatePlane(frame, 1, chromaBytes, out failure);
         }
 
-        if (!isHdr && format == AVPixelFormat.AV_PIX_FMT_YUV420P)
+        if (!isHdr && IsConvertibleSdrPlanarFormat(format))
         {
             return TryValidatePlane(frame, 0, width, out failure) &&
                    TryValidatePlane(frame, 1, width / 2, out failure) &&
@@ -289,6 +289,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         failure = string.Empty;
         return true;
     }
+
+    private static bool IsConvertibleSdrPlanarFormat(AVPixelFormat format)
+        => format == AVPixelFormat.AV_PIX_FMT_YUV420P ||
+           format == AVPixelFormat.AV_PIX_FMT_YUVJ420P;
 
     private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)
     {
@@ -1587,7 +1591,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         if (_needsConvert)
         {
             var canConvert =
-                _decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P ||
+                IsConvertibleSdrPlanarFormat(_decodedPixelFormat) ||
                 _decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P10LE;
 
             if (!canConvert)

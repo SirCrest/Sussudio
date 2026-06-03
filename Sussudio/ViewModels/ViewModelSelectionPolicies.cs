@@ -117,6 +117,50 @@ internal static class CaptureModeOptionsBuilder
     }
 }
 
+internal static class DeviceModeSupportPolicy
+{
+    internal static bool IsSupported(CaptureDevice device, MediaFormat format)
+    {
+        if (!CaptureModeOptionsBuilder.IsHdrModeCandidate(format))
+        {
+            return true;
+        }
+
+        if (IsElgato4KX(device))
+        {
+            var friendlyFps = FrameRateTimingPolicy.GetFriendlyFrameRateBucket(format.FrameRateExact);
+            if (format.Width >= 3840 || format.Height >= 2160)
+            {
+                return friendlyFps <= 30;
+            }
+
+            if (format.Width <= 2560 && format.Height <= 1440)
+            {
+                return friendlyFps <= 60;
+            }
+
+            return friendlyFps <= 60;
+        }
+
+        return true;
+    }
+
+    internal static string DescribeUnsupported(CaptureDevice device, MediaFormat format)
+    {
+        if (IsElgato4KX(device) && CaptureModeOptionsBuilder.IsHdrModeCandidate(format))
+        {
+            return "Elgato 4K X HDR over USB is limited to 4K30 or 1440p60.";
+        }
+
+        return "This capture mode is not supported by the selected device.";
+    }
+
+    private static bool IsElgato4KX(CaptureDevice device)
+        => device.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase) ||
+           device.Id.Contains("vid_0fd9", StringComparison.OrdinalIgnoreCase) &&
+           device.Id.Contains("pid_009b", StringComparison.OrdinalIgnoreCase);
+}
+
 internal static class CaptureResolutionSelectionPolicy
 {
     internal static CaptureResolutionSelection Select(CaptureResolutionSelectionRequest request)

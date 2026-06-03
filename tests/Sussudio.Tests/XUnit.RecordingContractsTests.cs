@@ -502,6 +502,8 @@ public class RecordingArtifactManagerTests
         AssertContains(rootText, "private static RecordingContext BuildContext(");
         AssertContains(rootText, "public FinalizeResult FinalizeContext(");
         AssertContains(rootText, "public Task RollbackAsync(");
+        AssertContains(rootText, "private static string ResolveUniqueOutputPath(");
+        AssertContains(rootText, "request.ReserveFinalOutputFile");
         AssertContains(rootText, "private static bool TryValidateFinalOutput(");
         AssertContains(rootText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
         AssertContains(rootText, "internal static class RecordingFinalizationRecoveryArtifacts");
@@ -837,6 +839,7 @@ public class RecordingContractsTests
         Assert.Equal("nv12", (string)requestType.GetProperty("VideoInputPixelFormat")!.GetValue(request)!);
         Assert.False((bool)requestType.GetProperty("IsFullRangeInput")!.GetValue(request)!);
         Assert.False((bool)requestType.GetProperty("UsePostMuxAudio")!.GetValue(request)!);
+        Assert.True((bool)requestType.GetProperty("ReserveFinalOutputFile")!.GetValue(request)!);
     }
 
     [Fact]
@@ -4076,6 +4079,7 @@ static partial class Program
         AssertContains(lifecycleText, "Output folder is unavailable: {settings.OutputPath}");
         AssertContains(lifecycleText, "private async Task<RecordingContext> CreateLibAvRecordingContextAsync(");
         AssertContains(lifecycleText, "private async Task<RecordingContext> CreateFlashbackRecordingContextAsync(");
+        AssertContains(lifecycleText, "ReserveFinalOutputFile = false");
         AssertContains(lifecycleText, "new RecordingContextRequest");
         AssertContains(lifecycleText, "GpuHandles = new GpuPipelineHandles(");
         AssertContains(lifecycleText, "GpuHandles = GpuPipelineHandles.None");

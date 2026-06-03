@@ -156,6 +156,7 @@ namespace Sussudio.Services.Contracts
         public bool IsFullRangeInput { get; init; }
         public GpuPipelineHandles GpuHandles { get; init; }
         public RecordingFormat? FileNameFormatOverride { get; init; }
+        public bool ReserveFinalOutputFile { get; init; } = true;
     }
 
     // Resolved recording-execution context. Flat record: every field is held

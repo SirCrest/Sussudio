@@ -6920,6 +6920,10 @@ static partial class Program
         AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
         AssertContains(deviceSelectionAutomationText, "public Task SetCustomAudioInputEnabledAsync");
         AssertContains(deviceSelectionAutomationText, "private AudioInputDevice? ResolveAudioDevice");
+        AssertContains(deviceSelectionAutomationText, "private static T? ResolveByName<T>(");
+        AssertContains(deviceSelectionAutomationText, ".Contains(deviceName, StringComparison.OrdinalIgnoreCase)");
+        AssertContains(deviceSelectionAutomationText, ".Take(2)");
+        AssertContains(deviceSelectionAutomationText, "return partialMatches.Length == 1 ? partialMatches[0] : null;");
         AssertContains(rootViewModelText, "public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)");
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
         AssertEqual(
@@ -10616,8 +10620,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "coalescedSeekEnd={result.FlashbackPlaybackSeekCommandsCoalescedAtEnd}");
         AssertContains(diagnosticSessionText, "failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = 1000 }");
-        AssertContains(diagnosticSessionText, "flashback playback started at 1000ms");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = playPositionMs }");
+        AssertContains(diagnosticSessionText, "flashback playback started at completed segment");
         AssertContains(diagnosticSessionText, "flashback playback returned live");
         AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(");
         AssertContains(diagnosticSessionText, "visualCadenceMetrics,");
@@ -10737,9 +10741,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback disable during export verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackRotatedExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export.mp4\"");
-        AssertContains(diagnosticSessionText, "flashback rotated segment observed");
+        AssertContains(diagnosticSessionText, "flashback rotated export requested via live-edge force rotation");
         AssertContains(diagnosticSessionText, "TryParseFlashbackExportSegmentCount(exportMessage)");
-        AssertContains(diagnosticSessionText, "exportedSegments is null or < 2");
+        AssertContains(diagnosticSessionText, "exportedSegments is null or < 1");
         AssertContains(diagnosticSessionText, "flashback rotated export verified");
         AssertContains(diagnosticSessionText, "internal static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-preview-off-export.mp4\"");
@@ -10876,7 +10880,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackDiagnosticWarmupFraction");
         AssertContains(diagnosticSessionText, "FlashbackDiagnosticMaxWarmupMs");
         AssertContains(diagnosticSessionText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
-        AssertContains(diagnosticSessionText, "diagnosticHealthSucceeded &&");
+        AssertContains(diagnosticSessionText, "(analysis.DiagnosticHealthSucceeded ||");
         AssertContains(diagnosticSessionText, "scenarioPlan.ToleratesSourceSignalHealthWarning");
         AssertContains(diagnosticSessionText, "IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");

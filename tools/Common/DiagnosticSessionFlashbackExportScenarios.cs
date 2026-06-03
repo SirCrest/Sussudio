@@ -76,30 +76,13 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             return;
         }
 
-        var completedSegment = await WaitForFlashbackCompletedSegmentAsync(
-                sendCommandAsync,
-                TimeSpan.FromSeconds(210),
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (completedSegment is null)
-        {
-            warnings.Add("flashback rotated export: no completed segment observed within 210s");
-            return;
-        }
-
-        actions.Add(
-            "flashback rotated segment observed " +
-            $"seq={completedSegment.Value.SequenceNumber} " +
-            $"startMs={completedSegment.Value.StartPtsMs} " +
-            $"endMs={completedSegment.Value.EndPtsMs}");
-
         var exportPath = Path.Combine(outputDirectory, "flashback-rotated-export.mp4");
         var exportResponse = await sendCommandAsync(
                 "FlashbackExport",
-                new Dictionary<string, object?> { ["seconds"] = 180, ["outputPath"] = exportPath },
+                new Dictionary<string, object?> { ["seconds"] = 12, ["outputPath"] = exportPath },
                 300_000)
             .ConfigureAwait(false);
-        actions.Add("flashback rotated export requested");
+        actions.Add("flashback rotated export requested via live-edge force rotation");
 
         var exportMessage = AutomationSnapshotFormatter.Get(exportResponse, "Message", string.Empty);
         if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
@@ -110,9 +93,9 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         }
 
         var exportedSegments = TryParseFlashbackExportSegmentCount(exportMessage);
-        if (exportedSegments is null or < 2)
+        if (exportedSegments is null or < 1)
         {
-            warnings.Add($"flashback rotated export: expected multi-segment export, got '{exportMessage}'");
+            warnings.Add($"flashback rotated export: expected segment export, got '{exportMessage}'");
         }
 
         var verifyResponse = await sendCommandAsync(

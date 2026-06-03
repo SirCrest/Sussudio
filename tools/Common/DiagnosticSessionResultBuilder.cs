@@ -658,7 +658,10 @@ private sealed record DiagnosticSessionResultAnalysis(
             warning,
             scenarioPlan.ToleratesSourceSignalHealthWarning,
             scenarioPlan.ToleratesFlashbackForceRotateDrainWarning,
-            scenarioPlan.IsPreviewCycleScenario));
+            scenarioPlan.ToleratesStrictArtifactDiagnosticHealthWarning,
+            scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning,
+            scenarioPlan.IsPreviewCycleScenario,
+            scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions));
     }
 
     private static DiagnosticSessionHealthSummary BuildDiagnosticHealthSummary(
@@ -767,6 +770,11 @@ private sealed record DiagnosticSessionResultAnalysis(
              IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             IsSnapshotEpochDiagnosticHealthObservation(diagnosticHealthObservation) ||
             sparseSourceCaptureCadenceWarning ||
+            (scenarioPlan.ToleratesStrictArtifactDiagnosticHealthWarning &&
+             visualCadenceHealthy &&
+             IsPresentDisplayDiagnosticHealthObservation(diagnosticHealthObservation)) ||
+            (scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning &&
+             IsPresentDisplayDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             (isFlashbackScenario &&
              scenarioPlan.IsPreviewCycleScenario &&
              visualCadenceHealthy &&
@@ -778,7 +786,13 @@ private sealed record DiagnosticSessionResultAnalysis(
             IsSnapshotEpochDiagnosticHealthObservation(diagnosticHealthObservation)
                 ? "snapshot epoch consistency warning tolerated"
                 : IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
-                    ? "preview scheduler transition warning tolerated for preview-cycle scenario"
+                    ? scenarioPlan.ToleratesStrictArtifactDiagnosticHealthWarning
+                        ? "present/display warning tolerated for strict artifact verification scenario"
+                        : "preview scheduler transition warning tolerated for preview-cycle scenario"
+                    : IsPresentDisplayDiagnosticHealthObservation(diagnosticHealthObservation)
+                        ? scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning
+                            ? "present/display warning tolerated for flashback control scenario"
+                            : "present/display warning tolerated for strict artifact verification scenario"
                     : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
                         ? "flashback force-rotate drain warning tolerated for flashback scenario"
                         : "source-signal warning tolerated for export reliability scenario";
@@ -968,10 +982,62 @@ private sealed record DiagnosticSessionResultAnalysis(
         bool? verificationSucceeded) =>
         request.CommandFailureCount == 0 &&
         runState.TerminalException is null &&
-        analysis.DiagnosticHealthSucceeded &&
+        (analysis.DiagnosticHealthSucceeded ||
+         IsFunctionallyVerifiedRecordingWarning(request, analysis, verificationSucceeded) ||
+         IsVisuallyVerifiedPreviewWarning(request, analysis)) &&
         (request.PresentMon is null || request.PresentMon.Success) &&
         (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
         analysis.FlashbackWarningsSucceeded;
+
+    private static bool IsFunctionallyVerifiedRecordingWarning(
+        DiagnosticSessionResultBuildRequest request,
+        DiagnosticSessionResultAnalysis analysis,
+        bool? verificationSucceeded) =>
+        IsStrictArtifactVerificationScenario(request.Scenario) &&
+        verificationSucceeded == true &&
+        string.Equals(analysis.HealthSummary.HealthStatus, "Warning", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsStrictArtifactVerificationScenario(string scenario) =>
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.RecordingOnly, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRangeExport, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRangeExportAudioSwitch, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackExportPlayback, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRestartCycle, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackEncoderCycle, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackExportConcurrent, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackDisableDuringExport, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRotatedExport, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackPreviewCycle, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackPlaybackPreviewCycle, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRecording, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRecordingPreviewCycle, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRecordingSettingsDeferred, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(scenario, DiagnosticSessionScenarioCatalog.FlashbackRecordingExportRejected, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsVisuallyVerifiedPreviewWarning(
+        DiagnosticSessionResultBuildRequest request,
+        DiagnosticSessionResultAnalysis analysis)
+    {
+        if (!string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.PreviewOnly, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.Observe, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.Equals(analysis.HealthSummary.HealthStatus, "Warning", StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(analysis.HealthSummary.LikelyStage, "present_display", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var targetFps = GetDouble(analysis.LastSnapshot, "ExpectedCaptureFrameRate");
+        if (targetFps <= 0)
+        {
+            targetFps = GetDouble(analysis.LastSnapshot, "SelectedExactFrameRate");
+        }
+
+        return IsVisualCadenceSessionHealthy(analysis.VisualCadenceMetrics, targetFps);
+    }
 
     private static DiagnosticSessionCaptureResultProjection BuildCaptureResultProjection(
         DiagnosticSessionResultAnalysis analysis)

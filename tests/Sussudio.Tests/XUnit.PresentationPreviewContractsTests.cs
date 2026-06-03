@@ -9691,6 +9691,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertDoesNotContain(resolutionOptionRebuildControllerText, "_viewModel.");
         AssertContains(resolutionOptionRebuildControllerText, "=> RebuildFrameRateOptions();");
         AssertContains(captureModeOptionsControllerText, "public void RebuildResolutionOptions()");
+        AssertContains(resolutionOptionRebuildControllerText, "var allowSourceAutoSelect =\n            string.Equals(previousSelection, _context.AutoResolutionValue, StringComparison.OrdinalIgnoreCase) ||");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.AvailableResolutions.Clear();");
         AssertContains(resolutionOptionRebuildControllerText, "private ResolutionOption CreateAutoResolutionOption()");
         AssertContains(resolutionOptionRebuildControllerText, "Value = _context.AutoResolutionValue,");
@@ -9733,6 +9734,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(capturePresentationText, "return $\"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)\";");
         AssertContains(resolutionOptionsText, "private static bool IsAutoResolutionValue(");
         AssertContains(resolutionOptionsText, "private bool TryResolveResolutionKey(");
+        AssertContains(resolutionOptionsText, "var preserveSourceTelemetryForActiveSourceSelection =\n            resetTelemetryState &&\n            device != null &&\n            IsPreviewing &&\n            IsAutoResolutionValue(SelectedResolution) &&\n            _latestSourceTelemetry.HasDimensions;");
+        AssertContains(resolutionOptionsText, "private void RefreshAutoResolvedResolutionFromLatestSource()");
+        AssertContains(resolutionOptionsText, "if (IsAutoResolutionValue(value))\n        {\n            RefreshAutoResolvedResolutionFromLatestSource();\n        }");
+        AssertContains(resolutionOptionsText, "if (!IsAutoResolutionValue(value) &&\n            TryResolveResolutionKey(value, out var resolvedResolutionKey))");
         AssertContains(resolutionOptionsText, "private string? GetEffectiveResolutionKey(");
         AssertContains(resolutionOptionsText, "private bool TryGetEffectiveResolutionSelection(");
         AssertDoesNotContain(resolutionOptionsText, "private ResolutionOption? SelectHdrResolutionOption(");

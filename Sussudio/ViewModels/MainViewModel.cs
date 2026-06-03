@@ -800,6 +800,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)
     {
         _isChangingDevice = true;
+        var preserveSourceTelemetryForActiveSourceSelection =
+            resetTelemetryState &&
+            device != null &&
+            IsPreviewing &&
+            IsAutoResolutionValue(SelectedResolution) &&
+            _latestSourceTelemetry.HasDimensions;
         try
         {
             ResetFrameRateSelectionState();
@@ -812,15 +818,25 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 _pendingSdrAutoSelectionForDeviceChange = device != null && !IsHdrEnabled;
                 _pendingSdrAutoFriendlyFrameRateBucket = null;
-                _sourceTelemetryController.ApplySourceTelemetrySnapshot(
-                    SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
-                    allowAutoRetarget: false);
+                if (!preserveSourceTelemetryForActiveSourceSelection)
+                {
+                    _sourceTelemetryController.ApplySourceTelemetrySnapshot(
+                        SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
+                        allowAutoRetarget: false);
+                }
             }
 
             if (device != null)
             {
+                var unsupportedFormatReasons = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var format in device.SupportedFormats)
                 {
+                    if (!DeviceModeSupportPolicy.IsSupported(device, format))
+                    {
+                        unsupportedFormatReasons.Add(DeviceModeSupportPolicy.DescribeUnsupported(device, format));
+                        continue;
+                    }
+
                     AvailableFormats.Add(format);
 
                     var resolutionKey = GetResolutionKey(format.Width, format.Height);
@@ -833,10 +849,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     formats.Add(format);
                 }
 
-                IsHdrAvailable = device.IsHdrCapable;
+                IsHdrAvailable = device.IsHdrCapable &&
+                    AvailableFormats.Any(CaptureModeOptionsBuilder.IsHdrModeCandidate);
                 if (!IsHdrAvailable)
                 {
                     IsHdrEnabled = false;
+                }
+                else if (unsupportedFormatReasons.Count > 0)
+                {
+                    HdrResolutionSupportHint = unsupportedFormatReasons.First();
                 }
             }
 
@@ -887,6 +908,29 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         resolutionKey = GetResolutionKey(width, height);
         return true;
+    }
+
+    private void RefreshAutoResolvedResolutionFromLatestSource()
+    {
+        if (!_latestSourceTelemetry.HasDimensions)
+        {
+            return;
+        }
+
+        var width = (uint)_latestSourceTelemetry.Width!.Value;
+        var height = (uint)_latestSourceTelemetry.Height!.Value;
+        var resolutionKey = GetResolutionKey(width, height);
+        if (!_resolutionToFormats.ContainsKey(resolutionKey))
+        {
+            return;
+        }
+
+        AutoResolvedWidth = width;
+        AutoResolvedHeight = height;
+        if (_latestSourceTelemetry.HasFrameRate)
+        {
+            AutoResolvedFrameRate = _latestSourceTelemetry.FrameRateExact;
+        }
     }
 
     private string? GetEffectiveResolutionKey(string? resolutionValue)
@@ -946,7 +990,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     partial void OnSelectedResolutionChanged(string? value)
     {
-        if (TryResolveResolutionKey(value, out var resolvedResolutionKey))
+        if (IsAutoResolutionValue(value))
+        {
+            RefreshAutoResolvedResolutionFromLatestSource();
+        }
+
+        if (!IsAutoResolutionValue(value) &&
+            TryResolveResolutionKey(value, out var resolvedResolutionKey))
         {
             _lastKnownResolutionKey = resolvedResolutionKey;
         }
@@ -1645,7 +1695,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         if (!string.IsNullOrWhiteSpace(deviceName))
         {
-            return Devices.FirstOrDefault(d => string.Equals(d.Name, deviceName, StringComparison.OrdinalIgnoreCase));
+            return ResolveByName(Devices, deviceName, d => d.Name);
         }
 
         return null;
@@ -1664,10 +1714,29 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         if (!string.IsNullOrWhiteSpace(deviceName))
         {
-            return AudioInputDevices.FirstOrDefault(d => string.Equals(d.Name, deviceName, StringComparison.OrdinalIgnoreCase));
+            return ResolveByName(AudioInputDevices, deviceName, d => d.Name);
         }
 
         return null;
+    }
+
+    private static T? ResolveByName<T>(
+        IEnumerable<T> devices,
+        string deviceName,
+        Func<T, string?> getName)
+        where T : class
+    {
+        var exact = devices.FirstOrDefault(d => string.Equals(getName(d), deviceName, StringComparison.OrdinalIgnoreCase));
+        if (exact != null)
+        {
+            return exact;
+        }
+
+        var partialMatches = devices
+            .Where(d => (getName(d) ?? string.Empty).Contains(deviceName, StringComparison.OrdinalIgnoreCase))
+            .Take(2)
+            .ToArray();
+        return partialMatches.Length == 1 ? partialMatches[0] : null;
     }
 
     private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)

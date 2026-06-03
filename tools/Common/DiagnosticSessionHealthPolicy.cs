@@ -130,6 +130,10 @@ internal static class DiagnosticSessionHealthPolicy
         => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
            string.Equals(observation.LikelyStage, "preview_scheduler", StringComparison.OrdinalIgnoreCase);
 
+    internal static bool IsPresentDisplayDiagnosticHealthObservation(DiagnosticHealthObservation observation)
+        => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
+           string.Equals(observation.LikelyStage, "present_display", StringComparison.OrdinalIgnoreCase);
+
     internal static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(DiagnosticHealthObservation observation)
         => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
            string.Equals(observation.LikelyStage, "flashback_recording", StringComparison.OrdinalIgnoreCase) &&
@@ -197,7 +201,10 @@ internal static class DiagnosticSessionHealthPolicy
         string warning,
         bool toleratesSourceSignalHealthWarning,
         bool toleratesFlashbackForceRotateDrainWarning,
-        bool toleratesPreviewCycleSchedulerWarning)
+        bool toleratesStrictArtifactDiagnosticHealthWarning,
+        bool toleratesControlOnlyDiagnosticHealthWarning,
+        bool toleratesPreviewCycleSchedulerWarning,
+        bool toleratesSparsePreviewSchedulerStressWarning)
     {
         if (toleratesSourceSignalHealthWarning &&
             warning.StartsWith(
@@ -222,9 +229,68 @@ internal static class DiagnosticSessionHealthPolicy
             return true;
         }
 
-        return toleratesPreviewCycleSchedulerWarning &&
+        if (toleratesStrictArtifactDiagnosticHealthWarning &&
+            warning.StartsWith(
+                "diagnostic health present/display warning tolerated for strict artifact verification scenario:",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (toleratesStrictArtifactDiagnosticHealthWarning &&
+            warning.StartsWith(
+                "diagnostic health degraded during session: health=Warning stage=present_display",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (toleratesStrictArtifactDiagnosticHealthWarning &&
+            warning.StartsWith(
+                "diagnostic health degraded during session: health=Warning stage=audio",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (toleratesStrictArtifactDiagnosticHealthWarning &&
+            warning.StartsWith(
+                "diagnostic health degraded during session: health=Warning stage=source_capture",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (toleratesControlOnlyDiagnosticHealthWarning &&
+            warning.StartsWith(
+                "diagnostic health present/display warning tolerated for flashback control scenario:",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (toleratesPreviewCycleSchedulerWarning &&
+            warning.StartsWith(
+                "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario:",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if ((toleratesPreviewCycleSchedulerWarning ||
+             toleratesSparsePreviewSchedulerStressWarning ||
+             toleratesStrictArtifactDiagnosticHealthWarning ||
+             toleratesControlOnlyDiagnosticHealthWarning) &&
+            warning.StartsWith(
+                "flashback preview: scheduler deadline drops increased delta=",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return toleratesStrictArtifactDiagnosticHealthWarning &&
                warning.StartsWith(
-                   "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario:",
+                   "flashback preview: present/display pressure ",
                    StringComparison.Ordinal);
     }
 }

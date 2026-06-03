@@ -6055,9 +6055,12 @@ static partial class Program
         AssertContains(sourceText, "private static bool TryValidateSoftwareVideoFrame(");
         AssertContains(sourceText, "width_mismatch frame={frame->width} expected={width}");
         AssertContains(sourceText, "height_mismatch frame={frame->height} expected={height}");
-        AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P");
+        AssertContains(sourceText, "private static bool IsConvertibleSdrPlanarFormat(AVPixelFormat format)");
+        AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P ||\n           format == AVPixelFormat.AV_PIX_FMT_YUVJ420P");
+        AssertContains(sourceText, "if (!isHdr && IsConvertibleSdrPlanarFormat(format))");
         AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P10LE");
         AssertContains(sourceText, "failure = $\"unsupported_format:{format}\";");
+        AssertContains(sourceText, "IsConvertibleSdrPlanarFormat(_decodedPixelFormat) ||");
         AssertContains(sourceText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
         AssertContains(sourceText, "var plane = (uint)planeIndex;");
         AssertContains(sourceText, "failure = $\"plane_{planeIndex}_null\";");
