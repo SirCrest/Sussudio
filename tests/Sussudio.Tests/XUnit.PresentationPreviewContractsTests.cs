@@ -930,6 +930,10 @@ public sealed class PresentationPreviewRuntimeShellContractsTests
         => global::Program.PreviewRuntimeSnapshotController_OwnsSnapshotMapping();
 
     [Fact]
+    public Task PreviewRuntimeSnapshotEpochDoesNotAdvanceForUnchangedSignatures()
+        => global::Program.PreviewRuntimeSnapshotEpoch_DoesNotAdvanceForUnchangedSignatures();
+
+    [Fact]
     public Task PreviewRuntimeD3DProjectionOwnsPolicyGroups()
         => global::Program.PreviewRuntimeD3DProjection_OwnsPolicyGroups();
 
@@ -3775,7 +3779,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewStartupSessionControllerText, "public bool MarkFirstVisualConfirmed(DateTimeOffset firstVisualUtc)");
         AssertContains(previewStartupSessionControllerText, "public void SetMissingSignals(string? missingSignals)");
         AssertContains(previewRuntimeSnapshotText, "StartupSessionController = _previewStartupSessionController,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = startupSession.State.ToString(),");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.State.ToString(),");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = signature.StartupState,");
         AssertContains(previewReinitText, "private PreviewReinitTransitionController _previewReinitTransitionController = null!;");
         AssertContains(previewReinitText, "private bool IsPreviewReinitAnimating");
         AssertContains(previewReinitText, "=> _previewReinitTransitionController.IsAnimating;");
@@ -4700,19 +4705,29 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "BuildSnapshot,");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "\"Failed to enqueue preview snapshot operation.\",");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "private PreviewRuntimeSnapshot BuildSnapshot()");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private readonly object _previewRuntimeSnapshotEpochLock = new();");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private PreviewRuntimeSnapshotSignature _lastPreviewRuntimeSnapshotSignature;");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "var startupSignalSnapshot = startupSignals.Snapshot;");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.ShouldRefreshMissingSignalsForSnapshot");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupMissingSignals = startupSignals.BuildMissingSignals();");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var signature = new PreviewRuntimeSnapshotSignature(");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var previewRuntimeEpoch = PreviewRuntimeSnapshotEpoch(signature);");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private long PreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "lock (_previewRuntimeSnapshotEpochLock)");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "Interlocked.Increment(ref _previewRuntimeSnapshotEpoch);");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "return Interlocked.Read(ref _previewRuntimeSnapshotEpoch);");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "internal readonly record struct PreviewRuntimeSnapshotSignature(");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "D3DRenderer = rendererHost.Renderer,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewSourceAttached = rendererHost.IsCpuPreviewSourceAttached,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuElementVisible = _context.IsGpuElementVisible(),");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "FramesArrived = rendererHost.FramesArrived,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewMinPresentationIntervalMs = rendererHost.PreviewMinPresentationIntervalMs,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = startupSession.State.ToString(),");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "IsStartupWaitingForFirstVisual = startupSession.IsWaitingForFirstVisual,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupGpuSignalMediaOpened = startupSignalSnapshot.GpuSignalMediaOpened,");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuPositionEventCount = startupSignals.PositionEventCount");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewRuntimeEpoch = previewRuntimeEpoch,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewSourceAttached = signature.PreviewSourceAttached,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuElementVisible = signature.GpuElementVisible,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "FramesArrived = signature.FramesArrived,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "PreviewMinPresentationIntervalMs = signature.PreviewMinPresentationIntervalMs,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupState = signature.StartupState,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "IsStartupWaitingForFirstVisual = signature.IsStartupWaitingForFirstVisual,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "StartupGpuSignalMediaOpened = signature.StartupGpuSignalMediaOpened,");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "GpuPositionEventCount = signature.GpuPositionEventCount");
         AssertContains(previewRuntimeSnapshotControllerText, "internal static class PreviewRuntimeSnapshotController");
         AssertContains(previewRuntimeSnapshotControllerText, "internal sealed class PreviewRuntimeSnapshotInput");
         AssertContains(previewRuntimeSnapshotControllerText, "public D3D11PreviewRenderer? D3DRenderer { get; init; }");
@@ -4830,6 +4845,66 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.PreviewRuntimeSnapshot.cs")),
             "preview runtime snapshot adapter lives with the preview renderer composition");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotEpoch_DoesNotAdvanceForUnchangedSignatures()
+    {
+        var contextType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSamplingControllerContext");
+        var samplerType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSamplingController");
+        var signatureType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSignature");
+        var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
+        var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "MediaOpened");
+        var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
+
+        var context = Activator.CreateInstance(contextType)
+                      ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingControllerContext.");
+        var sampler = Activator.CreateInstance(samplerType, context)
+                      ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingController.");
+        var epochMethod = samplerType.GetMethod("PreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
+                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotEpoch method not found.");
+        var signatureConstructor = signatureType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Single(constructor => constructor.GetParameters().Length == 26);
+        var requestedUtc = DateTimeOffset.UtcNow.AddMilliseconds(-250);
+
+        object CreateSignature(long framesDisplayed)
+            => signatureConstructor.Invoke(new object?[]
+            {
+                true,
+                true,
+                true,
+                false,
+                false,
+                12L,
+                framesDisplayed,
+                1L,
+                12345L,
+                16.67d,
+                "WaitingForFirstVisual",
+                true,
+                "attempt-epoch",
+                requestedUtc,
+                1200,
+                true,
+                false,
+                true,
+                requiredSignals,
+                receivedSignals,
+                startupStrategy,
+                "FirstVisual",
+                2,
+                "timeout",
+                false,
+                3L
+            });
+
+        var unchangedSignature = CreateSignature(framesDisplayed: 7);
+        var changedSignature = CreateSignature(framesDisplayed: 8);
+
+        AssertEqual(1L, Convert.ToInt64(epochMethod.Invoke(sampler, new[] { unchangedSignature })), "initial preview runtime epoch");
+        AssertEqual(1L, Convert.ToInt64(epochMethod.Invoke(sampler, new[] { unchangedSignature })), "unchanged preview runtime signature must not advance epoch");
+        AssertEqual(2L, Convert.ToInt64(epochMethod.Invoke(sampler, new[] { changedSignature })), "changed preview runtime signature advances epoch");
 
         return Task.CompletedTask;
     }

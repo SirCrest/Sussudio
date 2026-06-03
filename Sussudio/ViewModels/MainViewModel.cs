@@ -1289,6 +1289,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         => _captureService.GetMjpegPipelineTimingDetails();
     public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();
     public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();
+    public Task<long> GetCaptureSnapshotProducerEpochAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(() => _captureService.SessionGeneration, cancellationToken);
     public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
         => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);
     public Task<CaptureHealthSnapshot> GetCaptureHealthSnapshotAsync(CancellationToken cancellationToken = default)
@@ -1341,6 +1343,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 SourceTelemetryConfidence = SourceTelemetryConfidence,
                 SourceTelemetryDiagnosticSummary = SourceTelemetryDiagnosticSummary,
                 SourceTelemetryTimestampUtc = SourceTelemetryTimestampUtc,
+                SourceTelemetryEpoch = _latestSourceTelemetry.TelemetryEpoch,
                 SourceTelemetrySummaryText = SourceTelemetrySummaryText,
                 SourceTargetSummaryText = SourceTargetSummaryText,
                 SelectedRecordingFormat = SelectedRecordingFormat,

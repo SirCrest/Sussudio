@@ -188,6 +188,8 @@ public partial class CaptureService
 
     public CaptureRuntimeSnapshot GetRuntimeSnapshot()
     {
+        var sessionGeneration = CaptureSnapshotProducerEpoch();
+        var latestSourceTelemetry = _latestSourceTelemetry;
         var sink = _recordingBackend.LibAvSink;
         var unifiedVideoCapture = _videoPipeline.Capture;
         var wasapiCapture = _previewAudioGraph.ProgramCapture;
@@ -205,12 +207,12 @@ public partial class CaptureService
             _activeVideoInputPixelFormat,
             _recordingBackend.Context,
             _isRecording,
-            _latestSourceTelemetry,
+            latestSourceTelemetry,
             _mfConvertersDisabled);
         var hdrRequested = hdrPipeline.HdrRequested;
         var sourceTelemetry = CaptureRuntimeSourceTelemetrySnapshotFields(
             requestedSettings,
-            _latestSourceTelemetry,
+            latestSourceTelemetry,
             _actualWidth,
             _actualHeight,
             _actualFrameRate,
@@ -237,6 +239,8 @@ public partial class CaptureService
         return CaptureRuntimeSnapshotAssembler.Build(new CaptureRuntimeSnapshotAssemblyFields
         {
             TimestampUtc = DateTimeOffset.UtcNow,
+            CaptureSessionEpoch = sessionGeneration,
+            SourceTelemetryEpoch = latestSourceTelemetry.TelemetryEpoch,
             IsInitialized = _isInitialized,
             IsRecording = _isRecording,
             IsAudioPreviewActive = _isAudioPreviewActive,
@@ -694,6 +698,8 @@ public partial class CaptureService
     private sealed class CaptureRuntimeSnapshotAssemblyFields
     {
         public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+        public long CaptureSessionEpoch { get; init; }
+        public long SourceTelemetryEpoch { get; init; }
         public bool IsInitialized { get; init; }
         public bool IsRecording { get; init; }
         public bool IsAudioPreviewActive { get; init; }
@@ -755,6 +761,8 @@ public partial class CaptureService
             return new CaptureRuntimeSnapshot
             {
                 TimestampUtc = fields.TimestampUtc,
+                CaptureSessionEpoch = fields.CaptureSessionEpoch,
+                SourceTelemetryEpoch = fields.SourceTelemetryEpoch,
                 IsInitialized = fields.IsInitialized,
                 IsRecording = fields.IsRecording,
                 IsAudioPreviewActive = fields.IsAudioPreviewActive,
@@ -1088,11 +1096,27 @@ public partial class CaptureService
 
     public RecordingStats GetRecordingStats()
     {
+        var snapshotUtc = DateTimeOffset.UtcNow;
+        var captureSessionEpoch = CaptureSnapshotProducerEpoch();
+
+        RecordingStats BuildStats(
+            long videoBytes,
+            long audioBytes,
+            bool isFlashbackEstimate = false,
+            bool isFailure = false)
+            => new(
+                videoBytes,
+                audioBytes,
+                isFlashbackEstimate,
+                isFailure,
+                snapshotUtc,
+                captureSessionEpoch);
+
         try
         {
             if (_isRecording && _recordingBackend.LibAvSink != null)
             {
-                return new RecordingStats(_recordingBackend.LibAvSink.OutputBytes, 0);
+                return BuildStats(_recordingBackend.LibAvSink.OutputBytes, 0);
             }
 
             // Flashback recording: the output file doesn't exist until export-on-stop.
@@ -1102,29 +1126,29 @@ public partial class CaptureService
                 var bufferManager = _flashbackBackend.BufferManager;
                 if (bufferManager != null)
                 {
-                    return new RecordingStats(bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes, 0, isFlashbackEstimate: true);
+                    return BuildStats(bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes, 0, isFlashbackEstimate: true);
                 }
             }
 
             var path = _recordingBackend.Context?.VideoOutputPath ?? _lastOutputPath;
             if (string.IsNullOrWhiteSpace(path))
             {
-                return new RecordingStats(0, 0);
+                return BuildStats(0, 0);
             }
 
             try
             {
-                return new RecordingStats(new FileInfo(path).Length, 0);
+                return BuildStats(new FileInfo(path).Length, 0);
             }
             catch (FileNotFoundException)
             {
-                return new RecordingStats(0, 0);
+                return BuildStats(0, 0);
             }
         }
         catch (Exception ex)
         {
             Logger.Log($"GetRecordingStats failed: {ex.Message}");
-            return new RecordingStats(0, 0, isFailure: true);
+            return BuildStats(0, 0, isFailure: true);
         }
     }
 
@@ -1364,7 +1388,8 @@ public partial class CaptureService
             return;
         }
 
-        _latestSourceTelemetry = MergeTelemetryWithFallback(telemetry, fallback);
+        var telemetryEpoch = Interlocked.Increment(ref _sourceTelemetryEpoch);
+        _latestSourceTelemetry = MergeTelemetryWithFallback(telemetry, fallback) with { TelemetryEpoch = telemetryEpoch };
         SourceTelemetryUpdated?.Invoke(this, _latestSourceTelemetry);
     }
 
@@ -1373,6 +1398,7 @@ public partial class CaptureService
         return new SourceSignalTelemetrySnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
+            TelemetryEpoch = Volatile.Read(ref _sourceTelemetryEpoch),
             Availability = SourceTelemetryAvailability.Inconclusive,
             Origin = SourceTelemetryOrigin.DeviceFormatFallback,
             OriginDetail = "CaptureSettingsFallback",

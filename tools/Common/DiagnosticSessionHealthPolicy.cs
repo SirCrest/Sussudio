@@ -135,6 +135,10 @@ internal static class DiagnosticSessionHealthPolicy
            string.Equals(observation.LikelyStage, "flashback_recording", StringComparison.OrdinalIgnoreCase) &&
            observation.Evidence.Contains("lastReject=force_rotate_draining", StringComparison.OrdinalIgnoreCase);
 
+    internal static bool IsSnapshotEpochDiagnosticHealthObservation(DiagnosticHealthObservation observation)
+        => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
+           string.Equals(observation.LikelyStage, "snapshot_epoch", StringComparison.OrdinalIgnoreCase);
+
     internal static bool IsSparseSourceCaptureCadenceWarningRun(
         DiagnosticHealthObservation observation,
         SourceCadenceSessionMetrics sourceCadenceMetrics,
@@ -206,6 +210,13 @@ internal static class DiagnosticSessionHealthPolicy
         if (toleratesFlashbackForceRotateDrainWarning &&
             warning.StartsWith(
                 "diagnostic health flashback force-rotate drain warning tolerated for flashback scenario:",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (warning.StartsWith(
+                "diagnostic health snapshot epoch consistency warning tolerated:",
                 StringComparison.Ordinal))
         {
             return true;

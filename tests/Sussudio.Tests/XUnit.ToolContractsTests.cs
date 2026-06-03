@@ -1200,6 +1200,10 @@ public sealed class McpDiagnosticSessionRunnerBehaviorContractsTests
         => global::Program.DiagnosticSessionRunner_ToleratesSparseSourceCadenceWarningsOnlyWithoutSourceDrops();
 
     [Fact]
+    public Task ToleratesSnapshotEpochWarningsAsTransientConsistency()
+        => global::Program.DiagnosticSessionRunner_ToleratesSnapshotEpochWarningsAsTransientConsistency();
+
+    [Fact]
     public Task UnknownInitialSnapshotFailsWithoutMutatingState()
         => global::Program.DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState();
 
@@ -2560,8 +2564,10 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(healthText, "IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(healthText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(healthText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
+        AssertContains(healthText, "IsSnapshotEpochDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(healthText, "diagnostic health degraded during session");
         AssertContains(healthText, "diagnostic health {tolerance.WarningReason}:");
+        AssertContains(healthText, "snapshot epoch consistency warning tolerated");
         AssertContains(healthText, "flashback force-rotate drain warning tolerated for flashback scenario");
         AssertEqual(
             false,
@@ -5625,6 +5631,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(policyText, "internal static bool IsSourceCaptureDiagnosticHealthObservation(");
         AssertContains(policyText, "internal static bool IsPreviewSchedulerDiagnosticHealthObservation(");
         AssertContains(policyText, "internal static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
+        AssertContains(policyText, "internal static bool IsSnapshotEpochDiagnosticHealthObservation(");
         AssertContains(policyText, "internal static bool IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(policyText, "internal static bool IsSparsePreviewSchedulerStressRun(");
@@ -6641,6 +6648,61 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             false,
             (bool)sparseSourceWarning.Invoke(null, new object?[] { observation, metrics, 0L, 0L, 300, true })!,
             "repeated source cadence drops block sparse source cadence tolerance");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task DiagnosticSessionRunner_ToleratesSnapshotEpochWarningsAsTransientConsistency()
+    {
+        var assembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
+        var healthPolicyType = assembly.GetType("Sussudio.Tools.DiagnosticSessionHealthPolicy")
+            ?? throw new InvalidOperationException("DiagnosticSessionHealthPolicy type was not found.");
+        var observationType = assembly.GetType("Sussudio.Tools.DiagnosticHealthObservation")
+            ?? throw new InvalidOperationException("DiagnosticHealthObservation type was not found.");
+        var snapshotEpochClassifier = healthPolicyType.GetMethod(
+                "IsSnapshotEpochDiagnosticHealthObservation",
+                BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Snapshot epoch classifier was not found.");
+        var toleratedWarningClassifier = healthPolicyType.GetMethod(
+                "IsToleratedFlashbackScenarioWarning",
+                BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Flashback tolerated warning classifier was not found.");
+
+        var snapshotEpochObservation = Activator.CreateInstance(
+                observationType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new object?[] { "Warning", "snapshot_epoch", "snapshot_epoch=7 producer_epochs=vm:1,capture:2", 1_000L, 2 },
+                culture: null)
+            ?? throw new InvalidOperationException("DiagnosticHealthObservation instance could not be created.");
+        var sourceObservation = Activator.CreateInstance(
+                observationType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new object?[] { "Warning", "source_capture", "capture cadence", 1_000L, 2 },
+                culture: null)
+            ?? throw new InvalidOperationException("DiagnosticHealthObservation instance could not be created.");
+
+        AssertEqual(
+            true,
+            (bool)snapshotEpochClassifier.Invoke(null, new object?[] { snapshotEpochObservation })!,
+            "snapshot epoch warning classifier");
+        AssertEqual(
+            false,
+            (bool)snapshotEpochClassifier.Invoke(null, new object?[] { sourceObservation })!,
+            "snapshot epoch classifier rejects source warnings");
+        AssertEqual(
+            true,
+            (bool)toleratedWarningClassifier.Invoke(
+                null,
+                new object?[]
+                {
+                    "diagnostic health snapshot epoch consistency warning tolerated: health=Warning stage=snapshot_epoch",
+                    false,
+                    false,
+                    false
+                })!,
+            "snapshot epoch warning remains tolerated under flashback warning policy");
 
         return Task.CompletedTask;
     }

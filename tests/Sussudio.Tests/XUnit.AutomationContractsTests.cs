@@ -523,6 +523,14 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsSnapshotStatusProjection_LivesInFocusedPartial();
 
     [Fact]
+    public Task AutomationDiagnosticsSnapshotCollectionEpochsMarkMixedSnapshots()
+        => global::Program.AutomationDiagnosticsSnapshotCollectionEpochs_MarkMixedSnapshots();
+
+    [Fact]
+    public Task AutomationDiagnosticsSnapshotCollectionEpochsMarkProducerChangesAsDiagnosticWarning()
+        => global::Program.AutomationDiagnosticsSnapshotCollectionEpochs_MarkProducerChangesAsDiagnosticWarning();
+
+    [Fact]
     public Task AutomationDiagnosticsSnapshotEvaluationProjectionLivesInFocusedPartial()
         => global::Program.AutomationDiagnosticsSnapshotEvaluationProjection_LivesInFocusedPartial();
 
@@ -681,6 +689,10 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
     [Fact]
     public Task CaptureServiceSessionStateWritesRouteThroughCoordination()
         => global::Program.CaptureService_SessionStateWritesRouteThroughCoordination();
+
+    [Fact]
+    public Task CaptureServiceSnapshotProducerEpochAdvancesWhenRecordingStateChanges()
+        => global::Program.CaptureService_SnapshotProducerEpoch_AdvancesWhenRecordingStateChanges();
 
     [Fact]
     public Task CaptureSessionCoordinatorCancellationAndWorkerTokensStayBounded()
@@ -5281,6 +5293,7 @@ static partial class Program
             automationInterfaceType,
             "ProbePreviewColorAsync",
             RequireType("Sussudio.Models.PreviewColorProbeResult"));
+        AssertTaskReturningMethod(snapshotQueryPortType, "GetCaptureSnapshotProducerEpochAsync", typeof(long));
 
         var interfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs")
             .Replace("\r\n", "\n");
@@ -5734,6 +5747,7 @@ static partial class Program
         AssertContains(automationFacadeText, "public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)");
         AssertContains(automationFacadeText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
         AssertContains(automationFacadeText, "=> FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);");
+        AssertContains(automationFacadeText, "public Task<long> GetCaptureSnapshotProducerEpochAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(() => _captureService.SessionGeneration, cancellationToken);");
         AssertContains(automationFacadeText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
         AssertContains(agentMapText, "`MainViewModel.cs` owns automation-facing view-model runtime snapshot UI-thread capture.");
         AssertContains(agentMapText, "`ViewModelBuilders.cs` owns pure view-model runtime snapshot DTO construction.");
@@ -7102,7 +7116,7 @@ static partial class Program
         var snapshotStatusProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(snapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);");
+        AssertContains(snapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);");
         AssertContains(snapshotFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
         AssertContains(snapshotFlatteningText, "TimestampUtc = snapshotStatusFlattening.TimestampUtc,");
         AssertContains(snapshotFlatteningText, "VerificationInProgress = snapshotStatusFlattening.VerificationInProgress,");
@@ -7116,7 +7130,9 @@ static partial class Program
         AssertDoesNotContain(snapshotFlatteningText, "StatusText = snapshotStatus.StatusText,");
 
         AssertContains(snapshotStatusProjectionText, "private SnapshotStatusProjection BuildSnapshotStatusProjection(");
-        AssertContains(snapshotStatusProjectionText, "TimestampUtc = DateTimeOffset.UtcNow,");
+        AssertContains(snapshotStatusProjectionText, "TimestampUtc = snapshotCollection.CompletedUtc,");
+        AssertContains(snapshotStatusProjectionText, "SnapshotCollectionEpoch = snapshotCollection.Epoch,");
+        AssertContains(snapshotStatusProjectionText, "SnapshotMixedEpochs = snapshotCollection.Mixed,");
         AssertContains(snapshotStatusProjectionText, "IsInitialized = viewModelSnapshot.IsInitialized,");
         AssertContains(snapshotStatusProjectionText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
         AssertContains(snapshotStatusProjectionText, "SessionState = captureRuntime.SessionState,");
@@ -7130,6 +7146,205 @@ static partial class Program
         AssertContains(snapshotStatusProjectionText, "private readonly record struct SnapshotStatusFlattenedProjection");
 
         return Task.CompletedTask;
+    }
+
+    internal static Task AutomationDiagnosticsSnapshotCollectionEpochs_MarkMixedSnapshots()
+    {
+        var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
+        var contractsText = ReadAutomationSnapshotFamilyText();
+        var snapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource();
+        var projectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+
+        foreach (var propertyName in new[]
+        {
+            "SnapshotCollectionEpoch",
+            "SnapshotCollectionStartedUtc",
+            "SnapshotCollectionCompletedUtc",
+            "SnapshotCollectionDurationMs",
+            "SnapshotMixedEpochs",
+            "SnapshotMixedEpochReason",
+            "SnapshotViewModelEpoch",
+            "SnapshotCaptureRuntimeEpoch",
+            "SnapshotCaptureHealthEpoch",
+            "SnapshotRecordingStatsEpoch",
+            "SnapshotPreviewRuntimeEpoch",
+            "SnapshotOutputEpoch",
+            "SnapshotSourceTelemetryEpoch"
+        })
+        {
+            AssertNotNull(snapshotType.GetProperty(propertyName), $"AutomationSnapshot.{propertyName}");
+        }
+
+        AssertContains(contractsText, "public long SnapshotCollectionEpoch { get; init; }");
+        AssertContains(contractsText, "public bool SnapshotMixedEpochs { get; init; }");
+        AssertContains(contractsText, "public long SnapshotSourceTelemetryEpoch { get; init; }");
+        AssertContains(snapshotsText, "var collectionEpoch = Interlocked.Increment(ref _snapshotCollectionEpoch);");
+        AssertContains(snapshotsText, "CaptureSnapshotFragmentAsync(");
+        AssertContains(snapshotsText, "token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token)");
+        AssertContains(snapshotsText, "_previewSnapshotProvider,\n            _previewSnapshotProvider,");
+        AssertContains(snapshotsText, "() => ProbeLastOutput(captureRuntime.LastOutputPath, viewModelSnapshot.IsRecording),");
+        AssertContains(snapshotsText, "ProducerChangedDuringCapture");
+        AssertContains(snapshotsText, "snapshot => snapshot.CaptureSessionEpoch");
+        AssertContains(snapshotsText, "snapshot => snapshot.PreviewRuntimeEpoch");
+        AssertContains(snapshotsText, "snapshot => snapshot.OutputEpoch");
+        AssertContains(snapshotsText, "\"capture_session_epoch\"");
+        AssertContains(snapshotsText, "\"source_telemetry_epoch\"");
+        AssertContains(snapshotsText, "\"capture_runtime_producer_changed\"");
+        AssertContains(snapshotsText, "\"capture_health_producer_changed\"");
+        AssertContains(snapshotsText, "\"recording_stats_producer_changed\"");
+        AssertContains(snapshotsText, "\"preview_runtime_producer_changed\"");
+        AssertContains(snapshotsText, "\"output_producer_changed\"");
+        AssertContains(snapshotsText, "ApplySnapshotCollectionDiagnostic(diagnostic, snapshotCollection);");
+        AssertContains(snapshotsText, "LikelyStage = \"snapshot_epoch\",");
+        AssertContains(snapshotsText, "view_model_preview_runtime");
+        AssertContains(projectionText, "TimestampUtc = snapshotCollection.CompletedUtc,");
+        AssertContains(projectionText, "SnapshotMixedEpochs = snapshotCollection.Mixed,");
+        AssertContains(projectionText, "SnapshotSourceTelemetryEpoch = snapshotStatusFlattening.SnapshotSourceTelemetryEpoch,");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task AutomationDiagnosticsSnapshotCollectionEpochs_MarkProducerChangesAsDiagnosticWarning()
+    {
+        var hubType = RequireType("Sussudio.Services.Automation.AutomationDiagnosticsHub");
+        var viewModelType = RequireType("Sussudio.Models.ViewModelRuntimeSnapshot");
+        var captureRuntimeType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var recordingStatsType = RequireType("Sussudio.Models.RecordingStats");
+        var previewRuntimeType = RequireType("Sussudio.Models.PreviewRuntimeSnapshot");
+        var lastOutputProbeType = RequireType("Sussudio.Services.Automation.AutomationDiagnosticsHub+LastOutputProbe");
+        var fragmentDefinitionType = RequireType("Sussudio.Services.Automation.SnapshotFragment`1");
+        var stampType = RequireType("Sussudio.Services.Automation.SnapshotCollectionStamp");
+        var diagnosticType = RequireType("Sussudio.Services.Automation.DiagnosticEvaluation");
+
+        var viewModel = Activator.CreateInstance(viewModelType)!;
+        SetPropertyBackingField(viewModel, "CaptureSessionEpoch", 1L);
+        SetPropertyBackingField(viewModel, "SourceTelemetryEpoch", 1L);
+
+        var captureRuntime = Activator.CreateInstance(captureRuntimeType)!;
+        SetPropertyBackingField(captureRuntime, "CaptureSessionEpoch", 1L);
+        SetPropertyBackingField(captureRuntime, "SourceTelemetryEpoch", 1L);
+
+        var health = Activator.CreateInstance(healthType)!;
+        SetPropertyBackingField(health, "CaptureSessionEpoch", 1L);
+        SetPropertyBackingField(health, "SourceTelemetryEpoch", 1L);
+
+        var recordingStats = Activator.CreateInstance(
+            recordingStatsType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new object[] { 0L, 0L, false, false, DateTimeOffset.UtcNow, 1L },
+            culture: null)!;
+
+        var previewRuntime = Activator.CreateInstance(previewRuntimeType)!;
+        SetPropertyBackingField(previewRuntime, "PreviewRuntimeEpoch", 1L);
+        var lastOutputProbe = Activator.CreateInstance(
+            lastOutputProbeType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new object?[] { false, null, 1L },
+            culture: null)!;
+
+        var captureRuntimeFragment = CreateSnapshotFragment(fragmentDefinitionType, captureRuntime, 1L, 1L, 2L, producerChanged: true);
+        var healthFragment = CreateSnapshotFragment(fragmentDefinitionType, health, 1L, 1L, 1L, producerChanged: false);
+        var recordingStatsFragment = CreateSnapshotFragment(fragmentDefinitionType, recordingStats, 1L, 1L, 1L, producerChanged: false);
+        var previewRuntimeFragment = CreateSnapshotFragment(fragmentDefinitionType, previewRuntime, 1L, 1L, 2L, producerChanged: true);
+        var lastOutputFragment = CreateSnapshotFragment(fragmentDefinitionType, lastOutputProbe, 1L, 1L, 2L, producerChanged: true);
+
+        var reasonMethod = hubType.GetMethod(
+            "BuildSnapshotMixedEpochReasons",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("BuildSnapshotMixedEpochReasons not found.");
+        var reasons = ((IEnumerable)reasonMethod.Invoke(
+            null,
+            new[]
+            {
+                viewModel,
+                captureRuntime,
+                health,
+                recordingStats,
+                previewRuntime,
+                captureRuntimeFragment,
+                healthFragment,
+                recordingStatsFragment,
+                previewRuntimeFragment,
+                lastOutputFragment
+            })!).Cast<object>().Select(static value => value.ToString()).ToArray();
+
+        AssertEqual(true, reasons.Contains("capture_runtime_producer_changed"), "producer change reason emitted");
+        AssertEqual(true, reasons.Contains("preview_runtime_producer_changed"), "preview producer change reason emitted");
+        AssertEqual(true, reasons.Contains("output_producer_changed"), "output producer change reason emitted");
+
+        var stamp = Activator.CreateInstance(
+            stampType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new object[]
+            {
+                7L,
+                DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow,
+                1L,
+                1L,
+                1L,
+                1L,
+                1L,
+                1L,
+                0L,
+                1L,
+                true,
+                "capture_runtime_producer_changed"
+            },
+            culture: null)!;
+        var diagnostic = Activator.CreateInstance(
+            diagnosticType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new object[]
+            {
+                "Healthy",
+                "none",
+                "No degraded frame lane detected.",
+                string.Empty,
+                "source ok",
+                "decode ok",
+                "preview ok",
+                "render ok",
+                "present ok",
+                "recording ok",
+                "audio ok"
+            },
+            culture: null)!;
+        var diagnosticMethod = hubType.GetMethod(
+            "ApplySnapshotCollectionDiagnostic",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ApplySnapshotCollectionDiagnostic not found.");
+        var result = diagnosticMethod.Invoke(null, new[] { diagnostic, stamp })
+            ?? throw new InvalidOperationException("ApplySnapshotCollectionDiagnostic returned null.");
+
+        AssertEqual("Warning", GetPublicProperty(result, "HealthStatus"), "mixed producer epoch warning health");
+        AssertEqual("snapshot_epoch", GetPublicProperty(result, "LikelyStage"), "mixed producer epoch warning stage");
+        AssertContains((string)GetPublicProperty(result, "Evidence")!, "snapshot_epoch=7");
+
+        return Task.CompletedTask;
+    }
+
+    private static object CreateSnapshotFragment(
+        Type fragmentDefinitionType,
+        object value,
+        long producerEpoch,
+        long producerEpochBefore,
+        long producerEpochAfter,
+        bool producerChanged)
+    {
+        var fragmentType = fragmentDefinitionType.MakeGenericType(value.GetType());
+        return Activator.CreateInstance(
+            fragmentType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            args: new object[] { value, 7L, producerEpoch, producerEpochBefore, producerEpochAfter, producerChanged, DateTimeOffset.UtcNow },
+            culture: null)!;
     }
 
     internal static Task AutomationDiagnosticsSnapshotEvaluationProjection_LivesInFocusedPartial()
@@ -8839,13 +9054,13 @@ static partial class Program
 
     private static void AssertDiagnosticsSnapshotStatusProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertContains(diagnostics.SnapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);");
+        AssertContains(diagnostics.SnapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);");
         AssertContains(diagnostics.SnapshotProjectionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "TimestampUtc = snapshotStatusFlattening.TimestampUtc,");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluationFlattening.PerformanceScore,");
-        AssertContains(diagnostics.SnapshotProjectionText, "TimestampUtc = DateTimeOffset.UtcNow,");
+        AssertContains(diagnostics.SnapshotProjectionText, "TimestampUtc = snapshotCollection.CompletedUtc,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
     }
 
@@ -9061,14 +9276,19 @@ static partial class Program
         AssertContains(diagnostics.VerificationText, "Automatic recording verification started.");
         AssertContains(diagnostics.VerificationText, "private static CaptureRuntimeSnapshot ApplyVerificationProfile(");
         AssertContains(diagnostics.VerificationText, "string.Equals(verificationProfile, \"flashback-export\"");
+        AssertContains(diagnostics.VerificationText, "CaptureSessionEpoch = runtimeSnapshot.CaptureSessionEpoch,");
+        AssertContains(diagnostics.VerificationText, "SourceTelemetryEpoch = runtimeSnapshot.SourceTelemetryEpoch,");
         AssertDoesNotContain(diagnostics.HubText, "public async Task<RecordingVerificationResult> VerifyLastRecordingAsync");
         AssertContains(diagnostics.HubText, "private readonly IAutomationSnapshotQueryPort _snapshotQueryPort;");
         AssertContains(diagnostics.HubText, "IAutomationSnapshotQueryPort snapshotQueryPort,");
         AssertContains(diagnostics.HubText, "_snapshotQueryPort = snapshotQueryPort ?? throw new ArgumentNullException(nameof(snapshotQueryPort));");
         AssertDoesNotContain(diagnostics.HubText, "IAutomationViewModel viewModel,");
         AssertDoesNotContain(diagnostics.HubText, "private readonly IAutomationViewModel _viewModel;");
-        AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n            .GetViewModelRuntimeSnapshotAsync(cancellationToken)");
-        AssertContains(diagnostics.SnapshotsText, "await _snapshotQueryPort\n            .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
+        AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetViewModelRuntimeSnapshotAsync(token)");
+        AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token)");
+        AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetCaptureRuntimeSnapshotAsync(token)");
+        AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetCaptureHealthSnapshotAsync(token)");
+        AssertContains(diagnostics.SnapshotsText, "token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token)");
         AssertContains(diagnostics.VerificationText, "await _snapshotQueryPort\n                .GetCaptureRuntimeSnapshotAsync(cancellationToken)");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");

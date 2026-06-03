@@ -50,8 +50,33 @@ internal readonly record struct FlashbackRecordingRecentCounters(
     public static FlashbackRecordingRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
 }
 
+internal readonly record struct SnapshotFragment<T>(
+    T Value,
+    long CollectionEpoch,
+    long ProducerEpoch,
+    long ProducerEpochBefore,
+    long ProducerEpochAfter,
+    bool ProducerChangedDuringCapture,
+    DateTimeOffset CollectedUtc);
+
+internal readonly record struct SnapshotCollectionStamp(
+    long Epoch,
+    DateTimeOffset StartedUtc,
+    DateTimeOffset CompletedUtc,
+    long DurationMs,
+    long ViewModelEpoch,
+    long CaptureRuntimeEpoch,
+    long CaptureHealthEpoch,
+    long RecordingStatsEpoch,
+    long PreviewRuntimeEpoch,
+    long OutputEpoch,
+    long SourceTelemetryEpoch,
+    bool Mixed,
+    string MixedReason);
+
 public sealed partial class AutomationDiagnosticsHub
 {
+    private long _snapshotCollectionEpoch;
     private long _lastPreviewJitterTotalDropped;
     private long _lastPreviewJitterUnderflows;
     private long _lastPreviewJitterDeadlineDrops;
@@ -78,6 +103,8 @@ public sealed partial class AutomationDiagnosticsHub
     private long _lastFlashbackGpuFramesDropped;
     private long _lastFlashbackVideoBackpressureEvents;
     private long _lastFlashbackRecordingEvalTick;
+    private long _lastOutputEpoch;
+    private LastOutputSignature _lastOutputSignature;
 
     public AutomationSnapshot GetLatestSnapshot()
     {
@@ -107,19 +134,42 @@ public sealed partial class AutomationDiagnosticsHub
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var viewModelSnapshot = await _snapshotQueryPort
-            .GetViewModelRuntimeSnapshotAsync(cancellationToken)
-            .ConfigureAwait(false);
-        var captureRuntime = await _snapshotQueryPort
-            .GetCaptureRuntimeSnapshotAsync(cancellationToken)
-            .ConfigureAwait(false);
-        var health = await _snapshotQueryPort
-            .GetCaptureHealthSnapshotAsync(cancellationToken)
-            .ConfigureAwait(false);
-        var recordingStats = await _snapshotQueryPort
-            .GetRecordingStatsSnapshotAsync(cancellationToken)
-            .ConfigureAwait(false);
-        var previewRuntime = await _previewSnapshotProvider(cancellationToken).ConfigureAwait(false);
+        var collectionEpoch = Interlocked.Increment(ref _snapshotCollectionEpoch);
+        var collectionStartedUtc = DateTimeOffset.UtcNow;
+        var viewModelFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            token => _snapshotQueryPort.GetViewModelRuntimeSnapshotAsync(token),
+            snapshot => snapshot.CaptureSessionEpoch,
+            cancellationToken).ConfigureAwait(false);
+        var captureRuntimeFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
+            token => _snapshotQueryPort.GetCaptureRuntimeSnapshotAsync(token),
+            snapshot => snapshot.CaptureSessionEpoch,
+            cancellationToken).ConfigureAwait(false);
+        var healthFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
+            token => _snapshotQueryPort.GetCaptureHealthSnapshotAsync(token),
+            snapshot => snapshot.CaptureSessionEpoch,
+            cancellationToken).ConfigureAwait(false);
+        var recordingStatsFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            token => _snapshotQueryPort.GetCaptureSnapshotProducerEpochAsync(token),
+            token => _snapshotQueryPort.GetRecordingStatsSnapshotAsync(token),
+            snapshot => snapshot.CaptureSessionEpoch,
+            cancellationToken).ConfigureAwait(false);
+        var previewRuntimeFragment = await CaptureSnapshotFragmentAsync(
+            collectionEpoch,
+            _previewSnapshotProvider,
+            _previewSnapshotProvider,
+            snapshot => snapshot.PreviewRuntimeEpoch,
+            cancellationToken).ConfigureAwait(false);
+        var viewModelSnapshot = viewModelFragment.Value;
+        var captureRuntime = captureRuntimeFragment.Value;
+        var health = healthFragment.Value;
+        var recordingStats = recordingStatsFragment.Value;
+        var previewRuntime = previewRuntimeFragment.Value;
 
         var nowTick = Environment.TickCount64;
         var recordingStarted = viewModelSnapshot.IsRecording && !_wasRecording;
@@ -190,14 +240,34 @@ public sealed partial class AutomationDiagnosticsHub
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
         var previewHdrState = BuildPreviewHdrState(captureRuntime, viewModelSnapshot, previewRuntime);
 
-        var lastOutput = ProbeLastOutput(captureRuntime.LastOutputPath, viewModelSnapshot.IsRecording);
-        var processResources = CaptureProcessResourceSnapshot();
+        var lastOutputFragment = CaptureSnapshotFragment(
+            collectionEpoch,
+            () => ProbeLastOutput(captureRuntime.LastOutputPath, viewModelSnapshot.IsRecording),
+            () => ProbeLastOutput(captureRuntime.LastOutputPath, viewModelSnapshot.IsRecording),
+            snapshot => snapshot.OutputEpoch);
+        var processResourcesFragment = CaptureSnapshotFragment(
+            collectionEpoch,
+            CaptureProcessResourceSnapshot,
+            _ => 0L);
+        var snapshotCollection = BuildSnapshotCollectionStamp(
+            collectionEpoch,
+            collectionStartedUtc,
+            DateTimeOffset.UtcNow,
+            viewModelFragment,
+            captureRuntimeFragment,
+            healthFragment,
+            recordingStatsFragment,
+            previewRuntimeFragment,
+            lastOutputFragment,
+            processResourcesFragment);
+        diagnostic = ApplySnapshotCollectionDiagnostic(diagnostic, snapshotCollection);
         var snapshot = BuildAutomationSnapshot(
             viewModelSnapshot,
             captureRuntime,
             health,
             recordingStats,
             previewRuntime,
+            snapshotCollection,
             performance,
             diagnostic,
             previewPacingClassification,
@@ -205,8 +275,8 @@ public sealed partial class AutomationDiagnosticsHub
             audioSignal,
             recordingFileGrowing,
             hdrTruthVerdict,
-            lastOutput,
-            processResources,
+            lastOutputFragment.Value,
+            processResourcesFragment.Value,
             lastVerification,
             recentD3DMissedRefreshes,
             recentD3DStatsFailures);
@@ -228,6 +298,330 @@ public sealed partial class AutomationDiagnosticsHub
 
         return snapshot;
     }
+
+    private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
+        long collectionEpoch,
+        Func<CancellationToken, Task<T>> capture,
+        Func<T, long> getProducerEpoch,
+        CancellationToken cancellationToken)
+    {
+        var value = await capture(cancellationToken).ConfigureAwait(false);
+        var producerEpoch = getProducerEpoch(value);
+        return new SnapshotFragment<T>(
+            value,
+            collectionEpoch,
+            producerEpoch,
+            producerEpoch,
+            producerEpoch,
+            ProducerChangedDuringCapture: false,
+            DateTimeOffset.UtcNow);
+    }
+
+    private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
+        long collectionEpoch,
+        Func<CancellationToken, Task<T>> captureCurrentProducerState,
+        Func<CancellationToken, Task<T>> capture,
+        Func<T, long> getProducerEpoch,
+        CancellationToken cancellationToken)
+    {
+        var producerEpochBefore = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
+        var value = await capture(cancellationToken).ConfigureAwait(false);
+        var collectedUtc = DateTimeOffset.UtcNow;
+        var producerEpochAfter = getProducerEpoch(await captureCurrentProducerState(cancellationToken).ConfigureAwait(false));
+        var producerEpoch = getProducerEpoch(value);
+        return new SnapshotFragment<T>(
+            value,
+            collectionEpoch,
+            producerEpoch,
+            producerEpochBefore,
+            producerEpochAfter,
+            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
+            collectedUtc);
+    }
+
+    private static async Task<SnapshotFragment<T>> CaptureSnapshotFragmentAsync<T>(
+        long collectionEpoch,
+        Func<CancellationToken, Task<long>> getCurrentProducerEpoch,
+        Func<CancellationToken, Task<T>> capture,
+        Func<T, long> getProducerEpoch,
+        CancellationToken cancellationToken)
+    {
+        var producerEpochBefore = await getCurrentProducerEpoch(cancellationToken).ConfigureAwait(false);
+        var value = await capture(cancellationToken).ConfigureAwait(false);
+        var collectedUtc = DateTimeOffset.UtcNow;
+        var producerEpochAfter = await getCurrentProducerEpoch(cancellationToken).ConfigureAwait(false);
+        var producerEpoch = getProducerEpoch(value);
+        return new SnapshotFragment<T>(
+            value,
+            collectionEpoch,
+            producerEpoch,
+            producerEpochBefore,
+            producerEpochAfter,
+            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
+            collectedUtc);
+    }
+
+    private static SnapshotFragment<T> CaptureSnapshotFragment<T>(
+        long collectionEpoch,
+        Func<T> capture,
+        Func<T, long> getProducerEpoch)
+    {
+        var value = capture();
+        var producerEpoch = getProducerEpoch(value);
+        return new SnapshotFragment<T>(
+            value,
+            collectionEpoch,
+            producerEpoch,
+            producerEpoch,
+            producerEpoch,
+            ProducerChangedDuringCapture: false,
+            DateTimeOffset.UtcNow);
+    }
+
+    private static SnapshotFragment<T> CaptureSnapshotFragment<T>(
+        long collectionEpoch,
+        Func<T> captureCurrentProducerState,
+        Func<T> capture,
+        Func<T, long> getProducerEpoch)
+    {
+        var producerEpochBefore = getProducerEpoch(captureCurrentProducerState());
+        var value = capture();
+        var collectedUtc = DateTimeOffset.UtcNow;
+        var producerEpochAfter = getProducerEpoch(captureCurrentProducerState());
+        var producerEpoch = getProducerEpoch(value);
+        return new SnapshotFragment<T>(
+            value,
+            collectionEpoch,
+            producerEpoch,
+            producerEpochBefore,
+            producerEpochAfter,
+            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
+            collectedUtc);
+    }
+
+    private static SnapshotFragment<T> CaptureSnapshotFragment<T>(
+        long collectionEpoch,
+        Func<long> getCurrentProducerEpoch,
+        Func<T> capture,
+        Func<T, long> getProducerEpoch)
+    {
+        var producerEpochBefore = getCurrentProducerEpoch();
+        var value = capture();
+        var collectedUtc = DateTimeOffset.UtcNow;
+        var producerEpochAfter = getCurrentProducerEpoch();
+        var producerEpoch = getProducerEpoch(value);
+        return new SnapshotFragment<T>(
+            value,
+            collectionEpoch,
+            producerEpoch,
+            producerEpochBefore,
+            producerEpochAfter,
+            ProducerChangedDuringCapture(producerEpoch, producerEpochBefore, producerEpochAfter),
+            collectedUtc);
+    }
+
+    private static bool ProducerChangedDuringCapture(long producerEpoch, long producerEpochBefore, long producerEpochAfter)
+        => producerEpochBefore != producerEpochAfter ||
+           producerEpoch != producerEpochBefore ||
+           producerEpoch != producerEpochAfter;
+
+    private static SnapshotCollectionStamp BuildSnapshotCollectionStamp(
+        long collectionEpoch,
+        DateTimeOffset startedUtc,
+        DateTimeOffset completedUtc,
+        SnapshotFragment<ViewModelRuntimeSnapshot> viewModel,
+        SnapshotFragment<CaptureRuntimeSnapshot> captureRuntime,
+        SnapshotFragment<CaptureHealthSnapshot> health,
+        SnapshotFragment<RecordingStats> recordingStats,
+        SnapshotFragment<PreviewRuntimeSnapshot> previewRuntime,
+        SnapshotFragment<LastOutputProbe> lastOutput,
+        SnapshotFragment<ProcessResourceSnapshot> processResources)
+    {
+        var mixedReasons = BuildSnapshotMixedEpochReasons(
+            viewModel.Value,
+            captureRuntime.Value,
+            health.Value,
+            recordingStats.Value,
+            previewRuntime.Value,
+            captureRuntime,
+            health,
+            recordingStats,
+            previewRuntime,
+            lastOutput);
+        var sourceTelemetryEpoch = ResolveSourceTelemetryEpoch(viewModel.Value, captureRuntime.Value, health.Value);
+        var effectiveCompletedUtc = processResources.CollectedUtc > completedUtc
+            ? processResources.CollectedUtc
+            : completedUtc;
+        return new SnapshotCollectionStamp(
+            collectionEpoch,
+            startedUtc,
+            effectiveCompletedUtc,
+            ComputeSnapshotCollectionDurationMs(startedUtc, effectiveCompletedUtc),
+            viewModel.ProducerEpoch,
+            captureRuntime.ProducerEpoch,
+            health.ProducerEpoch,
+            recordingStats.ProducerEpoch,
+            previewRuntime.ProducerEpoch,
+            lastOutput.ProducerEpoch,
+            sourceTelemetryEpoch,
+            mixedReasons.Count > 0,
+            string.Join(",", mixedReasons));
+    }
+
+    private static List<string> BuildSnapshotMixedEpochReasons(
+        ViewModelRuntimeSnapshot viewModel,
+        CaptureRuntimeSnapshot captureRuntime,
+        CaptureHealthSnapshot health,
+        RecordingStats recordingStats,
+        PreviewRuntimeSnapshot previewRuntime,
+        SnapshotFragment<CaptureRuntimeSnapshot> captureRuntimeFragment,
+        SnapshotFragment<CaptureHealthSnapshot> healthFragment,
+        SnapshotFragment<RecordingStats> recordingStatsFragment,
+        SnapshotFragment<PreviewRuntimeSnapshot> previewRuntimeFragment,
+        SnapshotFragment<LastOutputProbe> lastOutputFragment)
+    {
+        var reasons = new List<string>();
+
+        AddEpochMismatchReason(
+            reasons,
+            "capture_session_epoch",
+            viewModel.CaptureSessionEpoch,
+            captureRuntime.CaptureSessionEpoch,
+            health.CaptureSessionEpoch,
+            recordingStats.CaptureSessionEpoch);
+        AddEpochMismatchReason(
+            reasons,
+            "source_telemetry_epoch",
+            viewModel.SourceTelemetryEpoch,
+            captureRuntime.SourceTelemetryEpoch,
+            health.SourceTelemetryEpoch);
+        AddProducerChangeReason(reasons, "capture_runtime_producer_changed", captureRuntimeFragment);
+        AddProducerChangeReason(reasons, "capture_health_producer_changed", healthFragment);
+        AddProducerChangeReason(reasons, "recording_stats_producer_changed", recordingStatsFragment);
+        AddProducerChangeReason(reasons, "preview_runtime_producer_changed", previewRuntimeFragment);
+        AddProducerChangeReason(reasons, "output_producer_changed", lastOutputFragment);
+
+        if (viewModel.IsInitialized != captureRuntime.IsInitialized)
+        {
+            reasons.Add("view_model_capture_initialized");
+        }
+
+        if (viewModel.IsRecording != captureRuntime.IsRecording)
+        {
+            reasons.Add("view_model_capture_recording");
+        }
+
+        if (viewModel.IsPreviewing != previewRuntime.IsPreviewing)
+        {
+            reasons.Add("view_model_preview_runtime");
+        }
+
+        if (captureRuntime.IsInitialized &&
+            !string.IsNullOrWhiteSpace(viewModel.SelectedDeviceId) &&
+            !string.IsNullOrWhiteSpace(captureRuntime.CurrentDeviceId) &&
+            !string.Equals(viewModel.SelectedDeviceId, captureRuntime.CurrentDeviceId, StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("view_model_capture_device");
+        }
+
+        if (!string.Equals(
+                viewModel.SourceTelemetryAvailability,
+                captureRuntime.SourceTelemetryAvailability,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            reasons.Add("source_telemetry_availability");
+        }
+
+        if (viewModel.SourceTelemetryTimestampUtc.HasValue != captureRuntime.SourceTelemetryTimestampUtc.HasValue)
+        {
+            reasons.Add("source_telemetry_timestamp_presence");
+        }
+        else if (viewModel.SourceTelemetryTimestampUtc.HasValue &&
+                 Math.Abs((viewModel.SourceTelemetryTimestampUtc.Value - captureRuntime.SourceTelemetryTimestampUtc!.Value).TotalMilliseconds) > 1.0)
+        {
+            reasons.Add("source_telemetry_timestamp");
+        }
+
+        if (viewModel.SourceWidth.HasValue &&
+            captureRuntime.SourceWidth.HasValue &&
+            viewModel.SourceWidth.Value != captureRuntime.SourceWidth.Value)
+        {
+            reasons.Add("source_signal_width");
+        }
+
+        if (viewModel.SourceHeight.HasValue &&
+            captureRuntime.SourceHeight.HasValue &&
+            viewModel.SourceHeight.Value != captureRuntime.SourceHeight.Value)
+        {
+            reasons.Add("source_signal_height");
+        }
+
+        return reasons;
+    }
+
+    private static void AddEpochMismatchReason(List<string> reasons, string reason, params long[] epochs)
+    {
+        if (epochs.Length <= 1)
+        {
+            return;
+        }
+
+        var first = epochs[0];
+        for (var i = 1; i < epochs.Length; i++)
+        {
+            if (epochs[i] != first)
+            {
+                reasons.Add(reason);
+                return;
+            }
+        }
+    }
+
+    private static void AddProducerChangeReason<T>(List<string> reasons, string reason, SnapshotFragment<T> fragment)
+    {
+        if (fragment.ProducerChangedDuringCapture)
+        {
+            reasons.Add(reason);
+        }
+    }
+
+    private static long ResolveSourceTelemetryEpoch(
+        ViewModelRuntimeSnapshot viewModel,
+        CaptureRuntimeSnapshot captureRuntime,
+        CaptureHealthSnapshot health)
+        => Math.Max(viewModel.SourceTelemetryEpoch, Math.Max(captureRuntime.SourceTelemetryEpoch, health.SourceTelemetryEpoch));
+
+    private static long ComputeSnapshotCollectionDurationMs(DateTimeOffset startedUtc, DateTimeOffset completedUtc)
+        => Math.Max(0L, (long)Math.Ceiling((completedUtc - startedUtc).TotalMilliseconds));
+
+    private static DiagnosticEvaluation ApplySnapshotCollectionDiagnostic(
+        DiagnosticEvaluation diagnostic,
+        SnapshotCollectionStamp snapshotCollection)
+    {
+        if (!snapshotCollection.Mixed)
+        {
+            return diagnostic;
+        }
+
+        var evidence = AppendDiagnosticEvidence(
+            diagnostic.Evidence,
+            $"snapshot_epoch={snapshotCollection.Epoch} producer_epochs=vm:{snapshotCollection.ViewModelEpoch},capture:{snapshotCollection.CaptureRuntimeEpoch},health:{snapshotCollection.CaptureHealthEpoch},recording:{snapshotCollection.RecordingStatsEpoch},preview:{snapshotCollection.PreviewRuntimeEpoch},output:{snapshotCollection.OutputEpoch},source:{snapshotCollection.SourceTelemetryEpoch} reason={snapshotCollection.MixedReason}");
+
+        return string.Equals(diagnostic.HealthStatus, "Healthy", StringComparison.OrdinalIgnoreCase)
+            ? diagnostic with
+            {
+                HealthStatus = "Warning",
+                LikelyStage = "snapshot_epoch",
+                Summary = "Automation diagnostics snapshot was collected from mixed source epochs.",
+                Evidence = evidence
+            }
+            : diagnostic with { Evidence = evidence };
+    }
+
+    private static string AppendDiagnosticEvidence(string existingEvidence, string additionalEvidence)
+        => string.IsNullOrWhiteSpace(existingEvidence)
+            ? additionalEvidence
+            : $"{existingEvidence}; {additionalEvidence}";
 
     private PreviewJitterRecentCounters UpdatePreviewJitterRecentCounters(
         CaptureHealthSnapshot health,
@@ -451,7 +845,7 @@ public sealed partial class AutomationDiagnosticsHub
         {
             _cachedFinalOutputSize = null;
             _cachedFinalOutputPath = null;
-            return LastOutputProbe.Empty;
+            return BuildLastOutputProbe(string.Empty, exists: false, sizeBytes: null, isRecording: false);
         }
 
         // While recording, the file is still growing, so re-stat each poll.
@@ -461,7 +855,7 @@ public sealed partial class AutomationDiagnosticsHub
                                string.Equals(_cachedFinalOutputPath, lastOutputPath, StringComparison.Ordinal);
         if (isFinalAndCached)
         {
-            return new LastOutputProbe(true, _cachedFinalOutputSize);
+            return BuildLastOutputProbe(lastOutputPath, exists: true, sizeBytes: _cachedFinalOutputSize, isRecording: false);
         }
 
         try
@@ -473,19 +867,30 @@ public sealed partial class AutomationDiagnosticsHub
                 _cachedFinalOutputPath = lastOutputPath;
             }
 
-            return new LastOutputProbe(true, size);
+            return BuildLastOutputProbe(lastOutputPath, exists: true, sizeBytes: size, isRecording: isRecording);
         }
         catch (Exception ex)
         {
             Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
-            return LastOutputProbe.Empty;
+            return BuildLastOutputProbe(lastOutputPath, exists: false, sizeBytes: null, isRecording: isRecording);
         }
     }
 
-    private readonly record struct LastOutputProbe(bool Exists, long? SizeBytes)
+    private LastOutputProbe BuildLastOutputProbe(string path, bool exists, long? sizeBytes, bool isRecording)
     {
-        public static LastOutputProbe Empty { get; } = new(false, null);
+        var signature = new LastOutputSignature(path, exists, sizeBytes, isRecording);
+        if (!EqualityComparer<LastOutputSignature>.Default.Equals(signature, _lastOutputSignature))
+        {
+            _lastOutputSignature = signature;
+            Interlocked.Increment(ref _lastOutputEpoch);
+        }
+
+        return new LastOutputProbe(exists, sizeBytes, Volatile.Read(ref _lastOutputEpoch));
     }
+
+    private readonly record struct LastOutputSignature(string Path, bool Exists, long? SizeBytes, bool IsRecording);
+
+    private readonly record struct LastOutputProbe(bool Exists, long? SizeBytes, long OutputEpoch);
 
     private ProcessResourceSnapshot CaptureProcessResourceSnapshot()
     {
@@ -741,6 +1146,8 @@ public sealed partial class AutomationDiagnosticsHub
         return new CaptureRuntimeSnapshot
         {
             TimestampUtc = runtimeSnapshot.TimestampUtc,
+            CaptureSessionEpoch = runtimeSnapshot.CaptureSessionEpoch,
+            SourceTelemetryEpoch = runtimeSnapshot.SourceTelemetryEpoch,
             RequestedWidth = runtimeSnapshot.RequestedWidth,
             RequestedHeight = runtimeSnapshot.RequestedHeight,
             RequestedFrameRate = runtimeSnapshot.RequestedFrameRate,

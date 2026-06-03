@@ -277,6 +277,8 @@ internal static class ViewModelRuntimeSnapshotBuilder
         return new ViewModelRuntimeSnapshot
         {
             TimestampUtc = input.TimestampUtc,
+            CaptureSessionEpoch = sessionSnapshot.SessionGeneration,
+            SourceTelemetryEpoch = input.SourceTelemetryEpoch,
             IsInitialized = input.IsInitialized,
             IsPreviewing = input.IsPreviewing,
             IsRecording = input.IsRecording,
@@ -383,6 +385,7 @@ internal sealed class ViewModelRuntimeSnapshotInput
     public string SourceTelemetryConfidence { get; init; } = "Unknown";
     public string? SourceTelemetryDiagnosticSummary { get; init; }
     public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+    public long SourceTelemetryEpoch { get; init; }
     public string SourceTelemetrySummaryText { get; init; } = string.Empty;
     public string SourceTargetSummaryText { get; init; } = string.Empty;
     public string SelectedRecordingFormat { get; init; } = string.Empty;

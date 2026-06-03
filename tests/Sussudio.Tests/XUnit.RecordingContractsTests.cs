@@ -848,7 +848,7 @@ public class RecordingContractsTests
         Assert.True(statsType.IsValueType);
         Assert.True(statsType.IsDefined(typeof(System.Runtime.CompilerServices.IsReadOnlyAttribute), inherit: false));
 
-        foreach (var propertyName in new[] { "VideoBytes", "AudioBytes", "TotalBytes", "IsFlashbackEstimate", "IsFailure" })
+        foreach (var propertyName in new[] { "TimestampUtc", "CaptureSessionEpoch", "VideoBytes", "AudioBytes", "TotalBytes", "IsFlashbackEstimate", "IsFailure" })
         {
             var property = statsType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
             Assert.NotNull(property);
@@ -864,6 +864,13 @@ public class RecordingContractsTests
         Assert.Equal(579L, GetLongProperty(finalStats, "TotalBytes"));
         Assert.False(GetBoolProperty(finalStats, "IsFlashbackEstimate"));
         Assert.False(GetBoolProperty(finalStats, "IsFailure"));
+
+        var stampedCtor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool), typeof(DateTimeOffset), typeof(long) });
+        Assert.NotNull(stampedCtor);
+        var timestamp = new DateTimeOffset(2026, 6, 2, 12, 0, 0, TimeSpan.Zero);
+        var stampedStats = stampedCtor!.Invoke(new object[] { 1L, 2L, false, false, timestamp, 42L });
+        Assert.Equal(timestamp, (DateTimeOffset)statsType.GetProperty("TimestampUtc")!.GetValue(stampedStats)!);
+        Assert.Equal(42L, GetLongProperty(stampedStats, "CaptureSessionEpoch"));
 
         var flashbackStats = ctor.Invoke(new object[] { 10L, 5L, true, false });
         Assert.Equal(15L, GetLongProperty(flashbackStats, "TotalBytes"));

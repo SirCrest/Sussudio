@@ -972,6 +972,16 @@ static partial class Program
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.State;");
         AssertContains(transitionExecutionText, "private long CurrentSessionGeneration");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.Generation;");
+        AssertContains(transitionExecutionText, "public long SessionGeneration => CaptureSnapshotProducerEpoch();");
+        AssertContains(transitionExecutionText, "private long CaptureSnapshotProducerEpoch()");
+        AssertOccursBefore(
+            transitionExecutionText,
+            "lock (_captureSnapshotProducerEpochLock)",
+            "var signature = BuildCaptureSnapshotProducerSignature();");
+        AssertContains(transitionExecutionText, "private CaptureSnapshotProducerSignature BuildCaptureSnapshotProducerSignature()");
+        AssertContains(transitionExecutionText, "_isRecording,");
+        AssertContains(transitionExecutionText, "_isVideoPreviewActive,");
+        AssertContains(transitionExecutionText, "_lastOutputPath,");
         AssertContains(transitionExecutionText, "private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()");
         AssertContains(transitionExecutionText, "private void EnterCleanupState()");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.EnterCleanup();");
@@ -1037,6 +1047,23 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.Failures.cs")),
             "CaptureService failure callbacks folded into CaptureService.cs");
 
+        return Task.CompletedTask;
+    }
+
+    internal static Task CaptureService_SnapshotProducerEpoch_AdvancesWhenRecordingStateChanges()
+    {
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
+        var sessionGenerationProperty = captureService.GetType().GetProperty("SessionGeneration", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CaptureService.SessionGeneration not found.");
+
+        var initialEpoch = Convert.ToInt64(sessionGenerationProperty.GetValue(captureService));
+        SetPrivateField(captureService, "_isRecording", true);
+        var recordingEpoch = Convert.ToInt64(sessionGenerationProperty.GetValue(captureService));
+
+        AssertEqual(
+            true,
+            recordingEpoch > initialEpoch,
+            "Capture snapshot producer epoch should advance when _isRecording changes inside an active transition.");
         return Task.CompletedTask;
     }
 

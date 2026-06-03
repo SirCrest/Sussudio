@@ -79,6 +79,7 @@ namespace Sussudio.Models
     public sealed record SourceSignalTelemetrySnapshot
     {
         public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+        public long TelemetryEpoch { get; init; }
         public SourceTelemetryAvailability Availability { get; init; } = SourceTelemetryAvailability.Unknown;
         public SourceTelemetryOrigin Origin { get; init; } = SourceTelemetryOrigin.Unknown;
         public string OriginDetail { get; init; } = "Unknown";

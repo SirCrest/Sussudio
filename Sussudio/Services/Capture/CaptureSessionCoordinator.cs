@@ -56,6 +56,7 @@ public readonly record struct CaptureCommand(
 public sealed class CaptureSessionSnapshot
 {
     public DateTimeOffset LastTransitionUtc { get; init; }
+    public long SessionGeneration { get; init; }
     public CaptureCommandKind? LastCommand { get; init; }
     public string? LastCorrelationId { get; init; }
     public string? LastError { get; init; }
@@ -525,6 +526,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 return new CaptureSessionSnapshot
                 {
                     LastTransitionUtc = _lastTransitionUtc,
+                    SessionGeneration = _captureService.SessionGeneration,
                     LastCommand = _lastCommand,
                     LastCorrelationId = _lastCorrelationId,
                     LastError = _lastError,

@@ -14,6 +14,7 @@ public partial class CaptureService
 {
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
+        var sessionGeneration = CaptureSnapshotProducerEpoch();
         var sink = _recordingBackend.LibAvSink;
         var unifiedVideoCapture = _videoPipeline.Capture;
         var fbSink = _flashbackBackend.Sink;
@@ -45,6 +46,8 @@ public partial class CaptureService
 
         return CaptureHealthSnapshotAssembler.Build(new CaptureHealthSnapshotAssemblyFields
         {
+            CaptureSessionEpoch = sessionGeneration,
+            SourceTelemetryEpoch = sourceTelemetry.Epoch,
             SessionState = CurrentSessionState,
             IsRecording = isRecording,
             RecordingBackend = ResolveRecordingBackendName(),
@@ -151,6 +154,7 @@ public partial class CaptureService
 
         return new SourceTelemetryHealthSnapshotFields(
             telemetry.Availability,
+            telemetry.TelemetryEpoch,
             telemetry.Origin,
             telemetry.Confidence,
             telemetry.OriginDetail,
@@ -210,6 +214,7 @@ public partial class CaptureService
 
     private readonly record struct SourceTelemetryHealthSnapshotFields(
         SourceTelemetryAvailability Availability,
+        long Epoch,
         SourceTelemetryOrigin Origin,
         SourceTelemetryConfidence Confidence,
         string OriginDetail,
@@ -1034,6 +1039,10 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
     // Health snapshot DTO construction from already-sampled field groups.
     private readonly record struct CaptureHealthSnapshotAssemblyFields
     {
+        public long CaptureSessionEpoch { get; init; }
+
+        public long SourceTelemetryEpoch { get; init; }
+
         public CaptureSessionState SessionState { get; init; }
 
         public bool IsRecording { get; init; }
@@ -1124,6 +1133,8 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
             return new CaptureHealthSnapshot
             {
                 TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),
+                CaptureSessionEpoch = fields.CaptureSessionEpoch,
+                SourceTelemetryEpoch = fields.SourceTelemetryEpoch,
                 SessionState = fields.SessionState,
                 IsRecording = fields.IsRecording,
                 RecordingBackend = fields.RecordingBackend,

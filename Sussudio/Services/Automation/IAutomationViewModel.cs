@@ -25,6 +25,7 @@ public interface IAutomationReadinessPort
 /// </summary>
 public interface IAutomationSnapshotQueryPort
 {
+    Task<long> GetCaptureSnapshotProducerEpochAsync(CancellationToken cancellationToken = default);
     Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default);
     Task<ViewModelRuntimeSnapshot> GetViewModelRuntimeSnapshotAsync(CancellationToken cancellationToken = default);
     Task<CaptureHealthSnapshot> GetCaptureHealthSnapshotAsync(CancellationToken cancellationToken = default);

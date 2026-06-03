@@ -9,6 +9,19 @@ namespace Sussudio.Models;
 public sealed class AutomationSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long SnapshotCollectionEpoch { get; init; }
+    public DateTimeOffset SnapshotCollectionStartedUtc { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset SnapshotCollectionCompletedUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long SnapshotCollectionDurationMs { get; init; }
+    public bool SnapshotMixedEpochs { get; init; }
+    public string SnapshotMixedEpochReason { get; init; } = string.Empty;
+    public long SnapshotViewModelEpoch { get; init; }
+    public long SnapshotCaptureRuntimeEpoch { get; init; }
+    public long SnapshotCaptureHealthEpoch { get; init; }
+    public long SnapshotRecordingStatsEpoch { get; init; }
+    public long SnapshotPreviewRuntimeEpoch { get; init; }
+    public long SnapshotOutputEpoch { get; init; }
+    public long SnapshotSourceTelemetryEpoch { get; init; }
 
     public bool IsInitialized { get; init; }
     public bool IsPreviewing { get; init; }

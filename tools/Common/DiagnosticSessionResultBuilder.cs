@@ -765,6 +765,7 @@ private sealed record DiagnosticSessionResultAnalysis(
              IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             (scenarioPlan.ToleratesFlashbackForceRotateDrainWarning &&
              IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)) ||
+            IsSnapshotEpochDiagnosticHealthObservation(diagnosticHealthObservation) ||
             sparseSourceCaptureCadenceWarning ||
             (isFlashbackScenario &&
              scenarioPlan.IsPreviewCycleScenario &&
@@ -774,11 +775,13 @@ private sealed record DiagnosticSessionResultAnalysis(
              sparsePreviewSchedulerDeadlineDropRun &&
              IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation));
         var warningReason =
-            IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
-                ? "preview scheduler transition warning tolerated for preview-cycle scenario"
-                : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
-                    ? "flashback force-rotate drain warning tolerated for flashback scenario"
-                    : "source-signal warning tolerated for export reliability scenario";
+            IsSnapshotEpochDiagnosticHealthObservation(diagnosticHealthObservation)
+                ? "snapshot epoch consistency warning tolerated"
+                : IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
+                    ? "preview scheduler transition warning tolerated for preview-cycle scenario"
+                    : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
+                        ? "flashback force-rotate drain warning tolerated for flashback scenario"
+                        : "source-signal warning tolerated for export reliability scenario";
 
         return new DiagnosticSessionHealthToleranceVerdict(
             tolerated,

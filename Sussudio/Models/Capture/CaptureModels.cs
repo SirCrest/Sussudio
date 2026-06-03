@@ -545,6 +545,8 @@ public sealed record FrameLedgerSummary(
 public class CaptureDiagnosticsSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long CaptureSessionEpoch { get; init; }
+    public long SourceTelemetryEpoch { get; init; }
     public CaptureSessionState SessionState { get; init; }
     public bool IsRecording { get; init; }
     public string RecordingBackend { get; init; } = "None";

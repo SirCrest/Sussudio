@@ -475,6 +475,8 @@ public sealed class PreviewColorProbeResult
 public sealed class ViewModelRuntimeSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long CaptureSessionEpoch { get; init; }
+    public long SourceTelemetryEpoch { get; init; }
     public bool IsInitialized { get; init; }
     public bool IsPreviewing { get; init; }
     public bool IsRecording { get; init; }
@@ -549,6 +551,8 @@ public sealed class ViewModelRuntimeSnapshot
 public sealed class CaptureRuntimeSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long CaptureSessionEpoch { get; init; }
+    public long SourceTelemetryEpoch { get; init; }
     public bool IsInitialized { get; init; }
     public bool IsRecording { get; init; }
     public bool IsAudioPreviewActive { get; init; }
@@ -767,6 +771,7 @@ public sealed class CaptureRuntimeSnapshot
 public sealed class PreviewRuntimeSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public long PreviewRuntimeEpoch { get; init; }
     public bool IsPreviewing { get; init; }
     public bool GpuActive { get; init; }
     public bool PlaceholderVisible { get; init; }

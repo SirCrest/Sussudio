@@ -283,14 +283,33 @@ public sealed class RecordingPipelineOptions
 
 public readonly struct RecordingStats
 {
-    public RecordingStats(long videoBytes, long audioBytes, bool isFlashbackEstimate = false, bool isFailure = false)
+    public RecordingStats(
+        long videoBytes,
+        long audioBytes,
+        bool isFlashbackEstimate = false,
+        bool isFailure = false)
+        : this(videoBytes, audioBytes, isFlashbackEstimate, isFailure, default, 0)
+    {
+    }
+
+    public RecordingStats(
+        long videoBytes,
+        long audioBytes,
+        bool isFlashbackEstimate,
+        bool isFailure,
+        DateTimeOffset timestampUtc,
+        long captureSessionEpoch)
     {
         VideoBytes = videoBytes;
         AudioBytes = audioBytes;
         IsFlashbackEstimate = isFlashbackEstimate;
         IsFailure = isFailure;
+        TimestampUtc = timestampUtc == default ? DateTimeOffset.UtcNow : timestampUtc;
+        CaptureSessionEpoch = captureSessionEpoch;
     }
 
+    public DateTimeOffset TimestampUtc { get; }
+    public long CaptureSessionEpoch { get; }
     public long VideoBytes { get; }
     public long AudioBytes { get; }
     public long TotalBytes => VideoBytes + AudioBytes;

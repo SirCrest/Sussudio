@@ -80,6 +80,7 @@ public sealed class SnapshotModelsTests
         AssertProperties(snapshotType, new[]
         {
             ("TimestampUtc", typeof(DateTimeOffset)),
+            ("TelemetryEpoch", typeof(long)),
             ("Availability", asm.GetType("Sussudio.Models.SourceTelemetryAvailability", throwOnError: true)!),
             ("Origin", asm.GetType("Sussudio.Models.SourceTelemetryOrigin", throwOnError: true)!),
             ("OriginDetail", typeof(string)),
@@ -140,6 +141,7 @@ public sealed class SnapshotModelsTests
 
         var timestamp = (DateTimeOffset)GetPropertyValue(snapshot, "TimestampUtc")!;
         Assert.InRange(timestamp, before, after);
+        Assert.Equal(0L, GetPropertyValue(snapshot, "TelemetryEpoch"));
         Assert.Equal("Unknown", GetPropertyValue(snapshot, "Availability")!.ToString());
         Assert.Equal("Unknown", GetPropertyValue(snapshot, "Origin")!.ToString());
         Assert.Equal("Unknown", (string)GetPropertyValue(snapshot, "OriginDetail")!);
@@ -1060,6 +1062,8 @@ public sealed class SnapshotModelsTests
             throw new InvalidOperationException("CaptureDiagnosticsSnapshot.TimestampUtc should default to current UTC time.");
         }
 
+        AssertEqual(0L, GetLongProperty(snapshot, "CaptureSessionEpoch"), "CaptureDiagnosticsSnapshot.CaptureSessionEpoch default");
+        AssertEqual(0L, GetLongProperty(snapshot, "SourceTelemetryEpoch"), "CaptureDiagnosticsSnapshot.SourceTelemetryEpoch default");
         AssertEqual(ParseEnum("Sussudio.Models.CaptureSessionState", "Uninitialized"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState default");
         AssertNonNullStringValue(snapshot, "RecordingBackend", "None", "CaptureDiagnosticsSnapshot.RecordingBackend default");
         AssertNonNullStringValue(snapshot, "AudioPathMode", "None", "CaptureDiagnosticsSnapshot.AudioPathMode default");
@@ -1088,6 +1092,8 @@ public sealed class SnapshotModelsTests
         var decoder = CreateMjpegDecoderHealthSnapshot(decoderType, 1, 120, 2.1, 3.4, 5.6);
         var perDecoder = Array.CreateInstance(decoderType, 1);
         perDecoder.SetValue(decoder, 0);
+        SetPropertyOrBackingField(snapshot, "CaptureSessionEpoch", 42L);
+        SetPropertyOrBackingField(snapshot, "SourceTelemetryEpoch", 99L);
         SetPropertyOrBackingField(snapshot, "SessionState", ParseEnum("Sussudio.Models.CaptureSessionState", "Recording"));
         SetPropertyOrBackingField(snapshot, "IsRecording", true);
         SetPropertyOrBackingField(snapshot, "RecordingBackend", "FFmpeg");
@@ -1145,6 +1151,8 @@ public sealed class SnapshotModelsTests
         SetPropertyOrBackingField(snapshot, "AudioChunksDropped", 3L);
 
         var roundTripDecoder = ((Array)GetPropertyValue(snapshot, "MjpegPerDecoder")!).GetValue(0)!;
+        AssertEqual(42L, GetLongProperty(snapshot, "CaptureSessionEpoch"), "CaptureDiagnosticsSnapshot.CaptureSessionEpoch round-trip");
+        AssertEqual(99L, GetLongProperty(snapshot, "SourceTelemetryEpoch"), "CaptureDiagnosticsSnapshot.SourceTelemetryEpoch round-trip");
         AssertEqual(ParseEnum("Sussudio.Models.CaptureSessionState", "Recording"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "IsRecording"), "CaptureDiagnosticsSnapshot.IsRecording round-trip");
         AssertEqual("FFmpeg", GetStringProperty(snapshot, "RecordingBackend"), "CaptureDiagnosticsSnapshot.RecordingBackend round-trip");
@@ -1204,6 +1212,8 @@ public sealed class SnapshotModelsTests
         var decoderJsonRoundTrip = ReflectionJsonRoundTrip(decoderType, decoder);
         AssertEqual(120, GetIntProperty(decoderJsonRoundTrip, "SampleCount"), "MjpegDecoderHealthSnapshot JSON SampleCount");
         var jsonRoundTrip = ReflectionJsonRoundTrip(snapshotType, snapshot);
+        AssertEqual(42L, GetLongProperty(jsonRoundTrip, "CaptureSessionEpoch"), "CaptureDiagnosticsSnapshot JSON CaptureSessionEpoch");
+        AssertEqual(99L, GetLongProperty(jsonRoundTrip, "SourceTelemetryEpoch"), "CaptureDiagnosticsSnapshot JSON SourceTelemetryEpoch");
         AssertEqual("FFmpeg", GetStringProperty(jsonRoundTrip, "RecordingBackend"), "CaptureDiagnosticsSnapshot JSON RecordingBackend");
         AssertEqual(true, GetBoolProperty(jsonRoundTrip, "RecordingEncodingFailed"), "CaptureDiagnosticsSnapshot JSON RecordingEncodingFailed");
         AssertEqual(2_000_000L, GetLongProperty(jsonRoundTrip, "FlashbackTotalBytesWritten"), "CaptureDiagnosticsSnapshot JSON FlashbackTotalBytesWritten");
@@ -1232,6 +1242,8 @@ public sealed class SnapshotModelsTests
             new SnapshotPropertySpec[]
             {
                 new("TimestampUtc", typeof(DateTimeOffset)),
+                new("CaptureSessionEpoch", typeof(long)),
+                new("SourceTelemetryEpoch", typeof(long)),
                 new("SessionState", sessionStateType),
                 new("IsRecording", typeof(bool)),
                 NonNullString("RecordingBackend"),
@@ -2108,6 +2120,7 @@ public sealed class ViewModelBuildersTests
         var timestamp = new DateTimeOffset(2026, 5, 16, 12, 0, 10, TimeSpan.Zero);
         var telemetryTimestamp = timestamp.AddSeconds(-12);
         var sessionSnapshot = CreateInput(sessionSnapshotType,
+            ("SessionGeneration", 42L),
             ("CommandsEnqueued", 11L),
             ("CommandsCompleted", 7L),
             ("CommandsFailed", 2L),
@@ -2153,6 +2166,7 @@ public sealed class ViewModelBuildersTests
             ("SourceTelemetryConfidence", "High"),
             ("SourceTelemetryDiagnosticSummary", "clean"),
             ("SourceTelemetryTimestampUtc", telemetryTimestamp),
+            ("SourceTelemetryEpoch", 99L),
             ("SourceTelemetrySummaryText", "source summary"),
             ("SourceTargetSummaryText", "target summary"),
             ("SelectedRecordingFormat", "HEVC"),
@@ -2181,6 +2195,8 @@ public sealed class ViewModelBuildersTests
         var snapshot = build.Invoke(null, new[] { input })!;
 
         Assert.Equal(timestamp, Get(snapshot, "TimestampUtc"));
+        Assert.Equal(42L, Get(snapshot, "CaptureSessionEpoch"));
+        Assert.Equal(99L, Get(snapshot, "SourceTelemetryEpoch"));
         Assert.True((bool)Get(snapshot, "IsInitialized")!);
         Assert.True((bool)Get(snapshot, "IsPreviewing")!);
         Assert.Equal("Ready", Get(snapshot, "StatusText"));

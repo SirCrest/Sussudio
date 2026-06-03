@@ -22,6 +22,7 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureHealthSnapshot health,
         RecordingStats recordingStats,
         PreviewRuntimeSnapshot previewRuntime,
+        SnapshotCollectionStamp snapshotCollection,
         PerformanceEvaluation performance,
         DiagnosticEvaluation diagnostic,
         PreviewPacingClassification previewPacingClassification,
@@ -41,6 +42,7 @@ public sealed partial class AutomationDiagnosticsHub
             health,
             recordingStats,
             previewRuntime,
+            snapshotCollection,
             performance,
             diagnostic,
             previewPacingClassification,
@@ -63,6 +65,7 @@ public sealed partial class AutomationDiagnosticsHub
         CaptureHealthSnapshot health,
         RecordingStats recordingStats,
         PreviewRuntimeSnapshot previewRuntime,
+        SnapshotCollectionStamp snapshotCollection,
         PerformanceEvaluation performance,
         DiagnosticEvaluation diagnostic,
         PreviewPacingClassification previewPacingClassification,
@@ -76,7 +79,7 @@ public sealed partial class AutomationDiagnosticsHub
         long recentD3DMissedRefreshes,
         long recentD3DStatsFailures)
     {
-        var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime);
+        var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);
         var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);
         var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);
         var audioDrops = BuildAudioDropsProjection(health);
@@ -297,10 +300,24 @@ public sealed partial class AutomationDiagnosticsHub
 
     private SnapshotStatusProjection BuildSnapshotStatusProjection(
         ViewModelRuntimeSnapshot viewModelSnapshot,
-        CaptureRuntimeSnapshot captureRuntime)
+        CaptureRuntimeSnapshot captureRuntime,
+        SnapshotCollectionStamp snapshotCollection)
         => new()
         {
-            TimestampUtc = DateTimeOffset.UtcNow,
+            TimestampUtc = snapshotCollection.CompletedUtc,
+            SnapshotCollectionEpoch = snapshotCollection.Epoch,
+            SnapshotCollectionStartedUtc = snapshotCollection.StartedUtc,
+            SnapshotCollectionCompletedUtc = snapshotCollection.CompletedUtc,
+            SnapshotCollectionDurationMs = snapshotCollection.DurationMs,
+            SnapshotMixedEpochs = snapshotCollection.Mixed,
+            SnapshotMixedEpochReason = snapshotCollection.MixedReason,
+            SnapshotViewModelEpoch = snapshotCollection.ViewModelEpoch,
+            SnapshotCaptureRuntimeEpoch = snapshotCollection.CaptureRuntimeEpoch,
+            SnapshotCaptureHealthEpoch = snapshotCollection.CaptureHealthEpoch,
+            SnapshotRecordingStatsEpoch = snapshotCollection.RecordingStatsEpoch,
+            SnapshotPreviewRuntimeEpoch = snapshotCollection.PreviewRuntimeEpoch,
+            SnapshotOutputEpoch = snapshotCollection.OutputEpoch,
+            SnapshotSourceTelemetryEpoch = snapshotCollection.SourceTelemetryEpoch,
             IsInitialized = viewModelSnapshot.IsInitialized,
             IsPreviewing = viewModelSnapshot.IsPreviewing,
             IsRecording = viewModelSnapshot.IsRecording,
@@ -315,6 +332,19 @@ public sealed partial class AutomationDiagnosticsHub
     private readonly record struct SnapshotStatusProjection
     {
         public DateTimeOffset TimestampUtc { get; init; }
+        public long SnapshotCollectionEpoch { get; init; }
+        public DateTimeOffset SnapshotCollectionStartedUtc { get; init; }
+        public DateTimeOffset SnapshotCollectionCompletedUtc { get; init; }
+        public long SnapshotCollectionDurationMs { get; init; }
+        public bool SnapshotMixedEpochs { get; init; }
+        public string SnapshotMixedEpochReason { get; init; }
+        public long SnapshotViewModelEpoch { get; init; }
+        public long SnapshotCaptureRuntimeEpoch { get; init; }
+        public long SnapshotCaptureHealthEpoch { get; init; }
+        public long SnapshotRecordingStatsEpoch { get; init; }
+        public long SnapshotPreviewRuntimeEpoch { get; init; }
+        public long SnapshotOutputEpoch { get; init; }
+        public long SnapshotSourceTelemetryEpoch { get; init; }
         public bool IsInitialized { get; init; }
         public bool IsPreviewing { get; init; }
         public bool IsRecording { get; init; }
@@ -331,6 +361,19 @@ public sealed partial class AutomationDiagnosticsHub
         => new()
         {
             TimestampUtc = snapshotStatus.TimestampUtc,
+            SnapshotCollectionEpoch = snapshotStatus.SnapshotCollectionEpoch,
+            SnapshotCollectionStartedUtc = snapshotStatus.SnapshotCollectionStartedUtc,
+            SnapshotCollectionCompletedUtc = snapshotStatus.SnapshotCollectionCompletedUtc,
+            SnapshotCollectionDurationMs = snapshotStatus.SnapshotCollectionDurationMs,
+            SnapshotMixedEpochs = snapshotStatus.SnapshotMixedEpochs,
+            SnapshotMixedEpochReason = snapshotStatus.SnapshotMixedEpochReason,
+            SnapshotViewModelEpoch = snapshotStatus.SnapshotViewModelEpoch,
+            SnapshotCaptureRuntimeEpoch = snapshotStatus.SnapshotCaptureRuntimeEpoch,
+            SnapshotCaptureHealthEpoch = snapshotStatus.SnapshotCaptureHealthEpoch,
+            SnapshotRecordingStatsEpoch = snapshotStatus.SnapshotRecordingStatsEpoch,
+            SnapshotPreviewRuntimeEpoch = snapshotStatus.SnapshotPreviewRuntimeEpoch,
+            SnapshotOutputEpoch = snapshotStatus.SnapshotOutputEpoch,
+            SnapshotSourceTelemetryEpoch = snapshotStatus.SnapshotSourceTelemetryEpoch,
             IsInitialized = snapshotStatus.IsInitialized,
             IsPreviewing = snapshotStatus.IsPreviewing,
             IsRecording = snapshotStatus.IsRecording,
@@ -345,6 +388,19 @@ public sealed partial class AutomationDiagnosticsHub
     private readonly record struct SnapshotStatusFlattenedProjection
     {
         public DateTimeOffset TimestampUtc { get; init; }
+        public long SnapshotCollectionEpoch { get; init; }
+        public DateTimeOffset SnapshotCollectionStartedUtc { get; init; }
+        public DateTimeOffset SnapshotCollectionCompletedUtc { get; init; }
+        public long SnapshotCollectionDurationMs { get; init; }
+        public bool SnapshotMixedEpochs { get; init; }
+        public string SnapshotMixedEpochReason { get; init; }
+        public long SnapshotViewModelEpoch { get; init; }
+        public long SnapshotCaptureRuntimeEpoch { get; init; }
+        public long SnapshotCaptureHealthEpoch { get; init; }
+        public long SnapshotRecordingStatsEpoch { get; init; }
+        public long SnapshotPreviewRuntimeEpoch { get; init; }
+        public long SnapshotOutputEpoch { get; init; }
+        public long SnapshotSourceTelemetryEpoch { get; init; }
         public bool IsInitialized { get; init; }
         public bool IsPreviewing { get; init; }
         public bool IsRecording { get; init; }
@@ -1232,6 +1288,19 @@ public sealed partial class AutomationDiagnosticsHub
         return new AutomationSnapshot
         {
             TimestampUtc = snapshotStatusFlattening.TimestampUtc,
+            SnapshotCollectionEpoch = snapshotStatusFlattening.SnapshotCollectionEpoch,
+            SnapshotCollectionStartedUtc = snapshotStatusFlattening.SnapshotCollectionStartedUtc,
+            SnapshotCollectionCompletedUtc = snapshotStatusFlattening.SnapshotCollectionCompletedUtc,
+            SnapshotCollectionDurationMs = snapshotStatusFlattening.SnapshotCollectionDurationMs,
+            SnapshotMixedEpochs = snapshotStatusFlattening.SnapshotMixedEpochs,
+            SnapshotMixedEpochReason = snapshotStatusFlattening.SnapshotMixedEpochReason,
+            SnapshotViewModelEpoch = snapshotStatusFlattening.SnapshotViewModelEpoch,
+            SnapshotCaptureRuntimeEpoch = snapshotStatusFlattening.SnapshotCaptureRuntimeEpoch,
+            SnapshotCaptureHealthEpoch = snapshotStatusFlattening.SnapshotCaptureHealthEpoch,
+            SnapshotRecordingStatsEpoch = snapshotStatusFlattening.SnapshotRecordingStatsEpoch,
+            SnapshotPreviewRuntimeEpoch = snapshotStatusFlattening.SnapshotPreviewRuntimeEpoch,
+            SnapshotOutputEpoch = snapshotStatusFlattening.SnapshotOutputEpoch,
+            SnapshotSourceTelemetryEpoch = snapshotStatusFlattening.SnapshotSourceTelemetryEpoch,
             IsInitialized = snapshotStatusFlattening.IsInitialized,
             IsPreviewing = snapshotStatusFlattening.IsPreviewing,
             IsRecording = snapshotStatusFlattening.IsRecording,

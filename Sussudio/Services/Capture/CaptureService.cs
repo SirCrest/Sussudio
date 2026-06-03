@@ -15,6 +15,45 @@ using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
+internal readonly record struct CaptureSnapshotProducerSignature(
+    CaptureSessionState SessionState,
+    bool IsInitialized,
+    bool IsRecording,
+    bool IsVideoPreviewActive,
+    bool IsAudioPreviewActive,
+    string? CurrentDeviceId,
+    string? AudioDeviceId,
+    uint? RequestedWidth,
+    uint? RequestedHeight,
+    double? RequestedFrameRate,
+    string? RequestedFrameRateArg,
+    uint? RequestedFrameRateNumerator,
+    uint? RequestedFrameRateDenominator,
+    string? RequestedPixelFormat,
+    RecordingFormat? RequestedFormat,
+    bool? RequestedHdrEnabled,
+    int? RequestedHdrNominalPeakNits,
+    int? RequestedHdrMaxCll,
+    int? RequestedHdrMaxFall,
+    string? RequestedHdrMasterDisplayMetadata,
+    bool? RequestedAudioEnabled,
+    bool? RequestedMicrophoneEnabled,
+    string? RequestedAudioDeviceId,
+    string? RequestedMicrophoneDeviceId,
+    string? RequestedOutputPath,
+    uint? ActualWidth,
+    uint? ActualHeight,
+    double? ActualFrameRate,
+    string? ActualFrameRateArg,
+    uint? ActualFrameRateNumerator,
+    uint? ActualFrameRateDenominator,
+    string? ActualPixelFormat,
+    string? LastMfSourceReaderNegotiatedFormat,
+    string? LastOutputPath,
+    string LastFinalizeStatus,
+    DateTimeOffset? LastFinalizeUtc,
+    string? FlashbackExportOutputPath);
+
 // High-level capture orchestrator. It owns the lifetime of video capture,
 // WASAPI capture/playback, recording sinks, Flashback backend pieces, source
 // telemetry, and the snapshots consumed by automation. CaptureSessionCoordinator
@@ -24,6 +63,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly SemaphoreSlim _sessionTransitionLock = new(1, 1);
     // Lock ordering: acquire _sessionTransitionLock before _flashbackBackendLeaseLock.
     private readonly SemaphoreSlim _flashbackBackendLeaseLock = new(1, 1);
+    private readonly object _captureSnapshotProducerEpochLock = new();
     private readonly ISourceSignalTelemetryProvider _sourceTelemetryProvider;
     private readonly IProcessSupervisor _processSupervisor;
     private readonly RecordingArtifactManager _artifactManager = new();
@@ -119,6 +159,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private CancellationTokenSource? _telemetryPollCts;
     private Task? _telemetryPollTask;
     private long _telemetryPollGeneration;
+    private long _sourceTelemetryEpoch;
+    private long _captureSnapshotProducerEpoch;
+    private CaptureSnapshotProducerSignature _lastCaptureSnapshotProducerSignature;
     private const int TelemetryPollIntervalMs = 500;
     private const int TelemetryPollStopDrainTimeoutMs = 750;
 
@@ -135,12 +178,71 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     public bool IsVideoPreviewActive => _isVideoPreviewActive;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
     public CaptureSessionState SessionState => CurrentSessionState;
+    public long SessionGeneration => CaptureSnapshotProducerEpoch();
 
     private CaptureSessionState CurrentSessionState
         => _sessionStateMachine.State;
 
     private long CurrentSessionGeneration
         => _sessionStateMachine.Generation;
+
+    private long CaptureSnapshotProducerEpoch()
+    {
+        lock (_captureSnapshotProducerEpochLock)
+        {
+            var signature = BuildCaptureSnapshotProducerSignature();
+            if (!_lastCaptureSnapshotProducerSignature.Equals(signature))
+            {
+                _lastCaptureSnapshotProducerSignature = signature;
+                Interlocked.Increment(ref _captureSnapshotProducerEpoch);
+            }
+
+            return Interlocked.Read(ref _captureSnapshotProducerEpoch);
+        }
+    }
+
+    private CaptureSnapshotProducerSignature BuildCaptureSnapshotProducerSignature()
+    {
+        var settings = _recordingBackend.SettingsSnapshot ?? _currentSettings;
+        return new CaptureSnapshotProducerSignature(
+            CurrentSessionState,
+            _isInitialized,
+            _isRecording,
+            _isVideoPreviewActive,
+            _isAudioPreviewActive,
+            _currentDevice?.Id,
+            _audioDeviceId,
+            settings?.Width,
+            settings?.Height,
+            settings?.FrameRate,
+            settings?.RequestedFrameRateArg,
+            settings?.RequestedFrameRateNumerator,
+            settings?.RequestedFrameRateDenominator,
+            settings?.RequestedPixelFormat,
+            settings?.Format,
+            settings?.HdrEnabled,
+            settings?.HdrNominalPeakNits,
+            settings?.HdrMaxCll,
+            settings?.HdrMaxFall,
+            settings?.HdrMasterDisplayMetadata,
+            settings?.AudioEnabled,
+            settings?.MicrophoneEnabled,
+            settings?.AudioDeviceId,
+            settings?.MicrophoneDeviceId,
+            settings?.OutputPath,
+            _actualWidth,
+            _actualHeight,
+            _actualFrameRate,
+            _actualFrameRateArg,
+            _actualFrameRateNumerator,
+            _actualFrameRateDenominator,
+            _actualPixelFormat,
+            _lastMfSourceReaderNegotiatedFormat,
+            _lastOutputPath,
+            _lastFinalizeStatus,
+            _lastFinalizeUtc,
+            _flashbackExportOutputPath);
+    }
 
     private async Task RunTransitionAsync(
         CaptureSessionState transitionState,
