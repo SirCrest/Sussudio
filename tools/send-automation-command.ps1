@@ -54,7 +54,8 @@ function Get-AutomationClientInputWriteTimeUtc {
     $repoRoot = Split-Path -Parent $PSScriptRoot
     $inputPaths = @(
         (Join-Path $PSScriptRoot "AutomationClient"),
-        (Join-Path $PSScriptRoot "Common")
+        (Join-Path $PSScriptRoot "Common"),
+        (Join-Path $repoRoot "Sussudio.Automation.Contracts")
     )
     $inputFiles = @()
     foreach ($inputPath in $inputPaths) {
@@ -65,11 +66,6 @@ function Get-AutomationClientInputWriteTimeUtc {
                     $_.FullName -notmatch "\\(bin|obj)\\"
                 }
         }
-    }
-
-    $commandKindPath = Join-Path $repoRoot "Sussudio\Models\AutomationCommandKind.cs"
-    if (Test-Path $commandKindPath) {
-        $inputFiles += Get-Item -LiteralPath $commandKindPath
     }
 
     $newest = [DateTime]::MinValue

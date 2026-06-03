@@ -4,28 +4,12 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using Microsoft.UI.Xaml;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Automation;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
-using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio
 {
     public partial class App : Application
     {
-        // Held for the process lifetime so the OS releases ownership on exit/crash.
-        // Static field prevents GC from finalizing the Mutex (which would release
-        // ownership and allow a racing second instance to acquire it mid-run).
-        // Name is in the Local\ namespace so it scopes per-session (RDP/fast-user-switch
-        // safe) rather than machine-global. Version suffix lets us bump if semantics change.
-        private const string SingleInstanceMutexName = @"Local\Sussudio.SingleInstance.v1";
-        private static Mutex? _singleInstanceMutex;
-
         private Window? _window;
 
         public App()
@@ -45,7 +29,7 @@ namespace Sussudio
             {
                 // Surface the missing runtime immediately rather than letting the
                 // first export fail with an opaque codec lookup error. The fatal
-                // breadcrumb is the only diagnostic this early in startup — the
+                // breadcrumb is the only diagnostic this early in startup - the
                 // global UnhandledException handlers above are wired but a throw
                 // from the ctor propagates up the WinUI activation stack before
                 // they catch it, so the breadcrumb in the log is the support trail.
@@ -60,7 +44,7 @@ namespace Sussudio
             // surface through Task.Wait/.Result or escape the async machinery on a worker
             // thread. Unwrap to a single inner before triage so a wrapped MF_E_NOTACCEPTING
             // or DXGI device-removed isn't misclassified as fatal and routed to FailFast.
-            // We unwrap only when there's exactly one inner — a multi-fault aggregate is
+            // We unwrap only when there's exactly one inner - a multi-fault aggregate is
             // unusual enough that we'd rather fail fast than guess which inner to trust.
             if (ex is AggregateException agg && agg.InnerExceptions.Count == 1 && agg.InnerException is not null)
             {
@@ -68,7 +52,7 @@ namespace Sussudio
             }
 
             if (ex is OperationCanceledException) return true;
-            if (ex is System.IO.IOException) return true;
+            if (ex is IOException) return true;
             if (ex is TimeoutException) return true;
             if (ex is System.Runtime.InteropServices.COMException com)
             {
@@ -178,6 +162,14 @@ namespace Sussudio
             }
         }
 
+        // Held for the process lifetime so the OS releases ownership on exit/crash.
+        // Static field prevents GC from finalizing the Mutex (which would release
+        // ownership and allow a racing second instance to acquire it mid-run).
+        // Name is in the Local\ namespace so it scopes per-session (RDP/fast-user-switch
+        // safe) rather than machine-global. Version suffix lets us bump if semantics change.
+        private const string SingleInstanceMutexName = @"Local\Sussudio.SingleInstance.v1";
+        private static Mutex? _singleInstanceMutex;
+
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             // Single-instance guard MUST run before any startup work that touches the
@@ -200,7 +192,7 @@ namespace Sussudio
                 {
                     // Existing mutex (possibly orphaned from a prior crashed instance).
                     // Try a zero-timeout acquisition; AbandonedMutexException means the
-                    // previous owner died without releasing — we successfully take ownership.
+                    // previous owner died without releasing - we successfully take ownership.
                     try
                     {
                         acquired = _singleInstanceMutex.WaitOne(TimeSpan.Zero, exitContext: false);
@@ -223,10 +215,13 @@ namespace Sussudio
             }
             catch (Exception ex)
             {
-                // Mutex creation should not fail under normal conditions. If it does
-                // (e.g. ACL denial), log and continue rather than blocking launch —
-                // the cleanup-corruption hazard is rare and a hard fail would be worse.
-                Logger.Log($"SINGLE_INSTANCE_GUARD mutex setup failed; proceeding without guard. msg={ex.Message}");
+                Logger.LogFatalBreadcrumb(
+                    $"SINGLE_INSTANCE_GUARD mutex setup failed; refusing launch. msg={ex.Message}",
+                    ex);
+                try { _singleInstanceMutex?.Dispose(); } catch { /* best-effort */ }
+                _singleInstanceMutex = null;
+                Environment.Exit(1);
+                return;
             }
 
             try
@@ -242,7 +237,7 @@ namespace Sussudio
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Trace.TraceWarning($"Suppressed exception in App.OnLaunched exe mtime probe: {ex.Message}");
+                    Trace.TraceWarning($"Suppressed exception in App.OnLaunched exe mtime probe: {ex.Message}");
                 }
 
                 var assembly = Assembly.GetExecutingAssembly();
@@ -257,7 +252,7 @@ namespace Sussudio
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in App.OnLaunched startup logging: {ex.Message}");
+                Trace.TraceWarning($"Suppressed exception in App.OnLaunched startup logging: {ex.Message}");
             }
 
             _window = new MainWindow();

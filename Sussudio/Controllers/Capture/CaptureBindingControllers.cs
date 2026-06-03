@@ -1,0 +1,1143 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Sussudio.Models;
+using Sussudio.ViewModels;
+
+namespace Sussudio.Controllers;
+
+internal static class CaptureOptionPresentationPolicy
+{
+    internal static CaptureOptionPresentationAffordances Build(CaptureOptionPresentationInput input)
+    {
+        var selectedFrameRate = ResolveSelectedFrameRate(input);
+        var showCustomBitrate = input.IsCustomBitrateVisible;
+
+        return new CaptureOptionPresentationAffordances(
+            InitialDecoderCount: Math.Clamp(input.MjpegDecoderCount, 1, 8),
+            ShowDecoderCount: ShouldShowDecoderCount(input.SelectedVideoFormat, input.SelectedFormatPixelFormat, selectedFrameRate),
+            EnableHdrToggle: input.IsHdrAvailable && !input.IsRecording && input.SourceIsHdr != false,
+            EnableTrueHdrPreviewToggle: input.IsHdrEnabled && !input.IsRecording,
+            ShowCustomBitrate: showCustomBitrate,
+            ShowPreset: !showCustomBitrate,
+            ShowAudioClip: input.AudioClipping);
+    }
+
+    private static double ResolveSelectedFrameRate(CaptureOptionPresentationInput input)
+    {
+        if (input.SelectedFrameRateOptionFriendlyValue is > 0)
+        {
+            return input.SelectedFrameRateOptionFriendlyValue.Value;
+        }
+
+        if (input.SelectedFrameRateOptionValue is > 0)
+        {
+            return input.SelectedFrameRateOptionValue.Value;
+        }
+
+        return input.SelectedFrameRateFallback;
+    }
+
+    private static bool ShouldShowDecoderCount(string? selectedVideoFormat, string? selectedFormatPixelFormat, double selectedFrameRate)
+    {
+        // Show decoder count when MJPG is explicitly selected, or when Auto resolves
+        // to a device-native MJPG format at high frame rates.
+        var isExplicitMjpg = string.Equals(selectedVideoFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+        var isAutoWithMjpgDevice = string.Equals(selectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase) &&
+                                   string.Equals(selectedFormatPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+
+        return (isExplicitMjpg || isAutoWithMjpgDevice) && selectedFrameRate >= 90;
+    }
+}
+
+internal readonly record struct CaptureOptionPresentationInput(
+    string? SelectedVideoFormat,
+    string? SelectedFormatPixelFormat,
+    double? SelectedFrameRateOptionFriendlyValue,
+    double? SelectedFrameRateOptionValue,
+    double SelectedFrameRateFallback,
+    int MjpegDecoderCount,
+    bool IsHdrAvailable,
+    bool IsRecording,
+    bool? SourceIsHdr,
+    bool IsHdrEnabled,
+    bool IsCustomBitrateVisible,
+    bool AudioClipping);
+
+internal readonly record struct CaptureOptionPresentationAffordances(
+    int InitialDecoderCount,
+    bool ShowDecoderCount,
+    bool EnableHdrToggle,
+    bool EnableTrueHdrPreviewToggle,
+    bool ShowCustomBitrate,
+    bool ShowPreset,
+    bool ShowAudioClip);
+
+internal sealed class CaptureOptionPresentationControllerContext
+{
+    public required MainViewModel ViewModel { get; init; }
+    public required ComboBox VideoFormatComboBox { get; init; }
+    public required ComboBox FrameRateComboBox { get; init; }
+    public required FrameworkElement DecoderCountPanel { get; init; }
+    public required ComboBox DecoderCountComboBox { get; init; }
+    public required ToggleButton HdrToggle { get; init; }
+    public required ToggleButton TrueHdrPreviewToggle { get; init; }
+    public required FrameworkElement CustomBitratePanel { get; init; }
+    public required FrameworkElement PresetPanel { get; init; }
+    public required FrameworkElement AudioClipText { get; init; }
+}
+
+internal sealed class CaptureOptionPresentationController
+{
+    private readonly CaptureOptionPresentationControllerContext _context;
+    private int _selectedDecoderCount = 4;
+
+    public CaptureOptionPresentationController(CaptureOptionPresentationControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void ApplyInitialDecoderCountSelection()
+    {
+        var affordances = BuildAffordances();
+        _selectedDecoderCount = affordances.InitialDecoderCount;
+        _context.DecoderCountComboBox.SelectedItem = _selectedDecoderCount;
+    }
+
+    public void UpdateDecoderCountVisibility()
+    {
+        var affordances = BuildAffordances();
+        _context.DecoderCountPanel.Visibility = ToVisibility(affordances.ShowDecoderCount);
+    }
+
+    public void HandleDecoderCountSelectionChanged()
+    {
+        if (_context.DecoderCountComboBox.SelectedItem is int count)
+        {
+            _selectedDecoderCount = count;
+            if (_context.ViewModel.MjpegDecoderCount != count)
+            {
+                _context.ViewModel.MjpegDecoderCount = count;
+            }
+        }
+    }
+
+    public void RefreshHdrHintText()
+    {
+        var tooltip = CaptureOptionTooltipFormatter.BuildHdrHintText(
+            _context.ViewModel.HdrResolutionSupportHint,
+            _context.ViewModel.HdrReadinessReason,
+            _context.ViewModel.IsRecording);
+        ToolTipService.SetToolTip(_context.HdrToggle, tooltip);
+    }
+
+    public void UpdateFpsTelemetryTooltip()
+    {
+        var tooltip = CaptureOptionTooltipFormatter.BuildFpsTelemetryTooltip(
+            _context.ViewModel.SourceTelemetrySummaryText,
+            _context.ViewModel.SourceTargetSummaryText);
+        ToolTipService.SetToolTip(_context.FrameRateComboBox, tooltip);
+    }
+
+    public void ApplyHdrToggleEnabledState()
+    {
+        var affordances = BuildAffordances();
+        _context.HdrToggle.IsEnabled = affordances.EnableHdrToggle;
+        _context.TrueHdrPreviewToggle.IsEnabled = affordances.EnableTrueHdrPreviewToggle;
+    }
+
+    public void ApplyBitrateVisibility()
+    {
+        var affordances = BuildAffordances();
+        _context.CustomBitratePanel.Visibility = ToVisibility(affordances.ShowCustomBitrate);
+        _context.PresetPanel.Visibility = ToVisibility(affordances.ShowPreset);
+    }
+
+    public void ApplyAudioClipVisibility()
+    {
+        var affordances = BuildAffordances();
+        _context.AudioClipText.Visibility = ToVisibility(affordances.ShowAudioClip);
+    }
+
+    private CaptureOptionPresentationAffordances BuildAffordances()
+        => CaptureOptionPresentationPolicy.Build(BuildPolicyInput());
+
+    private CaptureOptionPresentationInput BuildPolicyInput()
+    {
+        var selectedFrameRateOption = _context.FrameRateComboBox.SelectedItem as FrameRateOption;
+        return new CaptureOptionPresentationInput(
+            SelectedVideoFormat: _context.VideoFormatComboBox.SelectedItem as string ?? _context.ViewModel.SelectedVideoFormat,
+            SelectedFormatPixelFormat: _context.ViewModel.SelectedFormat?.PixelFormat,
+            SelectedFrameRateOptionFriendlyValue: selectedFrameRateOption?.FriendlyValue,
+            SelectedFrameRateOptionValue: selectedFrameRateOption?.Value,
+            SelectedFrameRateFallback: _context.ViewModel.SelectedFrameRate,
+            MjpegDecoderCount: _context.ViewModel.MjpegDecoderCount,
+            IsHdrAvailable: _context.ViewModel.IsHdrAvailable,
+            IsRecording: _context.ViewModel.IsRecording,
+            SourceIsHdr: _context.ViewModel.SourceIsHdr,
+            IsHdrEnabled: _context.ViewModel.IsHdrEnabled,
+            IsCustomBitrateVisible: _context.ViewModel.IsCustomBitrateVisible,
+            AudioClipping: _context.ViewModel.AudioClipping);
+    }
+
+    private static Visibility ToVisibility(bool isVisible)
+        => isVisible ? Visibility.Visible : Visibility.Collapsed;
+}
+
+internal sealed class CaptureOptionBindingControllerContext
+{
+    public required MainViewModel ViewModel { get; init; }
+    public required ComboBox ResolutionComboBox { get; init; }
+    public required ComboBox FrameRateComboBox { get; init; }
+    public required ComboBox FormatComboBox { get; init; }
+    public required ComboBox QualityComboBox { get; init; }
+    public required ComboBox PresetComboBox { get; init; }
+    public required ComboBox SplitEncodeComboBox { get; init; }
+    public required ComboBox VideoFormatComboBox { get; init; }
+    public required ComboBox DecoderCountComboBox { get; init; }
+    public required NumberBox CustomBitrateNumberBox { get; init; }
+    public required ToggleButton HdrToggle { get; init; }
+    public required ToggleButton TrueHdrPreviewToggle { get; init; }
+    public required Action ApplyInitialDecoderCountSelection { get; init; }
+    public required Action ApplyBitrateVisibility { get; init; }
+    public required Action ApplyHdrToggleEnabledState { get; init; }
+    public required Action ApplyAudioClipVisibility { get; init; }
+    public required Action RefreshHdrHintText { get; init; }
+    public required Action UpdateFpsTelemetryTooltip { get; init; }
+    public required Action UpdateVideoContentOverlays { get; init; }
+    public required Action<bool> SetHdrPassthroughEnabled { get; init; }
+    public required Action UpdateDecoderCountVisibility { get; init; }
+    public required Action EnsureResolutionSelection { get; init; }
+    public required Action EnsureFrameRateSelection { get; init; }
+    public required Action EnsureFormatSelection { get; init; }
+    public required Action EnsureQualitySelection { get; init; }
+    public required Action EnsurePresetSelection { get; init; }
+    public required Action EnsureSplitEncodeModeSelection { get; init; }
+}
+
+internal sealed class CaptureOptionBindingController
+{
+    private readonly CaptureOptionBindingControllerContext _context;
+
+    public CaptureOptionBindingController(CaptureOptionBindingControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void InitializeCollections()
+    {
+        _context.VideoFormatComboBox.ItemsSource = _context.ViewModel.AvailableVideoFormats;
+        _context.DecoderCountComboBox.Items.Clear();
+        for (var i = 1; i <= 8; i++)
+        {
+            _context.DecoderCountComboBox.Items.Add(i);
+        }
+    }
+
+    public void ApplyInitialSelections()
+    {
+        _context.FormatComboBox.SelectedItem = _context.ViewModel.SelectedRecordingFormat;
+        _context.QualityComboBox.SelectedItem = _context.ViewModel.SelectedQuality;
+        _context.PresetComboBox.SelectedItem = _context.ViewModel.SelectedPreset;
+        _context.SplitEncodeComboBox.SelectedItem = _context.ViewModel.SelectedSplitEncodeMode;
+        _context.VideoFormatComboBox.SelectedItem = _context.ViewModel.SelectedVideoFormat;
+        _context.ApplyInitialDecoderCountSelection();
+        _context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;
+        _context.ApplyBitrateVisibility();
+        _context.HdrToggle.IsChecked = _context.ViewModel.IsHdrEnabled;
+        _context.TrueHdrPreviewToggle.IsChecked = _context.ViewModel.IsTrueHdrPreviewEnabled;
+        _context.ApplyHdrToggleEnabledState();
+    }
+
+    public void EnsureInitialSelections()
+    {
+        _context.EnsureResolutionSelection();
+        _context.EnsureFrameRateSelection();
+        _context.EnsureFormatSelection();
+        _context.EnsureQualitySelection();
+        _context.EnsurePresetSelection();
+        _context.EnsureSplitEncodeModeSelection();
+        _context.UpdateDecoderCountVisibility();
+    }
+
+    public void AttachCaptureModeSelectionBindings()
+    {
+        _context.ResolutionComboBox.SelectionChanged += (s, e) =>
+        {
+            if (_context.ResolutionComboBox.SelectedItem is ResolutionOption resolution &&
+                resolution.IsEnabled &&
+                !string.Equals(resolution.Value, _context.ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
+            {
+                _context.ViewModel.SelectedResolution = resolution.Value;
+            }
+        };
+
+        _context.FrameRateComboBox.SelectionChanged += (s, e) =>
+        {
+            if (_context.FrameRateComboBox.SelectedItem is FrameRateOption frameRate &&
+                frameRate.IsEnabled)
+            {
+                if (CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(frameRate))
+                {
+                    if (!_context.ViewModel.IsAutoFrameRateSelected)
+                    {
+                        _context.ViewModel.SelectedFrameRate = frameRate.Value;
+                    }
+                }
+                else if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(frameRate.Value, _context.ViewModel.SelectedFrameRate))
+                {
+                    _context.ViewModel.SelectedFrameRate = frameRate.Value;
+                }
+            }
+
+            _context.UpdateDecoderCountVisibility();
+        };
+    }
+
+    public void AttachRecordingOptionBindings()
+    {
+        AttachStringSelection(_context.FormatComboBox, value => _context.ViewModel.SelectedRecordingFormat = value);
+        AttachStringSelection(_context.QualityComboBox, value => _context.ViewModel.SelectedQuality = value);
+        AttachStringSelection(_context.PresetComboBox, value => _context.ViewModel.SelectedPreset = value);
+        AttachStringSelection(_context.SplitEncodeComboBox, value => _context.ViewModel.SelectedSplitEncodeMode = value);
+
+        _context.VideoFormatComboBox.SelectionChanged += (s, e) =>
+        {
+            if (_context.VideoFormatComboBox.SelectedItem is string videoFormat)
+            {
+                _context.ViewModel.SelectedVideoFormat = videoFormat;
+            }
+
+            _context.UpdateDecoderCountVisibility();
+        };
+
+        _context.CustomBitrateNumberBox.ValueChanged += (s, e) =>
+        {
+            if (!double.IsNaN(_context.CustomBitrateNumberBox.Value))
+            {
+                _context.ViewModel.CustomBitrateMbps = _context.CustomBitrateNumberBox.Value;
+            }
+        };
+        AttachHdrToggleBindings();
+    }
+
+    public bool TryHandlePropertyChanged(string propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.AudioClipping):
+                _context.ApplyAudioClipVisibility();
+                return true;
+
+            case nameof(MainViewModel.IsHdrAvailable):
+            case nameof(MainViewModel.SourceIsHdr):
+                _context.ApplyHdrToggleEnabledState();
+                return true;
+
+            case nameof(MainViewModel.IsHdrEnabled):
+                HandleHdrEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.IsTrueHdrPreviewEnabled):
+                HandleTrueHdrPreviewEnabledChanged();
+                return true;
+
+            case nameof(MainViewModel.HdrResolutionSupportHint):
+            case nameof(MainViewModel.HdrReadinessReason):
+            case nameof(MainViewModel.HdrRuntimeState):
+                _context.RefreshHdrHintText();
+                return true;
+
+            case nameof(MainViewModel.SourceTelemetrySummaryText):
+            case nameof(MainViewModel.SourceTargetSummaryText):
+                _context.UpdateFpsTelemetryTooltip();
+                return true;
+
+            case nameof(MainViewModel.SourceWidth):
+            case nameof(MainViewModel.SourceHeight):
+                _context.UpdateVideoContentOverlays();
+                return true;
+
+            case nameof(MainViewModel.IsCustomBitrateVisible):
+                _context.ApplyBitrateVisibility();
+                return true;
+
+            case nameof(MainViewModel.CustomBitrateMbps):
+                HandleCustomBitratePropertyChanged();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    public void HandleCustomBitratePropertyChanged()
+    {
+        if (double.IsNaN(_context.CustomBitrateNumberBox.Value) ||
+            Math.Abs(_context.CustomBitrateNumberBox.Value - _context.ViewModel.CustomBitrateMbps) > 0.01)
+        {
+            _context.CustomBitrateNumberBox.Value = _context.ViewModel.CustomBitrateMbps;
+        }
+    }
+
+    public void HandleHdrEnabledChanged()
+    {
+        if (_context.HdrToggle.IsChecked != _context.ViewModel.IsHdrEnabled)
+        {
+            _context.HdrToggle.IsChecked = _context.ViewModel.IsHdrEnabled;
+        }
+
+        _context.ApplyHdrToggleEnabledState();
+    }
+
+    public void HandleTrueHdrPreviewEnabledChanged()
+    {
+        if (_context.TrueHdrPreviewToggle.IsChecked != _context.ViewModel.IsTrueHdrPreviewEnabled)
+        {
+            _context.TrueHdrPreviewToggle.IsChecked = _context.ViewModel.IsTrueHdrPreviewEnabled;
+        }
+
+        _context.SetHdrPassthroughEnabled(_context.ViewModel.IsTrueHdrPreviewEnabled);
+    }
+
+    private void AttachHdrToggleBindings()
+    {
+        _context.HdrToggle.Click += (s, e) =>
+            _context.ViewModel.IsHdrEnabled = _context.HdrToggle.IsChecked == true;
+        _context.TrueHdrPreviewToggle.Click += (s, e) =>
+            _context.ViewModel.IsTrueHdrPreviewEnabled = _context.TrueHdrPreviewToggle.IsChecked == true;
+    }
+
+    private static void AttachStringSelection(ComboBox comboBox, Action<string> setVmProp)
+    {
+        comboBox.SelectionChanged += (s, e) =>
+        {
+            if (comboBox.SelectedItem is string value)
+            {
+                setVmProp(value);
+            }
+        };
+    }
+}
+
+internal static class CaptureOptionTooltipFormatter
+{
+    public static string? BuildHdrHintText(string? resolutionHint, string? readinessHint, bool isRecording)
+    {
+        resolutionHint = resolutionHint?.Trim();
+        readinessHint = readinessHint?.Trim();
+        var combinedHint = string.IsNullOrWhiteSpace(readinessHint)
+            ? resolutionHint
+            : string.IsNullOrWhiteSpace(resolutionHint)
+                ? readinessHint
+                : $"{readinessHint}{Environment.NewLine}{resolutionHint}";
+        if (isRecording)
+        {
+            combinedHint = string.IsNullOrWhiteSpace(combinedHint)
+                ? "Stop recording before switching between HDR and SDR pipelines."
+                : $"{combinedHint}{Environment.NewLine}Stop recording before switching between HDR and SDR pipelines.";
+        }
+
+        return string.IsNullOrWhiteSpace(combinedHint) ? null : combinedHint;
+    }
+
+    public static string? BuildFpsTelemetryTooltip(string? sourceTelemetrySummaryText, string? sourceTargetSummaryText)
+    {
+        if (string.IsNullOrWhiteSpace(sourceTelemetrySummaryText))
+        {
+            return string.IsNullOrWhiteSpace(sourceTargetSummaryText) ? null : sourceTargetSummaryText;
+        }
+
+        if (string.IsNullOrWhiteSpace(sourceTargetSummaryText))
+        {
+            return sourceTelemetrySummaryText;
+        }
+
+        return $"{sourceTelemetrySummaryText}{Environment.NewLine}{sourceTargetSummaryText}";
+    }
+}
+
+internal sealed class CaptureSelectionBindingControllerContext
+{
+    public required DispatcherQueue DispatcherQueue { get; init; }
+    public required MainViewModel ViewModel { get; init; }
+    public required ComboBox DeviceComboBox { get; init; }
+    public required ComboBox AudioInputComboBox { get; init; }
+    public required ComboBox MicrophoneComboBox { get; init; }
+    public required ComboBox ResolutionComboBox { get; init; }
+    public required ComboBox FrameRateComboBox { get; init; }
+    public required ComboBox FormatComboBox { get; init; }
+    public required ComboBox QualityComboBox { get; init; }
+    public required ComboBox PresetComboBox { get; init; }
+    public required ComboBox SplitEncodeComboBox { get; init; }
+    public required Button ApplyDeviceButton { get; init; }
+    public required StackPanel DeviceAudioControlPanel { get; init; }
+    public required ToggleSwitch DeviceAudioModeToggle { get; init; }
+    public required StackPanel AnalogAudioGainPanel { get; init; }
+    public required Slider AnalogAudioGainSlider { get; init; }
+    public required TextBlock AnalogAudioGainValueTextBlock { get; init; }
+}
+
+internal sealed class CaptureDeviceActionControllerContext
+{
+    public required MainViewModel ViewModel { get; init; }
+    public required Button RefreshButton { get; init; }
+    public required Button ApplyDeviceButton { get; init; }
+    public required ComboBox DeviceComboBox { get; init; }
+    public required Action UpdateDeviceApplyButtonState { get; init; }
+}
+
+internal sealed class CaptureDeviceActionController
+{
+    private readonly CaptureDeviceActionControllerContext _context;
+
+    public CaptureDeviceActionController(CaptureDeviceActionControllerContext context)
+    {
+        _context = context;
+    }
+
+    public async Task RefreshDevicesAsync()
+    {
+        _context.RefreshButton.Content = new ProgressRing { Width = 16, Height = 16, IsActive = true };
+        _context.RefreshButton.IsEnabled = false;
+        try
+        {
+            await _context.ViewModel.RefreshDevicesAsync();
+        }
+        finally
+        {
+            _context.RefreshButton.Content = new FontIcon { Glyph = "\uE72C", FontSize = 14 };
+            _context.RefreshButton.IsEnabled = true;
+        }
+    }
+
+    public async Task ApplySelectedDeviceAsync()
+    {
+        if (_context.DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
+        {
+            return;
+        }
+
+        _context.ApplyDeviceButton.IsEnabled = false;
+        try
+        {
+            await _context.ViewModel.ApplySelectedDeviceAsync(selectedDevice);
+        }
+        finally
+        {
+            _context.UpdateDeviceApplyButtonState();
+        }
+    }
+}
+
+internal sealed class CaptureSelectionBindingController
+{
+    private const int SyncDevice = 0;
+    private const int SyncAudio = 1;
+    private const int SyncResolution = 2;
+    private const int SyncFrameRate = 3;
+    private const int SyncFormat = 4;
+    private const int SyncQuality = 5;
+    private const int SyncPreset = 6;
+    private const int SyncSplitEncode = 7;
+    private const int SyncMicrophone = 8;
+
+    private readonly CaptureSelectionBindingControllerContext _context;
+    private readonly int[] _selectionSyncQueued = new int[9];
+
+    public CaptureSelectionBindingController(CaptureSelectionBindingControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void AttachDeviceSelectionChangedBinding()
+    {
+        _context.DeviceComboBox.SelectionChanged += (_, _) => UpdateDeviceApplyButtonState();
+    }
+
+    public void AttachCollectionBindings()
+    {
+        _context.DeviceComboBox.ItemsSource = _context.ViewModel.Devices;
+        _context.AudioInputComboBox.ItemsSource = _context.ViewModel.AudioInputDevices;
+        _context.MicrophoneComboBox.ItemsSource = _context.ViewModel.MicrophoneDevices;
+        _context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;
+        _context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;
+        _context.FormatComboBox.ItemsSource = _context.ViewModel.AvailableRecordingFormats;
+        _context.QualityComboBox.ItemsSource = _context.ViewModel.AvailableQualities;
+        _context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;
+        _context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;
+
+        AttachCollectionSync(_context.ViewModel.Devices, QueueDeviceSelectionSync);
+        AttachCollectionSync(_context.ViewModel.AudioInputDevices, QueueAudioSelectionSync);
+        AttachCollectionSync(_context.ViewModel.MicrophoneDevices, QueueMicrophoneSelectionSync);
+        AttachCollectionSync(_context.ViewModel.AvailableResolutions, QueueResolutionSelectionSync);
+        AttachCollectionSync(_context.ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);
+        AttachCollectionSync(_context.ViewModel.AvailableRecordingFormats, QueueFormatSelectionSync);
+        AttachCollectionSync(_context.ViewModel.AvailableQualities, QueueQualitySelectionSync);
+        AttachCollectionSync(_context.ViewModel.AvailablePresets, QueuePresetSelectionSync);
+        AttachCollectionSync(_context.ViewModel.AvailableSplitEncodeModes, QueueSplitEncodeModeSelectionSync);
+    }
+
+    public bool TryHandlePropertyChanged(string? propertyName)
+    {
+        switch (propertyName)
+        {
+            case nameof(MainViewModel.SelectedDevice):
+                HandleSelectedDevicePropertyChanged();
+                return true;
+
+            case nameof(MainViewModel.SelectedResolution):
+                EnsureResolutionSelection();
+                return true;
+
+            case nameof(MainViewModel.SelectedFrameRate):
+            case nameof(MainViewModel.IsAutoFrameRateSelected):
+                EnsureFrameRateSelection();
+                return true;
+
+            case nameof(MainViewModel.AvailableResolutions):
+                HandleAvailableResolutionsPropertyChanged();
+                return true;
+
+            case nameof(MainViewModel.AvailableFrameRates):
+                HandleAvailableFrameRatesPropertyChanged();
+                return true;
+
+            case nameof(MainViewModel.IsDeviceAudioControlSupported):
+            case nameof(MainViewModel.SelectedDeviceAudioMode):
+            case nameof(MainViewModel.AnalogAudioGainPercent):
+            case nameof(MainViewModel.AvailableDeviceAudioModes):
+                ApplyDeviceAudioControlState();
+                return true;
+
+            case nameof(MainViewModel.SelectedAudioInputDevice):
+                EnsureAudioInputSelection();
+                return true;
+
+            case nameof(MainViewModel.SelectedMicrophoneDevice):
+                EnsureMicrophoneSelection();
+                return true;
+
+            case nameof(MainViewModel.SelectedRecordingFormat):
+                EnsureFormatSelection();
+                return true;
+
+            case nameof(MainViewModel.SelectedQuality):
+                EnsureQualitySelection();
+                return true;
+
+            case nameof(MainViewModel.AvailablePresets):
+                HandleAvailablePresetsPropertyChanged();
+                return true;
+
+            case nameof(MainViewModel.SelectedPreset):
+                EnsurePresetSelection();
+                return true;
+
+            case nameof(MainViewModel.AvailableSplitEncodeModes):
+                HandleAvailableSplitEncodeModesPropertyChanged();
+                return true;
+
+            case nameof(MainViewModel.SelectedSplitEncodeMode):
+                EnsureSplitEncodeModeSelection();
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    public void EnsureDeviceSelection()
+    {
+        if (_context.ViewModel.Devices.Count == 0)
+        {
+            _context.DeviceComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingDevice = CaptureComboBoxSelectionNormalizer.ResolveCaptureDeviceSelection(
+            _context.ViewModel.Devices,
+            _context.ViewModel.SelectedDevice);
+        if (matchingDevice == null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(_context.ViewModel.SelectedDevice, matchingDevice))
+        {
+            _context.ViewModel.SelectedDevice = matchingDevice;
+        }
+
+        if (!ReferenceEquals(_context.DeviceComboBox.SelectedItem, matchingDevice))
+        {
+            _context.DeviceComboBox.SelectedItem = matchingDevice;
+        }
+
+        UpdateDeviceApplyButtonState();
+    }
+
+    public void EnsureAudioInputSelection()
+    {
+        if (_context.ViewModel.AudioInputDevices.Count == 0)
+        {
+            _context.AudioInputComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingDevice = CaptureComboBoxSelectionNormalizer.ResolveAudioInputDeviceSelection(
+            _context.ViewModel.AudioInputDevices,
+            _context.ViewModel.SelectedAudioInputDevice);
+        if (matchingDevice == null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(_context.ViewModel.SelectedAudioInputDevice, matchingDevice))
+        {
+            _context.ViewModel.SelectedAudioInputDevice = matchingDevice;
+        }
+
+        if (!ReferenceEquals(_context.AudioInputComboBox.SelectedItem, matchingDevice))
+        {
+            _context.AudioInputComboBox.SelectedItem = matchingDevice;
+        }
+    }
+
+    public void EnsureMicrophoneSelection()
+    {
+        if (_context.ViewModel.MicrophoneDevices.Count == 0)
+        {
+            _context.MicrophoneComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingDevice = CaptureComboBoxSelectionNormalizer.ResolveAudioInputDeviceSelection(
+            _context.ViewModel.MicrophoneDevices,
+            _context.ViewModel.SelectedMicrophoneDevice);
+        if (matchingDevice == null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(_context.ViewModel.SelectedMicrophoneDevice, matchingDevice))
+        {
+            _context.ViewModel.SelectedMicrophoneDevice = matchingDevice;
+        }
+
+        if (!ReferenceEquals(_context.MicrophoneComboBox.SelectedItem, matchingDevice))
+        {
+            _context.MicrophoneComboBox.SelectedItem = matchingDevice;
+        }
+    }
+
+    public void EnsureResolutionSelection()
+    {
+        if (_context.ViewModel.AvailableResolutions.Count == 0)
+        {
+            if (_context.ViewModel.SelectedDevice == null || !_context.ViewModel.IsPreviewing)
+            {
+                _context.ResolutionComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        var matchingResolution = CaptureComboBoxSelectionNormalizer.ResolveResolutionSelection(
+            _context.ViewModel.AvailableResolutions,
+            _context.ViewModel.SelectedResolution);
+        if (matchingResolution == null)
+        {
+            return;
+        }
+
+        if (!string.Equals(matchingResolution.Value, _context.ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
+        {
+            _context.ViewModel.SelectedResolution = matchingResolution.Value;
+        }
+
+        if (_context.ResolutionComboBox.SelectedItem is not ResolutionOption selectedResolutionOption ||
+            !string.Equals(selectedResolutionOption.Value, matchingResolution.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            _context.ResolutionComboBox.SelectedItem = matchingResolution;
+        }
+    }
+
+    public void EnsureFrameRateSelection()
+    {
+        if (_context.ViewModel.AvailableFrameRates.Count == 0)
+        {
+            if (_context.ViewModel.SelectedDevice == null || !_context.ViewModel.IsPreviewing)
+            {
+                _context.FrameRateComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        if (_context.ViewModel.IsAutoFrameRateSelected)
+        {
+            var autoOption = CaptureComboBoxSelectionNormalizer.ResolveFrameRateSelection(
+                _context.ViewModel.AvailableFrameRates,
+                _context.ViewModel.SelectedFrameRate,
+                isAutoFrameRateSelected: true);
+            if (autoOption != null && CaptureComboBoxSelectionNormalizer.IsAutoFrameRateOption(autoOption))
+            {
+                if (!ReferenceEquals(_context.FrameRateComboBox.SelectedItem, autoOption))
+                {
+                    _context.FrameRateComboBox.SelectedItem = autoOption;
+                }
+
+                return;
+            }
+        }
+
+        var matchingRate = CaptureComboBoxSelectionNormalizer.ResolveFrameRateSelection(
+            _context.ViewModel.AvailableFrameRates,
+            _context.ViewModel.SelectedFrameRate,
+            isAutoFrameRateSelected: false);
+        if (matchingRate == null)
+        {
+            return;
+        }
+
+        if (!CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(matchingRate.Value, _context.ViewModel.SelectedFrameRate))
+        {
+            _context.ViewModel.SelectedFrameRate = matchingRate.Value;
+        }
+
+        if (_context.FrameRateComboBox.SelectedItem is not FrameRateOption currentFps ||
+            !CaptureComboBoxSelectionNormalizer.IsFrameRateMatch(currentFps.Value, matchingRate.Value))
+        {
+            _context.FrameRateComboBox.SelectedItem = matchingRate;
+        }
+    }
+
+    public void EnsureFormatSelection()
+    {
+        if (_context.ViewModel.AvailableRecordingFormats.Count == 0)
+        {
+            if (_context.ViewModel.SelectedDevice == null || !_context.ViewModel.IsPreviewing)
+            {
+                _context.FormatComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        ApplyStringComboBoxSelection(
+            _context.FormatComboBox,
+            _context.ViewModel.AvailableRecordingFormats,
+            () => _context.ViewModel.SelectedRecordingFormat,
+            value => _context.ViewModel.SelectedRecordingFormat = value);
+    }
+
+    public void EnsureQualitySelection() =>
+        ApplyStringComboBoxSelection(
+            _context.QualityComboBox,
+            _context.ViewModel.AvailableQualities,
+            () => _context.ViewModel.SelectedQuality,
+            value => _context.ViewModel.SelectedQuality = value);
+
+    public void EnsurePresetSelection() =>
+        ApplyStringComboBoxSelection(
+            _context.PresetComboBox,
+            _context.ViewModel.AvailablePresets,
+            () => _context.ViewModel.SelectedPreset,
+            value => _context.ViewModel.SelectedPreset = value);
+
+    public void EnsureSplitEncodeModeSelection() =>
+        ApplyStringComboBoxSelection(
+            _context.SplitEncodeComboBox,
+            _context.ViewModel.AvailableSplitEncodeModes,
+            () => _context.ViewModel.SelectedSplitEncodeMode,
+            value => _context.ViewModel.SelectedSplitEncodeMode = value);
+
+    public void EnsureDeviceAudioModeSelection()
+    {
+        if (_context.ViewModel.AvailableDeviceAudioModes.Count == 0)
+        {
+            return;
+        }
+
+        var selectedMode = _context.ViewModel.SelectedDeviceAudioMode;
+        var matchingMode = _context.ViewModel.AvailableDeviceAudioModes.FirstOrDefault(mode =>
+            string.Equals(mode, selectedMode, StringComparison.OrdinalIgnoreCase))
+            ?? _context.ViewModel.AvailableDeviceAudioModes.FirstOrDefault();
+        if (matchingMode == null)
+        {
+            return;
+        }
+
+        if (!string.Equals(_context.ViewModel.SelectedDeviceAudioMode, matchingMode, StringComparison.OrdinalIgnoreCase))
+        {
+            _context.ViewModel.SelectedDeviceAudioMode = matchingMode;
+        }
+
+        var shouldBeOn = string.Equals(matchingMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
+        if (_context.DeviceAudioModeToggle.IsOn != shouldBeOn)
+        {
+            _context.DeviceAudioModeToggle.IsOn = shouldBeOn;
+        }
+    }
+
+    public void ApplyDeviceAudioControlState()
+    {
+        _context.DeviceAudioControlPanel.Visibility =
+            _context.ViewModel.IsDeviceAudioControlSupported ? Visibility.Visible : Visibility.Collapsed;
+        EnsureDeviceAudioModeSelection();
+
+        var analogGain = Math.Clamp(_context.ViewModel.AnalogAudioGainPercent, 0.0, 100.0);
+        if (Math.Abs(_context.AnalogAudioGainSlider.Value - analogGain) > 0.1)
+        {
+            _context.AnalogAudioGainSlider.Value = analogGain;
+        }
+
+        _context.AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(analogGain)}%";
+        var analogModeActive = string.Equals(
+            _context.ViewModel.SelectedDeviceAudioMode,
+            DeviceAudioMode.Analog,
+            StringComparison.OrdinalIgnoreCase);
+        _context.AnalogAudioGainPanel.Visibility =
+            _context.ViewModel.IsDeviceAudioControlSupported && analogModeActive
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        _context.AnalogAudioGainSlider.IsEnabled =
+            _context.ViewModel.IsDeviceAudioControlSupported &&
+            analogModeActive &&
+            !_context.ViewModel.IsRecording;
+    }
+
+    public void HandleSelectedDevicePropertyChanged()
+    {
+        var selectedDevice = (CaptureDevice?)_context.DeviceComboBox.SelectedItem;
+        if (!string.Equals(selectedDevice?.Id, _context.ViewModel.SelectedDevice?.Id, StringComparison.Ordinal))
+        {
+            Sussudio.Logger.Log(
+                $"DEVICE_SELECTION_SYNC viewModel='{_context.ViewModel.SelectedDevice?.Name ?? "NULL"}' combo='{selectedDevice?.Name ?? "NULL"}' devices={_context.ViewModel.Devices.Count} comboItems={_context.DeviceComboBox.Items.Count}");
+        }
+
+        EnsureDeviceSelection();
+        UpdateDeviceApplyButtonState();
+    }
+
+    public void HandleAvailableResolutionsPropertyChanged()
+    {
+        _context.ResolutionComboBox.ItemsSource = _context.ViewModel.AvailableResolutions;
+        EnsureResolutionSelection();
+    }
+
+    public void HandleAvailableFrameRatesPropertyChanged()
+    {
+        _context.FrameRateComboBox.ItemsSource = _context.ViewModel.AvailableFrameRates;
+        EnsureFrameRateSelection();
+    }
+
+    public void HandleAvailablePresetsPropertyChanged()
+    {
+        _context.PresetComboBox.ItemsSource = _context.ViewModel.AvailablePresets;
+        EnsurePresetSelection();
+    }
+
+    public void HandleAvailableSplitEncodeModesPropertyChanged()
+    {
+        _context.SplitEncodeComboBox.ItemsSource = _context.ViewModel.AvailableSplitEncodeModes;
+        EnsureSplitEncodeModeSelection();
+    }
+
+    public bool HasPendingDeviceSelection()
+    {
+        if (_context.DeviceComboBox.SelectedItem is not CaptureDevice selectedDevice)
+        {
+            return false;
+        }
+
+        return !string.Equals(
+            selectedDevice.Id,
+            _context.ViewModel.SelectedDevice?.Id,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void UpdateDeviceApplyButtonState()
+    {
+        if (_context.ApplyDeviceButton == null)
+        {
+            return;
+        }
+
+        _context.ApplyDeviceButton.IsEnabled =
+            HasPendingDeviceSelection() &&
+            !_context.ViewModel.IsRecording &&
+            !_context.ViewModel.IsPreviewReinitializing;
+    }
+
+    private static void AttachCollectionSync(INotifyCollectionChanged collection, Action queueSync)
+    {
+        collection.CollectionChanged += (_, e) =>
+        {
+            if (e.Action is NotifyCollectionChangedAction.Add
+                or NotifyCollectionChangedAction.Reset
+                or NotifyCollectionChangedAction.Remove)
+            {
+                queueSync();
+            }
+        };
+    }
+
+    private void QueueSelectionSync(int syncIndex, Action ensureMethod)
+    {
+        if (Interlocked.Exchange(ref _selectionSyncQueued[syncIndex], 1) != 0)
+        {
+            return;
+        }
+
+        _context.DispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                ensureMethod();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _selectionSyncQueued[syncIndex], 0);
+            }
+        });
+    }
+
+    private void QueueDeviceSelectionSync() => QueueSelectionSync(SyncDevice, EnsureDeviceSelection);
+    private void QueueAudioSelectionSync() => QueueSelectionSync(SyncAudio, EnsureAudioInputSelection);
+    private void QueueMicrophoneSelectionSync() => QueueSelectionSync(SyncMicrophone, EnsureMicrophoneSelection);
+    private void QueueResolutionSelectionSync() => QueueSelectionSync(SyncResolution, EnsureResolutionSelection);
+    private void QueueFrameRateSelectionSync() => QueueSelectionSync(SyncFrameRate, EnsureFrameRateSelection);
+    private void QueueFormatSelectionSync() => QueueSelectionSync(SyncFormat, EnsureFormatSelection);
+    private void QueueQualitySelectionSync() => QueueSelectionSync(SyncQuality, EnsureQualitySelection);
+    private void QueuePresetSelectionSync() => QueueSelectionSync(SyncPreset, EnsurePresetSelection);
+    private void QueueSplitEncodeModeSelectionSync() => QueueSelectionSync(SyncSplitEncode, EnsureSplitEncodeModeSelection);
+
+    private static void ApplyStringComboBoxSelection(
+        ComboBox comboBox,
+        ObservableCollection<string> items,
+        Func<string?> getVmProp,
+        Action<string> setVmProp)
+    {
+        if (items.Count == 0)
+        {
+            comboBox.SelectedItem = null;
+            return;
+        }
+
+        var vmValue = getVmProp();
+        var match = CaptureComboBoxSelectionNormalizer.ResolveStringSelection(items, vmValue);
+        if (match == null)
+        {
+            return;
+        }
+
+        if (!string.Equals(match, vmValue, StringComparison.OrdinalIgnoreCase))
+        {
+            setVmProp(match);
+        }
+
+        if (!string.Equals(comboBox.SelectedItem as string, match, StringComparison.OrdinalIgnoreCase))
+        {
+            comboBox.SelectedItem = match;
+        }
+    }
+}
+
+internal static class CaptureComboBoxSelectionNormalizer
+{
+    public static CaptureDevice? ResolveCaptureDeviceSelection(
+        IReadOnlyList<CaptureDevice> devices,
+        CaptureDevice? selectedDevice)
+        => ResolveDeviceSelection(devices, selectedDevice?.Id, device => device.Id);
+
+    public static AudioInputDevice? ResolveAudioInputDeviceSelection(
+        IReadOnlyList<AudioInputDevice> devices,
+        AudioInputDevice? selectedDevice)
+        => ResolveDeviceSelection(devices, selectedDevice?.Id, device => device.Id);
+
+    public static ResolutionOption? ResolveResolutionSelection(
+        IReadOnlyList<ResolutionOption> options,
+        string? selectedResolution)
+    {
+        if (options.Count == 0)
+        {
+            return null;
+        }
+
+        return options.FirstOrDefault(option =>
+                string.Equals(option.Value, selectedResolution, StringComparison.OrdinalIgnoreCase))
+            ?? options.FirstOrDefault(option => option.IsEnabled)
+            ?? options.FirstOrDefault();
+    }
+
+    public static FrameRateOption? ResolveFrameRateSelection(
+        IReadOnlyList<FrameRateOption> options,
+        double selectedFrameRate,
+        bool isAutoFrameRateSelected)
+    {
+        if (options.Count == 0)
+        {
+            return null;
+        }
+
+        if (isAutoFrameRateSelected)
+        {
+            var autoOption = options.FirstOrDefault(IsAutoFrameRateOption);
+            if (autoOption != null)
+            {
+                return autoOption;
+            }
+        }
+
+        return options.FirstOrDefault(option => IsFrameRateMatch(option.Value, selectedFrameRate))
+            ?? options.FirstOrDefault(option => option.IsEnabled)
+            ?? options.FirstOrDefault();
+    }
+
+    public static string? ResolveStringSelection(
+        IReadOnlyList<string> items,
+        string? selectedValue)
+    {
+        if (items.Count == 0)
+        {
+            return null;
+        }
+
+        var match = items.FirstOrDefault(item => string.Equals(item, selectedValue, StringComparison.OrdinalIgnoreCase))
+            ?? items.FirstOrDefault();
+        return string.IsNullOrWhiteSpace(match) ? null : match;
+    }
+
+    public static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
+        => Math.Abs(a - b) < tolerance;
+
+    public static bool IsAutoFrameRateOption(FrameRateOption option)
+        => option.Value <= 0 || option.FriendlyValue <= 0;
+
+    private static TDevice? ResolveDeviceSelection<TDevice>(
+        IReadOnlyList<TDevice> devices,
+        string? selectedDeviceId,
+        Func<TDevice, string?> getDeviceId)
+        where TDevice : class
+    {
+        if (devices.Count == 0)
+        {
+            return default;
+        }
+
+        var matchingDevice = selectedDeviceId != null
+            ? devices.FirstOrDefault(device =>
+                string.Equals(getDeviceId(device), selectedDeviceId, StringComparison.OrdinalIgnoreCase))
+            : default;
+        return matchingDevice ?? devices.FirstOrDefault();
+    }
+}

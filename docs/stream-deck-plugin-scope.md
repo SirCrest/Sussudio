@@ -11,12 +11,16 @@ automation clients:
   "command": 1,
   "correlationId": "<guid>",
   "authToken": "<token-or-null>",
+  "manifestRevision": 1,
   "payload": {}
 }
 ```
 
-Use `AutomationPipeProtocol.CreateRequestEnvelope` so plugin requests match
-ssctl, MCP, and AutomationClient behavior.
+Use `AutomationPipeProtocol.CreateRequestEnvelope` and
+`AutomationPipeProtocol.CommandManifestRevision` so plugin requests match ssctl,
+MCP, and AutomationClient behavior. The app rejects mismatched manifest
+revisions before dispatch to keep stale numeric command IDs from silently
+misrouting commands.
 
 ## Authentication
 

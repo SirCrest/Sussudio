@@ -3,14 +3,125 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using Sussudio.Models;
+using Vortice.Direct3D11;
 using Vortice.DXGI;
 
 namespace Sussudio.Services.Preview;
 
 internal static class PreviewScreenshotCapture
 {
-    private static readonly uint[] PngCrc32Table = InitPngCrc32Table();
+    internal static byte[] CopyMappedFrameToBuffer(MappedSubresource mapped, int height, int sourceRowBytes)
+    {
+        var sourceBuffer = new byte[checked(sourceRowBytes * height)];
+        for (var y = 0; y < height; y++)
+        {
+            var sourceRow = IntPtr.Add(mapped.DataPointer, checked(y * (int)mapped.RowPitch));
+            Marshal.Copy(sourceRow, sourceBuffer, checked(y * sourceRowBytes), sourceRowBytes);
+        }
+
+        return sourceBuffer;
+    }
+
+    internal static int CountLeadingBlackEdges(bool[] values)
+    {
+        var count = 0;
+        while (count < values.Length && values[count])
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    internal static int CountTrailingBlackEdges(bool[] values)
+    {
+        var count = 0;
+        while (count < values.Length && values[values.Length - 1 - count])
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    internal static PreviewFrameCaptureResult CaptureMappedFrameToBmp(
+        MappedSubresource mapped,
+        int width,
+        int height,
+        string outputPath,
+        string rendererMode,
+        Format backBufferFormat = Format.B8G8R8A8_UNorm)
+    {
+        const int bitmapFileHeaderSize = 14;
+        const int bitmapInfoHeaderSize = 40;
+        const int bitmapColorMaskSize = 12;
+        const int bytesPerPixel = 4;
+
+        var rowBytes = checked(width * bytesPerPixel);
+        var imageSize = checked(rowBytes * height);
+        var pixelDataOffset = bitmapFileHeaderSize + bitmapInfoHeaderSize + bitmapColorMaskSize;
+        var fileSize = checked(pixelDataOffset + imageSize);
+        var analysis = new PreviewScreenshotPixelAnalysis(width, height);
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var rowBuffer = ArrayPool<byte>.Shared.Rent(rowBytes);
+        try
+        {
+            using var fileStream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+            using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
+            WriteBitmapHeaders(writer, fileSize, pixelDataOffset, width, height, imageSize);
+
+            for (var y = 0; y < height; y++)
+            {
+                var sourceRow = IntPtr.Add(mapped.DataPointer, checked(y * (int)mapped.RowPitch));
+                Marshal.Copy(sourceRow, rowBuffer, 0, rowBytes);
+
+                if (backBufferFormat == Format.R10G10B10A2_UNorm)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        var offset = x * bytesPerPixel;
+                        var pixel = (uint)(rowBuffer[offset] |
+                                           (rowBuffer[offset + 1] << 8) |
+                                           (rowBuffer[offset + 2] << 16) |
+                                           (rowBuffer[offset + 3] << 24));
+                        rowBuffer[offset] = (byte)(((pixel >> 20) & 0x3FFu) >> 2);
+                        rowBuffer[offset + 1] = (byte)(((pixel >> 10) & 0x3FFu) >> 2);
+                        rowBuffer[offset + 2] = (byte)((pixel & 0x3FFu) >> 2);
+                        rowBuffer[offset + 3] = 255;
+                    }
+                }
+
+                writer.Write(rowBuffer, 0, rowBytes);
+
+                var isRowPureBlack = true;
+                for (var x = 0; x < width; x++)
+                {
+                    var offset = x * bytesPerPixel;
+                    var b = rowBuffer[offset];
+                    var g = rowBuffer[offset + 1];
+                    var r = rowBuffer[offset + 2];
+
+                    analysis.AnalyzePixel(x, r, g, b, ref isRowPureBlack);
+                }
+
+                analysis.CompleteRow(y, isRowPureBlack);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rowBuffer);
+        }
+
+        return analysis.CreateResult(outputPath, rendererMode);
+    }
 
     internal static PreviewFrameCaptureResult CaptureFrameBufferTo16BitPng(
         byte[] sourceBuffer,
@@ -24,29 +135,7 @@ internal static class PreviewScreenshotCapture
         const int sourceBytesPerPixel = 4;
         const int pngBytesPerPixel = 6;
         var pngRowBytes = checked(1 + (width * pngBytesPerPixel));
-
-        var histogram = new int[16];
-        var rowAllBlack = new bool[height];
-        var columnAllBlack = new bool[width];
-        Array.Fill(rowAllBlack, true);
-        Array.Fill(columnAllBlack, true);
-
-        long sumR = 0;
-        long sumG = 0;
-        long sumB = 0;
-        double sumLuminance = 0;
-        double minLuminance = 255;
-        double maxLuminance = 0;
-        long nearBlackCount = 0;
-        long nearWhiteCount = 0;
-        long pureBlackCount = 0;
-        var totalPixels = (long)width * height;
-
-        var directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrWhiteSpace(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        var analysis = new PreviewScreenshotPixelAnalysis(width, height);
 
         var sourceRowBuffer = ArrayPool<byte>.Shared.Rent(sourceRowBytes);
         var pngRowBuffer = ArrayPool<byte>.Shared.Rent(pngRowBytes);
@@ -113,85 +202,15 @@ internal static class PreviewScreenshotCapture
                             pngRowBuffer[pngOffset++] = (byte)(b16 >> 8);
                             pngRowBuffer[pngOffset++] = (byte)b16;
 
-                            sumR += r8;
-                            sumG += g8;
-                            sumB += b8;
-
-                            var luminance = (0.299 * r8) + (0.587 * g8) + (0.114 * b8);
-                            sumLuminance += luminance;
-                            if (luminance < minLuminance)
-                            {
-                                minLuminance = luminance;
-                            }
-                            if (luminance > maxLuminance)
-                            {
-                                maxLuminance = luminance;
-                            }
-
-                            if (luminance < 16.0)
-                            {
-                                nearBlackCount++;
-                            }
-                            if (luminance > 240.0)
-                            {
-                                nearWhiteCount++;
-                            }
-
-                            var isPureBlack = r8 == 0 && g8 == 0 && b8 == 0;
-                            if (isPureBlack)
-                            {
-                                pureBlackCount++;
-                            }
-                            else
-                            {
-                                isRowPureBlack = false;
-                                columnAllBlack[x] = false;
-                            }
-
-                            var histogramIndex = (int)(luminance / 16.0);
-                            if (histogramIndex > 15)
-                            {
-                                histogramIndex = 15;
-                            }
-
-                            histogram[histogramIndex]++;
+                            analysis.AnalyzePixel(x, r8, g8, b8, ref isRowPureBlack);
                         }
 
-                        rowAllBlack[y] = isRowPureBlack;
+                        analysis.CompleteRow(y, isRowPureBlack);
                         zlibStream.Write(pngRowBuffer, 0, pngRowBytes);
                     }
                 }
 
-                using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
-
-                writer.Write(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
-
-                var ihdrData = new byte[13];
-                BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(0, 4), checked((uint)width));
-                BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(4, 4), checked((uint)height));
-                ihdrData[8] = 16;
-                ihdrData[9] = 2;
-                ihdrData[10] = 0;
-                ihdrData[11] = 0;
-                ihdrData[12] = 0;
-
-                WritePngChunk(writer, new byte[] { (byte)'I', (byte)'H', (byte)'D', (byte)'R' }, ihdrData);
-                if (compressedDataStream.TryGetBuffer(out var compressedData))
-                {
-                    WritePngChunk(
-                        writer,
-                        new byte[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' },
-                        compressedData.Array!,
-                        compressedData.Offset,
-                        checked((int)compressedDataStream.Length));
-                }
-                else
-                {
-                    WritePngChunk(writer, new byte[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' }, compressedDataStream.ToArray());
-                }
-
-                WritePngChunk(writer, new byte[] { (byte)'I', (byte)'E', (byte)'N', (byte)'D' }, Array.Empty<byte>());
+                PreviewPng16Encoder.WriteCompressedRgb16Png(outputPath, width, height, compressedDataStream);
             }
         }
         finally
@@ -200,52 +219,214 @@ internal static class PreviewScreenshotCapture
             ArrayPool<byte>.Shared.Return(sourceRowBuffer);
         }
 
-        var letterboxTopRows = CountLeadingBlackEdges(rowAllBlack);
-        var letterboxBottomRows = letterboxTopRows == height ? 0 : CountTrailingBlackEdges(rowAllBlack);
-        var pillarboxLeftCols = CountLeadingBlackEdges(columnAllBlack);
-        var pillarboxRightCols = pillarboxLeftCols == width ? 0 : CountTrailingBlackEdges(columnAllBlack);
+        return analysis.CreateResult(outputPath, rendererMode);
+    }
 
-        var contentWidth = Math.Max(0, width - pillarboxLeftCols - pillarboxRightCols);
-        var contentHeight = Math.Max(0, height - letterboxTopRows - letterboxBottomRows);
-        var contentAspectRatio = contentHeight > 0
-            ? (double)contentWidth / contentHeight
-            : 0.0;
+    private static void WriteBitmapHeaders(
+        BinaryWriter writer,
+        int fileSize,
+        int pixelDataOffset,
+        int width,
+        int height,
+        int imageSize)
+    {
+        writer.Write((byte)'B');
+        writer.Write((byte)'M');
+        writer.Write(fileSize);
+        writer.Write((short)0);
+        writer.Write((short)0);
+        writer.Write(pixelDataOffset);
 
-        var averageR = totalPixels > 0 ? (double)sumR / totalPixels : 0.0;
-        var averageG = totalPixels > 0 ? (double)sumG / totalPixels : 0.0;
-        var averageB = totalPixels > 0 ? (double)sumB / totalPixels : 0.0;
-        var averageLuminance = totalPixels > 0 ? sumLuminance / totalPixels : 0.0;
-        var nearBlackPercent = totalPixels > 0 ? (nearBlackCount * 100.0) / totalPixels : 0.0;
-        var nearWhitePercent = totalPixels > 0 ? (nearWhiteCount * 100.0) / totalPixels : 0.0;
-        var pureBlackPercent = totalPixels > 0 ? (pureBlackCount * 100.0) / totalPixels : 0.0;
+        writer.Write(40);
+        writer.Write(width);
+        writer.Write(-height);
+        writer.Write((short)1);
+        writer.Write((short)32);
+        writer.Write(3);
+        writer.Write(imageSize);
+        writer.Write(0);
+        writer.Write(0);
+        writer.Write(0);
+        writer.Write(0);
 
-        return new PreviewFrameCaptureResult
+        writer.Write(unchecked((int)0x00FF0000));
+        writer.Write(unchecked((int)0x0000FF00));
+        writer.Write(unchecked((int)0x000000FF));
+    }
+
+    private sealed class PreviewScreenshotPixelAnalysis
+    {
+        private readonly int _width;
+        private readonly int _height;
+        private readonly int[] _histogram = new int[16];
+        private readonly bool[] _rowAllBlack;
+        private readonly bool[] _columnAllBlack;
+        private long _sumR;
+        private long _sumG;
+        private long _sumB;
+        private double _sumLuminance;
+        private double _minLuminance = 255;
+        private double _maxLuminance;
+        private long _nearBlackCount;
+        private long _nearWhiteCount;
+        private long _pureBlackCount;
+
+        internal PreviewScreenshotPixelAnalysis(int width, int height)
         {
-            Succeeded = true,
-            Message = "Preview frame captured.",
-            FilePath = outputPath,
-            CapturedWidth = width,
-            CapturedHeight = height,
-            RendererMode = rendererMode,
-            AverageR = averageR,
-            AverageG = averageG,
-            AverageB = averageB,
-            AverageLuminance = averageLuminance,
-            MinLuminance = minLuminance,
-            MaxLuminance = maxLuminance,
-            NearBlackPercent = nearBlackPercent,
-            NearWhitePercent = nearWhitePercent,
-            PureBlackPercent = pureBlackPercent,
-            LetterboxTopRows = letterboxTopRows,
-            LetterboxBottomRows = letterboxBottomRows,
-            PillarboxLeftCols = pillarboxLeftCols,
-            PillarboxRightCols = pillarboxRightCols,
-            ContentWidth = contentWidth,
-            ContentHeight = contentHeight,
-            ContentAspectRatio = contentAspectRatio,
-            LuminanceHistogram = histogram,
-            TotalPixels = totalPixels
-        };
+            _width = width;
+            _height = height;
+            _rowAllBlack = new bool[height];
+            _columnAllBlack = new bool[width];
+            Array.Fill(_rowAllBlack, true);
+            Array.Fill(_columnAllBlack, true);
+        }
+
+        internal void AnalyzePixel(int x, byte r, byte g, byte b, ref bool isRowPureBlack)
+        {
+            _sumR += r;
+            _sumG += g;
+            _sumB += b;
+
+            var luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            _sumLuminance += luminance;
+            if (luminance < _minLuminance)
+            {
+                _minLuminance = luminance;
+            }
+            if (luminance > _maxLuminance)
+            {
+                _maxLuminance = luminance;
+            }
+
+            if (luminance < 16.0)
+            {
+                _nearBlackCount++;
+            }
+            if (luminance > 240.0)
+            {
+                _nearWhiteCount++;
+            }
+
+            var isPureBlack = r == 0 && g == 0 && b == 0;
+            if (isPureBlack)
+            {
+                _pureBlackCount++;
+            }
+            else
+            {
+                isRowPureBlack = false;
+                _columnAllBlack[x] = false;
+            }
+
+            var histogramIndex = (int)(luminance / 16.0);
+            if (histogramIndex > 15)
+            {
+                histogramIndex = 15;
+            }
+
+            _histogram[histogramIndex]++;
+        }
+
+        internal void CompleteRow(int y, bool isRowPureBlack)
+        {
+            _rowAllBlack[y] = isRowPureBlack;
+        }
+
+        internal PreviewFrameCaptureResult CreateResult(string outputPath, string rendererMode)
+        {
+            var totalPixels = (long)_width * _height;
+            var letterboxTopRows = CountLeadingBlackEdges(_rowAllBlack);
+            var letterboxBottomRows = letterboxTopRows == _height ? 0 : CountTrailingBlackEdges(_rowAllBlack);
+            var pillarboxLeftCols = CountLeadingBlackEdges(_columnAllBlack);
+            var pillarboxRightCols = pillarboxLeftCols == _width ? 0 : CountTrailingBlackEdges(_columnAllBlack);
+
+            var contentWidth = Math.Max(0, _width - pillarboxLeftCols - pillarboxRightCols);
+            var contentHeight = Math.Max(0, _height - letterboxTopRows - letterboxBottomRows);
+            var contentAspectRatio = contentHeight > 0
+                ? (double)contentWidth / contentHeight
+                : 0.0;
+
+            return new PreviewFrameCaptureResult
+            {
+                Succeeded = true,
+                Message = "Preview frame captured.",
+                FilePath = outputPath,
+                CapturedWidth = _width,
+                CapturedHeight = _height,
+                RendererMode = rendererMode,
+                AverageR = totalPixels > 0 ? (double)_sumR / totalPixels : 0.0,
+                AverageG = totalPixels > 0 ? (double)_sumG / totalPixels : 0.0,
+                AverageB = totalPixels > 0 ? (double)_sumB / totalPixels : 0.0,
+                AverageLuminance = totalPixels > 0 ? _sumLuminance / totalPixels : 0.0,
+                MinLuminance = _minLuminance,
+                MaxLuminance = _maxLuminance,
+                NearBlackPercent = totalPixels > 0 ? (_nearBlackCount * 100.0) / totalPixels : 0.0,
+                NearWhitePercent = totalPixels > 0 ? (_nearWhiteCount * 100.0) / totalPixels : 0.0,
+                PureBlackPercent = totalPixels > 0 ? (_pureBlackCount * 100.0) / totalPixels : 0.0,
+                LetterboxTopRows = letterboxTopRows,
+                LetterboxBottomRows = letterboxBottomRows,
+                PillarboxLeftCols = pillarboxLeftCols,
+                PillarboxRightCols = pillarboxRightCols,
+                ContentWidth = contentWidth,
+                ContentHeight = contentHeight,
+                ContentAspectRatio = contentAspectRatio,
+                LuminanceHistogram = _histogram,
+                TotalPixels = totalPixels
+            };
+        }
+    }
+}
+
+internal static class PreviewPng16Encoder
+{
+    private static readonly byte[] PngSignature = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+    private static readonly byte[] IhdrChunkType = { (byte)'I', (byte)'H', (byte)'D', (byte)'R' };
+    private static readonly byte[] IdatChunkType = { (byte)'I', (byte)'D', (byte)'A', (byte)'T' };
+    private static readonly byte[] IendChunkType = { (byte)'I', (byte)'E', (byte)'N', (byte)'D' };
+    private static readonly uint[] PngCrc32Table = InitPngCrc32Table();
+
+    internal static void WriteCompressedRgb16Png(
+        string outputPath,
+        int width,
+        int height,
+        MemoryStream compressedDataStream)
+    {
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        using var fileStream = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+        using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
+
+        writer.Write(PngSignature);
+
+        var ihdrData = new byte[13];
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(0, 4), checked((uint)width));
+        BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(4, 4), checked((uint)height));
+        ihdrData[8] = 16;
+        ihdrData[9] = 2;
+        ihdrData[10] = 0;
+        ihdrData[11] = 0;
+        ihdrData[12] = 0;
+
+        WritePngChunk(writer, IhdrChunkType, ihdrData);
+        if (compressedDataStream.TryGetBuffer(out var compressedData))
+        {
+            WritePngChunk(
+                writer,
+                IdatChunkType,
+                compressedData.Array!,
+                compressedData.Offset,
+                checked((int)compressedDataStream.Length));
+        }
+        else
+        {
+            WritePngChunk(writer, IdatChunkType, compressedDataStream.ToArray());
+        }
+
+        WritePngChunk(writer, IendChunkType, Array.Empty<byte>());
     }
 
     internal static uint[] InitPngCrc32Table()
@@ -263,28 +444,6 @@ internal static class PreviewScreenshotCapture
         }
 
         return table;
-    }
-
-    internal static int CountLeadingBlackEdges(bool[] values)
-    {
-        var count = 0;
-        while (count < values.Length && values[count])
-        {
-            count++;
-        }
-
-        return count;
-    }
-
-    internal static int CountTrailingBlackEdges(bool[] values)
-    {
-        var count = 0;
-        while (count < values.Length && values[values.Length - 1 - count])
-        {
-            count++;
-        }
-
-        return count;
     }
 
     private static uint UpdatePngCrc32(uint crc, byte[] buffer, int offset, int length)

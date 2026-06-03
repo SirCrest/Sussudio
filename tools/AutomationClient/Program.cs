@@ -1,6 +1,6 @@
+using System.Text.Json;
 using System.Globalization;
 using System.Text;
-using System.Text.Json;
 using Sussudio.Tools;
 
 // Generic automation-pipe client used by scripts and ad hoc debugging. ssctl
@@ -74,14 +74,15 @@ internal static class Program
                     payload,
                     options.ConnectTimeoutMs,
                     responseTimeoutMs,
-                    options.AuthToken)
+                    options.AuthToken,
+                    cancellationToken: cts.Token)
                 .ConfigureAwait(false);
             var responseLine = result.ResponseJson;
 
             if (options.Pretty)
             {
                 using var responseDocument = JsonDocument.Parse(responseLine);
-                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, JsonOptions.Pretty);
+                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, ToolJsonOptions.Pretty);
                 Console.WriteLine(pretty);
             }
             else
@@ -114,91 +115,18 @@ internal static class Program
         }
     }
 
-    private static object BuildPayload(Options options)
+    private sealed class Options
     {
-        if (!string.IsNullOrWhiteSpace(options.PayloadBase64))
-        {
-            if (options.PayloadKv.Count > 0 ||
-                !string.Equals(options.PayloadJson, "{}", StringComparison.Ordinal))
-            {
-                throw new ArgumentException("Use only one of --payload, --payload-base64, or --payload-kv.");
-            }
-
-            var payloadBytes = Convert.FromBase64String(options.PayloadBase64);
-            var payloadJson = Encoding.UTF8.GetString(payloadBytes);
-            using var decodedPayloadDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(payloadJson) ? "{}" : payloadJson);
-            return decodedPayloadDocument.RootElement.Clone();
-        }
-
-        if (options.PayloadKv.Count > 0)
-        {
-            if (!string.Equals(options.PayloadJson, "{}", StringComparison.Ordinal))
-            {
-                throw new ArgumentException("Use either --payload or --payload-kv, not both.");
-            }
-
-            var payload = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach (var entry in options.PayloadKv)
-            {
-                var separatorIndex = entry.IndexOf('=');
-                if (separatorIndex <= 0)
-                {
-                    throw new ArgumentException($"Invalid --payload-kv entry '{entry}'. Expected key=value.");
-                }
-
-                var key = entry.Substring(0, separatorIndex).Trim();
-                var rawValue = entry[(separatorIndex + 1)..].Trim();
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    throw new ArgumentException($"Invalid --payload-kv entry '{entry}'. Key is empty.");
-                }
-
-                payload[key] = ParsePayloadValue(rawValue);
-            }
-
-            return payload;
-        }
-
-        using var payloadDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(options.PayloadJson) ? "{}" : options.PayloadJson);
-        return payloadDocument.RootElement.Clone();
-    }
-
-    private static object? ParsePayloadValue(string rawValue)
-    {
-        if (string.Equals(rawValue, "null", StringComparison.OrdinalIgnoreCase))
-        {
-            return null;
-        }
-
-        if ((rawValue.StartsWith("\"", StringComparison.Ordinal) && rawValue.EndsWith("\"", StringComparison.Ordinal)) ||
-            (rawValue.StartsWith("'", StringComparison.Ordinal) && rawValue.EndsWith("'", StringComparison.Ordinal)))
-        {
-            rawValue = rawValue[1..^1];
-        }
-
-        if (bool.TryParse(rawValue, out var boolValue))
-        {
-            return boolValue;
-        }
-
-        if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue))
-        {
-            return intValue;
-        }
-
-        if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
-        {
-            return doubleValue;
-        }
-
-        if ((rawValue.StartsWith("{", StringComparison.Ordinal) && rawValue.EndsWith("}", StringComparison.Ordinal)) ||
-            (rawValue.StartsWith("[", StringComparison.Ordinal) && rawValue.EndsWith("]", StringComparison.Ordinal)))
-        {
-            using var jsonValueDocument = JsonDocument.Parse(rawValue);
-            return jsonValueDocument.RootElement.Clone();
-        }
-
-        return rawValue;
+        public string? Command { get; set; }
+        public string PipeName { get; set; } = AutomationPipeProtocol.DefaultPipeName;
+        public string? AuthToken { get; set; }
+        public string PayloadJson { get; set; } = "{}";
+        public string PayloadBase64 { get; set; } = string.Empty;
+        public List<string> PayloadKv { get; } = [];
+        public int ConnectTimeoutMs { get; set; } = AutomationPipeProtocol.DefaultConnectTimeoutMs;
+        public int? ResponseTimeoutMs { get; set; }
+        public bool Pretty { get; set; }
+        public bool ShowHelp { get; set; }
     }
 
     private static Options ParseArgs(string[] args)
@@ -292,17 +220,91 @@ internal static class Program
         Console.WriteLine("  --help, -h, /?            Show help");
     }
 
-    private sealed class Options
+
+    private static object BuildPayload(Options options)
     {
-        public string? Command { get; set; }
-        public string PipeName { get; set; } = AutomationPipeProtocol.DefaultPipeName;
-        public string? AuthToken { get; set; }
-        public string PayloadJson { get; set; } = "{}";
-        public string PayloadBase64 { get; set; } = string.Empty;
-        public List<string> PayloadKv { get; } = [];
-        public int ConnectTimeoutMs { get; set; } = AutomationPipeProtocol.DefaultConnectTimeoutMs;
-        public int? ResponseTimeoutMs { get; set; }
-        public bool Pretty { get; set; }
-        public bool ShowHelp { get; set; }
+        if (!string.IsNullOrWhiteSpace(options.PayloadBase64))
+        {
+            if (options.PayloadKv.Count > 0 ||
+                !string.Equals(options.PayloadJson, "{}", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Use only one of --payload, --payload-base64, or --payload-kv.");
+            }
+
+            var payloadBytes = Convert.FromBase64String(options.PayloadBase64);
+            var payloadJson = Encoding.UTF8.GetString(payloadBytes);
+            using var decodedPayloadDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(payloadJson) ? "{}" : payloadJson);
+            return decodedPayloadDocument.RootElement.Clone();
+        }
+
+        if (options.PayloadKv.Count > 0)
+        {
+            if (!string.Equals(options.PayloadJson, "{}", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Use either --payload or --payload-kv, not both.");
+            }
+
+            var payload = new Dictionary<string, object?>(StringComparer.Ordinal);
+            foreach (var entry in options.PayloadKv)
+            {
+                var separatorIndex = entry.IndexOf('=');
+                if (separatorIndex <= 0)
+                {
+                    throw new ArgumentException($"Invalid --payload-kv entry '{entry}'. Expected key=value.");
+                }
+
+                var key = entry.Substring(0, separatorIndex).Trim();
+                var rawValue = entry[(separatorIndex + 1)..].Trim();
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    throw new ArgumentException($"Invalid --payload-kv entry '{entry}'. Key is empty.");
+                }
+
+                payload[key] = ParsePayloadValue(rawValue);
+            }
+
+            return payload;
+        }
+
+        using var payloadDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(options.PayloadJson) ? "{}" : options.PayloadJson);
+        return payloadDocument.RootElement.Clone();
+    }
+
+    private static object? ParsePayloadValue(string rawValue)
+    {
+        if (string.Equals(rawValue, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if ((rawValue.StartsWith("\"", StringComparison.Ordinal) && rawValue.EndsWith("\"", StringComparison.Ordinal)) ||
+            (rawValue.StartsWith("'", StringComparison.Ordinal) && rawValue.EndsWith("'", StringComparison.Ordinal)))
+        {
+            rawValue = rawValue[1..^1];
+        }
+
+        if (bool.TryParse(rawValue, out var boolValue))
+        {
+            return boolValue;
+        }
+
+        if (int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue))
+        {
+            return intValue;
+        }
+
+        if (double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
+        {
+            return doubleValue;
+        }
+
+        if ((rawValue.StartsWith("{", StringComparison.Ordinal) && rawValue.EndsWith("}", StringComparison.Ordinal)) ||
+            (rawValue.StartsWith("[", StringComparison.Ordinal) && rawValue.EndsWith("]", StringComparison.Ordinal)))
+        {
+            using var jsonValueDocument = JsonDocument.Parse(rawValue);
+            return jsonValueDocument.RootElement.Clone();
+        }
+
+        return rawValue;
     }
 }

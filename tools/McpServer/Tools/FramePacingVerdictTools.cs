@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -21,7 +22,7 @@ public static class FramePacingVerdictTools
         [Description("Minimum per-channel cadence sample duration in seconds before lows are considered trustworthy. Default 30 seconds.")] double minSampleSeconds = 30,
         [Description("Optional target high-frame-rate FPS. Use 0 to infer from snapshot source/capture/playback fields.")] double targetFpsOverride = 0)
     {
-        var snapshotResponse = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        var snapshotResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(snapshotResponse))
         {
             return McpToolResultFactory.FromResponse(snapshotResponse, GetMessage(snapshotResponse));
@@ -37,7 +38,7 @@ public static class FramePacingVerdictTools
         {
             ["maxEntries"] = maxTimelineEntries
         };
-        var timelineResponse = await pipeClient.SendCommandAsync("GetPerformanceTimeline", timelinePayload).ConfigureAwait(false);
+        var timelineResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(timelineResponse))
         {
             return McpToolResultFactory.FromResponse(timelineResponse, GetMessage(timelineResponse));
@@ -45,7 +46,6 @@ public static class FramePacingVerdictTools
 
         var timeline = ReadTimeline(timelineResponse);
         var targetFps = ResolveTargetFps(snapshot, targetFpsOverride);
-        var targetFrameMs = targetFps > 0 ? 1000.0 / targetFps : 0;
         var minSampleMs = Math.Max(0, minSampleSeconds) * 1000.0;
 
         var capture = ReadChannel(
@@ -84,56 +84,41 @@ public static class FramePacingVerdictTools
         var hiddenStutter = sampleReady && IsHiddenStutter(targetFps, preview) ||
                             sampleReady && IsHiddenStutter(targetFps, playback);
         var verdict = ResolveVerdict(sampleReady, previewHalfRate, playbackHalfRate, hiddenStutter);
+        var text = BuildFramePacingVerdictText(
+            snapshot,
+            timeline,
+            targetFps,
+            minSampleSeconds,
+            capture,
+            preview,
+            playback,
+            captureReady,
+            previewReady,
+            playbackReady,
+            sampleReady,
+            previewHalfRate,
+            playbackHalfRate,
+            hiddenStutter,
+            verdict);
 
-        var first = timeline.FirstOrDefault();
-        var last = timeline.LastOrDefault();
-        var dxgiMissedMax = timeline.Count == 0 ? 0 : timeline.Max(row => row.DxgiRecentMissed);
-        var previewDropDelta = first is null || last is null ? 0 : NonNegativeDelta(last.MjpegJitterDropped, first.MjpegJitterDropped);
-        var playbackDropDelta = first is null || last is null ? 0 : NonNegativeDelta(last.PlaybackDroppedFrames, first.PlaybackDroppedFrames);
-        var visualChangeFps = AutomationSnapshotFormatter.GetDouble(snapshot, "VisualCadenceChangeObservedFps");
-        var visualRepeatPercent = AutomationSnapshotFormatter.GetDouble(snapshot, "VisualCadenceRepeatFramePercent");
-        var visualConfidence = AutomationSnapshotFormatter.Get(snapshot, "VisualCadenceMotionConfidence");
-        var mjpegInputFps = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashInputObservedFps");
-        var mjpegUniqueFps = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashUniqueObservedFps");
-        var mjpegDuplicatePercent = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashDuplicateFramePercent");
-        var previewPacingStage = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingLikelySlowStage", "Unknown");
-        var previewPacingConfidence = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingSlowStageConfidence", "None");
-        var previewPacingEvidence = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingSlowStageEvidence", string.Empty);
-
-        var builder = new StringBuilder();
-        builder.AppendLine($"Verdict: {verdict}");
-        builder.AppendLine($"SampleQuality: {(sampleReady ? "Ready" : "Insufficient")}");
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"TargetFps: {targetFps:0.##}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"TargetFrameMs: {targetFrameMs:0.###}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MinSampleSeconds: {minSampleSeconds:0.##}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Capture: observed={capture.ObservedFps:0.##} 5pct={capture.FivePercentLowFps:0.##} 1pct={capture.OnePercentLowFps:0.##} samples={capture.SampleCount} durationMs={capture.SampleDurationMs:0.#} ready={FormatBool(captureReady)}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Preview: observed={preview.ObservedFps:0.##} 5pct={preview.FivePercentLowFps:0.##} 1pct={preview.OnePercentLowFps:0.##} samples={preview.SampleCount} durationMs={preview.SampleDurationMs:0.#} ready={FormatBool(previewReady)}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Playback: observed={playback.ObservedFps:0.##} 5pct={playback.FivePercentLowFps:0.##} 1pct={playback.OnePercentLowFps:0.##} samples={playback.SampleCount} durationMs={playback.SampleDurationMs:0.#} ready={FormatBool(playbackReady)}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"SourceToPreviewRatio: {Ratio(preview.ObservedFps, targetFps):0.###}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"SourceToPlaybackRatio: {Ratio(playback.ObservedFps, targetFps):0.###}"));
-        builder.AppendLine($"HalfRatePreviewSuspected: {FormatBool(previewHalfRate)}");
-        builder.AppendLine($"HalfRatePlaybackSuspected: {FormatBool(playbackHalfRate)}");
-        builder.AppendLine($"HiddenStutterSuspected: {FormatBool(hiddenStutter)}");
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"VisualChangeFps: {visualChangeFps:0.##}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"VisualRepeatPercent: {visualRepeatPercent:0.##}"));
-        builder.AppendLine($"VisualMotionConfidence: {visualConfidence}");
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegInputFps: {mjpegInputFps:0.##}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegUniqueFps: {mjpegUniqueFps:0.##}"));
-        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegDuplicatePercent: {mjpegDuplicatePercent:0.##}"));
-        builder.AppendLine($"PreviewPacingLikelySlowStage: {previewPacingStage}");
-        builder.AppendLine($"PreviewPacingSlowStageConfidence: {previewPacingConfidence}");
-        builder.AppendLine($"PreviewPacingSlowStageEvidence: {previewPacingEvidence}");
-        builder.AppendLine($"TimelineSamples: {timeline.Count}");
-        builder.AppendLine($"DxgiMissedRefreshRecentMax: {dxgiMissedMax}");
-        builder.AppendLine($"PreviewDropDelta: {previewDropDelta}");
-        builder.AppendLine($"PlaybackDropDelta: {playbackDropDelta}");
-        builder.AppendLine($"Evidence: captureReady={FormatBool(captureReady)} previewReady={FormatBool(previewReady)} playbackReady={FormatBool(playbackReady)} previewHalfRate={FormatBool(previewHalfRate)} playbackHalfRate={FormatBool(playbackHalfRate)}");
-
-        return McpToolResultFactory.FromResponse(snapshotResponse, builder.ToString().TrimEnd());
+        return McpToolResultFactory.FromResponse(snapshotResponse, text);
     }
 
     private static string GetMessage(JsonElement response)
         => AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
+
+    private sealed record TimelineRow(
+        long DxgiRecentMissed,
+        long MjpegJitterDropped,
+        long PlaybackDroppedFrames);
+
+    private sealed record FramePacingChannel(
+        double ObservedFps,
+        double FivePercentLowFps,
+        double OnePercentLowFps,
+        int SampleCount,
+        double SampleDurationMs,
+        double[] IntervalsMs);
 
     private static IReadOnlyList<TimelineRow> ReadTimeline(JsonElement timelineResponse)
     {
@@ -171,6 +156,32 @@ public static class FramePacingVerdictTools
             AutomationSnapshotFormatter.GetInt(snapshot, sampleCountProperty),
             AutomationSnapshotFormatter.GetDouble(snapshot, sampleDurationMsProperty),
             GetDoubleArray(snapshot, intervalsProperty));
+    }
+
+    private static double[] GetDoubleArray(JsonElement element, string propertyName)
+    {
+        if (element.ValueKind != JsonValueKind.Object ||
+            !element.TryGetProperty(propertyName, out var array) ||
+            array.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<double>();
+        }
+
+        var values = new List<double>();
+        foreach (var item in array.EnumerateArray())
+        {
+            if (item.ValueKind == JsonValueKind.Number && item.TryGetDouble(out var numeric))
+            {
+                values.Add(numeric);
+            }
+            else if (item.ValueKind == JsonValueKind.String &&
+                     double.TryParse(item.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+            {
+                values.Add(parsed);
+            }
+        }
+
+        return values.ToArray();
     }
 
     private static double ResolveTargetFps(JsonElement snapshot, double targetFpsOverride)
@@ -269,30 +280,69 @@ public static class FramePacingVerdictTools
         return hiddenStutter ? "HiddenStutterSuspected" : "FramePacingLooksGood";
     }
 
-    private static double[] GetDoubleArray(JsonElement element, string propertyName)
+    private static string BuildFramePacingVerdictText(
+        JsonElement snapshot,
+        IReadOnlyList<TimelineRow> timeline,
+        double targetFps,
+        double minSampleSeconds,
+        FramePacingChannel capture,
+        FramePacingChannel preview,
+        FramePacingChannel playback,
+        bool captureReady,
+        bool previewReady,
+        bool playbackReady,
+        bool sampleReady,
+        bool previewHalfRate,
+        bool playbackHalfRate,
+        bool hiddenStutter,
+        string verdict)
     {
-        if (element.ValueKind != JsonValueKind.Object ||
-            !element.TryGetProperty(propertyName, out var array) ||
-            array.ValueKind != JsonValueKind.Array)
-        {
-            return Array.Empty<double>();
-        }
+        var targetFrameMs = targetFps > 0 ? 1000.0 / targetFps : 0;
+        var first = timeline.FirstOrDefault();
+        var last = timeline.LastOrDefault();
+        var dxgiMissedMax = timeline.Count == 0 ? 0 : timeline.Max(row => row.DxgiRecentMissed);
+        var previewDropDelta = first is null || last is null ? 0 : NonNegativeDelta(last.MjpegJitterDropped, first.MjpegJitterDropped);
+        var playbackDropDelta = first is null || last is null ? 0 : NonNegativeDelta(last.PlaybackDroppedFrames, first.PlaybackDroppedFrames);
+        var visualChangeFps = AutomationSnapshotFormatter.GetDouble(snapshot, "VisualCadenceChangeObservedFps");
+        var visualRepeatPercent = AutomationSnapshotFormatter.GetDouble(snapshot, "VisualCadenceRepeatFramePercent");
+        var visualConfidence = AutomationSnapshotFormatter.Get(snapshot, "VisualCadenceMotionConfidence");
+        var mjpegInputFps = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashInputObservedFps");
+        var mjpegUniqueFps = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashUniqueObservedFps");
+        var mjpegDuplicatePercent = AutomationSnapshotFormatter.GetDouble(snapshot, "MjpegPacketHashDuplicateFramePercent");
+        var previewPacingStage = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingLikelySlowStage", "Unknown");
+        var previewPacingConfidence = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingSlowStageConfidence", "None");
+        var previewPacingEvidence = AutomationSnapshotFormatter.Get(snapshot, "PreviewPacingSlowStageEvidence", string.Empty);
 
-        var values = new List<double>();
-        foreach (var item in array.EnumerateArray())
-        {
-            if (item.ValueKind == JsonValueKind.Number && item.TryGetDouble(out var numeric))
-            {
-                values.Add(numeric);
-            }
-            else if (item.ValueKind == JsonValueKind.String &&
-                     double.TryParse(item.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-            {
-                values.Add(parsed);
-            }
-        }
+        var builder = new StringBuilder();
+        builder.AppendLine($"Verdict: {verdict}");
+        builder.AppendLine($"SampleQuality: {(sampleReady ? "Ready" : "Insufficient")}");
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"TargetFps: {targetFps:0.##}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"TargetFrameMs: {targetFrameMs:0.###}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MinSampleSeconds: {minSampleSeconds:0.##}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Capture: observed={capture.ObservedFps:0.##} 5pct={capture.FivePercentLowFps:0.##} 1pct={capture.OnePercentLowFps:0.##} samples={capture.SampleCount} durationMs={capture.SampleDurationMs:0.#} ready={FormatBool(captureReady)}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Preview: observed={preview.ObservedFps:0.##} 5pct={preview.FivePercentLowFps:0.##} 1pct={preview.OnePercentLowFps:0.##} samples={preview.SampleCount} durationMs={preview.SampleDurationMs:0.#} ready={FormatBool(previewReady)}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"Playback: observed={playback.ObservedFps:0.##} 5pct={playback.FivePercentLowFps:0.##} 1pct={playback.OnePercentLowFps:0.##} samples={playback.SampleCount} durationMs={playback.SampleDurationMs:0.#} ready={FormatBool(playbackReady)}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"SourceToPreviewRatio: {Ratio(preview.ObservedFps, targetFps):0.###}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"SourceToPlaybackRatio: {Ratio(playback.ObservedFps, targetFps):0.###}"));
+        builder.AppendLine($"HalfRatePreviewSuspected: {FormatBool(previewHalfRate)}");
+        builder.AppendLine($"HalfRatePlaybackSuspected: {FormatBool(playbackHalfRate)}");
+        builder.AppendLine($"HiddenStutterSuspected: {FormatBool(hiddenStutter)}");
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"VisualChangeFps: {visualChangeFps:0.##}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"VisualRepeatPercent: {visualRepeatPercent:0.##}"));
+        builder.AppendLine($"VisualMotionConfidence: {visualConfidence}");
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegInputFps: {mjpegInputFps:0.##}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegUniqueFps: {mjpegUniqueFps:0.##}"));
+        builder.AppendLine(string.Create(CultureInfo.InvariantCulture, $"MjpegDuplicatePercent: {mjpegDuplicatePercent:0.##}"));
+        builder.AppendLine($"PreviewPacingLikelySlowStage: {previewPacingStage}");
+        builder.AppendLine($"PreviewPacingSlowStageConfidence: {previewPacingConfidence}");
+        builder.AppendLine($"PreviewPacingSlowStageEvidence: {previewPacingEvidence}");
+        builder.AppendLine($"TimelineSamples: {timeline.Count}");
+        builder.AppendLine($"DxgiMissedRefreshRecentMax: {dxgiMissedMax}");
+        builder.AppendLine($"PreviewDropDelta: {previewDropDelta}");
+        builder.AppendLine($"PlaybackDropDelta: {playbackDropDelta}");
+        builder.AppendLine($"Evidence: captureReady={FormatBool(captureReady)} previewReady={FormatBool(previewReady)} playbackReady={FormatBool(playbackReady)} previewHalfRate={FormatBool(previewHalfRate)} playbackHalfRate={FormatBool(playbackHalfRate)}");
 
-        return values.ToArray();
+        return builder.ToString().TrimEnd();
     }
 
     private static long NonNegativeDelta(long latest, long first)
@@ -303,17 +353,4 @@ public static class FramePacingVerdictTools
 
     private static string FormatBool(bool value)
         => value ? "true" : "false";
-
-    private sealed record FramePacingChannel(
-        double ObservedFps,
-        double FivePercentLowFps,
-        double OnePercentLowFps,
-        int SampleCount,
-        double SampleDurationMs,
-        double[] IntervalsMs);
-
-    private sealed record TimelineRow(
-        long DxgiRecentMissed,
-        long MjpegJitterDropped,
-        long PlaybackDroppedFrames);
 }

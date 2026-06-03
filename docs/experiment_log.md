@@ -35,7 +35,8 @@ not as current truth. This condensed file is the agent-facing map.
   `results/e2e-20260505-193751` and `results/e2e-20260505-focused`.
 - Automation pipe: `SussudioAutomation`, with optional
   `SUSSUDIO_AUTOMATION_TOKEN`.
-- Main CLI: `tools/ssctl`; shared protocol/catalog live under `tools/Common`.
+- Main CLI: `tools/ssctl`; shared protocol/catalog live under
+  `Sussudio.Automation.Contracts`.
 - Useful command family:
   `ssctl diagnostic-session --seconds <N> --verify <scenario>`.
 - UI/MCP-visible toggles include `ssctl frametime show|hide` and
@@ -111,8 +112,9 @@ not as current truth. This condensed file is the agent-facing map.
 - `AutomationCommandCatalog` is the shared source for command metadata, payload
   shape, readiness gating, response timeout, path policy, CLI help text, and MCP
   description text.
-- If `AutomationCommandKind` changes, update the dispatcher, catalog/protocol,
-  `ssctl`, MCP tools, diagnostic sessions, tests, and freshness inputs together.
+- If `AutomationCommandKind` changes, update the contracts catalog/protocol,
+  dispatcher, `ssctl`, MCP tools, diagnostic sessions, tests, and freshness
+  inputs together.
 - `ssctl --help` is the preferred helper check. Old `ecctl` references are
   historical.
 - Long Flashback export operations use the Flashback mutation timeout path
@@ -130,8 +132,9 @@ not as current truth. This condensed file is the agent-facing map.
   risks preview and audio continuity.
 - `CaptureModeOptionsBuilder` owns deterministic resolution/video-format option
   construction; `MainViewModel` still owns selection state and reinit decisions.
-- `StatsPresentationBuilder` owns pure stats text/status projection; WinUI files
-  own polling, row pools, brushes, and drawing.
+- `StatsPresentationBuilder` owns pure stats text/status projection; stats
+  controllers own polling, refresh orchestration, row pools, brushes, and
+  drawing while WinUI files stay adapters.
 - `FlashbackBackendResources` is the right place for new backend ownership
   behavior. Avoid adding a second manager or parallel source of truth in
   `CaptureService`.

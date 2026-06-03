@@ -5,13 +5,9 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Audio;
 using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
@@ -60,6 +56,7 @@ public readonly record struct CaptureCommand(
 public sealed class CaptureSessionSnapshot
 {
     public DateTimeOffset LastTransitionUtc { get; init; }
+    public long SessionGeneration { get; init; }
     public CaptureCommandKind? LastCommand { get; init; }
     public string? LastCorrelationId { get; init; }
     public string? LastError { get; init; }
@@ -146,6 +143,9 @@ internal readonly record struct FlashbackBufferStatus(
 // itself should only see one transition at a time.
 public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 {
+    private const int DefaultDisposeDrainTimeoutMs = 15_000;
+    private const int DefaultDisposeCancelTimeoutMs = 1_000;
+
     private readonly CaptureService _captureService;
     private readonly Channel<CoordinatorWorkItem> _queue;
     private readonly CancellationTokenSource _workerCancellation = new();
@@ -171,19 +171,6 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private string? _lastCorrelationId;
     private string? _lastError;
     private CaptureCommandOutcome _lastOutcome = CaptureCommandOutcome.None;
-    private const int DefaultDisposeDrainTimeoutMs = 15_000;
-    private const int DefaultDisposeCancelTimeoutMs = 1_000;
-
-    private sealed class CoordinatorWorkItem
-    {
-        public required CaptureCommand Command { get; init; }
-        public required Func<CancellationToken, Task> Operation { get; init; }
-        public required CancellationToken CancellationToken { get; init; }
-        public required TaskCompletionSource<object?> Completion { get; init; }
-        public required CancellationTokenRegistration CancellationRegistration { get; init; }
-        public bool PropagateCancellationToOperation { get; init; }
-        public int? CoalescingGeneration { get; init; }
-    }
 
     public CaptureSessionCoordinator(CaptureService captureService)
     {
@@ -197,40 +184,18 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         _workerTask = Task.Run(ProcessQueueAsync);
     }
 
-    public CaptureSessionSnapshot Snapshot
+    // REVIEWED 2026-04-07: IDisposable fallback only; MainViewModel.DisposeAsync
+    // calls DisposeAsync directly. This sync path is never hit in production.
+    public void Dispose()
     {
-        get
-        {
-            lock (_snapshotLock)
-            {
-                var oldestPendingCommandAgeMs = _pendingCommandEnqueuedAtUtc.Count > 0
-                    ? Math.Max(0L, (long)(DateTimeOffset.UtcNow - _pendingCommandEnqueuedAtUtc.Peek()).TotalMilliseconds)
-                    : 0L;
-                return new CaptureSessionSnapshot
-                {
-                    LastTransitionUtc = _lastTransitionUtc,
-                    LastCommand = _lastCommand,
-                    LastCorrelationId = _lastCorrelationId,
-                    LastError = _lastError,
-                    CommandsEnqueued = Volatile.Read(ref _commandsEnqueued),
-                    CommandsCompleted = Volatile.Read(ref _commandsCompleted),
-                    CommandsFailed = Volatile.Read(ref _commandsFailed),
-                    CommandsCanceled = Volatile.Read(ref _commandsCanceled),
-                    CommandsCoalesced = Volatile.Read(ref _commandsCoalesced),
-                    PendingCommands = Volatile.Read(ref _pendingCommands),
-                    MaxPendingCommands = Volatile.Read(ref _maxPendingCommands),
-                    OldestPendingCommandAgeMs = oldestPendingCommandAgeMs,
-                    LastCommandQueueLatencyMs = Volatile.Read(ref _lastCommandQueueLatencyMs),
-                    MaxCommandQueueLatencyMs = Volatile.Read(ref _maxCommandQueueLatencyMs),
-                    LastOutcome = _lastOutcome,
-                    SessionState = _captureService.SessionState,
-                    IsRecording = _captureService.IsRecording,
-                    IsInitialized = _captureService.IsInitialized,
-                    IsVideoPreviewActive = _captureService.IsVideoPreviewActive,
-                    IsAudioPreviewActive = _captureService.IsAudioPreviewActive
-                };
-            }
-        }
+        if (!TryBeginDispose()) return;
+        Task.Run(() => CoreDisposeAsync().AsTask()).GetAwaiter().GetResult();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!TryBeginDispose()) return;
+        await CoreDisposeAsync().ConfigureAwait(false);
     }
 
     public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)
@@ -251,7 +216,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StopRecording, ct => _captureService.StopRecordingAsync(ct), cancellationToken);
 
-    // Used exclusively by MainViewModel.StopRecordingForEmergencyAsync → routes through the
+    // Used exclusively by MainViewModel.StopRecordingForEmergencyAsync -> routes through the
     // same coordinator queue but signals CaptureService to use EmergencyStopTimeoutMs (5s)
     // instead of StopTimeoutMs (30s) so the emergency stop fits inside App.xaml.cs's 8s wrapper.
     public Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
@@ -301,6 +266,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             CaptureCommandKind.UpdateMicrophoneMonitor,
             ct => _captureService.UpdateMicrophoneMonitorAsync(enabled, micDeviceId, micDeviceName, ct),
             cancellationToken);
+
+    public Task CleanupAsync(CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.Cleanup, ct => _captureService.CleanupAsync(ct), cancellationToken);
 
     public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(
@@ -394,6 +362,45 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 controller.LastCommandFailureUtcUnixMs);
     }
 
+    internal Task<FinalizeResult> ExportFlashbackRangeAsync(
+        TimeSpan? inPoint,
+        TimeSpan? outPoint,
+        string outputPath,
+        IProgress<ExportProgress>? progress,
+        CancellationToken cancellationToken,
+        TimeSpan? inPointFilePts = null,
+        TimeSpan? outPointFilePts = null,
+        bool force = false)
+    {
+        ThrowIfDisposed();
+        return _captureService.ExportFlashbackRangeAsync(
+            inPoint,
+            outPoint,
+            outputPath,
+            progress,
+            cancellationToken,
+            inPointFilePts,
+            outPointFilePts,
+            force);
+    }
+
+    internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
+        double seconds,
+        string outputPath,
+        IProgress<ExportProgress>? progress,
+        CancellationToken cancellationToken,
+        bool force = false)
+    {
+        ThrowIfDisposed();
+        return _captureService.ExportFlashbackLastNSecondsAsync(seconds, outputPath, progress, cancellationToken, force);
+    }
+
+    internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+    {
+        ThrowIfDisposed();
+        return _captureService.GetFlashbackSegments();
+    }
+
     internal bool FlashbackBeginScrub(TimeSpan position)
     {
         if (!TryGetActiveFlashback(nameof(FlashbackBeginScrub), out var controller)) return false;
@@ -483,48 +490,6 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         return true;
     }
 
-    internal Task<FinalizeResult> ExportFlashbackRangeAsync(
-        TimeSpan? inPoint,
-        TimeSpan? outPoint,
-        string outputPath,
-        IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken,
-        TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null,
-        bool force = false)
-    {
-        ThrowIfDisposed();
-        return _captureService.ExportFlashbackRangeAsync(
-            inPoint,
-            outPoint,
-            outputPath,
-            progress,
-            cancellationToken,
-            inPointFilePts,
-            outPointFilePts,
-            force);
-    }
-
-    internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
-        double seconds,
-        string outputPath,
-        IProgress<ExportProgress>? progress,
-        CancellationToken cancellationToken,
-        bool force = false)
-    {
-        ThrowIfDisposed();
-        return _captureService.ExportFlashbackLastNSecondsAsync(seconds, outputPath, progress, cancellationToken, force);
-    }
-
-    internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
-    {
-        ThrowIfDisposed();
-        return _captureService.GetFlashbackSegments();
-    }
-
-    public Task CleanupAsync(CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.Cleanup, ct => _captureService.CleanupAsync(ct), cancellationToken);
-
     private bool TryGetActiveFlashback(
         string command,
         [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out FlashbackPlaybackController? controller)
@@ -547,6 +512,92 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _lastFlashbackCommandRejectionUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         Logger.Log($"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}");
         return false;
+    }
+
+    public CaptureSessionSnapshot Snapshot
+    {
+        get
+        {
+            lock (_snapshotLock)
+            {
+                var oldestPendingCommandAgeMs = _pendingCommandEnqueuedAtUtc.Count > 0
+                    ? Math.Max(0L, (long)(DateTimeOffset.UtcNow - _pendingCommandEnqueuedAtUtc.Peek()).TotalMilliseconds)
+                    : 0L;
+                return new CaptureSessionSnapshot
+                {
+                    LastTransitionUtc = _lastTransitionUtc,
+                    SessionGeneration = _captureService.SessionGeneration,
+                    LastCommand = _lastCommand,
+                    LastCorrelationId = _lastCorrelationId,
+                    LastError = _lastError,
+                    CommandsEnqueued = Volatile.Read(ref _commandsEnqueued),
+                    CommandsCompleted = Volatile.Read(ref _commandsCompleted),
+                    CommandsFailed = Volatile.Read(ref _commandsFailed),
+                    CommandsCanceled = Volatile.Read(ref _commandsCanceled),
+                    CommandsCoalesced = Volatile.Read(ref _commandsCoalesced),
+                    PendingCommands = Volatile.Read(ref _pendingCommands),
+                    MaxPendingCommands = Volatile.Read(ref _maxPendingCommands),
+                    OldestPendingCommandAgeMs = oldestPendingCommandAgeMs,
+                    LastCommandQueueLatencyMs = Volatile.Read(ref _lastCommandQueueLatencyMs),
+                    MaxCommandQueueLatencyMs = Volatile.Read(ref _maxCommandQueueLatencyMs),
+                    LastOutcome = _lastOutcome,
+                    SessionState = _captureService.SessionState,
+                    IsRecording = _captureService.IsRecording,
+                    IsInitialized = _captureService.IsInitialized,
+                    IsVideoPreviewActive = _captureService.IsVideoPreviewActive,
+                    IsAudioPreviewActive = _captureService.IsAudioPreviewActive
+                };
+            }
+        }
+    }
+
+    private void UpdateSnapshot(CaptureCommand command, CaptureCommandOutcome outcome, string? error)
+    {
+        lock (_snapshotLock)
+        {
+            _lastTransitionUtc = DateTimeOffset.UtcNow;
+            _lastCommand = command.Kind;
+            _lastCorrelationId = command.CorrelationId;
+            _lastOutcome = outcome;
+            _lastError = error;
+        }
+    }
+
+    private void TrackPendingCommandEnqueued(DateTimeOffset enqueuedAtUtc)
+    {
+        lock (_snapshotLock)
+        {
+            _pendingCommandEnqueuedAtUtc.Enqueue(enqueuedAtUtc);
+        }
+    }
+
+    private void RemoveOldestPendingCommand()
+    {
+        lock (_snapshotLock)
+        {
+            if (_pendingCommandEnqueuedAtUtc.Count > 0)
+            {
+                _pendingCommandEnqueuedAtUtc.Dequeue();
+            }
+        }
+    }
+
+    private void RecordCommandQueueLatency(DateTimeOffset enqueuedAtUtc)
+    {
+        var latencyMs = Math.Max(0L, (long)(DateTimeOffset.UtcNow - enqueuedAtUtc).TotalMilliseconds);
+        Volatile.Write(ref _lastCommandQueueLatencyMs, latencyMs);
+        AtomicMax.Update(ref _maxCommandQueueLatencyMs, latencyMs);
+    }
+
+    private sealed class CoordinatorWorkItem
+    {
+        public required CaptureCommand Command { get; init; }
+        public required Func<CancellationToken, Task> Operation { get; init; }
+        public required CancellationToken CancellationToken { get; init; }
+        public required TaskCompletionSource<object?> Completion { get; init; }
+        public required CancellationTokenRegistration CancellationRegistration { get; init; }
+        public bool PropagateCancellationToOperation { get; init; }
+        public int? CoalescingGeneration { get; init; }
     }
 
     private Task EnqueueAsync(
@@ -609,212 +660,12 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         return completion.Task;
     }
 
-    private async Task ProcessQueueAsync()
-    {
-        try
-        {
-            await foreach (var workItem in _queue.Reader.ReadAllAsync(_workerCancellation.Token))
-            {
-                var sw = Stopwatch.StartNew();
-                Logger.LogEvent("CAP-COORD-START", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId}");
-                RecordCommandQueueLatency(workItem.Command.EnqueuedAtUtc);
-
-                try
-                {
-                    DisposeCancellationRegistrationBestEffort(workItem.CancellationRegistration, "begin_process");
-
-                    if (workItem.CoalescingGeneration is int generation &&
-                        generation != Volatile.Read(ref _latestFlashbackEncoderCycleGeneration))
-                    {
-                        workItem.Completion.TrySetResult(null);
-                        Interlocked.Increment(ref _commandsCompleted);
-                        Interlocked.Increment(ref _commandsCoalesced);
-                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Coalesced, null);
-                        Logger.LogEvent("CAP-COORD-SKIP", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} stale_generation={generation}");
-                        continue;
-                    }
-
-                    if (workItem.CancellationToken.IsCancellationRequested)
-                    {
-                        workItem.Completion.TrySetCanceled(workItem.CancellationToken);
-                        Interlocked.Increment(ref _commandsCanceled);
-                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
-                        continue;
-                    }
-
-                    using var linkedCancellation = workItem.PropagateCancellationToOperation
-                        ? CancellationTokenSource.CreateLinkedTokenSource(
-                            workItem.CancellationToken,
-                            _workerCancellation.Token)
-                        : CancellationTokenSource.CreateLinkedTokenSource(_workerCancellation.Token);
-                    var operationToken = linkedCancellation.Token;
-
-                    if (operationToken.IsCancellationRequested)
-                    {
-                        workItem.Completion.TrySetCanceled(operationToken);
-                        Interlocked.Increment(ref _commandsCanceled);
-                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
-                        continue;
-                    }
-
-                    await workItem.Operation(operationToken);
-                    workItem.Completion.TrySetResult(null);
-                    Interlocked.Increment(ref _commandsCompleted);
-                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Completed, null);
-                    Logger.LogEvent("CAP-COORD-DONE", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
-                }
-                catch (OperationCanceledException oce) when (
-                    _workerCancellation.IsCancellationRequested ||
-                    (workItem.PropagateCancellationToOperation && workItem.CancellationToken.IsCancellationRequested))
-                {
-                    var cancelToken = workItem.PropagateCancellationToOperation && workItem.CancellationToken.IsCancellationRequested
-                        ? workItem.CancellationToken
-                        : _workerCancellation.Token;
-                    workItem.Completion.TrySetCanceled(cancelToken);
-                    Interlocked.Increment(ref _commandsCanceled);
-                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, oce.Message);
-                    Logger.LogEvent("CAP-COORD-CANCEL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
-                }
-                catch (Exception ex)
-                {
-                    workItem.Completion.TrySetException(ex);
-                    Interlocked.Increment(ref _commandsFailed);
-                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Failed, ex.Message);
-                    Logger.LogException(ex);
-                    Logger.LogEvent("CAP-COORD-FAIL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
-                }
-                finally
-                {
-                    sw.Stop();
-                    RemoveOldestPendingCommand();
-                    DecrementPendingCommands("process_complete");
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            /* Expected during disposal — worker loop cancelled via CancellationToken */
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex);
-        }
-        finally
-        {
-            Exception failure = Volatile.Read(ref _isDisposed)
-                ? new ObjectDisposedException(nameof(CaptureSessionCoordinator))
-                : new OperationCanceledException("Capture session coordinator stopped.");
-            FailPendingCommands(failure);
-        }
-    }
-
-    private void UpdateSnapshot(CaptureCommand command, CaptureCommandOutcome outcome, string? error)
-    {
-        lock (_snapshotLock)
-        {
-            _lastTransitionUtc = DateTimeOffset.UtcNow;
-            _lastCommand = command.Kind;
-            _lastCorrelationId = command.CorrelationId;
-            _lastOutcome = outcome;
-            _lastError = error;
-        }
-    }
-
     private void ThrowIfDisposed()
     {
         if (Volatile.Read(ref _isDisposed))
         {
             throw new ObjectDisposedException(nameof(CaptureSessionCoordinator));
         }
-    }
-
-    private void FailPendingCommands(Exception ex)
-    {
-        while (_queue.Reader.TryRead(out var pending))
-        {
-            RemoveOldestPendingCommand();
-            DisposeCancellationRegistrationBestEffort(pending.CancellationRegistration, "fail_pending");
-            if (pending.Completion.Task.IsCanceled)
-            {
-                Interlocked.Increment(ref _commandsCanceled);
-                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
-            }
-            else if (pending.Completion.TrySetException(ex))
-            {
-                Interlocked.Increment(ref _commandsFailed);
-                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
-            }
-            else if (pending.Completion.Task.IsCanceled)
-            {
-                Interlocked.Increment(ref _commandsCanceled);
-                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
-            }
-            else if (pending.Completion.Task.IsFaulted)
-            {
-                Interlocked.Increment(ref _commandsFailed);
-                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
-            }
-
-            DecrementPendingCommands("fail_pending");
-        }
-    }
-
-    private void DecrementPendingCommands(string operation)
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref _pendingCommands);
-            if (current <= 0)
-            {
-                Logger.Log($"CAPTURE_COORD_PENDING_UNDERFLOW op={operation}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
-            {
-                return;
-            }
-        }
-    }
-
-    private void TrackPendingCommandEnqueued(DateTimeOffset enqueuedAtUtc)
-    {
-        lock (_snapshotLock)
-        {
-            _pendingCommandEnqueuedAtUtc.Enqueue(enqueuedAtUtc);
-        }
-    }
-
-    private void RemoveOldestPendingCommand()
-    {
-        lock (_snapshotLock)
-        {
-            if (_pendingCommandEnqueuedAtUtc.Count > 0)
-            {
-                _pendingCommandEnqueuedAtUtc.Dequeue();
-            }
-        }
-    }
-
-    private void RecordCommandQueueLatency(DateTimeOffset enqueuedAtUtc)
-    {
-        var latencyMs = Math.Max(0L, (long)(DateTimeOffset.UtcNow - enqueuedAtUtc).TotalMilliseconds);
-        Volatile.Write(ref _lastCommandQueueLatencyMs, latencyMs);
-        AtomicMax.Update(ref _maxCommandQueueLatencyMs, latencyMs);
-    }
-
-    // REVIEWED 2026-04-07: IDisposable fallback only — MainViewModel.DisposeAsync
-    // calls DisposeAsync directly. This sync path is never hit in production.
-    public void Dispose()
-    {
-        if (!TryBeginDispose()) return;
-        Task.Run(() => CoreDisposeAsync().AsTask()).GetAwaiter().GetResult();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (!TryBeginDispose()) return;
-        await CoreDisposeAsync().ConfigureAwait(false);
     }
 
     private bool TryBeginDispose()
@@ -848,7 +699,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            /* Expected during disposal — worker task was cancelled */
+            /* Expected during disposal - worker task was cancelled */
         }
         catch (Exception ex)
         {
@@ -948,6 +799,154 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"CAPTURE_COORD_WORKER_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private async Task ProcessQueueAsync()
+    {
+        try
+        {
+            await foreach (var workItem in _queue.Reader.ReadAllAsync(_workerCancellation.Token))
+            {
+                var sw = Stopwatch.StartNew();
+                Logger.LogEvent("CAP-COORD-START", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId}");
+                RecordCommandQueueLatency(workItem.Command.EnqueuedAtUtc);
+
+                try
+                {
+                    DisposeCancellationRegistrationBestEffort(workItem.CancellationRegistration, "begin_process");
+
+                    if (workItem.CoalescingGeneration is int generation &&
+                        generation != Volatile.Read(ref _latestFlashbackEncoderCycleGeneration))
+                    {
+                        workItem.Completion.TrySetResult(null);
+                        Interlocked.Increment(ref _commandsCompleted);
+                        Interlocked.Increment(ref _commandsCoalesced);
+                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Coalesced, null);
+                        Logger.LogEvent("CAP-COORD-SKIP", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} stale_generation={generation}");
+                        continue;
+                    }
+
+                    if (workItem.CancellationToken.IsCancellationRequested)
+                    {
+                        workItem.Completion.TrySetCanceled(workItem.CancellationToken);
+                        Interlocked.Increment(ref _commandsCanceled);
+                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
+                        continue;
+                    }
+
+                    using var linkedCancellation = workItem.PropagateCancellationToOperation
+                        ? CancellationTokenSource.CreateLinkedTokenSource(
+                            workItem.CancellationToken,
+                            _workerCancellation.Token)
+                        : CancellationTokenSource.CreateLinkedTokenSource(_workerCancellation.Token);
+                    var operationToken = linkedCancellation.Token;
+
+                    if (operationToken.IsCancellationRequested)
+                    {
+                        workItem.Completion.TrySetCanceled(operationToken);
+                        Interlocked.Increment(ref _commandsCanceled);
+                        UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
+                        continue;
+                    }
+
+                    await workItem.Operation(operationToken);
+                    workItem.Completion.TrySetResult(null);
+                    Interlocked.Increment(ref _commandsCompleted);
+                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Completed, null);
+                    Logger.LogEvent("CAP-COORD-DONE", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
+                }
+                catch (OperationCanceledException oce) when (
+                    _workerCancellation.IsCancellationRequested ||
+                    (workItem.PropagateCancellationToOperation && workItem.CancellationToken.IsCancellationRequested))
+                {
+                    var cancelToken = workItem.PropagateCancellationToOperation && workItem.CancellationToken.IsCancellationRequested
+                        ? workItem.CancellationToken
+                        : _workerCancellation.Token;
+                    workItem.Completion.TrySetCanceled(cancelToken);
+                    Interlocked.Increment(ref _commandsCanceled);
+                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Canceled, oce.Message);
+                    Logger.LogEvent("CAP-COORD-CANCEL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
+                }
+                catch (Exception ex)
+                {
+                    workItem.Completion.TrySetException(ex);
+                    Interlocked.Increment(ref _commandsFailed);
+                    UpdateSnapshot(workItem.Command, CaptureCommandOutcome.Failed, ex.Message);
+                    Logger.LogException(ex);
+                    Logger.LogEvent("CAP-COORD-FAIL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
+                }
+                finally
+                {
+                    sw.Stop();
+                    RemoveOldestPendingCommand();
+                    DecrementPendingCommands("process_complete");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            /* Expected during disposal - worker loop cancelled via CancellationToken */
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+        }
+        finally
+        {
+            Exception failure = Volatile.Read(ref _isDisposed)
+                ? new ObjectDisposedException(nameof(CaptureSessionCoordinator))
+                : new OperationCanceledException("Capture session coordinator stopped.");
+            FailPendingCommands(failure);
+        }
+    }
+
+    private void FailPendingCommands(Exception ex)
+    {
+        while (_queue.Reader.TryRead(out var pending))
+        {
+            RemoveOldestPendingCommand();
+            DisposeCancellationRegistrationBestEffort(pending.CancellationRegistration, "fail_pending");
+            if (pending.Completion.Task.IsCanceled)
+            {
+                Interlocked.Increment(ref _commandsCanceled);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
+            }
+            else if (pending.Completion.TrySetException(ex))
+            {
+                Interlocked.Increment(ref _commandsFailed);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
+            }
+            else if (pending.Completion.Task.IsCanceled)
+            {
+                Interlocked.Increment(ref _commandsCanceled);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Canceled, "Canceled before execution");
+            }
+            else if (pending.Completion.Task.IsFaulted)
+            {
+                Interlocked.Increment(ref _commandsFailed);
+                UpdateSnapshot(pending.Command, CaptureCommandOutcome.Failed, ex.Message);
+            }
+
+            DecrementPendingCommands("fail_pending");
+        }
+    }
+
+    private void DecrementPendingCommands(string operation)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _pendingCommands);
+            if (current <= 0)
+            {
+                Logger.Log($"CAPTURE_COORD_PENDING_UNDERFLOW op={operation}");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
+            {
+                return;
+            }
         }
     }
 }

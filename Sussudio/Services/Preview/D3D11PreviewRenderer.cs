@@ -1,33 +1,39 @@
-using System;
+﻿using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO;
-using System.IO.Compression;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
-using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
-using Vortice.Mathematics;
 
 namespace Sussudio.Services.Preview;
 
+internal readonly record struct PreviewDisplayClockSnapshot(
+    long LastPresentTick,
+    long FrameIntervalTicks,
+    double ExpectedFrameIntervalMs,
+    int SampleCount);
+
+internal interface IPreviewDisplayClock
+{
+    bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot);
+}
+
+internal interface IPreviewFrameQueueControl
+{
+    int DropPendingFrames(string reason);
+}
+
 internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreviewFrameQueueControl, IPreviewDisplayClock, IDisposable
 {
-    private const int FrameCaptureTimeoutMs = 5000;
-    private const string RendererModeNone = "None";
-    private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
-    private const string RendererModeHdrPassthrough = "HdrPassthrough";
-
     [ComImport]
     [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -36,33 +42,76 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         void SetSwapChain(IntPtr swapChain);
     }
 
-    [ComImport]
-    [Guid("8BA5FB08-5195-40e2-AC58-0D989C3A0102")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface ID3DBlob
-    {
-        [PreserveSig]
-        IntPtr GetBufferPointer();
-        [PreserveSig]
-        IntPtr GetBufferSize();
-    }
+    private const string RendererModeNone = "None";
+    private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
+    private const string RendererModeHdrPassthrough = "HdrPassthrough";
 
-    [DllImport("d3dcompiler_47.dll", EntryPoint = "D3DCompile", CallingConvention = CallingConvention.StdCall)]
-    private static extern int D3DCompileNative(
-        byte[] srcData,
-        IntPtr srcDataSize,
-        [MarshalAs(UnmanagedType.LPStr)] string? sourceName,
-        IntPtr defines,
-        IntPtr include,
-        [MarshalAs(UnmanagedType.LPStr)] string entryPoint,
-        [MarshalAs(UnmanagedType.LPStr)] string target,
-        uint flags1,
-        uint flags2,
-        out IntPtr code,
-        out IntPtr errorMsgs);
+    private readonly SwapChainPanel _panel;
+    private readonly DispatcherQueue _dispatcherQueue;
+    private readonly object _lifecycleLock = new();
+    private readonly ManualResetEventSlim _frameReadyEvent = new(false);
+    private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
 
-    [DllImport("dwmapi.dll", ExactSpelling = true)]
-    private static extern int DwmFlush();
+    // Best measured 4K120 MJPG cadence on the SwapChainPanel path uses DWM-paced
+    // Present(1) with a shallow compositor queue. The env overrides remain for A/B
+    // runs on other machines or display modes.
+    private readonly int _presentSyncInterval = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_PRESENT_SYNC_INTERVAL", 1, 0, 1);
+    private readonly int _dxgiMaxFrameLatency = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_MAX_FRAME_LATENCY", 1, 1, 3);
+    private readonly int _swapChainBufferCount = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_SWAPCHAIN_BUFFER_COUNT", 2, 2, 4);
+    private readonly int _maxPendingFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_QUEUE_DEPTH", 4, 1, 8);
+    private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
+    private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
+    private readonly int _dxgiFrameStatisticsSampleIntervalFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL", 2, 1, 120);
+    private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
+    private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
+    private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
+    private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK") ?? "Playback";
+    private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
+    private readonly int _nativeStopFenceTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS", 1000, 100, 10000);
+    private readonly int _renderThreadStopTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS", 3000, 500, 30000);
+
+    private int _naturalWidth;
+    private int _naturalHeight;
+    private Thread? _renderThread;
+    private int _disposed;
+    private int _isRendering;
+    private int _startupWidth;
+    private int _startupHeight;
+    private double _startupFps = 60.0;
+
+    private const int CadenceWindowSeconds = 20;
+
+
+    private string _inputColorSpaceLabel = "Unknown";
+    private string _outputColorSpaceLabel = "Unknown";
+    private string _rendererMode = RendererModeNone;
+
+    private int _configuredInputWidth;
+    private int _configuredInputHeight;
+    private int _configuredOutputWidth;
+    private int _configuredOutputHeight;
+    private Format _configuredInputFormat = Format.Unknown;
+    private bool _configuredHdr;
+    private bool _fullRangeInput;
+    private bool _hdrCapableSwapChain;
+    private uint _outputFrameIndex;
+    private int _hdrPassthroughEnabled;
+    private int _swapChainColorSpaceDirty;
+    private int _compositionTransformDirty;
+    private int _panelPixelWidth = 1;
+    private int _panelPixelHeight = 1;
+    private double _panelLogicalWidth = 1.0;
+    private double _panelLogicalHeight = 1.0;
+    private double _rasterizationScale = 1.0;
+    private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
+    private const uint WaitObject0 = 0;
+    private const uint WaitTimeout = 258;
+    private IntPtr _frameLatencyWaitHandle;
+    private int _stopRequested;
+    private int _inNativeCall; // 1 while render thread is between guard-check and Present return
+    private int _pendingFrameCount;
+    private bool _loggedNv12ShaderMissing;
+    private int _lastNv12IsHdr = -1; // tri-state: -1 = unset, 0 = SDR, 1 = HDR
 
     private sealed class PendingFrame : IDisposable
     {
@@ -166,295 +215,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
-    public readonly record struct PresentCadenceMetrics(
-        int SampleCount,
-        double ObservedFps,
-        double ExpectedIntervalMs,
-        double AverageIntervalMs,
-        double P95IntervalMs,
-        double P99IntervalMs,
-        double MaxIntervalMs,
-        double OnePercentLowFps,
-        double FivePercentLowFps,
-        double SampleDurationMs,
-        double[] RecentIntervalsMs,
-        double JitterStdDevMs,
-        long SlowFrameCount,
-        double SlowFramePercent);
-
-    public readonly record struct CpuStageTimingMetrics(
-        int SampleCount,
-        double AverageMs,
-        double P95Ms,
-        double P99Ms,
-        double MaxMs);
-
-    public readonly record struct RenderCpuTimingMetrics(
-        CpuStageTimingMetrics InputUpload,
-        CpuStageTimingMetrics RenderSubmit,
-        CpuStageTimingMetrics PresentCall,
-        CpuStageTimingMetrics TotalFrame);
-
-    public readonly record struct PipelineLatencyMetrics(
-        int SampleCount,
-        double AverageMs,
-        double P95Ms,
-        double P99Ms,
-        double MaxMs);
-
-    public readonly record struct FrameLatencyWaitMetrics(
-        bool Enabled,
-        bool HandleActive,
-        long CallCount,
-        long SignaledCount,
-        long TimeoutCount,
-        long UnexpectedResultCount,
-        uint LastResult,
-        double LastWaitMs,
-        CpuStageTimingMetrics Timing);
-
-    public readonly record struct FrameOwnershipMetrics(
-        long LastSubmittedPreviewPresentId,
-        long LastSubmittedSourceSequenceNumber,
-        long LastSubmittedSourcePtsTicks,
-        long LastSubmittedQpc,
-        long LastSubmittedUtcUnixMs,
-        long LastRenderedPreviewPresentId,
-        long LastRenderedSourceSequenceNumber,
-        long LastRenderedSourcePtsTicks,
-        long LastRenderedQpc,
-        long LastRenderedUtcUnixMs,
-        double LastRenderedSchedulerToPresentMs,
-        double LastRenderedPipelineLatencyMs,
-        long LastDroppedPreviewPresentId,
-        long LastDroppedSourceSequenceNumber,
-        long LastDroppedSourcePtsTicks,
-        long LastDroppedQpc,
-        long LastDroppedUtcUnixMs,
-        string LastDropReason);
-
-    public readonly record struct DxgiFrameStatisticsMetrics(
-        long SampleCount,
-        long SuccessCount,
-        long FailureCount,
-        string LastError,
-        long PresentCount,
-        long PresentRefreshCount,
-        long SyncRefreshCount,
-        long SyncQpcTime,
-        long LastPresentDelta,
-        long LastPresentRefreshDelta,
-        long LastSyncRefreshDelta,
-        long MissedRefreshCount);
-
-    private readonly SwapChainPanel _panel;
-    private readonly DispatcherQueue _dispatcherQueue;
-    private readonly ManualResetEventSlim _frameReadyEvent = new(false);
-    private readonly object _lifecycleLock = new();
-    // Best measured 4K120 MJPG cadence on the SwapChainPanel path uses DWM-paced
-    // Present(1) with a shallow compositor queue. The env overrides remain for A/B
-    // runs on other machines or display modes.
-    private readonly int _presentSyncInterval = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_PRESENT_SYNC_INTERVAL", 1, 0, 1);
-    private readonly int _dxgiMaxFrameLatency = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_MAX_FRAME_LATENCY", 1, 1, 3);
-    private readonly int _swapChainBufferCount = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_SWAPCHAIN_BUFFER_COUNT", 2, 2, 4);
-    private readonly int _maxPendingFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_QUEUE_DEPTH", 4, 1, 8);
-    private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
-    private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
-    private readonly int _dxgiFrameStatisticsSampleIntervalFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL", 2, 1, 120);
-    private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
-    private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
-    private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
-    private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK") ?? "Playback";
-    private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
-    private readonly int _nativeStopFenceTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS", 1000, 100, 10000);
-    private readonly int _renderThreadStopTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS", 3000, 500, 30000);
-
-    private Thread? _renderThread;
-    private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
-    private int _pendingFrameCount;
-    private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
-
-    private int _disposed;
-    private int _stopRequested;
-    private int _isRendering;
-    private int _inNativeCall; // 1 while render thread is between guard-check and Present return
-    private int _compositionTransformDirty;
-    private int _firstFrameRaised;
-
-    private int _panelPixelWidth;
-    private int _panelPixelHeight;
-    private double _panelLogicalWidth = 1.0;
-    private double _panelLogicalHeight = 1.0;
-    private double _rasterizationScale = 1.0;
-    private int _startupWidth;
-    private int _startupHeight;
-    private double _startupFps = 60.0;
-
-    private int _naturalWidth;
-    private int _naturalHeight;
-
-    private long _framesSubmitted;
-    private long _framesRendered;
-    private long _framesDropped;
-    private const int CadenceWindowSeconds = 20;
-    private readonly object _presentCadenceLock = new();
-    private double[] _presentIntervalWindowMs = new double[1200];
-    private int _presentIntervalCount;
-    private int _presentIntervalIndex;
-    private long _lastPresentTick;
-    private int _presentCadenceBaselinePending;
-    private readonly object _pipelineLatencyLock = new();
-    private double[] _pipelineLatencyWindowMs = new double[1200];
-    private int _pipelineLatencyCount;
-    private int _pipelineLatencyIndex;
-    private readonly object _renderCpuTimingLock = new();
-    private double[] _inputUploadCpuTimingWindowMs = new double[1200];
-    private double[] _renderSubmitCpuTimingWindowMs = new double[1200];
-    private double[] _presentCallTimingWindowMs = new double[1200];
-    private double[] _renderTotalCpuTimingWindowMs = new double[1200];
-    private int _renderCpuTimingCount;
-    private int _renderCpuTimingIndex;
-    private readonly object _frameLatencyWaitTimingLock = new();
-    private double[] _frameLatencyWaitTimingWindowMs = new double[1200];
-    private int _frameLatencyWaitTimingCount;
-    private int _frameLatencyWaitTimingIndex;
-    private long _frameLatencyWaitCallCount;
-    private long _frameLatencyWaitSignaledCount;
-    private long _frameLatencyWaitTimeoutCount;
-    private long _frameLatencyWaitUnexpectedResultCount;
-    private long _frameLatencyWaitLastResult;
-    private long _frameLatencyWaitLastTicks;
-    private readonly object _slowFrameDiagnosticsLock = new();
-    private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];
-    private int _slowFrameDiagnosticsCount;
-    private int _slowFrameDiagnosticsIndex;
-    private readonly object _dxgiFrameStatisticsLock = new();
-    private long _dxgiFrameStatisticsSampleCount;
-    private long _dxgiFrameStatisticsSuccessCount;
-    private long _dxgiFrameStatisticsFailureCount;
-    private string _dxgiFrameStatisticsLastError = string.Empty;
-    private long _dxgiFrameStatisticsPresentCount = -1;
-    private long _dxgiFrameStatisticsPresentRefreshCount = -1;
-    private long _dxgiFrameStatisticsSyncRefreshCount = -1;
-    private long _dxgiFrameStatisticsSyncQpcTime;
-    private long _dxgiFrameStatisticsLastPresentDelta;
-    private long _dxgiFrameStatisticsLastPresentRefreshDelta;
-    private long _dxgiFrameStatisticsLastSyncRefreshDelta;
-    private long _dxgiFrameStatisticsMissedRefreshCount;
-    private long _dxgiFrameStatisticsFrameCounter;
-    private long _dxgiFrameStatisticsLastSampleFrameCounter;
-    private bool _dxgiFrameStatisticsHasBaseline;
-    private long _lastSubmittedPreviewPresentId;
-    private long _lastSubmittedSourceSequenceNumber = -1;
-    private long _lastSubmittedSourcePtsTicks;
-    private long _lastSubmittedQpc;
-    private long _lastSubmittedUtcUnixMs;
-    private long _lastRenderedPreviewPresentId;
-    private long _lastRenderedSourceSequenceNumber = -1;
-    private long _lastRenderedSourcePtsTicks;
-    private long _lastRenderedQpc;
-    private long _lastRenderedUtcUnixMs;
-    private long _lastRenderedSchedulerToPresentTicks;
-    private long _lastRenderedPipelineLatencyTicks;
-    private long _lastDroppedPreviewPresentId;
-    private long _lastDroppedSourceSequenceNumber = -1;
-    private long _lastDroppedSourcePtsTicks;
-    private long _lastDroppedQpc;
-    private long _lastDroppedUtcUnixMs;
-    private long _submissionGeneration;
-    private string _lastDropReason = string.Empty;
-    private string _submissionGenerationDropReason = "transition";
-
-    private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
-    private int _frameCaptureEncodeInProgress;
-    private string? _frameCaptureOutputPath;
-
-    private string _inputColorSpaceLabel = "Unknown";
-    private string _outputColorSpaceLabel = "Unknown";
-    private string _rendererMode = RendererModeNone;
-    private string _lastRenderThreadFailureType = string.Empty;
-    private string _lastRenderThreadFailureMessage = string.Empty;
-    private int _lastRenderThreadFailureHResult;
-    private long _renderThreadFailureCount;
-
-    private ID3D11Device? _device;
-    private ID3D11DeviceContext? _deviceContext;
-    private ID3D11Device3? _device3;
-    private ID3D11Multithread? _multithread;
-    private ID3D11VideoDevice? _videoDevice;
-    private ID3D11VideoContext? _videoContext;
-    private ID3D11VideoContext1? _videoContext1;
-    private IDXGIFactory2? _factory;
-    private IDXGISwapChain1? _swapChain;
-    private IDXGISwapChain2? _swapChain2;
-    private IDXGISwapChain3? _swapChain3;
-    private IntPtr _frameLatencyWaitHandle;
-    private long _swapChainAddress;
-    private ID3D11Texture2D? _swapChainBackBuffer;
-    private ID3D11RenderTargetView? _swapChainRTV;
-    private ID3D11Texture2D? _inputTexture;
-    private ID3D11Texture2D? _stagingTexture;
-    private ID3D11VideoProcessorEnumerator? _videoProcessorEnumerator;
-    private ID3D11VideoProcessor? _videoProcessor;
-    private ID3D11VideoProcessorInputView? _inputView;
-    private ID3D11VideoProcessorOutputView? _outputView;
-    private ID3D11Texture2D? _hdrInputTexture;
-    private ID3D11Texture2D? _hdrStagingTexture;
-    private ID3D11ShaderResourceView? _hdrYPlaneSRV;
-    private ID3D11ShaderResourceView? _hdrUVPlaneSRV;
-    private ID3D11VertexShader? _fullscreenVS;
-    private ID3D11PixelShader? _nv12PS;
-    private ID3D11ShaderResourceView? _nv12YSRV;
-    private ID3D11ShaderResourceView? _nv12UVSRV;
-    private IntPtr _nv12LastYPtr;
-    private IntPtr _nv12LastUVPtr;
-    private ID3D11PixelShader? _hdrTonemapPS;
-    private ID3D11PixelShader? _hdrPassthroughPS;
-    private ID3D11SamplerState? _linearSampler;
-    private ID3D11Buffer? _viewportCB;
-    private int _hdrInputConfiguredWidth;
-    private int _hdrInputConfiguredHeight;
-    private bool _hdrPlaneViewsUnavailable;
-    private ID3D11Device? _sharedDevice;
-
-    // Pre-allocated arrays to avoid per-frame GC pressure (720+ allocs/s at 120fps)
-    private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];
-    private readonly ID3D11RenderTargetView[] _rtvArray = new ID3D11RenderTargetView[1];
-    private readonly Viewport[] _viewportArray = new Viewport[1];
-    private readonly ID3D11SamplerState[] _samplerArray = new ID3D11SamplerState[1];
-    private readonly ID3D11ShaderResourceView[] _srvArray2 = new ID3D11ShaderResourceView[2];
-    private readonly ID3D11ShaderResourceView[] _srvNullArray2 = { null!, null! };
-    private readonly ID3D11Buffer[] _cbArray = new ID3D11Buffer[1];
-
-    // Persistent staging texture for frame capture (avoids GPU resource churn)
-    private ID3D11Texture2D? _captureStagingTexture;
-    private int _captureStagingWidth;
-    private int _captureStagingHeight;
-
-    private int _configuredInputWidth;
-    private int _configuredInputHeight;
-    private int _configuredOutputWidth;
-    private int _configuredOutputHeight;
-    private Format _configuredInputFormat = Format.Unknown;
-    private bool _configuredHdr;
-    private bool _fullRangeInput;
-    private bool _hdrCapableSwapChain;
-    private uint _outputFrameIndex;
-    private int _hdrPassthroughEnabled;
-    private int _swapChainColorSpaceDirty;
-    private int _sharedDeviceResetPending;
-    private int _sharedDeviceActive;
-    private bool _loggedNv12ShaderMissing;
-    private bool _loggedDirectUploadFallback;
-    private bool _loggedHdrShaderFallback;
-    private int _lastNv12IsHdr = -1; // tri-state: -1 = unset, 0 = SDR, 1 = HDR
-
     public D3D11PreviewRenderer(SwapChainPanel panel, DispatcherQueue dispatcherQueue)
     {
         _panel = panel ?? throw new ArgumentNullException(nameof(panel));
         _dispatcherQueue = dispatcherQueue ?? throw new ArgumentNullException(nameof(dispatcherQueue));
-        _panelPixelWidth = 1;
-        _panelPixelHeight = 1;
     }
 
     public event Action? FirstFrameRendered;
@@ -495,307 +259,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         SignalFrameReady("hdr_passthrough");
     }
 
-    public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)
-        => CaptureNextFrameAsync(outputPath, CancellationToken.None);
-
-    public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return Task.FromResult(CreateFrameCaptureError("Preview frame capture canceled."));
-        }
-
-        if (!IsRendering || _device == null || _swapChain == null || Volatile.Read(ref _stopRequested) != 0)
-        {
-            return Task.FromResult(CreateFrameCaptureError("No active preview renderer."));
-        }
-
-        if (Volatile.Read(ref _frameCaptureEncodeInProgress) != 0)
-        {
-            return Task.FromResult(CreateFrameCaptureError("A preview frame capture is already pending."));
-        }
-
-        var resolvedOutputPath = string.IsNullOrWhiteSpace(outputPath)
-            ? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss_fff}.bmp")
-            : outputPath;
-
-        var request = new TaskCompletionSource<PreviewFrameCaptureResult>(
-            state: resolvedOutputPath,
-            creationOptions: TaskCreationOptions.RunContinuationsAsynchronously);
-        if (Interlocked.CompareExchange(ref _frameCaptureRequest, request, null) != null)
-        {
-            return Task.FromResult(CreateFrameCaptureError("A preview frame capture is already pending."));
-        }
-
-        CancellationTokenRegistration cancellationRegistration = default;
-        if (cancellationToken.CanBeCanceled)
-        {
-            cancellationRegistration = cancellationToken.Register(
-                static state =>
-                {
-                    var (renderer, request) = ((D3D11PreviewRenderer Renderer, TaskCompletionSource<PreviewFrameCaptureResult> Request))state!;
-                    var pending = Interlocked.CompareExchange(ref renderer._frameCaptureRequest, null, request);
-                    if (!ReferenceEquals(pending, request))
-                    {
-                        return;
-                    }
-
-                    Interlocked.Exchange(ref renderer._frameCaptureOutputPath, null);
-                    request.TrySetResult(CreateFrameCaptureError("Preview frame capture canceled."));
-                    Logger.Log("PREVIEW_FRAME_CAPTURE_CANCELED");
-                },
-                (this, request));
-            _ = request.Task.ContinueWith(
-                _ => cancellationRegistration.Dispose(),
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-        }
-
-        Volatile.Write(ref _frameCaptureOutputPath, resolvedOutputPath);
-        _ = Task.Delay(FrameCaptureTimeoutMs).ContinueWith(
-            _ =>
-            {
-                var pending = Interlocked.CompareExchange(ref _frameCaptureRequest, null, request);
-                if (!ReferenceEquals(pending, request))
-                {
-                    return;
-                }
-
-                Interlocked.Exchange(ref _frameCaptureOutputPath, null);
-                request.TrySetResult(CreateFrameCaptureError("Timed out waiting for the next rendered preview frame."));
-                Logger.Log("PREVIEW_FRAME_CAPTURE_TIMEOUT missing=RenderedFrame");
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.ExecuteSynchronously,
-            TaskScheduler.Default);
-
-        return request.Task;
-    }
-
-    public void SetSharedDevice(ID3D11Device sharedDevice)
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(sharedDevice);
-        if (sharedDevice.NativePointer == IntPtr.Zero)
-        {
-            throw new ArgumentException("Shared D3D11 device pointer is null.", nameof(sharedDevice));
-        }
-
-        ID3D11Device? previous;
-        lock (_lifecycleLock)
-        {
-            Marshal.AddRef(sharedDevice.NativePointer);
-            previous = _sharedDevice;
-            _sharedDevice = new ID3D11Device(sharedDevice.NativePointer);
-        }
-
-        previous?.Dispose();
-        Interlocked.Exchange(ref _sharedDeviceActive, 0);
-
-        // The render thread flips _isRendering before its first InitializeD3D().
-        // If the capture service applies the shared device in that startup
-        // window, the initial InitializeD3D() will already consume _sharedDevice;
-        // queuing a reset would immediately unbind/dispose/recreate the freshly
-        // bound swap chain. Only reset once D3D resources actually exist.
-        if (Volatile.Read(ref _isRendering) != 0 &&
-            (_device != null || _swapChain != null))
-        {
-            Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
-            SignalFrameReady("shared_device_reset");
-        }
-    }
-
-    public void RetireSharedDeviceReferenceForReinit()
-    {
-        // Mode reinit retires this renderer after Stop() has already released
-        // the render-thread resources. The remaining shared-device wrapper is a
-        // duplicate COM reference obtained from the capture backend's
-        // SharedD3DDeviceManager. Disposing that wrapper while the old capture
-        // pipeline is also disposing its manager has produced corrupted-state
-        // AccessViolationException crashes in SharpGen/Vortice. Abandon the
-        // duplicate reference for this rare mode-switch path; the active
-        // renderer gets a fresh shared device from the new capture pipeline.
-        _sharedDevice = null;
-        Interlocked.Exchange(ref _sharedDeviceActive, 0);
-        Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
-    }
-
-    public void Start(int width, int height, double fps, bool isHdr)
-    {
-        ThrowIfDisposed();
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
-        if (fps <= 0) throw new ArgumentOutOfRangeException(nameof(fps));
-
-        Stop();
-
-        lock (_lifecycleLock)
-        {
-            _startupWidth = width;
-            _startupHeight = height;
-            _startupFps = fps;
-
-            Volatile.Write(ref _naturalWidth, width);
-            Volatile.Write(ref _naturalHeight, height);
-            if (Volatile.Read(ref _panelPixelWidth) <= 0) Volatile.Write(ref _panelPixelWidth, width);
-            if (Volatile.Read(ref _panelPixelHeight) <= 0) Volatile.Write(ref _panelPixelHeight, height);
-
-            _configuredInputWidth = 0;
-            _configuredInputHeight = 0;
-            _configuredOutputWidth = 0;
-            _configuredOutputHeight = 0;
-            _configuredInputFormat = Format.Unknown;
-            _configuredHdr = isHdr;
-            _outputFrameIndex = 0;
-            Volatile.Write(ref _rendererMode, RendererModeNone);
-
-            Interlocked.Exchange(ref _stopRequested, 0);
-            Interlocked.Exchange(ref _compositionTransformDirty, 1);
-            Interlocked.Exchange(ref _firstFrameRaised, 0);
-            Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
-            ResetFrameReady("start");
-
-            _renderThread = new Thread(RenderThreadMain)
-            {
-                IsBackground = true,
-                Priority = ThreadPriority.AboveNormal,
-                Name = "D3D11PreviewRenderer"
-            };
-            _renderThread.Start();
-        }
-
-        Logger.Log($"D3D11 preview renderer start width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
-    }
-
     /// <summary>
-    /// Stops the render thread before capture pipeline teardown.
+    /// Set to true when the input NV12 data uses full range (0-255), e.g. from MJPEG/NVDEC decode.
+    /// Must be set before frames are submitted. Affects VP input color space.
     /// </summary>
-    public void StopRenderThread()
+    public bool FullRangeInput
     {
-        // Reinit has two native lifetime constraints that have to be ordered:
-        // stop rendering before UnifiedVideoCapture tears down the shared D3D
-        // device, and detach SwapChainPanel while the old swap chain is still
-        // alive. HDR<->SDR or resolution changes can alter swap-chain format
-        // and size; replacing a still-attached stale chain later lets WinUI call
-        // through a released native reference during SetSwapChain(newPtr).
-        Stop();
-        Logger.Log("D3D11 preview renderer render thread stopped for reinit.");
-    }
-
-    public void Stop()
-    {
-        Thread? renderThread;
-        lock (_lifecycleLock)
-        {
-            renderThread = _renderThread;
-            if (renderThread == null)
-            {
-                FailPendingFrameCapture("Preview renderer is not running.");
-                Volatile.Write(ref _rendererMode, RendererModeNone);
-                ResetPresentCadence();
-                return;
-            }
-            Interlocked.Exchange(ref _stopRequested, 1);
-        }
-
-        // Wait for any in-flight native render call (VideoProcessorBlt / Present)
-        // to complete before we unbind the swap chain. The render thread sets
-        // _inNativeCall=1 before entering the native call block and clears it after.
-        // Without this gate, the CAS unbind below can yank the swap chain while
-        // the render thread is inside a native D3D call, causing an unrecoverable
-        // AccessViolationException (.NET 8 cannot catch corrupted-state exceptions).
-        WaitForNativeCallToDrainOrThrow("stop");
-
-        // Unbind swap chain from panel BEFORE joining the render thread.
-        // The render thread releases the swap chain and D3D device during cleanup.
-        // If we unbind after that, the panel holds a stale DXGI reference and
-        // SetSwapChain (either null or new chain) hits an AccessViolationException
-        // — a corrupted-state exception .NET Core cannot catch.
-        // Unbinding first, while D3D resources are still alive, avoids this.
-        //
-        // CAS(1->0) ensures exactly one thread performs the unbind. The render
-        // thread's CleanupD3DResources also CAS's this flag before disposing the
-        // swap chain — whoever loses the race skips the native call entirely.
-        if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
-        {
-            Interlocked.Exchange(ref _swapChainAddress, 0);
-            try
-            {
-                if (_dispatcherQueue.HasThreadAccess)
-                {
-                    if (_panel?.XamlRoot != null)
-                    {
-                        var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
-                        panelNative.SetSwapChain(IntPtr.Zero);
-                    }
-                }
-                else
-                {
-                    UnbindSwapChainFromPanel();
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"D3D11 preview swap chain unbind failed: {ex.GetType().Name} msg={ex.Message}");
-            }
-        }
-
-        // Wake the render thread AFTER the swap chain is safely unbound so it
-        // sees _stopRequested and exits without attempting to Present.
-        SignalFrameReady("stop");
-        if (Thread.CurrentThread != renderThread)
-        {
-            if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
-            {
-                Logger.Log($"D3D11 preview renderer stop timed out after {_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
-                throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
-            }
-        }
-
-        lock (_lifecycleLock)
-        {
-            if (ReferenceEquals(_renderThread, renderThread))
-            {
-                _renderThread = null;
-            }
-        }
-
-        while (TryDequeuePendingFrame(out var stale))
-        {
-            TrackFrameDropped(stale, "renderer-stop");
-            stale.Dispose();
-        }
-
-        FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
-        Volatile.Write(ref _rendererMode, RendererModeNone);
-        ResetPresentCadence();
-        Logger.Log("D3D11 preview renderer stop completed.");
-    }
-
-    private void WaitForNativeCallToDrainOrThrow(string operation)
-    {
-        if (Volatile.Read(ref _inNativeCall) == 0)
-        {
-            return;
-        }
-
-        var stopwatch = Stopwatch.StartNew();
-        var spinner = new SpinWait();
-        while (Volatile.Read(ref _inNativeCall) != 0)
-        {
-            if (stopwatch.ElapsedMilliseconds >= _nativeStopFenceTimeoutMs)
-            {
-                Logger.Log($"D3D11 preview renderer {operation} timed out waiting for native render call to return after {_nativeStopFenceTimeoutMs}ms.");
-                throw new TimeoutException("D3D11 preview native render call did not return before timeout.");
-            }
-
-            spinner.SpinOnce();
-            if (spinner.NextSpinWillYield)
-            {
-                Thread.Sleep(1);
-            }
-        }
+        get => Volatile.Read(ref _fullRangeInput);
+        set => Volatile.Write(ref _fullRangeInput, value);
     }
 
     public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)
@@ -813,16 +284,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
         SignalFrameReady("panel_size_changed");
         Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
-    }
-
-    /// <summary>
-    /// Set to true when the input NV12 data uses full range (0-255), e.g. from MJPEG/NVDEC decode.
-    /// Must be set before frames are submitted. Affects VP input color space.
-    /// </summary>
-    public bool FullRangeInput
-    {
-        get => Volatile.Read(ref _fullRangeInput);
-        set => Volatile.Write(ref _fullRangeInput, value);
     }
 
     public void SubmitRawFrame(
@@ -988,7 +449,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (!_loggedNv12ShaderMissing)
             {
-                Logger.Log("D3D11_RENDERER_WARN NV12 pixel shader not available — frames will be dropped via this path");
+                Logger.Log("D3D11_RENDERER_WARN NV12 pixel shader not available - frames will be dropped via this path");
                 _loggedNv12ShaderMissing = true;
             }
             return;
@@ -1213,6 +674,453 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    public void Start(int width, int height, double fps, bool isHdr)
+    {
+        ThrowIfDisposed();
+        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+        if (fps <= 0) throw new ArgumentOutOfRangeException(nameof(fps));
+
+        Stop();
+
+        lock (_lifecycleLock)
+        {
+            _startupWidth = width;
+            _startupHeight = height;
+            _startupFps = fps;
+
+            Volatile.Write(ref _naturalWidth, width);
+            Volatile.Write(ref _naturalHeight, height);
+            if (Volatile.Read(ref _panelPixelWidth) <= 0) Volatile.Write(ref _panelPixelWidth, width);
+            if (Volatile.Read(ref _panelPixelHeight) <= 0) Volatile.Write(ref _panelPixelHeight, height);
+
+            _configuredInputWidth = 0;
+            _configuredInputHeight = 0;
+            _configuredOutputWidth = 0;
+            _configuredOutputHeight = 0;
+            _configuredInputFormat = Format.Unknown;
+            _configuredHdr = isHdr;
+            _outputFrameIndex = 0;
+            Volatile.Write(ref _rendererMode, RendererModeNone);
+
+            Interlocked.Exchange(ref _stopRequested, 0);
+            Interlocked.Exchange(ref _compositionTransformDirty, 1);
+            ResetFirstFrameNotification();
+            Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
+            ResetFrameReady("start");
+
+            _renderThread = new Thread(RenderThreadMain)
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.AboveNormal,
+                Name = "D3D11PreviewRenderer"
+            };
+            _renderThread.Start();
+        }
+
+        Logger.Log($"D3D11 preview renderer start width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
+    }
+
+    private void RenderThreadMain()
+    {
+        Interlocked.Exchange(ref _isRendering, 1);
+        using var mmcss = MmcssThreadRegistration.TryRegister(_renderMmcssTask, _renderMmcssPriority, message => Logger.Log(message));
+        try
+        {
+            InitializeD3D();
+            while (Volatile.Read(ref _stopRequested) == 0)
+            {
+                _frameReadyEvent.Wait(TimeSpan.FromMilliseconds(200));
+                if (Volatile.Read(ref _stopRequested) != 0) break;
+
+                if (Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1) == 1)
+                {
+                    HandlePendingSharedDeviceResetOnRenderThread();
+                }
+
+                if (Interlocked.CompareExchange(ref _compositionTransformDirty, 0, 1) == 1)
+                {
+                    if (!TryApplyPendingCompositionTransformOnRenderThread(out var skipFrameDispatch))
+                    {
+                        break;
+                    }
+
+                    if (skipFrameDispatch)
+                    {
+                        continue;
+                    }
+                }
+
+                if (!ProcessRenderThreadFrameOrIdle())
+                {
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"D3D11 preview renderer thread failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            NotifyRenderThreadFailed(ex);
+        }
+        finally
+        {
+            CleanupRenderThreadExit();
+        }
+    }
+
+    private void HandlePendingSharedDeviceResetOnRenderThread()
+    {
+        while (TryDequeuePendingFrame(out var stale))
+        {
+            TrackFrameDropped(stale, "shared-device-reset");
+            stale.Dispose();
+        }
+
+        try
+        {
+            // The capture backend can hand us its shared D3D device after the
+            // render thread has already created a startup swap chain. Rebuilding
+            // directly would leave the first chain attached to SwapChainPanel
+            // while the fields point at the second chain, corrupting WinUI's
+            // native panel state. Unbind before rebuilding the shared-device chain.
+            if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
+            {
+                Interlocked.Exchange(ref _swapChainAddress, 0);
+                UnbindSwapChainFromPanel();
+            }
+
+            CleanupD3DResources();
+            InitializeD3D();
+            Interlocked.Exchange(ref _compositionTransformDirty, 1);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"D3D11 preview shared device rebind failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            CleanupD3DResources();
+        }
+    }
+
+    private bool TryApplyPendingCompositionTransformOnRenderThread(out bool skipFrameDispatch)
+    {
+        skipFrameDispatch = false;
+
+        // Re-check stop flag: Stop() may have unbound the swap chain between
+        // the top-of-loop check and here. Accessing an unbound chain causes
+        // native stack corruption (BEX64 / 0xc0000409).
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            return false;
+        }
+
+        try
+        {
+            var swapChain = _swapChain;
+            if (swapChain != null && Volatile.Read(ref _swapChainBound) == 1)
+            {
+                ApplyCompositionScaleTransform(swapChain);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (IsDeviceLostException(ex))
+            {
+                HandleDeviceLost(ex);
+                skipFrameDispatch = true;
+                return true;
+            }
+
+            Logger.Log($"D3D11 preview composition transform update failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+        }
+
+        return true;
+    }
+
+    private bool ProcessRenderThreadFrameOrIdle()
+    {
+        if (!TryDequeuePendingFrame(out var frame))
+        {
+            ResetFrameReady("render_loop_idle");
+            if (!_pendingFrames.IsEmpty ||
+                Volatile.Read(ref _compositionTransformDirty) != 0 ||
+                Volatile.Read(ref _sharedDeviceResetPending) != 0)
+            {
+                SignalFrameReady("render_loop_race");
+            }
+
+            return true;
+        }
+
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            TrackFrameDropped(frame, "renderer-stopped");
+            frame.Dispose();
+            return false;
+        }
+
+        try
+        {
+            if (frame.SubmissionGeneration != Interlocked.Read(ref _submissionGeneration))
+            {
+                var reason = Volatile.Read(ref _submissionGenerationDropReason);
+                TrackFrameDropped(frame, string.IsNullOrWhiteSpace(reason) ? "stale-generation" : $"{reason}:stale");
+                return true;
+            }
+
+            WaitForFrameLatencySignal();
+            var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
+            RenderFrame(frame);
+            if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)
+            {
+                TrackFrameDropped(frame, "render-skipped");
+            }
+
+            // Keep the event set while more frames are queued so the
+            // render thread drains the elastic buffer without waiting.
+            if (!_pendingFrames.IsEmpty)
+            {
+                SignalFrameReady("render_loop_drain");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (IsDeviceLostException(ex))
+            {
+                HandleDeviceLost(ex);
+            }
+            else
+            {
+                Logger.Log($"D3D11 preview render failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            }
+
+            TrackFrameDropped(frame, "render-failed");
+        }
+        finally
+        {
+            frame.Dispose();
+        }
+
+        if (_pendingFrames.IsEmpty &&
+            Volatile.Read(ref _compositionTransformDirty) == 0 &&
+            Volatile.Read(ref _sharedDeviceResetPending) == 0)
+        {
+            ResetFrameReady("render_loop_empty_after_failure");
+        }
+
+        return true;
+    }
+
+    private void ConfigureFrameLatencyWaitableObject()
+    {
+        _frameLatencyWaitHandle = IntPtr.Zero;
+        _swapChain2?.Dispose();
+        _swapChain2 = null;
+
+        if (!_waitableSwapChainEnabled || _swapChain == null)
+        {
+            return;
+        }
+
+        _swapChain2 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
+        if (_swapChain2 == null)
+        {
+            Logger.Log("D3D11 preview waitable swap chain unavailable: IDXGISwapChain2 not supported.");
+            return;
+        }
+
+        _swapChain2.MaximumFrameLatency = (uint)_dxgiMaxFrameLatency;
+        _frameLatencyWaitHandle = _swapChain2.FrameLatencyWaitableObject;
+        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{_frameLatencyWaitHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
+    }
+
+    private void WaitForFrameLatencySignal()
+    {
+        if (!_waitableSwapChainEnabled || _frameLatencyWaitHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var waitStart = Stopwatch.GetTimestamp();
+        var result = WaitForSingleObject(_frameLatencyWaitHandle, 8);
+        TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
+        if (result != WaitObject0 && result != WaitTimeout)
+        {
+            Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
+        }
+    }
+
+    private void CleanupRenderThreadExit()
+    {
+        while (TryDequeuePendingFrame(out var stale))
+        {
+            TrackFrameDropped(stale, "renderer-exit");
+            stale.Dispose();
+        }
+
+        FailPendingFrameCapture("Render thread exited before frame capture completed.");
+        CleanupD3DResources();
+        Interlocked.Exchange(ref _isRendering, 0);
+        Volatile.Write(ref _rendererMode, RendererModeNone);
+    }
+
+    /// <summary>
+    /// Stops the render thread before capture pipeline teardown.
+    /// </summary>
+    public void StopRenderThread()
+    {
+        // Reinit has two native lifetime constraints that have to be ordered:
+        // stop rendering before UnifiedVideoCapture tears down the shared D3D
+        // device, and detach SwapChainPanel while the old swap chain is still
+        // alive. HDR<->SDR or resolution changes can alter swap-chain format
+        // and size; replacing a still-attached stale chain later lets WinUI call
+        // through a released native reference during SetSwapChain(newPtr).
+        Stop();
+        Logger.Log("D3D11 preview renderer render thread stopped for reinit.");
+    }
+
+    public void Stop()
+    {
+        Thread? renderThread;
+        lock (_lifecycleLock)
+        {
+            renderThread = _renderThread;
+            if (renderThread == null)
+            {
+                FailPendingFrameCapture("Preview renderer is not running.");
+                Volatile.Write(ref _rendererMode, RendererModeNone);
+                ResetPresentCadence();
+                return;
+            }
+
+            Interlocked.Exchange(ref _stopRequested, 1);
+        }
+
+        // Wait for any in-flight native render call (VideoProcessorBlt / Present)
+        // to complete before we unbind the swap chain. The render thread sets
+        // _inNativeCall=1 before entering the native call block and clears it after.
+        // Without this gate, the CAS unbind below can yank the swap chain while
+        // the render thread is inside a native D3D call, causing an unrecoverable
+        // AccessViolationException (.NET 8 cannot catch corrupted-state exceptions).
+        WaitForNativeCallToDrainOrThrow("stop");
+
+        // Unbind swap chain from panel BEFORE joining the render thread.
+        // The render thread releases the swap chain and D3D device during cleanup.
+        // If we unbind after that, the panel holds a stale DXGI reference and
+        // SetSwapChain (either null or new chain) hits an AccessViolationException,
+        // a corrupted-state exception .NET Core cannot catch.
+        // Unbinding first, while D3D resources are still alive, avoids this.
+        //
+        // CAS(1->0) ensures exactly one thread performs the unbind. The render
+        // thread's CleanupD3DResources also CAS's this flag before disposing the
+        // swap chain; whoever loses the race skips the native call entirely.
+        if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
+        {
+            Interlocked.Exchange(ref _swapChainAddress, 0);
+            try
+            {
+                if (_dispatcherQueue.HasThreadAccess)
+                {
+                    if (_panel?.XamlRoot != null)
+                    {
+                        var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
+                        panelNative.SetSwapChain(IntPtr.Zero);
+                    }
+                }
+                else
+                {
+                    UnbindSwapChainFromPanel();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"D3D11 preview swap chain unbind failed: {ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
+        // Wake the render thread AFTER the swap chain is safely unbound so it
+        // sees _stopRequested and exits without attempting to Present.
+        SignalFrameReady("stop");
+        if (Thread.CurrentThread != renderThread)
+        {
+            if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
+            {
+                Logger.Log($"D3D11 preview renderer stop timed out after {_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
+                throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
+            }
+        }
+
+        lock (_lifecycleLock)
+        {
+            if (ReferenceEquals(_renderThread, renderThread))
+            {
+                _renderThread = null;
+            }
+        }
+
+        while (TryDequeuePendingFrame(out var stale))
+        {
+            TrackFrameDropped(stale, "renderer-stop");
+            stale.Dispose();
+        }
+
+        FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
+        Volatile.Write(ref _rendererMode, RendererModeNone);
+        ResetPresentCadence();
+        Logger.Log("D3D11 preview renderer stop completed.");
+    }
+
+    private void WaitForNativeCallToDrainOrThrow(string operation)
+    {
+        if (Volatile.Read(ref _inNativeCall) == 0)
+        {
+            return;
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        var spinner = new SpinWait();
+        while (Volatile.Read(ref _inNativeCall) != 0)
+        {
+            if (stopwatch.ElapsedMilliseconds >= _nativeStopFenceTimeoutMs)
+            {
+                Logger.Log($"D3D11 preview renderer {operation} timed out waiting for native render call to return after {_nativeStopFenceTimeoutMs}ms.");
+                throw new TimeoutException("D3D11 preview native render call did not return before timeout.");
+            }
+
+            spinner.SpinOnce();
+            if (spinner.NextSpinWillYield)
+            {
+                Thread.Sleep(1);
+            }
+        }
+    }
+
+    private bool TryEnterNativeRenderCall()
+    {
+        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+        {
+            return false;
+        }
+
+        Interlocked.Exchange(ref _inNativeCall, 1);
+        if (Volatile.Read(ref _stopRequested) == 0 && Volatile.Read(ref _swapChainBound) != 0)
+        {
+            return true;
+        }
+
+        ExitNativeRenderCall();
+        return false;
+    }
+
+    private void ExitNativeRenderCall()
+        => Interlocked.Exchange(ref _inNativeCall, 0);
+
+    private void ThrowIfDisposed()
+    {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            throw new ObjectDisposedException(nameof(D3D11PreviewRenderer));
+        }
+    }
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
@@ -1220,6 +1128,416 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         _sharedDevice?.Dispose();
         _sharedDevice = null;
         _frameReadyEvent.Dispose();
+    }
+
+    private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)
+    {
+        using var swapChain2 = swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
+        if (swapChain2 == null)
+        {
+            return;
+        }
+
+        var panelLogicalW = Volatile.Read(ref _panelLogicalWidth);
+        var panelLogicalH = Volatile.Read(ref _panelLogicalHeight);
+        var swapW = (double)Math.Max(1, _configuredOutputWidth);
+        var swapH = (double)Math.Max(1, _configuredOutputHeight);
+
+        if (panelLogicalW <= 0 || panelLogicalH <= 0)
+        {
+            swapChain2.MatrixTransform = Matrix3x2.Identity;
+            return;
+        }
+
+        var uniformScale = (float)Math.Min(panelLogicalW / swapW, panelLogicalH / swapH);
+        var offsetX = (float)((panelLogicalW - swapW * uniformScale) * 0.5);
+        var offsetY = (float)((panelLogicalH - swapH * uniformScale) * 0.5);
+
+        swapChain2.MatrixTransform = new Matrix3x2(
+            uniformScale, 0,
+            0, uniformScale,
+            offsetX, offsetY);
+
+        Logger.Log($"D3D11 preview composition transform set scale={uniformScale:F4} offset=({offsetX:F1},{offsetY:F1}) panel={panelLogicalW:F0}x{panelLogicalH:F0} swap={swapW}x{swapH}.");
+    }
+
+    private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)
+    {
+        // ISwapChainPanelNative.SetSwapChain must be called on the UI thread
+        // because _panel is a XAML element. Marshal from the render thread.
+        //
+        // Reinit deadlock guard: if the UI thread is blocked in StopRenderThread().Join()
+        // waiting for this render thread to exit, dispatching here would deadlock until
+        // the Join times out. Two safeguards: (a) the wait below polls _stopRequested in
+        // short chunks so it can bail early, (b) the queued lambda re-checks both
+        // _stopRequested and that _swapChain still equals the chain we are trying to
+        // bind. If either has changed, the renderer has been stopped or the chain
+        // superseded, and SetSwapChain on a stale chain would AV.
+        var done = new ManualResetEventSlim(false);
+        Exception? uiError = null;
+        var aborted = false;
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (Volatile.Read(ref _stopRequested) != 0 ||
+                    !ReferenceEquals(_swapChain, swapChain))
+                {
+                    uiError = new OperationCanceledException(
+                        "Swap chain binding superseded before reaching the UI thread.");
+                    return;
+                }
+
+                if (_panel?.XamlRoot == null)
+                {
+                    uiError = new InvalidOperationException(
+                        "Panel is no longer in the visual tree; swap chain binding skipped.");
+                    return;
+                }
+
+                var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
+                panelNative.SetSwapChain(swapChain.NativePointer);
+                Interlocked.Exchange(ref _swapChainAddress, swapChain.NativePointer.ToInt64());
+                Interlocked.Exchange(ref _swapChainBound, 1);
+            }
+            catch (Exception ex)
+            {
+                uiError = ex;
+            }
+            finally
+            {
+                try { done.Set(); }
+                catch { /* race with dispose if we aborted; safe to ignore */ }
+            }
+        });
+
+        if (!enqueued)
+        {
+            done.Dispose();
+            throw new InvalidOperationException("Failed to enqueue swap chain binding to UI thread.");
+        }
+
+        const int waitChunkMs = 50;
+        const int maxWaitMs = 5000;
+        var elapsedMs = 0;
+        var completed = false;
+        while (elapsedMs < maxWaitMs)
+        {
+            if (done.Wait(waitChunkMs))
+            {
+                completed = true;
+                break;
+            }
+
+            elapsedMs += waitChunkMs;
+            if (Volatile.Read(ref _stopRequested) != 0)
+            {
+                aborted = true;
+                Logger.Log($"D3D11 preview swap-chain binding aborted at {elapsedMs}ms: stop requested during UI dispatcher wait.");
+                break;
+            }
+        }
+
+        if (!completed)
+        {
+            // Leave done undisposed: the queued lambda may still run later and
+            // call done.Set(). Disposing now would race with that and risk an
+            // ObjectDisposedException on the UI thread. The lambda's stale-chain
+            // guard above prevents it from binding a disposed swap chain.
+            if (aborted)
+            {
+                return;
+            }
+
+            throw new TimeoutException("Swap chain binding to UI thread timed out.");
+        }
+
+        done.Dispose();
+        if (uiError != null)
+        {
+            if (uiError is OperationCanceledException)
+            {
+                Logger.Log("D3D11 preview swap-chain binding cancelled on UI thread; renderer shutting down.");
+                return;
+            }
+
+            throw new InvalidOperationException("Swap chain binding failed on UI thread.", uiError);
+        }
+    }
+
+    private void UnbindSwapChainFromPanel()
+    {
+        // Must run on UI thread since _panel is a XAML element.
+        // Called from render thread during cleanup, so marshal via dispatcher.
+        try
+        {
+            using var done = new ManualResetEventSlim(false);
+            var enqueued = _dispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    // Guard: if the panel is no longer in the visual tree, its native
+                    // COM backing may be released. AccessViolationException from a stale
+                    // vtable pointer is a corrupted-state exception that .NET Core cannot
+                    // catch; it terminates the process. Skip the call entirely.
+                    if (_panel?.XamlRoot == null)
+                    {
+                        done.Set();
+                        return;
+                    }
+
+                    var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
+                    panelNative.SetSwapChain(IntPtr.Zero);
+                }
+                catch
+                {
+                    // Best-effort: panel may already be torn down during app shutdown.
+                    Logger.Log("D3D11 preview swap chain unbind skipped: UI callback failed during cleanup.");
+                }
+                finally
+                {
+                    done.Set();
+                }
+            });
+
+            if (enqueued)
+            {
+                if (!done.Wait(TimeSpan.FromSeconds(2)))
+                {
+                    Logger.Log("D3D11 preview swap chain unbind timed out on UI thread during cleanup.");
+                }
+            }
+            else
+            {
+                Logger.Log("D3D11 preview swap chain unbind enqueue failed during cleanup.");
+            }
+        }
+        catch (Exception ex)
+        {
+            // Dispatcher may be shut down; safe to ignore during cleanup.
+            Logger.Log($"D3D11 preview swap chain unbind ignored during cleanup: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+
+public readonly record struct PresentCadenceMetrics(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double P99IntervalMs,
+        double MaxIntervalMs,
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentIntervalsMs,
+        double JitterStdDevMs,
+        long SlowFrameCount,
+        double SlowFramePercent);
+
+    public readonly record struct CpuStageTimingMetrics(
+        int SampleCount,
+        double AverageMs,
+        double P95Ms,
+        double P99Ms,
+        double MaxMs);
+
+    public readonly record struct RenderCpuTimingMetrics(
+        CpuStageTimingMetrics InputUpload,
+        CpuStageTimingMetrics RenderSubmit,
+        CpuStageTimingMetrics PresentCall,
+        CpuStageTimingMetrics TotalFrame);
+
+    public readonly record struct PipelineLatencyMetrics(
+        int SampleCount,
+        double AverageMs,
+        double P95Ms,
+        double P99Ms,
+        double MaxMs);
+
+    public readonly record struct FrameLatencyWaitMetrics(
+        bool Enabled,
+        bool HandleActive,
+        long CallCount,
+        long SignaledCount,
+        long TimeoutCount,
+        long UnexpectedResultCount,
+        uint LastResult,
+        double LastWaitMs,
+        CpuStageTimingMetrics Timing);
+
+    public readonly record struct FrameOwnershipMetrics(
+        long LastSubmittedPreviewPresentId,
+        long LastSubmittedSourceSequenceNumber,
+        long LastSubmittedSourcePtsTicks,
+        long LastSubmittedQpc,
+        long LastSubmittedUtcUnixMs,
+        long LastRenderedPreviewPresentId,
+        long LastRenderedSourceSequenceNumber,
+        long LastRenderedSourcePtsTicks,
+        long LastRenderedQpc,
+        long LastRenderedUtcUnixMs,
+        double LastRenderedSchedulerToPresentMs,
+        double LastRenderedPipelineLatencyMs,
+        long LastDroppedPreviewPresentId,
+        long LastDroppedSourceSequenceNumber,
+        long LastDroppedSourcePtsTicks,
+        long LastDroppedQpc,
+        long LastDroppedUtcUnixMs,
+        string LastDropReason);
+
+    public readonly record struct DxgiFrameStatisticsMetrics(
+        long SampleCount,
+        long SuccessCount,
+        long FailureCount,
+        string LastError,
+        long PresentCount,
+        long PresentRefreshCount,
+        long SyncRefreshCount,
+        long SyncQpcTime,
+        long LastPresentDelta,
+        long LastPresentRefreshDelta,
+        long LastSyncRefreshDelta,
+        long MissedRefreshCount);
+
+    private readonly object _presentCadenceLock = new();
+    private double[] _presentIntervalWindowMs = new double[1200];
+    private int _presentIntervalCount;
+    private int _presentIntervalIndex;
+    private long _lastPresentTick;
+    private int _presentCadenceBaselinePending;
+    private readonly object _pipelineLatencyLock = new();
+    private double[] _pipelineLatencyWindowMs = new double[1200];
+    private int _pipelineLatencyCount;
+    private int _pipelineLatencyIndex;
+    private readonly object _renderCpuTimingLock = new();
+    private double[] _inputUploadCpuTimingWindowMs = new double[1200];
+    private double[] _renderSubmitCpuTimingWindowMs = new double[1200];
+    private double[] _presentCallTimingWindowMs = new double[1200];
+    private double[] _renderTotalCpuTimingWindowMs = new double[1200];
+    private int _renderCpuTimingCount;
+    private int _renderCpuTimingIndex;
+    private readonly object _frameLatencyWaitTimingLock = new();
+    private double[] _frameLatencyWaitTimingWindowMs = new double[1200];
+    private int _frameLatencyWaitTimingCount;
+    private int _frameLatencyWaitTimingIndex;
+    private long _frameLatencyWaitCallCount;
+    private long _frameLatencyWaitSignaledCount;
+    private long _frameLatencyWaitTimeoutCount;
+    private long _frameLatencyWaitUnexpectedResultCount;
+    private long _frameLatencyWaitLastResult;
+    private long _frameLatencyWaitLastTicks;
+    private long _framesSubmitted;
+    private long _framesRendered;
+    private long _framesDropped;
+    private long _lastSubmittedPreviewPresentId;
+    private long _lastSubmittedSourceSequenceNumber = -1;
+    private long _lastSubmittedSourcePtsTicks;
+    private long _lastSubmittedQpc;
+    private long _lastSubmittedUtcUnixMs;
+    private long _lastRenderedPreviewPresentId;
+    private long _lastRenderedSourceSequenceNumber = -1;
+    private long _lastRenderedSourcePtsTicks;
+    private long _lastRenderedQpc;
+    private long _lastRenderedUtcUnixMs;
+    private long _lastRenderedSchedulerToPresentTicks;
+    private long _lastRenderedPipelineLatencyTicks;
+    private long _lastDroppedPreviewPresentId;
+    private long _lastDroppedSourceSequenceNumber = -1;
+    private long _lastDroppedSourcePtsTicks;
+    private long _lastDroppedQpc;
+    private long _lastDroppedUtcUnixMs;
+    private long _submissionGeneration;
+    private string _lastDropReason = string.Empty;
+    private string _submissionGenerationDropReason = "transition";
+    private readonly object _slowFrameDiagnosticsLock = new();
+    private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];
+    private string _lastRenderThreadFailureType = string.Empty;
+    private string _lastRenderThreadFailureMessage = string.Empty;
+    private int _firstFrameRaised;
+    private int _lastRenderThreadFailureHResult;
+    private int _slowFrameDiagnosticsCount;
+    private int _slowFrameDiagnosticsIndex;
+    private long _renderThreadFailureCount;
+
+    private readonly record struct SlowFrameDxgiSlipSnapshot(
+        long PresentDelta,
+        long PresentRefreshDelta,
+        long SyncRefreshDelta,
+        long MissedRefreshCount,
+        bool IsRefreshSlip);
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    private static extern int DwmFlush();
+
+    private readonly object _dxgiFrameStatisticsLock = new();
+    private long _dxgiFrameStatisticsSampleCount;
+    private long _dxgiFrameStatisticsSuccessCount;
+    private long _dxgiFrameStatisticsFailureCount;
+    private string _dxgiFrameStatisticsLastError = string.Empty;
+    private long _dxgiFrameStatisticsPresentCount = -1;
+    private long _dxgiFrameStatisticsPresentRefreshCount = -1;
+    private long _dxgiFrameStatisticsSyncRefreshCount = -1;
+    private long _dxgiFrameStatisticsSyncQpcTime;
+    private long _dxgiFrameStatisticsLastPresentDelta;
+    private long _dxgiFrameStatisticsLastPresentRefreshDelta;
+    private long _dxgiFrameStatisticsLastSyncRefreshDelta;
+    private long _dxgiFrameStatisticsMissedRefreshCount;
+    private long _dxgiFrameStatisticsFrameCounter;
+    private long _dxgiFrameStatisticsLastSampleFrameCounter;
+    private bool _dxgiFrameStatisticsHasBaseline;
+
+    public void SetExpectedFrameRate(double fps)
+    {
+        if (fps <= 0) return;
+        _startupFps = fps;
+        var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));
+        lock (_presentCadenceLock)
+        {
+            if (_presentIntervalWindowMs.Length != targetSize)
+            {
+                _presentIntervalWindowMs = new double[targetSize];
+                _presentIntervalCount = 0;
+                _presentIntervalIndex = 0;
+            }
+        }
+
+        lock (_pipelineLatencyLock)
+        {
+            if (_pipelineLatencyWindowMs.Length != targetSize)
+            {
+                _pipelineLatencyWindowMs = new double[targetSize];
+                _pipelineLatencyCount = 0;
+                _pipelineLatencyIndex = 0;
+            }
+        }
+
+        lock (_renderCpuTimingLock)
+        {
+            if (_renderTotalCpuTimingWindowMs.Length != targetSize)
+            {
+                _inputUploadCpuTimingWindowMs = new double[targetSize];
+                _renderSubmitCpuTimingWindowMs = new double[targetSize];
+                _presentCallTimingWindowMs = new double[targetSize];
+                _renderTotalCpuTimingWindowMs = new double[targetSize];
+                _renderCpuTimingCount = 0;
+                _renderCpuTimingIndex = 0;
+            }
+        }
+
+        lock (_frameLatencyWaitTimingLock)
+        {
+            if (_frameLatencyWaitTimingWindowMs.Length != targetSize)
+            {
+                _frameLatencyWaitTimingWindowMs = new double[targetSize];
+                _frameLatencyWaitTimingCount = 0;
+                _frameLatencyWaitTimingIndex = 0;
+            }
+        }
     }
 
     public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)
@@ -1314,6 +1632,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             SlowFramePercent: slowPercent);
     }
 
+    public double[] GetRecentPresentIntervalsMs(int maxSamples)
+    {
+        lock (_presentCadenceLock)
+        {
+            return CopyRecentRing(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
+        }
+    }
+
     public double GetEstimatedPipelineLatencyMs()
     {
         lock (_pipelineLatencyLock)
@@ -1355,14 +1681,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
-    public double[] GetRecentPresentIntervalsMs(int maxSamples)
-    {
-        lock (_presentCadenceLock)
-        {
-            return CopyRecentRing(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
-        }
-    }
-
     public double[] GetRecentPipelineLatencyMs(int maxSamples)
     {
         lock (_pipelineLatencyLock)
@@ -1392,25 +1710,29 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             SummarizeCpuStageTiming(totalSamples));
     }
 
-    public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)
+    public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()
     {
-        lock (_slowFrameDiagnosticsLock)
+        CpuStageTimingMetrics timing;
+        lock (_frameLatencyWaitTimingLock)
         {
-            var take = Math.Min(Math.Max(0, maxEntries), _slowFrameDiagnosticsCount);
-            if (take <= 0)
-            {
-                return Array.Empty<PreviewSlowFrameDiagnostic>();
-            }
-
-            var result = new PreviewSlowFrameDiagnostic[take];
-            var start = (_slowFrameDiagnosticsIndex - take + _slowFrameDiagnostics.Length) % _slowFrameDiagnostics.Length;
-            for (var i = 0; i < take; i++)
-            {
-                result[i] = _slowFrameDiagnostics[(start + i) % _slowFrameDiagnostics.Length];
-            }
-
-            return result;
+            timing = SummarizeCpuStageTiming(CopyRecentRing(
+                _frameLatencyWaitTimingWindowMs,
+                _frameLatencyWaitTimingCount,
+                _frameLatencyWaitTimingIndex,
+                _frameLatencyWaitTimingWindowMs.Length));
         }
+
+        var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
+        return new FrameLatencyWaitMetrics(
+            Enabled: _waitableSwapChainEnabled,
+            HandleActive: _frameLatencyWaitHandle != IntPtr.Zero,
+            CallCount: Interlocked.Read(ref _frameLatencyWaitCallCount),
+            SignaledCount: Interlocked.Read(ref _frameLatencyWaitSignaledCount),
+            TimeoutCount: Interlocked.Read(ref _frameLatencyWaitTimeoutCount),
+            UnexpectedResultCount: Interlocked.Read(ref _frameLatencyWaitUnexpectedResultCount),
+            LastResult: unchecked((uint)Interlocked.Read(ref _frameLatencyWaitLastResult)),
+            LastWaitMs: lastTicks > 0 ? TicksToMs(lastTicks) : 0,
+            Timing: timing);
     }
 
     public FrameOwnershipMetrics GetFrameOwnershipMetrics()
@@ -1456,125 +1778,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 LastSyncRefreshDelta: _dxgiFrameStatisticsLastSyncRefreshDelta,
                 MissedRefreshCount: _dxgiFrameStatisticsMissedRefreshCount);
         }
-    }
-
-    public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()
-    {
-        CpuStageTimingMetrics timing;
-        lock (_frameLatencyWaitTimingLock)
-        {
-            timing = SummarizeCpuStageTiming(CopyRecentRing(
-                _frameLatencyWaitTimingWindowMs,
-                _frameLatencyWaitTimingCount,
-                _frameLatencyWaitTimingIndex,
-                _frameLatencyWaitTimingWindowMs.Length));
-        }
-
-        var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
-        return new FrameLatencyWaitMetrics(
-            Enabled: _waitableSwapChainEnabled,
-            HandleActive: _frameLatencyWaitHandle != IntPtr.Zero,
-            CallCount: Interlocked.Read(ref _frameLatencyWaitCallCount),
-            SignaledCount: Interlocked.Read(ref _frameLatencyWaitSignaledCount),
-            TimeoutCount: Interlocked.Read(ref _frameLatencyWaitTimeoutCount),
-            UnexpectedResultCount: Interlocked.Read(ref _frameLatencyWaitUnexpectedResultCount),
-            LastResult: unchecked((uint)Interlocked.Read(ref _frameLatencyWaitLastResult)),
-            LastWaitMs: lastTicks > 0 ? TicksToMs(lastTicks) : 0,
-            Timing: timing);
-    }
-
-    private void TrackFrameSubmitted(PendingFrame frame)
-    {
-        Interlocked.Exchange(ref _lastSubmittedPreviewPresentId, frame.PreviewPresentId);
-        Interlocked.Exchange(ref _lastSubmittedSourceSequenceNumber, frame.SourceSequenceNumber);
-        Interlocked.Exchange(ref _lastSubmittedSourcePtsTicks, frame.SourcePtsTicks);
-        Interlocked.Exchange(ref _lastSubmittedQpc, Stopwatch.GetTimestamp());
-        Interlocked.Exchange(ref _lastSubmittedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-    }
-
-    private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)
-    {
-        Interlocked.Exchange(ref _lastRenderedPreviewPresentId, frame.PreviewPresentId);
-        Interlocked.Exchange(ref _lastRenderedSourceSequenceNumber, frame.SourceSequenceNumber);
-        Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);
-        Interlocked.Exchange(ref _lastRenderedQpc, presentReturnTick);
-        Interlocked.Exchange(ref _lastRenderedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        var schedulerToPresentTicks = frame.SchedulerSubmitTick > 0 && presentReturnTick > frame.SchedulerSubmitTick
-            ? presentReturnTick - frame.SchedulerSubmitTick
-            : 0;
-        var pipelineLatencyTicks = frame.ArrivalTick > 0 && estimatedVisibleTick > frame.ArrivalTick
-            ? estimatedVisibleTick - frame.ArrivalTick
-            : 0;
-        Interlocked.Exchange(ref _lastRenderedSchedulerToPresentTicks, schedulerToPresentTicks);
-        Interlocked.Exchange(ref _lastRenderedPipelineLatencyTicks, pipelineLatencyTicks);
-    }
-
-    private void TrackFrameDropped(PendingFrame frame, string reason)
-    {
-        Interlocked.Increment(ref _framesDropped);
-        Interlocked.Exchange(ref _lastDroppedPreviewPresentId, frame.PreviewPresentId);
-        Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, frame.SourceSequenceNumber);
-        Interlocked.Exchange(ref _lastDroppedSourcePtsTicks, frame.SourcePtsTicks);
-        Interlocked.Exchange(ref _lastDroppedQpc, Stopwatch.GetTimestamp());
-        Interlocked.Exchange(ref _lastDroppedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        Volatile.Write(ref _lastDropReason, reason);
-    }
-
-    private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)
-    {
-        var take = Math.Min(Math.Max(0, maxSamples), count);
-        if (take <= 0)
-        {
-            return Array.Empty<double>();
-        }
-
-        var result = new double[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
-        return result;
-    }
-
-    private double TrackPresentCadence(bool countSample)
-    {
-        var nowTick = Stopwatch.GetTimestamp();
-        var previousTick = Interlocked.Exchange(ref _lastPresentTick, nowTick);
-        if (!countSample)
-        {
-            Interlocked.Exchange(ref _presentCadenceBaselinePending, 1);
-            return 0;
-        }
-
-        if (previousTick <= 0)
-        {
-            return 0;
-        }
-
-        if (Interlocked.Exchange(ref _presentCadenceBaselinePending, 0) != 0)
-        {
-            return 0;
-        }
-
-        var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
-        if (intervalMs <= 0 || intervalMs > 5000)
-        {
-            return 0;
-        }
-
-        lock (_presentCadenceLock)
-        {
-            _presentIntervalWindowMs[_presentIntervalIndex] = intervalMs;
-            _presentIntervalIndex = (_presentIntervalIndex + 1) % _presentIntervalWindowMs.Length;
-            if (_presentIntervalCount < _presentIntervalWindowMs.Length)
-            {
-                _presentIntervalCount++;
-            }
-        }
-
-        return intervalMs;
     }
 
     private void TrackDxgiFrameStatistics()
@@ -1672,6 +1875,142 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    private long EstimateVisibleTick(long presentReturnTick)
+    {
+        var frameIntervalTicks = GetEstimatedDisplayFrameIntervalTicks();
+        long displayClockTick;
+        lock (_dxgiFrameStatisticsLock)
+        {
+            displayClockTick = _dxgiFrameStatisticsSyncQpcTime;
+        }
+
+        if (displayClockTick <= 0)
+        {
+            return presentReturnTick + frameIntervalTicks;
+        }
+
+        var visibleTick = displayClockTick;
+        if (visibleTick <= presentReturnTick)
+        {
+            var intervalsBehind = ((presentReturnTick - visibleTick) / frameIntervalTicks) + 1;
+            visibleTick += intervalsBehind * frameIntervalTicks;
+        }
+
+        var maxLeadTicks = frameIntervalTicks * Math.Max(1, Math.Min(3, _dxgiMaxFrameLatency + 1));
+        if (visibleTick - presentReturnTick > maxLeadTicks)
+        {
+            return presentReturnTick + frameIntervalTicks;
+        }
+
+        return visibleTick;
+    }
+
+    private long GetEstimatedDisplayFrameIntervalTicks()
+    {
+        var fps = Math.Max(1.0, _startupFps);
+        return Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
+    }
+
+    public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)
+    {
+        var fps = Math.Max(1.0, _startupFps);
+        var intervalTicks = GetEstimatedDisplayFrameIntervalTicks();
+        long lastPresentTick;
+        int sampleCount;
+        lock (_dxgiFrameStatisticsLock)
+        {
+            lastPresentTick = _dxgiFrameStatisticsSyncQpcTime > 0
+                ? _dxgiFrameStatisticsSyncQpcTime
+                : Interlocked.Read(ref _lastPresentTick);
+            sampleCount = _dxgiFrameStatisticsSuccessCount > 0
+                ? (int)Math.Min(int.MaxValue, _dxgiFrameStatisticsSuccessCount)
+                : Volatile.Read(ref _presentIntervalCount);
+        }
+
+        snapshot = new PreviewDisplayClockSnapshot(
+            LastPresentTick: lastPresentTick,
+            FrameIntervalTicks: intervalTicks,
+            ExpectedFrameIntervalMs: 1000.0 / fps,
+            SampleCount: sampleCount);
+        return lastPresentTick > 0;
+    }
+
+    private void TrackFrameSubmitted(PendingFrame frame)
+    {
+        Interlocked.Exchange(ref _lastSubmittedPreviewPresentId, frame.PreviewPresentId);
+        Interlocked.Exchange(ref _lastSubmittedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastSubmittedSourcePtsTicks, frame.SourcePtsTicks);
+        Interlocked.Exchange(ref _lastSubmittedQpc, Stopwatch.GetTimestamp());
+        Interlocked.Exchange(ref _lastSubmittedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
+
+    private void TrackFramePresented(PendingFrame frame, long presentReturnTick, long estimatedVisibleTick)
+    {
+        Interlocked.Exchange(ref _lastRenderedPreviewPresentId, frame.PreviewPresentId);
+        Interlocked.Exchange(ref _lastRenderedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);
+        Interlocked.Exchange(ref _lastRenderedQpc, presentReturnTick);
+        Interlocked.Exchange(ref _lastRenderedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        var schedulerToPresentTicks = frame.SchedulerSubmitTick > 0 && presentReturnTick > frame.SchedulerSubmitTick
+            ? presentReturnTick - frame.SchedulerSubmitTick
+            : 0;
+        var pipelineLatencyTicks = frame.ArrivalTick > 0 && estimatedVisibleTick > frame.ArrivalTick
+            ? estimatedVisibleTick - frame.ArrivalTick
+            : 0;
+        Interlocked.Exchange(ref _lastRenderedSchedulerToPresentTicks, schedulerToPresentTicks);
+        Interlocked.Exchange(ref _lastRenderedPipelineLatencyTicks, pipelineLatencyTicks);
+    }
+
+    private void TrackFrameDropped(PendingFrame frame, string reason)
+    {
+        Interlocked.Increment(ref _framesDropped);
+        Interlocked.Exchange(ref _lastDroppedPreviewPresentId, frame.PreviewPresentId);
+        Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastDroppedSourcePtsTicks, frame.SourcePtsTicks);
+        Interlocked.Exchange(ref _lastDroppedQpc, Stopwatch.GetTimestamp());
+        Interlocked.Exchange(ref _lastDroppedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        Volatile.Write(ref _lastDropReason, reason);
+    }
+
+    private double TrackPresentCadence(bool countSample)
+    {
+        var nowTick = Stopwatch.GetTimestamp();
+        var previousTick = Interlocked.Exchange(ref _lastPresentTick, nowTick);
+        if (!countSample)
+        {
+            Interlocked.Exchange(ref _presentCadenceBaselinePending, 1);
+            return 0;
+        }
+
+        if (previousTick <= 0)
+        {
+            return 0;
+        }
+
+        if (Interlocked.Exchange(ref _presentCadenceBaselinePending, 0) != 0)
+        {
+            return 0;
+        }
+
+        var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
+        if (intervalMs <= 0 || intervalMs > 5000)
+        {
+            return 0;
+        }
+
+        lock (_presentCadenceLock)
+        {
+            _presentIntervalWindowMs[_presentIntervalIndex] = intervalMs;
+            _presentIntervalIndex = (_presentIntervalIndex + 1) % _presentIntervalWindowMs.Length;
+            if (_presentIntervalCount < _presentIntervalWindowMs.Length)
+            {
+                _presentIntervalCount++;
+            }
+        }
+
+        return intervalMs;
+    }
+
     private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)
     {
         if (arrivalTick <= 0 || estimatedVisibleTick <= arrivalTick)
@@ -1726,42 +2065,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
-    private long EstimateVisibleTick(long presentReturnTick)
-    {
-        var frameIntervalTicks = GetEstimatedDisplayFrameIntervalTicks();
-        long displayClockTick;
-        lock (_dxgiFrameStatisticsLock)
-        {
-            displayClockTick = _dxgiFrameStatisticsSyncQpcTime;
-        }
-
-        if (displayClockTick <= 0)
-        {
-            return presentReturnTick + frameIntervalTicks;
-        }
-
-        var visibleTick = displayClockTick;
-        if (visibleTick <= presentReturnTick)
-        {
-            var intervalsBehind = ((presentReturnTick - visibleTick) / frameIntervalTicks) + 1;
-            visibleTick += intervalsBehind * frameIntervalTicks;
-        }
-
-        var maxLeadTicks = frameIntervalTicks * Math.Max(1, Math.Min(3, _dxgiMaxFrameLatency + 1));
-        if (visibleTick - presentReturnTick > maxLeadTicks)
-        {
-            return presentReturnTick + frameIntervalTicks;
-        }
-
-        return visibleTick;
-    }
-
-    private long GetEstimatedDisplayFrameIntervalTicks()
-    {
-        var fps = Math.Max(1.0, _startupFps);
-        return Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
-    }
-
     private void TrackFrameLatencyWait(uint result, long waitTicks)
     {
         Interlocked.Increment(ref _frameLatencyWaitCallCount);
@@ -1795,212 +2098,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 _frameLatencyWaitTimingCount++;
             }
         }
-    }
-
-    private void RecordSlowFrameDiagnostic(
-        PendingFrame frame,
-        double presentIntervalMs,
-        long inputUploadTicks,
-        long renderSubmitTicks,
-        long presentCallTicks,
-        long totalTicks,
-        long presentEndTick,
-        long estimatedVisibleTick)
-    {
-        var inputUploadMs = TicksToMs(inputUploadTicks);
-        var renderSubmitMs = TicksToMs(renderSubmitTicks);
-        var presentCallMs = TicksToMs(presentCallTicks);
-        var totalMs = TicksToMs(totalTicks);
-        if (!IsValidRenderCpuStageMs(totalMs))
-        {
-            return;
-        }
-
-        var expectedIntervalMs = _startupFps > 0 ? 1000.0 / _startupFps : 8.333;
-        var thresholdMs = _slowFrameDiagnosticThresholdMs > 0
-            ? _slowFrameDiagnosticThresholdMs
-            : Math.Max(expectedIntervalMs * 1.02, expectedIntervalMs + 0.15);
-
-        long presentDelta;
-        long presentRefreshDelta;
-        long syncRefreshDelta;
-        long missedRefreshCount;
-        var frameStatisticsFrameCounter = Interlocked.Read(ref _dxgiFrameStatisticsFrameCounter);
-        long frameStatisticsLastSampleFrameCounter;
-        lock (_dxgiFrameStatisticsLock)
-        {
-            presentDelta = _dxgiFrameStatisticsLastPresentDelta;
-            presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
-            syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
-            missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
-            frameStatisticsLastSampleFrameCounter = _dxgiFrameStatisticsLastSampleFrameCounter;
-        }
-
-        var dxgiRefreshSlip =
-            frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter &&
-            presentDelta > 0 &&
-            presentRefreshDelta > presentDelta;
-        if ((presentIntervalMs <= 0 || presentIntervalMs < thresholdMs) &&
-            totalMs < thresholdMs &&
-            presentCallMs < thresholdMs &&
-            !dxgiRefreshSlip)
-        {
-            return;
-        }
-
-        var schedulerToPresentMs = frame.SchedulerSubmitTick > 0 && presentEndTick > frame.SchedulerSubmitTick
-            ? TicksToMs(presentEndTick - frame.SchedulerSubmitTick)
-            : 0;
-        var pipelineLatencyMs = frame.ArrivalTick > 0 && estimatedVisibleTick > frame.ArrivalTick
-            ? TicksToMs(estimatedVisibleTick - frame.ArrivalTick)
-            : 0;
-        var worstObservedMs = Math.Max(
-            Math.Max(presentIntervalMs > 0 ? presentIntervalMs : 0, totalMs),
-            presentCallMs);
-        var worstOverBudgetMs = Math.Max(0, worstObservedMs - expectedIntervalMs);
-        var slowReason = BuildSlowFrameDiagnosticReason(
-            presentIntervalMs,
-            totalMs,
-            presentCallMs,
-            dxgiRefreshSlip,
-            thresholdMs);
-        var sample = new PreviewSlowFrameDiagnostic
-        {
-            PreviewPresentId = frame.PreviewPresentId,
-            SourceSequenceNumber = frame.SourceSequenceNumber,
-            QpcTimestamp = presentEndTick,
-            UtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            PresentIntervalMs = presentIntervalMs,
-            InputUploadCpuMs = IsValidRenderCpuStageMs(inputUploadMs) ? inputUploadMs : 0,
-            RenderSubmitCpuMs = IsValidRenderCpuStageMs(renderSubmitMs) ? renderSubmitMs : 0,
-            PresentCallMs = IsValidRenderCpuStageMs(presentCallMs) ? presentCallMs : 0,
-            TotalFrameCpuMs = totalMs,
-            SchedulerToPresentMs = schedulerToPresentMs,
-            PipelineLatencyMs = pipelineLatencyMs,
-            ExpectedIntervalMs = expectedIntervalMs,
-            DiagnosticThresholdMs = thresholdMs,
-            WorstOverBudgetMs = worstOverBudgetMs,
-            SlowReason = slowReason,
-            PendingFrameCount = PendingFrameCount,
-            DxgiPresentDelta = presentDelta,
-            DxgiPresentRefreshDelta = presentRefreshDelta,
-            DxgiSyncRefreshDelta = syncRefreshDelta,
-            DxgiMissedRefreshCount = missedRefreshCount
-        };
-
-        lock (_slowFrameDiagnosticsLock)
-        {
-            _slowFrameDiagnostics[_slowFrameDiagnosticsIndex] = sample;
-            _slowFrameDiagnosticsIndex = (_slowFrameDiagnosticsIndex + 1) % _slowFrameDiagnostics.Length;
-            if (_slowFrameDiagnosticsCount < _slowFrameDiagnostics.Length)
-            {
-                _slowFrameDiagnosticsCount++;
-            }
-        }
-    }
-
-    private static string BuildSlowFrameDiagnosticReason(
-        double presentIntervalMs,
-        double totalFrameCpuMs,
-        double presentCallMs,
-        bool dxgiRefreshSlip,
-        double thresholdMs)
-    {
-        var reason = string.Empty;
-        AppendSlowFrameReason(ref reason, presentIntervalMs >= thresholdMs, "present_interval");
-        AppendSlowFrameReason(ref reason, totalFrameCpuMs >= thresholdMs, "total_cpu");
-        AppendSlowFrameReason(ref reason, presentCallMs >= thresholdMs, "present_call");
-        AppendSlowFrameReason(ref reason, dxgiRefreshSlip, "dxgi_refresh_slip");
-        return reason.Length > 0 ? reason : "unknown";
-    }
-
-    private static void AppendSlowFrameReason(ref string reason, bool condition, string token)
-    {
-        if (!condition)
-        {
-            return;
-        }
-
-        reason = reason.Length == 0 ? token : $"{reason}+{token}";
-    }
-
-    private static double TicksToMs(long ticks)
-        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
-
-    private static bool IsValidRenderCpuStageMs(double value)
-        => value >= 0 && value <= 5000 && !double.IsNaN(value) && !double.IsInfinity(value);
-
-    public void SetExpectedFrameRate(double fps)
-    {
-        if (fps <= 0) return;
-        _startupFps = fps;
-        var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));
-        lock (_presentCadenceLock)
-        {
-            if (_presentIntervalWindowMs.Length != targetSize)
-            {
-                _presentIntervalWindowMs = new double[targetSize];
-                _presentIntervalCount = 0;
-                _presentIntervalIndex = 0;
-            }
-        }
-
-        lock (_pipelineLatencyLock)
-        {
-            if (_pipelineLatencyWindowMs.Length != targetSize)
-            {
-                _pipelineLatencyWindowMs = new double[targetSize];
-                _pipelineLatencyCount = 0;
-                _pipelineLatencyIndex = 0;
-            }
-        }
-
-        lock (_renderCpuTimingLock)
-        {
-            if (_renderTotalCpuTimingWindowMs.Length != targetSize)
-            {
-                _inputUploadCpuTimingWindowMs = new double[targetSize];
-                _renderSubmitCpuTimingWindowMs = new double[targetSize];
-                _presentCallTimingWindowMs = new double[targetSize];
-                _renderTotalCpuTimingWindowMs = new double[targetSize];
-                _renderCpuTimingCount = 0;
-                _renderCpuTimingIndex = 0;
-            }
-        }
-
-        lock (_frameLatencyWaitTimingLock)
-        {
-            if (_frameLatencyWaitTimingWindowMs.Length != targetSize)
-            {
-                _frameLatencyWaitTimingWindowMs = new double[targetSize];
-                _frameLatencyWaitTimingCount = 0;
-                _frameLatencyWaitTimingIndex = 0;
-            }
-        }
-    }
-
-    public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)
-    {
-        var fps = Math.Max(1.0, _startupFps);
-        var intervalTicks = GetEstimatedDisplayFrameIntervalTicks();
-        long lastPresentTick;
-        int sampleCount;
-        lock (_dxgiFrameStatisticsLock)
-        {
-            lastPresentTick = _dxgiFrameStatisticsSyncQpcTime > 0
-                ? _dxgiFrameStatisticsSyncQpcTime
-                : Interlocked.Read(ref _lastPresentTick);
-            sampleCount = _dxgiFrameStatisticsSuccessCount > 0
-                ? (int)Math.Min(int.MaxValue, _dxgiFrameStatisticsSuccessCount)
-                : Volatile.Read(ref _presentIntervalCount);
-        }
-
-        snapshot = new PreviewDisplayClockSnapshot(
-            LastPresentTick: lastPresentTick,
-            FrameIntervalTicks: intervalTicks,
-            ExpectedFrameIntervalMs: 1000.0 / fps,
-            SampleCount: sampleCount);
-        return lastPresentTick > 0;
     }
 
     private void ResetPresentCadence()
@@ -2053,6 +2150,215 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)
+    {
+        lock (_slowFrameDiagnosticsLock)
+        {
+            var take = Math.Min(Math.Max(0, maxEntries), _slowFrameDiagnosticsCount);
+            if (take <= 0)
+            {
+                return Array.Empty<PreviewSlowFrameDiagnostic>();
+            }
+
+            var result = new PreviewSlowFrameDiagnostic[take];
+            var start = (_slowFrameDiagnosticsIndex - take + _slowFrameDiagnostics.Length) % _slowFrameDiagnostics.Length;
+            for (var i = 0; i < take; i++)
+            {
+                result[i] = _slowFrameDiagnostics[(start + i) % _slowFrameDiagnostics.Length];
+            }
+
+            return result;
+        }
+    }
+
+    private void ResetFirstFrameNotification()
+        => Interlocked.Exchange(ref _firstFrameRaised, 0);
+
+    private void NotifyFirstFrameRendered(string message)
+    {
+        if (Interlocked.Exchange(ref _firstFrameRaised, 1) != 0)
+        {
+            return;
+        }
+
+        Logger.Log(message);
+        if (!_dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke()))
+        {
+            Logger.Log("D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
+        }
+    }
+
+    private void NotifyRenderThreadFailed(Exception ex)
+    {
+        Interlocked.Increment(ref _renderThreadFailureCount);
+        Volatile.Write(ref _lastRenderThreadFailureType, ex.GetType().Name);
+        Volatile.Write(ref _lastRenderThreadFailureMessage, ex.Message);
+        Volatile.Write(ref _lastRenderThreadFailureHResult, ex.HResult);
+
+        var reason = $"{ex.GetType().Name}: {ex.Message}";
+        if (!_dispatcherQueue.TryEnqueue(() => RenderThreadFailed?.Invoke(reason)))
+        {
+            Logger.Log("D3D_RENDER_THREAD_FAILURE_UI_ENQUEUE_FAILED");
+        }
+    }
+
+    private void RecordSlowFrameDiagnostic(
+        PendingFrame frame,
+        double presentIntervalMs,
+        long inputUploadTicks,
+        long renderSubmitTicks,
+        long presentCallTicks,
+        long totalTicks,
+        long presentEndTick,
+        long estimatedVisibleTick)
+    {
+        var inputUploadMs = TicksToMs(inputUploadTicks);
+        var renderSubmitMs = TicksToMs(renderSubmitTicks);
+        var presentCallMs = TicksToMs(presentCallTicks);
+        var totalMs = TicksToMs(totalTicks);
+        if (!IsValidRenderCpuStageMs(totalMs))
+        {
+            return;
+        }
+
+        var expectedIntervalMs = _startupFps > 0 ? 1000.0 / _startupFps : 8.333;
+        var thresholdMs = _slowFrameDiagnosticThresholdMs > 0
+            ? _slowFrameDiagnosticThresholdMs
+            : Math.Max(expectedIntervalMs * 1.02, expectedIntervalMs + 0.15);
+
+        var dxgiSlip = CaptureSlowFrameDxgiSlipSnapshot();
+        if ((presentIntervalMs <= 0 || presentIntervalMs < thresholdMs) &&
+            totalMs < thresholdMs &&
+            presentCallMs < thresholdMs &&
+            !dxgiSlip.IsRefreshSlip)
+        {
+            return;
+        }
+
+        var schedulerToPresentMs = frame.SchedulerSubmitTick > 0 && presentEndTick > frame.SchedulerSubmitTick
+            ? TicksToMs(presentEndTick - frame.SchedulerSubmitTick)
+            : 0;
+        var pipelineLatencyMs = frame.ArrivalTick > 0 && estimatedVisibleTick > frame.ArrivalTick
+            ? TicksToMs(estimatedVisibleTick - frame.ArrivalTick)
+            : 0;
+        var worstObservedMs = Math.Max(
+            Math.Max(presentIntervalMs > 0 ? presentIntervalMs : 0, totalMs),
+            presentCallMs);
+        var worstOverBudgetMs = Math.Max(0, worstObservedMs - expectedIntervalMs);
+        var slowReason = BuildSlowFrameDiagnosticReason(
+            presentIntervalMs,
+            totalMs,
+            presentCallMs,
+            dxgiSlip.IsRefreshSlip,
+            thresholdMs);
+        var sample = new PreviewSlowFrameDiagnostic
+        {
+            PreviewPresentId = frame.PreviewPresentId,
+            SourceSequenceNumber = frame.SourceSequenceNumber,
+            QpcTimestamp = presentEndTick,
+            UtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            PresentIntervalMs = presentIntervalMs,
+            InputUploadCpuMs = IsValidRenderCpuStageMs(inputUploadMs) ? inputUploadMs : 0,
+            RenderSubmitCpuMs = IsValidRenderCpuStageMs(renderSubmitMs) ? renderSubmitMs : 0,
+            PresentCallMs = IsValidRenderCpuStageMs(presentCallMs) ? presentCallMs : 0,
+            TotalFrameCpuMs = totalMs,
+            SchedulerToPresentMs = schedulerToPresentMs,
+            PipelineLatencyMs = pipelineLatencyMs,
+            ExpectedIntervalMs = expectedIntervalMs,
+            DiagnosticThresholdMs = thresholdMs,
+            WorstOverBudgetMs = worstOverBudgetMs,
+            SlowReason = slowReason,
+            PendingFrameCount = PendingFrameCount,
+            DxgiPresentDelta = dxgiSlip.PresentDelta,
+            DxgiPresentRefreshDelta = dxgiSlip.PresentRefreshDelta,
+            DxgiSyncRefreshDelta = dxgiSlip.SyncRefreshDelta,
+            DxgiMissedRefreshCount = dxgiSlip.MissedRefreshCount
+        };
+
+        lock (_slowFrameDiagnosticsLock)
+        {
+            _slowFrameDiagnostics[_slowFrameDiagnosticsIndex] = sample;
+            _slowFrameDiagnosticsIndex = (_slowFrameDiagnosticsIndex + 1) % _slowFrameDiagnostics.Length;
+            if (_slowFrameDiagnosticsCount < _slowFrameDiagnostics.Length)
+            {
+                _slowFrameDiagnosticsCount++;
+            }
+        }
+    }
+
+    private SlowFrameDxgiSlipSnapshot CaptureSlowFrameDxgiSlipSnapshot()
+    {
+        var frameStatisticsFrameCounter = Interlocked.Read(ref _dxgiFrameStatisticsFrameCounter);
+        long presentDelta;
+        long presentRefreshDelta;
+        long syncRefreshDelta;
+        long missedRefreshCount;
+        long frameStatisticsLastSampleFrameCounter;
+        lock (_dxgiFrameStatisticsLock)
+        {
+            presentDelta = _dxgiFrameStatisticsLastPresentDelta;
+            presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
+            syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
+            missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
+            frameStatisticsLastSampleFrameCounter = _dxgiFrameStatisticsLastSampleFrameCounter;
+        }
+
+        var isRefreshSlip =
+            frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter &&
+            presentDelta > 0 &&
+            presentRefreshDelta > presentDelta;
+
+        return new SlowFrameDxgiSlipSnapshot(
+            PresentDelta: presentDelta,
+            PresentRefreshDelta: presentRefreshDelta,
+            SyncRefreshDelta: syncRefreshDelta,
+            MissedRefreshCount: missedRefreshCount,
+            IsRefreshSlip: isRefreshSlip);
+    }
+
+    private static string BuildSlowFrameDiagnosticReason(
+        double presentIntervalMs,
+        double totalFrameCpuMs,
+        double presentCallMs,
+        bool dxgiRefreshSlip,
+        double thresholdMs)
+    {
+        var reason = string.Empty;
+        AppendSlowFrameReason(ref reason, presentIntervalMs >= thresholdMs, "present_interval");
+        AppendSlowFrameReason(ref reason, totalFrameCpuMs >= thresholdMs, "total_cpu");
+        AppendSlowFrameReason(ref reason, presentCallMs >= thresholdMs, "present_call");
+        AppendSlowFrameReason(ref reason, dxgiRefreshSlip, "dxgi_refresh_slip");
+        return reason.Length > 0 ? reason : "unknown";
+    }
+
+    private static void AppendSlowFrameReason(ref string reason, bool condition, string token)
+    {
+        if (!condition)
+        {
+            return;
+        }
+
+        reason = reason.Length == 0 ? token : $"{reason}+{token}";
+    }
+
+    private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)
+    {
+        var take = Math.Min(Math.Max(0, maxSamples), count);
+        if (take <= 0)
+        {
+            return Array.Empty<double>();
+        }
+
+        var result = new double[take];
+        var start = (index - take + window.Length) % window.Length;
+        for (var i = 0; i < take; i++)
+        {
+            result[i] = window[(start + i) % window.Length];
+        }
+
+        return result;
+    }
+
     private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)
     {
         if (samples.Length == 0)
@@ -2082,4 +2388,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             max);
     }
 
+    private static double TicksToMs(long ticks)
+        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
+
+    private static bool IsValidRenderCpuStageMs(double value)
+        => value >= 0 && value <= 5000 && !double.IsNaN(value) && !double.IsInfinity(value);
 }

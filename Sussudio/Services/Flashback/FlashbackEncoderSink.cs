@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
@@ -32,7 +31,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const double ForceRotateQueueGuardRatio = 0.65;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
-    private const int ForceRotateCommittedGraceMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
     private const int AudioInputBlockAlignBytes = 2 * sizeof(float);
     private const int MaxAudioPacketBytes = 4 * 1024 * 1024;
@@ -67,11 +65,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private int _disposeFinalized;
     private int _deferredDisposeScheduled;
 
-    private bool _forceRotateRequested;
-    private volatile ForceRotateRequest? _forceRotateRequest;
-    private TimeSpan _forceRotateInPoint;
-    private TimeSpan _forceRotateOutPoint;
-
     private long _segmentStartBytes;
     private long _lastDiskBytesUpdateMs;
     private long _segmentRotationFailures;
@@ -92,7 +85,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _gpuFramesDropped;
     private long _gpuQueueRejectedFrames;
     private Action<Exception>? _onFatalError;
-    private bool _forceRotateDraining;
     private int _videoQueueDepth;
     private int _videoQueueMaxDepth;
     private int _videoQueueCapacity = DefaultVideoQueueCapacity;
@@ -112,66 +104,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private TimeSpan _segmentDuration;
     private TimeSpan _ptsBaseOffset;
 
-    private sealed class ForceRotateRequest
-    {
-        private const int StatePending = 0;
-        private const int StateCommitting = 1;
-        private const int StateCompleted = 2;
-        private const int StateCanceled = 3;
-
-        private int _state = StatePending;
-
-        private readonly TaskCompletionSource<IReadOnlyList<string>> _completion =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public Task<IReadOnlyList<string>> Task => _completion.Task;
-
-        public bool IsCompleted
-        {
-            get
-            {
-                var state = Volatile.Read(ref _state);
-                return state == StateCompleted ||
-                       state == StateCanceled ||
-                       _completion.Task.IsCompleted;
-            }
-        }
-
-        public bool TryBeginCommit()
-            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;
-
-        public bool TryCancel()
-        {
-            if (Interlocked.CompareExchange(ref _state, StateCanceled, StatePending) != StatePending)
-            {
-                return false;
-            }
-
-            _completion.TrySetResult(Array.Empty<string>());
-            return true;
-        }
-
-        public void Complete(IReadOnlyList<string> paths)
-        {
-            while (true)
-            {
-                var state = Volatile.Read(ref _state);
-                if (state == StateCompleted || state == StateCanceled)
-                {
-                    return;
-                }
-
-                if (Interlocked.CompareExchange(ref _state, StateCompleted, state) == state)
-                {
-                    _completion.TrySetResult(paths);
-                    return;
-                }
-            }
-        }
-
-        public void CompleteEmpty()
-            => Complete(Array.Empty<string>());
-    }
+    public event EventHandler<long>? FrameEncoded;
 
     public FlashbackEncoderSink(FlashbackBufferOptions? options = null)
     {
@@ -191,99 +124,32 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
     }
 
-    public event EventHandler<long>? FrameEncoded;
-
-    public long DroppedVideoFrames =>
-        Interlocked.Read(ref _droppedVideoFrames) +
-        Interlocked.Read(ref _gpuFramesDropped) +
-        _encoder.DroppedFrameCount;
-
-    public long EncodedVideoFrames => Interlocked.Read(ref _encodedVideoFrames);
-
-    public long AudioSamplesReceived => Interlocked.Read(ref _audioSamplesReceived);
-
-    public long OutputBytes => _bufferManager.TotalDiskBytes;
-    public long TotalBytesWritten => _bufferManager.TotalBytesWritten;
-
-    public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
-    public int VideoQueueCapacityFrames => Volatile.Read(ref _videoQueueCapacity);
-    public int VideoQueueMaxDepth => Volatile.Read(ref _videoQueueMaxDepth);
-
-    public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
-    public int AudioQueueCapacityPackets => AudioQueueCapacity;
-
-    public long VideoFramesEnqueuedCount => Interlocked.Read(ref _videoFramesEnqueued);
-    public long VideoFramesSubmittedToEncoder => Interlocked.Read(ref _videoFramesSubmittedToEncoder);
-    public long VideoEncoderPts => _encoder.NextVideoPts;
-    public long VideoEncoderPacketsWritten => _encoder.VideoPacketsWritten;
-    public long VideoEncoderDroppedFrames => _encoder.DroppedFrameCount;
-    public long VideoSequenceGaps => _videoLatencyTracker.SequenceGaps;
-
-    public long VideoDropsQueueSaturated => Interlocked.Read(ref _videoDropsQueueSaturated);
-
-    public long VideoDropsBacklogEviction => Interlocked.Read(ref _videoDropsBacklogEviction);
-
-    public long VideoQueueRejectedFrames => Interlocked.Read(ref _videoQueueRejectedFrames);
-
-    public string? LastVideoQueueRejectReason => Volatile.Read(ref _lastVideoQueueRejectReason);
-
-    public long AudioDropsQueueSaturated => Interlocked.Read(ref _audioDropsQueueSaturated);
-
-    public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
-
-    public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
-
-    public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
-    public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
-    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.GetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
-    public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
-    public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
-    public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
-    public double VideoQueueLatencyP95Ms => _videoLatencyTracker.GetMetrics().P95Ms;
-    public double VideoQueueLatencyP99Ms => _videoLatencyTracker.GetMetrics().P99Ms;
-    public double VideoQueueLatencyMaxMs => _videoLatencyTracker.GetMetrics().MaxMs;
-    public long VideoBackpressureWaitMs => _videoLatencyTracker.BackpressureWaitMs;
-    public long VideoBackpressureEvents => _videoLatencyTracker.BackpressureEvents;
-    public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
-    public long MaxVideoBackpressureWaitMs => _videoLatencyTracker.MaxBackpressureWaitMs;
-
-    public bool GpuEncodingEnabled => Volatile.Read(ref _gpuEncodingEnabled);
-    public int GpuQueueCount => Volatile.Read(ref _gpuQueueDepth);
-    public int GpuQueueCapacityFrames => GpuQueueCapacity;
-    public int GpuQueueMaxDepth => Volatile.Read(ref _gpuQueueMaxDepth);
-    public long GpuFramesEnqueued => Interlocked.Read(ref _gpuFramesEnqueued);
-    public long GpuFramesDropped => Interlocked.Read(ref _gpuFramesDropped);
-    public long GpuQueueRejectedFrames => Interlocked.Read(ref _gpuQueueRejectedFrames);
-    public string? LastGpuQueueRejectReason => Volatile.Read(ref _lastGpuQueueRejectReason);
-    public long SegmentRotationFailures => Interlocked.Read(ref _segmentRotationFailures);
-
-    public bool EncodingFailed => Volatile.Read(ref _encodingFailure) != null;
-    public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
-    public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
-
-    public bool AudioEnabled => Volatile.Read(ref _audioEnabled);
-
-    public bool MicrophoneEnabled => Volatile.Read(ref _microphoneEnabled);
-
-    /// <summary>
-    /// Registers a callback invoked when the encoding loop encounters a fatal error.
-    /// This lets the owning CaptureService surface the failure rather than going silently dead.
-    /// </summary>
-    public void SetFatalErrorCallback(Action<Exception>? callback) => _onFatalError = callback;
-
-    public string? CodecName => _sessionContext?.CodecName;
-    public uint TargetBitRate => _sessionContext?.BitRate ?? 0;
-    public int EncoderWidth => _width;
-    public int EncoderHeight => _height;
-    public double EncoderFrameRate => _sessionContext?.FrameRate ?? 0;
-    public int? EncoderFrameRateNumerator => _sessionContext?.FrameRateNumerator;
-    public int? EncoderFrameRateDenominator => _sessionContext?.FrameRateDenominator;
-    /// <summary>
-    /// True when this sink was started with a P010 (HDR) session context.
-    /// Used by CaptureService to detect pixel-format drift between UVC re-negotiations.
-    /// </summary>
-    public bool? IsP010 => _sessionContext?.IsP010;
-    internal Task EncodingCompletionTask => _encodingTask ?? Task.CompletedTask;
+    private static FlashbackSessionContext CreateSessionContext(RecordingContext context)
+    {
+        var (frameRateNumerator, frameRateDenominator) = ResolveFrameRateParts(context.FrameRateArg);
+        return new FlashbackSessionContext
+        {
+            Width = checked((int)context.EffectiveWidth),
+            Height = checked((int)context.EffectiveHeight),
+            FrameRate = context.EffectiveFrameRate,
+            FrameRateNumerator = frameRateNumerator,
+            FrameRateDenominator = frameRateDenominator,
+            BitRate = context.Settings.GetTargetBitrate(),
+            IsP010 = context.HdrPipelineActive,
+            CodecName = MapCodecName(context.Settings.Format),
+            NvencPreset = context.Settings.NvencPreset.ToString(),
+            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
+            HdrEnabled = context.HdrPipelineActive,
+            IsFullRangeInput = context.IsFullRangeInput,
+            HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
+            HdrMaxCll = context.Settings.HdrMaxCll,
+            HdrMaxFall = context.Settings.HdrMaxFall,
+            D3D11DevicePtr = context.D3D11DevicePtr,
+            D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
+            AudioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName),
+            MicrophoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName)
+        };
+    }
 
     public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)
     {
@@ -329,51 +195,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _recordingOutputPath = string.Empty;
 
             _encoder.Initialize(CreateOptions(sessionContext, tsPath));
-
-            // FullMode = Wait only affects WriteAsync (which we never call).
-            // TryWrite returns false immediately when full regardless of FullMode,
-            // allowing our manual eviction paths to handle resource cleanup (COM Release,
-            // ArrayPool Return) before dropping the packet.
-            var videoQueueCapacity = ResolveVideoQueueCapacity(sessionContext, _encoder.UseHardwareFrames);
-            Volatile.Write(ref _videoQueueCapacity, videoQueueCapacity);
-            if (!_encoder.UseHardwareFrames && IsHighResolutionFrame(sessionContext))
-            {
-                Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={sessionContext.Width} height={sessionContext.Height} — GPU encoding unavailable, performance will be severely degraded");
-            }
-
-            if (_encoder.UseHardwareFrames)
-            {
-                _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
-                {
-                    FullMode = BoundedChannelFullMode.Wait,
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-                _gpuEncodingEnabled = true;
-                Logger.Log($"FLASHBACK_SINK_GPU_QUEUE_INIT capacity={GpuQueueCapacity}");
-            }
-
-            _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-            _audioQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-            if (sessionContext.MicrophoneEnabled)
-            {
-                _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
-                {
-                    SingleReader = true,
-                    SingleWriter = false,
-                    FullMode = BoundedChannelFullMode.Wait
-                });
-            }
+            InitializeStartupQueues(sessionContext);
 
             _cts = new CancellationTokenSource();
             _sessionContext = sessionContext;
@@ -387,7 +209,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // When continuing after a sink-only cycle (ptsBaseOffset > 0), we offset
             // the encoder's file-level PTS directly so segment timestamps continue from
             // the previous session. _ptsBaseOffset stays Zero because the buffer PTS
-            // formula is: _ptsBaseOffset + encoder.NextVideoPts / frameRate — and the
+            // formula is: _ptsBaseOffset + encoder.NextVideoPts / frameRate - and the
             // encoder PTS already includes the offset.
             _ptsBaseOffset = TimeSpan.Zero;
             _segmentStartPts = ptsBaseOffset;
@@ -422,63 +244,365 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch (Exception ex)
         {
-            /* Cleanup must not throw — tear down partially-initialized queues/state before re-throwing */
-            Logger.Log($"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
-            CompleteWriter(_videoQueue);
-            CompleteWriter(_audioQueue);
-            CompleteWriter(_microphoneQueue);
-            CompleteWriter(_gpuQueue);
-            _videoQueue = null;
-            _audioQueue = null;
-            _microphoneQueue = null;
-            _gpuQueue = null;
-            _gpuEncodingEnabled = false;
-            lock (_sync)
-            {
-                _started = false;
-            }
-            DisposeCtsBestEffort(_cts, "start_fail");
-            _cts = null;
-            _encodingTask = null;
-            _sessionContext = null;
-            _width = 0;
-            _height = 0;
-            _audioEnabled = false;
-            _microphoneEnabled = false;
-            _tsFilePath = null;
-            _recordingOutputPath = string.Empty;
-            _segmentStartPts = TimeSpan.Zero;
-            _segmentDuration = TimeSpan.Zero;
-            _ptsBaseOffset = TimeSpan.Zero;
-            Interlocked.Exchange(ref _segmentStartBytes, 0);
-
-            DisposeEncoderBestEffort("start_fail");
-            if (_ownsBufferManager)
-            {
-                _bufferManager.PurgeAllSegments();
-            }
-            else if (startupGeneratedSegmentPath != null)
-            {
-                _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);
-            }
+            RollBackStartFailure(ex, startupGeneratedSegmentPath);
             throw;
         }
     }
 
-    Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)
+    private static string CreateSessionId()
     {
-        ArgumentNullException.ThrowIfNull(context);
-        return StartAsync(CreateSessionContext(context), cancellationToken);
+        return $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds():x}_{Guid.NewGuid():N}";
     }
+
+    /// <summary>
+    /// MPEG-TS supports H.264 and HEVC natively. AV1 in MPEG-TS requires newer ffmpeg builds
+    /// (libavformat 61.7+) and is not widely supported. Use fMP4 for AV1.
+    /// </summary>
+    private static bool SupportsTransportStream(string codecName) =>
+        codecName.Contains("264", StringComparison.OrdinalIgnoreCase) ||
+        codecName.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
+        codecName.Contains("265", StringComparison.OrdinalIgnoreCase);
+
+    internal static string GetSegmentExtension(string codecName) =>
+        SupportsTransportStream(codecName) ? ".ts" : ".mp4";
+
+    private static LibAvEncoderOptions CreateOptions(FlashbackSessionContext context, string outputPath)
+    {
+        var (frameRateNumerator, frameRateDenominator) = ResolveSessionFrameRateParts(
+            context.FrameRateNumerator,
+            context.FrameRateDenominator);
+
+        return new LibAvEncoderOptions
+        {
+            OutputPath = outputPath,
+            ContainerFormat = SupportsTransportStream(context.CodecName) ? "mpegts" : "mp4",
+            FragmentedMp4 = !SupportsTransportStream(context.CodecName),
+            CodecName = context.CodecName,
+            Width = context.Width,
+            Height = context.Height,
+            FrameRate = context.FrameRate,
+            FrameRateNumerator = frameRateNumerator,
+            FrameRateDenominator = frameRateDenominator,
+            BitRate = context.BitRate,
+            IsP010 = context.IsP010,
+            NvencPreset = context.NvencPreset,
+            SplitEncodeMode = context.SplitEncodeMode,
+            // 1-second GOP for fast interactive seeking. The default (2x frame rate)
+            // means up to 2 seconds of decode-forward on every pause/scrub.
+            // 1x frame rate halves worst-case seek latency with minimal bitrate impact.
+            GopSize = (int)Math.Max(1, Math.Round(context.FrameRate)),
+            HdrEnabled = context.HdrEnabled,
+            IsFullRangeInput = context.IsFullRangeInput,
+            HdrMasterDisplayMetadata = context.HdrMasterDisplayMetadata,
+            HdrMaxCll = context.HdrMaxCll,
+            HdrMaxFall = context.HdrMaxFall,
+            D3D11DevicePtr = context.D3D11DevicePtr,
+            D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
+            AudioEnabled = context.AudioEnabled,
+            AudioSampleRate = 48_000,
+            AudioChannels = 2,
+            AudioBitRate = 320_000,
+            MicrophoneEnabled = context.MicrophoneEnabled,
+            MicrophoneSampleRate = 48_000,
+            MicrophoneChannels = 2,
+            MicrophoneBitRate = 320_000
+        };
+    }
+
+    private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)
+    {
+        if (!numerator.HasValue || !denominator.HasValue || numerator <= 0 || denominator <= 0)
+        {
+            return (null, null);
+        }
+
+        var fps = (double)numerator.Value / denominator.Value;
+        if (!double.IsFinite(fps) || fps <= 0 || fps > MaxSessionFrameRate)
+        {
+            return (null, null);
+        }
+
+        return (numerator, denominator);
+    }
+
+    private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)
+    {
+        if (string.IsNullOrWhiteSpace(frameRateArg) || !frameRateArg.Contains('/', StringComparison.Ordinal))
+        {
+            return (null, null);
+        }
+
+        var parts = frameRateArg.Split('/', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 ||
+            !int.TryParse(parts[0], out var numerator) ||
+            !int.TryParse(parts[1], out var denominator) ||
+            numerator <= 0 ||
+            denominator <= 0)
+        {
+            return (null, null);
+        }
+
+        return (numerator, denominator);
+    }
+
+    private static string MapCodecName(RecordingFormat format)
+        => MediaFormat.MapNvencCodecName(format);
+
+    private void ResetEncodingCounters()
+    {
+        Interlocked.Exchange(ref _droppedVideoFrames, 0);
+        Interlocked.Exchange(ref _encodedVideoFrames, 0);
+        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
+        Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
+        Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _videoQueueRejectedFrames, 0);
+        Volatile.Write(ref _lastVideoQueueRejectReason, null);
+        Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _droppedAudioSamplesCount, 0);
+        Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
+        Interlocked.Exchange(ref _gpuFramesDropped, 0);
+        Interlocked.Exchange(ref _gpuQueueRejectedFrames, 0);
+        Volatile.Write(ref _lastGpuQueueRejectReason, null);
+        Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
+        Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
+        Interlocked.Exchange(ref _audioSamplesReceived, 0);
+        Interlocked.Exchange(ref _videoQueueDepth, 0);
+        Interlocked.Exchange(ref _audioQueueDepth, 0);
+        Interlocked.Exchange(ref _microphoneQueueDepth, 0);
+        Interlocked.Exchange(ref _gpuQueueDepth, 0);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
+        Interlocked.Exchange(ref _lastVideoWriteTick, 0);
+        ResetVideoDiagnostics();
+        Interlocked.Exchange(ref _segmentStartBytes, 0);
+    }
+
+    private void ResetVideoDiagnostics()
+    {
+        _videoLatencyTracker.ResetAll();
+    }
+
+    private void InitializeStartupQueues(FlashbackSessionContext sessionContext)
+    {
+        // FullMode = Wait only affects WriteAsync (which we never call).
+        // TryWrite returns false immediately when full regardless of FullMode,
+        // allowing manual eviction paths to clean up resources before dropping.
+        var videoQueueCapacity = ResolveVideoQueueCapacity(sessionContext, _encoder.UseHardwareFrames);
+        Volatile.Write(ref _videoQueueCapacity, videoQueueCapacity);
+        if (!_encoder.UseHardwareFrames && IsHighResolutionFrame(sessionContext))
+        {
+            Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={sessionContext.Width} height={sessionContext.Height} â€” GPU encoding unavailable, performance will be severely degraded");
+        }
+
+        if (_encoder.UseHardwareFrames)
+        {
+            _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
+            {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = true
+            });
+            _gpuEncodingEnabled = true;
+            Logger.Log($"FLASHBACK_SINK_GPU_QUEUE_INIT capacity={GpuQueueCapacity}");
+        }
+
+        _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueCapacity)
+        {
+            SingleReader = true,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
+        });
+        _audioQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+        {
+            SingleReader = true,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
+        });
+        if (sessionContext.MicrophoneEnabled)
+        {
+            _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
+        }
+    }
+
+    private void RollBackStartFailure(Exception ex, string? startupGeneratedSegmentPath)
+    {
+        Logger.Log($"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+        CompleteWriter(_videoQueue);
+        CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
+        CompleteWriter(_gpuQueue);
+        _videoQueue = null;
+        _audioQueue = null;
+        _microphoneQueue = null;
+        _gpuQueue = null;
+        _gpuEncodingEnabled = false;
+        lock (_sync)
+        {
+            _started = false;
+        }
+        DisposeCtsBestEffort(_cts, "start_fail");
+        _cts = null;
+        _encodingTask = null;
+        _sessionContext = null;
+        _width = 0;
+        _height = 0;
+        _audioEnabled = false;
+        _microphoneEnabled = false;
+        _tsFilePath = null;
+        _recordingOutputPath = string.Empty;
+        _segmentStartPts = TimeSpan.Zero;
+        _segmentDuration = TimeSpan.Zero;
+        _ptsBaseOffset = TimeSpan.Zero;
+        Interlocked.Exchange(ref _segmentStartBytes, 0);
+
+        DisposeEncoderBestEffort("start_fail");
+        if (_ownsBufferManager)
+        {
+            _bufferManager.PurgeAllSegments();
+        }
+        else if (startupGeneratedSegmentPath != null)
+        {
+            _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);
+        }
+    }
+
+    private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)
+        => !useHardwareFrames && IsHighResolutionFrame(context)
+            ? HighResolutionCpuVideoQueueCapacity
+            : DefaultVideoQueueCapacity;
+
+    private static bool IsHighResolutionFrame(FlashbackSessionContext context)
+        => context.Width >= 2560 || context.Height >= 1440;
+
+    private static double ResolveSessionFrameRate(double frameRate)
+    {
+        if (!double.IsFinite(frameRate) || frameRate <= 0)
+        {
+            return FallbackSessionFrameRate;
+        }
+
+        return Math.Min(frameRate, MaxSessionFrameRate);
+    }
+
+    private static void ValidateSessionContext(FlashbackSessionContext context)
+    {
+        if (context.Width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(context), context.Width, "Flashback session width must be positive.");
+        }
+
+        if (context.Height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(context), context.Height, "Flashback session height must be positive.");
+        }
+
+        if (string.IsNullOrWhiteSpace(context.CodecName))
+        {
+            throw new ArgumentException("Flashback session codec name is required.", nameof(context));
+        }
+    }
+
+    public long DroppedVideoFrames =>
+        Interlocked.Read(ref _droppedVideoFrames) +
+        Interlocked.Read(ref _gpuFramesDropped) +
+        _encoder.DroppedFrameCount;
+
+    public long EncodedVideoFrames => Interlocked.Read(ref _encodedVideoFrames);
+
+    public long AudioSamplesReceived => Interlocked.Read(ref _audioSamplesReceived);
+
+    public long OutputBytes => _bufferManager.TotalDiskBytes;
+    public long TotalBytesWritten => _bufferManager.TotalBytesWritten;
+
+    public long VideoFramesEnqueuedCount => Interlocked.Read(ref _videoFramesEnqueued);
+    public long VideoFramesSubmittedToEncoder => Interlocked.Read(ref _videoFramesSubmittedToEncoder);
+    public long VideoEncoderPts => _encoder.NextVideoPts;
+    public long VideoEncoderPacketsWritten => _encoder.VideoPacketsWritten;
+    public long VideoEncoderDroppedFrames => _encoder.DroppedFrameCount;
+    public long VideoSequenceGaps => _videoLatencyTracker.SequenceGaps;
+
+    public long VideoDropsQueueSaturated => Interlocked.Read(ref _videoDropsQueueSaturated);
+    public long VideoDropsBacklogEviction => Interlocked.Read(ref _videoDropsBacklogEviction);
+
+    public long AudioDropsQueueSaturated => Interlocked.Read(ref _audioDropsQueueSaturated);
+    public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
+
+    public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
+    public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
+
+    public long SegmentRotationFailures => Interlocked.Read(ref _segmentRotationFailures);
+
+    public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
+    public int VideoQueueCapacityFrames => Volatile.Read(ref _videoQueueCapacity);
+    public int VideoQueueMaxDepth => Volatile.Read(ref _videoQueueMaxDepth);
+
+    public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
+    public int AudioQueueCapacityPackets => AudioQueueCapacity;
+
+    public long VideoQueueRejectedFrames => Interlocked.Read(ref _videoQueueRejectedFrames);
+    public string? LastVideoQueueRejectReason => Volatile.Read(ref _lastVideoQueueRejectReason);
+
+    public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
+    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.GetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
+    public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
+    public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
+    public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
+    public double VideoQueueLatencyP95Ms => _videoLatencyTracker.GetMetrics().P95Ms;
+    public double VideoQueueLatencyP99Ms => _videoLatencyTracker.GetMetrics().P99Ms;
+    public double VideoQueueLatencyMaxMs => _videoLatencyTracker.GetMetrics().MaxMs;
+    public long VideoBackpressureWaitMs => _videoLatencyTracker.BackpressureWaitMs;
+    public long VideoBackpressureEvents => _videoLatencyTracker.BackpressureEvents;
+    public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
+    public long MaxVideoBackpressureWaitMs => _videoLatencyTracker.MaxBackpressureWaitMs;
+
+    public bool GpuEncodingEnabled => Volatile.Read(ref _gpuEncodingEnabled);
+    public int GpuQueueCount => Volatile.Read(ref _gpuQueueDepth);
+    public int GpuQueueCapacityFrames => GpuQueueCapacity;
+    public int GpuQueueMaxDepth => Volatile.Read(ref _gpuQueueMaxDepth);
+    public long GpuFramesEnqueued => Interlocked.Read(ref _gpuFramesEnqueued);
+    public long GpuFramesDropped => Interlocked.Read(ref _gpuFramesDropped);
+    public long GpuQueueRejectedFrames => Interlocked.Read(ref _gpuQueueRejectedFrames);
+    public string? LastGpuQueueRejectReason => Volatile.Read(ref _lastGpuQueueRejectReason);
+
+    public bool EncodingFailed => Volatile.Read(ref _encodingFailure) != null;
+    public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
+    public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
+
+    public bool AudioEnabled => Volatile.Read(ref _audioEnabled);
+
+    public bool MicrophoneEnabled => Volatile.Read(ref _microphoneEnabled);
+
+    /// <summary>
+    /// Registers a callback invoked when the encoding loop encounters a fatal error.
+    /// This lets the owning CaptureService surface the failure rather than going silently dead.
+    /// </summary>
+    public void SetFatalErrorCallback(Action<Exception>? callback) => _onFatalError = callback;
+
+    public string? CodecName => _sessionContext?.CodecName;
+    public uint TargetBitRate => _sessionContext?.BitRate ?? 0;
+    public int EncoderWidth => _width;
+    public int EncoderHeight => _height;
+    public double EncoderFrameRate => _sessionContext?.FrameRate ?? 0;
+    public int? EncoderFrameRateNumerator => _sessionContext?.FrameRateNumerator;
+    public int? EncoderFrameRateDenominator => _sessionContext?.FrameRateDenominator;
+
+    /// <summary>
+    /// True when this sink was started with a P010 (HDR) session context.
+    /// Used by CaptureService to detect pixel-format drift between UVC re-negotiations.
+    /// </summary>
+    public bool? IsP010 => _sessionContext?.IsP010;
 
     public TimeSpan LastRecordingStartPts { get; private set; }
     public TimeSpan LastRecordingEndPts { get; private set; }
     public bool IsRecordingActive => Volatile.Read(ref _recordingActive) != 0;
-    public bool IsForceRotateActive =>
-        Volatile.Read(ref _forceRotateRequested) ||
-        Volatile.Read(ref _forceRotateDraining);
-    public bool IsForceRotateRequested => Volatile.Read(ref _forceRotateRequested);
-    public bool IsForceRotateDraining => Volatile.Read(ref _forceRotateDraining);
 
     public bool CanBeginRecording
     {
@@ -497,25 +621,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    public bool WaitForForceRotateIdle(TimeSpan timeout)
+    Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)
     {
-        var timeoutMs = Math.Max(0, (long)timeout.TotalMilliseconds);
-        var deadlineTick = Environment.TickCount64 + timeoutMs;
-        while (IsForceRotateActive)
-        {
-            if (timeoutMs == 0 || Environment.TickCount64 >= deadlineTick)
-            {
-                return false;
-            }
-
-            SignalWork("force_rotate_idle");
-            if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        ArgumentNullException.ThrowIfNull(context);
+        return StartAsync(CreateSessionContext(context), cancellationToken);
     }
 
     public void BeginRecording(string outputPath)
@@ -647,6 +756,306 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     $"end_pts_ms={(long)LastRecordingEndPts.TotalMilliseconds} " +
                     $"duration_s={NonNegativeDuration(LastRecordingEndPts, LastRecordingStartPts).TotalSeconds:F1}");
             }
+        }
+    }
+
+    private static long ToNonNegativeLongSaturated(double value)
+    {
+        if (!double.IsFinite(value) || value <= 0)
+        {
+            return 0;
+        }
+
+        return value >= long.MaxValue ? long.MaxValue : (long)value;
+    }
+
+    private static long NonNegativeByteDelta(long currentBytes, long startBytes)
+    {
+        currentBytes = Math.Max(0, currentBytes);
+        startBytes = Math.Max(0, startBytes);
+        if (currentBytes <= startBytes)
+        {
+            return 0;
+        }
+
+        return currentBytes - startBytes;
+    }
+
+    private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)
+    {
+        if (end <= start)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var endTicks = end.Ticks;
+        var startTicks = start.Ticks;
+        if (startTicks < 0 && endTicks > long.MaxValue + startTicks)
+        {
+            return TimeSpan.MaxValue;
+        }
+
+        return TimeSpan.FromTicks(endTicks - startTicks);
+    }
+
+    private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(
+        FlashbackBufferManager bufferManager,
+        string operation)
+    {
+        try
+        {
+            return bufferManager.ResumeEviction();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_EVICTION_RESUME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+            return (bufferManager.RecordingStartPts, bufferManager.RecordingEndPts);
+        }
+    }
+
+    internal Task EncodingCompletionTask => _encodingTask ?? Task.CompletedTask;
+
+    public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
+    {
+        return StopCoreAsync(cancellationToken);
+    }
+
+    private async Task<FinalizeResult> StopCoreAsync(CancellationToken cancellationToken)
+    {
+        var outputPath = _recordingOutputPath ?? _tsFilePath ?? string.Empty;
+        if (_disposed)
+        {
+            return FinalizeResult.Success(outputPath, "Stopped");
+        }
+
+        lock (_sync)
+        {
+            _started = false;
+        }
+
+        CompleteWriter(_videoQueue);
+        CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
+        CompleteWriter(_gpuQueue);
+
+        if (_encodingTask != null)
+        {
+            var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(StopTimeoutMs, cancellationToken)).ConfigureAwait(false);
+            if (!ReferenceEquals(completedTask, _encodingTask))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var timeoutFailure = new TimeoutException("Flashback encode drain timed out while stopping.");
+                lock (_sync)
+                {
+                    _encodingFailure ??= timeoutFailure;
+                }
+                CancelEncodingCts("stop_timeout");
+                CompletePendingForceRotateWithEmptyResult();
+                Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
+                return FinalizeResult.Failure(outputPath, "Stopped (flashback encode drain timed out)");
+            }
+
+            try
+            {
+                await _encodingTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _encodingFailure ??= ex;
+            }
+        }
+
+        if (_encodingFailure != null)
+        {
+            Logger.Log($"FLASHBACK_SINK_STOP_FAIL type={_encodingFailure.GetType().Name} msg={_encodingFailure.Message}");
+            return FinalizeResult.Failure(outputPath, $"Stopped (flashback encode failed: {_encodingFailure.Message})");
+        }
+
+        Logger.Log(
+            $"FLASHBACK_SINK_STOP output='{outputPath}' frames={EncodedVideoFrames} dropped={DroppedVideoFrames} " +
+            $"audio_samples={AudioSamplesReceived}");
+        return FinalizeResult.Success(outputPath, "Stopped");
+    }
+
+    // REVIEWED 2026-04-07: IDisposable fallback only; all callers use DisposeAsync.
+    // CaptureService.DisposeFlashbackPreviewBackendAsync awaits DisposeAsync directly.
+    public void Dispose()
+    {
+        if (_disposed) return;
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+        if (Interlocked.Exchange(ref _recordingActive, 0) != 0)
+        {
+            ResumeEvictionBestEffort(_bufferManager, "dispose");
+        }
+
+        lock (_sync)
+        {
+            _started = false;
+        }
+
+        CompleteWriter(_videoQueue);
+        CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
+        CompleteWriter(_gpuQueue);
+        CancelEncodingCts("dispose");
+
+        if (_encodingTask == null)
+        {
+            FinalizeDisposeCore();
+            return;
+        }
+
+        var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
+        if (ReferenceEquals(completedTask, _encodingTask))
+        {
+            ObserveEncodingTaskCompletion(_encodingTask);
+            FinalizeDisposeCore();
+            return;
+        }
+
+        Logger.Log($"FLASHBACK_SINK_DISPOSE_DEFERRED timeout_ms={DisposeTimeoutMs}");
+        ScheduleDeferredDisposeCleanup(_encodingTask);
+    }
+
+    private void ScheduleDeferredDisposeCleanup(Task encodingTask)
+    {
+        if (Interlocked.CompareExchange(ref _deferredDisposeScheduled, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await encodingTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _encodingFailure ??= ex;
+            }
+            finally
+            {
+                FinalizeDisposeCore();
+                Logger.Log("FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
+            }
+        });
+    }
+
+    private void ObserveEncodingTaskCompletion(Task encodingTask)
+    {
+        try
+        {
+            encodingTask.GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _encodingFailure ??= ex;
+        }
+    }
+
+    private void FinalizeDisposeCore()
+    {
+        if (Interlocked.CompareExchange(ref _disposeFinalized, 1, 0) != 0)
+        {
+            return;
+        }
+
+        ReturnAllRemainingQueuedBuffers();
+
+        DisposeCtsBestEffort(_cts, "finalize_dispose");
+        _cts = null;
+        _videoQueue = null;
+        _audioQueue = null;
+        _microphoneQueue = null;
+        _gpuQueue = null;
+        _gpuEncodingEnabled = false;
+        _audioEnabled = false;
+        _microphoneEnabled = false;
+        _sessionContext = null;
+        _width = 0;
+        _height = 0;
+        _tsFilePath = null;
+        _recordingOutputPath = string.Empty;
+        _segmentStartPts = TimeSpan.Zero;
+        _segmentDuration = TimeSpan.Zero;
+        _ptsBaseOffset = TimeSpan.Zero;
+        Interlocked.Exchange(ref _segmentStartBytes, 0);
+        _encodingTask = null;
+        DisposeWorkAvailableBestEffort("finalize_dispose");
+        CompletePendingForceRotateWithEmptyResult();
+        DisposeEncoderBestEffort("finalize_dispose");
+
+        if (_ownsBufferManager)
+        {
+            try
+            {
+                _bufferManager.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+    }
+
+    private void CancelEncodingCts(string operation)
+    {
+        try
+        {
+            _cts?.Cancel();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_CANCEL_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void DisposeCtsBestEffort(CancellationTokenSource? cts, string operation)
+    {
+        if (cts == null) return;
+
+        try
+        {
+            cts.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void DisposeWorkAvailableBestEffort(string operation)
+    {
+        try
+        {
+            _workAvailable.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void DisposeEncoderBestEffort(string operation)
+    {
+        try
+        {
+            _encoder.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_ENCODER_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
         }
     }
 
@@ -875,291 +1284,496 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return Task.CompletedTask;
     }
 
-    public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
+    private static long GetSampleCount(int byteLength)
     {
-        return StopCoreAsync(cancellationToken);
+        return byteLength > 0 ? byteLength / AudioInputBlockAlignBytes : 0;
     }
 
-    // REVIEWED 2026-04-07: IDisposable fallback only — all callers use DisposeAsync.
-    // CaptureService.DisposeFlashbackPreviewBackendAsync awaits DisposeAsync directly.
-    public void Dispose()
+    private static bool TryValidateAudioPacketLength(int byteLength, string source)
     {
-        if (_disposed) return;
-        DisposeAsync().AsTask().GetAwaiter().GetResult();
+        if (byteLength <= 0 || byteLength > MaxAudioPacketBytes)
+        {
+            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=size bytes={byteLength}");
+            return false;
+        }
+
+        if (byteLength % AudioInputBlockAlignBytes != 0)
+        {
+            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=alignment bytes={byteLength} align={AudioInputBlockAlignBytes}");
+            return false;
+        }
+
+        return true;
     }
 
-    private static int ResolveVideoQueueCapacity(FlashbackSessionContext context, bool useHardwareFrames)
-        => !useHardwareFrames && IsHighResolutionFrame(context)
-            ? HighResolutionCpuVideoQueueCapacity
-            : DefaultVideoQueueCapacity;
+    private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)
+        =>
+            queueCapacity > 0 &&
+            queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio);
 
-    private static bool IsHighResolutionFrame(FlashbackSessionContext context)
-        => context.Width >= 2560 || context.Height >= 1440;
-
-    public async ValueTask DisposeAsync()
+    private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
-        if (_disposed)
+        lock (_videoQueueSync)
         {
-            return;
-        }
-
-        _disposed = true;
-        if (Interlocked.Exchange(ref _recordingActive, 0) != 0)
-        {
-            ResumeEvictionBestEffort(_bufferManager, "dispose");
-        }
-
-        lock (_sync)
-        {
-            _started = false;
-        }
-
-        CompleteWriter(_videoQueue);
-        CompleteWriter(_audioQueue);
-        CompleteWriter(_microphoneQueue);
-        CompleteWriter(_gpuQueue);
-        CancelEncodingCts("dispose");
-
-        if (_encodingTask == null)
-        {
-            FinalizeDisposeCore();
-            return;
-        }
-
-        var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
-        if (ReferenceEquals(completedTask, _encodingTask))
-        {
-            ObserveEncodingTaskCompletion(_encodingTask);
-            FinalizeDisposeCore();
-            return;
-        }
-
-        Logger.Log($"FLASHBACK_SINK_DISPOSE_DEFERRED timeout_ms={DisposeTimeoutMs}");
-        ScheduleDeferredDisposeCleanup(_encodingTask);
-    }
-
-    private void ScheduleDeferredDisposeCleanup(Task encodingTask)
-    {
-        if (Interlocked.CompareExchange(ref _deferredDisposeScheduled, 1, 0) != 0)
-        {
-            return;
-        }
-
-        _ = Task.Run(async () =>
-        {
-            try
+            var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
+            if (rejectReason != null)
             {
-                await encodingTask.ConfigureAwait(false);
+                ReturnVideoPacket(packet);
+                TrackVideoQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
             }
-            catch (Exception ex)
+
+            if (TryWriteVideoPacket(queue, packet))
             {
-                _encodingFailure ??= ex;
+                _videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick);
+                Interlocked.Increment(ref _videoFramesEnqueued);
+                SignalWork("video_enqueue");
+                return VideoEnqueueResult.Accepted;
             }
-            finally
+
+            rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
+            if (rejectReason != null)
             {
-                FinalizeDisposeCore();
-                Logger.Log("FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
+                ReturnVideoPacket(packet);
+                TrackVideoQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
             }
-        });
-    }
 
-    private void ObserveEncodingTaskCompletion(Task encodingTask)
-    {
-        try
-        {
-            encodingTask.GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            _encodingFailure ??= ex;
+            Interlocked.Increment(ref _droppedVideoFrames);
+            ReturnVideoPacket(packet);
+            TrackVideoQueueRejected("queue_full");
+            return VideoEnqueueResult.Overloaded;
         }
     }
 
-    private void FinalizeDisposeCore()
+    private bool TryEnqueueAudioPacket(
+        Channel<AudioSamplePacket> queue,
+        AudioSamplePacket packet,
+        ref int queueDepth,
+        ref long backlogEvictions)
     {
-        if (Interlocked.CompareExchange(ref _disposeFinalized, 1, 0) != 0)
+        lock (_videoQueueSync)
         {
-            return;
-        }
-
-        ReturnAllRemainingQueuedBuffers();
-
-        DisposeCtsBestEffort(_cts, "finalize_dispose");
-        _cts = null;
-        _videoQueue = null;
-        _audioQueue = null;
-        _microphoneQueue = null;
-        _gpuQueue = null;
-        _gpuEncodingEnabled = false;
-        _audioEnabled = false;
-        _microphoneEnabled = false;
-        _sessionContext = null;
-        _width = 0;
-        _height = 0;
-        _tsFilePath = null;
-        _recordingOutputPath = string.Empty;
-        _segmentStartPts = TimeSpan.Zero;
-        _segmentDuration = TimeSpan.Zero;
-        _ptsBaseOffset = TimeSpan.Zero;
-        Interlocked.Exchange(ref _segmentStartBytes, 0);
-        _encodingTask = null;
-        DisposeWorkAvailableBestEffort("finalize_dispose");
-        CompletePendingForceRotateWithEmptyResult();
-        DisposeEncoderBestEffort("finalize_dispose");
-
-        if (_ownsBufferManager)
-        {
-            try
+            if (_disposed ||
+                !_started ||
+                _cts?.IsCancellationRequested == true ||
+                (Volatile.Read(ref _forceRotateDraining) &&
+                 IsForceRotateQueueGuarded(Volatile.Read(ref queueDepth), AudioQueueCapacity)) ||
+                Volatile.Read(ref _encodingFailure) != null)
             {
-                _bufferManager.Dispose();
+                ReturnBuffer(packet.Buffer);
+                return false;
             }
-            catch (Exception ex)
+
+            if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio"))
             {
-                Logger.Log($"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                SignalWork("audio_enqueue");
+                return true;
             }
-        }
-    }
 
-    private void CancelEncodingCts(string operation)
-    {
-        try
-        {
-            _cts?.Cancel();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_CANCEL_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void DisposeCtsBestEffort(CancellationTokenSource? cts, string operation)
-    {
-        if (cts == null) return;
-
-        try
-        {
-            cts.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void DisposeWorkAvailableBestEffort(string operation)
-    {
-        try
-        {
-            _workAvailable.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void DisposeEncoderBestEffort(string operation)
-    {
-        try
-        {
-            _encoder.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_ENCODER_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private async Task<FinalizeResult> StopCoreAsync(CancellationToken cancellationToken)
-    {
-        var outputPath = _recordingOutputPath ?? _tsFilePath ?? string.Empty;
-        if (_disposed)
-        {
-            return FinalizeResult.Success(outputPath, "Stopped");
-        }
-
-        lock (_sync)
-        {
-            _started = false;
-        }
-
-        CompleteWriter(_videoQueue);
-        CompleteWriter(_audioQueue);
-        CompleteWriter(_microphoneQueue);
-        CompleteWriter(_gpuQueue);
-
-        if (_encodingTask != null)
-        {
-            var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(StopTimeoutMs, cancellationToken)).ConfigureAwait(false);
-            if (!ReferenceEquals(completedTask, _encodingTask))
+            if (queue.Reader.TryRead(out var evictedPacket))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var timeoutFailure = new TimeoutException("Flashback encode drain timed out while stopping.");
-                lock (_sync)
+                DecrementQueueDepth(ref queueDepth, "audio_evict");
+                Interlocked.Increment(ref backlogEvictions);
+                // Track dropped audio samples for A/V drift diagnostics (analogous to SkipVideoFrame for video)
+                var evictedSamples = GetSampleCount(evictedPacket.Length);
+                var totalDropped = Interlocked.Add(ref _droppedAudioSamplesCount, evictedSamples);
+                if (totalDropped == evictedSamples || totalDropped % 48_000 < evictedSamples)
                 {
-                    _encodingFailure ??= timeoutFailure;
+                    Logger.Log(
+                        $"FLASHBACK_SINK_AUDIO_EVICT_PTS samples={evictedSamples} total_dropped_samples={totalDropped} " +
+                        $"drift_ms={totalDropped * 1000.0 / 48_000:F1}");
                 }
-                CancelEncodingCts("stop_timeout");
-                CompletePendingForceRotateWithEmptyResult();
-                Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
-                return FinalizeResult.Failure(outputPath, "Stopped (flashback encode drain timed out)");
+
+                ReturnBuffer(evictedPacket.Buffer);
+                if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio_after_evict"))
+                {
+                    SignalWork("audio_after_evict");
+                    return true;
+                }
             }
 
-            try
-            {
-                await _encodingTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _encodingFailure ??= ex;
-            }
+            // Total saturation: both eviction and re-enqueue failed.
+            var saturatedSamples = GetSampleCount(packet.Length);
+            Interlocked.Add(ref _droppedAudioSamplesCount, saturatedSamples);
+            ReturnBuffer(packet.Buffer);
+            return false;
         }
-
-        if (_encodingFailure != null)
-        {
-            Logger.Log($"FLASHBACK_SINK_STOP_FAIL type={_encodingFailure.GetType().Name} msg={_encodingFailure.Message}");
-            return FinalizeResult.Failure(outputPath, $"Stopped (flashback encode failed: {_encodingFailure.Message})");
-        }
-
-        Logger.Log(
-            $"FLASHBACK_SINK_STOP output='{outputPath}' frames={EncodedVideoFrames} dropped={DroppedVideoFrames} " +
-            $"audio_samples={AudioSamplesReceived}");
-        return FinalizeResult.Success(outputPath, "Stopped");
     }
 
-    private void ResetEncodingCounters()
+    private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
     {
-        Interlocked.Exchange(ref _droppedVideoFrames, 0);
-        Interlocked.Exchange(ref _encodedVideoFrames, 0);
-        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
-        Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
-        Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
-        Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
-        Interlocked.Exchange(ref _videoQueueRejectedFrames, 0);
-        Volatile.Write(ref _lastVideoQueueRejectReason, null);
-        Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
-        Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
-        Interlocked.Exchange(ref _droppedAudioSamplesCount, 0);
-        Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
-        Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
-        Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
-        Interlocked.Exchange(ref _gpuFramesDropped, 0);
-        Interlocked.Exchange(ref _gpuQueueRejectedFrames, 0);
-        Volatile.Write(ref _lastGpuQueueRejectReason, null);
-        Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
-        Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
-        Interlocked.Exchange(ref _audioSamplesReceived, 0);
-        Interlocked.Exchange(ref _videoQueueDepth, 0);
-        Interlocked.Exchange(ref _audioQueueDepth, 0);
-        Interlocked.Exchange(ref _microphoneQueueDepth, 0);
-        Interlocked.Exchange(ref _gpuQueueDepth, 0);
-        Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
-        Interlocked.Exchange(ref _lastVideoWriteTick, 0);
-        ResetVideoDiagnostics();
-        Interlocked.Exchange(ref _segmentStartBytes, 0);
+        lock (_videoQueueSync)
+        {
+            var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
+            if (rejectReason != null)
+            {
+                ReleaseGpuTextureBestEffort(packet.Texture);
+                TrackGpuQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
+            }
+
+            if (TryWriteGpuPacket(queue, packet))
+            {
+                Interlocked.Increment(ref _gpuFramesEnqueued);
+                SignalWork("gpu_enqueue");
+                return VideoEnqueueResult.Accepted;
+            }
+
+            rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
+            if (rejectReason != null)
+            {
+                ReleaseGpuTextureBestEffort(packet.Texture);
+                TrackGpuQueueRejected(rejectReason);
+                return VideoEnqueueResult.Rejected;
+            }
+
+            ReleaseGpuTextureBestEffort(packet.Texture);
+            TrackGpuQueueRejected("queue_full");
+            return VideoEnqueueResult.Overloaded;
+        }
     }
 
-    // ── Encoding Loop ───────────────────────────────────────────────────────
+    private string? GetVideoEnqueueRejectReason(bool isGpu)
+    {
+        if (_disposed)
+        {
+            return "disposed";
+        }
+
+        if (!_started)
+        {
+            return "not_started";
+        }
+
+        if (_cts?.IsCancellationRequested == true)
+        {
+            return "cancelled";
+        }
+
+        if (Volatile.Read(ref _forceRotateDraining))
+        {
+            return "force_rotate_draining";
+        }
+
+        var failure = Volatile.Read(ref _encodingFailure);
+        return failure != null
+            ? $"encoding_failed:{failure.GetType().Name}"
+            : null;
+    }
+
+    private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)
+    {
+        var lifecycleReason = GetVideoEnqueueRejectReason(isGpu: false);
+        if (lifecycleReason != null)
+        {
+            return lifecycleReason;
+        }
+
+        if (queue == null)
+        {
+            return "queue_null";
+        }
+
+        if (expectedSize <= 0)
+        {
+            return "invalid_expected_size";
+        }
+
+        return dataIsEmpty ? "data_empty" : null;
+    }
+
+    private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)
+    {
+        var lifecycleReason = GetVideoEnqueueRejectReason(isGpu: true);
+        if (lifecycleReason != null)
+        {
+            return lifecycleReason;
+        }
+
+        if (queue == null)
+        {
+            return "queue_null";
+        }
+
+        return texture == IntPtr.Zero ? "null_texture" : null;
+    }
+
+    private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _videoQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
+        return false;
+    }
+
+    private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _gpuQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
+        return false;
+    }
+
+    private static bool TryWriteAudioPacket(
+        Channel<AudioSamplePacket> queue,
+        AudioSamplePacket packet,
+        ref int queueDepth,
+        string queueName)
+    {
+        Interlocked.Increment(ref queueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            return true;
+        }
+
+        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
+        return false;
+    }
+
+    private void TrackVideoQueueRejected(string reason)
+    {
+        Volatile.Write(ref _lastVideoQueueRejectReason, reason);
+        var total = Interlocked.Increment(ref _videoQueueRejectedFrames);
+        if (total == 1 || total % 30 == 0)
+        {
+            Logger.Log(
+                $"FLASHBACK_SINK_VIDEO_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _videoQueueDepth)} capacity={VideoQueueCapacityFrames}");
+        }
+    }
+
+    private void TrackGpuQueueRejected(string reason)
+    {
+        Volatile.Write(ref _lastGpuQueueRejectReason, reason);
+        var total = Interlocked.Increment(ref _gpuQueueRejectedFrames);
+        if (total == 1 || total % 30 == 0)
+        {
+            Logger.Log(
+                $"FLASHBACK_SINK_GPU_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _gpuQueueDepth)} capacity={GpuQueueCapacity}");
+        }
+    }
+
+    private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber, bool IsP010)
+    {
+        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick, bool isP010) => new(buffer, null, length, enqueueTick, null, isP010);
+        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber, lease.PixelFormat == PooledVideoPixelFormat.P010);
+    }
+
+    private enum VideoEnqueueResult
+    {
+        Accepted,
+        Rejected,
+        Overloaded
+    }
+
+    private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
+    private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
+
+    private static byte[] GetBuffer(int size)
+    {
+        return ArrayPool<byte>.Shared.Rent(size);
+    }
+
+    private static void ReturnBuffer(byte[] buffer)
+    {
+        ArrayPool<byte>.Shared.Return(buffer);
+    }
+
+    private static void ReturnVideoPacket(VideoFramePacket packet)
+    {
+        if (packet.Buffer != null)
+        {
+            ReturnBuffer(packet.Buffer);
+        }
+
+        packet.Lease?.Dispose();
+    }
+
+    private static void ReturnVideoPacketBestEffort(VideoFramePacket packet)
+    {
+        try
+        {
+            ReturnVideoPacket(packet);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private static void ReleaseGpuTextureBestEffort(IntPtr texture)
+    {
+        if (texture == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            Marshal.Release(texture);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
+    {
+        channel?.Writer.TryComplete();
+        SignalWork("complete_writer");
+    }
+
+    private void SignalWork(string operation)
+    {
+        try
+        {
+            _workAvailable.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"FLASHBACK_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
+        }
+    }
+
+    private static void DecrementQueueDepth(ref int target, string queueName)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref target);
+            if (current <= 0)
+            {
+                Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={current - 1}");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    private void ReturnAllRemainingQueuedBuffers()
+    {
+        ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
+        ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
+        ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
+        ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
+    }
+
+    private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            ReturnVideoPacketBestEffort(packet);
+        }
+
+        lock (_videoQueueSync)
+        {
+            _videoLatencyTracker.ClearEnqueueTicksUnderLock();
+        }
+
+        Interlocked.Exchange(ref queueDepth, 0);
+    }
+
+    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            ReturnBuffer(packet.Buffer);
+        }
+
+        Interlocked.Exchange(ref queueDepth, 0);
+    }
+
+    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            ReleaseGpuTextureBestEffort(packet.Texture);
+        }
+
+        Interlocked.Exchange(ref queueDepth, 0);
+    }
+
+    private bool WaitForCancellation(TimeSpan timeout)
+    {
+        var cts = _cts;
+        if (cts == null)
+        {
+            Thread.Sleep(timeout);
+            return false;
+        }
+
+        try
+        {
+            return cts.Token.WaitHandle.WaitOne(timeout);
+        }
+        catch (ObjectDisposedException)
+        {
+            return true;
+        }
+    }
+
+    private void FailEncoding(Exception ex)
+    {
+        var shouldNotify = false;
+        lock (_sync)
+        {
+            if (_encodingFailure == null)
+            {
+                _encodingFailure = ex;
+                _started = false;
+                shouldNotify = true;
+            }
+        }
+
+        if (!shouldNotify)
+        {
+            return;
+        }
+
+        Logger.Log($"FLASHBACK_SINK_FATAL type={ex.GetType().Name} msg={ex.Message}");
+        CompleteWriter(_videoQueue);
+        CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
+        CompleteWriter(_gpuQueue);
+
+        try
+        {
+            _onFatalError?.Invoke(ex);
+        }
+        catch (Exception callbackEx)
+        {
+            Logger.Log($"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+        }
+    }
 
     private void EncodingLoop(CancellationToken cancellationToken)
     {
@@ -1199,157 +1813,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 // Handle force-rotate requests from the export thread (must run on encoding thread)
                 if (Volatile.Read(ref _forceRotateRequested))
                 {
-                    ForceRotateRequest? localRequest;
-                    TimeSpan localIn, localOut;
-
-                    // Pause acceptance of new packets to ensure atomicity between drain and rotation.
-                    // Producers calling Enqueue* will see this flag and drop packets rather than
-                    // inserting them into the new segment that would be excluded from the export.
-                    lock (_videoQueueSync)
+                    if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))
                     {
-                        Volatile.Write(ref _forceRotateDraining, true);
-                    }
-
-                    lock (_sync)
-                    {
-                        _forceRotateRequested = false;
-                        localRequest = _forceRotateRequest;
-                        _forceRotateRequest = null;
-                        localIn = _forceRotateInPoint;
-                        localOut = _forceRotateOutPoint;
-                    }
-                    try
-                    {
-                        if (localRequest == null)
-                        {
-                            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request");
-                            madeProgress = true;
-                            continue;
-                        }
-
-                        if (localRequest.IsCompleted)
-                        {
-                            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed");
-                            madeProgress = true;
-                            continue;
-                        }
-
-                        // Drain all remaining queued packets into the current segment before rotating.
-                        // This ensures no data is lost at the live edge.
-                        var inFlightCount = 0;
-                        var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, "before_drain", inFlightCount);
-                        if (!forceRotateDrainAborted)
-                        {
-                            while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))
-                            {
-                                inFlightCount++;
-                                if (ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount))
-                                {
-                                    forceRotateDrainAborted = true;
-                                    break;
-                                }
-                            }
-
-                            forceRotateDrainAborted = forceRotateDrainAborted ||
-                                ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount);
-                        }
-                        if (!forceRotateDrainAborted && _microphoneEnabled && microphoneQueue != null)
-                        {
-                            while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))
-                            {
-                                inFlightCount++;
-                                if (ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount))
-                                {
-                                    forceRotateDrainAborted = true;
-                                    break;
-                                }
-                            }
-
-                            forceRotateDrainAborted = forceRotateDrainAborted ||
-                                ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount);
-                        }
-                        if (!forceRotateDrainAborted && gpuQueue != null)
-                        {
-                            while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))
-                            {
-                                inFlightCount++;
-                                if (ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount))
-                                {
-                                    forceRotateDrainAborted = true;
-                                    break;
-                                }
-                            }
-
-                            forceRotateDrainAborted = forceRotateDrainAborted ||
-                                ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount);
-                        }
-                        if (!forceRotateDrainAborted)
-                        {
-                            while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))
-                            {
-                                inFlightCount++;
-                                if (ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount))
-                                {
-                                    forceRotateDrainAborted = true;
-                                    break;
-                                }
-                            }
-
-                            forceRotateDrainAborted = forceRotateDrainAborted ||
-                                ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount);
-                        }
-
-                        if (inFlightCount > 0)
-                        {
-                            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_DRAIN in_flight_rounds={inFlightCount}");
-                        }
-
-                        if (forceRotateDrainAborted)
-                        {
-                            madeProgress = true;
-                            continue;
-                        }
-
-                        if (localRequest.IsCompleted)
-                        {
-                            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
-                            madeProgress = true;
-                            continue;
-                        }
-
-                        var currentPts = ResolveEncoderPts();
-
-                        if (currentPts > _segmentStartPts)
-                        {
-                            if (!localRequest.TryBeginCommit())
-                            {
-                                Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate");
-                                madeProgress = true;
-                                continue;
-                            }
-
-                            if (!RotateSegment(currentPts))
-                            {
-                                localRequest.CompleteEmpty();
-                                madeProgress = true;
-                                continue;
-                            }
-                        }
-
-                        localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                        localRequest?.CompleteEmpty();
-                        throw;
-                    }
-                    finally
-                    {
-                        lock (_videoQueueSync)
-                        {
-                            Volatile.Write(ref _forceRotateDraining, false);
-                        }
+                        madeProgress = true;
+                        continue;
                     }
                     madeProgress = true;
                 }
@@ -1510,7 +1977,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 var expectedFrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(w, h, packet.IsP010);
                 // Defense-in-depth: if a stale frame from a previous resolution
                 // leaks through during a reinit cycle, drop it rather than sending
-                // mismatched dimensions to the encoder (which could crash in native code).
+                // mismatched dimensions to the encoder, which could crash in native code.
                 if (expectedFrameSize > 0 && packet.Length != expectedFrameSize)
                 {
                     Interlocked.Increment(ref _droppedVideoFrames);
@@ -1562,6 +2029,52 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return drainedAny;
     }
 
+    private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)
+    {
+        var drainedAny = false;
+        var drainedCount = 0;
+        while (drainedCount < maxPackets && reader.TryRead(out var packet))
+        {
+            DecrementQueueDepth(ref _audioQueueDepth, "audio");
+            try
+            {
+                _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
+            }
+            finally
+            {
+                ReturnBuffer(packet.Buffer);
+            }
+
+            drainedAny = true;
+            drainedCount++;
+        }
+
+        return drainedAny;
+    }
+
+    private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)
+    {
+        var drainedAny = false;
+        var drainedCount = 0;
+        while (drainedCount < maxPackets && reader.TryRead(out var packet))
+        {
+            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone");
+            try
+            {
+                _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
+            }
+            finally
+            {
+                ReturnBuffer(packet.Buffer);
+            }
+
+            drainedAny = true;
+            drainedCount++;
+        }
+
+        return drainedAny;
+    }
+
     private void OnVideoFrameEncoded()
     {
         if (_disposed)
@@ -1572,14 +2085,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _lastVideoWriteTick, Environment.TickCount64);
         var encoded = Interlocked.Increment(ref _encodedVideoFrames);
 
-        // Notify buffer manager of PTS progress
         var pts = ResolveEncoderPts();
         if (pts > TimeSpan.Zero)
         {
             _bufferManager.UpdateLatestPts(pts);
 
-            // Check if current segment duration exceeded — trigger rotation
-            // All rotation now happens on the encoding thread, no lock needed
+            // Segment rotation happens on the encoding thread, so no extra lock is needed here.
             if (_segmentDuration > TimeSpan.Zero && pts - _segmentStartPts >= _segmentDuration)
             {
                 _ = RotateSegment(pts);
@@ -1630,88 +2141,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             : _ptsBaseOffset + delta;
     }
 
-    private static double ResolveSessionFrameRate(double frameRate)
-    {
-        if (!double.IsFinite(frameRate) || frameRate <= 0)
-        {
-            return FallbackSessionFrameRate;
-        }
-
-        return Math.Min(frameRate, MaxSessionFrameRate);
-    }
-
-    private static void ValidateSessionContext(FlashbackSessionContext context)
-    {
-        if (context.Width <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(context), context.Width, "Flashback session width must be positive.");
-        }
-
-        if (context.Height <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(context), context.Height, "Flashback session height must be positive.");
-        }
-
-        if (string.IsNullOrWhiteSpace(context.CodecName))
-        {
-            throw new ArgumentException("Flashback session codec name is required.", nameof(context));
-        }
-    }
-
-    private static long ToNonNegativeLongSaturated(double value)
-    {
-        if (!double.IsFinite(value) || value <= 0)
-        {
-            return 0;
-        }
-
-        return value >= long.MaxValue ? long.MaxValue : (long)value;
-    }
-
-    private static long NonNegativeByteDelta(long currentBytes, long startBytes)
-    {
-        currentBytes = Math.Max(0, currentBytes);
-        startBytes = Math.Max(0, startBytes);
-        if (currentBytes <= startBytes)
-        {
-            return 0;
-        }
-
-        return currentBytes - startBytes;
-    }
-
-    private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)
-    {
-        if (end <= start)
-        {
-            return TimeSpan.Zero;
-        }
-
-        var endTicks = end.Ticks;
-        var startTicks = start.Ticks;
-        if (startTicks < 0 && endTicks > long.MaxValue + startTicks)
-        {
-            return TimeSpan.MaxValue;
-        }
-
-        return TimeSpan.FromTicks(endTicks - startTicks);
-    }
-
-    private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(
-        FlashbackBufferManager bufferManager,
-        string operation)
-    {
-        try
-        {
-            return bufferManager.ResumeEviction();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_EVICTION_RESUME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
-            return (bufferManager.RecordingStartPts, bufferManager.RecordingEndPts);
-        }
-    }
-
     private bool RotateSegment(TimeSpan currentPts)
     {
         string? completedPath = null;
@@ -1737,7 +2166,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);
 
-            // Update disk bytes tracking
+            // Update disk bytes tracking.
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
             _lastDiskBytesUpdateMs = Environment.TickCount64;
 
@@ -1779,11 +2208,46 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 }
             }
 
-            // Advance _segmentStartPts to prevent infinite retry on every frame
+            // Advance _segmentStartPts to prevent infinite retry on every frame.
             _segmentStartPts = currentPts;
             Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
             return false;
         }
+    }
+
+    private bool _forceRotateRequested;
+    private volatile ForceRotateRequest? _forceRotateRequest;
+    private TimeSpan _forceRotateInPoint;
+    private TimeSpan _forceRotateOutPoint;
+    private bool _forceRotateDraining;
+
+    private const int ForceRotateCommittedGraceMs = 1_000;
+
+    public bool IsForceRotateActive =>
+        Volatile.Read(ref _forceRotateRequested) ||
+        Volatile.Read(ref _forceRotateDraining);
+    public bool IsForceRotateRequested => Volatile.Read(ref _forceRotateRequested);
+    public bool IsForceRotateDraining => Volatile.Read(ref _forceRotateDraining);
+
+    public bool WaitForForceRotateIdle(TimeSpan timeout)
+    {
+        var timeoutMs = Math.Max(0, (long)timeout.TotalMilliseconds);
+        var deadlineTick = Environment.TickCount64 + timeoutMs;
+        while (IsForceRotateActive)
+        {
+            if (timeoutMs == 0 || Environment.TickCount64 >= deadlineTick)
+            {
+                return false;
+            }
+
+            SignalWork("force_rotate_idle");
+            if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public FlashbackForceRotateResult ForceRotateForExport(
@@ -1848,7 +2312,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         SignalWork("force_rotate_request");
 
-        // AV1 encoding is significantly slower than H.264/HEVC — drain can take
+        // AV1 encoding is significantly slower than H.264/HEVC - drain can take
         // much longer at 4K@120fps with a deep queue. Use a longer timeout for AV1.
         var codecName = _sessionContext?.CodecName ?? string.Empty;
         var isSlowCodec = codecName.Contains("av1", StringComparison.OrdinalIgnoreCase);
@@ -1887,6 +2351,161 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());
+    }
+
+    private bool ProcessPendingForceRotate(
+        Channel<VideoFramePacket> videoQueue,
+        Channel<AudioSamplePacket> audioQueue,
+        Channel<AudioSamplePacket>? microphoneQueue,
+        Channel<GpuFramePacket>? gpuQueue)
+    {
+        ForceRotateRequest? localRequest;
+        TimeSpan localIn, localOut;
+
+        // Pause acceptance of new packets to ensure atomicity between drain and rotation.
+        // Producers calling Enqueue* will see this flag and drop packets rather than
+        // inserting them into the new segment that would be excluded from the export.
+        lock (_videoQueueSync)
+        {
+            Volatile.Write(ref _forceRotateDraining, true);
+        }
+
+        lock (_sync)
+        {
+            _forceRotateRequested = false;
+            localRequest = _forceRotateRequest;
+            _forceRotateRequest = null;
+            localIn = _forceRotateInPoint;
+            localOut = _forceRotateOutPoint;
+        }
+        try
+        {
+            if (localRequest == null)
+            {
+                Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request");
+                return true;
+            }
+
+            if (localRequest.IsCompleted)
+            {
+                Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed");
+                return true;
+            }
+
+            // Drain all remaining queued packets into the current segment before rotating.
+            // This ensures no data is lost at the live edge.
+            var inFlightCount = 0;
+            var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, "before_drain", inFlightCount);
+            if (!forceRotateDrainAborted)
+            {
+                while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))
+                {
+                    inFlightCount++;
+                    if (ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount))
+                    {
+                        forceRotateDrainAborted = true;
+                        break;
+                    }
+                }
+
+                forceRotateDrainAborted = forceRotateDrainAborted ||
+                    ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount);
+            }
+            if (!forceRotateDrainAborted && _microphoneEnabled && microphoneQueue != null)
+            {
+                while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))
+                {
+                    inFlightCount++;
+                    if (ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount))
+                    {
+                        forceRotateDrainAborted = true;
+                        break;
+                    }
+                }
+
+                forceRotateDrainAborted = forceRotateDrainAborted ||
+                    ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount);
+            }
+            if (!forceRotateDrainAborted && gpuQueue != null)
+            {
+                while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))
+                {
+                    inFlightCount++;
+                    if (ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount))
+                    {
+                        forceRotateDrainAborted = true;
+                        break;
+                    }
+                }
+
+                forceRotateDrainAborted = forceRotateDrainAborted ||
+                    ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount);
+            }
+            if (!forceRotateDrainAborted)
+            {
+                while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))
+                {
+                    inFlightCount++;
+                    if (ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount))
+                    {
+                        forceRotateDrainAborted = true;
+                        break;
+                    }
+                }
+
+                forceRotateDrainAborted = forceRotateDrainAborted ||
+                    ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount);
+            }
+
+            if (inFlightCount > 0)
+            {
+                Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_DRAIN in_flight_rounds={inFlightCount}");
+            }
+
+            if (forceRotateDrainAborted)
+            {
+                return true;
+            }
+
+            if (localRequest.IsCompleted)
+            {
+                Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
+                return true;
+            }
+
+            var currentPts = ResolveEncoderPts();
+
+            if (currentPts > _segmentStartPts)
+            {
+                if (!localRequest.TryBeginCommit())
+                {
+                    Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate");
+                    return true;
+                }
+
+                if (!RotateSegment(currentPts))
+                {
+                    localRequest.CompleteEmpty();
+                    return true;
+                }
+            }
+
+            localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            localRequest?.CompleteEmpty();
+            throw;
+        }
+        finally
+        {
+            lock (_videoQueueSync)
+            {
+                Volatile.Write(ref _forceRotateDraining, false);
+            }
+        }
     }
 
     private bool TryCancelForceRotate(ForceRotateRequest request)
@@ -1935,685 +2554,64 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return true;
     }
 
-    private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)
+    private sealed class ForceRotateRequest
     {
-        var drainedAny = false;
-        var drainedCount = 0;
-        while (drainedCount < maxPackets && reader.TryRead(out var packet))
+        private const int StatePending = 0;
+        private const int StateCommitting = 1;
+        private const int StateCompleted = 2;
+        private const int StateCanceled = 3;
+
+        private int _state = StatePending;
+
+        private readonly TaskCompletionSource<IReadOnlyList<string>> _completion =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<IReadOnlyList<string>> Task => _completion.Task;
+
+        public bool IsCompleted
         {
-            DecrementQueueDepth(ref _audioQueueDepth, "audio");
-            try
+            get
             {
-                _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
-            }
-            finally
-            {
-                ReturnBuffer(packet.Buffer);
-            }
-
-            drainedAny = true;
-            drainedCount++;
-        }
-
-        return drainedAny;
-    }
-
-    private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)
-    {
-        var drainedAny = false;
-        var drainedCount = 0;
-        while (drainedCount < maxPackets && reader.TryRead(out var packet))
-        {
-            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone");
-            try
-            {
-                _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
-            }
-            finally
-            {
-                ReturnBuffer(packet.Buffer);
-            }
-
-            drainedAny = true;
-            drainedCount++;
-        }
-
-        return drainedAny;
-    }
-
-    // ── Queue Management ────────────────────────────────────────────────────
-
-    private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
-    {
-        channel?.Writer.TryComplete();
-        SignalWork("complete_writer");
-    }
-
-    private void SignalWork(string operation)
-    {
-        try
-        {
-            _workAvailable.Set();
-        }
-        catch (ObjectDisposedException)
-        {
-            Logger.Log($"FLASHBACK_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
-        }
-    }
-
-    private static void DecrementQueueDepth(ref int target, string queueName)
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref target);
-            if (current <= 0)
-            {
-                Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={current - 1}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
-            {
-                return;
+                var state = Volatile.Read(ref _state);
+                return state == StateCompleted ||
+                       state == StateCanceled ||
+                       _completion.Task.IsCompleted;
             }
         }
-    }
 
-    private void ResetVideoDiagnostics()
-    {
-        _videoLatencyTracker.ResetAll();
-    }
+        public bool TryBeginCommit()
+            => Interlocked.CompareExchange(ref _state, StateCommitting, StatePending) == StatePending;
 
-    private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
-    {
-        lock (_videoQueueSync)
+        public bool TryCancel()
         {
-            var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
-            if (rejectReason != null)
+            if (Interlocked.CompareExchange(ref _state, StateCanceled, StatePending) != StatePending)
             {
-                ReturnVideoPacket(packet);
-                TrackVideoQueueRejected(rejectReason);
-                return VideoEnqueueResult.Rejected;
+                return false;
             }
 
-            if (TryWriteVideoPacket(queue, packet))
-            {
-                _videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick);
-                Interlocked.Increment(ref _videoFramesEnqueued);
-                SignalWork("video_enqueue");
-                return VideoEnqueueResult.Accepted;
-            }
-
-            rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
-            if (rejectReason != null)
-            {
-                ReturnVideoPacket(packet);
-                TrackVideoQueueRejected(rejectReason);
-                return VideoEnqueueResult.Rejected;
-            }
-
-            Interlocked.Increment(ref _droppedVideoFrames);
-            ReturnVideoPacket(packet);
-            TrackVideoQueueRejected("queue_full");
-            return VideoEnqueueResult.Overloaded;
-        }
-    }
-
-    private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
-    {
-        lock (_videoQueueSync)
-        {
-            var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
-            if (rejectReason != null)
-            {
-                ReleaseGpuTextureBestEffort(packet.Texture);
-                TrackGpuQueueRejected(rejectReason);
-                return VideoEnqueueResult.Rejected;
-            }
-
-            if (TryWriteGpuPacket(queue, packet))
-            {
-                Interlocked.Increment(ref _gpuFramesEnqueued);
-                SignalWork("gpu_enqueue");
-                return VideoEnqueueResult.Accepted;
-            }
-
-            rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
-            if (rejectReason != null)
-            {
-                ReleaseGpuTextureBestEffort(packet.Texture);
-                TrackGpuQueueRejected(rejectReason);
-                return VideoEnqueueResult.Rejected;
-            }
-
-            ReleaseGpuTextureBestEffort(packet.Texture);
-            TrackGpuQueueRejected("queue_full");
-            return VideoEnqueueResult.Overloaded;
-        }
-    }
-
-    private string? GetVideoEnqueueRejectReason(bool isGpu)
-    {
-        if (_disposed)
-        {
-            return "disposed";
-        }
-
-        if (!_started)
-        {
-            return "not_started";
-        }
-
-        if (_cts?.IsCancellationRequested == true)
-        {
-            return "cancelled";
-        }
-
-        if (Volatile.Read(ref _forceRotateDraining))
-        {
-            return "force_rotate_draining";
-        }
-
-        var failure = Volatile.Read(ref _encodingFailure);
-        return failure != null
-            ? $"encoding_failed:{failure.GetType().Name}"
-            : null;
-    }
-
-    private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)
-        =>
-            queueCapacity > 0 &&
-            queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio);
-
-    private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _videoQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
+            _completion.TrySetResult(Array.Empty<string>());
             return true;
         }
 
-        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
-        return false;
-    }
-
-    private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _gpuQueueDepth);
-        if (queue.Writer.TryWrite(packet))
+        public void Complete(IReadOnlyList<string> paths)
         {
-            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
-        return false;
-    }
-
-    private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)
-    {
-        var lifecycleReason = GetVideoEnqueueRejectReason(isGpu: false);
-        if (lifecycleReason != null)
-        {
-            return lifecycleReason;
-        }
-
-        if (queue == null)
-        {
-            return "queue_null";
-        }
-
-        if (expectedSize <= 0)
-        {
-            return "invalid_expected_size";
-        }
-
-        return dataIsEmpty ? "data_empty" : null;
-    }
-
-    private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)
-    {
-        var lifecycleReason = GetVideoEnqueueRejectReason(isGpu: true);
-        if (lifecycleReason != null)
-        {
-            return lifecycleReason;
-        }
-
-        if (queue == null)
-        {
-            return "queue_null";
-        }
-
-        return texture == IntPtr.Zero ? "null_texture" : null;
-    }
-
-    private void TrackVideoQueueRejected(string reason)
-    {
-        Volatile.Write(ref _lastVideoQueueRejectReason, reason);
-        var total = Interlocked.Increment(ref _videoQueueRejectedFrames);
-        if (total == 1 || total % 30 == 0)
-        {
-            Logger.Log(
-                $"FLASHBACK_SINK_VIDEO_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _videoQueueDepth)} capacity={VideoQueueCapacityFrames}");
-        }
-    }
-
-    private void TrackGpuQueueRejected(string reason)
-    {
-        Volatile.Write(ref _lastGpuQueueRejectReason, reason);
-        var total = Interlocked.Increment(ref _gpuQueueRejectedFrames);
-        if (total == 1 || total % 30 == 0)
-        {
-            Logger.Log(
-                $"FLASHBACK_SINK_GPU_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _gpuQueueDepth)} capacity={GpuQueueCapacity}");
-        }
-    }
-
-    private bool WaitForCancellation(TimeSpan timeout)
-    {
-        var cts = _cts;
-        if (cts == null)
-        {
-            Thread.Sleep(timeout);
-            return false;
-        }
-
-        try
-        {
-            return cts.Token.WaitHandle.WaitOne(timeout);
-        }
-        catch (ObjectDisposedException)
-        {
-            return true;
-        }
-    }
-
-    private void FailEncoding(Exception ex)
-    {
-        var shouldNotify = false;
-        lock (_sync)
-        {
-            if (_encodingFailure == null)
+            while (true)
             {
-                _encodingFailure = ex;
-                _started = false;
-                shouldNotify = true;
+                var state = Volatile.Read(ref _state);
+                if (state == StateCompleted || state == StateCanceled)
+                {
+                    return;
+                }
+
+                if (Interlocked.CompareExchange(ref _state, StateCompleted, state) == state)
+                {
+                    _completion.TrySetResult(paths);
+                    return;
+                }
             }
         }
 
-        if (!shouldNotify)
-        {
-            return;
-        }
-
-        Logger.Log($"FLASHBACK_SINK_FATAL type={ex.GetType().Name} msg={ex.Message}");
-        CompleteWriter(_videoQueue);
-        CompleteWriter(_audioQueue);
-        CompleteWriter(_microphoneQueue);
-        CompleteWriter(_gpuQueue);
-
-        try
-        {
-            _onFatalError?.Invoke(ex);
-        }
-        catch (Exception callbackEx)
-        {
-            Logger.Log($"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
-        }
+        public void CompleteEmpty()
+            => Complete(Array.Empty<string>());
     }
-
-    private bool TryEnqueueAudioPacket(
-        Channel<AudioSamplePacket> queue,
-        AudioSamplePacket packet,
-        ref int queueDepth,
-        ref long backlogEvictions)
-    {
-        lock (_videoQueueSync)
-        {
-        if (_disposed ||
-            !_started ||
-            _cts?.IsCancellationRequested == true ||
-            (Volatile.Read(ref _forceRotateDraining) &&
-             IsForceRotateQueueGuarded(Volatile.Read(ref queueDepth), AudioQueueCapacity)) ||
-            Volatile.Read(ref _encodingFailure) != null)
-        {
-            ReturnBuffer(packet.Buffer);
-            return false;
-        }
-
-        if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio"))
-        {
-            SignalWork("audio_enqueue");
-            return true;
-        }
-
-        if (queue.Reader.TryRead(out var evictedPacket))
-        {
-            DecrementQueueDepth(ref queueDepth, "audio_evict");
-            Interlocked.Increment(ref backlogEvictions);
-            // Track dropped audio samples for A/V drift diagnostics (analogous to SkipVideoFrame for video)
-            var evictedSamples = GetSampleCount(evictedPacket.Length);
-            var totalDropped = Interlocked.Add(ref _droppedAudioSamplesCount, evictedSamples);
-            if (totalDropped == evictedSamples || totalDropped % 48_000 < evictedSamples)
-            {
-                Logger.Log(
-                    $"FLASHBACK_SINK_AUDIO_EVICT_PTS samples={evictedSamples} total_dropped_samples={totalDropped} " +
-                    $"drift_ms={totalDropped * 1000.0 / 48_000:F1}");
-            }
-            ReturnBuffer(evictedPacket.Buffer);
-            if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio_after_evict"))
-            {
-                SignalWork("audio_after_evict");
-                return true;
-            }
-        }
-
-        // Total saturation — both eviction and re-enqueue failed
-        var saturatedSamples = GetSampleCount(packet.Length);
-        Interlocked.Add(ref _droppedAudioSamplesCount, saturatedSamples);
-        ReturnBuffer(packet.Buffer);
-        return false;
-        }
-    }
-
-    private static bool TryWriteAudioPacket(
-        Channel<AudioSamplePacket> queue,
-        AudioSamplePacket packet,
-        ref int queueDepth,
-        string queueName)
-    {
-        Interlocked.Increment(ref queueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            return true;
-        }
-
-        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
-        return false;
-    }
-
-    private void ReturnAllRemainingQueuedBuffers()
-    {
-        ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
-        ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
-        ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-        ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
-    }
-
-    private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            ReturnVideoPacketBestEffort(packet);
-        }
-
-        lock (_videoQueueSync)
-        {
-            _videoLatencyTracker.ClearEnqueueTicksUnderLock();
-        }
-
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            ReturnBuffer(packet.Buffer);
-        }
-
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            ReleaseGpuTextureBestEffort(packet.Texture);
-        }
-
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    // ── Options / Helpers ───────────────────────────────────────────────────
-
-    /// <summary>
-    /// MPEG-TS supports H.264 and HEVC natively. AV1 in MPEG-TS requires newer ffmpeg builds
-    /// (libavformat 61.7+) and is not widely supported. Use fMP4 for AV1.
-    /// </summary>
-    private static bool SupportsTransportStream(string codecName) =>
-        codecName.Contains("264", StringComparison.OrdinalIgnoreCase) ||
-        codecName.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
-        codecName.Contains("265", StringComparison.OrdinalIgnoreCase);
-
-    internal static string GetSegmentExtension(string codecName) =>
-        SupportsTransportStream(codecName) ? ".ts" : ".mp4";
-
-    private static LibAvEncoderOptions CreateOptions(FlashbackSessionContext context, string outputPath)
-    {
-        var (frameRateNumerator, frameRateDenominator) = ResolveSessionFrameRateParts(
-            context.FrameRateNumerator,
-            context.FrameRateDenominator);
-
-        return new LibAvEncoderOptions
-        {
-            OutputPath = outputPath,
-            ContainerFormat = SupportsTransportStream(context.CodecName) ? "mpegts" : "mp4",
-            FragmentedMp4 = !SupportsTransportStream(context.CodecName),
-            CodecName = context.CodecName,
-            Width = context.Width,
-            Height = context.Height,
-            FrameRate = context.FrameRate,
-            FrameRateNumerator = frameRateNumerator,
-            FrameRateDenominator = frameRateDenominator,
-            BitRate = context.BitRate,
-            IsP010 = context.IsP010,
-            NvencPreset = context.NvencPreset,
-            SplitEncodeMode = context.SplitEncodeMode,
-            // 1-second GOP for fast interactive seeking. The default (2x frame rate)
-            // means up to 2 seconds of decode-forward on every pause/scrub.
-            // 1x frame rate halves worst-case seek latency with minimal bitrate impact.
-            GopSize = (int)Math.Max(1, Math.Round(context.FrameRate)),
-            HdrEnabled = context.HdrEnabled,
-            IsFullRangeInput = context.IsFullRangeInput,
-            HdrMasterDisplayMetadata = context.HdrMasterDisplayMetadata,
-            HdrMaxCll = context.HdrMaxCll,
-            HdrMaxFall = context.HdrMaxFall,
-            D3D11DevicePtr = context.D3D11DevicePtr,
-            D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
-            AudioEnabled = context.AudioEnabled,
-            AudioSampleRate = 48_000,
-            AudioChannels = 2,
-            AudioBitRate = 320_000,
-            MicrophoneEnabled = context.MicrophoneEnabled,
-            MicrophoneSampleRate = 48_000,
-            MicrophoneChannels = 2,
-            MicrophoneBitRate = 320_000
-        };
-    }
-
-    private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)
-    {
-        if (!numerator.HasValue || !denominator.HasValue || numerator <= 0 || denominator <= 0)
-        {
-            return (null, null);
-        }
-
-        var fps = (double)numerator.Value / denominator.Value;
-        if (!double.IsFinite(fps) || fps <= 0 || fps > MaxSessionFrameRate)
-        {
-            return (null, null);
-        }
-
-        return (numerator, denominator);
-    }
-
-    private static FlashbackSessionContext CreateSessionContext(RecordingContext context)
-    {
-        var (frameRateNumerator, frameRateDenominator) = ResolveFrameRateParts(context.FrameRateArg);
-        return new FlashbackSessionContext
-        {
-            Width = checked((int)context.EffectiveWidth),
-            Height = checked((int)context.EffectiveHeight),
-            FrameRate = context.EffectiveFrameRate,
-            FrameRateNumerator = frameRateNumerator,
-            FrameRateDenominator = frameRateDenominator,
-            BitRate = context.Settings.GetTargetBitrate(),
-            IsP010 = context.HdrPipelineActive,
-            CodecName = MapCodecName(context.Settings.Format),
-            NvencPreset = context.Settings.NvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
-            HdrEnabled = context.HdrPipelineActive,
-            IsFullRangeInput = context.IsFullRangeInput,
-            HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
-            HdrMaxCll = context.Settings.HdrMaxCll,
-            HdrMaxFall = context.Settings.HdrMaxFall,
-            D3D11DevicePtr = context.D3D11DevicePtr,
-            D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
-            AudioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName),
-            MicrophoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName)
-        };
-    }
-
-    private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)
-    {
-        if (string.IsNullOrWhiteSpace(frameRateArg) || !frameRateArg.Contains('/', StringComparison.Ordinal))
-        {
-            return (null, null);
-        }
-
-        var parts = frameRateArg.Split('/', 2, StringSplitOptions.TrimEntries);
-        if (parts.Length != 2 ||
-            !int.TryParse(parts[0], out var numerator) ||
-            !int.TryParse(parts[1], out var denominator) ||
-            numerator <= 0 ||
-            denominator <= 0)
-        {
-            return (null, null);
-        }
-
-        return (numerator, denominator);
-    }
-
-    private static string MapCodecName(RecordingFormat format)
-        => MediaFormat.MapNvencCodecName(format);
-
-    private static long GetFileSize(string path)
-    {
-        try
-        {
-            return File.Exists(path) ? new FileInfo(path).Length : 0;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_FILE_SIZE_WARN path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
-            return 0;
-        }
-    }
-
-    private static string CreateSessionId()
-    {
-        return $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds():x}_{Guid.NewGuid():N}";
-    }
-
-    private static long GetSampleCount(int byteLength)
-    {
-        return byteLength > 0 ? byteLength / AudioInputBlockAlignBytes : 0;
-    }
-
-    private static bool TryValidateAudioPacketLength(int byteLength, string source)
-    {
-        if (byteLength <= 0 || byteLength > MaxAudioPacketBytes)
-        {
-            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=size bytes={byteLength}");
-            return false;
-        }
-
-        if (byteLength % AudioInputBlockAlignBytes != 0)
-        {
-            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=alignment bytes={byteLength} align={AudioInputBlockAlignBytes}");
-            return false;
-        }
-
-        return true;
-    }
-
-    private static byte[] GetBuffer(int size)
-    {
-        return ArrayPool<byte>.Shared.Rent(size);
-    }
-
-    private static void ReturnBuffer(byte[] buffer)
-    {
-        ArrayPool<byte>.Shared.Return(buffer);
-    }
-
-    private static void ReturnVideoPacket(VideoFramePacket packet)
-    {
-        if (packet.Buffer != null)
-        {
-            ReturnBuffer(packet.Buffer);
-        }
-
-        packet.Lease?.Dispose();
-    }
-
-    private static void ReturnVideoPacketBestEffort(VideoFramePacket packet)
-    {
-        try
-        {
-            ReturnVideoPacket(packet);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private static void ReleaseGpuTextureBestEffort(IntPtr texture)
-    {
-        if (texture == IntPtr.Zero)
-        {
-            return;
-        }
-
-        try
-        {
-            Marshal.Release(texture);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber, bool IsP010)
-    {
-        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick, bool isP010) => new(buffer, null, length, enqueueTick, null, isP010);
-        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber, lease.PixelFormat == PooledVideoPixelFormat.P010);
-    }
-    private enum VideoEnqueueResult
-    {
-        Accepted,
-        Rejected,
-        Overloaded
-    }
-    private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
-    private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
 }

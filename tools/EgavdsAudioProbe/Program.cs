@@ -17,8 +17,6 @@ return EgavdsProbe.Run(args);
 
 static class EgavdsProbe
 {
-    const string DLL = "EGAVDeviceSupport";
-
     public static int Run(string[] args)
     {
         string? setMode = null;
@@ -247,19 +245,22 @@ static class EgavdsProbe
         return null;
     }
 
-    // --- SWIG callback registration ---
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    delegate void SwigExceptionDelegate(string message);
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    delegate void SwigExceptionArgDelegate(string message, string paramName);
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    delegate string SwigStringDelegate(string message);
+    private const string DLL = "EGAVDeviceSupport";
 
-    static SwigExceptionDelegate _swigExcHandler = msg => Console.WriteLine($"SWIG Exception: {msg}");
-    static SwigExceptionArgDelegate _swigArgHandler = (msg, p) => Console.WriteLine($"SWIG Arg Exception: {msg} ({p})");
-    static SwigStringDelegate _swigStrHandler = s => s;
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void SwigExceptionDelegate(string message);
 
-    static void RegisterSwigCallbacks()
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void SwigExceptionArgDelegate(string message, string paramName);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate string SwigStringDelegate(string message);
+
+    private static SwigExceptionDelegate _swigExcHandler = msg => Console.WriteLine($"SWIG Exception: {msg}");
+    private static SwigExceptionArgDelegate _swigArgHandler = (msg, p) => Console.WriteLine($"SWIG Arg Exception: {msg} ({p})");
+    private static SwigStringDelegate _swigStrHandler = s => s;
+
+    private static void RegisterSwigCallbacks()
     {
         SWIGRegisterExceptionCallbacks_EGAVDS(
             _swigExcHandler, _swigExcHandler, _swigExcHandler, _swigExcHandler,
@@ -269,110 +270,128 @@ static class EgavdsProbe
         SWIGRegisterStringCallback_EGAVDS(_swigStrHandler);
     }
 
-    // ======================================================================
-    // P/Invoke declarations — all target EGAVDeviceSupport.dll from Elgato Studio
-    // ======================================================================
-
-    // SWIG infrastructure
-    [DllImport(DLL)] static extern void SWIGRegisterExceptionCallbacks_EGAVDS(
+    [DllImport(DLL)] private static extern void SWIGRegisterExceptionCallbacks_EGAVDS(
         SwigExceptionDelegate a1, SwigExceptionDelegate a2, SwigExceptionDelegate a3, SwigExceptionDelegate a4,
         SwigExceptionDelegate a5, SwigExceptionDelegate a6, SwigExceptionDelegate a7, SwigExceptionDelegate a8,
         SwigExceptionDelegate a9, SwigExceptionDelegate a10, SwigExceptionDelegate a11);
 
     [DllImport(DLL, EntryPoint = "SWIGRegisterExceptionArgumentCallbacks_EGAVDS")]
-    static extern void SWIGRegisterExceptionCallbacksArgument_EGAVDS(
+    private static extern void SWIGRegisterExceptionCallbacksArgument_EGAVDS(
         SwigExceptionArgDelegate a1, SwigExceptionArgDelegate a2, SwigExceptionArgDelegate a3);
 
-    [DllImport(DLL)] static extern void SWIGRegisterStringCallback_EGAVDS(SwigStringDelegate cb);
+    [DllImport(DLL)] private static extern void SWIGRegisterStringCallback_EGAVDS(SwigStringDelegate cb);
 
-    // Lifecycle
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_new_EGAVDS_INITIALIZE_PARAMS___")]
-    static extern nint EGAVDS_new_INITIALIZE_PARAMS();
+    private static extern nint EGAVDS_new_INITIALIZE_PARAMS();
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_delete_EGAVDS_INITIALIZE_PARAMS___")]
-    static extern void EGAVDS_delete_INITIALIZE_PARAMS(HandleRef p);
+    private static extern void EGAVDS_delete_INITIALIZE_PARAMS(HandleRef p);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_appDataDirectoryPath_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_appDataDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_appDataDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_tmpDirectoryPath_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_tmpDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_tmpDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_logDirectoryPath_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_logDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_logDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_companyNameShort_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_companyNameShort_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_companyNameShort_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_companyNameLong_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_companyNameLong_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_companyNameLong_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_productNameShort_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_productNameShort_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_productNameShort_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_productNameLong_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_productNameLong_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_productNameLong_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_productClientName_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_productClientName_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_productClientName_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_isDebug_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_isDebug_set(HandleRef p, bool v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_isDebug_set(HandleRef p, bool v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_edidDirectoryPath_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_edidDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_edidDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_INITIALIZE_PARAMS_firmwareDirectoryPath_set___")]
-    static extern void EGAVDS_INITIALIZE_PARAMS_firmwareDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+    private static extern void EGAVDS_INITIALIZE_PARAMS_firmwareDirectoryPath_set(HandleRef p, [MarshalAs(UnmanagedType.LPUTF8Str)] string v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_Initialize___")]
-    static extern int EGAVDS_Initialize(HandleRef p);
+    private static extern int EGAVDS_Initialize(HandleRef p);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_InitializeWithJSONFile___")]
-    static extern int EGAVDS_InitializeWithJSONFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, uint pathLen);
+    private static extern int EGAVDS_InitializeWithJSONFile([MarshalAs(UnmanagedType.LPUTF8Str)] string path, uint pathLen);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_EGAVDS_Deinitialize___")]
-    static extern void EGAVDS_Deinitialize();
+    private static extern void EGAVDS_Deinitialize();
 
-    // Device handle
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_new_EGAVDS_DEVICE_HANDLE___")]
-    static extern nint EGAVDS_new_DEVICE_HANDLE();
+    private static extern nint EGAVDS_new_DEVICE_HANDLE();
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_delete_EGAVDS_DEVICE_HANDLE___")]
-    static extern void EGAVDS_delete_DEVICE_HANDLE(HandleRef h);
+    private static extern void EGAVDS_delete_DEVICE_HANDLE(HandleRef h);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_OpenDevice___")]
-    static extern int EGAVDS_OpenDevice([MarshalAs(UnmanagedType.LPUTF8Str)] string deviceId, HandleRef h);
+    private static extern int EGAVDS_OpenDevice([MarshalAs(UnmanagedType.LPUTF8Str)] string deviceId, HandleRef h);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_CloseDevice___")]
-    static extern void EGAVDS_CloseDevice(HandleRef h);
+    private static extern void EGAVDS_CloseDevice(HandleRef h);
 
-    // Audio input
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_SupportsAudioInputSelection___")]
-    static extern bool EGAVDS_SupportsAudioInputSelection(HandleRef h);
+    private static extern bool EGAVDS_SupportsAudioInputSelection(HandleRef h);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_GetAudioInputSelection___")]
-    static extern int EGAVDS_GetAudioInputSelection(HandleRef h, ref int audioInput);
+    private static extern int EGAVDS_GetAudioInputSelection(HandleRef h, ref int audioInput);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_SetAudioInputSelection___")]
-    static extern int EGAVDS_SetAudioInputSelection(HandleRef h, int audioInput);
+    private static extern int EGAVDS_SetAudioInputSelection(HandleRef h, int audioInput);
 
-    // Line-in gain
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_SupportsLineInAudioGainControl___")]
-    static extern bool EGAVDS_SupportsLineInAudioGainControl(HandleRef h);
+    private static extern bool EGAVDS_SupportsLineInAudioGainControl(HandleRef h);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_GetLineInAudioGain___")]
-    static extern int EGAVDS_GetLineInAudioGain(HandleRef h, ref long v);
+    private static extern int EGAVDS_GetLineInAudioGain(HandleRef h, ref long v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_SetLineInAudioGain___")]
-    static extern int EGAVDS_SetLineInAudioGain(HandleRef h, long v);
+    private static extern int EGAVDS_SetLineInAudioGain(HandleRef h, long v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_GetLineInAudioGainMin___")]
-    static extern int EGAVDS_GetLineInAudioGainMin(HandleRef h, ref long v);
+    private static extern int EGAVDS_GetLineInAudioGainMin(HandleRef h, ref long v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_GetLineInAudioGainMax___")]
-    static extern int EGAVDS_GetLineInAudioGainMax(HandleRef h, ref long v);
+    private static extern int EGAVDS_GetLineInAudioGainMax(HandleRef h, ref long v);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_GetLineInAudioGainDefault___")]
-    static extern int EGAVDS_GetLineInAudioGainDefault(HandleRef h, ref long v);
+    private static extern int EGAVDS_GetLineInAudioGainDefault(HandleRef h, ref long v);
 
-    // Misc
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_IsVideoHDR___")]
-    static extern int EGAVDS_IsVideoHDR(HandleRef h, ref bool isHdr);
+    private static extern int EGAVDS_IsVideoHDR(HandleRef h, ref bool isHdr);
+
     [DllImport(DLL, EntryPoint = "CSharp_ElgatofEGAVDeviceSupport_GetIsConnectionOK___")]
-    static extern int EGAVDS_GetIsConnectionOK(HandleRef h, ref bool isOk);
+    private static extern int EGAVDS_GetIsConnectionOK(HandleRef h, ref bool isOk);
 
-    // SetupAPI
     [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern nint SetupDiGetClassDevs(ref Guid classGuid, string? enumerator, nint hwndParent, uint flags);
-    [DllImport("setupapi.dll", SetLastError = true)]
-    static extern bool SetupDiEnumDeviceInterfaces(nint devInfoSet, nint devInfoData, ref Guid interfaceClassGuid, uint memberIndex, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData);
-    [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    static extern bool SetupDiGetDeviceInterfaceDetail(nint devInfoSet, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData, nint deviceInterfaceDetailData, uint deviceInterfaceDetailDataSize, out uint requiredSize, nint deviceInfoData);
-    [DllImport("setupapi.dll", SetLastError = true)]
-    static extern bool SetupDiDestroyDeviceInfoList(nint devInfoSet);
-}
+    private static extern nint SetupDiGetClassDevs(ref Guid classGuid, string? enumerator, nint hwndParent, uint flags);
 
-[StructLayout(LayoutKind.Sequential)]
-struct SP_DEVICE_INTERFACE_DATA
-{
-    public int cbSize;
-    public Guid InterfaceClassGuid;
-    public uint Flags;
-    public nuint Reserved;
+    [DllImport("setupapi.dll", SetLastError = true)]
+    private static extern bool SetupDiEnumDeviceInterfaces(nint devInfoSet, nint devInfoData, ref Guid interfaceClassGuid, uint memberIndex, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData);
+
+    [DllImport("setupapi.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool SetupDiGetDeviceInterfaceDetail(nint devInfoSet, ref SP_DEVICE_INTERFACE_DATA deviceInterfaceData, nint deviceInterfaceDetailData, uint deviceInterfaceDetailDataSize, out uint requiredSize, nint deviceInfoData);
+
+    [DllImport("setupapi.dll", SetLastError = true)]
+    private static extern bool SetupDiDestroyDeviceInfoList(nint devInfoSet);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SP_DEVICE_INTERFACE_DATA
+    {
+        public int cbSize;
+        public Guid InterfaceClassGuid;
+        public uint Flags;
+        public nuint Reserved;
+    }
 }

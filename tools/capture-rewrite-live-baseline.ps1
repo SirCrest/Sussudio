@@ -961,8 +961,9 @@ function Restore-AppState {
 
     if ($script:LaunchedApp -and -not $NoClose) {
         try {
-            Invoke-Automation -Command "ArmClose" -Payload @{ armed = $true } -AllowFailure | Out-Null
-            Invoke-Automation -Command "WindowAction" -Payload @{ action = "Close" } -AllowFailure | Out-Null
+            $closeActionId = [Guid]::NewGuid().ToString("N")
+            Invoke-Automation -Command "ArmClose" -Payload @{ armed = $true; actionId = $closeActionId } -AllowFailure | Out-Null
+            Invoke-Automation -Command "WindowAction" -Payload @{ action = "Close"; actionId = $closeActionId } -AllowFailure | Out-Null
         }
         catch {
             Write-Warning "Launched app close failed: $($_.Exception.Message)"

@@ -64,28 +64,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private long _livePreviewPresentId;
     private long _videoFramesWrittenToSink;
     private long _recordingFramesDelivered;
+    private long _recordingFramesRejected;
+    private long _recordingQueueRejectedFrames;
     private long _lastVideoFrameArrivedTick;
     private Action<string>? _pixelFormatDetectedCallback;
     private int _pixelFormatObserverFired;
     private volatile bool _previewSuppressed;
-
-    public readonly record struct MjpegPipelineTimingMetrics(
-        int DecodeSampleCount,
-        double DecodeAvgMs,
-        double DecodeP95Ms,
-        double DecodeMaxMs,
-        int InteropCopySampleCount,
-        double InteropCopyAvgMs,
-        double InteropCopyP95Ms,
-        double InteropCopyMaxMs,
-        int CallbackSampleCount,
-        double CallbackAvgMs,
-        double CallbackP95Ms,
-        double CallbackMaxMs);
-
-    public readonly record struct MjpegPipelineTimingSnapshot(
-        MjpegPipelineTimingMetrics Summary,
-        ParallelMjpegDecodePipeline.PipelineTimingMetrics? Details);
 
     public bool IsP010 => Volatile.Read(ref _isP010);
     public int Width => Volatile.Read(ref _width);
@@ -106,6 +90,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     }
     public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
     public long RecordingFramesDelivered => Interlocked.Read(ref _recordingFramesDelivered);
+    public long RecordingFramesRejected => Interlocked.Read(ref _recordingFramesRejected);
+    public long RecordingQueueRejectedFrames => Interlocked.Read(ref _recordingQueueRejectedFrames);
     public long FlashbackRecordingSequenceGaps => Interlocked.Read(ref _flashbackRecordingSequenceGaps);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
     public event EventHandler<Exception>? FatalErrorOccurred;
@@ -113,6 +99,102 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     public long SourceReaderReadOutstandingMs => _capture?.ReadSampleOutstandingMs ?? 0;
     public long SourceReaderLastFrameTickMs => _capture?.LastFrameDeliveredTickMs ?? 0;
     public SharedD3DDeviceManager? D3DManager => Volatile.Read(ref _d3dManager);
+
+    public readonly record struct MjpegPipelineTimingMetrics(
+        int DecodeSampleCount,
+        double DecodeAvgMs,
+        double DecodeP95Ms,
+        double DecodeMaxMs,
+        int InteropCopySampleCount,
+        double InteropCopyAvgMs,
+        double InteropCopyP95Ms,
+        double InteropCopyMaxMs,
+        int CallbackSampleCount,
+        double CallbackAvgMs,
+        double CallbackP95Ms,
+        double CallbackMaxMs);
+
+    public readonly record struct MjpegPipelineTimingSnapshot(
+        MjpegPipelineTimingMetrics Summary,
+        ParallelMjpegDecodePipeline.PipelineTimingMetrics? Details);
+
+    public void SetFlashbackSink(FlashbackEncoderSink? sink)
+    {
+        Volatile.Write(ref _flashbackSink, sink);
+    }
+
+    public void SetPixelFormatDetectedCallback(Action<string>? observer)
+    {
+        Volatile.Write(ref _pixelFormatDetectedCallback, observer);
+    }
+
+    public Task StartRecordingAsync(
+        IRecordingSink sink,
+        IRawVideoFrameEncoder encoder,
+        IGpuVideoFrameEncoder? gpuEncoder = null)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(sink);
+        ArgumentNullException.ThrowIfNull(encoder);
+
+        lock (_sync)
+        {
+            if (_capture == null)
+            {
+                throw new InvalidOperationException("Cannot start recording before capture is initialized.");
+            }
+
+            _recordingSink = sink;
+            Volatile.Write(ref _recordingEncoder, encoder);
+            Volatile.Write(ref _gpuRecordingEncoder, gpuEncoder);
+            Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
+            Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+            Interlocked.Exchange(ref _recordingFramesRejected, 0);
+            Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
+            Volatile.Write(ref _recordingActive, true);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public void BeginFlashbackRecordingAccounting()
+    {
+        Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
+        Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+        Interlocked.Exchange(ref _recordingFramesRejected, 0);
+        Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
+        Interlocked.Exchange(ref _flashbackRecordingLastAcceptedSequence, -1);
+        Interlocked.Exchange(ref _flashbackRecordingSequenceGaps, 0);
+        Volatile.Write(ref _flashbackRecordingAccountingActive, true);
+    }
+
+    public void EndFlashbackRecordingAccounting()
+    {
+        Volatile.Write(ref _flashbackRecordingAccountingActive, false);
+    }
+
+    public Task StopRecordingAsync()
+    {
+        lock (_sync)
+        {
+            Volatile.Write(ref _recordingActive, false);
+            Volatile.Write(ref _flashbackRecordingAccountingActive, false);
+            _recordingSink = null;
+            Volatile.Write(ref _recordingEncoder, null);
+            Volatile.Write(ref _gpuRecordingEncoder, null);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public void SetSkipCpuReadback(bool skip)
+    {
+        var capture = _capture;
+        if (capture != null)
+        {
+            capture.SkipCpuReadback = skip;
+        }
+    }
 
     public MfSourceReaderVideoCapture.SourceCadenceMetrics GetSourceCadenceMetrics()
     {
@@ -205,36 +287,15 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
-        ParallelMjpegDecodePipeline? mjpegPipeline = null;
-
-        // 4K120 MJPEG is compressed on the USB wire. In that mode the source
-        // reader must hand compressed samples to our decoder instead of trying
-        // to expose D3D textures directly from Media Foundation.
-        var useExternalMjpegDecode =
-            useMjpegHighFrameRateMode &&
-            !requireP010 &&
-            string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-
-        if (useExternalMjpegDecode)
-        {
-            try
-            {
-                mjpegPipeline = new ParallelMjpegDecodePipeline(
-                    mjpegDecoderCount,
-                    width,
-                    height,
-                    OnMjpegPipelineFrameEmitted,
-                    OnMjpegPipelineFatalError,
-                    OnMjpegPipelinePreviewFrameDecoded);
-            }
-            catch (Exception ex)
-            {
-                mjpegPipeline?.Dispose();
-                Logger.Log($"SW_MJPEG_PIPELINE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                throw new InvalidOperationException(
-                    $"CPU MJPEG decode pipeline failed to initialize: {ex.Message}", ex);
-            }
-        }
+        var useExternalMjpegDecode = ShouldUseExternalMjpegDecode(
+            useMjpegHighFrameRateMode,
+            requireP010,
+            requestedPixelFormat);
+        var mjpegPipeline = CreateExternalMjpegPipelineIfNeeded(
+            useExternalMjpegDecode,
+            mjpegDecoderCount,
+            width,
+            height);
 
         var capture = new MfSourceReaderVideoCapture();
         try
@@ -261,15 +322,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (mjpegPipeline != null)
         {
-            var previewJitterFps = capture.Fps > 0 ? capture.Fps : fps;
-            Volatile.Write(
-                ref _mjpegPreviewJitterBuffer,
-                new MjpegPreviewJitterBuffer(
-                    previewJitterFps,
-                    () => Volatile.Read(ref _previewSink),
-                    () => _previewSuppressed,
-                    previewFrameProbe: null,
-                    targetDepth: 3));
+            InstallMjpegPreviewJitterBuffer(capture.Fps > 0 ? capture.Fps : fps);
         }
 
         if (!capture.IsD3DOutputEnabled)
@@ -299,6 +352,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+            Interlocked.Exchange(ref _recordingFramesRejected, 0);
+            Interlocked.Exchange(ref _recordingQueueRejectedFrames, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
             Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
@@ -360,124 +415,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    public void SetPreviewSink(IPreviewFrameSink? sink)
-    {
-        Volatile.Write(ref _previewSink, sink);
-    }
-
-    public void SuppressPreviewSubmission()
-    {
-        // Flashback playback temporarily owns the preview renderer. Drain
-        // pending live frames so an old live texture cannot flash over a
-        // scrub/playback frame when presentation mode changes.
-        _previewSuppressed = true;
-        Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression();
-        DropPendingPreviewFrames("live-preview-suppressed");
-    }
-
-    public void ResumePreviewSubmission()
-    {
-        // Drop before clearing suppression so the first resumed frame is a new
-        // live source frame, not stale queue residue from the playback period.
-        DropPendingPreviewFrames("live-preview-resumed");
-        _previewSuppressed = false;
-        Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume();
-    }
-
-    private void DropPendingPreviewFrames(string reason)
-    {
-        if (Volatile.Read(ref _previewSink) is not IPreviewFrameQueueControl queueControl)
-        {
-            return;
-        }
-
-        try
-        {
-            var dropped = queueControl.DropPendingFrames(reason);
-            if (dropped > 0)
-            {
-                Logger.Log($"UNIFIED_VIDEO_PREVIEW_PENDING_DRAIN reason={reason} dropped={dropped}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"UNIFIED_VIDEO_PREVIEW_PENDING_DRAIN_WARN reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
-
-    public void SetFlashbackSink(FlashbackEncoderSink? sink)
-    {
-        Volatile.Write(ref _flashbackSink, sink);
-    }
-
-    public void SetPixelFormatDetectedCallback(Action<string>? observer)
-    {
-        Volatile.Write(ref _pixelFormatDetectedCallback, observer);
-    }
-
-    public Task StartRecordingAsync(
-        IRecordingSink sink,
-        IRawVideoFrameEncoder encoder,
-        IGpuVideoFrameEncoder? gpuEncoder = null)
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(sink);
-        ArgumentNullException.ThrowIfNull(encoder);
-
-        lock (_sync)
-        {
-            if (_capture == null)
-            {
-                throw new InvalidOperationException("Cannot start recording before capture is initialized.");
-            }
-
-            _recordingSink = sink;
-            Volatile.Write(ref _recordingEncoder, encoder);
-            Volatile.Write(ref _gpuRecordingEncoder, gpuEncoder);
-            Interlocked.Exchange(ref _recordingFramesDelivered, 0);
-            Volatile.Write(ref _recordingActive, true);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public void BeginFlashbackRecordingAccounting()
-    {
-        Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
-        Interlocked.Exchange(ref _recordingFramesDelivered, 0);
-        Interlocked.Exchange(ref _flashbackRecordingLastAcceptedSequence, -1);
-        Interlocked.Exchange(ref _flashbackRecordingSequenceGaps, 0);
-        Volatile.Write(ref _flashbackRecordingAccountingActive, true);
-    }
-
-    public void EndFlashbackRecordingAccounting()
-    {
-        Volatile.Write(ref _flashbackRecordingAccountingActive, false);
-    }
-
-    public Task StopRecordingAsync()
-    {
-        lock (_sync)
-        {
-            Volatile.Write(ref _recordingActive, false);
-            Volatile.Write(ref _flashbackRecordingAccountingActive, false);
-            _recordingSink = null;
-            Volatile.Write(ref _recordingEncoder, null);
-            Volatile.Write(ref _gpuRecordingEncoder, null);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public void SetSkipCpuReadback(bool skip)
-    {
-        var capture = _capture;
-        if (capture != null)
-        {
-            capture.SkipCpuReadback = skip;
-        }
-    }
-
     public async Task StopAsync()
     {
         CancellationTokenSource? readCts;
@@ -526,28 +463,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
             if (mjpegPipelineToStop != null)
             {
-                var jitterBuffer = Interlocked.Exchange(ref _mjpegPreviewJitterBuffer, null);
-                jitterBuffer?.Dispose();
-
-                if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
-                {
-                    var stopException = new InvalidOperationException(
-                        $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
-                    SignalFatalError(
-                        stopException,
-                        $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
-                    throw stopException;
-                }
-
-                lock (_sync)
-                {
-                    if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
-                    {
-                        _mjpegPipeline = null;
-                    }
-                }
-
-                mjpegPipelineToStop.Dispose();
+                StopAndDisposeMjpegPipeline(mjpegPipelineToStop);
             }
         }
         finally
@@ -607,8 +523,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             await capture.DisposeAsync().ConfigureAwait(false);
         }
 
-        mjpegPipeline?.Dispose();
-        jitterBuffer?.Dispose();
+        DisposeMjpegPipelineResources(mjpegPipeline, jitterBuffer);
         if (disposeSharedD3DDeviceManager)
         {
             d3dManager?.Dispose();
@@ -622,6 +537,114 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         {
             throw stopException;
         }
+    }
+
+    private void ThrowIfDisposed()
+        => ObjectDisposedException.ThrowIf(_disposed, this);
+
+    private void OnCaptureFatalError(object? sender, Exception ex)
+    {
+        SignalFatalError(
+            ex,
+            $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
+    }
+
+    private static bool ShouldUseExternalMjpegDecode(
+        bool useMjpegHighFrameRateMode,
+        bool requireP010,
+        string? requestedPixelFormat)
+    {
+        // 4K120 MJPEG is compressed on the USB wire. In that mode the source
+        // reader must hand compressed samples to our decoder instead of trying
+        // to expose D3D textures directly from Media Foundation.
+        return useMjpegHighFrameRateMode &&
+            !requireP010 &&
+            string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(
+        bool useExternalMjpegDecode,
+        int mjpegDecoderCount,
+        int width,
+        int height)
+    {
+        if (!useExternalMjpegDecode)
+        {
+            return null;
+        }
+
+        ParallelMjpegDecodePipeline? mjpegPipeline = null;
+        try
+        {
+            mjpegPipeline = new ParallelMjpegDecodePipeline(
+                mjpegDecoderCount,
+                width,
+                height,
+                OnMjpegPipelineFrameEmitted,
+                OnMjpegPipelineFatalError,
+                OnMjpegPipelinePreviewFrameDecoded);
+            return mjpegPipeline;
+        }
+        catch (Exception ex)
+        {
+            mjpegPipeline?.Dispose();
+            Logger.Log($"SW_MJPEG_PIPELINE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            throw new InvalidOperationException(
+                $"CPU MJPEG decode pipeline failed to initialize: {ex.Message}", ex);
+        }
+    }
+
+    private void InstallMjpegPreviewJitterBuffer(double fps)
+    {
+        Volatile.Write(
+            ref _mjpegPreviewJitterBuffer,
+            new MjpegPreviewJitterBuffer(
+                fps,
+                () => Volatile.Read(ref _previewSink),
+                () => _previewSuppressed,
+                previewFrameProbe: null,
+                targetDepth: 3));
+    }
+
+    private void StopAndDisposeMjpegPipeline(ParallelMjpegDecodePipeline mjpegPipelineToStop)
+    {
+        var jitterBuffer = Interlocked.Exchange(ref _mjpegPreviewJitterBuffer, null);
+        jitterBuffer?.Dispose();
+
+        if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
+        {
+            var stopException = new InvalidOperationException(
+                $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
+            SignalFatalError(
+                stopException,
+                $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
+            throw stopException;
+        }
+
+        lock (_sync)
+        {
+            if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
+            {
+                _mjpegPipeline = null;
+            }
+        }
+
+        mjpegPipelineToStop.Dispose();
+    }
+
+    private static void DisposeMjpegPipelineResources(
+        ParallelMjpegDecodePipeline? mjpegPipeline,
+        MjpegPreviewJitterBuffer? jitterBuffer)
+    {
+        mjpegPipeline?.Dispose();
+        jitterBuffer?.Dispose();
+    }
+
+    private void OnMjpegPipelineFatalError(Exception ex)
+    {
+        SignalFatalError(
+            ex,
+            $"UNIFIED_VIDEO_FATAL_MJPEG_ERROR type={ex.GetType().Name} msg={ex.Message}");
     }
 
     private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)
@@ -667,59 +690,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         EnqueueRecordingFrame(frame);
         EnqueueFlashbackFrame(frame);
-    }
-
-    private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-        FirePixelFormatObserverOnce("NV12");
-        _frameLedger.RecordEvent(
-            frame.SequenceNumber,
-            FrameLedgerStage.PreviewEnqueued,
-            subsystem: "preview",
-            accepted: true);
-        TrackPreviewVisualFrame(
-            frame.Memory.Span,
-            frame.Width,
-            frame.Height,
-            frame.PixelFormat,
-            frame.ArrivalTick,
-            frame.SequenceNumber);
-
-        var previewSink = Volatile.Read(ref _previewSink);
-        var jitterBuffer = Volatile.Read(ref _mjpegPreviewJitterBuffer);
-        if (_previewSuppressed || previewSink == null)
-        {
-            jitterBuffer?.Clear();
-            frame.Dispose();
-            return;
-        }
-
-        if (jitterBuffer != null)
-        {
-            jitterBuffer.Enqueue(frame);
-            return;
-        }
-
-        PooledVideoFrameLease? ownedFrame = frame;
-        try
-        {
-            var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
-            var submitTick = Stopwatch.GetTimestamp();
-            previewSink.SubmitRawFrameLease(
-                ownedFrame,
-                isHdr: false,
-                PreviewFrameTracking.Default with
-                {
-                    PreviewPresentId = previewPresentId,
-                    SchedulerSubmitTick = submitTick,
-                });
-            ownedFrame = null;
-        }
-        finally
-        {
-            ownedFrame?.Dispose();
-        }
     }
 
     private void OnDualFrameArrived(
@@ -852,160 +822,130 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             CompressedByteLength: compressedByteLength));
     }
 
-    private void RecordRecordingEnqueue(long sourceSequence, bool accepted, string? reason)
+    private void FirePixelFormatObserverOnce(string format)
     {
+        if (Interlocked.CompareExchange(ref _pixelFormatObserverFired, 1, 0) != 0)
+        {
+            return;
+        }
+
+        Volatile.Read(ref _pixelFormatDetectedCallback)?.Invoke(format);
+    }
+
+    private void SignalFatalError(Exception ex, string logMessage)
+    {
+        Logger.Log(logMessage);
+
+        if (Interlocked.Exchange(ref _fatalErrorSignaled, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            FatalErrorOccurred?.Invoke(this, ex);
+        }
+        catch (Exception callbackEx)
+        {
+            Logger.Log($"UNIFIED_VIDEO_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+        }
+    }
+
+    public void SetPreviewSink(IPreviewFrameSink? sink)
+    {
+        Volatile.Write(ref _previewSink, sink);
+    }
+
+    public void SuppressPreviewSubmission()
+    {
+        // Flashback playback temporarily owns the preview renderer. Drain
+        // pending live frames so an old live texture cannot flash over a
+        // scrub/playback frame when presentation mode changes.
+        _previewSuppressed = true;
+        Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression();
+        DropPendingPreviewFrames("live-preview-suppressed");
+    }
+
+    public void ResumePreviewSubmission()
+    {
+        // Drop before clearing suppression so the first resumed frame is a new
+        // live source frame, not stale queue residue from the playback period.
+        DropPendingPreviewFrames("live-preview-resumed");
+        _previewSuppressed = false;
+        Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume();
+    }
+
+    private void DropPendingPreviewFrames(string reason)
+    {
+        if (Volatile.Read(ref _previewSink) is not IPreviewFrameQueueControl queueControl)
+        {
+            return;
+        }
+
+        try
+        {
+            var dropped = queueControl.DropPendingFrames(reason);
+            if (dropped > 0)
+            {
+                Logger.Log($"UNIFIED_VIDEO_PREVIEW_PENDING_DRAIN reason={reason} dropped={dropped}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"UNIFIED_VIDEO_PREVIEW_PENDING_DRAIN_WARN reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        FirePixelFormatObserverOnce("NV12");
         _frameLedger.RecordEvent(
-            sourceSequence,
-            FrameLedgerStage.RecordingEnqueued,
-            subsystem: "recording",
-            accepted: accepted,
-            reason: reason);
-    }
+            frame.SequenceNumber,
+            FrameLedgerStage.PreviewEnqueued,
+            subsystem: "preview",
+            accepted: true);
+        TrackPreviewVisualFrame(
+            frame.Memory.Span,
+            frame.Width,
+            frame.Height,
+            frame.PixelFormat,
+            frame.ArrivalTick,
+            frame.SequenceNumber);
 
-    private void RecordFlashbackEnqueue(long sourceSequence, bool accepted, string? reason)
-    {
-        _frameLedger.RecordEvent(
-            sourceSequence,
-            FrameLedgerStage.FlashbackEnqueued,
-            subsystem: "flashback",
-            accepted: accepted,
-            reason: reason);
-    }
-
-    private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)
-    {
-        var sink = Volatile.Read(ref _flashbackSink);
-        if (sink == null)
+        var previewSink = Volatile.Read(ref _previewSink);
+        var jitterBuffer = Volatile.Read(ref _mjpegPreviewJitterBuffer);
+        if (_previewSuppressed || previewSink == null)
         {
+            jitterBuffer?.Clear();
+            frame.Dispose();
             return;
         }
 
+        if (jitterBuffer != null)
+        {
+            jitterBuffer.Enqueue(frame);
+            return;
+        }
+
+        PooledVideoFrameLease? ownedFrame = frame;
         try
         {
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
-            if (frameData.Length < expectedSize)
-            {
-                RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence);
-                RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "frame_size_mismatch");
-                return;
-            }
-
-            var accepted = sink.TryEnqueueRawVideoFrame(frameData, expectedSize);
-            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence);
-            RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
-        }
-        catch (Exception ex)
-        {
-            RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
-            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void EnqueueFlashbackFrame(PooledVideoFrame frame)
-    {
-        var sink = Volatile.Read(ref _flashbackSink);
-        if (sink == null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (sink is IRawVideoFrameLeaseEncoder leaseEncoder &&
-                frame.TryAddLease(out var lease))
-            {
-                try
+            var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
+            var submitTick = Stopwatch.GetTimestamp();
+            previewSink.SubmitRawFrameLease(
+                ownedFrame,
+                isHdr: false,
+                PreviewFrameTracking.Default with
                 {
-                    var accepted = leaseEncoder is IRawVideoFrameLeaseTryEncoder leaseTryEncoder
-                        ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
-                        : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
-                    lease = null;
-                    RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber);
-                    RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");
-                }
-                finally
-                {
-                    lease?.Dispose();
-                }
-
-                return;
-            }
-
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
-            if (frame.Length < expectedSize)
-            {
-                RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber);
-                RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "frame_size_mismatch");
-                return;
-            }
-
-            var rawAccepted = sink.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize);
-            RecordFlashbackRecordingAccounting(sink, rawAccepted, frame.SequenceNumber);
-            RecordFlashbackEnqueue(frame.SequenceNumber, rawAccepted, rawAccepted ? null : "queue_rejected");
+                    PreviewPresentId = previewPresentId,
+                    SchedulerSubmitTick = submitTick,
+                });
+            ownedFrame = null;
         }
-        catch (Exception ex)
+        finally
         {
-            RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "exception");
-            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)
-    {
-        var sink = Volatile.Read(ref _flashbackSink);
-        if (sink == null)
-        {
-            return;
-        }
-
-        try
-        {
-            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
-            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence);
-            RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
-        }
-        catch (Exception ex)
-        {
-            RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
-            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_GPU_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void RecordFlashbackRecordingAccounting(FlashbackEncoderSink sink, bool accepted, long sourceSequence)
-    {
-        if (!Volatile.Read(ref _flashbackRecordingAccountingActive) ||
-            !sink.IsRecordingActive)
-        {
-            return;
-        }
-
-        Interlocked.Increment(ref _recordingFramesDelivered);
-        if (accepted)
-        {
-            TrackFlashbackRecordingAcceptedSequence(sourceSequence);
-            Interlocked.Increment(ref _videoFramesWrittenToSink);
-        }
-    }
-
-    private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)
-    {
-        while (true)
-        {
-            var last = Interlocked.Read(ref _flashbackRecordingLastAcceptedSequence);
-            if (sourceSequence <= last)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _flashbackRecordingLastAcceptedSequence, sourceSequence, last) == last)
-            {
-                if (last >= 0 && sourceSequence > last + 1)
-                {
-                    Interlocked.Add(ref _flashbackRecordingSequenceGaps, sourceSequence - last - 1);
-                }
-
-                return;
-            }
+            ownedFrame?.Dispose();
         }
     }
 
@@ -1108,6 +1048,25 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         _visualCadenceTracker.Reset();
         _visualCenterCadenceTracker.Reset();
         Logger.Log($"UNIFIED_VIDEO_VISUAL_CADENCE_UNAVAILABLE reason={reason}");
+    }
+
+    private void RecordRecordingEnqueue(long sourceSequence, bool accepted, string? reason)
+    {
+        if (!accepted)
+        {
+            Interlocked.Increment(ref _recordingFramesRejected);
+            if (string.Equals(reason, "queue_rejected", StringComparison.Ordinal))
+            {
+                Interlocked.Increment(ref _recordingQueueRejectedFrames);
+            }
+        }
+
+        _frameLedger.RecordEvent(
+            sourceSequence,
+            FrameLedgerStage.RecordingEnqueued,
+            subsystem: "recording",
+            accepted: accepted,
+            reason: reason);
     }
 
     private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)
@@ -1263,49 +1222,375 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         return true;
     }
 
-    private void ThrowIfDisposed()
-        => ObjectDisposedException.ThrowIf(_disposed, this);
-
-    private void OnCaptureFatalError(object? sender, Exception ex)
+    private void RecordFlashbackEnqueue(long sourceSequence, bool accepted, string? reason)
     {
-        SignalFatalError(
-            ex,
-            $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
+        _frameLedger.RecordEvent(
+            sourceSequence,
+            FrameLedgerStage.FlashbackEnqueued,
+            subsystem: "flashback",
+            accepted: accepted,
+            reason: reason);
     }
 
-    private void OnMjpegPipelineFatalError(Exception ex)
+    private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)
     {
-        SignalFatalError(
-            ex,
-            $"UNIFIED_VIDEO_FATAL_MJPEG_ERROR type={ex.GetType().Name} msg={ex.Message}");
-    }
-
-    private void FirePixelFormatObserverOnce(string format)
-    {
-        if (Interlocked.CompareExchange(ref _pixelFormatObserverFired, 1, 0) != 0)
-        {
-            return;
-        }
-
-        Volatile.Read(ref _pixelFormatDetectedCallback)?.Invoke(format);
-    }
-
-    private void SignalFatalError(Exception ex, string logMessage)
-    {
-        Logger.Log(logMessage);
-
-        if (Interlocked.Exchange(ref _fatalErrorSignaled, 1) != 0)
+        var sink = Volatile.Read(ref _flashbackSink);
+        if (sink == null)
         {
             return;
         }
 
         try
         {
-            FatalErrorOccurred?.Invoke(this, ex);
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
+            if (frameData.Length < expectedSize)
+            {
+                RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "frame_size_mismatch");
+                RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "frame_size_mismatch");
+                return;
+            }
+
+            var accepted = sink.TryEnqueueRawVideoFrame(frameData, expectedSize);
+            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : "queue_rejected");
+            RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
         }
-        catch (Exception callbackEx)
+        catch (Exception ex)
         {
-            Logger.Log($"UNIFIED_VIDEO_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+            RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "exception");
+            RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
+            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
+    }
+
+    private void EnqueueFlashbackFrame(PooledVideoFrame frame)
+    {
+        var sink = Volatile.Read(ref _flashbackSink);
+        if (sink == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (sink is IRawVideoFrameLeaseEncoder leaseEncoder &&
+                frame.TryAddLease(out var lease))
+            {
+                try
+                {
+                    var accepted = leaseEncoder is IRawVideoFrameLeaseTryEncoder leaseTryEncoder
+                        ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
+                        : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
+                    lease = null;
+                    RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber, accepted ? null : "queue_rejected");
+                    RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");
+                }
+                finally
+                {
+                    lease?.Dispose();
+                }
+
+                return;
+            }
+
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
+            if (frame.Length < expectedSize)
+            {
+                RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "frame_size_mismatch");
+                RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "frame_size_mismatch");
+                return;
+            }
+
+            var rawAccepted = sink.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize);
+            RecordFlashbackRecordingAccounting(sink, rawAccepted, frame.SequenceNumber, rawAccepted ? null : "queue_rejected");
+            RecordFlashbackEnqueue(frame.SequenceNumber, rawAccepted, rawAccepted ? null : "queue_rejected");
+        }
+        catch (Exception ex)
+        {
+            RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "exception");
+            RecordFlashbackEnqueue(frame.SequenceNumber, accepted: false, reason: "exception");
+            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)
+    {
+        var sink = Volatile.Read(ref _flashbackSink);
+        if (sink == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
+            RecordFlashbackRecordingAccounting(sink, accepted, sourceSequence, accepted ? null : "queue_rejected");
+            RecordFlashbackEnqueue(sourceSequence, accepted, accepted ? null : "queue_rejected");
+        }
+        catch (Exception ex)
+        {
+            RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "exception");
+            RecordFlashbackEnqueue(sourceSequence, accepted: false, reason: "exception");
+            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_GPU_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void RecordFlashbackRecordingAccounting(
+        FlashbackEncoderSink sink,
+        bool accepted,
+        long sourceSequence,
+        string? rejectedReason)
+    {
+        if (!Volatile.Read(ref _flashbackRecordingAccountingActive) ||
+            !sink.IsRecordingActive)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _recordingFramesDelivered);
+        if (accepted)
+        {
+            TrackFlashbackRecordingAcceptedSequence(sourceSequence);
+            Interlocked.Increment(ref _videoFramesWrittenToSink);
+            return;
+        }
+
+        Interlocked.Increment(ref _recordingFramesRejected);
+        if (string.Equals(rejectedReason, "queue_rejected", StringComparison.Ordinal))
+        {
+            Interlocked.Increment(ref _recordingQueueRejectedFrames);
+        }
+    }
+
+    private void TrackFlashbackRecordingAcceptedSequence(long sourceSequence)
+    {
+        while (true)
+        {
+            var last = Interlocked.Read(ref _flashbackRecordingLastAcceptedSequence);
+            if (sourceSequence <= last)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _flashbackRecordingLastAcceptedSequence, sourceSequence, last) == last)
+            {
+                if (last >= 0 && sourceSequence > last + 1)
+                {
+                    Interlocked.Add(ref _flashbackRecordingSequenceGaps, sourceSequence - last - 1);
+                }
+
+                return;
+            }
+        }
+    }
+
+}
+
+// Ring buffer of recent per-frame routing decisions. It gives automation a
+// compact "flight recorder" for one source sequence across capture, preview,
+// Flashback, and recording without writing a log line for every frame forever.
+internal sealed class FrameLedger
+{
+    public const int DefaultCapacity = 4096;
+
+    private readonly object _sync = new();
+    private readonly EventEntry[] _entries;
+    private int _nextIndex;
+    private int _count;
+    private long _totalEventsRecorded;
+    private long _eventsDroppedByRetention;
+
+    public FrameLedger(int capacity = DefaultCapacity)
+    {
+        if (capacity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(capacity), "Frame ledger capacity must be positive.");
+        }
+
+        _entries = new EventEntry[capacity];
+    }
+
+    public int Capacity => _entries.Length;
+
+    public void Reset()
+    {
+        lock (_sync)
+        {
+            Array.Clear(_entries);
+            _nextIndex = 0;
+            _count = 0;
+            _totalEventsRecorded = 0;
+            _eventsDroppedByRetention = 0;
+        }
+    }
+
+    public void RecordCaptureArrived(FrameIdentity identity, string subsystem = "capture")
+    {
+        Record(
+            sourceSequence: identity.SourceSequence,
+            stage: FrameLedgerStage.CaptureArrived,
+            qpcTimestamp: identity.CaptureArrivalQpc,
+            subsystem: subsystem,
+            queueDepth: null,
+            byteDepth: identity.CompressedByteLength > 0 ? (long?)identity.CompressedByteLength : null,
+            accepted: true,
+            reason: null,
+            identity: identity);
+    }
+
+    public void RecordEvent(
+        long sourceSequence,
+        FrameLedgerStage stage,
+        long qpcTimestamp = 0,
+        string subsystem = "",
+        int? queueDepth = null,
+        long? byteDepth = null,
+        bool? accepted = null,
+        string? reason = null)
+    {
+        Record(
+            sourceSequence,
+            stage,
+            qpcTimestamp == 0 ? Stopwatch.GetTimestamp() : qpcTimestamp,
+            string.IsNullOrWhiteSpace(subsystem) ? stage.ToString() : subsystem,
+            queueDepth,
+            byteDepth,
+            accepted,
+            reason,
+            identity: null);
+    }
+
+    public FrameLedgerSummary GetSummary(int maxEvents = 64)
+    {
+        if (maxEvents < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maxEvents), "Frame ledger max event count cannot be negative.");
+        }
+
+        lock (_sync)
+        {
+            if (_count == 0 || maxEvents == 0)
+            {
+                return new FrameLedgerSummary(
+                    Capacity,
+                    _totalEventsRecorded,
+                    _eventsDroppedByRetention,
+                    RecentEventCount: 0,
+                    OldestSourceSequence: null,
+                    NewestSourceSequence: null,
+                    RecentEvents: Array.Empty<FrameLedgerEventSnapshot>());
+            }
+
+            var eventCount = Math.Min(_count, maxEvents);
+            var firstIndex = GetChronologicalIndex(_count - eventCount);
+            var events = new FrameLedgerEventSnapshot[eventCount];
+            long? oldest = null;
+            long? newest = null;
+            for (var i = 0; i < eventCount; i++)
+            {
+                var entry = _entries[(firstIndex + i) % Capacity];
+                events[i] = entry.ToSnapshot();
+                oldest ??= entry.SourceSequence;
+                newest = entry.SourceSequence;
+            }
+
+            return new FrameLedgerSummary(
+                Capacity,
+                _totalEventsRecorded,
+                _eventsDroppedByRetention,
+                eventCount,
+                oldest,
+                newest,
+                events);
+        }
+    }
+
+    private void Record(
+        long sourceSequence,
+        FrameLedgerStage stage,
+        long qpcTimestamp,
+        string subsystem,
+        int? queueDepth,
+        long? byteDepth,
+        bool? accepted,
+        string? reason,
+        FrameIdentity? identity)
+    {
+        lock (_sync)
+        {
+            _entries[_nextIndex] = new EventEntry(
+                sourceSequence,
+                stage,
+                qpcTimestamp,
+                subsystem,
+                queueDepth,
+                byteDepth,
+                accepted,
+                reason,
+                identity);
+
+            _nextIndex = (_nextIndex + 1) % Capacity;
+            _totalEventsRecorded++;
+            if (_count < Capacity)
+            {
+                _count++;
+            }
+            else
+            {
+                _eventsDroppedByRetention++;
+            }
+        }
+    }
+
+    private int GetChronologicalIndex(int offset)
+    {
+        var start = _count == Capacity ? _nextIndex : 0;
+        return (start + offset) % Capacity;
+    }
+
+    private readonly struct EventEntry
+    {
+        public EventEntry(
+            long sourceSequence,
+            FrameLedgerStage stage,
+            long qpcTimestamp,
+            string subsystem,
+            int? queueDepth,
+            long? byteDepth,
+            bool? accepted,
+            string? reason,
+            FrameIdentity? identity)
+        {
+            SourceSequence = sourceSequence;
+            Stage = stage;
+            QpcTimestamp = qpcTimestamp;
+            Subsystem = subsystem;
+            QueueDepth = queueDepth;
+            ByteDepth = byteDepth;
+            Accepted = accepted;
+            Reason = reason;
+            Identity = identity;
+        }
+
+        public long SourceSequence { get; }
+        public FrameLedgerStage Stage { get; }
+        public long QpcTimestamp { get; }
+        public string Subsystem { get; }
+        public int? QueueDepth { get; }
+        public long? ByteDepth { get; }
+        public bool? Accepted { get; }
+        public string? Reason { get; }
+        public FrameIdentity? Identity { get; }
+
+        public FrameLedgerEventSnapshot ToSnapshot()
+            => new(
+                SourceSequence,
+                Stage,
+                QpcTimestamp,
+                Subsystem,
+                QueueDepth,
+                ByteDepth,
+                Accepted,
+                Reason,
+                Identity);
     }
 }

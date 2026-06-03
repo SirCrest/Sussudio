@@ -1,15 +1,16 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Sussudio.Models;
 using FFmpeg.AutoGen;
+using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 
@@ -87,13 +88,13 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private long _lastVideoWriteTick;
     private readonly VideoQueueLatencyTracker _videoLatencyTracker;
     private bool _gpuEncodingEnabled;
+    private bool _cudaEncodingEnabled;
 
     public LibAvRecordingSink()
     {
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "LIBAV_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
     }
-    private bool _cudaEncodingEnabled;
 
     public event EventHandler<long>? FrameEncoded;
 
@@ -103,6 +104,228 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     /// instead of silently dropping all subsequent frames until Stop is called.
     /// </summary>
     public Action<Exception>? OnEncodingFailed { get; set; }
+
+    public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        lock (_sync)
+        {
+            if (_started)
+            {
+                throw new InvalidOperationException("LibAv recording sink has already started.");
+            }
+        }
+
+        try
+        {
+            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+
+            _microphoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName);
+            var options = CreateOptions(context);
+            _encoder.Initialize(options);
+            InitializeVideoSessionQueues();
+            _audioQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
+            if (_microphoneEnabled)
+            {
+                _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+                {
+                    SingleReader = true,
+                    SingleWriter = false,
+                    FullMode = BoundedChannelFullMode.Wait
+                });
+            }
+
+            _cts = new CancellationTokenSource();
+            _context = context;
+            _encodingFailure = null;
+            ResetVideoSessionState(context);
+            _audioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName);
+            Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
+            Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+            Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
+            Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
+            Interlocked.Exchange(ref _audioQueueDepth, 0);
+            Interlocked.Exchange(ref _microphoneQueueDepth, 0);
+            _encodingTask = Task.Factory.StartNew(
+                () => EncodingLoop(_cts.Token),
+                _cts.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+
+            lock (_sync)
+            {
+                _started = true;
+            }
+
+            Logger.Log(
+                $"LIBAV_SINK_START output='{context.FinalOutputPath}' codec='{options.CodecName}' " +
+                $"width={_width} height={_height} fps={context.EffectiveFrameRate:0.###} p010={context.HdrPipelineActive} audio={_audioEnabled} microphone={_microphoneEnabled}");
+            return Task.CompletedTask;
+        }
+        catch
+        {
+            /* Cleanup must not throw - tear down partially-initialized queues/state before re-throwing */
+            CompleteWriter(_videoQueue);
+            CompleteWriter(_audioQueue);
+            CompleteWriter(_microphoneQueue);
+            CompleteWriter(_gpuQueue);
+            CompleteWriter(_cudaQueue);
+            _videoQueue = null;
+            _audioQueue = null;
+            _microphoneQueue = null;
+            _gpuQueue = null;
+            _cudaQueue = null;
+            _gpuEncodingEnabled = false;
+            _cudaEncodingEnabled = false;
+            _cts?.Dispose();
+            _cts = null;
+            _encodingTask = null;
+            _context = null;
+            _width = 0;
+            _height = 0;
+            _audioEnabled = false;
+            _microphoneEnabled = false;
+            lock (_sync)
+            {
+                _started = false;
+            }
+
+            _encoder.Dispose();
+            throw;
+        }
+    }
+
+    private void InitializeVideoSessionQueues()
+    {
+        if (_encoder.UseCudaHardwareFrames)
+        {
+            _cudaQueue = Channel.CreateBounded<CudaFramePacket>(new BoundedChannelOptions(CudaQueueCapacity)
+            {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = true
+            });
+            _cudaEncodingEnabled = true;
+            Logger.Log("LIBAV_SINK_CUDA_QUEUE_INIT capacity=" + CudaQueueCapacity);
+        }
+        else if (_encoder.UseHardwareFrames)
+        {
+            _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
+            {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = true
+            });
+            _gpuEncodingEnabled = true;
+            Logger.Log("LIBAV_SINK_GPU_QUEUE_INIT capacity=" + GpuQueueCapacity);
+        }
+
+        _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(VideoQueueCapacity)
+        {
+            SingleReader = true,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
+        });
+    }
+
+    private void ResetVideoSessionState(RecordingContext context)
+    {
+        _width = checked((int)context.EffectiveWidth);
+        _height = checked((int)context.EffectiveHeight);
+        ResetVideoSessionMetrics();
+    }
+
+    private void ResetVideoSessionMetrics()
+    {
+        Interlocked.Exchange(ref _droppedVideoFrames, 0);
+        Interlocked.Exchange(ref _encodedVideoFrames, 0);
+        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
+        Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
+        Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
+        Interlocked.Exchange(ref _gpuFramesDropped, 0);
+        Interlocked.Exchange(ref _cudaFramesEnqueued, 0);
+        Interlocked.Exchange(ref _cudaFramesDropped, 0);
+        Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
+        Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
+        Interlocked.Exchange(ref _cudaQueueMaxDepth, 0);
+        Interlocked.Exchange(ref _videoQueueDepth, 0);
+        Interlocked.Exchange(ref _gpuQueueDepth, 0);
+        Interlocked.Exchange(ref _cudaQueueDepth, 0);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
+        Interlocked.Exchange(ref _lastVideoWriteTick, 0);
+        ResetVideoDiagnostics();
+    }
+
+    private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();
+
+    private static string MapCodecName(RecordingFormat format)
+        => MediaFormat.MapNvencCodecName(format);
+
+    private static (int? Numerator, int? Denominator) ResolveFrameRateParts(RecordingContext context)
+    {
+        if (string.IsNullOrWhiteSpace(context.FrameRateArg) || !context.FrameRateArg.Contains('/', StringComparison.Ordinal))
+        {
+            return (null, null);
+        }
+
+        var parts = context.FrameRateArg.Split('/', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 ||
+            !int.TryParse(parts[0], out var numerator) ||
+            !int.TryParse(parts[1], out var denominator) ||
+            numerator <= 0 ||
+            denominator <= 0)
+        {
+            return (null, null);
+        }
+
+        return (numerator, denominator);
+    }
+
+    private LibAvEncoderOptions CreateOptions(RecordingContext context)
+    {
+        var (frameRateNumerator, frameRateDenominator) = ResolveFrameRateParts(context);
+        return new LibAvEncoderOptions
+        {
+            OutputPath = context.VideoOutputPath,
+            CodecName = MapCodecName(context.Settings.Format),
+            Width = checked((int)context.EffectiveWidth),
+            Height = checked((int)context.EffectiveHeight),
+            FrameRate = context.EffectiveFrameRate,
+            FrameRateNumerator = frameRateNumerator,
+            FrameRateDenominator = frameRateDenominator,
+            BitRate = context.Settings.GetTargetBitrate(),
+            IsP010 = context.HdrPipelineActive,
+            NvencPreset = context.Settings.NvencPreset.ToString(),
+            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
+            HdrEnabled = context.HdrPipelineActive,
+            IsFullRangeInput = context.IsFullRangeInput,
+            HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
+            HdrMaxCll = context.Settings.HdrMaxCll,
+            HdrMaxFall = context.Settings.HdrMaxFall,
+            D3D11DevicePtr = context.D3D11DevicePtr,
+            D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
+            CudaHwDeviceCtxPtr = context.CudaHwDeviceCtxPtr,
+            CudaHwFramesCtxPtr = context.CudaHwFramesCtxPtr,
+            AudioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName),
+            AudioSampleRate = 48_000,
+            AudioChannels = 2,
+            AudioBitRate = 320_000,
+            MicrophoneEnabled = _microphoneEnabled,
+            MicrophoneSampleRate = 48_000,
+            MicrophoneChannels = 2,
+            MicrophoneBitRate = 320_000
+        };
+    }
 
     public long DroppedVideoFrames =>
         Interlocked.Read(ref _droppedVideoFrames) +
@@ -163,352 +386,111 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)
         => _encoder.TryGetCurrentAvSyncDrift(out driftMs, out correctionSamples);
 
-    public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)
+    private void EncodingLoop(CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        ArgumentNullException.ThrowIfNull(context);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        lock (_sync)
-        {
-            if (_started)
-            {
-                throw new InvalidOperationException("LibAv recording sink has already started.");
-            }
-        }
-
         try
         {
-            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+            var videoQueue = _videoQueue ?? throw new InvalidOperationException("Video queue is not initialized.");
+            var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
+            var microphoneQueue = _microphoneQueue;
+            var gpuQueue = _gpuQueue;
+            var cudaQueue = _cudaQueue;
 
-            _microphoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName);
-            var options = CreateOptions(context);
-            _encoder.Initialize(options);
-            if (_encoder.UseCudaHardwareFrames)
+            while (true)
             {
-                _cudaQueue = Channel.CreateBounded<CudaFramePacket>(new BoundedChannelOptions(CudaQueueCapacity)
+                var madeProgress = false;
+
+                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                if (_microphoneEnabled && microphoneQueue != null)
                 {
-                    FullMode = BoundedChannelFullMode.Wait,
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-                _cudaEncodingEnabled = true;
-                Logger.Log("LIBAV_SINK_CUDA_QUEUE_INIT capacity=" + CudaQueueCapacity);
-            }
-            else if (_encoder.UseHardwareFrames)
-            {
-                _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
+                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                }
+
+                if (cudaQueue != null)
                 {
-                    FullMode = BoundedChannelFullMode.Wait,
-                    SingleReader = true,
-                    SingleWriter = true
-                });
-                _gpuEncodingEnabled = true;
-                Logger.Log("LIBAV_SINK_GPU_QUEUE_INIT capacity=" + GpuQueueCapacity);
-            }
-
-            _videoQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(VideoQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-            _audioQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
-            if (_microphoneEnabled)
-            {
-                _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+                    madeProgress = DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit) || madeProgress;
+                }
+                if (gpuQueue != null)
                 {
-                    SingleReader = true,
-                    SingleWriter = false,
-                    FullMode = BoundedChannelFullMode.Wait
-                });
-            }
-            _cts = new CancellationTokenSource();
-            _context = context;
-            _encodingFailure = null;
-            _width = checked((int)context.EffectiveWidth);
-            _height = checked((int)context.EffectiveHeight);
-            _audioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName);
-            Interlocked.Exchange(ref _droppedVideoFrames, 0);
-            Interlocked.Exchange(ref _encodedVideoFrames, 0);
-            Interlocked.Exchange(ref _videoFramesEnqueued, 0);
-            Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
-            Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
-            Interlocked.Exchange(ref _gpuFramesDropped, 0);
-            Interlocked.Exchange(ref _cudaFramesEnqueued, 0);
-            Interlocked.Exchange(ref _cudaFramesDropped, 0);
-            Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
-            Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
-            Interlocked.Exchange(ref _cudaQueueMaxDepth, 0);
-            Interlocked.Exchange(ref _videoQueueDepth, 0);
-            Interlocked.Exchange(ref _audioQueueDepth, 0);
-            Interlocked.Exchange(ref _microphoneQueueDepth, 0);
-            Interlocked.Exchange(ref _gpuQueueDepth, 0);
-            Interlocked.Exchange(ref _cudaQueueDepth, 0);
-            Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
-            Interlocked.Exchange(ref _lastVideoWriteTick, 0);
-            ResetVideoDiagnostics();
-            _encodingTask = Task.Factory.StartNew(
-                () => EncodingLoop(_cts.Token),
-                _cts.Token,
-                TaskCreationOptions.LongRunning,
-                TaskScheduler.Default);
+                    madeProgress = DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit) || madeProgress;
+                }
 
-            lock (_sync)
+                madeProgress = DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit) || madeProgress;
+
+                // Audio again catches samples that arrived while video encoding
+                // was consuming its bounded batch.
+                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                if (_microphoneEnabled && microphoneQueue != null)
+                {
+                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                }
+
+                if (videoQueue.Reader.Completion.IsCompleted &&
+                    audioQueue.Reader.Completion.IsCompleted &&
+                    (microphoneQueue == null || microphoneQueue.Reader.Completion.IsCompleted) &&
+                    (gpuQueue == null || gpuQueue.Reader.Completion.IsCompleted) &&
+                    (cudaQueue == null || cudaQueue.Reader.Completion.IsCompleted) &&
+                    Volatile.Read(ref _videoQueueDepth) == 0 &&
+                    Volatile.Read(ref _audioQueueDepth) == 0 &&
+                    Volatile.Read(ref _microphoneQueueDepth) == 0 &&
+                    Volatile.Read(ref _gpuQueueDepth) == 0 &&
+                    Volatile.Read(ref _cudaQueueDepth) == 0)
+                {
+                    break;
+                }
+
+                if (madeProgress)
+                {
+                    continue;
+                }
+
+                _workAvailable.Wait(cancellationToken);
+            }
+
+            _encoder.FlushAndClose();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            ReturnRemainingVideoBuffers(_videoQueue);
+            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
+            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
+            ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
+            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
+        }
+        catch (Exception ex)
+        {
+            _encodingFailure = ex;
+            lock (_sync) { _started = false; }
+            Logger.Log($"LIBAV_SINK_ENCODING_LOOP_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            ReturnRemainingVideoBuffers(_videoQueue);
+            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
+            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
+            ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
+            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
+            try
             {
-                _started = true;
+                _encoder.Dispose();
             }
-
-            Logger.Log(
-                $"LIBAV_SINK_START output='{context.FinalOutputPath}' codec='{options.CodecName}' " +
-                $"width={_width} height={_height} fps={context.EffectiveFrameRate:0.###} p010={context.HdrPipelineActive} audio={_audioEnabled} microphone={_microphoneEnabled}");
-            return Task.CompletedTask;
-        }
-        catch
-        {
-            /* Cleanup must not throw — tear down partially-initialized queues/state before re-throwing */
-            CompleteWriter(_videoQueue);
-            CompleteWriter(_audioQueue);
-            CompleteWriter(_microphoneQueue);
-            CompleteWriter(_gpuQueue);
-            CompleteWriter(_cudaQueue);
-            _videoQueue = null;
-            _audioQueue = null;
-            _microphoneQueue = null;
-            _gpuQueue = null;
-            _cudaQueue = null;
-            _gpuEncodingEnabled = false;
-            _cudaEncodingEnabled = false;
-            _cts?.Dispose();
-            _cts = null;
-            _encodingTask = null;
-            _context = null;
-            _width = 0;
-            _height = 0;
-            _audioEnabled = false;
-            _microphoneEnabled = false;
-            lock (_sync)
+            catch
             {
-                _started = false;
+                // Preserve the original failure.
             }
 
-            _encoder.Dispose();
-            throw;
+            try
+            {
+                OnEncodingFailed?.Invoke(ex);
+            }
+            catch
+            {
+                // Best effort: callback must not mask the original failure.
+            }
         }
     }
 
-    public void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
-        => TryEnqueueGpuVideoFrame(d3d11Texture2D, subresourceIndex);
-
-    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+    private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
     {
-        var queue = _gpuQueue;
-        if (_disposed || !_started || queue == null || d3d11Texture2D == IntPtr.Zero)
-        {
-            return false;
-        }
-
-        Marshal.AddRef(d3d11Texture2D);
-        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex);
-
-        var enqueueResult = TryEnqueueGpuPacket(queue, packet);
-        if (enqueueResult != VideoEnqueueResult.Overloaded)
-        {
-            return enqueueResult == VideoEnqueueResult.Accepted;
-        }
-
-        var dropped = Interlocked.Increment(ref _gpuFramesDropped);
-        if (dropped == 1 || dropped % 30 == 0)
-        {
-            Logger.Log($"LIBAV_SINK_GPU_OVERLOAD count={dropped} queue_depth={Volatile.Read(ref _gpuQueueDepth)}");
-        }
-
-        return false;
-    }
-
-    public unsafe void EnqueueCudaVideoFrame(AVFrame* cudaFrame)
-    {
-        var queue = _cudaQueue;
-        if (_disposed || !_started || queue == null || cudaFrame == null)
-        {
-            return;
-        }
-
-        var cloned = ffmpeg.av_frame_clone(cudaFrame);
-        if (cloned == null)
-        {
-            FailEncoding(new InvalidOperationException("LibAv CUDA frame clone failed."));
-            Interlocked.Increment(ref _cudaFramesDropped);
-            return;
-        }
-
-        var packet = new CudaFramePacket((IntPtr)cloned);
-        var enqueueResult = TryEnqueueCudaPacket(queue, packet);
-        if (enqueueResult != VideoEnqueueResult.Overloaded)
-        {
-            return;
-        }
-
-        var dropped = Interlocked.Increment(ref _cudaFramesDropped);
-        if (dropped == 1 || dropped % 30 == 0)
-        {
-            Logger.Log($"LIBAV_SINK_CUDA_OVERLOAD count={dropped}");
-        }
-    }
-
-    public void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
-        => TryEnqueueRawVideoFrame(data, expectedSize);
-
-    public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
-    {
-        var queue = _videoQueue;
-        if (_disposed || !_started || queue == null || expectedSize <= 0 || data.IsEmpty)
-        {
-            return false;
-        }
-
-        if (data.Length < expectedSize)
-        {
-            Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SHORT actual={data.Length} expected={expectedSize}");
-            return false;
-        }
-
-        var buffer = GetBuffer(expectedSize);
-        data[..expectedSize].CopyTo(buffer.AsSpan(0, expectedSize));
-        var enqueueTick = Environment.TickCount64;
-        var packet = VideoFramePacket.Frame(buffer, expectedSize, enqueueTick);
-        Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
-
-        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
-        if (enqueueResult != VideoEnqueueResult.Overloaded)
-        {
-            return enqueueResult == VideoEnqueueResult.Accepted;
-        }
-
-        var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
-        if (dropped == 1 || dropped % 30 == 0)
-        {
-            Logger.Log(
-                $"LIBAV_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
-        }
-
-        return false;
-    }
-
-    void IRawVideoFrameLeaseEncoder.EnqueueRawVideoFrame(PooledVideoFrameLease frame)
-        => ((IRawVideoFrameLeaseTryEncoder)this).TryEnqueueRawVideoFrame(frame);
-
-    bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-
-        var queue = _videoQueue;
-        if (_disposed || !_started || queue == null)
-        {
-            frame.Dispose();
-            return false;
-        }
-
-        var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
-        if (frame.Length < expectedSize)
-        {
-            Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SHORT actual={frame.Length} expected={expectedSize}");
-            frame.Dispose();
-            return false;
-        }
-
-        if (frame.Width != _width || frame.Height != _height)
-        {
-            Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SIZE_MISMATCH expected={_width}x{_height} actual={frame.Width}x{frame.Height}");
-            frame.Dispose();
-            return false;
-        }
-
-        var enqueueTick = Environment.TickCount64;
-        var packet = VideoFramePacket.Frame(frame, enqueueTick);
-        Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
-
-        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
-        if (enqueueResult != VideoEnqueueResult.Overloaded)
-        {
-            return enqueueResult == VideoEnqueueResult.Accepted;
-        }
-
-        var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
-        if (dropped == 1 || dropped % 30 == 0)
-        {
-            Logger.Log(
-                $"LIBAV_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
-        }
-
-        return false;
-    }
-
-    public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
-    {
-        // Hot WASAPI callback path: copy/enqueue only, never await or block.
-        cancellationToken.ThrowIfCancellationRequested();
-        var queue = _audioQueue;
-        if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty)
-        {
-            return Task.CompletedTask;
-        }
-
-        var buffer = GetBuffer(samples.Length);
-        samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
-        var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueAudioPacket(queue, packet))
-        {
-            return Task.CompletedTask;
-        }
-
-        var dropped = Interlocked.Increment(ref _audioDropsQueueSaturated);
-        if (dropped == 1 || dropped % 120 == 0)
-        {
-            Logger.Log(
-                $"LIBAV_SINK_AUDIO_DROP saturated={dropped} evicted={Interlocked.Read(ref _audioDropsBacklogEviction)}");
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
-    {
-        // Hot WASAPI callback path: copy/enqueue only, never await or block.
-        cancellationToken.ThrowIfCancellationRequested();
-        var queue = _microphoneQueue;
-        if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
-        {
-            return Task.CompletedTask;
-        }
-
-        var buffer = GetBuffer(samples.Length);
-        samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
-        var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueMicrophonePacket(queue, packet))
-        {
-            return Task.CompletedTask;
-        }
-
-        var dropped = Interlocked.Increment(ref _microphoneDropsQueueSaturated);
-        if (dropped == 1 || dropped % 120 == 0)
-        {
-            Logger.Log(
-                $"LIBAV_SINK_MIC_DROP saturated={dropped} evicted={Interlocked.Read(ref _microphoneDropsBacklogEviction)}");
-        }
-
-        return Task.CompletedTask;
+        channel?.Writer.TryComplete();
+        SignalWork("complete_writer");
     }
 
     // Public path used by normal recording-stop (UI Stop button, automation StopRecording).
@@ -554,15 +536,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Cancel the encoding loop so it stops processing new frames and
-                // exits via OperationCanceledException — this must happen before
+                // exits via OperationCanceledException - this must happen before
                 // FlushAndClose so the two don't race on _encoder state.
                 _cts?.Cancel();
 
                 // Give the encoding task a brief window to unblock from its
-                // cancellation-token wait and exit cleanly.  DisposeTimeoutMs (1 s)
+                // cancellation-token wait and exit cleanly. DisposeTimeoutMs (1 s)
                 // is sufficient when the encoding loop is parked at its token-aware
                 // wait site (_workAvailable.Wait), but the loop does NOT poll
-                // cancellation inside the inner drain loops — if it's wedged in a
+                // cancellation inside the inner drain loops. If it's wedged in a
                 // native libav call (avcodec_send_frame, av_interleaved_write_frame),
                 // the grace expires while the loop is still touching _encoder /
                 // _videoCodecCtx / _formatCtx. Flushing concurrently in that case
@@ -573,7 +555,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 var graceResult = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
                 if (ReferenceEquals(graceResult, _encodingTask))
                 {
-                    // Encoder loop has exited — safe to flush. Wrap in try/catch
+                    // Encoder loop has exited - safe to flush. Wrap in try/catch
                     // since FlushAndClose can itself throw if the encoder is in a
                     // broken state; in that case the file is still truncated but
                     // the error has been surfaced to the caller via Failure below.
@@ -591,7 +573,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     Logger.Log("LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
                 }
 
-                return FinalizeResult.Failure(outputPath, "Stopped (libav encode drain timed out; emergency flush attempted)");
+                const string timeoutStatus = "Stopped (libav encode drain timed out; recovery artifacts preserved)";
+                var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(
+                    context,
+                    outputPath,
+                    timeoutStatus);
+                return FinalizeResult.Failure(outputPath, timeoutStatus, preservedArtifacts);
             }
 
             try
@@ -647,7 +634,42 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return FinalizeResult.Success(outputPath, "Stopped");
     }
 
-    // REVIEWED 2026-04-07: IDisposable fallback only — all callers use DisposeAsync.
+    private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)
+    {
+        outputBytes = 0;
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            failureMessage = "output path is empty";
+            return false;
+        }
+
+        try
+        {
+            if (!File.Exists(outputPath))
+            {
+                failureMessage = "output file is missing";
+                return false;
+            }
+
+            outputBytes = new FileInfo(outputPath).Length;
+            if (outputBytes <= 0)
+            {
+                failureMessage = "output file is empty";
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            failureMessage = $"output file length unavailable: {ex.Message}";
+            Logger.Log($"LIBAV_SINK_STOP_OUTPUT_VALIDATE_WARN output='{outputPath}' type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    // REVIEWED 2026-04-07: IDisposable fallback only - all callers use DisposeAsync.
     // CaptureService cleanup awaits StopAsync/DisposeAsync on background thread.
     public void Dispose()
     {
@@ -767,280 +789,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         catch (Exception ex)
         {
             Logger.Log($"LIBAV_SINK_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private static string MapCodecName(RecordingFormat format)
-        => MediaFormat.MapNvencCodecName(format);
-
-    private static (int? Numerator, int? Denominator) ResolveFrameRateParts(RecordingContext context)
-    {
-        if (string.IsNullOrWhiteSpace(context.FrameRateArg) || !context.FrameRateArg.Contains('/', StringComparison.Ordinal))
-        {
-            return (null, null);
-        }
-
-        var parts = context.FrameRateArg.Split('/', 2, StringSplitOptions.TrimEntries);
-        if (parts.Length != 2 ||
-            !int.TryParse(parts[0], out var numerator) ||
-            !int.TryParse(parts[1], out var denominator) ||
-            numerator <= 0 ||
-            denominator <= 0)
-        {
-            return (null, null);
-        }
-
-        return (numerator, denominator);
-    }
-
-    private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)
-    {
-        outputBytes = 0;
-        if (string.IsNullOrWhiteSpace(outputPath))
-        {
-            failureMessage = "output path is empty";
-            return false;
-        }
-
-        try
-        {
-            if (!File.Exists(outputPath))
-            {
-                failureMessage = "output file is missing";
-                return false;
-            }
-
-            outputBytes = new FileInfo(outputPath).Length;
-            if (outputBytes <= 0)
-            {
-                failureMessage = "output file is empty";
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            failureMessage = $"output file length unavailable: {ex.Message}";
-            Logger.Log($"LIBAV_SINK_STOP_OUTPUT_VALIDATE_WARN output='{outputPath}' type={ex.GetType().Name} msg={ex.Message}");
-            return false;
-        }
-
-        failureMessage = string.Empty;
-        return true;
-    }
-
-    private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
-    {
-        channel?.Writer.TryComplete();
-        SignalWork("complete_writer");
-    }
-
-    private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            ReturnVideoPacket(packet);
-        }
-
-        lock (_videoQueueSync)
-        {
-            _videoLatencyTracker.ClearEnqueueTicksUnderLock();
-        }
-
-        Interlocked.Exchange(ref _videoQueueDepth, 0);
-    }
-
-    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            ReturnBuffer(packet.Buffer);
-        }
-    }
-
-    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)
-    {
-        ReturnRemainingBuffers(queue);
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            Marshal.Release(packet.Texture);
-        }
-
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)
-    {
-        if (queue == null)
-        {
-            return;
-        }
-
-        while (queue.Reader.TryRead(out var packet))
-        {
-            var frame = (AVFrame*)packet.Frame;
-            if (frame != null)
-            {
-                ffmpeg.av_frame_free(&frame);
-            }
-        }
-
-        Interlocked.Exchange(ref queueDepth, 0);
-    }
-
-    private LibAvEncoderOptions CreateOptions(RecordingContext context)
-    {
-        var (frameRateNumerator, frameRateDenominator) = ResolveFrameRateParts(context);
-        return new LibAvEncoderOptions
-        {
-            OutputPath = context.VideoOutputPath,
-            CodecName = MapCodecName(context.Settings.Format),
-            Width = checked((int)context.EffectiveWidth),
-            Height = checked((int)context.EffectiveHeight),
-            FrameRate = context.EffectiveFrameRate,
-            FrameRateNumerator = frameRateNumerator,
-            FrameRateDenominator = frameRateDenominator,
-            BitRate = context.Settings.GetTargetBitrate(),
-            IsP010 = context.HdrPipelineActive,
-            NvencPreset = context.Settings.NvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
-            HdrEnabled = context.HdrPipelineActive,
-            IsFullRangeInput = context.IsFullRangeInput,
-            HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
-            HdrMaxCll = context.Settings.HdrMaxCll,
-            HdrMaxFall = context.Settings.HdrMaxFall,
-            D3D11DevicePtr = context.D3D11DevicePtr,
-            D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
-            CudaHwDeviceCtxPtr = context.CudaHwDeviceCtxPtr,
-            CudaHwFramesCtxPtr = context.CudaHwFramesCtxPtr,
-            AudioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName),
-            AudioSampleRate = 48_000,
-            AudioChannels = 2,
-            AudioBitRate = 320_000,
-            MicrophoneEnabled = _microphoneEnabled,
-            MicrophoneSampleRate = 48_000,
-            MicrophoneChannels = 2,
-            MicrophoneBitRate = 320_000
-        };
-    }
-
-    private void EncodingLoop(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var videoQueue = _videoQueue ?? throw new InvalidOperationException("Video queue is not initialized.");
-            var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
-            var microphoneQueue = _microphoneQueue;
-            var gpuQueue = _gpuQueue;
-            var cudaQueue = _cudaQueue;
-
-            while (true)
-            {
-                var madeProgress = false;
-
-                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
-                if (_microphoneEnabled && microphoneQueue != null)
-                {
-                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
-                }
-
-                if (cudaQueue != null)
-                {
-                    madeProgress = DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit) || madeProgress;
-                }
-                if (gpuQueue != null)
-                {
-                    madeProgress = DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit) || madeProgress;
-                }
-
-                madeProgress = DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit) || madeProgress;
-
-                // Audio again catches samples that arrived while video encoding
-                // was consuming its bounded batch.
-                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
-                if (_microphoneEnabled && microphoneQueue != null)
-                {
-                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
-                }
-
-                if (videoQueue.Reader.Completion.IsCompleted &&
-                    audioQueue.Reader.Completion.IsCompleted &&
-                    (microphoneQueue == null || microphoneQueue.Reader.Completion.IsCompleted) &&
-                    (gpuQueue == null || gpuQueue.Reader.Completion.IsCompleted) &&
-                    (cudaQueue == null || cudaQueue.Reader.Completion.IsCompleted) &&
-                    Volatile.Read(ref _videoQueueDepth) == 0 &&
-                    Volatile.Read(ref _audioQueueDepth) == 0 &&
-                    Volatile.Read(ref _microphoneQueueDepth) == 0 &&
-                    Volatile.Read(ref _gpuQueueDepth) == 0 &&
-                    Volatile.Read(ref _cudaQueueDepth) == 0)
-                {
-                    break;
-                }
-
-                if (madeProgress)
-                {
-                    continue;
-                }
-
-                _workAvailable.Wait(cancellationToken);
-            }
-
-            _encoder.FlushAndClose();
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            ReturnRemainingVideoBuffers(_videoQueue);
-            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
-            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-            ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
-            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
-        }
-        catch (Exception ex)
-        {
-            _encodingFailure = ex;
-            lock (_sync) { _started = false; }
-            Logger.Log($"LIBAV_SINK_ENCODING_LOOP_FAIL type={ex.GetType().Name} msg={ex.Message}");
-            ReturnRemainingVideoBuffers(_videoQueue);
-            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
-            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-            ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
-            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
-            try
-            {
-                _encoder.Dispose();
-            }
-            catch
-            {
-                // Preserve the original failure.
-            }
-
-            try
-            {
-                OnEncodingFailed?.Invoke(ex);
-            }
-            catch
-            {
-                // Best effort — callback must not mask the original failure.
-            }
         }
     }
 
@@ -1210,19 +958,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         return drainedAny;
     }
-
-    private void SignalWork(string operation)
-    {
-        try { _workAvailable.Release(); }
-        catch (SemaphoreFullException) { /* Best-effort: semaphore already signaled — work loop will pick it up */ }
-        catch (ObjectDisposedException)
-        {
-            Logger.Log($"LIBAV_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
-        }
-    }
-
-    private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();
-
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
         Exception? overloadFailure = null;
@@ -1378,6 +1113,253 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return false;
     }
 
+    private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            ReturnVideoPacket(packet);
+        }
+
+        lock (_videoQueueSync)
+        {
+            _videoLatencyTracker.ClearEnqueueTicksUnderLock();
+        }
+
+        Interlocked.Exchange(ref _videoQueueDepth, 0);
+    }
+
+    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            Marshal.Release(packet.Texture);
+        }
+
+        Interlocked.Exchange(ref queueDepth, 0);
+    }
+
+    private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            var frame = (AVFrame*)packet.Frame;
+            if (frame != null)
+            {
+                ffmpeg.av_frame_free(&frame);
+            }
+        }
+
+        Interlocked.Exchange(ref queueDepth, 0);
+    }
+
+    private static byte[] GetBuffer(int size)
+    {
+        return ArrayPool<byte>.Shared.Rent(size);
+    }
+
+    private static void ReturnBuffer(byte[] buffer)
+    {
+        ArrayPool<byte>.Shared.Return(buffer);
+    }
+
+    private static void ReturnVideoPacket(VideoFramePacket packet)
+    {
+        if (packet.Buffer != null)
+        {
+            ReturnBuffer(packet.Buffer);
+        }
+
+        packet.Lease?.Dispose();
+    }
+
+    private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber)
+    {
+        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick) => new(buffer, null, length, enqueueTick, null);
+        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber);
+    }
+
+    private enum VideoEnqueueResult
+    {
+        Accepted,
+        Rejected,
+        Overloaded
+    }
+
+    private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
+    private readonly record struct CudaFramePacket(IntPtr Frame);
+
+    public void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+        => TryEnqueueGpuVideoFrame(d3d11Texture2D, subresourceIndex);
+
+    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+    {
+        var queue = _gpuQueue;
+        if (_disposed || !_started || queue == null || d3d11Texture2D == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        Marshal.AddRef(d3d11Texture2D);
+        var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex);
+
+        var enqueueResult = TryEnqueueGpuPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
+        {
+            return enqueueResult == VideoEnqueueResult.Accepted;
+        }
+
+        var dropped = Interlocked.Increment(ref _gpuFramesDropped);
+        if (dropped == 1 || dropped % 30 == 0)
+        {
+            Logger.Log($"LIBAV_SINK_GPU_OVERLOAD count={dropped} queue_depth={Volatile.Read(ref _gpuQueueDepth)}");
+        }
+
+        return false;
+    }
+
+    public unsafe void EnqueueCudaVideoFrame(AVFrame* cudaFrame)
+    {
+        var queue = _cudaQueue;
+        if (_disposed || !_started || queue == null || cudaFrame == null)
+        {
+            return;
+        }
+
+        var cloned = ffmpeg.av_frame_clone(cudaFrame);
+        if (cloned == null)
+        {
+            FailEncoding(new InvalidOperationException("LibAv CUDA frame clone failed."));
+            Interlocked.Increment(ref _cudaFramesDropped);
+            return;
+        }
+
+        var packet = new CudaFramePacket((IntPtr)cloned);
+        var enqueueResult = TryEnqueueCudaPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
+        {
+            return;
+        }
+
+        var dropped = Interlocked.Increment(ref _cudaFramesDropped);
+        if (dropped == 1 || dropped % 30 == 0)
+        {
+            Logger.Log($"LIBAV_SINK_CUDA_OVERLOAD count={dropped}");
+        }
+    }
+
+    public void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
+        => TryEnqueueRawVideoFrame(data, expectedSize);
+
+    public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
+    {
+        var queue = _videoQueue;
+        if (_disposed || !_started || queue == null || expectedSize <= 0 || data.IsEmpty)
+        {
+            return false;
+        }
+
+        if (data.Length < expectedSize)
+        {
+            Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SHORT actual={data.Length} expected={expectedSize}");
+            return false;
+        }
+
+        var buffer = GetBuffer(expectedSize);
+        data[..expectedSize].CopyTo(buffer.AsSpan(0, expectedSize));
+        var enqueueTick = Environment.TickCount64;
+        var packet = VideoFramePacket.Frame(buffer, expectedSize, enqueueTick);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
+
+        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
+        {
+            return enqueueResult == VideoEnqueueResult.Accepted;
+        }
+
+        var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
+        if (dropped == 1 || dropped % 30 == 0)
+        {
+            Logger.Log(
+                $"LIBAV_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
+        }
+
+        return false;
+    }
+
+    void IRawVideoFrameLeaseEncoder.EnqueueRawVideoFrame(PooledVideoFrameLease frame)
+        => ((IRawVideoFrameLeaseTryEncoder)this).TryEnqueueRawVideoFrame(frame);
+
+    bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        var queue = _videoQueue;
+        if (_disposed || !_started || queue == null)
+        {
+            frame.Dispose();
+            return false;
+        }
+
+        var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
+        if (frame.Length < expectedSize)
+        {
+            Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SHORT actual={frame.Length} expected={expectedSize}");
+            frame.Dispose();
+            return false;
+        }
+
+        if (frame.Width != _width || frame.Height != _height)
+        {
+            Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SIZE_MISMATCH expected={_width}x{_height} actual={frame.Width}x{frame.Height}");
+            frame.Dispose();
+            return false;
+        }
+
+        var enqueueTick = Environment.TickCount64;
+        var packet = VideoFramePacket.Frame(frame, enqueueTick);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
+
+        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
+        {
+            return enqueueResult == VideoEnqueueResult.Accepted;
+        }
+
+        var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
+        if (dropped == 1 || dropped % 30 == 0)
+        {
+            Logger.Log(
+                $"LIBAV_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
+        }
+
+        return false;
+    }
+
+    private void SignalWork(string operation)
+    {
+        try { _workAvailable.Release(); }
+        catch (SemaphoreFullException) { /* Best-effort: semaphore already signaled — work loop will pick it up */ }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"LIBAV_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
+        }
+    }
+
     private void FailEncoding(Exception ex)
     {
         var shouldNotify = false;
@@ -1411,6 +1393,99 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             Logger.Log($"LIBAV_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
         }
+    }
+
+    private static void DecrementQueueDepth(ref int target, string queueName)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref target);
+            if (current <= 0)
+            {
+                Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
+    {
+        // Hot WASAPI callback path: copy/enqueue only, never await or block.
+        cancellationToken.ThrowIfCancellationRequested();
+        var queue = _audioQueue;
+        if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty)
+        {
+            return Task.CompletedTask;
+        }
+
+        var buffer = GetBuffer(samples.Length);
+        samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
+        var packet = new AudioSamplePacket(buffer, samples.Length);
+        if (TryEnqueueAudioPacket(queue, packet))
+        {
+            return Task.CompletedTask;
+        }
+
+        var dropped = Interlocked.Increment(ref _audioDropsQueueSaturated);
+        if (dropped == 1 || dropped % 120 == 0)
+        {
+            Logger.Log(
+                $"LIBAV_SINK_AUDIO_DROP saturated={dropped} evicted={Interlocked.Read(ref _audioDropsBacklogEviction)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
+    {
+        // Hot WASAPI callback path: copy/enqueue only, never await or block.
+        cancellationToken.ThrowIfCancellationRequested();
+        var queue = _microphoneQueue;
+        if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
+        {
+            return Task.CompletedTask;
+        }
+
+        var buffer = GetBuffer(samples.Length);
+        samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
+        var packet = new AudioSamplePacket(buffer, samples.Length);
+        if (TryEnqueueMicrophonePacket(queue, packet))
+        {
+            return Task.CompletedTask;
+        }
+
+        var dropped = Interlocked.Increment(ref _microphoneDropsQueueSaturated);
+        if (dropped == 1 || dropped % 120 == 0)
+        {
+            Logger.Log(
+                $"LIBAV_SINK_MIC_DROP saturated={dropped} evicted={Interlocked.Read(ref _microphoneDropsBacklogEviction)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var packet))
+        {
+            ReturnBuffer(packet.Buffer);
+        }
+    }
+
+    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)
+    {
+        ReturnRemainingBuffers(queue);
+        Interlocked.Exchange(ref queueDepth, 0);
     }
 
     private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
@@ -1504,56 +1579,300 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return false;
     }
 
-    private static void DecrementQueueDepth(ref int target, string queueName)
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref target);
-            if (current <= 0)
-            {
-                Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
-            {
-                return;
-            }
-        }
-    }
-
-    private static byte[] GetBuffer(int size)
-    {
-        return ArrayPool<byte>.Shared.Rent(size);
-    }
-
-    private static void ReturnBuffer(byte[] buffer)
-    {
-        ArrayPool<byte>.Shared.Return(buffer);
-    }
-
-    private static void ReturnVideoPacket(VideoFramePacket packet)
-    {
-        if (packet.Buffer != null)
-        {
-            ReturnBuffer(packet.Buffer);
-        }
-
-        packet.Lease?.Dispose();
-    }
-
-    private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber)
-    {
-        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick) => new(buffer, null, length, enqueueTick, null);
-        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber);
-    }
-    private enum VideoEnqueueResult
-    {
-        Accepted,
-        Rejected,
-        Overloaded
-    }
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
-    private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
-    private readonly record struct CudaFramePacket(IntPtr Frame);
+}
+
+// Shared queue dwell-time/backpressure tracker for recording-style video sinks.
+// It lives with queue admission/cleanup because callers must coordinate its
+// enqueue ticks with queue-depth changes under the sink-owned queue lock.
+internal sealed class VideoQueueLatencyTracker
+{
+    private readonly string _logTagPrefix;
+    private readonly object _enqueueTickLock;
+    private readonly Queue<long> _enqueueTicks = new();
+
+    private readonly object _latencySync = new();
+    private readonly double[] _latencySamples;
+    private int _latencySampleIndex;
+    private int _latencySampleCount;
+
+    private readonly object _sequenceSync = new();
+    private long _lastSequenceNumber = -1;
+    private long _sequenceGaps;
+
+    private long _lastLatencyMs;
+    private long _backpressureWaitMs;
+    private long _backpressureEvents;
+    private long _lastBackpressureWaitMs;
+    private long _maxBackpressureWaitMs;
+
+    public VideoQueueLatencyTracker(string logTagPrefix, object enqueueTickLock, int latencyWindowSize)
+    {
+        _logTagPrefix = logTagPrefix;
+        _enqueueTickLock = enqueueTickLock;
+        _latencySamples = new double[Math.Max(1, latencyWindowSize)];
+    }
+
+    public long LastLatencyMs => Interlocked.Read(ref _lastLatencyMs);
+    public long BackpressureWaitMs => Interlocked.Read(ref _backpressureWaitMs);
+    public long BackpressureEvents => Interlocked.Read(ref _backpressureEvents);
+    public long LastBackpressureWaitMs => Interlocked.Read(ref _lastBackpressureWaitMs);
+    public long MaxBackpressureWaitMs => Interlocked.Read(ref _maxBackpressureWaitMs);
+    public long LastSequenceNumber => Interlocked.Read(ref _lastSequenceNumber);
+    public long SequenceGaps => Interlocked.Read(ref _sequenceGaps);
+
+    // Caller must hold the supplied enqueueTickLock.
+    public void TrackEnqueueUnderLock(long enqueueTick)
+    {
+        _enqueueTicks.Enqueue(enqueueTick);
+    }
+
+    // Caller must hold the supplied enqueueTickLock.
+    public void ClearEnqueueTicksUnderLock()
+    {
+        _enqueueTicks.Clear();
+    }
+
+    // Caller must hold the supplied enqueueTickLock.
+    public void TrackDequeueUnderLock(long expectedEnqueueTick)
+    {
+        if (_enqueueTicks.Count == 0)
+        {
+            return;
+        }
+
+        var queuedTick = _enqueueTicks.Dequeue();
+        if (queuedTick != expectedEnqueueTick)
+        {
+            Logger.Log($"{_logTagPrefix}_QUEUE_TICK_MISMATCH expected={expectedEnqueueTick} actual={queuedTick}");
+        }
+    }
+
+    public long GetOldestFrameAgeMs(int currentDepth)
+    {
+        lock (_enqueueTickLock)
+        {
+            while (_enqueueTicks.Count > currentDepth)
+            {
+                _enqueueTicks.Dequeue();
+            }
+
+            return _enqueueTicks.Count == 0
+                ? 0
+                : Math.Max(0, Environment.TickCount64 - _enqueueTicks.Peek());
+        }
+    }
+
+    public void RecordBackpressure(long startTick, long endTick)
+    {
+        if (startTick <= 0)
+        {
+            return;
+        }
+
+        var elapsedMs = Math.Max(0, endTick - startTick);
+        if (elapsedMs <= 0)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _backpressureEvents);
+        Interlocked.Add(ref _backpressureWaitMs, elapsedMs);
+        Interlocked.Exchange(ref _lastBackpressureWaitMs, elapsedMs);
+        AtomicMax.Update(ref _maxBackpressureWaitMs, elapsedMs);
+    }
+
+    public void RecordPacketDequeued(long enqueueTick, long? sequenceNumber)
+    {
+        var latencyMs = Math.Max(0, Environment.TickCount64 - enqueueTick);
+        Interlocked.Exchange(ref _lastLatencyMs, latencyMs);
+        lock (_latencySync)
+        {
+            _latencySamples[_latencySampleIndex] = latencyMs;
+            _latencySampleIndex = (_latencySampleIndex + 1) % _latencySamples.Length;
+            if (_latencySampleCount < _latencySamples.Length)
+            {
+                _latencySampleCount++;
+            }
+        }
+
+        if (sequenceNumber.HasValue)
+        {
+            lock (_sequenceSync)
+            {
+                var last = Interlocked.Read(ref _lastSequenceNumber);
+                var current = sequenceNumber.Value;
+                if (last >= 0 && current > last + 1)
+                {
+                    Interlocked.Add(ref _sequenceGaps, current - last - 1);
+                }
+
+                if (current > last)
+                {
+                    Interlocked.Exchange(ref _lastSequenceNumber, current);
+                }
+            }
+        }
+    }
+
+    public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) GetMetrics()
+    {
+        double[] copy;
+        int count;
+        lock (_latencySync)
+        {
+            count = _latencySampleCount;
+            if (count <= 0)
+            {
+                return (0, 0, 0, 0, 0);
+            }
+
+            copy = new double[count];
+            Array.Copy(_latencySamples, copy, count);
+        }
+
+        Array.Sort(copy);
+        var total = 0.0;
+        for (var i = 0; i < copy.Length; i++)
+        {
+            total += copy[i];
+        }
+
+        var p95Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.95) - 1, 0, copy.Length - 1);
+        var p99Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.99) - 1, 0, copy.Length - 1);
+        return (copy.Length, total / copy.Length, copy[p95Index], copy[p99Index], copy[^1]);
+    }
+
+    public void ResetAll()
+    {
+        Interlocked.Exchange(ref _lastLatencyMs, 0);
+        Interlocked.Exchange(ref _backpressureWaitMs, 0);
+        Interlocked.Exchange(ref _backpressureEvents, 0);
+        Interlocked.Exchange(ref _lastBackpressureWaitMs, 0);
+        Interlocked.Exchange(ref _maxBackpressureWaitMs, 0);
+        Interlocked.Exchange(ref _sequenceGaps, 0);
+        Interlocked.Exchange(ref _lastSequenceNumber, -1);
+
+        lock (_enqueueTickLock)
+        {
+            _enqueueTicks.Clear();
+        }
+
+        lock (_latencySync)
+        {
+            Array.Clear(_latencySamples, 0, _latencySamples.Length);
+            _latencySampleCount = 0;
+            _latencySampleIndex = 0;
+        }
+    }
+}
+
+// Runs the repo HDR validation script after recording finalization. This wraps
+// the external PowerShell gate so recording code receives a compact pass/fail
+// detail instead of parsing script output itself.
+internal static class HdrValidationRunner
+{
+    private const int ValidationTimeoutMs = 30_000;
+
+    public static async Task<(bool Success, string Detail)> RunAsync(
+        RecordingContext? context,
+        string? outputPath,
+        CancellationToken cancellationToken = default)
+    {
+        if (context == null)
+        {
+            return (false, "recording-context-missing");
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPath) || !File.Exists(outputPath))
+        {
+            return (false, $"output-file-missing(path={outputPath ?? "null"})");
+        }
+
+        var validatorPath = ResolveValidatorScriptPath();
+        if (validatorPath == null)
+        {
+            return (false, "validator-script-missing(tools/validate_hdr.ps1)");
+        }
+
+        var codec = context.Settings.Format switch
+        {
+            RecordingFormat.HevcMp4 => "hevc",
+            RecordingFormat.Av1Mp4 => "av1",
+            _ => "either"
+        };
+
+        var arguments =
+            "-NoProfile -ExecutionPolicy Bypass " +
+            $"-File \"{validatorPath}\" " +
+            $"-File \"{outputPath}\" " +
+            $"-Codec {codec} ";
+
+        if (context.HdrPipelineActive)
+        {
+            arguments += "-ExpectHdr ";
+        }
+
+        var masteringMetadataRequested =
+            !string.IsNullOrWhiteSpace(context.Settings.HdrMasterDisplayMetadata) ||
+            (context.Settings.HdrMaxCll > 0 && context.Settings.HdrMaxFall > 0);
+        if (masteringMetadataRequested)
+        {
+            arguments += "-RequireHdr10StaticMetadata ";
+        }
+
+        if (context.EffectiveFrameRate > 0)
+        {
+            arguments += $"-ExpectedFps {context.EffectiveFrameRate.ToString("0.###", CultureInfo.InvariantCulture)} ";
+        }
+
+        var result = await new ProcessSupervisor().RunAsync(new ProcessSpec
+        {
+            FileName = "powershell",
+            Arguments = arguments,
+            TimeoutMs = ValidationTimeoutMs
+        }, cancellationToken).ConfigureAwait(false);
+
+        if (!result.Started)
+        {
+            return (false, "validator-process-start-failed");
+        }
+
+        if (result.TimedOut)
+        {
+            return (false, "validator-timeout");
+        }
+
+        var stdOut = result.StdOut;
+        var stdErr = result.StdErr;
+
+        if (!string.IsNullOrWhiteSpace(stdOut))
+        {
+            Logger.Log($"HDR validator stdout: {stdOut.Trim()}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(stdErr))
+        {
+            Logger.Log($"HDR validator stderr: {stdErr.Trim()}");
+        }
+
+        if (result.ExitCode != 0)
+        {
+            var detail = !string.IsNullOrWhiteSpace(stdErr) ? stdErr.Trim() : stdOut.Trim();
+            if (string.IsNullOrWhiteSpace(detail))
+            {
+                detail = $"validator-exit-code-{result.ExitCode ?? -1}";
+            }
+
+            return (false, detail);
+        }
+
+        return (true, "validator-pass");
+    }
+
+    private static string? ResolveValidatorScriptPath()
+    {
+        var candidate = Path.Combine(RuntimePaths.GetRepoRoot(), "tools", "validate_hdr.ps1");
+        return File.Exists(candidate) ? candidate : null;
+    }
 }

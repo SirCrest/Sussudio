@@ -9,6 +9,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);SUSSUDIO_HDR_CAPTURE_LAB</DefineConstants>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Sussudio.FfmpegEncodeLab\Program.cs" Link="Program.cs" />
+  </ItemGroup>
 </Project>

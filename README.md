@@ -73,21 +73,29 @@ The app targets:
 
 ## Build
 
-From the repository root:
+Normal validation build from the repository root:
 
 ```powershell
-dotnet build Sussudio\Sussudio.csproj -p:Platform=x64 -p:StageLatestBuild=true
+dotnet build Sussudio.slnx -p:Platform=x64 --no-restore
 ```
 
-`StageLatestBuild=true` copies the debug build output to `latest-build/`, which
-is ignored by Git and useful for local manual runs.
+Manual latest-build staging:
+
+```powershell
+dotnet build Sussudio\Sussudio.csproj -p:Platform=x64 -p:StageLatestBuild=true --no-restore
+```
+
+`StageLatestBuild=true` copies the debug build output to `latest-build/`,
+which is ignored by Git and useful for local manual runs.
 
 ## Test
 
-Main regression harness:
+Normal code/test validation:
 
 ```powershell
-dotnet run --project tests\Sussudio.Tests\ -- "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
+dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
+dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
+git diff --check
 ```
 
 For deeper runtime validation, especially capture/recording/Flashback work, use
@@ -112,10 +120,11 @@ The automation smoke test requires the app to be running.
 | Path | Purpose |
 |------|---------|
 | `Sussudio/` | WinUI app, capture pipeline, preview renderer, recording, audio, Flashback, automation server |
-| `tests/Sussudio.Tests/` | Console-based regression harness |
+| `Sussudio.Automation.Contracts/` | Shared automation command IDs, protocol constants, manifest/catalog, and pipe security policy |
+| `tests/Sussudio.Tests/` | Legacy console regression harness plus xUnit and source-shape architecture contract tests |
 | `tests/Sussudio.HdrLab/` | HDR ingest/validation lab |
 | `tests/Sussudio.FfmpegEncodeLab/` | FFmpeg/libav encode lab |
-| `tools/Common/` | Shared automation protocol, command catalog, formatting, diagnostic-session helpers |
+| `tools/Common/` | Shared automation client, formatting, and diagnostic-session helpers; protocol/catalog/security contracts belong in `Sussudio.Automation.Contracts/` |
 | `tools/ssctl/` | Preferred command-line automation client |
 | `tools/McpServer/` | MCP bridge over the app automation pipe |
 | `tools/AutomationClient/` | Lower-level named-pipe automation client |
@@ -134,12 +143,19 @@ name is:
 SussudioAutomation
 ```
 
-The shared command catalog is in `tools/Common/AutomationCommandCatalog.cs`.
-When adding automation commands, keep these in sync:
+The shared command IDs, protocol constants, manifest/catalog, and pipe security
+policy live in `Sussudio.Automation.Contracts/`.
+`tools/Common/` remains helper-only for shared clients, formatters, diagnostic
+sessions, and probes; do not put protocol/catalog/security contract sources
+there.
+When adding automation commands, treat `Sussudio.Automation.Contracts/` as the
+source of truth for command IDs, protocol constants, command metadata, payload
+shape, readiness gating, timeouts, path policy, CLI help, and MCP descriptions.
+Then keep these consumers in sync:
 
-- `Sussudio/Models/AutomationCommandKind.cs`
-- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs`
-- `tools/Common/AutomationCommandCatalog.cs`
+- `Sussudio/Services/Automation/AutomationCommandDispatcher*.cs`
+- `Sussudio.Automation.Contracts/AutomationCommandCatalog.cs`
+- `Sussudio.Automation.Contracts/AutomationPipeProtocol.cs`
 - `tools/ssctl/`
 - `tools/McpServer/`
 - `tools/AutomationClient/`

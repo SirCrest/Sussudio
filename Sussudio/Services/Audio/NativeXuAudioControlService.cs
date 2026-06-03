@@ -5,9 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
-using Microsoft.Win32.SafeHandles;
 using Sussudio.Services.Capture;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Audio;
 
@@ -17,7 +15,6 @@ namespace Sussudio.Services.Audio;
 // state outside the HDMI/Analog selection.
 internal sealed class NativeXuAudioControlService
 {
-    private static readonly Guid XuGuid = new("961073C7-49F7-44F2-AB42-E940405940C2");
     // Control byte indexes: stable bytes that differ between HDMI and Analog modes.
     // Captured from PID 0x009B firmware via Elgato Studio toggling.
     // Dynamic bytes (counters/timers) are excluded by the diagnostic snapshot below.
@@ -37,27 +34,26 @@ internal sealed class NativeXuAudioControlService
         92, 93, 94, 95, 96, 104, 111, 112, 114, 128, 144, 145, 146
     };
     private static readonly int[] GainByteIndexes = Array.Empty<int>();
-    // PID 0x009B HDMI reference — first ~87 bytes are zero, data starts at the end.
+    // PID 0x009B HDMI reference - first ~87 bytes are zero, data starts at the end.
     private static readonly byte[] HdmiReference = ParseHex(
         "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003400000059A80029A8000029A800A8007900F043301ACE1040C600C00000060606001B301A001D301A601C301A2CA80029A800A800A8000A00010000000000");
-    // PID 0x009B Analog reference — data throughout.
+    // PID 0x009B Analog reference - data throughout.
     private static readonly byte[] AnalogReference = ParseHex(
         "058545008004009A080000000E9F002F8000006F0899905E2D0029C398A80079F09F433080CE109FE4A2433080CE10103900001A00060606801B301A2CA80029A8D6905EA8000029A800A8007900F043301ACE10B8F043301ACE101039000030000606061A1B301A1A2DA80029A80029A8000029A800A8007900F043301ACE10B8E400C00000060606001B301A001D301A601C301A2D");
     private static readonly IReadOnlyList<string> SupportedModes = new[] { DeviceAudioMode.Hdmi, DeviceAudioMode.Analog };
-    // Gain profiles not yet captured for PID 0x009B firmware — gain control disabled until fresh data.
+    // Gain profiles not yet captured for PID 0x009B firmware - gain control disabled until fresh data.
     private static readonly GainProfile[] GainProfiles =
     {
         new(0, "0%", AnalogReference),
         new(50, "50%", AnalogReference),
         new(100, "100%", AnalogReference)
     };
-
+    private static readonly Guid XuGuid = NativeXuDeviceSupport.ExtensionUnitGuid;
     private const int SelectorId = 3;
     private const int SelectorBufferSize = 2048;
     private const int RawHeaderBytes = 0;
     private const int TransportGateAttempts = 6;
     private const int TransportGateRetryDelayMs = 250;
-    private const string PreferredInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
     private static bool SupportsAnalogGainReadback => GainByteIndexes.Length > 0;
 
     public IReadOnlyList<string> GetSupportedModes() => SupportedModes;
@@ -93,7 +89,7 @@ internal sealed class NativeXuAudioControlService
     {
         ushort? vendorId = null;
         ushort? productId = null;
-        if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var parsedVendorId, out var parsedProductId))
+        if (NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var parsedVendorId, out var parsedProductId))
         {
             vendorId = parsedVendorId;
             productId = parsedProductId;
@@ -198,6 +194,289 @@ internal sealed class NativeXuAudioControlService
         return updated;
     }
 
+    private async Task<bool> UpdatePayloadAsync(
+        CaptureDevice? device,
+        Func<byte[], bool> mutator,
+        CancellationToken cancellationToken)
+    {
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        {
+            Logger.Log("NATIVEXU_AUDIO_PAYLOAD device-unsupported");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
+        {
+            Logger.Log("NATIVEXU_AUDIO_PAYLOAD missing-selected-interface");
+            return false;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                Logger.Log("NATIVEXU_AUDIO_PAYLOAD gate-timeout");
+                return false;
+            }
+
+            var candidateCount = 0;
+            foreach (var candidate in EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath))
+            {
+                candidateCount++;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryReadRawPayload(candidate, out var rawPayload))
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} read-failed path={candidate.InterfacePath}");
+                    continue;
+                }
+
+                var normalizedPayload = NormalizePayload(rawPayload);
+                if (normalizedPayload.Length == 0)
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} normalize-empty rawLen={rawPayload.Length}");
+                    continue;
+                }
+
+                var mutatedPayload = normalizedPayload.ToArray();
+                if (!mutator(mutatedPayload))
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} mutator-failed");
+                    continue;
+                }
+
+                if (mutatedPayload.SequenceEqual(normalizedPayload))
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} already-correct");
+                    return true;
+                }
+
+                var rawMutatedPayload = RehydrateRawPayload(rawPayload, mutatedPayload);
+                if (!TryWriteRawPayload(candidate, rawMutatedPayload))
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} write-failed");
+                    continue;
+                }
+
+                // Give firmware time to commit the write before verifying
+                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+
+                if (!TryReadRawPayload(candidate, out var verifyRawPayload))
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verify-read-failed");
+                    continue;
+                }
+
+                var verifyNormalizedPayload = NormalizePayload(verifyRawPayload);
+                if (verifyNormalizedPayload.SequenceEqual(mutatedPayload))
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verified-ok");
+                    return true;
+                }
+
+                // The selector 3 payload contains dynamic bytes (counters, status) that
+                // change between reads. Only verify the specific bytes we mutated
+                // (InputByteIndexes or GainByteIndexes) - ignore the rest.
+                var controlBytesMatch = true;
+                var checkedCount = 0;
+                var mismatchCount = 0;
+                foreach (var index in InputByteIndexes.Concat(GainByteIndexes))
+                {
+                    if (index >= mutatedPayload.Length || index >= verifyNormalizedPayload.Length)
+                    {
+                        continue;
+                    }
+
+                    checkedCount++;
+                    if (mutatedPayload[index] != verifyNormalizedPayload[index])
+                    {
+                        mismatchCount++;
+                        controlBytesMatch = false;
+                    }
+                }
+
+                if (controlBytesMatch)
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verified-control-bytes checked={checkedCount} ok");
+                    return true;
+                }
+
+                Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verify-mismatch control={mismatchCount}/{checkedCount}");
+            }
+
+            Logger.Log($"NATIVEXU_AUDIO_PAYLOAD no-candidate-succeeded count={candidateCount}");
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                NativeXuDeviceSupport.ReleaseTransportGate();
+            }
+        }
+    }
+
+    private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(
+        CaptureDevice? device,
+        CancellationToken cancellationToken)
+    {
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
+        {
+            Logger.Log("NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
+            return null;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                return null;
+            }
+
+            foreach (var candidate in EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryReadRawPayload(candidate, out var rawPayload))
+                {
+                    continue;
+                }
+
+                var normalizedPayload = NormalizePayload(rawPayload);
+                if (normalizedPayload.Length == 0)
+                {
+                    continue;
+                }
+
+                return new RawPayloadSnapshot(candidate.InterfacePath, candidate.NodeId, rawPayload, normalizedPayload);
+            }
+
+            return null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                NativeXuDeviceSupport.ReleaseTransportGate();
+            }
+        }
+    }
+
+    private static IEnumerable<RawControlCandidate> EnumerateCandidates(
+        ushort vendorId,
+        ushort productId,
+        string? selectedInterfacePath)
+    {
+        if (string.IsNullOrWhiteSpace(selectedInterfacePath))
+        {
+            yield break;
+        }
+
+        var orderedInterfaces = NativeXuDeviceSupport.EnumerateSelectedInterfacePath(selectedInterfacePath);
+
+        foreach (var ksInterface in orderedInterfaces)
+        {
+            using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+            if (handle is null)
+            {
+                continue;
+            }
+
+            if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+            {
+                continue;
+            }
+
+            var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+            foreach (var node in nodeList.Where(node => node.IsDevSpecific))
+            {
+                yield return new RawControlCandidate(ksInterface.Path, node.NodeId);
+            }
+        }
+    }
+
+    private static bool TryReadRawPayload(RawControlCandidate candidate, out byte[] payload)
+    {
+        payload = Array.Empty<byte>();
+        using var handle = KsExtensionUnitNative.TryOpen(candidate.InterfacePath, out _);
+        if (handle is null)
+        {
+            return false;
+        }
+
+        return KsExtensionUnitNative.TryXuGetDirect(
+                   handle,
+                   candidate.NodeId,
+                   XuGuid,
+                   SelectorId,
+                   SelectorBufferSize,
+                   out payload,
+                   out var bytesReturned,
+                   out _)
+               && bytesReturned > RawHeaderBytes;
+    }
+
+    private static bool TryWriteRawPayload(RawControlCandidate candidate, byte[] payload)
+    {
+        using var handle = KsExtensionUnitNative.TryOpen(candidate.InterfacePath, out _);
+        if (handle is null)
+        {
+            return false;
+        }
+
+        return KsExtensionUnitNative.TryXuSetViaOutput(handle, candidate.NodeId, XuGuid, SelectorId, payload, out _);
+    }
+
+    private static byte[] NormalizePayload(byte[] rawPayload)
+    {
+        if (rawPayload.Length <= RawHeaderBytes)
+        {
+            return Array.Empty<byte>();
+        }
+
+        return rawPayload.AsSpan(RawHeaderBytes).ToArray();
+    }
+
+    private static byte[] RehydrateRawPayload(byte[] rawPayload, byte[] normalizedPayload)
+    {
+        var updated = rawPayload.ToArray();
+        normalizedPayload.CopyTo(updated.AsSpan(RawHeaderBytes));
+        return updated;
+    }
+
+    private static async Task<bool> TryAcquireTransportGateAsync(CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < TransportGateAttempts; attempt++)
+        {
+            if (await NativeXuDeviceSupport.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false))
+            {
+                return true;
+            }
+
+            if (attempt + 1 < TransportGateAttempts)
+            {
+                await Task.Delay(TransportGateRetryDelayMs, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        return false;
+    }
+
     private static bool TryGetTargetInputReference(string? mode, out byte[] reference)
     {
         if (string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
@@ -298,286 +577,6 @@ internal sealed class NativeXuAudioControlService
 
     private static int ByteAt(byte[] payload, int index)
         => index >= 0 && index < payload.Length ? payload[index] : -1;
-
-    private async Task<bool> UpdatePayloadAsync(
-        CaptureDevice? device,
-        Func<byte[], bool> mutator,
-        CancellationToken cancellationToken)
-    {
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var vendorId, out var productId))
-        {
-            Logger.Log("NATIVEXU_AUDIO_PAYLOAD device-unsupported");
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
-        {
-            Logger.Log("NATIVEXU_AUDIO_PAYLOAD missing-selected-interface");
-            return false;
-        }
-
-        var gateAcquired = false;
-        try
-        {
-            gateAcquired = await TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
-            if (!gateAcquired)
-            {
-                Logger.Log("NATIVEXU_AUDIO_PAYLOAD gate-timeout");
-                return false;
-            }
-
-            var candidateCount = 0;
-            foreach (var candidate in EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath))
-            {
-                candidateCount++;
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryReadRawPayload(candidate, out var rawPayload))
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} read-failed path={candidate.InterfacePath}");
-                    continue;
-                }
-
-                var normalizedPayload = NormalizePayload(rawPayload);
-                if (normalizedPayload.Length == 0)
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} normalize-empty rawLen={rawPayload.Length}");
-                    continue;
-                }
-
-                var mutatedPayload = normalizedPayload.ToArray();
-                if (!mutator(mutatedPayload))
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} mutator-failed");
-                    continue;
-                }
-
-                if (mutatedPayload.SequenceEqual(normalizedPayload))
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} already-correct");
-                    return true;
-                }
-
-                var rawMutatedPayload = RehydrateRawPayload(rawPayload, mutatedPayload);
-                if (!TryWriteRawPayload(candidate, rawMutatedPayload))
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} write-failed");
-                    continue;
-                }
-
-                // Give firmware time to commit the write before verifying
-                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-
-                if (!TryReadRawPayload(candidate, out var verifyRawPayload))
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verify-read-failed");
-                    continue;
-                }
-
-                var verifyNormalizedPayload = NormalizePayload(verifyRawPayload);
-                if (verifyNormalizedPayload.SequenceEqual(mutatedPayload))
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verified-ok");
-                    return true;
-                }
-
-                // The selector 3 payload contains dynamic bytes (counters, status) that
-                // change between reads. Only verify the specific bytes we mutated
-                // (InputByteIndexes or GainByteIndexes) — ignore the rest.
-                var controlBytesMatch = true;
-                var checkedCount = 0;
-                var mismatchCount = 0;
-                foreach (var index in InputByteIndexes.Concat(GainByteIndexes))
-                {
-                    if (index >= mutatedPayload.Length || index >= verifyNormalizedPayload.Length)
-                        continue;
-                    checkedCount++;
-                    if (mutatedPayload[index] != verifyNormalizedPayload[index])
-                    {
-                        mismatchCount++;
-                        controlBytesMatch = false;
-                    }
-                }
-
-                if (controlBytesMatch)
-                {
-                    Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verified-control-bytes checked={checkedCount} ok");
-                    return true;
-                }
-
-                Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verify-mismatch control={mismatchCount}/{checkedCount}");
-            }
-
-            Logger.Log($"NATIVEXU_AUDIO_PAYLOAD no-candidate-succeeded count={candidateCount}");
-            return false;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        finally
-        {
-            if (gateAcquired)
-            {
-                NativeXuAtCommandProvider.ReleaseTransportGate();
-            }
-        }
-    }
-
-    private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(
-        CaptureDevice? device,
-        CancellationToken cancellationToken)
-    {
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var vendorId, out var productId))
-        {
-            return null;
-        }
-
-        if (string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
-        {
-            Logger.Log("NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
-            return null;
-        }
-
-        var gateAcquired = false;
-        try
-        {
-            gateAcquired = await TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false);
-            if (!gateAcquired)
-            {
-                return null;
-            }
-
-            foreach (var candidate in EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                if (!TryReadRawPayload(candidate, out var rawPayload))
-                {
-                    continue;
-                }
-
-                var normalizedPayload = NormalizePayload(rawPayload);
-                if (normalizedPayload.Length == 0)
-                {
-                    continue;
-                }
-
-                return new RawPayloadSnapshot(candidate.InterfacePath, candidate.NodeId, rawPayload, normalizedPayload);
-            }
-
-            return null;
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        finally
-        {
-            if (gateAcquired)
-            {
-                NativeXuAtCommandProvider.ReleaseTransportGate();
-            }
-        }
-    }
-
-    private static IEnumerable<RawControlCandidate> EnumerateCandidates(
-        ushort vendorId,
-        ushort productId,
-        string? selectedInterfacePath)
-    {
-        if (string.IsNullOrWhiteSpace(selectedInterfacePath))
-        {
-            yield break;
-        }
-
-        var orderedInterfaces = new[] { new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty) };
-
-        foreach (var ksInterface in orderedInterfaces)
-        {
-            using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
-            if (handle is null)
-            {
-                continue;
-            }
-
-            if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
-            {
-                continue;
-            }
-
-            var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
-            foreach (var node in nodeList.Where(node => node.IsDevSpecific))
-            {
-                yield return new RawControlCandidate(ksInterface.Path, node.NodeId);
-            }
-        }
-    }
-
-    private static bool TryReadRawPayload(RawControlCandidate candidate, out byte[] payload)
-    {
-        payload = Array.Empty<byte>();
-        using var handle = KsExtensionUnitNative.TryOpen(candidate.InterfacePath, out _);
-        if (handle is null)
-        {
-            return false;
-        }
-
-        return KsExtensionUnitNative.TryXuGetDirect(
-                   handle,
-                   candidate.NodeId,
-                   XuGuid,
-                   SelectorId,
-                   SelectorBufferSize,
-                   out payload,
-                   out var bytesReturned,
-                   out _)
-               && bytesReturned > RawHeaderBytes;
-    }
-
-    private static bool TryWriteRawPayload(RawControlCandidate candidate, byte[] payload)
-    {
-        using var handle = KsExtensionUnitNative.TryOpen(candidate.InterfacePath, out _);
-        if (handle is null)
-        {
-            return false;
-        }
-
-        return KsExtensionUnitNative.TryXuSetViaOutput(handle, candidate.NodeId, XuGuid, SelectorId, payload, out _);
-    }
-
-    private static byte[] NormalizePayload(byte[] rawPayload)
-    {
-        if (rawPayload.Length <= RawHeaderBytes)
-        {
-            return Array.Empty<byte>();
-        }
-
-        return rawPayload.AsSpan(RawHeaderBytes).ToArray();
-    }
-
-    private static byte[] RehydrateRawPayload(byte[] rawPayload, byte[] normalizedPayload)
-    {
-        var updated = rawPayload.ToArray();
-        normalizedPayload.CopyTo(updated.AsSpan(RawHeaderBytes));
-        return updated;
-    }
-
-    private static async Task<bool> TryAcquireTransportGateAsync(CancellationToken cancellationToken)
-    {
-        for (var attempt = 0; attempt < TransportGateAttempts; attempt++)
-        {
-            if (await NativeXuAtCommandProvider.TryAcquireTransportGateAsync(cancellationToken).ConfigureAwait(false))
-            {
-                return true;
-            }
-
-            if (attempt + 1 < TransportGateAttempts)
-            {
-                await Task.Delay(TransportGateRetryDelayMs, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        return false;
-    }
 
     private static byte[] ParseHex(string hex)
     {

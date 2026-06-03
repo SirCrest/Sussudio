@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <!--
-      Dual-stack test runner. The legacy custom Program.cs Main runs ~400
-      tests via reflection ('dotnet run' with the Sussudio.dll path); xUnit
+      Dual-stack test runner. The legacy custom Program Main in HarnessCore.cs runs the
+      remaining HarnessCheckCatalog checks via reflection ('dotnet run' with the Sussudio.dll path); xUnit
       cases land via 'dotnet test' once VSTest discovers the Fact/Theory
       members. Migration is incremental, see tests/Sussudio.Tests/MIGRATION.md.
     -->
@@ -21,6 +21,6 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\tools\Common\AutomationPipeSecurityPolicy.cs" Link="Common\AutomationPipeSecurityPolicy.cs" />
+    <ProjectReference Include="..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
   </ItemGroup>
 </Project>

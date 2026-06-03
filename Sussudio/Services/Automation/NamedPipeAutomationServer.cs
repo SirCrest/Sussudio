@@ -2,20 +2,17 @@ using System;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Security.AccessControl;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 using Sussudio.Models;
-using Sussudio.Tools;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
+using Sussudio.Tools;
 
 namespace Sussudio.Services.Automation;
 
@@ -36,17 +33,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     private Task? _serverTask;
     private bool _disposed;
     private bool _explicitSecurityFailed;
-
-    private const uint PipeAccessDuplex = 0x00000003;
-    private const uint FileFlagOverlapped = 0x40000000;
-    private const uint PipeTypeByte = 0x00000000;
-    private const uint PipeReadModeByte = 0x00000000;
-    private const uint PipeWait = 0x00000000;
-    private const uint PipeUnlimitedInstances = 255;
-
-    private readonly record struct CommandExecutionResult(
-        AutomationCommandResponse Response,
-        bool DispatchContinues);
 
     public NamedPipeAutomationServer(
         IAutomationCommandDispatcher commandDispatcher,
@@ -88,9 +74,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             minValue: 1000,
             maxValue: 300000);
     }
-
-    public string PipeName => _pipeName;
-    internal bool AuthTokenRequired => _authTokenRequired;
 
     public bool Start()
     {
@@ -153,11 +136,11 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (TimeoutException)
         {
-            // Server loop didn't stop within 5s — proceed with cleanup.
+            // Server loop did not stop within 5s; proceed with cleanup.
         }
         catch (OperationCanceledException)
         {
-            /* Expected during shutdown — server loop cancelled via disposal */
+            /* Expected during shutdown - server loop cancelled via disposal */
         }
 
         _cts?.Dispose();
@@ -201,7 +184,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (OperationCanceledException)
             {
-                /* Expected during shutdown — exit the accept loop */
+                /* Expected during shutdown - exit the accept loop */
                 break;
             }
             catch (AutomationPipeSecurityException ex)
@@ -227,7 +210,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            /* Expected during shutdown — connection cancelled while handling client */
+            /* Expected during shutdown - connection cancelled while handling client */
         }
         catch (IOException ioEx)
         {
@@ -254,169 +237,210 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
     private async Task HandleConnectionAsync(NamedPipeServerStream server, CancellationToken cancellationToken)
     {
-        AutomationCommandResponse response;
-        var requestTimeout = new CancellationTokenSource(_requestTimeoutMs);
-        var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, cancellationToken);
-        var disposeRequestCancellation = true;
+        var session = new ConnectionSession(this, server, cancellationToken);
+        await session.RunAsync().ConfigureAwait(false);
+    }
 
-        using var reader = new StreamReader(server, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 4096, leaveOpen: true);
-        using var writer = new StreamWriter(server, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 4096, leaveOpen: true)
-        {
-            AutoFlush = true
-        };
+    private static AutomationCommandResponse CreateErrorResponse(string message, string errorCode) => new()
+    {
+        Success = false,
+        CorrelationId = Guid.NewGuid().ToString("N"),
+        Status = AutomationResponseStatus.Error,
+        CommandLifecycle = AutomationCommandLifecycle.Failed,
+        Message = message,
+        ErrorCode = errorCode
+    };
 
+    private AutomationCommandResponse CreateRequestTimeoutResponse()
+        => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", "request-timeout");
+
+    private static void TraceFallback(string line)
+    {
         try
         {
-            var requestLine = await reader.ReadLineAsync().WaitAsync(requestCancellation.Token).ConfigureAwait(false);
-            var request = string.IsNullOrWhiteSpace(requestLine)
-                ? null
-                : JsonSerializer.Deserialize<AutomationCommandRequest>(requestLine, _jsonOptions);
-
-            if (request == null)
-            {
-                response = CreateErrorResponse("Request payload was empty.", "invalid-request");
-            }
-            else
-            {
-                uint clientPid = 0;
-                try
-                {
-                    var handle = server.SafePipeHandle.DangerousGetHandle();
-                    if (handle != IntPtr.Zero)
-                    {
-                        GetNamedPipeClientProcessId(handle, out clientPid);
-                    }
-                }
-                catch
-                {
-                    // PID lookup is best-effort.
-                }
-                Logger.Log(
-                    $"AUTOMATION_PIPE_RECV command={request.Command} correlationId={request.CorrelationId} clientPid={(clientPid == 0 ? "?" : clientPid.ToString())}");
-
-                var execution = await ExecuteCommandWithTimeoutAsync(
-                    request,
-                    requestTimeout,
-                    requestCancellation,
-                    cancellationToken).ConfigureAwait(false);
-                response = execution.Response;
-                disposeRequestCancellation = !execution.DispatchContinues;
-            }
-        }
-        catch (JsonException ex)
-        {
-            response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
-        }
-        catch (OperationCanceledException)
-        {
-            var timedOut = requestTimeout.IsCancellationRequested;
-            response = CreateErrorResponse(
-                timedOut ? $"Request timed out after {_requestTimeoutMs} ms." : "Request canceled.",
-                timedOut ? "request-timeout" : "canceled");
+            var path = RuntimePaths.GetRepoLogFile("Sussudio_AutomationPipe.log");
+            File.AppendAllText(path, line + Environment.NewLine);
         }
         catch (Exception ex)
         {
-            response = CreateErrorResponse($"Request execution failed: {ex.Message}", "execution-failed");
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
         }
-        finally
+    }
+
+    public string PipeName => _pipeName;
+    internal bool AuthTokenRequired => _authTokenRequired;
+
+    private sealed class ConnectionSession
+    {
+        private readonly NamedPipeAutomationServer _owner;
+        private readonly NamedPipeServerStream _server;
+        private readonly CancellationToken _serverCancellation;
+
+        public ConnectionSession(
+            NamedPipeAutomationServer owner,
+            NamedPipeServerStream server,
+            CancellationToken serverCancellation)
         {
-            if (disposeRequestCancellation)
+            _owner = owner;
+            _server = server;
+            _serverCancellation = serverCancellation;
+        }
+
+        public async Task RunAsync()
+        {
+            AutomationCommandResponse response;
+            var requestTimeout = new CancellationTokenSource(_owner._requestTimeoutMs);
+            var requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(requestTimeout.Token, _serverCancellation);
+
+            using var reader = new StreamReader(_server, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 4096, leaveOpen: true);
+            using var writer = new StreamWriter(_server, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 4096, leaveOpen: true)
+            {
+                AutoFlush = true
+            };
+
+            try
+            {
+                var requestLine = await reader.ReadLineAsync().WaitAsync(requestCancellation.Token).ConfigureAwait(false);
+                var request = string.IsNullOrWhiteSpace(requestLine)
+                    ? null
+                    : JsonSerializer.Deserialize<AutomationCommandRequest>(requestLine, _owner._jsonOptions);
+
+                if (request == null)
+                {
+                    response = CreateErrorResponse("Request payload was empty.", "invalid-request");
+                }
+                else
+                {
+                    LogReceivedRequest(request);
+
+                    response = await ExecuteCommandWithTimeoutAsync(
+                            request,
+                            requestTimeout,
+                            requestCancellation)
+                        .ConfigureAwait(false);
+                }
+            }
+            catch (JsonException ex)
+            {
+                response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
+            }
+            catch (OperationCanceledException)
+            {
+                var timedOut = requestTimeout.IsCancellationRequested;
+                response = CreateErrorResponse(
+                    timedOut ? $"Request timed out after {_owner._requestTimeoutMs} ms." : "Request canceled.",
+                    timedOut ? "request-timeout" : "canceled");
+            }
+            catch (Exception ex)
+            {
+                response = CreateErrorResponse($"Request execution failed: {ex.Message}", "execution-failed");
+            }
+            finally
             {
                 requestCancellation.Dispose();
                 requestTimeout.Dispose();
             }
+
+            var responseLine = JsonSerializer.Serialize(response, _owner._jsonOptions);
+            await writer.WriteLineAsync(responseLine).ConfigureAwait(false);
         }
 
-        var responseLine = JsonSerializer.Serialize(response, _jsonOptions);
-        await writer.WriteLineAsync(responseLine).ConfigureAwait(false);
-    }
-
-    private async Task<CommandExecutionResult> ExecuteCommandWithTimeoutAsync(
-        AutomationCommandRequest request,
-        CancellationTokenSource requestTimeout,
-        CancellationTokenSource requestCancellation,
-        CancellationToken serverCancellation)
-    {
-        var dispatchTask = _commandDispatcher.ExecuteAsync(request, requestCancellation.Token);
-        if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))
+        private void LogReceivedRequest(AutomationCommandRequest request)
         {
-            var response = await dispatchTask.ConfigureAwait(false);
-            if (requestTimeout.IsCancellationRequested &&
-                string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
+            var clientPid = TryGetClientProcessId();
+            Logger.Log(
+                $"AUTOMATION_PIPE_RECV command={request.Command} correlationId={request.CorrelationId} clientPid={(clientPid == 0 ? "?" : clientPid.ToString())}");
+        }
+
+        private uint TryGetClientProcessId()
+        {
+            try
             {
-                response = CreateRequestTimeoutResponse();
+                var handle = _server.SafePipeHandle.DangerousGetHandle();
+                if (handle != IntPtr.Zero && GetNamedPipeClientProcessId(handle, out var clientPid))
+                {
+                    return clientPid;
+                }
+            }
+            catch
+            {
+                // PID lookup is best-effort.
             }
 
-            return new CommandExecutionResult(response, DispatchContinues: false);
+            return 0;
         }
 
-        if (serverCancellation.IsCancellationRequested && !requestTimeout.IsCancellationRequested)
+        private async Task<AutomationCommandResponse> ExecuteCommandWithTimeoutAsync(
+            AutomationCommandRequest request,
+            CancellationTokenSource requestTimeout,
+            CancellationTokenSource requestCancellation)
         {
-            throw new OperationCanceledException(serverCancellation);
+            var dispatchTask = _owner._commandDispatcher.ExecuteAsync(request, requestCancellation.Token);
+            if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))
+            {
+                var response = await dispatchTask.ConfigureAwait(false);
+                if (requestTimeout.IsCancellationRequested &&
+                    string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
+                {
+                    response = _owner.CreateRequestTimeoutResponse();
+                }
+
+                return response;
+            }
+
+            if (_serverCancellation.IsCancellationRequested && !requestTimeout.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(_serverCancellation);
+            }
+
+            if (!requestTimeout.IsCancellationRequested)
+            {
+                requestTimeout.Cancel();
+            }
+
+            requestCancellation.Cancel();
+            Logger.Log($"Automation command exceeded request timeout; waiting for dispatch to stop: command={request.Command}");
+            if (await WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None).ConfigureAwait(false))
+            {
+                var response = await dispatchTask.ConfigureAwait(false);
+                if (string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
+                {
+                    response = _owner.CreateRequestTimeoutResponse();
+                }
+
+                return response;
+            }
+
+            return _owner.CreateRequestTimeoutResponse();
         }
 
-        if (!requestTimeout.IsCancellationRequested)
+        private static async Task<bool> WaitForDispatchCompletionAsync(
+            Task<AutomationCommandResponse> dispatchTask,
+            CancellationToken cancellationToken)
         {
-            requestTimeout.Cancel();
+            if (dispatchTask.IsCompleted)
+            {
+                return true;
+            }
+
+            var cancellationCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var registration = cancellationToken.Register(
+                static state => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
+                cancellationCompletion);
+            var completedTask = await Task.WhenAny(dispatchTask, cancellationCompletion.Task).ConfigureAwait(false);
+            return ReferenceEquals(completedTask, dispatchTask);
         }
 
-        ObserveTimedOutDispatch(dispatchTask, request.Command, requestTimeout, requestCancellation);
-        return new CommandExecutionResult(CreateRequestTimeoutResponse(), DispatchContinues: true);
+        private AutomationCommandResponse CreateErrorResponse(string message, string errorCode)
+            => NamedPipeAutomationServer.CreateErrorResponse(message, errorCode);
     }
 
-    private static async Task<bool> WaitForDispatchCompletionAsync(
-        Task<AutomationCommandResponse> dispatchTask,
-        CancellationToken cancellationToken)
-    {
-        if (dispatchTask.IsCompleted)
-        {
-            return true;
-        }
-
-        var cancellationCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var registration = cancellationToken.Register(
-            static state => ((TaskCompletionSource<bool>)state!).TrySetResult(true),
-            cancellationCompletion);
-        var completedTask = await Task.WhenAny(dispatchTask, cancellationCompletion.Task).ConfigureAwait(false);
-        return ReferenceEquals(completedTask, dispatchTask);
-    }
-
-    private void ObserveTimedOutDispatch(
-        Task<AutomationCommandResponse> dispatchTask,
-        AutomationCommandKind command,
-        CancellationTokenSource requestTimeout,
-        CancellationTokenSource requestCancellation)
-    {
-        _ = ObserveTimedOutDispatchAsync(dispatchTask, command, requestTimeout, requestCancellation);
-    }
-
-    private async Task ObserveTimedOutDispatchAsync(
-        Task<AutomationCommandResponse> dispatchTask,
-        AutomationCommandKind command,
-        CancellationTokenSource requestTimeout,
-        CancellationTokenSource requestCancellation)
-    {
-        try
-        {
-            var response = await dispatchTask.ConfigureAwait(false);
-            Logger.Log(
-                $"Automation command completed after request timeout: command={command} success={response.Success} error={response.ErrorCode ?? "(none)"}");
-        }
-        catch (OperationCanceledException ex)
-        {
-            Logger.Log($"Automation command canceled after request timeout: command={command} message={ex.Message}");
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Automation command failed after request timeout: command={command} error={ex.Message}");
-            Logger.LogException(ex);
-        }
-        finally
-        {
-            requestCancellation.Dispose();
-            requestTimeout.Dispose();
-        }
-    }
+    private const uint PipeAccessDuplex = 0x00000003;
+    private const uint FileFlagOverlapped = 0x40000000;
+    private const uint PipeTypeByte = 0x00000000;
+    private const uint PipeReadModeByte = 0x00000000;
+    private const uint PipeWait = 0x00000000;
+    private const uint PipeUnlimitedInstances = 255;
 
     private NamedPipeServerStream CreateServerStream()
     {
@@ -578,32 +602,6 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         uint nInBufferSize,
         uint nDefaultTimeOut,
         ref SECURITY_ATTRIBUTES lpSecurityAttributes);
-
-    private static AutomationCommandResponse CreateErrorResponse(string message, string errorCode) => new()
-    {
-        Success = false,
-        CorrelationId = Guid.NewGuid().ToString("N"),
-        Status = AutomationResponseStatus.Error,
-        CommandLifecycle = AutomationCommandLifecycle.Failed,
-        Message = message,
-        ErrorCode = errorCode
-    };
-
-    private AutomationCommandResponse CreateRequestTimeoutResponse()
-        => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", "request-timeout");
-
-    private static void TraceFallback(string line)
-    {
-        try
-        {
-            var path = RuntimePaths.GetRepoLogFile("Sussudio_AutomationPipe.log");
-            File.AppendAllText(path, line + Environment.NewLine);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
-        }
-    }
 
     private sealed class AutomationPipeSecurityException : Exception
     {

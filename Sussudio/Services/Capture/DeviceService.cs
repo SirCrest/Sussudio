@@ -12,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Telemetry;
 
 namespace Sussudio.Services.Capture;
 
@@ -51,6 +50,7 @@ internal partial class DeviceFormatCacheJsonContext : JsonSerializerContext;
 public class DeviceService
 {
     private const int FormatProbeConcurrency = 2;
+    private const string PreferredNativeXuInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
     private readonly SemaphoreSlim _formatProbeGate = new(FormatProbeConcurrency, FormatProbeConcurrency);
 
     private static readonly string[] PreferredDeviceNames =
@@ -85,15 +85,21 @@ public class DeviceService
     };
 
     private static readonly Regex TokenizeRegex = new("[A-Za-z0-9\\+]+", RegexOptions.Compiled);
-    private const string PreferredNativeXuInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
 
     public string LastDiscoverySummary { get; private set; } = "No discovery run yet";
     public event EventHandler<DeviceFormatProbeCompletedEventArgs>? FormatProbeCompleted;
 
     public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync(bool waitForFormatProbes = true)
     {
+        var discovery = await EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes).ConfigureAwait(false);
+        return discovery.CaptureDevices;
+    }
+
+    public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(bool waitForFormatProbes = true)
+    {
         var discoveryStopwatch = Stopwatch.StartNew();
         var discovered = new ObservableCollection<CaptureDevice>();
+        var noAudioDevices = Array.Empty<AudioInputDevice>();
 
         List<MfDeviceEnumerator.MfVideoDeviceInfo> videoDevices;
         List<AudioInputDevice> audioDevices;
@@ -109,7 +115,7 @@ public class DeviceService
         {
             LastDiscoverySummary = $"Video devices: enumeration failed ({ex.GetType().Name}: {ex.Message})";
             Logger.Log($"Device discovery failed while querying MF/WASAPI enumerators: {ex}");
-            return discovered;
+            return new DeviceDiscoveryResult(discovered, noAudioDevices);
         }
 
         if (videoDevices.Count == 0)
@@ -175,68 +181,198 @@ public class DeviceService
             $"first-list-ms={discoveryStopwatch.ElapsedMilliseconds}, format-probes={(waitForFormatProbes ? "inline" : "background")}";
         Logger.Log($"Device discovery summary: {LastDiscoverySummary}");
 
-        return discovered;
+        return new DeviceDiscoveryResult(discovered, audioDevices);
     }
 
-    public void BeginBackgroundFormatProbe(CaptureDevice device, long requestId = 0)
+    private sealed record DeviceCandidate(
+        string SourceName,
+        CaptureDevice Device,
+        bool HasEnumeratedFormats,
+        bool Include,
+        bool PreferredByName,
+        bool LikelyByCapability,
+        bool LikelyByName);
+
+    private static int GetDevicePriority(DeviceCandidate candidate)
     {
-        ArgumentNullException.ThrowIfNull(device);
-        if (string.IsNullOrWhiteSpace(device.Id) || string.IsNullOrWhiteSpace(device.Name))
+        var maxPixelCount = candidate.Device.SupportedFormats
+            .Select(f => (long)f.Width * f.Height)
+            .DefaultIfEmpty(0)
+            .Max();
+        var maxFrameRate = candidate.Device.SupportedFormats
+            .Select(f => f.FrameRate)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        var priority = 0;
+        if (candidate.PreferredByName) priority += 400;
+        if (candidate.LikelyByCapability) priority += 200;
+        if (candidate.LikelyByName) priority += 100;
+        if (candidate.HasEnumeratedFormats) priority += 50;
+        priority += (int)Math.Min(maxFrameRate, 120);
+        priority += (int)Math.Min(maxPixelCount / 500_000, 40);
+        return priority;
+    }
+
+    private static bool LooksLikeHighBandwidthCapture(CaptureDevice device)
+    {
+        foreach (var format in device.SupportedFormats)
         {
+            if ((format.Width >= 1920 && format.FrameRate >= 50) ||
+                (format.Width >= 2560 && format.FrameRate >= 30) ||
+                (format.Width >= 3840 && format.FrameRate >= 24))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void AttachBestAudioDevice(
+        string videoDeviceName,
+        CaptureDevice captureDevice,
+        IReadOnlyList<AudioInputDevice> audioDevices)
+    {
+        var bestMatch = audioDevices
+            .Select(audioDevice => new
+            {
+                Device = audioDevice,
+                Score = ScoreAudioAssociation(videoDeviceName, audioDevice.Name)
+            })
+            .OrderByDescending(x => x.Score)
+            .FirstOrDefault();
+
+        if (bestMatch == null || bestMatch.Score <= 0)
+        {
+            Logger.Log($"No associated audio device found for {captureDevice.Name}");
             return;
         }
 
-        _ = RunBackgroundFormatProbeAsync(device.Id, device.Name, requestId);
+        captureDevice.AudioDeviceId = bestMatch.Device.Id;
+        captureDevice.AudioDeviceName = bestMatch.Device.Name;
+        Logger.Log($"Associated audio device for {captureDevice.Name}: {bestMatch.Device.Name} (score={bestMatch.Score})");
     }
 
-    private async Task RunBackgroundFormatProbeAsync(string deviceId, string deviceName, long requestId)
+    private static int ScoreAudioAssociation(string videoDeviceName, string audioDeviceName)
     {
-        await _formatProbeGate.WaitAsync().ConfigureAwait(false);
+        var score = 0;
+
+        var videoTokens = Tokenize(videoDeviceName);
+        var audioTokens = Tokenize(audioDeviceName);
+        var overlap = videoTokens.Intersect(audioTokens).Count();
+        score += overlap * 20;
+
+        if (videoDeviceName.Contains("Elgato", StringComparison.OrdinalIgnoreCase) &&
+            audioDeviceName.Contains("Elgato", StringComparison.OrdinalIgnoreCase))
+        {
+            score += 40;
+        }
+
+        var videoModel = GetModelHint(videoDeviceName);
+        var audioModel = GetModelHint(audioDeviceName);
+        if (!string.IsNullOrEmpty(videoModel) &&
+            string.Equals(videoModel, audioModel, StringComparison.OrdinalIgnoreCase))
+        {
+            score += 50;
+        }
+
+        return score;
+    }
+
+    private static string? GetModelHint(string deviceName)
+    {
+        foreach (var modelHint in ModelHints)
+        {
+            if (deviceName.Contains(modelHint, StringComparison.OrdinalIgnoreCase))
+            {
+                return modelHint;
+            }
+        }
+
+        return null;
+    }
+
+    private static HashSet<string> Tokenize(string text)
+    {
+        var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (Match match in TokenizeRegex.Matches(text))
+        {
+            var token = match.Value.Trim();
+            if (token.Length >= 2)
+            {
+                tokens.Add(token);
+            }
+        }
+
+        return tokens;
+    }
+
+    private static string? ResolveNativeXuInterfacePath(string deviceId)
+    {
+        var probeDevice = new CaptureDevice { Id = deviceId };
+        if (!NativeXuDeviceSupport.TryGetSupported4kXIds(probeDevice, out var vendorId, out var productId))
+        {
+            return null;
+        }
+
         try
         {
-            var probeDevice = new CaptureDevice
+            var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vendorId, productId);
+            if (interfaces.Count == 0)
             {
-                Id = deviceId,
-                Name = deviceName,
-                NativeXuInterfacePath = ResolveNativeXuInterfacePath(deviceId)
-            };
-
-            var hasEnumeratedFormats = await QuerySupportedFormatsAsync(probeDevice).ConfigureAwait(false);
-            var snapshot = CloneFormats(probeDevice.SupportedFormats);
-            if (hasEnumeratedFormats)
-            {
-                TrySaveFormatCache(probeDevice, snapshot);
+                return null;
             }
 
-            FormatProbeCompleted?.Invoke(
-                this,
-                new DeviceFormatProbeCompletedEventArgs(
-                    deviceId,
-                    deviceName,
-                    snapshot,
-                    probeDevice.IsHdrCapable,
-                    hasEnumeratedFormats,
-                    requestId,
-                    Error: null));
+            var deviceInstanceKey = GetDeviceInstanceKey(deviceId);
+            var sameDeviceInterfaces = interfaces
+                .Where(ksInterface => string.Equals(
+                    GetDeviceInstanceKey(ksInterface.Path),
+                    deviceInstanceKey,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (sameDeviceInterfaces.Length == 0)
+            {
+                Logger.Log($"Native XU interface resolution found no matching interface for device '{deviceId}'");
+                return null;
+            }
+
+            return sameDeviceInterfaces
+                .Select(ksInterface => ksInterface.Path)
+                .OrderByDescending(path =>
+                    path.IndexOf(PreferredNativeXuInterfaceFragment, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
         }
         catch (Exception ex)
         {
-            Logger.Log($"Background format probe failed for {deviceName}: {ex.Message}");
-            FormatProbeCompleted?.Invoke(
-                this,
-                new DeviceFormatProbeCompletedEventArgs(
-                    deviceId,
-                    deviceName,
-                    Array.Empty<MediaFormat>(),
-                    IsHdrCapable: false,
-                    HasEnumeratedFormats: false,
-                    requestId,
-                    Error: ex.Message));
+            Logger.Log($"Native XU interface resolution failed for device '{deviceId}': {ex.GetType().Name}: {ex.Message}");
+            return null;
         }
-        finally
-        {
-            _formatProbeGate.Release();
-        }
+    }
+
+    private static string GetDeviceInstanceKey(string interfacePath)
+    {
+        var categoryStart = interfacePath.LastIndexOf("#{", StringComparison.Ordinal);
+        return categoryStart > 0
+            ? interfacePath[..categoryStart]
+            : interfacePath;
+    }
+
+    public sealed record DeviceDiscoveryResult(
+        ObservableCollection<CaptureDevice> CaptureDevices,
+        IReadOnlyList<AudioInputDevice> AudioInputDevices);
+
+    public sealed record DeviceFormatProbeCompletedEventArgs(
+        string DeviceId,
+        string DeviceName,
+        IReadOnlyList<MediaFormat> Formats,
+        bool IsHdrCapable,
+        bool HasEnumeratedFormats,
+        long RequestId,
+        string? Error)
+    {
+        public bool Succeeded => string.IsNullOrWhiteSpace(Error);
     }
 
     private static IReadOnlyList<MediaFormat> CloneFormats(IEnumerable<MediaFormat> formats)
@@ -370,170 +506,65 @@ public class DeviceService
         }
     }
 
-    private static int GetDevicePriority(DeviceCandidate candidate)
+    public void BeginBackgroundFormatProbe(CaptureDevice device, long requestId = 0)
     {
-        var maxPixelCount = candidate.Device.SupportedFormats
-            .Select(f => (long)f.Width * f.Height)
-            .DefaultIfEmpty(0)
-            .Max();
-        var maxFrameRate = candidate.Device.SupportedFormats
-            .Select(f => f.FrameRate)
-            .DefaultIfEmpty(0)
-            .Max();
-
-        var priority = 0;
-        if (candidate.PreferredByName) priority += 400;
-        if (candidate.LikelyByCapability) priority += 200;
-        if (candidate.LikelyByName) priority += 100;
-        if (candidate.HasEnumeratedFormats) priority += 50;
-        priority += (int)Math.Min(maxFrameRate, 120);
-        priority += (int)Math.Min(maxPixelCount / 500_000, 40);
-        return priority;
-    }
-
-    private static bool LooksLikeHighBandwidthCapture(CaptureDevice device)
-    {
-        foreach (var format in device.SupportedFormats)
+        ArgumentNullException.ThrowIfNull(device);
+        if (string.IsNullOrWhiteSpace(device.Id) || string.IsNullOrWhiteSpace(device.Name))
         {
-            if ((format.Width >= 1920 && format.FrameRate >= 50) ||
-                (format.Width >= 2560 && format.FrameRate >= 30) ||
-                (format.Width >= 3840 && format.FrameRate >= 24))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static void AttachBestAudioDevice(
-        string videoDeviceName,
-        CaptureDevice captureDevice,
-        IReadOnlyList<AudioInputDevice> audioDevices)
-    {
-        var bestMatch = audioDevices
-            .Select(audioDevice => new
-            {
-                Device = audioDevice,
-                Score = ScoreAudioAssociation(videoDeviceName, audioDevice.Name)
-            })
-            .OrderByDescending(x => x.Score)
-            .FirstOrDefault();
-
-        if (bestMatch == null || bestMatch.Score <= 0)
-        {
-            Logger.Log($"No associated audio device found for {captureDevice.Name}");
             return;
         }
 
-        captureDevice.AudioDeviceId = bestMatch.Device.Id;
-        captureDevice.AudioDeviceName = bestMatch.Device.Name;
-        Logger.Log($"Associated audio device for {captureDevice.Name}: {bestMatch.Device.Name} (score={bestMatch.Score})");
+        _ = RunBackgroundFormatProbeAsync(device.Id, device.Name, requestId);
     }
 
-    private static int ScoreAudioAssociation(string videoDeviceName, string audioDeviceName)
+    private async Task RunBackgroundFormatProbeAsync(string deviceId, string deviceName, long requestId)
     {
-        var score = 0;
-
-        var videoTokens = Tokenize(videoDeviceName);
-        var audioTokens = Tokenize(audioDeviceName);
-        var overlap = videoTokens.Intersect(audioTokens).Count();
-        score += overlap * 20;
-
-        if (videoDeviceName.Contains("Elgato", StringComparison.OrdinalIgnoreCase) &&
-            audioDeviceName.Contains("Elgato", StringComparison.OrdinalIgnoreCase))
-        {
-            score += 40;
-        }
-
-        var videoModel = GetModelHint(videoDeviceName);
-        var audioModel = GetModelHint(audioDeviceName);
-        if (!string.IsNullOrEmpty(videoModel) &&
-            string.Equals(videoModel, audioModel, StringComparison.OrdinalIgnoreCase))
-        {
-            score += 50;
-        }
-
-        return score;
-    }
-
-    private static string? GetModelHint(string deviceName)
-    {
-        foreach (var modelHint in ModelHints)
-        {
-            if (deviceName.Contains(modelHint, StringComparison.OrdinalIgnoreCase))
-            {
-                return modelHint;
-            }
-        }
-
-        return null;
-    }
-
-    private static HashSet<string> Tokenize(string text)
-    {
-        var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (Match match in TokenizeRegex.Matches(text))
-        {
-            var token = match.Value.Trim();
-            if (token.Length >= 2)
-            {
-                tokens.Add(token);
-            }
-        }
-
-        return tokens;
-    }
-
-    private static string? ResolveNativeXuInterfacePath(string deviceId)
-    {
-        var probeDevice = new CaptureDevice { Id = deviceId };
-        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(probeDevice, out var vendorId, out var productId))
-        {
-            return null;
-        }
-
+        await _formatProbeGate.WaitAsync().ConfigureAwait(false);
         try
         {
-            var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vendorId, productId);
-            if (interfaces.Count == 0)
+            var probeDevice = new CaptureDevice
             {
-                return null;
+                Id = deviceId,
+                Name = deviceName,
+                NativeXuInterfacePath = ResolveNativeXuInterfacePath(deviceId)
+            };
+
+            var hasEnumeratedFormats = await QuerySupportedFormatsAsync(probeDevice).ConfigureAwait(false);
+            var snapshot = CloneFormats(probeDevice.SupportedFormats);
+            if (hasEnumeratedFormats)
+            {
+                TrySaveFormatCache(probeDevice, snapshot);
             }
 
-            var deviceInstanceKey = GetDeviceInstanceKey(deviceId);
-            var sameDeviceInterfaces = interfaces
-                .Where(ksInterface => string.Equals(
-                    GetDeviceInstanceKey(ksInterface.Path),
-                    deviceInstanceKey,
-                    StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            if (sameDeviceInterfaces.Length == 0)
-            {
-                Logger.Log($"Native XU interface resolution found no matching interface for device '{deviceId}'");
-                return null;
-            }
-
-            return sameDeviceInterfaces
-                .Select(ksInterface => ksInterface.Path)
-                .OrderByDescending(path =>
-                    path.IndexOf(PreferredNativeXuInterfaceFragment, StringComparison.OrdinalIgnoreCase) >= 0)
-                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
+            FormatProbeCompleted?.Invoke(
+                this,
+                new DeviceFormatProbeCompletedEventArgs(
+                    deviceId,
+                    deviceName,
+                    snapshot,
+                    probeDevice.IsHdrCapable,
+                    hasEnumeratedFormats,
+                    requestId,
+                    Error: null));
         }
         catch (Exception ex)
         {
-            Logger.Log($"Native XU interface resolution failed for device '{deviceId}': {ex.GetType().Name}: {ex.Message}");
-            return null;
+            Logger.Log($"Background format probe failed for {deviceName}: {ex.Message}");
+            FormatProbeCompleted?.Invoke(
+                this,
+                new DeviceFormatProbeCompletedEventArgs(
+                    deviceId,
+                    deviceName,
+                    Array.Empty<MediaFormat>(),
+                    IsHdrCapable: false,
+                    HasEnumeratedFormats: false,
+                    requestId,
+                    Error: ex.Message));
         }
-    }
-
-    private static string GetDeviceInstanceKey(string interfacePath)
-    {
-        var categoryStart = interfacePath.LastIndexOf("#{", StringComparison.Ordinal);
-        return categoryStart > 0
-            ? interfacePath[..categoryStart]
-            : interfacePath;
+        finally
+        {
+            _formatProbeGate.Release();
+        }
     }
 
     private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)
@@ -662,26 +693,5 @@ public class DeviceService
         }
 
         return token.ToUpperInvariant();
-    }
-
-    private sealed record DeviceCandidate(
-        string SourceName,
-        CaptureDevice Device,
-        bool HasEnumeratedFormats,
-        bool Include,
-        bool PreferredByName,
-        bool LikelyByCapability,
-        bool LikelyByName);
-
-    public sealed record DeviceFormatProbeCompletedEventArgs(
-        string DeviceId,
-        string DeviceName,
-        IReadOnlyList<MediaFormat> Formats,
-        bool IsHdrCapable,
-        bool HasEnumeratedFormats,
-        long RequestId,
-        string? Error)
-    {
-        public bool Succeeded => string.IsNullOrWhiteSpace(Error);
     }
 }

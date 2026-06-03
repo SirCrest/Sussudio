@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -23,6 +24,50 @@ internal static class AutomationSnapshotFormatter
             return Get(snapshotResponse, "Message", "Snapshot data not available.");
         }
 
+        var builder = new StringBuilder();
+        AppendStateSection(builder, snapshot);
+        AppendCaptureSettingsSection(builder, snapshot);
+        AppendAudioSection(builder, snapshot);
+        AppendVideoPipelineSection(builder, snapshot);
+        AppendRecordingSection(builder, snapshot);
+        if (includeFlashback)
+        {
+            AppendFlashbackSection(builder, snapshot);
+        }
+
+        AppendDiagnosticsSection(builder, snapshot);
+        AppendPerformanceSection(builder, snapshot);
+        AppendMemorySection(builder, snapshot);
+        AppendCaptureCadenceSection(builder, snapshot);
+        return builder.ToString().TrimEnd();
+    }
+
+    private static void AppendStateSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine("== Sussudio State ==");
+        builder.AppendLine($"Status: {Get(snapshot, "SessionState")} | {Get(snapshot, "StatusText")}");
+        builder.AppendLine($"Capture Commands: pending={Get(snapshot, "CaptureCommandPendingCommands")} maxPending={Get(snapshot, "CaptureCommandMaxPendingCommands")} oldestAge={Get(snapshot, "CaptureCommandOldestPendingCommandAgeMs")}ms lastLatency={Get(snapshot, "CaptureCommandLastQueueLatencyMs")}ms maxLatency={Get(snapshot, "CaptureCommandMaxQueueLatencyMs")}ms enq={Get(snapshot, "CaptureCommandCommandsEnqueued")} done={Get(snapshot, "CaptureCommandCommandsCompleted")} fail={Get(snapshot, "CaptureCommandCommandsFailed")} cancel={Get(snapshot, "CaptureCommandCommandsCanceled")} coalesced={Get(snapshot, "CaptureCommandCommandsCoalesced")} last={Get(snapshot, "CaptureCommandLastCommand", "None")} outcome={Get(snapshot, "CaptureCommandLastOutcome", "None")} corr={Get(snapshot, "CaptureCommandLastCorrelationId", "")} error={Get(snapshot, "CaptureCommandLastError", "")}");
+        builder.AppendLine($"Device: {Get(snapshot, "SelectedDeviceName")} ({Get(snapshot, "SelectedDeviceId")})");
+        builder.AppendLine($"Initialized: {Get(snapshot, "IsInitialized")} | Previewing: {Get(snapshot, "IsPreviewing")} | Recording: {Get(snapshot, "IsRecording")}");
+        builder.AppendLine();
+    }
+
+    private static void AppendCaptureSettingsSection(StringBuilder builder, JsonElement snapshot)
+    {
+        var frameRateSummary = FormatFrameRateSummary(snapshot);
+
+        builder.AppendLine("== Capture Settings ==");
+        builder.AppendLine($"Resolution: {Get(snapshot, "SelectedResolution")} | Frame Rate: {frameRateSummary}");
+        builder.AppendLine($"Format: {Get(snapshot, "SelectedRecordingFormat")} | Quality: {Get(snapshot, "SelectedQuality")} | Preset: {Get(snapshot, "SelectedPreset")}");
+        builder.AppendLine($"Video Format: {Get(snapshot, "SelectedVideoFormat")} | Split Encode: {Get(snapshot, "SelectedSplitEncodeMode")} | MJPEG Decoders: {Get(snapshot, "MjpegDecoderCount")}");
+        builder.AppendLine($"HDR: {Get(snapshot, "IsHdrEnabled")} (Available: {Get(snapshot, "IsHdrAvailable")}, Active: {Get(snapshot, "HdrOutputActive")}, State: {Get(snapshot, "HdrRuntimeState")})");
+        builder.AppendLine($"Pipeline: Requested={Get(snapshot, "RequestedPipelineMode")} Active={Get(snapshot, "ActivePipelineMode")} Matched={Get(snapshot, "PipelineModeMatched")}");
+        builder.AppendLine($"UI: Preview Volume={Get(snapshot, "PreviewVolumePercent")}% | Stats Visible={Get(snapshot, "IsStatsVisible")}");
+        builder.AppendLine();
+    }
+
+    private static string FormatFrameRateSummary(JsonElement snapshot)
+    {
         var selectedFriendlyFrameRate = Get(snapshot, "SelectedFriendlyFrameRate", string.Empty);
         var selectedExactFrameRate = Get(snapshot, "SelectedExactFrameRate", string.Empty);
         var selectedExactFrameRateArg = Get(snapshot, "SelectedExactFrameRateArg", string.Empty);
@@ -34,30 +79,23 @@ internal static class AutomationSnapshotFormatter
             : !string.IsNullOrWhiteSpace(selectedExactFrameRate)
                 ? $"{selectedExactFrameRate} fps"
                 : string.Empty;
-        var frameRateSummary = string.IsNullOrWhiteSpace(frameRateExactDetail)
+
+        return string.IsNullOrWhiteSpace(frameRateExactDetail)
             ? $"{frameRateBucket} fps"
             : $"{frameRateBucket} fps ({frameRateExactDetail})";
+    }
 
-        var builder = new StringBuilder();
-        builder.AppendLine("== Sussudio State ==");
-        builder.AppendLine($"Status: {Get(snapshot, "SessionState")} | {Get(snapshot, "StatusText")}");
-        builder.AppendLine($"Capture Commands: pending={Get(snapshot, "CaptureCommandPendingCommands")} maxPending={Get(snapshot, "CaptureCommandMaxPendingCommands")} oldestAge={Get(snapshot, "CaptureCommandOldestPendingCommandAgeMs")}ms lastLatency={Get(snapshot, "CaptureCommandLastQueueLatencyMs")}ms maxLatency={Get(snapshot, "CaptureCommandMaxQueueLatencyMs")}ms enq={Get(snapshot, "CaptureCommandCommandsEnqueued")} done={Get(snapshot, "CaptureCommandCommandsCompleted")} fail={Get(snapshot, "CaptureCommandCommandsFailed")} cancel={Get(snapshot, "CaptureCommandCommandsCanceled")} coalesced={Get(snapshot, "CaptureCommandCommandsCoalesced")} last={Get(snapshot, "CaptureCommandLastCommand", "None")} outcome={Get(snapshot, "CaptureCommandLastOutcome", "None")} corr={Get(snapshot, "CaptureCommandLastCorrelationId", "")} error={Get(snapshot, "CaptureCommandLastError", "")}");
-        builder.AppendLine($"Device: {Get(snapshot, "SelectedDeviceName")} ({Get(snapshot, "SelectedDeviceId")})");
-        builder.AppendLine($"Initialized: {Get(snapshot, "IsInitialized")} | Previewing: {Get(snapshot, "IsPreviewing")} | Recording: {Get(snapshot, "IsRecording")}");
-        builder.AppendLine();
-        builder.AppendLine("== Capture Settings ==");
-        builder.AppendLine($"Resolution: {Get(snapshot, "SelectedResolution")} | Frame Rate: {frameRateSummary}");
-        builder.AppendLine($"Format: {Get(snapshot, "SelectedRecordingFormat")} | Quality: {Get(snapshot, "SelectedQuality")} | Preset: {Get(snapshot, "SelectedPreset")}");
-        builder.AppendLine($"Video Format: {Get(snapshot, "SelectedVideoFormat")} | Split Encode: {Get(snapshot, "SelectedSplitEncodeMode")} | MJPEG Decoders: {Get(snapshot, "MjpegDecoderCount")}");
-        builder.AppendLine($"HDR: {Get(snapshot, "IsHdrEnabled")} (Available: {Get(snapshot, "IsHdrAvailable")}, Active: {Get(snapshot, "HdrOutputActive")}, State: {Get(snapshot, "HdrRuntimeState")})");
-        builder.AppendLine($"Pipeline: Requested={Get(snapshot, "RequestedPipelineMode")} Active={Get(snapshot, "ActivePipelineMode")} Matched={Get(snapshot, "PipelineModeMatched")}");
-        builder.AppendLine($"UI: Show All Options={Get(snapshot, "ShowAllCaptureOptions")} | Preview Volume={Get(snapshot, "PreviewVolumePercent")}% | Stats Visible={Get(snapshot, "IsStatsVisible")}");
-        builder.AppendLine();
+    private static void AppendAudioSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Audio ==");
         builder.AppendLine($"Enabled: {Get(snapshot, "IsAudioEnabled")} | Preview: {Get(snapshot, "IsAudioPreviewEnabled")} | Custom Input: {Get(snapshot, "IsCustomAudioInputEnabled")}");
         builder.AppendLine($"Peak: {Get(snapshot, "AudioPeak")} | Clipping: {Get(snapshot, "AudioClipping")} | Signal: {Get(snapshot, "AudioSignalPresent")}");
         builder.AppendLine($"Reader: {Get(snapshot, "AudioReaderActive")} | Frames: {Get(snapshot, "AudioFramesArrived")} arrived, {Get(snapshot, "AudioFramesWrittenToSink")} to sink");
         builder.AppendLine();
+    }
+
+    private static void AppendVideoPipelineSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Video Pipeline ==");
         builder.AppendLine($"Reader: {Get(snapshot, "VideoReaderActive")} | Ingest: {Get(snapshot, "IngestVideoFramesArrived")} arrived, {Get(snapshot, "IngestVideoFramesWrittenToSink")} to sink");
         builder.AppendLine($"Encoder: {Get(snapshot, "EncoderVideoFramesEnqueued")} enqueued, {Get(snapshot, "EncoderVideoFramesEncoded")} encoded | Queue: {Get(snapshot, "FfmpegVideoQueueDepth")}/{Get(snapshot, "RecordingVideoQueueCapacity")} depth, max={Get(snapshot, "RecordingVideoQueueMaxDepth")} overloads={Get(snapshot, "VideoDropsQueueSaturated")}");
@@ -68,11 +106,22 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"GPU Queue: {Get(snapshot, "RecordingGpuQueueDepth")}/{Get(snapshot, "RecordingGpuQueueCapacity")} max={Get(snapshot, "RecordingGpuQueueMaxDepth")} enq={Get(snapshot, "RecordingGpuFramesEnqueued")} overloads={Get(snapshot, "RecordingGpuFramesDropped")} | CUDA: {Get(snapshot, "RecordingCudaQueueDepth")}/{Get(snapshot, "RecordingCudaQueueCapacity")} max={Get(snapshot, "RecordingCudaQueueMaxDepth")} enq={Get(snapshot, "RecordingCudaFramesEnqueued")} overloads={Get(snapshot, "RecordingCudaFramesDropped")}");
         builder.AppendLine($"Freshness: reader {Get(snapshot, "IngestLastVideoFrameAgeMs")}ms | enqueue {Get(snapshot, "EncoderLastEnqueueAgeMs")}ms | write {Get(snapshot, "EncoderLastWriteAgeMs")}ms");
         builder.AppendLine($"Diagnostics: MemPref={Get(snapshot, "MemoryPreference")} ReqSubtype={Get(snapshot, "VideoRequestedSubtype")} NegSubtype={Get(snapshot, "VideoNegotiatedSubtype")} Errors={Get(snapshot, "VideoIngestErrorCount")}");
+        AppendThreadHealthSection(builder, snapshot);
+        builder.AppendLine();
+    }
+
+    private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine();
         builder.AppendLine("== Thread Health ==");
+        AppendSourceReaderThreadHealthLine(builder, snapshot);
+        AppendWasapiCaptureThreadHealthLine(builder, snapshot);
+        AppendWasapiPlaybackThreadHealthLine(builder, snapshot);
+    }
+
+    private static void AppendSourceReaderThreadHealthLine(StringBuilder builder, JsonElement snapshot)
+    {
         var sourceReaderLastFrameAgeMs = ComputeTickAgeMs(GetLong(snapshot, "SourceReaderLastFrameTickMs"));
-        var wasapiCaptureLastCallbackAgeMs = ComputeTickAgeMs(GetLong(snapshot, "WasapiCaptureLastCallbackTickMs"));
-        var wasapiPlaybackLastRenderAgeMs = ComputeTickAgeMs(GetLong(snapshot, "WasapiPlaybackLastRenderTickMs"));
         var sourceReaderOutstanding = Get(snapshot, "SourceReaderReadOutstanding");
         var sourceReaderOutstandingSuffix = string.Equals(sourceReaderOutstanding, "true", StringComparison.OrdinalIgnoreCase)
             ? $" outstandingFor={Get(snapshot, "SourceReaderReadOutstandingMs")}ms"
@@ -80,6 +129,11 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine(
             $"Source Reader: outstanding={sourceReaderOutstanding}{sourceReaderOutstandingSuffix} " +
             $"lastFrame={sourceReaderLastFrameAgeMs}ms ago channelDepth={Get(snapshot, "SourceReaderFrameChannelDepth")}");
+    }
+
+    private static void AppendWasapiCaptureThreadHealthLine(StringBuilder builder, JsonElement snapshot)
+    {
+        var wasapiCaptureLastCallbackAgeMs = ComputeTickAgeMs(GetLong(snapshot, "WasapiCaptureLastCallbackTickMs"));
         builder.AppendLine(
             $"WASAPI Capture: callbacks={Get(snapshot, "WasapiCaptureCallbackCount")} " +
             $"interval={Get(snapshot, "WasapiCaptureCallbackAvgIntervalMs")}ms/avg {Get(snapshot, "WasapiCaptureCallbackMaxIntervalMs")}ms/max " +
@@ -90,6 +144,11 @@ internal static class AutomationSnapshotFormatter
             $"disc={Get(snapshot, "WasapiCaptureAudioDiscontinuityCount")} " +
             $"tsErr={Get(snapshot, "WasapiCaptureAudioTimestampErrorCount")} " +
             $"severeGaps={Get(snapshot, "WasapiCaptureCallbackSevereGapCount")}");
+    }
+
+    private static void AppendWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)
+    {
+        var wasapiPlaybackLastRenderAgeMs = ComputeTickAgeMs(GetLong(snapshot, "WasapiPlaybackLastRenderTickMs"));
         builder.AppendLine(
             $"WASAPI Playback: callbacks={Get(snapshot, "WasapiPlaybackRenderCallbackCount")} " +
             $"silence={Get(snapshot, "WasapiPlaybackRenderSilenceCount")} " +
@@ -101,7 +160,10 @@ internal static class AutomationSnapshotFormatter
             $"streamLatencyMs={Get(snapshot, "WasapiPlaybackStreamLatencyMs")} " +
             $"drops={Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
             $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
-        builder.AppendLine();
+    }
+
+    private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Recording ==");
         builder.AppendLine($"Recording: {Get(snapshot, "IsRecording")} | Output: {Get(snapshot, "OutputPath")}");
         builder.AppendLine($"Time: {Get(snapshot, "RecordingTime")} | Size: {Get(snapshot, "RecordingSizeInfo")} | Bitrate: {Get(snapshot, "RecordingBitrateInfo")}");
@@ -110,11 +172,10 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"Audio Integrity: {Get(snapshot, "RecordingIntegrityAudioStatus")} enabled={Get(snapshot, "RecordingIntegrityAudioEnabled")} active={Get(snapshot, "RecordingIntegrityAudioCaptureActive")} arrived={Get(snapshot, "RecordingIntegrityAudioFramesArrived")} written={Get(snapshot, "RecordingIntegrityAudioFramesWrittenToSink")} encoded={Get(snapshot, "RecordingIntegrityAudioSamplesEncoded")} drops={Get(snapshot, "RecordingIntegrityAudioDropEvents")} disc={Get(snapshot, "RecordingIntegrityAudioDiscontinuities")} tsErr={Get(snapshot, "RecordingIntegrityAudioTimestampErrors")} gaps={Get(snapshot, "RecordingIntegrityAudioCallbackGaps")} drift={Get(snapshot, "RecordingIntegrityAvSyncDriftMs", "N/A")}ms encoderDrift={Get(snapshot, "RecordingIntegrityEncoderAvSyncDriftMs", "N/A")}ms corr={Get(snapshot, "RecordingIntegrityEncoderAvSyncCorrectionSamples", "N/A")}");
         builder.AppendLine($"Last Output: {Get(snapshot, "LastOutputPath")} ({Get(snapshot, "LastOutputSizeBytes")} bytes) Finalize: {Get(snapshot, "LastFinalizeStatus")}");
         builder.AppendLine();
-        if (includeFlashback)
-        {
-            AppendFlashbackSection(builder, snapshot);
-        }
+    }
 
+    private static void AppendDiagnosticsSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Diagnostics ==");
         builder.AppendLine($"Health: {Get(snapshot, "DiagnosticHealthStatus")} | Stage: {Get(snapshot, "DiagnosticLikelyStage")}");
         builder.AppendLine($"Summary: {Get(snapshot, "DiagnosticSummary")}");
@@ -128,11 +189,19 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"  Recording: {Get(snapshot, "DiagnosticRecordingLane")}");
         builder.AppendLine($"  Audio: {Get(snapshot, "DiagnosticAudioLane")}");
         builder.AppendLine();
+    }
+
+    private static void AppendPerformanceSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Performance ==");
         builder.AppendLine($"Legacy Score: {Get(snapshot, "PerformanceScore")} | Perfection: {Get(snapshot, "PerformancePerfectionMet")}");
         builder.AppendLine($"Legacy Summary: {Get(snapshot, "PerformanceSummary")}");
         builder.AppendLine($"Pipeline Latency: {Get(snapshot, "EstimatedPipelineLatencyMs")}ms (app receive -> estimated visible)");
         builder.AppendLine();
+    }
+
+    private static void AppendMemorySection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Memory & GC ==");
         builder.AppendLine($"Process CPU: {Get(snapshot, "ProcessCpuPercent")}% | CPU Time: {Get(snapshot, "ProcessCpuTotalProcessorTimeMs")}ms");
         builder.AppendLine($"Working Set: {Get(snapshot, "MemoryWorkingSetMb")} MB | Private: {Get(snapshot, "MemoryPrivateBytesMb")} MB | Managed Heap: {Get(snapshot, "MemoryManagedHeapMb")} MB");
@@ -141,6 +210,10 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"GC Pause: {Get(snapshot, "MemoryGcPauseTimePercent")}% | Fragmentation: {Get(snapshot, "MemoryGcFragmentationPercent")}%");
         builder.AppendLine($"ThreadPool Workers: {Get(snapshot, "ThreadPoolWorkerAvailable")}/{Get(snapshot, "ThreadPoolWorkerMax")} avail | IO: {Get(snapshot, "ThreadPoolIoAvailable")}/{Get(snapshot, "ThreadPoolIoMax")} avail");
         builder.AppendLine();
+    }
+
+    private static void AppendCaptureCadenceSection(StringBuilder builder, JsonElement snapshot)
+    {
         builder.AppendLine("== Capture Cadence ==");
         builder.AppendLine($"Frame Time: target={FormatFrameBudgetMs(snapshot, "ExpectedCaptureFrameRate")} avg={Get(snapshot, "CaptureCadenceAverageIntervalMs")}ms P95={Get(snapshot, "CaptureCadenceP95IntervalMs")}ms P99={Get(snapshot, "CaptureCadenceP99IntervalMs")}ms max={Get(snapshot, "CaptureCadenceMaxIntervalMs")}ms | Samples: {Get(snapshot, "CaptureCadenceSampleCount")} over {Get(snapshot, "CaptureCadenceSampleDurationMs")}ms");
         builder.AppendLine($"Average Rate: {Get(snapshot, "CaptureCadenceObservedFps")} fps (expected {Get(snapshot, "ExpectedCaptureFrameRate")} fps)");
@@ -153,312 +226,6 @@ internal static class AutomationSnapshotFormatter
         AppendAvSyncSection(builder, snapshot);
         AppendPreviewSection(builder, snapshot);
         AppendSourceSection(builder, snapshot);
-        return builder.ToString().TrimEnd();
-    }
-
-    internal static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
-
-    internal static string Get(JsonElement element, string propertyName, string fallback = "N/A")
-    {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(propertyName, out var value))
-        {
-            return fallback;
-        }
-
-        if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return fallback;
-        }
-
-        return value.ValueKind switch
-        {
-            JsonValueKind.String => value.GetString() ?? fallback,
-            JsonValueKind.True => "true",
-            JsonValueKind.False => "false",
-            JsonValueKind.Number => value.ToString(),
-            JsonValueKind.Array => value.GetArrayLength() == 0 ? fallback : value.ToString(),
-            JsonValueKind.Object => value.ToString(),
-            _ => fallback
-        };
-    }
-
-    internal static int GetInt(JsonElement element, string propertyName, int fallback = 0)
-    {
-        if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty(propertyName, out var value))
-        {
-            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var numeric))
-                return numeric;
-
-            if (value.ValueKind == JsonValueKind.String &&
-                int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
-                return parsed;
-        }
-
-        return fallback;
-    }
-
-    internal static double GetDouble(JsonElement element, string propertyName, double fallback = 0.0)
-    {
-        if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty(propertyName, out var value))
-        {
-            if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var numeric))
-                return numeric;
-
-            if (value.ValueKind == JsonValueKind.String &&
-                double.TryParse(value.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-                return parsed;
-        }
-
-        return fallback;
-    }
-
-    internal static string FormatFrameBudgetMs(JsonElement element, string fpsPropertyName, string fallback = "N/A")
-    {
-        var fps = GetDouble(element, fpsPropertyName);
-        return fps > 0 ? $"{1000.0 / fps:0.00}ms" : fallback;
-    }
-
-    internal static string FormatIntervalMs(JsonElement element, string propertyName, string fallback = "N/A")
-    {
-        var intervalMs = GetDouble(element, propertyName);
-        return intervalMs > 0 ? $"{intervalMs:0.##}ms" : fallback;
-    }
-
-    internal static string FormatBytes(long bytes)
-    {
-        if (bytes < 0)
-        {
-            return "N/A";
-        }
-
-        if (bytes >= 1024L * 1024L * 1024L)
-        {
-            return $"{bytes / (1024.0 * 1024.0 * 1024.0):0.##} GB";
-        }
-
-        if (bytes >= 1024L * 1024L)
-        {
-            return $"{bytes / (1024.0 * 1024.0):0.##} MB";
-        }
-
-        if (bytes >= 1024L)
-        {
-            return $"{bytes / 1024.0:0.##} KB";
-        }
-
-        return $"{bytes} B";
-    }
-
-    internal static long GetLong(JsonElement element, string propertyName, long fallback = 0)
-    {
-        return element.ValueKind == JsonValueKind.Object &&
-               element.TryGetProperty(propertyName, out var value) &&
-               value.ValueKind == JsonValueKind.Number &&
-               value.TryGetInt64(out var result)
-            ? result
-            : fallback;
-    }
-
-    internal static long? GetNullableLong(JsonElement element, string propertyName)
-    {
-        if (element.ValueKind != JsonValueKind.Object ||
-            !element.TryGetProperty(propertyName, out var value) ||
-            value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return null;
-        }
-
-        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var numeric))
-        {
-            return numeric;
-        }
-
-        return long.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
-            : null;
-    }
-
-    internal static bool GetBool(JsonElement element, string propertyName)
-    {
-        if (element.ValueKind != JsonValueKind.Object ||
-            !element.TryGetProperty(propertyName, out var value))
-        {
-            return false;
-        }
-
-        return value.ValueKind switch
-        {
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.String => bool.TryParse(value.GetString(), out var parsed) && parsed,
-            _ => false
-        };
-    }
-
-    internal static string? GetString(JsonElement element, string propertyName)
-    {
-        if (element.ValueKind != JsonValueKind.Object ||
-            !element.TryGetProperty(propertyName, out var value) ||
-            value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return null;
-        }
-
-        return value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : value.ToString();
-    }
-
-    internal static long ComputeTickAgeMs(long tickMs)
-    {
-        if (tickMs <= 0)
-        {
-            return -1;
-        }
-
-        return Math.Max(0, Environment.TickCount64 - tickMs);
-    }
-
-    private static void AppendFlashbackSection(StringBuilder builder, JsonElement snapshot)
-    {
-        var flashbackActive = Get(snapshot, "FlashbackActive", "false");
-        var flashbackFailed = Get(snapshot, "FlashbackEncodingFailed", "false");
-        if (!flashbackActive.Equals("true", StringComparison.OrdinalIgnoreCase) &&
-            !flashbackFailed.Equals("true", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        builder.AppendLine("== Flashback ==");
-        var codec = Get(snapshot, "EncoderCodecName");
-        if (!string.IsNullOrEmpty(codec))
-        {
-            var encW = Get(snapshot, "EncoderWidth", "0");
-            var encH = Get(snapshot, "EncoderHeight", "0");
-            var encFps = Get(snapshot, "EncoderFrameRate", "0");
-            var encFpsNum = Get(snapshot, "EncoderFrameRateNumerator", "");
-            var encFpsDen = Get(snapshot, "EncoderFrameRateDenominator", "");
-            var encFpsDetail = !string.IsNullOrWhiteSpace(encFpsNum) &&
-                               !string.IsNullOrWhiteSpace(encFpsDen) &&
-                               encFpsDen != "0"
-                ? $"{encFps} fps ({encFpsNum}/{encFpsDen})"
-                : $"{encFps} fps";
-            var encBitrate = uint.TryParse(Get(snapshot, "EncoderTargetBitRate", "0"), out var br) ? br / 1_000_000.0 : 0;
-            builder.AppendLine($"Encoder: {codec} {encW}x{encH} @ {encFpsDetail} | Target: {encBitrate:0.#} Mbps");
-        }
-        var bufferedDurationMs = long.TryParse(Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durationMs)
-            ? durationMs
-            : 0;
-        var diskBytes = long.TryParse(Get(snapshot, "FlashbackDiskBytes", "0"), out var rawDiskBytes)
-            ? rawDiskBytes
-            : 0;
-        var diskMb = diskBytes / (1024.0 * 1024.0);
-        builder.AppendLine($"Buffer: {bufferedDurationMs / 1000.0:F1}s | Disk: {diskMb:F1} MB | Written: {FormatBytes(GetLong(snapshot, "FlashbackTotalBytesWritten"))} | GPU Encode: {Get(snapshot, "FlashbackGpuEncoding")}");
-        builder.AppendLine($"Temp Cache: cache={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheBytes"))} budget={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheBudgetBytes"))} free={FormatBytes(GetLong(snapshot, "FlashbackTempDriveFreeBytes"))} sessions={Get(snapshot, "FlashbackStartupCacheSessionCount")} deleted={Get(snapshot, "FlashbackStartupCacheDeletedSessionCount")} freed={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheFreedBytes"))} overBudget={Get(snapshot, "FlashbackStartupCacheOverBudget")}");
-        builder.AppendLine($"Encoded: {Get(snapshot, "FlashbackEncodedFrames")} frames | Dropped: {Get(snapshot, "FlashbackDroppedFrames")} | forceRotate={Get(snapshot, "FlashbackForceRotateActive")} requested={Get(snapshot, "FlashbackForceRotateRequested")} draining={Get(snapshot, "FlashbackForceRotateDraining")} | VQ: {Get(snapshot, "FlashbackVideoQueueDepth")}/{Get(snapshot, "FlashbackVideoQueueCapacity")} max={Get(snapshot, "FlashbackVideoQueueMaxDepth")} AQ: {Get(snapshot, "FlashbackAudioQueueDepth")}/{Get(snapshot, "FlashbackAudioQueueCapacity")}");
-        builder.AppendLine($"Flashback Detail: submitted={Get(snapshot, "FlashbackVideoFramesSubmittedToEncoder")} packets={Get(snapshot, "FlashbackVideoEncoderPacketsWritten")} pts={Get(snapshot, "FlashbackVideoEncoderPts")} encoderDrops={Get(snapshot, "FlashbackVideoEncoderDroppedFrames")} seqGaps={Get(snapshot, "FlashbackVideoSequenceGaps")} backendStale={Get(snapshot, "FlashbackBackendSettingsStale")} staleReason={Get(snapshot, "FlashbackBackendSettingsStaleReason", "")} active={Get(snapshot, "FlashbackBackendActiveFormat")}/{Get(snapshot, "FlashbackBackendActivePreset")} requested={Get(snapshot, "FlashbackBackendRequestedFormat")}/{Get(snapshot, "FlashbackBackendRequestedPreset")}");
-        builder.AppendLine($"Cleanup: fatal={Get(snapshot, "FatalCleanupInProgress")} flashback={Get(snapshot, "FlashbackCleanupInProgress")}");
-        builder.AppendLine($"Flashback Queue Latency: oldest={Get(snapshot, "FlashbackVideoQueueOldestFrameAgeMs")}ms last={Get(snapshot, "FlashbackVideoQueueLastLatencyMs")}ms avg={Get(snapshot, "FlashbackVideoQueueLatencyAvgMs")}ms P95={Get(snapshot, "FlashbackVideoQueueLatencyP95Ms")}ms P99={Get(snapshot, "FlashbackVideoQueueLatencyP99Ms")}ms max={Get(snapshot, "FlashbackVideoQueueLatencyMaxMs")}ms samples={Get(snapshot, "FlashbackVideoQueueLatencySampleCount")} rejected={Get(snapshot, "FlashbackVideoQueueRejectedFrames")} lastReject={Get(snapshot, "FlashbackVideoQueueLastRejectReason", "")}");
-        builder.AppendLine($"Flashback Backpressure: total={Get(snapshot, "FlashbackVideoBackpressureWaitMs")}ms events={Get(snapshot, "FlashbackVideoBackpressureEvents")} last={Get(snapshot, "FlashbackVideoBackpressureLastWaitMs")}ms max={Get(snapshot, "FlashbackVideoBackpressureMaxWaitMs")}ms");
-        builder.AppendLine($"Flashback Failure: active={Get(snapshot, "FlashbackEncodingFailed")} type={Get(snapshot, "FlashbackEncodingFailureType", "None")} msg={Get(snapshot, "FlashbackEncodingFailureMessage", "")}");
-        builder.AppendLine($"Flashback GPU Queue: {Get(snapshot, "FlashbackGpuQueueDepth")}/{Get(snapshot, "FlashbackGpuQueueCapacity")} max={Get(snapshot, "FlashbackGpuQueueMaxDepth")} enq={Get(snapshot, "FlashbackGpuFramesEnqueued")} overloads={Get(snapshot, "FlashbackGpuFramesDropped")} rejected={Get(snapshot, "FlashbackGpuQueueRejectedFrames")} lastReject={Get(snapshot, "FlashbackGpuQueueLastRejectReason", "")}");
-        builder.AppendLine($"Playback: {Get(snapshot, "FlashbackPlaybackState")} | Pos: {Get(snapshot, "FlashbackPlaybackPositionMs")}ms | Decoder: {Get(snapshot, "FlashbackDecoderHwAccel")}");
-        builder.AppendLine($"Playback Commands: pending={Get(snapshot, "FlashbackPlaybackPendingCommands")}/{Get(snapshot, "FlashbackPlaybackCommandQueueCapacity")} maxPending={Get(snapshot, "FlashbackPlaybackMaxPendingCommands")} lastLatency={Get(snapshot, "FlashbackPlaybackLastCommandQueueLatencyMs")}ms maxLatency={Get(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")}ms maxLatencyCommand={Get(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyCommand")} enq={Get(snapshot, "FlashbackPlaybackCommandsEnqueued")} proc={Get(snapshot, "FlashbackPlaybackCommandsProcessed")} drop={Get(snapshot, "FlashbackPlaybackCommandsDropped")} skip={Get(snapshot, "FlashbackPlaybackCommandsSkippedNotReady")} coalescedScrub={Get(snapshot, "FlashbackPlaybackScrubUpdatesCoalesced")} coalescedSeek={Get(snapshot, "FlashbackPlaybackSeekCommandsCoalesced")} threadAlive={Get(snapshot, "FlashbackPlaybackThreadAlive")} lastQueued={Get(snapshot, "FlashbackPlaybackLastCommandQueued")} lastProcessed={Get(snapshot, "FlashbackPlaybackLastCommandProcessed")} failure={Get(snapshot, "FlashbackPlaybackLastCommandFailure", "")} failureUtc={Get(snapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs")}");
-        builder.AppendLine($"Export: active={Get(snapshot, "FlashbackExportActive")} status={Get(snapshot, "FlashbackExportStatus")} id={Get(snapshot, "FlashbackExportId")} lastResultId={Get(snapshot, "LastExportId")} kind={Get(snapshot, "FlashbackExportFailureKind", "None")} progress={Get(snapshot, "FlashbackExportPercent")}% segments={Get(snapshot, "FlashbackExportSegmentsProcessed")}/{Get(snapshot, "FlashbackExportTotalSegments")} elapsed={Get(snapshot, "FlashbackExportElapsedMs")}ms progressAge={Get(snapshot, "FlashbackExportLastProgressAgeMs")}ms bytes={FormatBytes(GetLong(snapshot, "FlashbackExportOutputBytes"))} throughput={FormatBytes((long)GetDouble(snapshot, "FlashbackExportThroughputBytesPerSec"))}/s in={Get(snapshot, "FlashbackExportInPointMs")}ms out={Get(snapshot, "FlashbackExportOutPointMs")}ms lastProgressUtc={Get(snapshot, "FlashbackExportLastProgressUtcUnixMs")} completedUtc={Get(snapshot, "FlashbackExportCompletedUtcUnixMs")} forceRotateFallbacks={Get(snapshot, "FlashbackExportForceRotateFallbacks")} lastForceRotateFallbackSegments={Get(snapshot, "FlashbackExportLastForceRotateFallbackSegments")} lastForceRotateFallbackUtc={Get(snapshot, "FlashbackExportLastForceRotateFallbackUtcUnixMs")} path={Get(snapshot, "FlashbackExportOutputPath")} msg={Get(snapshot, "FlashbackExportMessage", "")}");
-        var playbackFps = double.TryParse(Get(snapshot, "FlashbackPlaybackObservedFps", "0"), NumberStyles.Float, CultureInfo.InvariantCulture, out var fps)
-            ? fps
-            : 0;
-        var playbackAvgMs = double.TryParse(Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), NumberStyles.Float, CultureInfo.InvariantCulture, out var avgMs)
-            ? avgMs
-            : 0;
-        var avDrift = double.TryParse(Get(snapshot, "FlashbackAvDriftMs", "0"), NumberStyles.Float, CultureInfo.InvariantCulture, out var drift)
-            ? drift
-            : 0;
-        builder.AppendLine($"Playback Frame Time: avg={playbackAvgMs:F2}ms P95={Get(snapshot, "FlashbackPlaybackP95FrameMs")}ms P99={Get(snapshot, "FlashbackPlaybackP99FrameMs")}ms max={Get(snapshot, "FlashbackPlaybackMaxFrameMs")}ms | Average Rate: {playbackFps:F1} fps | Target: {Get(snapshot, "FlashbackPlaybackTargetFps")} fps | 5% Low: {Get(snapshot, "FlashbackPlaybackFivePercentLowFps")} fps | 1% Low: {Get(snapshot, "FlashbackPlaybackOnePercentLowFps")} fps | Samples: {Get(snapshot, "FlashbackPlaybackCadenceSampleCount")} over {Get(snapshot, "FlashbackPlaybackSampleDurationMs")}ms");
-        builder.AppendLine($"Playback Decode: avg={Get(snapshot, "FlashbackPlaybackDecodeAvgMs")}ms P95={Get(snapshot, "FlashbackPlaybackDecodeP95Ms")}ms P99={Get(snapshot, "FlashbackPlaybackDecodeP99Ms")}ms max={Get(snapshot, "FlashbackPlaybackDecodeMaxMs")}ms phase={Get(snapshot, "FlashbackPlaybackMaxDecodePhase", "")} receive={Get(snapshot, "FlashbackPlaybackMaxDecodeReceiveMs")}ms feed={Get(snapshot, "FlashbackPlaybackMaxDecodeFeedMs")}ms read={Get(snapshot, "FlashbackPlaybackMaxDecodeReadMs")}ms send={Get(snapshot, "FlashbackPlaybackMaxDecodeSendMs")}ms audio={Get(snapshot, "FlashbackPlaybackMaxDecodeAudioMs")}ms convert={Get(snapshot, "FlashbackPlaybackMaxDecodeConvertMs")}ms maxPos={Get(snapshot, "FlashbackPlaybackMaxDecodePositionMs")}ms samples={Get(snapshot, "FlashbackPlaybackDecodeSampleCount")} seekCapHits={Get(snapshot, "FlashbackPlaybackSeekForwardDecodeCapHits")} lastSeekCap={Get(snapshot, "FlashbackPlaybackLastSeekHitForwardDecodeCap")}");
-        builder.AppendLine($"Playback Frames: total={Get(snapshot, "FlashbackPlaybackFrameCount")} late={Get(snapshot, "FlashbackPlaybackLateFrames")} slow={Get(snapshot, "FlashbackPlaybackSlowFrames")} ({Get(snapshot, "FlashbackPlaybackSlowFramePercent")}%) dropped={Get(snapshot, "FlashbackPlaybackDroppedFrames")} audioMasterDouble={Get(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles")} audioMasterShrink={Get(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks")} audioMasterFallback={Get(snapshot, "FlashbackPlaybackAudioMasterFallbacks")} unavailable={Get(snapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks")} stale={Get(snapshot, "FlashbackPlaybackAudioMasterStaleFallbacks")} driftOutlier={Get(snapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks")} lastAudioFallback={Get(snapshot, "FlashbackPlaybackAudioMasterLastFallbackReason", "")}/{Get(snapshot, "FlashbackPlaybackAudioMasterLastFallbackClockAgeMs")}ms lastDrop={Get(snapshot, "FlashbackPlaybackLastDropReason", "")} lastDropUtc={Get(snapshot, "FlashbackPlaybackLastDropUtcUnixMs")} submitFailures={Get(snapshot, "FlashbackPlaybackSubmitFailures")} lastSubmitFailure={Get(snapshot, "FlashbackPlaybackLastSubmitFailure", "")} lastSubmitFailureUtc={Get(snapshot, "FlashbackPlaybackLastSubmitFailureUtcUnixMs")}");
-        builder.AppendLine($"Playback Stages: switches={Get(snapshot, "FlashbackPlaybackSegmentSwitches")} fmp4Reopens={Get(snapshot, "FlashbackPlaybackFmp4Reopens")} writeHeadWaits={Get(snapshot, "FlashbackPlaybackWriteHeadWaits")} nearLiveSnaps={Get(snapshot, "FlashbackPlaybackNearLiveSnaps")} decodeErrorSnaps={Get(snapshot, "FlashbackPlaybackDecodeErrorSnaps")} lastWriteHeadGap={Get(snapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs")}ms");
-        builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | Audio buffered={Get(snapshot, "WasapiPlaybackBufferedDurationMs")}ms queue={Get(snapshot, "WasapiPlaybackQueueDurationMs")}ms active={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")}ms endpoint={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")}ms streamLatency={Get(snapshot, "WasapiPlaybackStreamLatencyMs")}ms | File: {Get(snapshot, "FlashbackFilePath")}");
-        builder.AppendLine();
-    }
-
-    private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot)
-    {
-        var mjpegDecodeSamples = Get(snapshot, "MjpegDecodeSampleCount", "0");
-        var mjpegDecoderCount = Get(snapshot, "MjpegDecoderCount", "0");
-        var hasCompressedActivity =
-            Get(snapshot, "MjpegCompressedFramesQueued", "0") != "0" ||
-            Get(snapshot, "MjpegCompressedFramesDequeued", "0") != "0" ||
-            Get(snapshot, "MjpegCompressedDropsQueueFull", "0") != "0" ||
-            Get(snapshot, "MjpegCompressedDropsByteBudget", "0") != "0" ||
-            Get(snapshot, "MjpegCompressedDropsDisposed", "0") != "0" ||
-            Get(snapshot, "MjpegCompressedQueueDepth", "0") != "0" ||
-            Get(snapshot, "MjpegCompressedQueueBytes", "0") != "0";
-        if (mjpegDecodeSamples == "0" && mjpegDecoderCount == "0" && !hasCompressedActivity)
-        {
-            return;
-        }
-
-        builder.AppendLine();
-        builder.AppendLine("== MJPEG Pipeline Timing ==");
-        if (mjpegDecodeSamples != "0")
-        {
-            builder.AppendLine($"Decode: avg={Get(snapshot, "MjpegDecodeAvgMs")}ms P95={Get(snapshot, "MjpegDecodeP95Ms")}ms max={Get(snapshot, "MjpegDecodeMaxMs")}ms ({mjpegDecodeSamples} samples)");
-            builder.AppendLine($"Interop Copy: avg={Get(snapshot, "MjpegInteropCopyAvgMs")}ms P95={Get(snapshot, "MjpegInteropCopyP95Ms")}ms max={Get(snapshot, "MjpegInteropCopyMaxMs")}ms ({Get(snapshot, "MjpegInteropCopySampleCount")} samples)");
-            builder.AppendLine($"Total Callback: avg={Get(snapshot, "MjpegCallbackAvgMs")}ms P95={Get(snapshot, "MjpegCallbackP95Ms")}ms max={Get(snapshot, "MjpegCallbackMaxMs")}ms ({Get(snapshot, "MjpegCallbackSampleCount")} samples)");
-        }
-
-        builder.AppendLine($"Decoders: {mjpegDecoderCount} | Decoded={Get(snapshot, "MjpegTotalDecoded")} Emitted={Get(snapshot, "MjpegTotalEmitted")} Dropped={Get(snapshot, "MjpegTotalDropped")}");
-        builder.AppendLine(
-            $"Compressed Queue: depth={Get(snapshot, "MjpegCompressedQueueDepth")} bytes={Get(snapshot, "MjpegCompressedQueueBytes")}/{Get(snapshot, "MjpegCompressedQueueByteBudget")} " +
-            $"queued={Get(snapshot, "MjpegCompressedFramesQueued")} dequeued={Get(snapshot, "MjpegCompressedFramesDequeued")} " +
-            $"drops(full={Get(snapshot, "MjpegCompressedDropsQueueFull")}, budget={Get(snapshot, "MjpegCompressedDropsByteBudget")}, disposed={Get(snapshot, "MjpegCompressedDropsDisposed")})");
-        builder.AppendLine(
-            $"MJPEG Drop Reasons: decode={Get(snapshot, "MjpegDecodeFailures")} reorderCollision={Get(snapshot, "MjpegReorderCollisions")} emit={Get(snapshot, "MjpegEmitFailures")}");
-        builder.AppendLine($"Reorder: avg={Get(snapshot, "MjpegReorderAvgMs")}ms P95={Get(snapshot, "MjpegReorderP95Ms")}ms max={Get(snapshot, "MjpegReorderMaxMs")}ms ({Get(snapshot, "MjpegReorderSampleCount")} samples) | Skips={Get(snapshot, "MjpegReorderSkips")} Buffer={Get(snapshot, "MjpegReorderBufferDepth")}");
-        builder.AppendLine($"Pipeline: avg={Get(snapshot, "MjpegPipelineAvgMs")}ms P95={Get(snapshot, "MjpegPipelineP95Ms")}ms max={Get(snapshot, "MjpegPipelineMaxMs")}ms ({Get(snapshot, "MjpegPipelineSampleCount")} samples)");
-        if (string.Equals(Get(snapshot, "MjpegPreviewJitterEnabled", "False"), "True", StringComparison.OrdinalIgnoreCase))
-        {
-            builder.AppendLine(
-                $"Preview Jitter: target={Get(snapshot, "MjpegPreviewJitterTargetDepth")} depth={Get(snapshot, "MjpegPreviewJitterQueueDepth")}/{Get(snapshot, "MjpegPreviewJitterMaxDepth")} " +
-                $"queued={Get(snapshot, "MjpegPreviewJitterTotalQueued")} submitted={Get(snapshot, "MjpegPreviewJitterTotalSubmitted")} dropped={Get(snapshot, "MjpegPreviewJitterTotalDropped")} " +
-                $"clearedDrops={Get(snapshot, "MjpegPreviewJitterClearedDropCount")} deadlineDrops={Get(snapshot, "MjpegPreviewJitterDeadlineDropCount")} underflows={Get(snapshot, "MjpegPreviewJitterUnderflowCount")} resumeReprimes={Get(snapshot, "MjpegPreviewJitterResumeReprimeCount")} " +
-                $"target+={Get(snapshot, "MjpegPreviewJitterTargetIncreaseCount")} target-={Get(snapshot, "MjpegPreviewJitterTargetDecreaseCount")}");
-            builder.AppendLine(
-                $"Preview Jitter Input: avg={Get(snapshot, "MjpegPreviewJitterInputAvgMs")}ms P95={Get(snapshot, "MjpegPreviewJitterInputP95Ms")}ms max={Get(snapshot, "MjpegPreviewJitterInputMaxMs")}ms ({Get(snapshot, "MjpegPreviewJitterInputSampleCount")} samples)");
-            builder.AppendLine(
-                $"Preview Jitter Output: avg={Get(snapshot, "MjpegPreviewJitterOutputAvgMs")}ms P95={Get(snapshot, "MjpegPreviewJitterOutputP95Ms")}ms max={Get(snapshot, "MjpegPreviewJitterOutputMaxMs")}ms ({Get(snapshot, "MjpegPreviewJitterOutputSampleCount")} samples)");
-            builder.AppendLine(
-                $"Preview Jitter Latency: avg={Get(snapshot, "MjpegPreviewJitterLatencyAvgMs")}ms P95={Get(snapshot, "MjpegPreviewJitterLatencyP95Ms")}ms max={Get(snapshot, "MjpegPreviewJitterLatencyMaxMs")}ms ({Get(snapshot, "MjpegPreviewJitterLatencySampleCount")} samples)");
-            builder.AppendLine(
-                $"Preview Jitter Ownership: present={Get(snapshot, "MjpegPreviewJitterLastSelectedPreviewPresentId")} sourceSeq={Get(snapshot, "MjpegPreviewJitterLastSelectedSourceSequenceNumber")} " +
-                $"sourceLatency={Get(snapshot, "MjpegPreviewJitterLastSelectedSourceLatencyMs")}ms lastDropSeq={Get(snapshot, "MjpegPreviewJitterLastDroppedSourceSequenceNumber")} reason={Get(snapshot, "MjpegPreviewJitterLastDropReason")}");
-            builder.AppendLine(
-                $"Preview Jitter Underflow: reason={Get(snapshot, "MjpegPreviewJitterLastUnderflowReason")} " +
-                $"queue={Get(snapshot, "MjpegPreviewJitterLastUnderflowQueueDepth")} " +
-                $"inputAge={Get(snapshot, "MjpegPreviewJitterLastUnderflowInputAgeMs")}ms outputAge={Get(snapshot, "MjpegPreviewJitterLastUnderflowOutputAgeMs")}ms " +
-                $"scheduleLateLast={Get(snapshot, "MjpegPreviewJitterLastScheduleLateMs")}ms scheduleLateMax={Get(snapshot, "MjpegPreviewJitterMaxScheduleLateMs")}ms count={Get(snapshot, "MjpegPreviewJitterScheduleLateCount")}");
-        }
-        if (!snapshot.TryGetProperty("MjpegPerDecoder", out var perDecoder) ||
-            perDecoder.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        foreach (var worker in perDecoder.EnumerateArray())
-        {
-            builder.AppendLine(
-                $"Decoder[{Get(worker, "WorkerIndex", "?")}]: avg={Get(worker, "AvgMs")}ms " +
-                $"P95={Get(worker, "P95Ms")}ms max={Get(worker, "MaxMs")}ms " +
-                $"({Get(worker, "SampleCount")} samples)");
-        }
     }
 
     private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)
@@ -499,34 +266,268 @@ internal static class AutomationSnapshotFormatter
             return;
         }
 
-        if (rendererMode == "D3D11VideoProcessor" ||
-            rendererMode == "Nv12Shader" ||
-            rendererMode == "HdrShader" ||
-            rendererMode == "HdrPassthrough")
+        if (IsPreviewD3DRendererMode(rendererMode))
         {
-            builder.AppendLine($"D3D Swap Chain: {Get(snapshot, "PreviewD3DSwapChainAddress", "N/A")}");
-            builder.AppendLine($"D3D Frames: {Get(snapshot, "PreviewD3DFramesSubmitted")} submitted, {Get(snapshot, "PreviewD3DFramesRendered")} rendered, {Get(snapshot, "PreviewD3DFramesDropped")} dropped, pending={Get(snapshot, "PreviewD3DPendingFrameCount")}");
-            var renderThreadFailures = Get(snapshot, "PreviewD3DRenderThreadFailureCount", "0");
-            if (renderThreadFailures != "0")
-            {
-                builder.AppendLine($"D3D Render Thread Failures: {renderThreadFailures} last={Get(snapshot, "PreviewD3DLastRenderThreadFailureType")} hr={Get(snapshot, "PreviewD3DLastRenderThreadFailureHResult")} msg={Get(snapshot, "PreviewD3DLastRenderThreadFailureMessage")}");
-            }
-            builder.AppendLine($"Color: input={Get(snapshot, "PreviewD3DInputColorSpace")} output={Get(snapshot, "PreviewD3DOutputColorSpace")}");
-            builder.AppendLine($"Frame Time: target={FormatIntervalMs(snapshot, "PreviewCadenceExpectedIntervalMs")} avg={Get(snapshot, "PreviewCadenceAverageIntervalMs")}ms P95={Get(snapshot, "PreviewCadenceP95IntervalMs")}ms max={Get(snapshot, "PreviewCadenceMaxIntervalMs")}ms");
-            builder.AppendLine($"Average Rate: {Get(snapshot, "PreviewCadenceObservedFps")} fps | 5% Low: {Get(snapshot, "PreviewCadenceFivePercentLowFps")} fps | 1% Low: {Get(snapshot, "PreviewCadenceOnePercentLowFps")} fps | Samples: {Get(snapshot, "PreviewCadenceSampleCount")} over {Get(snapshot, "PreviewCadenceSampleDurationMs")}ms");
-            builder.AppendLine($"Pacing Classifier: stage={Get(snapshot, "PreviewPacingLikelySlowStage")} confidence={Get(snapshot, "PreviewPacingSlowStageConfidence")} evidence={Get(snapshot, "PreviewPacingSlowStageEvidence", "")}");
-            builder.AppendLine($"D3D CPU timing: input/upload avg={Get(snapshot, "PreviewD3DInputUploadCpuAvgMs")}ms P95={Get(snapshot, "PreviewD3DInputUploadCpuP95Ms")}ms P99={Get(snapshot, "PreviewD3DInputUploadCpuP99Ms")}ms max={Get(snapshot, "PreviewD3DInputUploadCpuMaxMs")}ms | render-submit avg={Get(snapshot, "PreviewD3DRenderSubmitCpuAvgMs")}ms P95={Get(snapshot, "PreviewD3DRenderSubmitCpuP95Ms")}ms P99={Get(snapshot, "PreviewD3DRenderSubmitCpuP99Ms")}ms max={Get(snapshot, "PreviewD3DRenderSubmitCpuMaxMs")}ms | present-call avg={Get(snapshot, "PreviewD3DPresentCallAvgMs")}ms P95={Get(snapshot, "PreviewD3DPresentCallP95Ms")}ms P99={Get(snapshot, "PreviewD3DPresentCallP99Ms")}ms max={Get(snapshot, "PreviewD3DPresentCallMaxMs")}ms | total-frame avg={Get(snapshot, "PreviewD3DTotalFrameCpuAvgMs")}ms P95={Get(snapshot, "PreviewD3DTotalFrameCpuP95Ms")}ms P99={Get(snapshot, "PreviewD3DTotalFrameCpuP99Ms")}ms max={Get(snapshot, "PreviewD3DTotalFrameCpuMaxMs")}ms samples={Get(snapshot, "PreviewD3DCpuTimingSampleCount")}");
-            builder.AppendLine($"D3D pipeline latency: avg={Get(snapshot, "PreviewD3DPipelineLatencyAvgMs")}ms P95={Get(snapshot, "PreviewD3DPipelineLatencyP95Ms")}ms P99={Get(snapshot, "PreviewD3DPipelineLatencyP99Ms")}ms max={Get(snapshot, "PreviewD3DPipelineLatencyMaxMs")}ms last={Get(snapshot, "PreviewD3DLastRenderedPipelineLatencyMs")}ms samples={Get(snapshot, "PreviewD3DPipelineLatencySampleCount")}");
-            builder.AppendLine($"D3D frame-latency wait: enabled={Get(snapshot, "PreviewD3DFrameLatencyWaitEnabled")} handle={Get(snapshot, "PreviewD3DFrameLatencyWaitHandleActive")} calls={Get(snapshot, "PreviewD3DFrameLatencyWaitCallCount")} signaled={Get(snapshot, "PreviewD3DFrameLatencyWaitSignaledCount")} timeouts={Get(snapshot, "PreviewD3DFrameLatencyWaitTimeoutCount")} unexpected={Get(snapshot, "PreviewD3DFrameLatencyWaitUnexpectedResultCount")} lastResult={Get(snapshot, "PreviewD3DFrameLatencyWaitLastResult")} last={Get(snapshot, "PreviewD3DFrameLatencyWaitLastMs")}ms avg={Get(snapshot, "PreviewD3DFrameLatencyWaitAvgMs")}ms P95={Get(snapshot, "PreviewD3DFrameLatencyWaitP95Ms")}ms max={Get(snapshot, "PreviewD3DFrameLatencyWaitMaxMs")}ms samples={Get(snapshot, "PreviewD3DFrameLatencyWaitSampleCount")}");
-            builder.AppendLine($"D3D DXGI stats: ok={Get(snapshot, "PreviewD3DFrameStatsSuccessCount")}/{Get(snapshot, "PreviewD3DFrameStatsSampleCount")} failures={Get(snapshot, "PreviewD3DFrameStatsFailureCount")} recentFailures={Get(snapshot, "PreviewD3DFrameStatsRecentFailureCount")} missedRefresh={Get(snapshot, "PreviewD3DFrameStatsMissedRefreshCount")} recentMissed={Get(snapshot, "PreviewD3DFrameStatsRecentMissedRefreshCount")} lastError={Get(snapshot, "PreviewD3DFrameStatsLastError", "")}");
-            builder.AppendLine($"D3D Ownership: submitted present={Get(snapshot, "PreviewD3DLastSubmittedPreviewPresentId")} sourceSeq={Get(snapshot, "PreviewD3DLastSubmittedSourceSequenceNumber")} pts={Get(snapshot, "PreviewD3DLastSubmittedSourcePtsTicks")} | rendered present={Get(snapshot, "PreviewD3DLastRenderedPreviewPresentId")} sourceSeq={Get(snapshot, "PreviewD3DLastRenderedSourceSequenceNumber")} pts={Get(snapshot, "PreviewD3DLastRenderedSourcePtsTicks")} schedulerToPresent={Get(snapshot, "PreviewD3DLastRenderedSchedulerToPresentMs")}ms pipeline={Get(snapshot, "PreviewD3DLastRenderedPipelineLatencyMs")}ms | lastDrop={Get(snapshot, "PreviewD3DLastDropReason")} dropPts={Get(snapshot, "PreviewD3DLastDroppedSourcePtsTicks")}");
-            AppendPreviewSlowFrameDiagnostics(builder, snapshot);
+            AppendPreviewD3DSection(builder, snapshot);
             return;
         }
 
         builder.AppendLine($"Frames: {Get(snapshot, "PreviewFramesArrived")} arrived, {Get(snapshot, "PreviewFramesDisplayed")} displayed, {Get(snapshot, "PreviewFramesDropped")} dropped");
         builder.AppendLine($"Average Rate: {Get(snapshot, "PreviewCadenceObservedFps")} fps | 5% Low: {Get(snapshot, "PreviewCadenceFivePercentLowFps")} fps | 1% Low: {Get(snapshot, "PreviewCadenceOnePercentLowFps")} fps | Samples: {Get(snapshot, "PreviewCadenceSampleCount")} over {Get(snapshot, "PreviewCadenceSampleDurationMs")}ms");
         builder.AppendLine($"Pacing Classifier: stage={Get(snapshot, "PreviewPacingLikelySlowStage")} confidence={Get(snapshot, "PreviewPacingSlowStageConfidence")} evidence={Get(snapshot, "PreviewPacingSlowStageEvidence", "")}");
+    }
+
+    private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine();
+        builder.AppendLine("== Source ==");
+        var sourceFrameRate = Get(snapshot, "DetectedSourceFrameRate", string.Empty);
+        var sourceFrameRateArg = Get(snapshot, "DetectedSourceFrameRateArg", string.Empty);
+        var sourceFpsSummary = !string.IsNullOrWhiteSpace(sourceFrameRateArg)
+            ? $"{sourceFrameRate}fps ({sourceFrameRateArg})"
+            : !string.IsNullOrWhiteSpace(sourceFrameRate)
+                ? $"{sourceFrameRate}fps"
+                : "N/A";
+        builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} @ {sourceFpsSummary} HDR={Get(snapshot, "SourceIsHdr")}");
+        builder.AppendLine($"Telemetry: {Get(snapshot, "SourceTelemetryAvailability")} ({Get(snapshot, "SourceTelemetryConfidence")})");
+    }
+
+    private static void AppendFlashbackSection(StringBuilder builder, JsonElement snapshot)
+    {
+        var flashbackActive = Get(snapshot, "FlashbackActive", "false");
+        var flashbackFailed = Get(snapshot, "FlashbackEncodingFailed", "false");
+        if (!flashbackActive.Equals("true", StringComparison.OrdinalIgnoreCase) &&
+            !flashbackFailed.Equals("true", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        builder.AppendLine("== Flashback ==");
+        AppendFlashbackEncodingSection(builder, snapshot);
+        AppendFlashbackPlaybackStatusSection(builder, snapshot);
+        AppendFlashbackExportSection(builder, snapshot);
+        AppendFlashbackPlaybackMetricsSection(builder, snapshot);
+        builder.AppendLine();
+    }
+
+    private static void AppendFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)
+    {
+        AppendFlashbackEncodingStatusSection(builder, snapshot);
+        AppendFlashbackEncodingHealthSection(builder, snapshot);
+    }
+
+    private static void AppendFlashbackEncodingStatusSection(StringBuilder builder, JsonElement snapshot)
+    {
+        var codec = Get(snapshot, "EncoderCodecName");
+        if (!string.IsNullOrEmpty(codec))
+        {
+            var encW = Get(snapshot, "EncoderWidth", "0");
+            var encH = Get(snapshot, "EncoderHeight", "0");
+            var encFps = Get(snapshot, "EncoderFrameRate", "0");
+            var encFpsNum = Get(snapshot, "EncoderFrameRateNumerator", "");
+            var encFpsDen = Get(snapshot, "EncoderFrameRateDenominator", "");
+            var encFpsDetail = !string.IsNullOrWhiteSpace(encFpsNum) &&
+                               !string.IsNullOrWhiteSpace(encFpsDen) &&
+                               encFpsDen != "0"
+                ? $"{encFps} fps ({encFpsNum}/{encFpsDen})"
+                : $"{encFps} fps";
+            var encBitrate = GetDouble(snapshot, "EncoderTargetBitRate") / 1_000_000.0;
+            builder.AppendLine($"Encoder: {codec} {encW}x{encH} @ {encFpsDetail} | Target: {FormatNumber(encBitrate, "0.#")} Mbps");
+        }
+
+        var bufferedDurationMs = GetLong(snapshot, "FlashbackBufferedDurationMs");
+        var diskBytes = GetLong(snapshot, "FlashbackDiskBytes");
+        var diskMb = diskBytes / (1024.0 * 1024.0);
+        builder.AppendLine($"Buffer: {FormatNumber(bufferedDurationMs / 1000.0, "F1")}s | Disk: {FormatNumber(diskMb, "F1")} MB | Written: {FormatBytes(GetLong(snapshot, "FlashbackTotalBytesWritten"))} | GPU Encode: {Get(snapshot, "FlashbackGpuEncoding")}");
+        builder.AppendLine($"Temp Cache: cache={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheBytes"))} budget={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheBudgetBytes"))} free={FormatBytes(GetLong(snapshot, "FlashbackTempDriveFreeBytes"))} sessions={Get(snapshot, "FlashbackStartupCacheSessionCount")} deleted={Get(snapshot, "FlashbackStartupCacheDeletedSessionCount")} freed={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheFreedBytes"))} overBudget={Get(snapshot, "FlashbackStartupCacheOverBudget")}");
+        builder.AppendLine($"Encoded: {Get(snapshot, "FlashbackEncodedFrames")} frames | Dropped: {Get(snapshot, "FlashbackDroppedFrames")} | forceRotate={Get(snapshot, "FlashbackForceRotateActive")} requested={Get(snapshot, "FlashbackForceRotateRequested")} draining={Get(snapshot, "FlashbackForceRotateDraining")} | VQ: {Get(snapshot, "FlashbackVideoQueueDepth")}/{Get(snapshot, "FlashbackVideoQueueCapacity")} max={Get(snapshot, "FlashbackVideoQueueMaxDepth")} AQ: {Get(snapshot, "FlashbackAudioQueueDepth")}/{Get(snapshot, "FlashbackAudioQueueCapacity")}");
+        builder.AppendLine($"Flashback Detail: submitted={Get(snapshot, "FlashbackVideoFramesSubmittedToEncoder")} packets={Get(snapshot, "FlashbackVideoEncoderPacketsWritten")} pts={Get(snapshot, "FlashbackVideoEncoderPts")} encoderDrops={Get(snapshot, "FlashbackVideoEncoderDroppedFrames")} seqGaps={Get(snapshot, "FlashbackVideoSequenceGaps")} backendStale={Get(snapshot, "FlashbackBackendSettingsStale")} staleReason={Get(snapshot, "FlashbackBackendSettingsStaleReason", "")} active={Get(snapshot, "FlashbackBackendActiveFormat")}/{Get(snapshot, "FlashbackBackendActivePreset")} requested={Get(snapshot, "FlashbackBackendRequestedFormat")}/{Get(snapshot, "FlashbackBackendRequestedPreset")}");
+        builder.AppendLine($"Cleanup: fatal={Get(snapshot, "FatalCleanupInProgress")} flashback={Get(snapshot, "FlashbackCleanupInProgress")}");
+    }
+
+    private static void AppendFlashbackEncodingHealthSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"Flashback Queue Latency: oldest={Get(snapshot, "FlashbackVideoQueueOldestFrameAgeMs")}ms last={Get(snapshot, "FlashbackVideoQueueLastLatencyMs")}ms avg={Get(snapshot, "FlashbackVideoQueueLatencyAvgMs")}ms P95={Get(snapshot, "FlashbackVideoQueueLatencyP95Ms")}ms P99={Get(snapshot, "FlashbackVideoQueueLatencyP99Ms")}ms max={Get(snapshot, "FlashbackVideoQueueLatencyMaxMs")}ms samples={Get(snapshot, "FlashbackVideoQueueLatencySampleCount")} rejected={Get(snapshot, "FlashbackVideoQueueRejectedFrames")} lastReject={Get(snapshot, "FlashbackVideoQueueLastRejectReason", "")}");
+        builder.AppendLine($"Flashback Backpressure: total={Get(snapshot, "FlashbackVideoBackpressureWaitMs")}ms events={Get(snapshot, "FlashbackVideoBackpressureEvents")} last={Get(snapshot, "FlashbackVideoBackpressureLastWaitMs")}ms max={Get(snapshot, "FlashbackVideoBackpressureMaxWaitMs")}ms");
+        builder.AppendLine($"Flashback Failure: active={Get(snapshot, "FlashbackEncodingFailed")} type={Get(snapshot, "FlashbackEncodingFailureType", "None")} msg={Get(snapshot, "FlashbackEncodingFailureMessage", "")}");
+        builder.AppendLine($"Flashback GPU Queue: {Get(snapshot, "FlashbackGpuQueueDepth")}/{Get(snapshot, "FlashbackGpuQueueCapacity")} max={Get(snapshot, "FlashbackGpuQueueMaxDepth")} enq={Get(snapshot, "FlashbackGpuFramesEnqueued")} overloads={Get(snapshot, "FlashbackGpuFramesDropped")} rejected={Get(snapshot, "FlashbackGpuQueueRejectedFrames")} lastReject={Get(snapshot, "FlashbackGpuQueueLastRejectReason", "")}");
+    }
+
+    private static void AppendFlashbackExportSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"Export: active={Get(snapshot, "FlashbackExportActive")} status={Get(snapshot, "FlashbackExportStatus")} id={Get(snapshot, "FlashbackExportId")} lastResultId={Get(snapshot, "LastExportId")} kind={Get(snapshot, "FlashbackExportFailureKind", "None")} progress={Get(snapshot, "FlashbackExportPercent")}% segments={Get(snapshot, "FlashbackExportSegmentsProcessed")}/{Get(snapshot, "FlashbackExportTotalSegments")} elapsed={Get(snapshot, "FlashbackExportElapsedMs")}ms progressAge={Get(snapshot, "FlashbackExportLastProgressAgeMs")}ms bytes={FormatBytes(GetLong(snapshot, "FlashbackExportOutputBytes"))} throughput={FormatBytes((long)GetDouble(snapshot, "FlashbackExportThroughputBytesPerSec"))}/s in={Get(snapshot, "FlashbackExportInPointMs")}ms out={Get(snapshot, "FlashbackExportOutPointMs")}ms lastProgressUtc={Get(snapshot, "FlashbackExportLastProgressUtcUnixMs")} completedUtc={Get(snapshot, "FlashbackExportCompletedUtcUnixMs")} forceRotateFallbacks={Get(snapshot, "FlashbackExportForceRotateFallbacks")} lastForceRotateFallbackSegments={Get(snapshot, "FlashbackExportLastForceRotateFallbackSegments")} lastForceRotateFallbackUtc={Get(snapshot, "FlashbackExportLastForceRotateFallbackUtcUnixMs")} path={Get(snapshot, "FlashbackExportOutputPath")} msg={Get(snapshot, "FlashbackExportMessage", "")}");
+    }
+
+    private static void AppendFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"Playback: {Get(snapshot, "FlashbackPlaybackState")} | Pos: {Get(snapshot, "FlashbackPlaybackPositionMs")}ms | Decoder: {Get(snapshot, "FlashbackDecoderHwAccel")}");
+        builder.AppendLine($"Playback Commands: pending={Get(snapshot, "FlashbackPlaybackPendingCommands")}/{Get(snapshot, "FlashbackPlaybackCommandQueueCapacity")} maxPending={Get(snapshot, "FlashbackPlaybackMaxPendingCommands")} lastLatency={Get(snapshot, "FlashbackPlaybackLastCommandQueueLatencyMs")}ms maxLatency={Get(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")}ms maxLatencyCommand={Get(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyCommand")} enq={Get(snapshot, "FlashbackPlaybackCommandsEnqueued")} proc={Get(snapshot, "FlashbackPlaybackCommandsProcessed")} drop={Get(snapshot, "FlashbackPlaybackCommandsDropped")} skip={Get(snapshot, "FlashbackPlaybackCommandsSkippedNotReady")} coalescedScrub={Get(snapshot, "FlashbackPlaybackScrubUpdatesCoalesced")} coalescedSeek={Get(snapshot, "FlashbackPlaybackSeekCommandsCoalesced")} threadAlive={Get(snapshot, "FlashbackPlaybackThreadAlive")} lastQueued={Get(snapshot, "FlashbackPlaybackLastCommandQueued")} lastProcessed={Get(snapshot, "FlashbackPlaybackLastCommandProcessed")} failure={Get(snapshot, "FlashbackPlaybackLastCommandFailure", "")} failureUtc={Get(snapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs")}");
+    }
+
+    private static void AppendFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)
+    {
+        var playbackFps = double.TryParse(Get(snapshot, "FlashbackPlaybackObservedFps", "0"), NumberStyles.Float, CultureInfo.InvariantCulture, out var fps)
+            ? fps
+            : 0;
+        var playbackAvgMs = double.TryParse(Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), NumberStyles.Float, CultureInfo.InvariantCulture, out var avgMs)
+            ? avgMs
+            : 0;
+        var avDrift = double.TryParse(Get(snapshot, "FlashbackAvDriftMs", "0"), NumberStyles.Float, CultureInfo.InvariantCulture, out var drift)
+            ? drift
+            : 0;
+        builder.AppendLine($"Playback Frame Time: avg={FormatNumber(playbackAvgMs, "F2")}ms P95={Get(snapshot, "FlashbackPlaybackP95FrameMs")}ms P99={Get(snapshot, "FlashbackPlaybackP99FrameMs")}ms max={Get(snapshot, "FlashbackPlaybackMaxFrameMs")}ms | Average Rate: {FormatNumber(playbackFps, "F1")} fps | Target: {Get(snapshot, "FlashbackPlaybackTargetFps")} fps | 5% Low: {Get(snapshot, "FlashbackPlaybackFivePercentLowFps")} fps | 1% Low: {Get(snapshot, "FlashbackPlaybackOnePercentLowFps")} fps | Samples: {Get(snapshot, "FlashbackPlaybackCadenceSampleCount")} over {Get(snapshot, "FlashbackPlaybackSampleDurationMs")}ms");
+        builder.AppendLine($"Playback Decode: avg={Get(snapshot, "FlashbackPlaybackDecodeAvgMs")}ms P95={Get(snapshot, "FlashbackPlaybackDecodeP95Ms")}ms P99={Get(snapshot, "FlashbackPlaybackDecodeP99Ms")}ms max={Get(snapshot, "FlashbackPlaybackDecodeMaxMs")}ms phase={Get(snapshot, "FlashbackPlaybackMaxDecodePhase", "")} receive={Get(snapshot, "FlashbackPlaybackMaxDecodeReceiveMs")}ms feed={Get(snapshot, "FlashbackPlaybackMaxDecodeFeedMs")}ms read={Get(snapshot, "FlashbackPlaybackMaxDecodeReadMs")}ms send={Get(snapshot, "FlashbackPlaybackMaxDecodeSendMs")}ms audio={Get(snapshot, "FlashbackPlaybackMaxDecodeAudioMs")}ms convert={Get(snapshot, "FlashbackPlaybackMaxDecodeConvertMs")}ms maxPos={Get(snapshot, "FlashbackPlaybackMaxDecodePositionMs")}ms samples={Get(snapshot, "FlashbackPlaybackDecodeSampleCount")} seekCapHits={Get(snapshot, "FlashbackPlaybackSeekForwardDecodeCapHits")} lastSeekCap={Get(snapshot, "FlashbackPlaybackLastSeekHitForwardDecodeCap")}");
+        builder.AppendLine($"Playback Frames: total={Get(snapshot, "FlashbackPlaybackFrameCount")} late={Get(snapshot, "FlashbackPlaybackLateFrames")} slow={Get(snapshot, "FlashbackPlaybackSlowFrames")} ({Get(snapshot, "FlashbackPlaybackSlowFramePercent")}%) dropped={Get(snapshot, "FlashbackPlaybackDroppedFrames")} audioMasterDouble={Get(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles")} audioMasterShrink={Get(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks")} audioMasterFallback={Get(snapshot, "FlashbackPlaybackAudioMasterFallbacks")} unavailable={Get(snapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks")} stale={Get(snapshot, "FlashbackPlaybackAudioMasterStaleFallbacks")} driftOutlier={Get(snapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks")} lastAudioFallback={Get(snapshot, "FlashbackPlaybackAudioMasterLastFallbackReason", "")}/{Get(snapshot, "FlashbackPlaybackAudioMasterLastFallbackClockAgeMs")}ms lastDrop={Get(snapshot, "FlashbackPlaybackLastDropReason", "")} lastDropUtc={Get(snapshot, "FlashbackPlaybackLastDropUtcUnixMs")} submitFailures={Get(snapshot, "FlashbackPlaybackSubmitFailures")} lastSubmitFailure={Get(snapshot, "FlashbackPlaybackLastSubmitFailure", "")} lastSubmitFailureUtc={Get(snapshot, "FlashbackPlaybackLastSubmitFailureUtcUnixMs")}");
+        builder.AppendLine($"Playback Stages: switches={Get(snapshot, "FlashbackPlaybackSegmentSwitches")} fmp4Reopens={Get(snapshot, "FlashbackPlaybackFmp4Reopens")} writeHeadWaits={Get(snapshot, "FlashbackPlaybackWriteHeadWaits")} nearLiveSnaps={Get(snapshot, "FlashbackPlaybackNearLiveSnaps")} decodeErrorSnaps={Get(snapshot, "FlashbackPlaybackDecodeErrorSnaps")} lastWriteHeadGap={Get(snapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs")}ms");
+        builder.AppendLine($"A/V Drift: {FormatNumber(avDrift, "+0.0;-0.0;0.0")}ms (+ = audio ahead) | Audio buffered={Get(snapshot, "WasapiPlaybackBufferedDurationMs")}ms queue={Get(snapshot, "WasapiPlaybackQueueDurationMs")}ms active={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")}ms endpoint={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")}ms streamLatency={Get(snapshot, "WasapiPlaybackStreamLatencyMs")}ms | File: {Get(snapshot, "FlashbackFilePath")}");
+    }
+
+    private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot)
+    {
+        var mjpegDecodeSamples = Get(snapshot, "MjpegDecodeSampleCount", "0");
+        var mjpegDecoderCount = Get(snapshot, "MjpegDecoderCount", "0");
+        var hasCompressedActivity =
+            Get(snapshot, "MjpegCompressedFramesQueued", "0") != "0" ||
+            Get(snapshot, "MjpegCompressedFramesDequeued", "0") != "0" ||
+            Get(snapshot, "MjpegCompressedDropsQueueFull", "0") != "0" ||
+            Get(snapshot, "MjpegCompressedDropsByteBudget", "0") != "0" ||
+            Get(snapshot, "MjpegCompressedDropsDisposed", "0") != "0" ||
+            Get(snapshot, "MjpegCompressedQueueDepth", "0") != "0" ||
+            Get(snapshot, "MjpegCompressedQueueBytes", "0") != "0";
+        if (mjpegDecodeSamples == "0" && mjpegDecoderCount == "0" && !hasCompressedActivity)
+        {
+            return;
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("== MJPEG Pipeline Timing ==");
+        AppendMjpegDecodeTimingLines(builder, snapshot, mjpegDecodeSamples);
+        AppendMjpegPipelineTimingLines(builder, snapshot, mjpegDecoderCount);
+        AppendMjpegPreviewJitterSection(builder, snapshot);
+        AppendMjpegPerDecoderTimingLines(builder, snapshot);
+    }
+
+    private static void AppendMjpegDecodeTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecodeSamples)
+    {
+        if (mjpegDecodeSamples == "0")
+        {
+            return;
+        }
+
+        builder.AppendLine($"Decode: avg={Get(snapshot, "MjpegDecodeAvgMs")}ms P95={Get(snapshot, "MjpegDecodeP95Ms")}ms max={Get(snapshot, "MjpegDecodeMaxMs")}ms ({mjpegDecodeSamples} samples)");
+        builder.AppendLine($"Interop Copy: avg={Get(snapshot, "MjpegInteropCopyAvgMs")}ms P95={Get(snapshot, "MjpegInteropCopyP95Ms")}ms max={Get(snapshot, "MjpegInteropCopyMaxMs")}ms ({Get(snapshot, "MjpegInteropCopySampleCount")} samples)");
+        builder.AppendLine($"Total Callback: avg={Get(snapshot, "MjpegCallbackAvgMs")}ms P95={Get(snapshot, "MjpegCallbackP95Ms")}ms max={Get(snapshot, "MjpegCallbackMaxMs")}ms ({Get(snapshot, "MjpegCallbackSampleCount")} samples)");
+    }
+
+    private static void AppendMjpegPipelineTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecoderCount)
+    {
+        builder.AppendLine($"Decoders: {mjpegDecoderCount} | Decoded={Get(snapshot, "MjpegTotalDecoded")} Emitted={Get(snapshot, "MjpegTotalEmitted")} Dropped={Get(snapshot, "MjpegTotalDropped")}");
+        builder.AppendLine(
+            $"Compressed Queue: depth={Get(snapshot, "MjpegCompressedQueueDepth")} bytes={Get(snapshot, "MjpegCompressedQueueBytes")}/{Get(snapshot, "MjpegCompressedQueueByteBudget")} " +
+            $"queued={Get(snapshot, "MjpegCompressedFramesQueued")} dequeued={Get(snapshot, "MjpegCompressedFramesDequeued")} " +
+            $"drops(full={Get(snapshot, "MjpegCompressedDropsQueueFull")}, budget={Get(snapshot, "MjpegCompressedDropsByteBudget")}, disposed={Get(snapshot, "MjpegCompressedDropsDisposed")})");
+        builder.AppendLine(
+            $"MJPEG Drop Reasons: decode={Get(snapshot, "MjpegDecodeFailures")} reorderCollision={Get(snapshot, "MjpegReorderCollisions")} emit={Get(snapshot, "MjpegEmitFailures")}");
+        builder.AppendLine($"Reorder: avg={Get(snapshot, "MjpegReorderAvgMs")}ms P95={Get(snapshot, "MjpegReorderP95Ms")}ms max={Get(snapshot, "MjpegReorderMaxMs")}ms ({Get(snapshot, "MjpegReorderSampleCount")} samples) | Skips={Get(snapshot, "MjpegReorderSkips")} Buffer={Get(snapshot, "MjpegReorderBufferDepth")}");
+        builder.AppendLine($"Pipeline: avg={Get(snapshot, "MjpegPipelineAvgMs")}ms P95={Get(snapshot, "MjpegPipelineP95Ms")}ms max={Get(snapshot, "MjpegPipelineMaxMs")}ms ({Get(snapshot, "MjpegPipelineSampleCount")} samples)");
+    }
+
+    private static void AppendMjpegPreviewJitterSection(StringBuilder builder, JsonElement snapshot)
+    {
+        if (!string.Equals(Get(snapshot, "MjpegPreviewJitterEnabled", "False"), "True", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        builder.AppendLine(
+            $"Preview Jitter: target={Get(snapshot, "MjpegPreviewJitterTargetDepth")} depth={Get(snapshot, "MjpegPreviewJitterQueueDepth")}/{Get(snapshot, "MjpegPreviewJitterMaxDepth")} " +
+            $"queued={Get(snapshot, "MjpegPreviewJitterTotalQueued")} submitted={Get(snapshot, "MjpegPreviewJitterTotalSubmitted")} dropped={Get(snapshot, "MjpegPreviewJitterTotalDropped")} " +
+            $"clearedDrops={Get(snapshot, "MjpegPreviewJitterClearedDropCount")} deadlineDrops={Get(snapshot, "MjpegPreviewJitterDeadlineDropCount")} underflows={Get(snapshot, "MjpegPreviewJitterUnderflowCount")} resumeReprimes={Get(snapshot, "MjpegPreviewJitterResumeReprimeCount")} " +
+            $"target+={Get(snapshot, "MjpegPreviewJitterTargetIncreaseCount")} target-={Get(snapshot, "MjpegPreviewJitterTargetDecreaseCount")}");
+        builder.AppendLine(
+            $"Preview Jitter Input: avg={Get(snapshot, "MjpegPreviewJitterInputAvgMs")}ms P95={Get(snapshot, "MjpegPreviewJitterInputP95Ms")}ms max={Get(snapshot, "MjpegPreviewJitterInputMaxMs")}ms ({Get(snapshot, "MjpegPreviewJitterInputSampleCount")} samples)");
+        builder.AppendLine(
+            $"Preview Jitter Output: avg={Get(snapshot, "MjpegPreviewJitterOutputAvgMs")}ms P95={Get(snapshot, "MjpegPreviewJitterOutputP95Ms")}ms max={Get(snapshot, "MjpegPreviewJitterOutputMaxMs")}ms ({Get(snapshot, "MjpegPreviewJitterOutputSampleCount")} samples)");
+        builder.AppendLine(
+            $"Preview Jitter Latency: avg={Get(snapshot, "MjpegPreviewJitterLatencyAvgMs")}ms P95={Get(snapshot, "MjpegPreviewJitterLatencyP95Ms")}ms max={Get(snapshot, "MjpegPreviewJitterLatencyMaxMs")}ms ({Get(snapshot, "MjpegPreviewJitterLatencySampleCount")} samples)");
+        builder.AppendLine(
+            $"Preview Jitter Ownership: present={Get(snapshot, "MjpegPreviewJitterLastSelectedPreviewPresentId")} sourceSeq={Get(snapshot, "MjpegPreviewJitterLastSelectedSourceSequenceNumber")} " +
+            $"sourceLatency={Get(snapshot, "MjpegPreviewJitterLastSelectedSourceLatencyMs")}ms lastDropSeq={Get(snapshot, "MjpegPreviewJitterLastDroppedSourceSequenceNumber")} reason={Get(snapshot, "MjpegPreviewJitterLastDropReason")}");
+        builder.AppendLine(
+            $"Preview Jitter Underflow: reason={Get(snapshot, "MjpegPreviewJitterLastUnderflowReason")} " +
+            $"queue={Get(snapshot, "MjpegPreviewJitterLastUnderflowQueueDepth")} " +
+            $"inputAge={Get(snapshot, "MjpegPreviewJitterLastUnderflowInputAgeMs")}ms outputAge={Get(snapshot, "MjpegPreviewJitterLastUnderflowOutputAgeMs")}ms " +
+            $"scheduleLateLast={Get(snapshot, "MjpegPreviewJitterLastScheduleLateMs")}ms scheduleLateMax={Get(snapshot, "MjpegPreviewJitterMaxScheduleLateMs")}ms count={Get(snapshot, "MjpegPreviewJitterScheduleLateCount")}");
+    }
+
+    private static void AppendMjpegPerDecoderTimingLines(StringBuilder builder, JsonElement snapshot)
+    {
+        if (!snapshot.TryGetProperty("MjpegPerDecoder", out var perDecoder) ||
+            perDecoder.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (var worker in perDecoder.EnumerateArray())
+        {
+            builder.AppendLine(
+                $"Decoder[{Get(worker, "WorkerIndex", "?")}]: avg={Get(worker, "AvgMs")}ms " +
+                $"P95={Get(worker, "P95Ms")}ms max={Get(worker, "MaxMs")}ms " +
+                $"({Get(worker, "SampleCount")} samples)");
+        }
+    }
+
+    private static bool IsPreviewD3DRendererMode(string rendererMode)
+        => rendererMode == "D3D11VideoProcessor" ||
+           rendererMode == "Nv12Shader" ||
+           rendererMode == "HdrShader" ||
+           rendererMode == "HdrPassthrough";
+
+    private static void AppendPreviewD3DSection(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"D3D Swap Chain: {Get(snapshot, "PreviewD3DSwapChainAddress", "N/A")}");
+        builder.AppendLine($"D3D Frames: {Get(snapshot, "PreviewD3DFramesSubmitted")} submitted, {Get(snapshot, "PreviewD3DFramesRendered")} rendered, {Get(snapshot, "PreviewD3DFramesDropped")} dropped, pending={Get(snapshot, "PreviewD3DPendingFrameCount")}");
+        var renderThreadFailures = Get(snapshot, "PreviewD3DRenderThreadFailureCount", "0");
+        if (renderThreadFailures != "0")
+        {
+            builder.AppendLine($"D3D Render Thread Failures: {renderThreadFailures} last={Get(snapshot, "PreviewD3DLastRenderThreadFailureType")} hr={Get(snapshot, "PreviewD3DLastRenderThreadFailureHResult")} msg={Get(snapshot, "PreviewD3DLastRenderThreadFailureMessage")}");
+        }
+
+        builder.AppendLine($"Color: input={Get(snapshot, "PreviewD3DInputColorSpace")} output={Get(snapshot, "PreviewD3DOutputColorSpace")}");
+        builder.AppendLine($"Frame Time: target={FormatIntervalMs(snapshot, "PreviewCadenceExpectedIntervalMs")} avg={Get(snapshot, "PreviewCadenceAverageIntervalMs")}ms P95={Get(snapshot, "PreviewCadenceP95IntervalMs")}ms max={Get(snapshot, "PreviewCadenceMaxIntervalMs")}ms");
+        builder.AppendLine($"Average Rate: {Get(snapshot, "PreviewCadenceObservedFps")} fps | 5% Low: {Get(snapshot, "PreviewCadenceFivePercentLowFps")} fps | 1% Low: {Get(snapshot, "PreviewCadenceOnePercentLowFps")} fps | Samples: {Get(snapshot, "PreviewCadenceSampleCount")} over {Get(snapshot, "PreviewCadenceSampleDurationMs")}ms");
+        builder.AppendLine($"Pacing Classifier: stage={Get(snapshot, "PreviewPacingLikelySlowStage")} confidence={Get(snapshot, "PreviewPacingSlowStageConfidence")} evidence={Get(snapshot, "PreviewPacingSlowStageEvidence", "")}");
+        AppendPreviewD3DCpuTiming(builder, snapshot);
+        AppendPreviewD3DPipelineLatency(builder, snapshot);
+        AppendPreviewD3DFrameLatencyWait(builder, snapshot);
+        AppendPreviewD3DFrameStats(builder, snapshot);
+        AppendPreviewD3DFrameOwnership(builder, snapshot);
+        AppendPreviewSlowFrameDiagnostics(builder, snapshot);
+    }
+
+    private static void AppendPreviewD3DCpuTiming(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"D3D CPU timing: input/upload avg={Get(snapshot, "PreviewD3DInputUploadCpuAvgMs")}ms P95={Get(snapshot, "PreviewD3DInputUploadCpuP95Ms")}ms P99={Get(snapshot, "PreviewD3DInputUploadCpuP99Ms")}ms max={Get(snapshot, "PreviewD3DInputUploadCpuMaxMs")}ms | render-submit avg={Get(snapshot, "PreviewD3DRenderSubmitCpuAvgMs")}ms P95={Get(snapshot, "PreviewD3DRenderSubmitCpuP95Ms")}ms P99={Get(snapshot, "PreviewD3DRenderSubmitCpuP99Ms")}ms max={Get(snapshot, "PreviewD3DRenderSubmitCpuMaxMs")}ms | present-call avg={Get(snapshot, "PreviewD3DPresentCallAvgMs")}ms P95={Get(snapshot, "PreviewD3DPresentCallP95Ms")}ms P99={Get(snapshot, "PreviewD3DPresentCallP99Ms")}ms max={Get(snapshot, "PreviewD3DPresentCallMaxMs")}ms | total-frame avg={Get(snapshot, "PreviewD3DTotalFrameCpuAvgMs")}ms P95={Get(snapshot, "PreviewD3DTotalFrameCpuP95Ms")}ms P99={Get(snapshot, "PreviewD3DTotalFrameCpuP99Ms")}ms max={Get(snapshot, "PreviewD3DTotalFrameCpuMaxMs")}ms samples={Get(snapshot, "PreviewD3DCpuTimingSampleCount")}");
+    }
+
+    private static void AppendPreviewD3DPipelineLatency(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"D3D pipeline latency: avg={Get(snapshot, "PreviewD3DPipelineLatencyAvgMs")}ms P95={Get(snapshot, "PreviewD3DPipelineLatencyP95Ms")}ms P99={Get(snapshot, "PreviewD3DPipelineLatencyP99Ms")}ms max={Get(snapshot, "PreviewD3DPipelineLatencyMaxMs")}ms last={Get(snapshot, "PreviewD3DLastRenderedPipelineLatencyMs")}ms samples={Get(snapshot, "PreviewD3DPipelineLatencySampleCount")}");
+    }
+
+    private static void AppendPreviewD3DFrameLatencyWait(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"D3D frame-latency wait: enabled={Get(snapshot, "PreviewD3DFrameLatencyWaitEnabled")} handle={Get(snapshot, "PreviewD3DFrameLatencyWaitHandleActive")} calls={Get(snapshot, "PreviewD3DFrameLatencyWaitCallCount")} signaled={Get(snapshot, "PreviewD3DFrameLatencyWaitSignaledCount")} timeouts={Get(snapshot, "PreviewD3DFrameLatencyWaitTimeoutCount")} unexpected={Get(snapshot, "PreviewD3DFrameLatencyWaitUnexpectedResultCount")} lastResult={Get(snapshot, "PreviewD3DFrameLatencyWaitLastResult")} last={Get(snapshot, "PreviewD3DFrameLatencyWaitLastMs")}ms avg={Get(snapshot, "PreviewD3DFrameLatencyWaitAvgMs")}ms P95={Get(snapshot, "PreviewD3DFrameLatencyWaitP95Ms")}ms max={Get(snapshot, "PreviewD3DFrameLatencyWaitMaxMs")}ms samples={Get(snapshot, "PreviewD3DFrameLatencyWaitSampleCount")}");
+    }
+
+    private static void AppendPreviewD3DFrameStats(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"D3D DXGI stats: ok={Get(snapshot, "PreviewD3DFrameStatsSuccessCount")}/{Get(snapshot, "PreviewD3DFrameStatsSampleCount")} failures={Get(snapshot, "PreviewD3DFrameStatsFailureCount")} recentFailures={Get(snapshot, "PreviewD3DFrameStatsRecentFailureCount")} missedRefresh={Get(snapshot, "PreviewD3DFrameStatsMissedRefreshCount")} recentMissed={Get(snapshot, "PreviewD3DFrameStatsRecentMissedRefreshCount")} lastError={Get(snapshot, "PreviewD3DFrameStatsLastError", "")}");
+    }
+
+    private static void AppendPreviewD3DFrameOwnership(StringBuilder builder, JsonElement snapshot)
+    {
+        builder.AppendLine($"D3D Ownership: submitted present={Get(snapshot, "PreviewD3DLastSubmittedPreviewPresentId")} sourceSeq={Get(snapshot, "PreviewD3DLastSubmittedSourceSequenceNumber")} pts={Get(snapshot, "PreviewD3DLastSubmittedSourcePtsTicks")} | rendered present={Get(snapshot, "PreviewD3DLastRenderedPreviewPresentId")} sourceSeq={Get(snapshot, "PreviewD3DLastRenderedSourceSequenceNumber")} pts={Get(snapshot, "PreviewD3DLastRenderedSourcePtsTicks")} schedulerToPresent={Get(snapshot, "PreviewD3DLastRenderedSchedulerToPresentMs")}ms pipeline={Get(snapshot, "PreviewD3DLastRenderedPipelineLatencyMs")}ms | lastDrop={Get(snapshot, "PreviewD3DLastDropReason")} dropPts={Get(snapshot, "PreviewD3DLastDroppedSourcePtsTicks")}");
     }
 
     internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)
@@ -568,21 +569,189 @@ internal static class AutomationSnapshotFormatter
     private static string FormatDiagnosticMs(JsonElement element, string propertyName)
     {
         var value = GetDouble(element, propertyName, double.NaN);
-        return double.IsFinite(value) ? $"{value:0.00}ms" : "N/A";
+        return double.IsFinite(value) ? $"{FormatNumber(value, "0.00")}ms" : "N/A";
     }
 
-    private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)
+    internal static bool IsSuccess(JsonElement response)
     {
-        builder.AppendLine();
-        builder.AppendLine("== Source ==");
-        var sourceFrameRate = Get(snapshot, "DetectedSourceFrameRate", string.Empty);
-        var sourceFrameRateArg = Get(snapshot, "DetectedSourceFrameRateArg", string.Empty);
-        var sourceFpsSummary = !string.IsNullOrWhiteSpace(sourceFrameRateArg)
-            ? $"{sourceFrameRate}fps ({sourceFrameRateArg})"
-            : !string.IsNullOrWhiteSpace(sourceFrameRate)
-                ? $"{sourceFrameRate}fps"
-                : "N/A";
-        builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} @ {sourceFpsSummary} HDR={Get(snapshot, "SourceIsHdr")}");
-        builder.AppendLine($"Telemetry: {Get(snapshot, "SourceTelemetryAvailability")} ({Get(snapshot, "SourceTelemetryConfidence")})");
+        return response.ValueKind == JsonValueKind.Object &&
+               response.TryGetProperty("Success", out var success) &&
+               success.ValueKind == JsonValueKind.True;
+    }
+
+    internal static string Get(JsonElement element, string propertyName, string fallback = "N/A")
+    {
+        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(propertyName, out var value))
+        {
+            return fallback;
+        }
+
+        if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return fallback;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString() ?? fallback,
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Number => value.ToString(),
+            JsonValueKind.Array => value.GetArrayLength() == 0 ? fallback : value.ToString(),
+            JsonValueKind.Object => value.ToString(),
+            _ => fallback
+        };
+    }
+
+    internal static bool GetBool(JsonElement element, string propertyName)
+    {
+        if (element.ValueKind != JsonValueKind.Object ||
+            !element.TryGetProperty(propertyName, out var value))
+        {
+            return false;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.False => false,
+            JsonValueKind.String => bool.TryParse(value.GetString(), out var parsed) && parsed,
+            _ => false
+        };
+    }
+
+    internal static string? GetString(JsonElement element, string propertyName)
+    {
+        if (element.ValueKind != JsonValueKind.Object ||
+            !element.TryGetProperty(propertyName, out var value) ||
+            value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        return value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : value.ToString();
+    }
+
+    internal static int GetInt(JsonElement element, string propertyName, int fallback = 0)
+    {
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty(propertyName, out var value))
+        {
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var numeric))
+                return numeric;
+
+            if (value.ValueKind == JsonValueKind.String &&
+                int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                return parsed;
+        }
+
+        return fallback;
+    }
+
+    internal static double GetDouble(JsonElement element, string propertyName, double fallback = 0.0)
+    {
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty(propertyName, out var value))
+        {
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var numeric))
+                return numeric;
+
+            if (value.ValueKind == JsonValueKind.String &&
+                double.TryParse(value.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+                return parsed;
+        }
+
+        return fallback;
+    }
+
+    internal static long GetLong(JsonElement element, string propertyName, long fallback = 0)
+    {
+        if (element.ValueKind == JsonValueKind.Object &&
+            element.TryGetProperty(propertyName, out var value))
+        {
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var numeric))
+            {
+                return numeric;
+            }
+
+            if (value.ValueKind == JsonValueKind.String &&
+                long.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return fallback;
+    }
+
+    internal static long? GetNullableLong(JsonElement element, string propertyName)
+    {
+        if (element.ValueKind != JsonValueKind.Object ||
+            !element.TryGetProperty(propertyName, out var value) ||
+            value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var numeric))
+        {
+            return numeric;
+        }
+
+        return long.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
+    }
+
+    internal static string FormatFrameBudgetMs(JsonElement element, string fpsPropertyName, string fallback = "N/A")
+    {
+        var fps = GetDouble(element, fpsPropertyName);
+        return fps > 0 ? $"{FormatNumber(1000.0 / fps, "0.00")}ms" : fallback;
+    }
+
+    internal static string FormatIntervalMs(JsonElement element, string propertyName, string fallback = "N/A")
+    {
+        var intervalMs = GetDouble(element, propertyName);
+        return intervalMs > 0 ? $"{FormatNumber(intervalMs, "0.##")}ms" : fallback;
+    }
+
+    internal static string FormatBytes(long bytes)
+    {
+        if (bytes < 0)
+        {
+            return "N/A";
+        }
+
+        if (bytes >= 1024L * 1024L * 1024L)
+        {
+            return $"{FormatNumber(bytes / (1024.0 * 1024.0 * 1024.0), "0.##")} GB";
+        }
+
+        if (bytes >= 1024L * 1024L)
+        {
+            return $"{FormatNumber(bytes / (1024.0 * 1024.0), "0.##")} MB";
+        }
+
+        if (bytes >= 1024L)
+        {
+            return $"{FormatNumber(bytes / 1024.0, "0.##")} KB";
+        }
+
+        return $"{bytes} B";
+    }
+
+    internal static string FormatNumber(double value, string format)
+        => value.ToString(format, CultureInfo.InvariantCulture);
+
+    internal static long ComputeTickAgeMs(long tickMs)
+    {
+        if (tickMs <= 0)
+        {
+            return -1;
+        }
+
+        return Math.Max(0, Environment.TickCount64 - tickMs);
     }
 }

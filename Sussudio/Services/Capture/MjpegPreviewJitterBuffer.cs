@@ -16,21 +16,6 @@ namespace Sussudio.Services.Capture;
 // letting preview latency grow without bound.
 internal sealed class MjpegPreviewJitterBuffer : IDisposable
 {
-    private enum DequeueMissReason
-    {
-        None,
-        EmptyQueue,
-        WaitingForSequence
-    }
-
-    public delegate void PreviewFrameProbe(
-        ReadOnlySpan<byte> frame,
-        int width,
-        int height,
-        PooledVideoPixelFormat pixelFormat,
-        long arrivalTick,
-        long sequenceNumber);
-
     private sealed class BufferedFrame : IDisposable
     {
         public BufferedFrame(byte[] buffer, int length, int width, int height, long arrivalTick, long enqueueTick)
@@ -85,6 +70,21 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             }
         }
     }
+
+    private enum DequeueMissReason
+    {
+        None,
+        EmptyQueue,
+        WaitingForSequence
+    }
+
+    public delegate void PreviewFrameProbe(
+        ReadOnlySpan<byte> frame,
+        int width,
+        int height,
+        PooledVideoPixelFormat pixelFormat,
+        long arrivalTick,
+        long sequenceNumber);
 
     public readonly record struct Metrics(
         bool Enabled,
@@ -263,210 +263,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             $"displayClockDelayMs={_displayClockSubmitDelayMs:0.###} displayClockMinLeadMs={_displayClockMinLeadMs:0.###}");
     }
 
-    public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
-    {
-        if (Volatile.Read(ref _disposed) != 0 ||
-            Volatile.Read(ref _previewSubmissionSuppressed) != 0 ||
-            nv12Data.IsEmpty ||
-            width <= 0 ||
-            height <= 0)
-        {
-            return;
-        }
-
-        var now = Stopwatch.GetTimestamp();
-        RecordInputInterval(now);
-
-        var buffer = ArrayPool<byte>.Shared.Rent(nv12Data.Length);
-        nv12Data.CopyTo(buffer);
-        var frame = new BufferedFrame(buffer, nv12Data.Length, width, height, arrivalTick, now);
-        EnqueueBufferedFrame(frame);
-    }
-
-    public void Enqueue(PooledVideoFrameLease frame)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-
-        if (Volatile.Read(ref _disposed) != 0 ||
-            Volatile.Read(ref _previewSubmissionSuppressed) != 0 ||
-            frame.Length <= 0 ||
-            frame.Width <= 0 ||
-            frame.Height <= 0)
-        {
-            frame.Dispose();
-            return;
-        }
-
-        var now = Stopwatch.GetTimestamp();
-        RecordInputInterval(now);
-        EnqueueBufferedFrame(new BufferedFrame(frame, now));
-    }
-
-    private void EnqueueBufferedFrame(BufferedFrame frame)
-    {
-        var shouldSignal = false;
-
-        lock (_sync)
-        {
-            if (Volatile.Read(ref _disposed) != 0)
-            {
-                frame.Dispose();
-                return;
-            }
-
-            while (_frames.Count >= _maxDepth)
-            {
-                var dropped = RemoveOldestFrame();
-                RecordDroppedFrame(dropped.SequenceNumber, "queue-full");
-                dropped.Dispose();
-                Interlocked.Increment(ref _totalDropped);
-            }
-
-            if (AddFrameInOrder(frame))
-            {
-                Interlocked.Increment(ref _totalQueued);
-                shouldSignal = true;
-            }
-        }
-
-        if (shouldSignal && Volatile.Read(ref _disposed) == 0)
-        {
-            try
-            {
-                _signal.Set();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Dispose won the race after the frame was queued; Dispose drains the queue.
-            }
-        }
-    }
-
-    public Metrics GetMetrics()
-    {
-        int depth;
-        double[] input;
-        double[] output;
-        double[] latency;
-        lock (_sync)
-        {
-            depth = _frames.Count;
-            input = RingBufferHelpers.Copy(_inputIntervalsMs, _inputIntervalCount, _inputIntervalIndex);
-            output = RingBufferHelpers.Copy(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex);
-            latency = RingBufferHelpers.Copy(_queueLatencyMs, _queueLatencyCount, _queueLatencyIndex);
-        }
-
-        var inputMetrics = ComputeTimingMetrics(input);
-        var outputMetrics = ComputeTimingMetrics(output);
-        var latencyMetrics = ComputeTimingMetrics(latency);
-        return new Metrics(
-            Enabled: true,
-            TargetDepth: Volatile.Read(ref _targetDepth),
-            MaxDepth: _maxDepth,
-            QueueDepth: depth,
-            TotalQueued: Interlocked.Read(ref _totalQueued),
-            TotalSubmitted: Interlocked.Read(ref _totalSubmitted),
-            TotalDropped: Interlocked.Read(ref _totalDropped),
-            UnderflowCount: Interlocked.Read(ref _underflowCount),
-            ResumeReprimeCount: Interlocked.Read(ref _resumeReprimeCount),
-            InputIntervalSampleCount: inputMetrics.SampleCount,
-            InputIntervalAvgMs: inputMetrics.AverageMs,
-            InputIntervalP95Ms: inputMetrics.P95Ms,
-            InputIntervalMaxMs: inputMetrics.MaxMs,
-            OutputIntervalSampleCount: outputMetrics.SampleCount,
-            OutputIntervalAvgMs: outputMetrics.AverageMs,
-            OutputIntervalP95Ms: outputMetrics.P95Ms,
-            OutputIntervalMaxMs: outputMetrics.MaxMs,
-            QueueLatencySampleCount: latencyMetrics.SampleCount,
-            QueueLatencyAvgMs: latencyMetrics.AverageMs,
-            QueueLatencyP95Ms: latencyMetrics.P95Ms,
-            QueueLatencyMaxMs: latencyMetrics.MaxMs,
-            DeadlineDropCount: Interlocked.Read(ref _deadlineDropCount),
-            ClearedDropCount: Interlocked.Read(ref _clearedDropCount),
-            TargetIncreaseCount: Interlocked.Read(ref _targetIncreaseCount),
-            TargetDecreaseCount: Interlocked.Read(ref _targetDecreaseCount),
-            LastSelectedPreviewPresentId: Interlocked.Read(ref _lastSelectedPreviewPresentId),
-            LastSelectedSourceSequenceNumber: Interlocked.Read(ref _lastSelectedSourceSequenceNumber),
-            LastSelectedQpc: Interlocked.Read(ref _lastSelectedQpc),
-            LastSelectedSourceLatencyMs: TicksToMs(Interlocked.Read(ref _lastSelectedSourceLatencyTicks)),
-            LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
-            LastDropQpc: Interlocked.Read(ref _lastDropQpc),
-            LastDropReason: Volatile.Read(ref _lastDropReason),
-            LastUnderflowQpc: Interlocked.Read(ref _lastUnderflowQpc),
-            LastUnderflowReason: Volatile.Read(ref _lastUnderflowReason),
-            LastUnderflowQueueDepth: Volatile.Read(ref _lastUnderflowQueueDepth),
-            LastUnderflowInputAgeMs: TicksToMs(Interlocked.Read(ref _lastUnderflowInputAgeTicks)),
-            LastUnderflowOutputAgeMs: TicksToMs(Interlocked.Read(ref _lastUnderflowOutputAgeTicks)),
-            LastScheduleLateMs: TicksToMs(Interlocked.Read(ref _lastScheduleLateTicks)),
-            MaxScheduleLateMs: TicksToMs(Interlocked.Read(ref _maxScheduleLateTicks)),
-            ScheduleLateCount: Interlocked.Read(ref _scheduleLateCount));
-    }
-
-    public void Dispose()
-    {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
-        {
-            return;
-        }
-
-        _signal.Set();
-        if (!_thread.Join(TimeSpan.FromSeconds(2)))
-        {
-            Logger.Log("MJPEG_PREVIEW_JITTER_STOP_TIMEOUT");
-        }
-
-        lock (_sync)
-        {
-            foreach (var frame in _frames)
-            {
-                frame.Dispose();
-            }
-
-            _frames.Clear();
-        }
-
-        if (_timerResolutionRaised)
-        {
-            timeEndPeriod(1);
-        }
-
-        _signal.Dispose();
-        Logger.Log(
-            $"MJPEG_PREVIEW_JITTER_DISPOSED queued={_totalQueued} submitted={_totalSubmitted} " +
-            $"dropped={_totalDropped} underflows={_underflowCount} resumeReprimes={_resumeReprimeCount}");
-    }
-
-    public void Clear()
-    {
-        ClearQueue();
-    }
-
-    public void ResetForPreviewSuppression()
-    {
-        Volatile.Write(ref _previewSubmissionSuppressed, 1);
-        Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
-        Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
-        ClearQueue("suppressed");
-    }
-
-    public void ReprimeAfterPreviewResume()
-    {
-        Volatile.Write(ref _previewSubmissionSuppressed, 0);
-        Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
-        Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
-        if (Volatile.Read(ref _disposed) == 0)
-        {
-            try
-            {
-                _signal.Set();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Dispose won the race; the resume marker is irrelevant now.
-            }
-        }
-    }
-
     private void EmitLoop()
     {
         using var mmcss = MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority, message => Logger.Log(message));
@@ -564,128 +360,147 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
     }
 
-    private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)
+    public void Dispose()
     {
-        if (!_displayClockPacingEnabled ||
-            sink is not IPreviewDisplayClock displayClock ||
-            !displayClock.TryGetDisplayClock(out var clock) ||
-            clock.LastPresentTick <= 0)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
-            return currentDueTick;
+            return;
         }
 
-        if (clock.LastPresentTick <= Interlocked.Read(ref _lastDisplayClockPacedPresentTick))
+        _signal.Set();
+        if (!_thread.Join(TimeSpan.FromSeconds(2)))
         {
-            return currentDueTick;
+            Logger.Log("MJPEG_PREVIEW_JITTER_STOP_TIMEOUT");
         }
 
-        var intervalTicks = clock.FrameIntervalTicks > 0 ? clock.FrameIntervalTicks : _frameIntervalTicks;
-        var submitDelayTicks = MsToTicks(_displayClockSubmitDelayMs);
-        var minLeadTicks = MsToTicks(_displayClockMinLeadMs);
-        var nextPresentTick = clock.LastPresentTick + intervalTicks;
-        while (nextPresentTick <= nowTick)
+        lock (_sync)
         {
-            nextPresentTick += intervalTicks;
+            foreach (var frame in _frames)
+            {
+                frame.Dispose();
+            }
+
+            _frames.Clear();
         }
 
-        var preferredDueTick = clock.LastPresentTick + submitDelayTicks;
-        while (preferredDueTick <= nowTick)
+        if (_timerResolutionRaised)
         {
-            preferredDueTick += intervalTicks;
+            timeEndPeriod(1);
         }
 
-        var latestSafeSubmitTick = nextPresentTick - minLeadTicks;
-        if (nowTick <= latestSafeSubmitTick && preferredDueTick > latestSafeSubmitTick)
-        {
-            Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
-            return nowTick;
-        }
-
-        if (preferredDueTick <= latestSafeSubmitTick)
-        {
-            Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
-            return preferredDueTick;
-        }
-
-        Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
-        return nextPresentTick + submitDelayTicks;
+        _signal.Dispose();
+        Logger.Log(
+            $"MJPEG_PREVIEW_JITTER_DISPOSED queued={_totalQueued} submitted={_totalSubmitted} " +
+            $"dropped={_totalDropped} underflows={_underflowCount} resumeReprimes={_resumeReprimeCount}");
     }
 
-    private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)
+    public void Clear()
     {
-        var submitTick = Stopwatch.GetTimestamp();
-        var previewPresentId = Interlocked.Increment(ref _nextPreviewPresentId);
-        try
+        ClearQueue();
+    }
+
+    public void ResetForPreviewSuppression()
+    {
+        Volatile.Write(ref _previewSubmissionSuppressed, 1);
+        Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
+        Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
+        ClearQueue("suppressed");
+    }
+
+    public void ReprimeAfterPreviewResume()
+    {
+        Volatile.Write(ref _previewSubmissionSuppressed, 0);
+        Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
+        Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
+        if (Volatile.Read(ref _disposed) == 0)
         {
-            if (frame.Lease != null)
+            try
             {
-                var lease = frame.Lease;
-                frame.Lease = null;
-                try
-                {
-                    _previewFrameProbe?.Invoke(
-                        lease.Memory.Span,
-                        frame.Width,
-                        frame.Height,
-                        lease.PixelFormat,
-                        frame.ArrivalTick,
-                        frame.SequenceNumber);
-                    sink.SubmitRawFrameLease(
-                        lease,
-                        isHdr: false,
-                        PreviewFrameTracking.Default with
-                        {
-                            PreviewPresentId = previewPresentId,
-                            SchedulerSubmitTick = submitTick,
-                        });
-                    lease = null;
-                }
-                finally
-                {
-                    lease?.Dispose();
-                }
+                _signal.Set();
             }
-            else
+            catch (ObjectDisposedException)
             {
-                _previewFrameProbe?.Invoke(
-                    frame.Buffer.AsSpan(0, frame.Length),
-                    frame.Width,
-                    frame.Height,
-                    frame.PixelFormat,
-                    frame.ArrivalTick,
-                    frame.SequenceNumber);
-                unsafe
-                {
-                    fixed (byte* pointer = frame.Buffer)
-                    {
-                        sink.SubmitRawFrame(
-                            (IntPtr)pointer,
-                            frame.Length,
-                            frame.Width,
-                            frame.Height,
-                            false,
-                            PreviewFrameTracking.Default with
-                            {
-                                ArrivalTick = frame.ArrivalTick,
-                                SourceSequenceNumber = frame.SequenceNumber,
-                                PreviewPresentId = previewPresentId,
-                                SchedulerSubmitTick = submitTick,
-                            });
-                    }
-                }
+                // Dispose won the race; the resume marker is irrelevant now.
+            }
+        }
+    }
+
+    public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
+    {
+        if (Volatile.Read(ref _disposed) != 0 ||
+            Volatile.Read(ref _previewSubmissionSuppressed) != 0 ||
+            nv12Data.IsEmpty ||
+            width <= 0 ||
+            height <= 0)
+        {
+            return;
+        }
+
+        var now = Stopwatch.GetTimestamp();
+        RecordInputInterval(now);
+
+        var buffer = ArrayPool<byte>.Shared.Rent(nv12Data.Length);
+        nv12Data.CopyTo(buffer);
+        var frame = new BufferedFrame(buffer, nv12Data.Length, width, height, arrivalTick, now);
+        EnqueueBufferedFrame(frame);
+    }
+
+    public void Enqueue(PooledVideoFrameLease frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        if (Volatile.Read(ref _disposed) != 0 ||
+            Volatile.Read(ref _previewSubmissionSuppressed) != 0 ||
+            frame.Length <= 0 ||
+            frame.Width <= 0 ||
+            frame.Height <= 0)
+        {
+            frame.Dispose();
+            return;
+        }
+
+        var now = Stopwatch.GetTimestamp();
+        RecordInputInterval(now);
+        EnqueueBufferedFrame(new BufferedFrame(frame, now));
+    }
+
+    private void EnqueueBufferedFrame(BufferedFrame frame)
+    {
+        var shouldSignal = false;
+
+        lock (_sync)
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                frame.Dispose();
+                return;
             }
 
-            var now = Stopwatch.GetTimestamp();
-            RecordSelectedFrame(frame, previewPresentId, submitTick);
-            RecordOutputInterval(now);
-            RecordQueueLatency(frame.EnqueueTick, now);
-            Interlocked.Increment(ref _totalSubmitted);
+            while (_frames.Count >= _maxDepth)
+            {
+                var dropped = RemoveOldestFrame();
+                RecordDroppedFrame(dropped.SequenceNumber, "queue-full");
+                dropped.Dispose();
+                Interlocked.Increment(ref _totalDropped);
+            }
+
+            if (AddFrameInOrder(frame))
+            {
+                Interlocked.Increment(ref _totalQueued);
+                shouldSignal = true;
+            }
         }
-        catch (Exception ex)
+
+        if (shouldSignal && Volatile.Read(ref _disposed) == 0)
         {
-            RecordDroppedFrame(frame.SequenceNumber, "submit-failed");
-            Interlocked.Increment(ref _totalDropped);
-            Logger.Log($"MJPEG_PREVIEW_JITTER_SUBMIT_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            try
+            {
+                _signal.Set();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Dispose won the race after the frame was queued; Dispose drains the queue.
+            }
         }
     }
 
@@ -895,6 +710,353 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
     }
 
+    public Metrics GetMetrics()
+    {
+        int depth;
+        double[] input;
+        double[] output;
+        double[] latency;
+        lock (_sync)
+        {
+            depth = _frames.Count;
+            input = RingBufferHelpers.Copy(_inputIntervalsMs, _inputIntervalCount, _inputIntervalIndex);
+            output = RingBufferHelpers.Copy(_outputIntervalsMs, _outputIntervalCount, _outputIntervalIndex);
+            latency = RingBufferHelpers.Copy(_queueLatencyMs, _queueLatencyCount, _queueLatencyIndex);
+        }
+
+        var inputMetrics = ComputeTimingMetrics(input);
+        var outputMetrics = ComputeTimingMetrics(output);
+        var latencyMetrics = ComputeTimingMetrics(latency);
+        return new Metrics(
+            Enabled: true,
+            TargetDepth: Volatile.Read(ref _targetDepth),
+            MaxDepth: _maxDepth,
+            QueueDepth: depth,
+            TotalQueued: Interlocked.Read(ref _totalQueued),
+            TotalSubmitted: Interlocked.Read(ref _totalSubmitted),
+            TotalDropped: Interlocked.Read(ref _totalDropped),
+            UnderflowCount: Interlocked.Read(ref _underflowCount),
+            ResumeReprimeCount: Interlocked.Read(ref _resumeReprimeCount),
+            InputIntervalSampleCount: inputMetrics.SampleCount,
+            InputIntervalAvgMs: inputMetrics.AverageMs,
+            InputIntervalP95Ms: inputMetrics.P95Ms,
+            InputIntervalMaxMs: inputMetrics.MaxMs,
+            OutputIntervalSampleCount: outputMetrics.SampleCount,
+            OutputIntervalAvgMs: outputMetrics.AverageMs,
+            OutputIntervalP95Ms: outputMetrics.P95Ms,
+            OutputIntervalMaxMs: outputMetrics.MaxMs,
+            QueueLatencySampleCount: latencyMetrics.SampleCount,
+            QueueLatencyAvgMs: latencyMetrics.AverageMs,
+            QueueLatencyP95Ms: latencyMetrics.P95Ms,
+            QueueLatencyMaxMs: latencyMetrics.MaxMs,
+            DeadlineDropCount: Interlocked.Read(ref _deadlineDropCount),
+            ClearedDropCount: Interlocked.Read(ref _clearedDropCount),
+            TargetIncreaseCount: Interlocked.Read(ref _targetIncreaseCount),
+            TargetDecreaseCount: Interlocked.Read(ref _targetDecreaseCount),
+            LastSelectedPreviewPresentId: Interlocked.Read(ref _lastSelectedPreviewPresentId),
+            LastSelectedSourceSequenceNumber: Interlocked.Read(ref _lastSelectedSourceSequenceNumber),
+            LastSelectedQpc: Interlocked.Read(ref _lastSelectedQpc),
+            LastSelectedSourceLatencyMs: TicksToMs(Interlocked.Read(ref _lastSelectedSourceLatencyTicks)),
+            LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
+            LastDropQpc: Interlocked.Read(ref _lastDropQpc),
+            LastDropReason: Volatile.Read(ref _lastDropReason),
+            LastUnderflowQpc: Interlocked.Read(ref _lastUnderflowQpc),
+            LastUnderflowReason: Volatile.Read(ref _lastUnderflowReason),
+            LastUnderflowQueueDepth: Volatile.Read(ref _lastUnderflowQueueDepth),
+            LastUnderflowInputAgeMs: TicksToMs(Interlocked.Read(ref _lastUnderflowInputAgeTicks)),
+            LastUnderflowOutputAgeMs: TicksToMs(Interlocked.Read(ref _lastUnderflowOutputAgeTicks)),
+            LastScheduleLateMs: TicksToMs(Interlocked.Read(ref _lastScheduleLateTicks)),
+            MaxScheduleLateMs: TicksToMs(Interlocked.Read(ref _maxScheduleLateTicks)),
+            ScheduleLateCount: Interlocked.Read(ref _scheduleLateCount));
+    }
+
+    private void RecordInputInterval(long nowTick)
+    {
+        var previous = Interlocked.Exchange(ref _lastInputTick, nowTick);
+        if (previous > 0)
+        {
+            RecordTimingSample(_inputIntervalsMs, ref _inputIntervalCount, ref _inputIntervalIndex, ElapsedMs(previous, nowTick));
+        }
+    }
+
+    private void RecordOutputInterval(long nowTick)
+    {
+        var previous = Interlocked.Exchange(ref _lastOutputTick, nowTick);
+        if (previous > 0)
+        {
+            RecordTimingSample(_outputIntervalsMs, ref _outputIntervalCount, ref _outputIntervalIndex, ElapsedMs(previous, nowTick));
+        }
+    }
+
+    private void RecordQueueLatency(long startTick, long endTick)
+        => RecordTimingSample(_queueLatencyMs, ref _queueLatencyCount, ref _queueLatencyIndex, ElapsedMs(startTick, endTick));
+
+    private void RecordSelectedFrame(BufferedFrame frame, long previewPresentId, long submitTick)
+    {
+        Interlocked.Exchange(ref _lastSelectedPreviewPresentId, previewPresentId);
+        Interlocked.Exchange(ref _lastSelectedSourceSequenceNumber, frame.SequenceNumber);
+        Interlocked.Exchange(ref _lastSelectedQpc, submitTick);
+        var latencyTicks = frame.ArrivalTick > 0 && submitTick > frame.ArrivalTick
+            ? submitTick - frame.ArrivalTick
+            : 0;
+        Interlocked.Exchange(ref _lastSelectedSourceLatencyTicks, latencyTicks);
+    }
+
+    private void RecordDroppedFrame(long sourceSequenceNumber, string reason)
+    {
+        Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, sourceSequenceNumber);
+        Interlocked.Exchange(ref _lastDropQpc, Stopwatch.GetTimestamp());
+        Volatile.Write(ref _lastDropReason, reason);
+    }
+
+    private void RecordUnderflow(long nowTick)
+    {
+        string reason;
+        int depth;
+        lock (_sync)
+        {
+            depth = _frames.Count;
+            reason = depth == 0
+                ? "empty-queue"
+                : _nextPreviewSequence >= 0 &&
+                  _frames.FindIndex(frame => frame.SequenceNumber == _nextPreviewSequence) < 0
+                    ? "waiting-for-sequence"
+                    : "selection-blocked";
+        }
+
+        Interlocked.Exchange(ref _lastUnderflowQpc, nowTick);
+        Volatile.Write(ref _lastUnderflowQueueDepth, depth);
+        Volatile.Write(ref _lastUnderflowReason, reason);
+
+        var lastInputTick = Interlocked.Read(ref _lastInputTick);
+        var inputAgeTicks = lastInputTick > 0 && nowTick > lastInputTick ? nowTick - lastInputTick : 0;
+        Interlocked.Exchange(ref _lastUnderflowInputAgeTicks, inputAgeTicks);
+
+        var lastOutputTick = Interlocked.Read(ref _lastOutputTick);
+        var outputAgeTicks = lastOutputTick > 0 && nowTick > lastOutputTick ? nowTick - lastOutputTick : 0;
+        Interlocked.Exchange(ref _lastUnderflowOutputAgeTicks, outputAgeTicks);
+    }
+
+    private void RecordScheduleLate(long scheduleLateTicks)
+    {
+        Interlocked.Exchange(ref _lastScheduleLateTicks, scheduleLateTicks);
+        if (scheduleLateTicks <= _frameIntervalTicks / 2)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _scheduleLateCount);
+        while (true)
+        {
+            var current = Interlocked.Read(ref _maxScheduleLateTicks);
+            if (scheduleLateTicks <= current ||
+                Interlocked.CompareExchange(ref _maxScheduleLateTicks, scheduleLateTicks, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    private void RecordTimingSample(double[] window, ref int count, ref int index, double valueMs)
+    {
+        if (valueMs <= 0 || valueMs > 5000)
+        {
+            return;
+        }
+
+        lock (_sync)
+        {
+            RingBufferHelpers.Add(window, ref count, ref index, valueMs);
+        }
+    }
+
+    private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)
+    {
+        if (samples.Length == 0)
+        {
+            return (0, 0, 0, 0);
+        }
+
+        var sorted = (double[])samples.Clone();
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sorted.Length; i++)
+        {
+            sum += sorted[i];
+            if (sorted[i] > max)
+            {
+                max = sorted[i];
+            }
+        }
+
+        Array.Sort(sorted);
+        var p95Index = Math.Min((int)(sorted.Length * 0.95), sorted.Length - 1);
+        return (sorted.Length, sum / sorted.Length, sorted[p95Index], max);
+    }
+
+    private static double ElapsedMs(long startTick, long endTick)
+        => (endTick - startTick) * 1000.0 / Stopwatch.Frequency;
+
+    private static double TicksToMs(long ticks)
+        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
+
+    private static long MsToTicks(double ms)
+        => Math.Max(0, (long)Math.Round(ms * Stopwatch.Frequency / 1000.0));
+
+
+    private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)
+    {
+        if (!_displayClockPacingEnabled ||
+            sink is not IPreviewDisplayClock displayClock ||
+            !displayClock.TryGetDisplayClock(out var clock) ||
+            clock.LastPresentTick <= 0)
+        {
+            return currentDueTick;
+        }
+
+        if (clock.LastPresentTick <= Interlocked.Read(ref _lastDisplayClockPacedPresentTick))
+        {
+            return currentDueTick;
+        }
+
+        var intervalTicks = clock.FrameIntervalTicks > 0 ? clock.FrameIntervalTicks : _frameIntervalTicks;
+        var submitDelayTicks = MsToTicks(_displayClockSubmitDelayMs);
+        var minLeadTicks = MsToTicks(_displayClockMinLeadMs);
+        var nextPresentTick = clock.LastPresentTick + intervalTicks;
+        while (nextPresentTick <= nowTick)
+        {
+            nextPresentTick += intervalTicks;
+        }
+
+        var preferredDueTick = clock.LastPresentTick + submitDelayTicks;
+        while (preferredDueTick <= nowTick)
+        {
+            preferredDueTick += intervalTicks;
+        }
+
+        var latestSafeSubmitTick = nextPresentTick - minLeadTicks;
+        if (nowTick <= latestSafeSubmitTick && preferredDueTick > latestSafeSubmitTick)
+        {
+            Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
+            return nowTick;
+        }
+
+        if (preferredDueTick <= latestSafeSubmitTick)
+        {
+            Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
+            return preferredDueTick;
+        }
+
+        Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
+        return nextPresentTick + submitDelayTicks;
+    }
+
+    private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)
+    {
+        var submitTick = Stopwatch.GetTimestamp();
+        var previewPresentId = Interlocked.Increment(ref _nextPreviewPresentId);
+        try
+        {
+            if (frame.Lease != null)
+            {
+                var lease = frame.Lease;
+                frame.Lease = null;
+                try
+                {
+                    _previewFrameProbe?.Invoke(
+                        lease.Memory.Span,
+                        frame.Width,
+                        frame.Height,
+                        lease.PixelFormat,
+                        frame.ArrivalTick,
+                        frame.SequenceNumber);
+                    sink.SubmitRawFrameLease(
+                        lease,
+                        isHdr: false,
+                        PreviewFrameTracking.Default with
+                        {
+                            PreviewPresentId = previewPresentId,
+                            SchedulerSubmitTick = submitTick,
+                        });
+                    lease = null;
+                }
+                finally
+                {
+                    lease?.Dispose();
+                }
+            }
+            else
+            {
+                _previewFrameProbe?.Invoke(
+                    frame.Buffer.AsSpan(0, frame.Length),
+                    frame.Width,
+                    frame.Height,
+                    frame.PixelFormat,
+                    frame.ArrivalTick,
+                    frame.SequenceNumber);
+                unsafe
+                {
+                    fixed (byte* pointer = frame.Buffer)
+                    {
+                        sink.SubmitRawFrame(
+                            (IntPtr)pointer,
+                            frame.Length,
+                            frame.Width,
+                            frame.Height,
+                            false,
+                            PreviewFrameTracking.Default with
+                            {
+                                ArrivalTick = frame.ArrivalTick,
+                                SourceSequenceNumber = frame.SequenceNumber,
+                                PreviewPresentId = previewPresentId,
+                                SchedulerSubmitTick = submitTick,
+                            });
+                    }
+                }
+            }
+
+            var now = Stopwatch.GetTimestamp();
+            RecordSelectedFrame(frame, previewPresentId, submitTick);
+            RecordOutputInterval(now);
+            RecordQueueLatency(frame.EnqueueTick, now);
+            Interlocked.Increment(ref _totalSubmitted);
+        }
+        catch (Exception ex)
+        {
+            RecordDroppedFrame(frame.SequenceNumber, "submit-failed");
+            Interlocked.Increment(ref _totalDropped);
+            Logger.Log($"MJPEG_PREVIEW_JITTER_SUBMIT_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void WaitForTicks(long ticks)
+    {
+        var deadline = Stopwatch.GetTimestamp() + ticks;
+
+        while (Volatile.Read(ref _disposed) == 0)
+        {
+            var remainingTicks = deadline - Stopwatch.GetTimestamp();
+            if (remainingTicks <= 0)
+            {
+                return;
+            }
+
+            var ms = remainingTicks * 1000.0 / Stopwatch.Frequency;
+            if (ms >= 2.0)
+            {
+                Thread.Sleep(Math.Max(1, (int)Math.Floor(ms - 0.5)));
+            }
+            else if (ms > 0)
+            {
+                Thread.SpinWait(64);
+            }
+            else
+            {
+                return;
+            }
+        }
+    }
+
     private void DropDeadlineExpiredFrames(long nowTick)
     {
         var droppedAny = false;
@@ -1065,167 +1227,6 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             return IsPastSoftDeadline(_frames[GetOldestFrameIndex()], nowTick);
         }
     }
-
-    private void WaitForTicks(long ticks)
-    {
-        var deadline = Stopwatch.GetTimestamp() + ticks;
-
-        while (Volatile.Read(ref _disposed) == 0)
-        {
-            var remainingTicks = deadline - Stopwatch.GetTimestamp();
-            if (remainingTicks <= 0)
-            {
-                return;
-            }
-
-            var ms = remainingTicks * 1000.0 / Stopwatch.Frequency;
-            if (ms >= 2.0)
-            {
-                Thread.Sleep(Math.Max(1, (int)Math.Floor(ms - 0.5)));
-            }
-            else if (ms > 0)
-            {
-                Thread.SpinWait(64);
-            }
-            else
-            {
-                return;
-            }
-        }
-    }
-
-    private void RecordInputInterval(long nowTick)
-    {
-        var previous = Interlocked.Exchange(ref _lastInputTick, nowTick);
-        if (previous > 0)
-        {
-            RecordTimingSample(_inputIntervalsMs, ref _inputIntervalCount, ref _inputIntervalIndex, ElapsedMs(previous, nowTick));
-        }
-    }
-
-    private void RecordOutputInterval(long nowTick)
-    {
-        var previous = Interlocked.Exchange(ref _lastOutputTick, nowTick);
-        if (previous > 0)
-        {
-            RecordTimingSample(_outputIntervalsMs, ref _outputIntervalCount, ref _outputIntervalIndex, ElapsedMs(previous, nowTick));
-        }
-    }
-
-    private void RecordQueueLatency(long startTick, long endTick)
-        => RecordTimingSample(_queueLatencyMs, ref _queueLatencyCount, ref _queueLatencyIndex, ElapsedMs(startTick, endTick));
-
-    private void RecordSelectedFrame(BufferedFrame frame, long previewPresentId, long submitTick)
-    {
-        Interlocked.Exchange(ref _lastSelectedPreviewPresentId, previewPresentId);
-        Interlocked.Exchange(ref _lastSelectedSourceSequenceNumber, frame.SequenceNumber);
-        Interlocked.Exchange(ref _lastSelectedQpc, submitTick);
-        var latencyTicks = frame.ArrivalTick > 0 && submitTick > frame.ArrivalTick
-            ? submitTick - frame.ArrivalTick
-            : 0;
-        Interlocked.Exchange(ref _lastSelectedSourceLatencyTicks, latencyTicks);
-    }
-
-    private void RecordDroppedFrame(long sourceSequenceNumber, string reason)
-    {
-        Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, sourceSequenceNumber);
-        Interlocked.Exchange(ref _lastDropQpc, Stopwatch.GetTimestamp());
-        Volatile.Write(ref _lastDropReason, reason);
-    }
-
-    private void RecordUnderflow(long nowTick)
-    {
-        string reason;
-        int depth;
-        lock (_sync)
-        {
-            depth = _frames.Count;
-            reason = depth == 0
-                ? "empty-queue"
-                : _nextPreviewSequence >= 0 &&
-                  _frames.FindIndex(frame => frame.SequenceNumber == _nextPreviewSequence) < 0
-                    ? "waiting-for-sequence"
-                    : "selection-blocked";
-        }
-
-        Interlocked.Exchange(ref _lastUnderflowQpc, nowTick);
-        Volatile.Write(ref _lastUnderflowQueueDepth, depth);
-        Volatile.Write(ref _lastUnderflowReason, reason);
-
-        var lastInputTick = Interlocked.Read(ref _lastInputTick);
-        var inputAgeTicks = lastInputTick > 0 && nowTick > lastInputTick ? nowTick - lastInputTick : 0;
-        Interlocked.Exchange(ref _lastUnderflowInputAgeTicks, inputAgeTicks);
-
-        var lastOutputTick = Interlocked.Read(ref _lastOutputTick);
-        var outputAgeTicks = lastOutputTick > 0 && nowTick > lastOutputTick ? nowTick - lastOutputTick : 0;
-        Interlocked.Exchange(ref _lastUnderflowOutputAgeTicks, outputAgeTicks);
-    }
-
-    private void RecordScheduleLate(long scheduleLateTicks)
-    {
-        Interlocked.Exchange(ref _lastScheduleLateTicks, scheduleLateTicks);
-        if (scheduleLateTicks <= _frameIntervalTicks / 2)
-        {
-            return;
-        }
-
-        Interlocked.Increment(ref _scheduleLateCount);
-        while (true)
-        {
-            var current = Interlocked.Read(ref _maxScheduleLateTicks);
-            if (scheduleLateTicks <= current ||
-                Interlocked.CompareExchange(ref _maxScheduleLateTicks, scheduleLateTicks, current) == current)
-            {
-                return;
-            }
-        }
-    }
-
-    private void RecordTimingSample(double[] window, ref int count, ref int index, double valueMs)
-    {
-        if (valueMs <= 0 || valueMs > 5000)
-        {
-            return;
-        }
-
-        lock (_sync)
-        {
-            RingBufferHelpers.Add(window, ref count, ref index, valueMs);
-        }
-    }
-
-    private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)
-    {
-        if (samples.Length == 0)
-        {
-            return (0, 0, 0, 0);
-        }
-
-        var sorted = (double[])samples.Clone();
-        var sum = 0.0;
-        var max = 0.0;
-        for (var i = 0; i < sorted.Length; i++)
-        {
-            sum += sorted[i];
-            if (sorted[i] > max)
-            {
-                max = sorted[i];
-            }
-        }
-
-        Array.Sort(sorted);
-        var p95Index = Math.Min((int)(sorted.Length * 0.95), sorted.Length - 1);
-        return (sorted.Length, sum / sorted.Length, sorted[p95Index], max);
-    }
-
-    private static double ElapsedMs(long startTick, long endTick)
-        => (endTick - startTick) * 1000.0 / Stopwatch.Frequency;
-
-    private static double TicksToMs(long ticks)
-        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
-
-    private static long MsToTicks(double ms)
-        => Math.Max(0, (long)Math.Round(ms * Stopwatch.Frequency / 1000.0));
 
     [DllImport("winmm.dll")]
     private static extern uint timeBeginPeriod(uint uPeriod);

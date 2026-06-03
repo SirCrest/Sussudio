@@ -846,377 +846,462 @@
                 Grid.Column="0"
                 Visibility="Collapsed"
                 HorizontalAlignment="Stretch"
-                Margin="0,0,0,0"
-                Padding="12,8"
-                CornerRadius="12,12,0,0"
-                BorderThickness="0">
+                Margin="16,0,16,8"
+                Padding="16,12"
+                CornerRadius="12"
+                BorderBrush="#10FFFFFF"
+                BorderThickness="1">
             <Border.Background>
-                <AcrylicBrush TintColor="#0A0A0A"
-                              TintOpacity="0.80"
-                              FallbackColor="#141414"/>
+                <AcrylicBrush TintColor="#141414"
+                              TintOpacity="0.85"
+                              FallbackColor="#1C1C1C"/>
             </Border.Background>
-            <Grid RowSpacing="6">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <Border.Resources>
+                <Style x:Key="SettingsShelfCardStyle" TargetType="Border">
+                    <Setter Property="Padding" Value="4,2"/>
+                    <Setter Property="CornerRadius" Value="0"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
+                <Style x:Key="SettingsShelfDividerStyle" TargetType="Border">
+                    <Setter Property="Width" Value="1"/>
+                    <Setter Property="Margin" Value="4,6"/>
+                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                    <Setter Property="Background" Value="#12FFFFFF"/>
+                </Style>
+                <Style x:Key="SettingsShelfHeaderStyle" TargetType="TextBlock">
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                </Style>
+                <Style x:Key="SettingsShelfCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource SecondaryLabelStyle}">
+                    <Setter Property="FontSize" Value="11"/>
+                    <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                </Style>
+                <Style x:Key="SettingsShelfIconButtonStyle" TargetType="Button">
+                    <Setter Property="Width" Value="26"/>
+                    <Setter Property="Height" Value="26"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="CornerRadius" Value="6"/>
+                    <Setter Property="VerticalAlignment" Value="Center"/>
+                </Style>
+                <Style TargetType="ComboBox">
+                    <Setter Property="MinHeight" Value="26"/>
+                    <Setter Property="Height" Value="28"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="Padding" Value="8,0,6,0"/>
+                </Style>
+                <Style TargetType="TextBox">
+                    <Setter Property="MinHeight" Value="26"/>
+                    <Setter Property="Height" Value="28"/>
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="Padding" Value="8,0,6,0"/>
+                </Style>
+                <Style TargetType="CheckBox">
+                    <Setter Property="FontSize" Value="12"/>
+                    <Setter Property="MinHeight" Value="24"/>
+                    <Setter Property="Padding" Value="3,0"/>
+                </Style>
+            </Border.Resources>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.35*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1.58*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="1.02*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="0.9*"/>
+                </Grid.ColumnDefinitions>
 
                 <!-- Device -->
-                <StackPanel Grid.Row="0" Spacing="6">
-                    <TextBlock Text="Device" FontWeight="SemiBold" FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <Grid ColumnSpacing="16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" MinWidth="200"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid ColumnSpacing="4">
+                <Border Grid.Column="0" Style="{StaticResource SettingsShelfCardStyle}">
+                    <Grid RowSpacing="6">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid ColumnSpacing="6" MinHeight="26">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
-                            <ComboBox x:Name="DeviceComboBox"
-                                      AutomationProperties.AutomationId="DeviceComboBox"
-                                      HorizontalAlignment="Stretch"
-                                      VerticalAlignment="Center"
-                                      DisplayMemberPath="Name"
-                                      PlaceholderText="Select a capture device"/>
-                            <Button Grid.Column="1"
+                            <TextBlock Text="Device" Style="{StaticResource SettingsShelfHeaderStyle}"/>
+                            <Button Grid.Column="2"
                                     x:Name="ApplyDeviceButton"
                                     AutomationProperties.AutomationId="ApplyDeviceButton"
                                     Click="ApplyDeviceButton_Click"
                                     ToolTipService.ToolTip="Apply selected capture device"
                                     IsEnabled="False"
-                                    VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE73E;" FontSize="14"/>
+                                    Style="{StaticResource SettingsShelfIconButtonStyle}">
+                                <FontIcon Glyph="&#xE73E;" FontSize="13"/>
                             </Button>
-                            <Button Grid.Column="2"
+                            <Button Grid.Column="3"
                                     x:Name="RefreshButton"
                                     AutomationProperties.AutomationId="RefreshButton"
                                     Click="RefreshButton_Click"
                                     ToolTipService.ToolTip="Refresh device list"
-                                    VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE72C;" FontSize="14"/>
+                                    Style="{StaticResource SettingsShelfIconButtonStyle}">
+                                <FontIcon Glyph="&#xE72C;" FontSize="13"/>
                             </Button>
                         </Grid>
-                        <StackPanel x:Name="DeviceAudioControlPanel"
-                                    Grid.Column="1"
-                                    Orientation="Horizontal"
-                                    Visibility="Collapsed"
-                                    VerticalAlignment="Center">
-                            <ToggleSwitch x:Name="DeviceAudioModeToggle"
-                                          AutomationProperties.AutomationId="DeviceAudioModeComboBox"
-                                          OffContent="HDMI" OnContent="Analog"
-                                          MinWidth="0"
-                                          VerticalAlignment="Center"/>
+                        <StackPanel Grid.Row="1" Spacing="2">
+                            <TextBlock Text="Capture device" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                            <ComboBox x:Name="DeviceComboBox"
+                                      AutomationProperties.AutomationId="DeviceComboBox"
+                                      HorizontalAlignment="Stretch"
+                                      DisplayMemberPath="Name"
+                                      PlaceholderText="Select a capture device"/>
                         </StackPanel>
-                        <StackPanel x:Name="AnalogAudioGainPanel"
-                                    Grid.Column="2"
-                                    Orientation="Horizontal"
-                                    Spacing="8"
-                                    Visibility="Collapsed"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="Gain"
-                                       Style="{StaticResource SecondaryLabelStyle}"
-                                       VerticalAlignment="Center"/>
-                            <Slider x:Name="AnalogAudioGainSlider"
-                                    AutomationProperties.AutomationId="AnalogAudioGainSlider"
-                                    Minimum="0"
-                                    Maximum="100"
-                                    StepFrequency="1"
-                                    TickFrequency="10"
-                                    Width="150"
-                                    VerticalAlignment="Center">
-                                <Slider.Resources>
-                                    <Style TargetType="ToolTip">
-                                        <Setter Property="Opacity" Value="0"/>
-                                        <Setter Property="IsHitTestVisible" Value="False"/>
-                                    </Style>
-                                </Slider.Resources>
-                            </Slider>
-                            <TextBlock x:Name="AnalogAudioGainValueTextBlock"
-                                       Style="{StaticResource SecondaryLabelStyle}"
-                                       Text="50%"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <Grid Grid.Row="2" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel x:Name="DeviceAudioControlPanel"
+                                        Orientation="Horizontal"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Center">
+                                <ToggleSwitch x:Name="DeviceAudioModeToggle"
+                                              AutomationProperties.AutomationId="DeviceAudioModeComboBox"
+                                              OffContent="HDMI" OnContent="Analog"
+                                              MinWidth="0"
+                                              VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel x:Name="AnalogAudioGainPanel"
+                                        Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        Spacing="6"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="Gain"
+                                           Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <Slider x:Name="AnalogAudioGainSlider"
+                                        AutomationProperties.AutomationId="AnalogAudioGainSlider"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        StepFrequency="1"
+                                        TickFrequency="10"
+                                        Width="120"
+                                        VerticalAlignment="Center">
+                                    <Slider.Resources>
+                                        <Style TargetType="ToolTip">
+                                            <Setter Property="Opacity" Value="0"/>
+                                            <Setter Property="IsHitTestVisible" Value="False"/>
+                                        </Style>
+                                    </Slider.Resources>
+                                </Slider>
+                                <TextBlock x:Name="AnalogAudioGainValueTextBlock"
+                                           Style="{StaticResource SettingsShelfCaptionStyle}"
+                                           Text="50%"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Grid.Row="3" ColumnSpacing="5" RowSpacing="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <CheckBox x:Name="CustomAudioToggle"
+                                      AutomationProperties.AutomationId="CustomAudioToggle"
+                                      Content="Alt Audio"
+                                      VerticalAlignment="Center"/>
+                            <ComboBox x:Name="AudioInputComboBox"
+                                      Grid.Column="1"
+                                      Grid.ColumnSpan="2"
+                                      AutomationProperties.AutomationId="AudioInputComboBox"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Center"
+                                      DisplayMemberPath="Name"
+                                      PlaceholderText="Select audio input"
+                                      IsEnabled="False"/>
+                            <CheckBox x:Name="MicrophoneToggle"
+                                      Grid.Row="1"
+                                      AutomationProperties.AutomationId="MicrophoneToggle"
+                                      Content="Mic"
+                                      VerticalAlignment="Center"/>
+                            <ComboBox x:Name="MicrophoneComboBox"
+                                      Grid.Row="1" Grid.Column="1"
+                                      AutomationProperties.AutomationId="MicrophoneComboBox"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Center"
+                                      DisplayMemberPath="Name"
+                                      PlaceholderText="Select microphone"
+                                      IsEnabled="False"/>
+                            <Slider x:Name="MicVolumeShelfSlider"
+                                    Grid.Row="1" Grid.Column="2"
+                                    AutomationProperties.AutomationId="MicVolumeShelfSlider"
+                                    Minimum="0" Maximum="100" StepFrequency="1"
+                                    Value="100"
+                                    Width="58"
+                                    VerticalAlignment="Center"
+                                    IsEnabled="False"
+                                    ToolTipService.ToolTip="Microphone volume"/>
+                        </Grid>
                     </Grid>
-                    <Grid ColumnSpacing="8" RowSpacing="4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource SettingsShelfDividerStyle}"/>
+
+                <!-- Capture -->
+                <Border Grid.Column="2" Style="{StaticResource SettingsShelfCardStyle}">
+                    <Grid RowSpacing="6">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <CheckBox x:Name="CustomAudioToggle"
-                                  AutomationProperties.AutomationId="CustomAudioToggle"
-                                  Content="Alt Audio"
-                                  Padding="4,0" MinHeight="0"
-                                  VerticalAlignment="Center"/>
-                        <ComboBox x:Name="AudioInputComboBox"
-                                  Grid.Column="1"
-                                  Grid.ColumnSpan="2"
-                                  AutomationProperties.AutomationId="AudioInputComboBox"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalAlignment="Center"
-                                  DisplayMemberPath="Name"
-                                  PlaceholderText="Select audio input"
-                                  IsEnabled="False"/>
-                        <CheckBox x:Name="MicrophoneToggle"
-                                  Grid.Row="1"
-                                  AutomationProperties.AutomationId="MicrophoneToggle"
-                                  Content="Microphone"
-                                  Padding="4,0" MinHeight="0"
-                                  VerticalAlignment="Center"/>
-                        <ComboBox x:Name="MicrophoneComboBox"
-                                  Grid.Row="1" Grid.Column="1"
-                                  AutomationProperties.AutomationId="MicrophoneComboBox"
-                                  HorizontalAlignment="Stretch"
-                                  VerticalAlignment="Center"
-                                  DisplayMemberPath="Name"
-                                  PlaceholderText="Select microphone"
-                                  IsEnabled="False"/>
-                        <Slider x:Name="MicVolumeShelfSlider"
-                                Grid.Row="1" Grid.Column="2"
-                                AutomationProperties.AutomationId="MicVolumeShelfSlider"
-                                Minimum="0" Maximum="100" StepFrequency="1"
-                                Value="100"
-                                Width="80"
-                                VerticalAlignment="Center"
-                                IsEnabled="False"
-                                ToolTipService.ToolTip="Microphone volume"/>
+                        <Grid ColumnSpacing="6" MinHeight="26">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Capture" Style="{StaticResource SettingsShelfHeaderStyle}"/>
+                        </Grid>
+                        <Grid x:Name="CaptureSettingsGrid" Grid.Row="1" ColumnSpacing="7" RowSpacing="5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition x:Name="VideoFormatColumn" Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition x:Name="PresetColumn" Width="*"/>
+                                <ColumnDefinition x:Name="SplitColumn" Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition x:Name="OverflowRow" Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel x:Name="VideoFormatPanel" Grid.Row="0" Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Input" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="VideoFormatComboBox"
+                                          AutomationProperties.AutomationId="VideoFormatComboBox"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
+                                <TextBlock Text="Resolution" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="ResolutionComboBox"
+                                          AutomationProperties.AutomationId="ResolutionComboBox"
+                                          HorizontalAlignment="Stretch"
+                                          DisplayMemberPath="DisplayText">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                                            <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="2" Spacing="2">
+                                <TextBlock Text="FPS" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="FrameRateComboBox"
+                                          AutomationProperties.AutomationId="FrameRateComboBox"
+                                          HorizontalAlignment="Stretch"
+                                          DisplayMemberPath="DisplayText">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                                            <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="3" Spacing="2">
+                                <TextBlock Text="Format" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="FormatComboBox"
+                                          AutomationProperties.AutomationId="FormatComboBox"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="0" Grid.Column="4" Spacing="2">
+                                <TextBlock Text="Bitrate" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="QualityComboBox"
+                                          AutomationProperties.AutomationId="QualityComboBox"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="PresetPanel" Grid.Row="0" Grid.Column="5" Spacing="2">
+                                <TextBlock Text="Preset" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="PresetComboBox"
+                                          AutomationProperties.AutomationId="PresetComboBox"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="CustomBitratePanel"
+                                        Grid.Row="0"
+                                        Grid.Column="5"
+                                        Orientation="Horizontal"
+                                        Spacing="4"
+                                        Visibility="Collapsed"
+                                        VerticalAlignment="Bottom">
+                                <NumberBox x:Name="CustomBitrateNumberBox"
+                                           AutomationProperties.AutomationId="CustomBitrateNumberBox"
+                                           Value="50"
+                                           Minimum="1"
+                                           Maximum="300"
+                                           SpinButtonPlacementMode="Compact"
+                                           SmallChange="5"
+                                           LargeChange="10"
+                                           MinWidth="90"/>
+                                <TextBlock Text="Mbps"
+                                           VerticalAlignment="Center"
+                                           Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="SplitPanel" Grid.Row="0" Grid.Column="6" Spacing="2">
+                                <TextBlock Text="Split" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="SplitEncodeComboBox"
+                                          AutomationProperties.AutomationId="SplitEncodeComboBox"
+                                          HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="DecoderCountPanel" Grid.Row="1" Grid.Column="1" Spacing="2" Visibility="Collapsed">
+                                <TextBlock Text="Threads" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                                <ComboBox x:Name="DecoderCountComboBox"
+                                          AutomationProperties.AutomationId="DecoderCountComboBox"
+                                          HorizontalAlignment="Stretch"
+                                          SelectionChanged="DecoderCountComboBox_SelectionChanged"/>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
-                </StackPanel>
+                </Border>
 
-                <!-- Separator -->
-                <Border Grid.Row="1" Height="1" Background="#0DFFFFFF" Margin="0,2,0,2"/>
-
-                <!-- Encoding -->
-                <StackPanel Grid.Row="2" Spacing="6">
-                    <TextBlock Text="Encoding" FontWeight="SemiBold" FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                    <Grid x:Name="CaptureSettingsGrid" ColumnSpacing="12" RowSpacing="6">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition x:Name="VideoFormatColumn" Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition x:Name="PresetColumn" Width="*"/>
-                            <ColumnDefinition x:Name="SplitColumn" Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition x:Name="OverflowRow" Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <StackPanel x:Name="VideoFormatPanel" Grid.Row="0" Grid.Column="0" Spacing="2">
-                            <TextBlock Text="Video Format"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="VideoFormatComboBox"
-                                      AutomationProperties.AutomationId="VideoFormatComboBox"
-                                      HorizontalAlignment="Stretch"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
-                            <TextBlock Text="Resolution"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="ResolutionComboBox"
-                                      AutomationProperties.AutomationId="ResolutionComboBox"
-                                      HorizontalAlignment="Stretch"
-                                      DisplayMemberPath="DisplayText">
-                                <ComboBox.ItemContainerStyle>
-                                    <Style TargetType="ComboBoxItem">
-                                        <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
-                                        <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
-                                    </Style>
-                                </ComboBox.ItemContainerStyle>
-                            </ComboBox>
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="0" Grid.Column="2" Spacing="2">
-                            <TextBlock Text="Frame Rate"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="FrameRateComboBox"
-                                      AutomationProperties.AutomationId="FrameRateComboBox"
-                                      HorizontalAlignment="Stretch"
-                                      DisplayMemberPath="DisplayText">
-                                <ComboBox.ItemContainerStyle>
-                                    <Style TargetType="ComboBoxItem">
-                                        <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
-                                        <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
-                                    </Style>
-                                </ComboBox.ItemContainerStyle>
-                            </ComboBox>
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="0" Grid.Column="3" Spacing="2">
-                            <TextBlock Text="Format"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="FormatComboBox"
-                                      AutomationProperties.AutomationId="FormatComboBox"
-                                      HorizontalAlignment="Stretch"/>
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="0" Grid.Column="4" Spacing="2">
-                            <TextBlock Text="Bitrate"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="QualityComboBox"
-                                      AutomationProperties.AutomationId="QualityComboBox"
-                                      HorizontalAlignment="Stretch"/>
-                        </StackPanel>
-
-                        <StackPanel x:Name="PresetPanel" Grid.Row="0" Grid.Column="5" Spacing="2">
-                            <TextBlock Text="NVENC Preset"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="PresetComboBox"
-                                      AutomationProperties.AutomationId="PresetComboBox"
-                                      HorizontalAlignment="Stretch"/>
-                        </StackPanel>
-
-                        <StackPanel x:Name="CustomBitratePanel"
-                                    Grid.Row="0"
-                                    Grid.Column="5"
-                                    Orientation="Horizontal"
-                                    Spacing="4"
-                                    Visibility="Collapsed"
-                                    VerticalAlignment="Center">
-                            <NumberBox x:Name="CustomBitrateNumberBox"
-                                       AutomationProperties.AutomationId="CustomBitrateNumberBox"
-                                       Value="50"
-                                       Minimum="1"
-                                       Maximum="300"
-                                       SpinButtonPlacementMode="Compact"
-                                       SmallChange="5"
-                                       LargeChange="10"
-                                       MinWidth="90"/>
-                            <TextBlock Text="Mbps"
-                                       VerticalAlignment="Center"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                        </StackPanel>
-
-                        <StackPanel x:Name="SplitPanel" Grid.Row="0" Grid.Column="6" Spacing="2">
-                            <TextBlock Text="Split Encode"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="SplitEncodeComboBox"
-                                      AutomationProperties.AutomationId="SplitEncodeComboBox"
-                                      HorizontalAlignment="Stretch"/>
-                        </StackPanel>
-
-                        <StackPanel x:Name="DecoderCountPanel" Grid.Row="1" Grid.Column="1" Spacing="2" Visibility="Collapsed">
-                            <TextBlock Text="MJPEG Threads"
-                                       Style="{StaticResource SecondaryLabelStyle}"/>
-                            <ComboBox x:Name="DecoderCountComboBox"
-                                      AutomationProperties.AutomationId="DecoderCountComboBox"
-                                      HorizontalAlignment="Stretch"
-                                      SelectionChanged="DecoderCountComboBox_SelectionChanged"/>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-
-                <!-- Separator -->
-                <Border Grid.Row="3" Height="1" Background="#0DFFFFFF" Margin="0,2,0,2"/>
+                <Border Grid.Column="3" Style="{StaticResource SettingsShelfDividerStyle}"/>
 
                 <!-- Output -->
-                <Grid Grid.Row="4" ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="OutputPathTextBox"
-                             AutomationProperties.AutomationId="OutputPathTextBox"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             FontSize="12"
-                             Height="32"/>
-                    <Button x:Name="BrowseButton"
-                            Grid.Column="1"
-                            AutomationProperties.AutomationId="BrowseButton"
-                            Click="BrowseButton_Click"
-                            Width="32"
-                            Height="32"
-                            Padding="0"
-                            ToolTipService.ToolTip="Choose output folder">
-                        <FontIcon Glyph="&#xE838;"
-                                  FontSize="14"
-                                  VerticalAlignment="Center"
-                                  HorizontalAlignment="Center"/>
-                    </Button>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
-                                VerticalAlignment="Center">
-                        <FontIcon Glyph="&#xEDA2;" FontSize="12"
-                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                  VerticalAlignment="Center"/>
+                <Border Grid.Column="4" Style="{StaticResource SettingsShelfCardStyle}">
+                    <Grid RowSpacing="6">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid ColumnSpacing="6" MinHeight="26">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Output" Style="{StaticResource SettingsShelfHeaderStyle}"/>
+                            <Button x:Name="BrowseButton"
+                                    Grid.Column="2"
+                                    AutomationProperties.AutomationId="BrowseButton"
+                                    Click="BrowseButton_Click"
+                                    Style="{StaticResource SettingsShelfIconButtonStyle}"
+                                    ToolTipService.ToolTip="Choose output folder">
+                                <FontIcon Glyph="&#xE838;"
+                                          FontSize="14"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Center"/>
+                            </Button>
+                        </Grid>
+                        <StackPanel Grid.Row="1" Spacing="2">
+                            <TextBlock Text="Save folder" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                            <TextBox x:Name="OutputPathTextBox"
+                                     AutomationProperties.AutomationId="OutputPathTextBox"
+                                     IsReadOnly="True"
+                                     FontSize="12"/>
+                        </StackPanel>
                         <TextBlock x:Name="DiskSpaceTextBlock"
+                                   Grid.Row="2"
                                    AutomationProperties.AutomationId="DiskSpaceTextBlock"
-                                   Style="{StaticResource SecondaryLabelStyle}"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-                    <CheckBox x:Name="ShowAllCaptureOptionsToggle"
-                              Grid.Column="3"
-                              AutomationProperties.AutomationId="ShowAllCaptureOptionsToggle"
-                              Content="Show all"
-                              Padding="4,0" MinHeight="0" MinWidth="0"
-                              VerticalAlignment="Center"/>
-                </Grid>
+                                   Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="5" Style="{StaticResource SettingsShelfDividerStyle}"/>
 
                 <!-- Flashback Settings -->
-                <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="12"
-                            Margin="0,8,0,0" VerticalAlignment="Center">
-                    <TextBlock Text="Flashback" FontWeight="SemiBold" FontSize="13"
-                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                               VerticalAlignment="Center"/>
-                    <ToggleSwitch x:Name="FlashbackEnabledToggle"
-                                  AutomationProperties.AutomationId="FlashbackEnabledToggle"
-                                  OnContent="" OffContent=""
-                                  MinWidth="0" MinHeight="0"
-                                  Margin="0,-2,0,0"
-                                  VerticalAlignment="Center"
-                                  Toggled="FlashbackEnabledToggle_Toggled"/>
-                    <ComboBox x:Name="FlashbackBufferDurationCombo"
-                              AutomationProperties.AutomationId="FlashbackBufferDurationCombo"
-                              Width="160"
-                              VerticalAlignment="Center"
-                              SelectionChanged="FlashbackBufferDurationCombo_SelectionChanged">
-                        <ComboBoxItem Content="1 minute" Tag="1"/>
-                        <ComboBoxItem Content="2 minutes" Tag="2"/>
-                        <ComboBoxItem Content="5 minutes" Tag="5" IsSelected="True"/>
-                        <ComboBoxItem Content="10 minutes" Tag="10"/>
-                        <ComboBoxItem Content="15 minutes" Tag="15"/>
-                        <ComboBoxItem Content="30 minutes" Tag="30"/>
-                    </ComboBox>
-                    <Button x:Name="FlashbackApplyButton"
-                            AutomationProperties.AutomationId="FlashbackApplyButton"
-                            Content="Apply"
-                            Height="28" Padding="12,0"
-                            VerticalAlignment="Center"
-                            ToolTipService.ToolTip="Restart flashback with current settings (clears buffer)"
-                            Click="FlashbackApplyButton_Click"/>
-                    <TextBlock x:Name="FlashbackDiskEstimateText"
-                               AutomationProperties.AutomationId="FlashbackDiskEstimateText"
-                               FontSize="11" Foreground="#80FFFFFF"
-                               VerticalAlignment="Center"
-                               Text="~1.3 GB"/>
-                    <TextBlock Text="GPU Decode" FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Center" Margin="8,0,0,0"/>
-                    <ToggleSwitch x:Name="FlashbackGpuDecodeToggle"
-                                  AutomationProperties.AutomationId="FlashbackGpuDecodeToggle"
-                                  OnContent="" OffContent=""
-                                  MinWidth="0" MinHeight="0"
-                                  Margin="0,-2,0,0"
-                                  VerticalAlignment="Center"/>
-                </StackPanel>
+                <Border Grid.Column="6" Style="{StaticResource SettingsShelfCardStyle}">
+                    <Grid RowSpacing="6">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid ColumnSpacing="6" MinHeight="26">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Flashback" Style="{StaticResource SettingsShelfHeaderStyle}"/>
+                            <ToggleSwitch x:Name="FlashbackEnabledToggle"
+                                          Grid.Column="2"
+                                          AutomationProperties.AutomationId="FlashbackEnabledToggle"
+                                          OnContent="" OffContent=""
+                                          MinWidth="0" MinHeight="0"
+                                          Margin="0,-2,0,0"
+                                          VerticalAlignment="Center"
+                                          Toggled="FlashbackEnabledToggle_Toggled"/>
+                        </Grid>
+                        <StackPanel Grid.Row="1" Spacing="2">
+                          <TextBlock Text="Buffer length" Style="{StaticResource SettingsShelfCaptionStyle}"/>
+                          <Grid ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox x:Name="FlashbackBufferDurationCombo"
+                                      AutomationProperties.AutomationId="FlashbackBufferDurationCombo"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Center"
+                                      SelectionChanged="FlashbackBufferDurationCombo_SelectionChanged">
+                                <ComboBoxItem Content="1 minute" Tag="1"/>
+                                <ComboBoxItem Content="2 minutes" Tag="2"/>
+                                <ComboBoxItem Content="5 minutes" Tag="5" IsSelected="True"/>
+                                <ComboBoxItem Content="10 minutes" Tag="10"/>
+                                <ComboBoxItem Content="15 minutes" Tag="15"/>
+                                <ComboBoxItem Content="30 minutes" Tag="30"/>
+                            </ComboBox>
+                            <Button x:Name="FlashbackApplyButton"
+                                    Grid.Column="1"
+                                    AutomationProperties.AutomationId="FlashbackApplyButton"
+                                    Content="Apply"
+                                    Height="30" Padding="10,0"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="Restart flashback with current settings (clears buffer)"
+                                    Click="FlashbackApplyButton_Click"/>
+                          </Grid>
+                        </StackPanel>
+                        <Grid Grid.Row="2" ColumnSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="FlashbackDiskEstimateText"
+                                       AutomationProperties.AutomationId="FlashbackDiskEstimateText"
+                                       Style="{StaticResource SettingsShelfCaptionStyle}"
+                                       MinWidth="52"
+                                       Text="~1.3 GB"/>
+                            <TextBlock Grid.Column="1" Text="GPU"
+                                       Style="{StaticResource SettingsShelfCaptionStyle}"
+                                       Margin="8,0,0,0"/>
+                            <ToggleSwitch x:Name="FlashbackGpuDecodeToggle"
+                                          Grid.Column="2"
+                                          AutomationProperties.AutomationId="FlashbackGpuDecodeToggle"
+                                          OnContent="" OffContent=""
+                                          MinWidth="0" MinHeight="0"
+                                          Margin="0,-2,0,0"
+                                          VerticalAlignment="Center"/>
+                        </Grid>
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 

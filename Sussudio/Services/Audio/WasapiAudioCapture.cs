@@ -67,44 +67,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     public bool IsCapturing => Volatile.Read(ref _capturing) != 0;
 
-    public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);
-
-    public long AudioFramesWrittenToSink => Interlocked.Read(ref _audioFramesWrittenToSink);
-
-    public long CaptureCallbackCount => Interlocked.Read(ref _captureCallbackCount);
-
-    // Snapshot getter — both fields read together drove the lock-and-walk twice per
-    // diagnostics poll. Callers should prefer GetCaptureCallbackIntervalSnapshot()
-    // when they need both values.
-    public double CaptureCallbackAvgIntervalMs => GetCaptureCallbackIntervalMetrics().AverageIntervalMs;
-
-    public double CaptureCallbackMaxIntervalMs => GetCaptureCallbackIntervalMetrics().MaxIntervalMs;
-
-    public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()
-    {
-        var metrics = GetCaptureCallbackIntervalMetrics();
-        return (metrics.AverageIntervalMs, metrics.MaxIntervalMs);
-    }
-
-    public long CaptureCallbackSevereGapCount => Interlocked.Read(ref _captureCallbackSevereGapCount);
-
-    public long AudioDataDiscontinuityCount => Interlocked.Read(ref _audioDataDiscontinuityCount);
-
-    public long AudioTimestampErrorCount => Interlocked.Read(ref _audioTimestampErrorCount);
-
-    public long AudioGlitchCount =>
-        Interlocked.Read(ref _audioDataDiscontinuityCount) +
-        Interlocked.Read(ref _audioTimestampErrorCount) +
-        Interlocked.Read(ref _captureCallbackSevereGapCount);
-
-    public int CaptureCallbackSilenceCount => Volatile.Read(ref _captureCallbackSilenceCount);
-
-    public long LastCaptureCallbackTickMs => Interlocked.Read(ref _lastCaptureCallbackTickMs);
-
-    public long AudioLevelEventsFired => Interlocked.Read(ref _audioLevelEventsFired);
-
-    public long AudioLevelEventsLastFireTickMs => Interlocked.Read(ref _audioLevelEventsLastFireTickMs);
-
     public Task InitializeAsync(string audioDeviceId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
@@ -291,41 +253,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         }
     }
 
-    public void AttachRecordingSink(IRecordingSink sink)
-    {
-        ArgumentNullException.ThrowIfNull(sink);
-        Volatile.Write(ref _recordingSink, sink);
-    }
-
-    public void DetachRecordingSink()
-    {
-        Volatile.Write(ref _recordingSink, null);
-    }
-
-    public void AttachFlashbackSink(IRecordingSink sink)
-    {
-        ArgumentNullException.ThrowIfNull(sink);
-        Volatile.Write(ref _flashbackSink, sink);
-    }
-
-    public void DetachFlashbackSink()
-    {
-        Volatile.Write(ref _flashbackSink, null);
-    }
-
-    public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)
-    {
-        // Runs on the WASAPI capture thread. Writers must copy/enqueue
-        // synchronously and return a completed task; incomplete tasks are
-        // rejected instead of being waited on in the callback path.
-        Volatile.Write(ref _audioWriter, writer);
-    }
-
-    internal void SetPlayback(WasapiAudioPlayback? playback)
-    {
-        Volatile.Write(ref _playback, playback);
-    }
-
     public Task StopAsync()
     {
         if (Interlocked.CompareExchange(ref _capturing, 0, 1) != 1)
@@ -388,272 +315,44 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         WasapiComInterop.ReleaseComObject(ref _deviceEnumerator);
     }
 
-    private void CaptureThreadMain()
+
+    public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);
+
+    public long AudioFramesWrittenToSink => Interlocked.Read(ref _audioFramesWrittenToSink);
+
+    public long CaptureCallbackCount => Interlocked.Read(ref _captureCallbackCount);
+
+    // Snapshot getter - both fields read together drove the lock-and-walk twice per
+    // diagnostics poll. Callers should prefer GetCaptureCallbackIntervalSnapshot()
+    // when they need both values.
+    public double CaptureCallbackAvgIntervalMs => GetCaptureCallbackIntervalMetrics().AverageIntervalMs;
+
+    public double CaptureCallbackMaxIntervalMs => GetCaptureCallbackIntervalMetrics().MaxIntervalMs;
+
+    public (double AvgIntervalMs, double MaxIntervalMs) GetCaptureCallbackIntervalSnapshot()
     {
-        var captureEvent = _captureEvent;
-        if (captureEvent == null)
-        {
-            return;
-        }
-
-        var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
-        while (Volatile.Read(ref _stopRequested) == 0)
-        {
-            var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
-            if (waitResult == WasapiComInterop.WaitTimeout)
-            {
-                continue;
-            }
-
-            if (waitResult != WasapiComInterop.WaitObject0)
-            {
-                continue;
-            }
-
-            if (Volatile.Read(ref _stopRequested) != 0)
-            {
-                return;
-            }
-
-            try
-            {
-                TrackCaptureCallback(Environment.TickCount64);
-                DrainCapturePackets();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"WASAPI capture loop error: {ex.Message}");
-                OnCaptureFailed(ex);
-            }
-        }
+        var metrics = GetCaptureCallbackIntervalMetrics();
+        return (metrics.AverageIntervalMs, metrics.MaxIntervalMs);
     }
 
-    private void DrainCapturePackets()
-    {
-        if (_audioCaptureClient == null)
-        {
-            return;
-        }
+    public long CaptureCallbackSevereGapCount => Interlocked.Read(ref _captureCallbackSevereGapCount);
 
-        while (Volatile.Read(ref _stopRequested) == 0)
-        {
-            WasapiComInterop.ThrowIfFailed(
-                _audioCaptureClient.GetNextPacketSize(out var packetFrames),
-                "IAudioCaptureClient.GetNextPacketSize");
+    public long AudioDataDiscontinuityCount => Interlocked.Read(ref _audioDataDiscontinuityCount);
 
-            if (packetFrames == 0)
-            {
-                return;
-            }
+    public long AudioTimestampErrorCount => Interlocked.Read(ref _audioTimestampErrorCount);
 
-            WasapiComInterop.ThrowIfFailed(
-                _audioCaptureClient.GetBuffer(
-                    out var data,
-                    out var availableFrames,
-                    out var flags,
-                    out _,
-                    out _),
-                "IAudioCaptureClient.GetBuffer");
+    public long AudioGlitchCount =>
+        Interlocked.Read(ref _audioDataDiscontinuityCount) +
+        Interlocked.Read(ref _audioTimestampErrorCount) +
+        Interlocked.Read(ref _captureCallbackSevereGapCount);
 
-            var converted = default(ConvertedAudioPacket);
-            var handoffToPlayback = false;
-            try
-            {
-                if (availableFrames == 0)
-                {
-                    Interlocked.Increment(ref _captureCallbackSilenceCount);
-                    continue;
-                }
+    public int CaptureCallbackSilenceCount => Volatile.Read(ref _captureCallbackSilenceCount);
 
-                TrackCapturePacketFlags(flags);
-                converted = ConvertToOutputFormat(
-                    data,
-                    (int)availableFrames,
-                    (flags & WasapiComInterop.AUDCLNT_BUFFERFLAGS_SILENT) != 0);
-                if (converted.Length <= 0 || converted.Frames <= 0 || converted.Buffer == null)
-                {
-                    continue;
-                }
+    public long LastCaptureCallbackTickMs => Interlocked.Read(ref _lastCaptureCallbackTickMs);
 
-                Interlocked.Add(ref _audioFramesArrived, converted.Frames);
-                var convertedBuffer = converted.Buffer;
-                RaiseAudioLevelIfDue(convertedBuffer.AsSpan(0, converted.Length));
+    public long AudioLevelEventsFired => Interlocked.Read(ref _audioLevelEventsFired);
 
-                var audioWriter = Volatile.Read(ref _audioWriter);
-                if (audioWriter != null)
-                {
-                    try
-                    {
-                        InvokeHotAudioWriter(
-                            audioWriter,
-                            new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
-                            "delegate");
-                        Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
-                    }
-                    catch (Exception ex)
-                    {
-                        Volatile.Write(ref _audioWriter, null);
-                        Interlocked.Exchange(ref _stopRequested, 1);
-                        _captureEvent?.Set();
-                        throw new InvalidOperationException("WASAPI audio delegate write failed.", ex);
-                    }
-                }
-                else
-                {
-                    var sink = Volatile.Read(ref _recordingSink);
-                    if (sink != null)
-                    {
-                        try
-                        {
-                            WriteAudioToSinkOnCaptureThread(
-                                sink,
-                                new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
-                                "recording");
-                            Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
-                        }
-                        catch (Exception ex)
-                        {
-                            Volatile.Write(ref _recordingSink, null);
-                            Interlocked.Exchange(ref _stopRequested, 1);
-                            _captureEvent?.Set();
-                            throw new InvalidOperationException("WASAPI audio sink write failed.", ex);
-                        }
-                    }
-                }
-
-                var flashbackSink = Volatile.Read(ref _flashbackSink);
-                if (flashbackSink != null)
-                {
-                    try
-                    {
-                        WriteAudioToSinkOnCaptureThread(
-                            flashbackSink,
-                            new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length),
-                            "flashback");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"WASAPI_FLASHBACK_AUDIO_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                    }
-                }
-
-                var playback = Volatile.Read(ref _playback);
-                if (playback != null)
-                {
-                    playback.EnqueuePooledSamples(convertedBuffer, converted.Length);
-                    handoffToPlayback = true;
-                }
-            }
-            finally
-            {
-                if (!handoffToPlayback)
-                {
-                    ReturnPacketBuffer(converted);
-                }
-
-                WasapiComInterop.ThrowIfFailed(
-                    _audioCaptureClient.ReleaseBuffer(availableFrames),
-                    "IAudioCaptureClient.ReleaseBuffer");
-            }
-        }
-    }
-
-    private static void InvokeHotAudioWriter(
-        Func<ReadOnlyMemory<byte>, Task> writer,
-        ReadOnlyMemory<byte> samples,
-        string target)
-        => CompleteHotAudioWrite(writer(samples), target);
-
-    private static void WriteAudioToSinkOnCaptureThread(
-        IRecordingSink sink,
-        ReadOnlyMemory<byte> samples,
-        string target)
-        => CompleteHotAudioWrite(sink.WriteAudioAsync(samples), target);
-
-    private static void CompleteHotAudioWrite(Task task, string target)
-    {
-        ArgumentNullException.ThrowIfNull(task);
-        if (!task.IsCompleted)
-        {
-            throw new InvalidOperationException(
-                $"{target} audio writer returned an incomplete Task on the WASAPI capture thread. " +
-                "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
-        }
-
-        task.GetAwaiter().GetResult();
-    }
-
-    private ConvertedAudioPacket ConvertToOutputFormat(IntPtr dataPtr, int inputFrames, bool silent)
-    {
-        if (inputFrames <= 0)
-        {
-            return default;
-        }
-
-        if (silent)
-        {
-            var outputFrames = ComputeResampledFrameCount(inputFrames);
-            if (outputFrames <= 0)
-            {
-                return default;
-            }
-
-            var outputLength = outputFrames * OutputBlockAlign;
-            var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
-            buffer.AsSpan(0, outputLength).Clear();
-            return new ConvertedAudioPacket(buffer, outputLength, outputFrames, isPooled: true);
-        }
-
-        if (_fastPathCopy)
-        {
-            var outputLength = inputFrames * OutputBlockAlign;
-            var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
-            Marshal.Copy(dataPtr, buffer, 0, outputLength);
-            return new ConvertedAudioPacket(buffer, outputLength, inputFrames, isPooled: true);
-        }
-
-        var decodedSampleCount = inputFrames * OutputChannels;
-        var decodedStereo = ArrayPool<float>.Shared.Rent(decodedSampleCount);
-        try
-        {
-            DecodeToStereo(dataPtr, inputFrames, _captureFormat, decodedStereo);
-
-            if (_captureFormat.SampleRate == OutputSampleRate)
-            {
-                var outputLength = decodedSampleCount * BytesPerFloatSample;
-                var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
-                var outputSamples = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(0, outputLength));
-                decodedStereo.AsSpan(0, decodedSampleCount).CopyTo(outputSamples);
-                return new ConvertedAudioPacket(buffer, outputLength, inputFrames, isPooled: true);
-            }
-
-            var outputFrames = ComputeResampledFrameCount(inputFrames);
-            if (outputFrames <= 0)
-            {
-                return default;
-            }
-
-            var outputSampleCount = outputFrames * OutputChannels;
-            var resampledStereo = ArrayPool<float>.Shared.Rent(outputSampleCount);
-            try
-            {
-                ResampleStereoLinear(decodedStereo, inputFrames, resampledStereo, outputFrames);
-                var outputLength = outputSampleCount * BytesPerFloatSample;
-                var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
-                var outputSamples = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(0, outputLength));
-                resampledStereo.AsSpan(0, outputSampleCount).CopyTo(outputSamples);
-                return new ConvertedAudioPacket(buffer, outputLength, outputFrames, isPooled: true);
-            }
-            finally
-            {
-                ArrayPool<float>.Shared.Return(resampledStereo);
-            }
-        }
-        finally
-        {
-            ArrayPool<float>.Shared.Return(decodedStereo);
-        }
-    }
+    public long AudioLevelEventsLastFireTickMs => Interlocked.Read(ref _audioLevelEventsLastFireTickMs);
 
     private void RaiseAudioLevelIfDue(ReadOnlySpan<byte> f32leBytes)
     {
@@ -763,6 +462,185 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         if ((flags & WasapiComInterop.AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR) != 0)
         {
             Interlocked.Increment(ref _audioTimestampErrorCount);
+        }
+    }
+
+    private void CaptureThreadMain()
+    {
+        var captureEvent = _captureEvent;
+        if (captureEvent == null)
+        {
+            return;
+        }
+
+        var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
+        while (Volatile.Read(ref _stopRequested) == 0)
+        {
+            var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
+            if (waitResult == WasapiComInterop.WaitTimeout)
+            {
+                continue;
+            }
+
+            if (waitResult != WasapiComInterop.WaitObject0)
+            {
+                continue;
+            }
+
+            if (Volatile.Read(ref _stopRequested) != 0)
+            {
+                return;
+            }
+
+            try
+            {
+                TrackCaptureCallback(Environment.TickCount64);
+                DrainCapturePackets();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"WASAPI capture loop error: {ex.Message}");
+                OnCaptureFailed(ex);
+            }
+        }
+    }
+
+    private void DrainCapturePackets()
+    {
+        if (_audioCaptureClient == null)
+        {
+            return;
+        }
+
+        while (Volatile.Read(ref _stopRequested) == 0)
+        {
+            WasapiComInterop.ThrowIfFailed(
+                _audioCaptureClient.GetNextPacketSize(out var packetFrames),
+                "IAudioCaptureClient.GetNextPacketSize");
+
+            if (packetFrames == 0)
+            {
+                return;
+            }
+
+            WasapiComInterop.ThrowIfFailed(
+                _audioCaptureClient.GetBuffer(
+                    out var data,
+                    out var availableFrames,
+                    out var flags,
+                    out _,
+                    out _),
+                "IAudioCaptureClient.GetBuffer");
+
+            var converted = default(ConvertedAudioPacket);
+            var handoffToPlayback = false;
+            try
+            {
+                if (availableFrames == 0)
+                {
+                    Interlocked.Increment(ref _captureCallbackSilenceCount);
+                    continue;
+                }
+
+                TrackCapturePacketFlags(flags);
+                converted = ConvertToOutputFormat(
+                    data,
+                    (int)availableFrames,
+                    (flags & WasapiComInterop.AUDCLNT_BUFFERFLAGS_SILENT) != 0);
+                if (converted.Length <= 0 || converted.Frames <= 0 || converted.Buffer == null)
+                {
+                    continue;
+                }
+
+                Interlocked.Add(ref _audioFramesArrived, converted.Frames);
+                var convertedBuffer = converted.Buffer;
+                RaiseAudioLevelIfDue(convertedBuffer.AsSpan(0, converted.Length));
+
+                handoffToPlayback = DispatchConvertedAudioPacket(converted);
+            }
+            finally
+            {
+                if (!handoffToPlayback)
+                {
+                    ReturnPacketBuffer(converted);
+                }
+
+                WasapiComInterop.ThrowIfFailed(
+                    _audioCaptureClient.ReleaseBuffer(availableFrames),
+                    "IAudioCaptureClient.ReleaseBuffer");
+            }
+        }
+    }
+
+    private ConvertedAudioPacket ConvertToOutputFormat(IntPtr dataPtr, int inputFrames, bool silent)
+    {
+        if (inputFrames <= 0)
+        {
+            return default;
+        }
+
+        if (silent)
+        {
+            var outputFrames = ComputeResampledFrameCount(inputFrames);
+            if (outputFrames <= 0)
+            {
+                return default;
+            }
+
+            var outputLength = outputFrames * OutputBlockAlign;
+            var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
+            buffer.AsSpan(0, outputLength).Clear();
+            return new ConvertedAudioPacket(buffer, outputLength, outputFrames, isPooled: true);
+        }
+
+        if (_fastPathCopy)
+        {
+            var outputLength = inputFrames * OutputBlockAlign;
+            var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
+            Marshal.Copy(dataPtr, buffer, 0, outputLength);
+            return new ConvertedAudioPacket(buffer, outputLength, inputFrames, isPooled: true);
+        }
+
+        var decodedSampleCount = inputFrames * OutputChannels;
+        var decodedStereo = ArrayPool<float>.Shared.Rent(decodedSampleCount);
+        try
+        {
+            DecodeToStereo(dataPtr, inputFrames, _captureFormat, decodedStereo);
+
+            if (_captureFormat.SampleRate == OutputSampleRate)
+            {
+                var outputLength = decodedSampleCount * BytesPerFloatSample;
+                var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
+                var outputSamples = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(0, outputLength));
+                decodedStereo.AsSpan(0, decodedSampleCount).CopyTo(outputSamples);
+                return new ConvertedAudioPacket(buffer, outputLength, inputFrames, isPooled: true);
+            }
+
+            var outputFrames = ComputeResampledFrameCount(inputFrames);
+            if (outputFrames <= 0)
+            {
+                return default;
+            }
+
+            var outputSampleCount = outputFrames * OutputChannels;
+            var resampledStereo = ArrayPool<float>.Shared.Rent(outputSampleCount);
+            try
+            {
+                ResampleStereoLinear(decodedStereo, inputFrames, resampledStereo, outputFrames);
+                var outputLength = outputSampleCount * BytesPerFloatSample;
+                var buffer = ArrayPool<byte>.Shared.Rent(outputLength);
+                var outputSamples = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(0, outputLength));
+                resampledStereo.AsSpan(0, outputSampleCount).CopyTo(outputSamples);
+                return new ConvertedAudioPacket(buffer, outputLength, outputFrames, isPooled: true);
+            }
+            finally
+            {
+                ArrayPool<float>.Shared.Return(resampledStereo);
+            }
+        }
+        finally
+        {
+            ArrayPool<float>.Shared.Return(decodedStereo);
         }
     }
 
@@ -906,6 +784,134 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         {
             System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture event fan-out: {fanOutEx.Message}");
         }
+    }
+
+    public void AttachRecordingSink(IRecordingSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        Volatile.Write(ref _recordingSink, sink);
+    }
+
+    public void DetachRecordingSink()
+    {
+        Volatile.Write(ref _recordingSink, null);
+    }
+
+    public void AttachFlashbackSink(IRecordingSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        Volatile.Write(ref _flashbackSink, sink);
+    }
+
+    public void DetachFlashbackSink()
+    {
+        Volatile.Write(ref _flashbackSink, null);
+    }
+
+    public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)
+    {
+        // Runs on the WASAPI capture thread. Writers must copy/enqueue
+        // synchronously and return a completed task; incomplete tasks are
+        // rejected instead of being waited on in the callback path.
+        Volatile.Write(ref _audioWriter, writer);
+    }
+
+    internal void SetPlayback(WasapiAudioPlayback? playback)
+    {
+        Volatile.Write(ref _playback, playback);
+    }
+
+    private static void InvokeHotAudioWriter(
+        Func<ReadOnlyMemory<byte>, Task> writer,
+        ReadOnlyMemory<byte> samples,
+        string target)
+        => CompleteHotAudioWrite(writer(samples), target);
+
+    private bool DispatchConvertedAudioPacket(ConvertedAudioPacket converted)
+    {
+        var convertedBuffer = converted.Buffer;
+        if (convertedBuffer == null || converted.Length <= 0 || converted.Frames <= 0)
+        {
+            return false;
+        }
+
+        var samples = new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length);
+        var audioWriter = Volatile.Read(ref _audioWriter);
+        if (audioWriter != null)
+        {
+            try
+            {
+                InvokeHotAudioWriter(audioWriter, samples, "delegate");
+                Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
+            }
+            catch (Exception ex)
+            {
+                Volatile.Write(ref _audioWriter, null);
+                Interlocked.Exchange(ref _stopRequested, 1);
+                _captureEvent?.Set();
+                throw new InvalidOperationException("WASAPI audio delegate write failed.", ex);
+            }
+        }
+        else
+        {
+            var sink = Volatile.Read(ref _recordingSink);
+            if (sink != null)
+            {
+                try
+                {
+                    WriteAudioToSinkOnCaptureThread(sink, samples, "recording");
+                    Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
+                }
+                catch (Exception ex)
+                {
+                    Volatile.Write(ref _recordingSink, null);
+                    Interlocked.Exchange(ref _stopRequested, 1);
+                    _captureEvent?.Set();
+                    throw new InvalidOperationException("WASAPI audio sink write failed.", ex);
+                }
+            }
+        }
+
+        var flashbackSink = Volatile.Read(ref _flashbackSink);
+        if (flashbackSink != null)
+        {
+            try
+            {
+                WriteAudioToSinkOnCaptureThread(flashbackSink, samples, "flashback");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"WASAPI_FLASHBACK_AUDIO_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
+        var playback = Volatile.Read(ref _playback);
+        if (playback == null)
+        {
+            return false;
+        }
+
+        playback.EnqueuePooledSamples(convertedBuffer, converted.Length);
+        return true;
+    }
+
+    private static void WriteAudioToSinkOnCaptureThread(
+        IRecordingSink sink,
+        ReadOnlyMemory<byte> samples,
+        string target)
+        => CompleteHotAudioWrite(sink.WriteAudioAsync(samples), target);
+
+    private static void CompleteHotAudioWrite(Task task, string target)
+    {
+        ArgumentNullException.ThrowIfNull(task);
+        if (!task.IsCompleted)
+        {
+            throw new InvalidOperationException(
+                $"{target} audio writer returned an incomplete Task on the WASAPI capture thread. " +
+                "Audio writers must copy/enqueue synchronously and return Task.CompletedTask.");
+        }
+
+        task.GetAwaiter().GetResult();
     }
 
     private readonly struct ConvertedAudioPacket

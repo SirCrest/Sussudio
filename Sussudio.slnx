@@ -6,6 +6,7 @@
     <Platform Solution="*|x64" Project="x64" />
     <Deploy />
   </Project>
+  <Project Path="Sussudio.Automation.Contracts/Sussudio.Automation.Contracts.csproj" />
   <Project Path="tests/Sussudio.Tests/Sussudio.Tests.csproj" />
   <Project Path="tests/Sussudio.HdrLab/Sussudio.HdrLab.csproj">
     <Platform Solution="*|x64" Project="x64" />

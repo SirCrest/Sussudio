@@ -1,22 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Sussudio.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
 using Windows.Graphics;
-using Sussudio.Services.Audio;
-using Sussudio.Services.Automation;
-using Sussudio.Services.Capture;
-using Sussudio.Services.Flashback;
-using Sussudio.Services.Gpu;
-using Sussudio.Services.Preview;
-using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
-using Sussudio.Services.Telemetry;
+using Sussudio.ViewModels;
 
 namespace Sussudio;
 
@@ -26,6 +17,7 @@ public sealed partial class StatsWindow : Window
 {
     private readonly Func<StatsSnapshot> _dataProvider;
     private readonly Action? _closedCallback;
+    private readonly StatsWindowPresentationController _presentationController;
     private readonly DispatcherQueueTimer _pollTimer;
 
     public StatsWindow(Func<StatsSnapshot> dataProvider, Action? closedCallback = null)
@@ -36,6 +28,7 @@ public sealed partial class StatsWindow : Window
 
         _dataProvider = dataProvider;
         _closedCallback = closedCallback;
+        _presentationController = CreatePresentationController();
 
         ConfigureWindow();
 
@@ -49,6 +42,47 @@ public sealed partial class StatsWindow : Window
 
         UpdateSnapshot(_dataProvider());
         _pollTimer.Start();
+    }
+
+    private StatsWindowPresentationController CreatePresentationController()
+    {
+        var telemetryDetailsController = new StatsWindowTelemetryDetailsController(new StatsWindowTelemetryDetailsControllerContext
+        {
+            ResourceOwner = RootGrid,
+            TelemetryDetailsContent = TelemetryDetailsContent
+        });
+
+        return new StatsWindowPresentationController(
+            new StatsWindowPresentationControllerContext
+            {
+                SessionStateValue = SessionStateValue,
+                DiagnosticStatusValue = DiagnosticStatusValue,
+                DiagnosticStageValue = DiagnosticStageValue,
+                DiagnosticEvidenceValue = DiagnosticEvidenceValue,
+                SourceResolutionValue = SourceResolutionValue,
+                SourceFrameRateValue = SourceFrameRateValue,
+                SourceHdrValue = SourceHdrValue,
+                SourceFormatValue = SourceFormatValue,
+                TelemetryOriginValue = TelemetryOriginValue,
+                SourceFpsValue = SourceFpsValue,
+                SourceExpectedFpsValue = SourceExpectedFpsValue,
+                SourceAvgValue = SourceAvgValue,
+                SourceP95Value = SourceP95Value,
+                SourceJitterValue = SourceJitterValue,
+                SourceGapsValue = SourceGapsValue,
+                SourceDropsValue = SourceDropsValue,
+                PreviewFpsValue = PreviewFpsValue,
+                PreviewAvgValue = PreviewAvgValue,
+                PreviewP95Value = PreviewP95Value,
+                PreviewSlowValue = PreviewSlowValue,
+                PipelineLatencyValue = PipelineLatencyValue,
+                SourceDeliveredValue = SourceDeliveredValue,
+                SourceDroppedValue = SourceDroppedValue,
+                RendererRenderedValue = RendererRenderedValue,
+                RendererDroppedValue = RendererDroppedValue,
+                PerfScoreValue = PerfScoreValue
+            },
+            telemetryDetailsController);
     }
 
     private const int MinWidth = 340;
@@ -111,89 +145,138 @@ public sealed partial class StatsWindow : Window
 
     private void UpdateSnapshot(StatsSnapshot snapshot)
     {
-        SessionStateValue.Text = snapshot.Recording
-            ? "Recording"
-            : snapshot.Previewing
-                ? "Previewing"
-                : "Idle";
-        DiagnosticStatusValue.Text = string.IsNullOrWhiteSpace(snapshot.DiagnosticHealthStatus)
-            ? "Unknown"
-            : snapshot.DiagnosticHealthStatus;
-        DiagnosticStageValue.Text = string.IsNullOrWhiteSpace(snapshot.DiagnosticLikelyStage)
-            ? "diagnostic_unavailable"
-            : snapshot.DiagnosticLikelyStage;
-        DiagnosticEvidenceValue.Text = string.IsNullOrWhiteSpace(snapshot.DiagnosticEvidence)
-            ? snapshot.DiagnosticSummary ?? "Diagnostics are not available yet."
-            : snapshot.DiagnosticEvidence;
+        var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);
+        _presentationController.Apply(presentation);
+    }
+}
 
-        SourceResolutionValue.Text = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
-            ? $"{snapshot.SourceWidth} x {snapshot.SourceHeight}"
-            : "\u2014";
-        SourceFrameRateValue.Text = snapshot.SourceFrameRateExact.HasValue
-            ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
-            : "\u2014";
-        SourceHdrValue.Text = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);
-        SourceFormatValue.Text = snapshot.SourceVideoFormat ?? "\u2014";
-        TelemetryOriginValue.Text = snapshot.TelemetryOrigin is not null and not "Unknown"
-            ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
-            : "\u2014";
+internal sealed class StatsWindowPresentationControllerContext
+{
+    public required TextBlock SessionStateValue { get; init; }
+    public required TextBlock DiagnosticStatusValue { get; init; }
+    public required TextBlock DiagnosticStageValue { get; init; }
+    public required TextBlock DiagnosticEvidenceValue { get; init; }
+    public required TextBlock SourceResolutionValue { get; init; }
+    public required TextBlock SourceFrameRateValue { get; init; }
+    public required TextBlock SourceHdrValue { get; init; }
+    public required TextBlock SourceFormatValue { get; init; }
+    public required TextBlock TelemetryOriginValue { get; init; }
+    public required TextBlock SourceFpsValue { get; init; }
+    public required TextBlock SourceExpectedFpsValue { get; init; }
+    public required TextBlock SourceAvgValue { get; init; }
+    public required TextBlock SourceP95Value { get; init; }
+    public required TextBlock SourceJitterValue { get; init; }
+    public required TextBlock SourceGapsValue { get; init; }
+    public required TextBlock SourceDropsValue { get; init; }
+    public required TextBlock PreviewFpsValue { get; init; }
+    public required TextBlock PreviewAvgValue { get; init; }
+    public required TextBlock PreviewP95Value { get; init; }
+    public required TextBlock PreviewSlowValue { get; init; }
+    public required TextBlock PipelineLatencyValue { get; init; }
+    public required TextBlock SourceDeliveredValue { get; init; }
+    public required TextBlock SourceDroppedValue { get; init; }
+    public required TextBlock RendererRenderedValue { get; init; }
+    public required TextBlock RendererDroppedValue { get; init; }
+    public required TextBlock PerfScoreValue { get; init; }
+}
 
-        SourceFpsValue.Text = FormatFps(snapshot.SourceObservedFps);
-        SourceExpectedFpsValue.Text = FormatFps(snapshot.SourceExpectedFps);
-        SourceAvgValue.Text = $"{FormatMs(snapshot.SourceAvgIntervalMs)} avg";
-        SourceP95Value.Text = $"{FormatMs(snapshot.SourceP95IntervalMs)} P95";
-        SourceJitterValue.Text = FormatMs(snapshot.SourceJitterMs);
-        SourceGapsValue.Text = $"{FormatCount(snapshot.SourceSevereGaps)} severe";
-        SourceDropsValue.Text = $"{FormatCount(snapshot.SourceEstDrops)} drops ({FormatPercent(snapshot.SourceEstDropPct)})";
+internal sealed class StatsWindowPresentationController
+{
+    private readonly StatsWindowPresentationControllerContext _context;
+    private readonly StatsWindowTelemetryDetailsController _telemetryDetailsController;
 
-        PreviewFpsValue.Text = FormatFps(snapshot.PreviewObservedFps);
-        PreviewAvgValue.Text = $"{FormatMs(snapshot.PreviewAvgIntervalMs)} avg";
-        PreviewP95Value.Text = $"{FormatMs(snapshot.PreviewP95IntervalMs)} P95";
-        PreviewSlowValue.Text = $"{FormatCount(snapshot.PreviewSlowFrames)} frames ({FormatPercent(snapshot.PreviewSlowPct)})";
-
-        PipelineLatencyValue.Text = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
-
-        SourceDeliveredValue.Text = $"{FormatCount(snapshot.SourceFramesDelivered)} delivered";
-        SourceDroppedValue.Text = $"{FormatCount(snapshot.SourceFramesDropped)} dropped";
-        RendererRenderedValue.Text = $"{FormatCount(snapshot.RendererFramesRendered)} rendered";
-        RendererDroppedValue.Text = $"{FormatCount(snapshot.RendererFramesDropped)} dropped";
-
-        PerfScoreValue.Text = $"{FormatScore(snapshot.PerformanceScore)} / 100";
-        UpdateTelemetryDetails(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
+    public StatsWindowPresentationController(
+        StatsWindowPresentationControllerContext context,
+        StatsWindowTelemetryDetailsController telemetryDetailsController)
+    {
+        _context = context;
+        _telemetryDetailsController = telemetryDetailsController;
     }
 
-    private void UpdateTelemetryDetails(IReadOnlyList<SourceTelemetryDetailEntry> details, string? diagnosticSummary)
+    public void Apply(StatsWindowPresentation presentation)
     {
-        TelemetryDetailsContent.Children.Clear();
+        SetTextIfChanged(_context.SessionStateValue, presentation.SessionState);
+        SetTextIfChanged(_context.DiagnosticStatusValue, presentation.DiagnosticStatus);
+        SetTextIfChanged(_context.DiagnosticStageValue, presentation.DiagnosticStage);
+        SetTextIfChanged(_context.DiagnosticEvidenceValue, presentation.DiagnosticEvidence);
+        SetTextIfChanged(_context.SourceResolutionValue, presentation.SourceResolution);
+        SetTextIfChanged(_context.SourceFrameRateValue, presentation.SourceFrameRate);
+        SetTextIfChanged(_context.SourceHdrValue, presentation.SourceHdr);
+        SetTextIfChanged(_context.SourceFormatValue, presentation.SourceFormat);
+        SetTextIfChanged(_context.TelemetryOriginValue, presentation.TelemetryOrigin);
+        SetTextIfChanged(_context.SourceFpsValue, presentation.SourceFps);
+        SetTextIfChanged(_context.SourceExpectedFpsValue, presentation.SourceExpectedFps);
+        SetTextIfChanged(_context.SourceAvgValue, presentation.SourceAvg);
+        SetTextIfChanged(_context.SourceP95Value, presentation.SourceP95);
+        SetTextIfChanged(_context.SourceJitterValue, presentation.SourceJitter);
+        SetTextIfChanged(_context.SourceGapsValue, presentation.SourceGaps);
+        SetTextIfChanged(_context.SourceDropsValue, presentation.SourceDrops);
+        SetTextIfChanged(_context.PreviewFpsValue, presentation.PreviewFps);
+        SetTextIfChanged(_context.PreviewAvgValue, presentation.PreviewAvg);
+        SetTextIfChanged(_context.PreviewP95Value, presentation.PreviewP95);
+        SetTextIfChanged(_context.PreviewSlowValue, presentation.PreviewSlow);
+        SetTextIfChanged(_context.PipelineLatencyValue, presentation.PipelineLatency);
+        SetTextIfChanged(_context.SourceDeliveredValue, presentation.SourceDelivered);
+        SetTextIfChanged(_context.SourceDroppedValue, presentation.SourceDropped);
+        SetTextIfChanged(_context.RendererRenderedValue, presentation.RendererRendered);
+        SetTextIfChanged(_context.RendererDroppedValue, presentation.RendererDropped);
+        SetTextIfChanged(_context.PerfScoreValue, presentation.PerformanceScore);
+        _telemetryDetailsController.Apply(presentation.TelemetryDetails);
+    }
 
-        if (details.Count > 0)
+    private static void SetTextIfChanged(TextBlock target, string value)
+    {
+        if (!string.Equals(target.Text, value, StringComparison.Ordinal))
         {
-            var currentGroup = string.Empty;
-            foreach (var detail in details)
+            target.Text = value;
+        }
+    }
+}
+
+internal sealed class StatsWindowTelemetryDetailsControllerContext
+{
+    public required FrameworkElement ResourceOwner { get; init; }
+    public required StackPanel TelemetryDetailsContent { get; init; }
+}
+
+internal sealed class StatsWindowTelemetryDetailsController
+{
+    private readonly StatsWindowTelemetryDetailsControllerContext _context;
+
+    public StatsWindowTelemetryDetailsController(StatsWindowTelemetryDetailsControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void Apply(StatsWindowTelemetryDetailsPresentation presentation)
+    {
+        _context.TelemetryDetailsContent.Children.Clear();
+
+        if (presentation.IsEmpty)
+        {
+            _context.TelemetryDetailsContent.Children.Add(new TextBlock
             {
-                if (!string.Equals(currentGroup, detail.Group, StringComparison.Ordinal))
-                {
-                    currentGroup = detail.Group;
-                    TelemetryDetailsContent.Children.Add(new TextBlock
-                    {
-                        Text = currentGroup,
-                        Margin = new Thickness(0, 8, 0, 2),
-                        Style = (Style)RootGrid.Resources["StatsSectionHeaderStyle"]
-                    });
-                }
-
-                TelemetryDetailsContent.Children.Add(CreateTelemetryDetailRow(detail.Label, detail.DisplayValue));
-            }
-
+                Text = presentation.EmptyText,
+                Style = GetStyle("StatsLabelStyle"),
+                TextWrapping = TextWrapping.Wrap
+            });
             return;
         }
 
-        TelemetryDetailsContent.Children.Add(new TextBlock
+        foreach (var row in presentation.Rows)
         {
-            Text = string.IsNullOrWhiteSpace(diagnosticSummary) ? "No telemetry details available" : diagnosticSummary,
-            Style = (Style)RootGrid.Resources["StatsLabelStyle"],
-            TextWrapping = TextWrapping.Wrap
-        });
+            if (row.GroupHeader != null)
+            {
+                _context.TelemetryDetailsContent.Children.Add(new TextBlock
+                {
+                    Text = row.GroupHeader,
+                    Margin = new Thickness(0, 8, 0, 2),
+                    Style = GetStyle("StatsSectionHeaderStyle")
+                });
+            }
+
+            _context.TelemetryDetailsContent.Children.Add(CreateTelemetryDetailRow(row.Label, row.Value));
+        }
     }
 
     private Grid CreateTelemetryDetailRow(string label, string value)
@@ -205,12 +288,12 @@ public sealed partial class StatsWindow : Window
         var labelBlock = new TextBlock
         {
             Text = label,
-            Style = (Style)RootGrid.Resources["StatsLabelStyle"]
+            Style = GetStyle("StatsLabelStyle")
         };
         var valueBlock = new TextBlock
         {
             Text = value,
-            Style = (Style)RootGrid.Resources["StatsValueStyle"],
+            Style = GetStyle("StatsValueStyle"),
             HorizontalAlignment = HorizontalAlignment.Right,
             TextWrapping = TextWrapping.Wrap
         };
@@ -221,41 +304,5 @@ public sealed partial class StatsWindow : Window
         return grid;
     }
 
-    private static string FormatFps(double value)
-    {
-        return Sanitize(value).ToString("0.00");
-    }
-
-    private static string FormatMs(double value)
-    {
-        return $"{Sanitize(value):0.00}ms";
-    }
-
-    private static string FormatPercent(double value)
-    {
-        return $"{Sanitize(value):0.0}%";
-    }
-
-    private static string FormatScore(double value)
-    {
-        return Sanitize(value).ToString("0.0");
-    }
-
-    private static string FormatCount(long value)
-    {
-        return Math.Max(0, value).ToString("N0");
-    }
-
-    private static string FormatSourceHdr(bool? isHdr, string? colorimetry)
-        => DisplayFormatters.FormatSourceHdr(isHdr, colorimetry);
-
-    private static double Sanitize(double value)
-    {
-        if (!double.IsFinite(value) || value < 0)
-        {
-            return 0;
-        }
-
-        return value;
-    }
+    private Style GetStyle(string key) => (Style)_context.ResourceOwner.Resources[key];
 }

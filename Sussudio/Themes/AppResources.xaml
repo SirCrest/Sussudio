@@ -22,6 +22,40 @@
 
             <!-- Accent system -->
             <SolidColorBrush x:Key="AccentBrush" Color="#00CED1"/>
+
+            <!-- Replace the Windows system accent (OS blue) with the app's
+                 teal. AccentFillColor* covers controls that bind the accent
+                 via {ThemeResource}; the per-control keys below are also
+                 required because WinUI binds them as early-bound
+                 StaticResource, which never sees an AccentFillColor override. -->
+            <Color x:Key="SystemAccentColor">#00CED1</Color>
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#00CED1"/>
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#00A5A8"/>
+
+            <!-- ToggleSwitch (on state) -->
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#00CED1"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#00A5A8"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#00CED1"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#00A5A8"/>
+
+            <!-- Slider (filled track + thumb) -->
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#00CED1"/>
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#00A5A8"/>
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="#00CED1"/>
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#00A5A8"/>
+
+            <!-- CheckBox (checked state) -->
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#00CED1"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#00A5A8"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#00CED1"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#33D6D8"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#00A5A8"/>
         </ResourceDictionary>
 
         <!-- Light theme -->
@@ -42,6 +76,36 @@
             <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#0A000000"/>
 
             <SolidColorBrush x:Key="AccentBrush" Color="#00868A"/>
+
+            <!-- Match the dark theme: app teal replaces the OS blue accent. -->
+            <Color x:Key="SystemAccentColor">#00868A</Color>
+            <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#00868A"/>
+            <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#1A9498"/>
+            <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#006D70"/>
+
+            <!-- ToggleSwitch (on state) -->
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#00868A"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#1A9498"/>
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#006D70"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#00868A"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#1A9498"/>
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#006D70"/>
+
+            <!-- Slider (filled track + thumb) -->
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#00868A"/>
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#1A9498"/>
+            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#006D70"/>
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="#00868A"/>
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#1A9498"/>
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#006D70"/>
+
+            <!-- CheckBox (checked state) -->
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked" Color="#00868A"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" Color="#1A9498"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed" Color="#006D70"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeChecked" Color="#00868A"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" Color="#1A9498"/>
+            <SolidColorBrush x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" Color="#006D70"/>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
