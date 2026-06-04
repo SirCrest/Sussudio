@@ -670,6 +670,10 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream();
 
     [Fact]
+    public Task FlashbackExporterPreservesLaterValidMicrophoneStreamTemplate()
+        => global::Program.FlashbackExporter_PreservesLaterValidMicrophoneStreamTemplate();
+
+    [Fact]
     public Task FlashbackExporterFailsWhenRequestedSegmentsAreSkipped()
         => global::Program.FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped();
 
@@ -1546,6 +1550,7 @@ static partial class Program
         AssertContains(templateSelectionBlock, "LogInputStreams(_activeInputContext, candidateStreamCount);");
         AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing'");
         AssertContains(templateSelectionBlock, "no usable video stream was found in any segment");
+        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_CANDIDATE");
         AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
         AssertContains(incompleteVideoParamsBlock, "var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];");
         AssertContains(incompleteVideoParamsBlock, "var videoHasValidParams = videoWidth > 0 && videoHeight > 0;");
@@ -1559,7 +1564,43 @@ static partial class Program
         AssertContains(streamTemplatesText, "return !inputHasCompleteDimensions && templateHasCompleteDimensions;");
         AssertContains(streamTemplatesText, "inputCodec->sample_rate != templateCodec->sample_rate");
         AssertContains(streamTemplatesText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
-        AssertContains(streamTemplatesText, "inputCodec->format != templateCodec->format");
+        AssertContains(streamTemplatesText, "private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
+        AssertContains(streamTemplatesText, "return inputCodec->format == templateCodec->format;");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackExporter_PreservesLaterValidMicrophoneStreamTemplate()
+    {
+        var sourceText = ReadFlashbackExporterSource();
+        var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+        var templateSelectionBlock = ExtractTextBetween(
+            sourceText,
+            "private bool TryInitializeSegmentOutputTemplate(",
+            "    private bool TryOpenSegmentInputForExport");
+
+        AssertContains(streamsText, "private static int CountUsableTemplateStreams(AVFormatContext* inputContext, int inputStreamCount)");
+        AssertContains(streamsText, "if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO &&\n                (inStream->codecpar->ch_layout.nb_channels <= 0 || inStream->codecpar->sample_rate <= 0))");
+        AssertContains(streamsText, "private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
+        AssertContains(streamsText, "var inputAudioParamsIncomplete = inputCodec->sample_rate <= 0 || inputCodec->ch_layout.nb_channels <= 0;");
+        AssertContains(streamsText, "var templateHasCompleteAudioParams = templateCodec->sample_rate > 0 && templateCodec->ch_layout.nb_channels > 0;");
+        AssertContains(streamsText, "return templateHasCompleteAudioParams;");
+        AssertContains(streamsText, "if (!AudioParamsMatchOrCanUseTemplate(inputCodec, templateCodec))");
+        AssertContains(streamsText, "audio_params expected=");
+        AssertContains(templateSelectionBlock, "var bestMappedStreamCount = -1;");
+        AssertContains(templateSelectionBlock, "var candidateMappedStreamCount = CountUsableTemplateStreams(_activeInputContext, candidateStreamCount);");
+        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_CANDIDATE");
+        AssertContains(templateSelectionBlock, "mapped_streams={candidateMappedStreamCount}");
+        AssertContains(templateSelectionBlock, "if (candidateMappedStreamCount > bestMappedStreamCount)");
+        AssertContains(templateSelectionBlock, "bestTemplatePath = templatePath;");
+        AssertContains(templateSelectionBlock, "OpenInput(bestTemplatePath);");
+        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
+        AssertContains(templateSelectionBlock, "mapped_streams={bestMappedStreamCount}");
+        AssertOccursBefore(
+            templateSelectionBlock,
+            "var candidateMappedStreamCount = CountUsableTemplateStreams(_activeInputContext, candidateStreamCount);",
+            "OpenInput(bestTemplatePath);");
 
         return Task.CompletedTask;
     }

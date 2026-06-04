@@ -431,6 +431,33 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         return streamMap;
     }
 
+    private static int CountUsableTemplateStreams(AVFormatContext* inputContext, int inputStreamCount)
+    {
+        var usableStreamCount = 0;
+
+        for (var streamIndex = 0; streamIndex < inputStreamCount; streamIndex++)
+        {
+            var inStream = inputContext->streams[streamIndex];
+            var codecType = inStream->codecpar->codec_type;
+
+            if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO &&
+                (inStream->codecpar->ch_layout.nb_channels <= 0 || inStream->codecpar->sample_rate <= 0))
+            {
+                continue;
+            }
+
+            if (codecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
+                (inStream->codecpar->width <= 0 || inStream->codecpar->height <= 0))
+            {
+                continue;
+            }
+
+            usableStreamCount++;
+        }
+
+        return usableStreamCount;
+    }
+
     private static string? FindSegmentStreamLayoutMismatch(
         AVFormatContext* inputContext,
         AVFormatContext* outputContext,
@@ -484,19 +511,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             }
             else if (inputCodec->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
             {
-                if (inputCodec->sample_rate != templateCodec->sample_rate)
+                if (!AudioParamsMatchOrCanUseTemplate(inputCodec, templateCodec))
                 {
-                    return $"stream={streamIndex} sample_rate expected={templateCodec->sample_rate} actual={inputCodec->sample_rate}";
-                }
-
-                if (inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels)
-                {
-                    return $"stream={streamIndex} channels expected={templateCodec->ch_layout.nb_channels} actual={inputCodec->ch_layout.nb_channels}";
-                }
-
-                if (inputCodec->format != templateCodec->format)
-                {
-                    return $"stream={streamIndex} sample_format expected={templateCodec->format} actual={inputCodec->format}";
+                    return $"stream={streamIndex} audio_params expected={templateCodec->sample_rate}Hz/{templateCodec->ch_layout.nb_channels}ch/{templateCodec->format} actual={inputCodec->sample_rate}Hz/{inputCodec->ch_layout.nb_channels}ch/{inputCodec->format}";
                 }
             }
         }
@@ -514,6 +531,28 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         var inputHasCompleteDimensions = inputCodec->width > 0 && inputCodec->height > 0;
         var templateHasCompleteDimensions = templateCodec->width > 0 && templateCodec->height > 0;
         return !inputHasCompleteDimensions && templateHasCompleteDimensions;
+    }
+
+    private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)
+    {
+        var inputAudioParamsIncomplete = inputCodec->sample_rate <= 0 || inputCodec->ch_layout.nb_channels <= 0;
+        var templateHasCompleteAudioParams = templateCodec->sample_rate > 0 && templateCodec->ch_layout.nb_channels > 0;
+        if (inputAudioParamsIncomplete)
+        {
+            return templateHasCompleteAudioParams;
+        }
+
+        if (inputCodec->sample_rate != templateCodec->sample_rate)
+        {
+            return false;
+        }
+
+        if (inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels)
+        {
+            return false;
+        }
+
+        return inputCodec->format == templateCodec->format;
     }
 
     private static int FindVideoStreamIndex(AVFormatContext* inputContext)
@@ -2406,6 +2445,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         selectedStreamMap = Array.Empty<int>();
         failureMessage = "Flashback export failed: no usable segment template was found.";
 
+        var bestTemplateSegIdx = -1;
+        string? bestTemplatePath = null;
+        var bestMappedStreamCount = -1;
+
         for (var templateSegIdx = 0; templateSegIdx < segments.Count; templateSegIdx++)
         {
             ct.ThrowIfCancellationRequested();
@@ -2451,14 +2494,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     continue;
                 }
 
-                CreateOutputContext(tmpPath, fastStart);
-                selectedStreamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount);
-                Logger.Log($"FLASHBACK_EXPORT_STREAM_MAP video_idx={candidateVideoStreamIndex} map=[{string.Join(",", selectedStreamMap)}]");
-                OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
-                selectedStreamCount = candidateStreamCount;
-                selectedVideoStreamIndex = candidateVideoStreamIndex;
-                Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SELECTED seg={templateSegIdx} path='{Path.GetFileName(templatePath)}'");
-                return true;
+                var candidateMappedStreamCount = CountUsableTemplateStreams(_activeInputContext, candidateStreamCount);
+                Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_CANDIDATE seg={templateSegIdx} path='{Path.GetFileName(templatePath)}' mapped_streams={candidateMappedStreamCount} video_idx={candidateVideoStreamIndex}");
+                if (candidateMappedStreamCount > bestMappedStreamCount)
+                {
+                    bestTemplateSegIdx = templateSegIdx;
+                    bestTemplatePath = templatePath;
+                    bestMappedStreamCount = candidateMappedStreamCount;
+                }
             }
             finally
             {
@@ -2466,7 +2509,61 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             }
         }
 
-        return false;
+        if (bestTemplateSegIdx < 0 || string.IsNullOrWhiteSpace(bestTemplatePath))
+        {
+            return false;
+        }
+
+        ct.ThrowIfCancellationRequested();
+        OpenInput(bestTemplatePath);
+        try
+        {
+            ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+            if (!TryGetInputStreamCount(_activeInputContext, "segment_template", out var candidateStreamCount, out var streamCountFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP path='{Path.GetFileName(bestTemplatePath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
+                failureMessage = streamCountFailure;
+                return false;
+            }
+
+            var candidateVideoStreamIndex = FindVideoStreamIndex(_activeInputContext);
+            LogInputStreams(_activeInputContext, candidateStreamCount);
+            if (candidateVideoStreamIndex < 0)
+            {
+                Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={bestTemplateSegIdx} trying_next_segment=False");
+                failureMessage = "Flashback export failed: no usable video stream was found in any segment.";
+                return false;
+            }
+
+            var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];
+            var videoWidth = videoStream->codecpar->width;
+            var videoHeight = videoStream->codecpar->height;
+            var videoExtradataSize = videoStream->codecpar->extradata_size;
+            var videoHasValidParams = videoWidth > 0 && videoHeight > 0;
+            if (!videoHasValidParams)
+            {
+                Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_params_incomplete' seg={bestTemplateSegIdx} " +
+                    $"w={videoWidth} " +
+                    $"h={videoHeight} " +
+                    $"extradata={videoExtradataSize} " +
+                    "trying_next_segment=False");
+                failureMessage = "Flashback export failed: no segment had complete video parameters.";
+                return false;
+            }
+
+            CreateOutputContext(tmpPath, fastStart);
+            selectedStreamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount);
+            Logger.Log($"FLASHBACK_EXPORT_STREAM_MAP video_idx={candidateVideoStreamIndex} map=[{string.Join(",", selectedStreamMap)}]");
+            OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
+            selectedStreamCount = candidateStreamCount;
+            selectedVideoStreamIndex = candidateVideoStreamIndex;
+            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SELECTED seg={bestTemplateSegIdx} path='{Path.GetFileName(bestTemplatePath)}' mapped_streams={bestMappedStreamCount}");
+            return true;
+        }
+        finally
+        {
+            CloseActiveInput();
+        }
     }
 
     private bool TryOpenSegmentInputForExport(
