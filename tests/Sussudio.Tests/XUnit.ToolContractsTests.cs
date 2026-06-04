@@ -52,7 +52,11 @@ public sealed class SsctlFormatterContractsTests
         const string json = """
                             {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","SelectedPreset":"P5","SelectedSplitEncodeMode":"Auto","SelectedVideoFormat":"MJPG","PreviewVolumePercent":42.5,"IsStatsVisible":true,"IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","FlashbackActive":true,"FlashbackBufferedDurationMs":45000,"FlashbackDiskBytes":104857600,"FlashbackTotalBytesWritten":157286400,"FlashbackGpuEncoding":true,"FlashbackEncodedFrames":900,"FlashbackDroppedFrames":3,"FlashbackVideoQueueDepth":2,"FlashbackAudioQueueDepth":1,"FlashbackPlaybackState":"Paused","FlashbackPlaybackPositionMs":1234,"FlashbackDecoderHwAccel":"D3D11","FlashbackPlaybackObservedFps":59.9,"FlashbackPlaybackAvgFrameMs":16.7,"FlashbackPlaybackFrameCount":300,"FlashbackPlaybackLateFrames":2,"FlashbackPlaybackSubmitFailures":1,"FlashbackAvDriftMs":-1.5,"FlashbackFilePath":"temp/flashback.mp4","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"MjpegDecoderCount":2,"MjpegReorderSampleCount":300,"MjpegReorderAvgMs":0.4,"MjpegReorderP95Ms":0.8,"MjpegReorderMaxMs":1.2,"MjpegPipelineSampleCount":300,"MjpegPipelineAvgMs":5.1,"MjpegPipelineP95Ms":7.0,"MjpegPipelineMaxMs":9.4,"MjpegTotalDecoded":301,"MjpegTotalEmitted":300,"MjpegTotalDropped":1,"MjpegReorderSkips":2,"MjpegReorderBufferDepth":1,"MjpegPerDecoder":[{"WorkerIndex":0,"SampleCount":150,"AvgMs":2.0,"P95Ms":3.0,"MaxMs":4.0},{"WorkerIndex":1,"SampleCount":151,"AvgMs":2.2,"P95Ms":3.2,"MaxMs":4.2}],"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
                             """;
-        var jsonWithEncoder = json.Replace(
+        var jsonWithAudioBuffer = json.Replace(
+            "\"WasapiPlaybackLastRenderTickMs\":0,",
+            "\"WasapiPlaybackLastRenderTickMs\":0,\"AudioBufferHealthStatus\":\"Healthy\",\"AudioBufferHealthReason\":\"No audio buffer underrun or overrun counters have moved for the active audio path.\",\"AudioBufferUnderrunDetected\":false,\"AudioBufferOverrunDetected\":false,\"AudioBufferUnderrunEvents\":0,\"AudioBufferOverrunEvents\":0,",
+            StringComparison.Ordinal);
+        var jsonWithEncoder = jsonWithAudioBuffer.Replace(
             "\"FlashbackActive\":true,",
             "\"FlashbackActive\":true,\"EncoderCodecName\":\"hevc_nvenc\",\"EncoderWidth\":3840,\"EncoderHeight\":2160,\"EncoderFrameRate\":120,\"EncoderFrameRateNumerator\":120,\"EncoderFrameRateDenominator\":1,\"EncoderTargetBitRate\":12345678,",
             StringComparison.Ordinal).Replace(
@@ -153,6 +157,7 @@ public sealed class SsctlFormatterContractsTests
         AssertContains(output, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
         AssertContains(output, "D3D Ownership: submitted present=41 sourceSeq=9000 pts=123456 | rendered present=42 sourceSeq=9001 pts=123789 schedulerToPresent=7.7ms pipeline=8.4ms | lastDrop=none dropPts=0");
         AssertContains(output, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
+        AssertContains(output, "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
         AssertContains(output, "== MJPEG Pipeline Timing ==");
         AssertContains(output, "== Preview ==");
         AssertContains(output, "== Source ==");
@@ -413,6 +418,8 @@ public sealed class SsctlFormatterContractsTests
         AssertContains(ssctlSnapshotRootSource, "WasapiCaptureCallbackSevereGapCount");
         AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotRootSource, "WasapiPlaybackQueueDropCount");
+        AssertContains(ssctlSnapshotRootSource, "AudioBufferHealthStatus");
+        AssertContains(ssctlSnapshotRootSource, "AudioBufferUnderrunEvents");
         AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(ssctlSnapshotFlashbackSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
         AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackEncodingSection(builder, snapshot);");
@@ -1289,6 +1296,7 @@ static partial class Program
         AssertContains(uiSettingsToolText, "configure_ui");
         AssertContains(uiSettingsToolText, "\"SetPreviewVolume\"");
         AssertContains(uiSettingsToolText, "\"SetStatsVisible\"");
+        AssertContains(captureOptionsToolText, "get_capture_options");
         AssertDoesNotContain(automationSnapshotText, " Options { get; init;");
 
         return Task.CompletedTask;
@@ -1360,6 +1368,7 @@ static partial class Program
             "RefreshDevices",
             "SelectDevice",
             "SelectAudioInputDevice",
+            "SelectMicrophoneDevice",
             "SetCustomAudioInput"
         })
         {
@@ -1373,6 +1382,8 @@ static partial class Program
             "SetTrueHdrPreviewEnabled",
             "SetAudioEnabled",
             "SetAudioPreviewEnabled",
+            "SetMicrophoneEnabled",
+            "SetMicrophoneVolume",
             "SetOutputPath"
         })
         {
@@ -1394,6 +1405,8 @@ static partial class Program
 
         AssertContains(flashbackToolsText, "AutomationCommandKind.SetFlashbackEnabled");
         AssertContains(flashbackToolsText, "AutomationCommandKind.RestartFlashback");
+        AssertContains(flashbackToolsText, "AutomationCommandKind.SetFlashbackBufferMinutes");
+        AssertContains(flashbackToolsText, "AutomationCommandKind.SetFlashbackGpuDecode");
         AssertDoesNotContain(flashbackToolsText, "commandName: \"SetFlashbackEnabled\"");
         AssertDoesNotContain(flashbackToolsText, "commandName: \"RestartFlashback\"");
         AssertContains(flashbackActionsText, "AutomationCommandKind.FlashbackAction");
@@ -1459,13 +1472,15 @@ static partial class Program
             null,
             null,
             null,
+            null,
+            null,
             false,
             null).ConfigureAwait(false);
         AssertEqual("No device configuration changes requested.", empty, "configure_device empty result");
 
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
-                expectedCount: 4,
+                expectedCount: 5,
                 () => InvokeMcpToolStringAsync(
                     deviceTools,
                     "configure_device",
@@ -1474,6 +1489,8 @@ static partial class Program
                     "Capture Name",
                     "audio-id",
                     "Audio Name",
+                    "mic-id",
+                    "Mic Name",
                     true,
                     true))
             .ConfigureAwait(false);
@@ -1489,7 +1506,12 @@ static partial class Program
             "SelectAudioInputDevice",
             ("deviceId", "audio-id"),
             ("deviceName", "Audio Name"));
-        AssertCommandRequest(requests[3], "SetCustomAudioInput", ("enabled", true));
+        AssertCommandRequest(
+            requests[3],
+            "SelectMicrophoneDevice",
+            ("deviceId", "mic-id"),
+            ("deviceName", "Mic Name"));
+        AssertCommandRequest(requests[4], "SetCustomAudioInput", ("enabled", true));
     }
 
     internal static async Task McpCaptureSettingsTools_RouteProvidedSettings()
@@ -1556,12 +1578,14 @@ static partial class Program
             null,
             null,
             null,
+            null,
+            null,
             null).ConfigureAwait(false);
         AssertEqual("No pipeline setting changes requested.", empty, "configure_pipeline empty result");
 
         var requests = await CapturePipeRequestsAsync(
                 pipeName,
-                expectedCount: 7,
+                expectedCount: 9,
                 async () =>
                 {
                     await InvokeMcpToolStringAsync(
@@ -1571,6 +1595,8 @@ static partial class Program
                         true,
                         false,
                         true,
+                        true,
+                        66.5d,
                         false,
                         @"C:\captures").ConfigureAwait(false);
                     await InvokeMcpToolStringAsync(
@@ -1590,9 +1616,11 @@ static partial class Program
         AssertCommandRequest(requests[1], "SetTrueHdrPreviewEnabled", ("enabled", false));
         AssertCommandRequest(requests[2], "SetAudioEnabled", ("enabled", false));
         AssertCommandRequest(requests[3], "SetAudioPreviewEnabled", ("enabled", true));
-        AssertCommandRequest(requests[4], "SetOutputPath", ("outputPath", @"C:\captures"));
-        AssertCommandRequest(requests[5], "SetDeviceAudioMode", ("mode", "analog"));
-        AssertCommandRequest(requests[6], "SetAnalogAudioGain", ("gain", 42.5d));
+        AssertCommandRequest(requests[4], "SetMicrophoneEnabled", ("enabled", true));
+        AssertCommandRequest(requests[5], "SetMicrophoneVolume", ("microphoneVolumePercent", 66.5d));
+        AssertCommandRequest(requests[6], "SetOutputPath", ("outputPath", @"C:\captures"));
+        AssertCommandRequest(requests[7], "SetDeviceAudioMode", ("mode", "analog"));
+        AssertCommandRequest(requests[8], "SetAnalogAudioGain", ("gain", 42.5d));
     }
 
     internal static async Task McpRecordingTools_RouteRecordingToggle()
@@ -2121,8 +2149,7 @@ static partial class Program
         AssertEqual("eq", assertion.GetProperty("op").GetString(), "AssertSnapshot op payload");
         AssertEqual(JsonValueKind.False, assertion.GetProperty("value").ValueKind, "AssertSnapshot value payload kind");
 
-        AssertEqual(
-            """
+        var expectedRecordingVerificationText = """
             == Recording Verification: PASS ==
             Message: last recording verified
             Output: C:\captures\latest.mp4 | Exists: true | Size: 123456 bytes
@@ -2130,27 +2157,31 @@ static partial class Program
             Resolution: 3840 x 2160 | FPS: 59.94
             HDR: Level=Strict Metadata=true Colorimetry=true Mastering=false
             Mismatches: None
-            """,
+            """.Replace("\r\n", "\n");
+        AssertEqual(
+            expectedRecordingVerificationText,
             recordingResult.Replace("\r\n", "\n"),
             "verify_recording exact text");
-        AssertEqual(
-            """
+        var expectedFileVerificationText = """
             == File Verification: FAIL ==
             Message: file mismatch
             File: C:\captures\clip.mp4 | Exists: true | Size: 42 bytes
             Codec: h264 | Pixel Format: yuv420p
             Resolution: 1920 x 1080 | FPS: 30
-            """,
+            """.Replace("\r\n", "\n");
+        AssertEqual(
+            expectedFileVerificationText,
             fileResult.Replace("\r\n", "\n"),
             "verify_file exact text");
-        AssertEqual(
-            """
+        var expectedSnapshotAssertionText = """
             Snapshot assertions: FAIL
             Message: 1 assertion failed
             Assertions: 1
             Passed: false
             Failures: IsRecording expected false
-            """,
+            """.Replace("\r\n", "\n");
+        AssertEqual(
+            expectedSnapshotAssertionText,
             assertResult.Replace("\r\n", "\n"),
             "assert_snapshot exact text");
         AssertEqual("no verification data", missingRecordingResult, "verify_recording missing verification fallback");
@@ -4173,6 +4204,34 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertCommandRequest(applyRequests[0], "RestartFlashback");
         AssertEqual("[OK] RestartFlashback: Flashback restarted.", result, "flashback_apply formatted success");
 
+        var settingsPipeName = NewMcpToolPipeName("flashback-settings");
+        var settingsPipeClient = CreateMcpPipeClient(settingsPipeName);
+        var settingsRequests = await CapturePipeRequestsAsync(
+                settingsPipeName,
+                expectedCount: 2,
+                async () =>
+                {
+                    result = await InvokeMcpToolStringAsync(
+                            flashbackTools,
+                            "flashback_settings",
+                            settingsPipeClient,
+                            10,
+                            false)
+                        .ConfigureAwait(false);
+                },
+                i => $$"""{"Success":true,"Message":"flashback setting {{i}} ok"}""")
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(settingsRequests[0], "SetFlashbackBufferMinutes", ("minutes", 10));
+        AssertCommandRequest(settingsRequests[1], "SetFlashbackGpuDecode", ("enabled", false));
+        AssertEqual(
+            string.Join(
+                Environment.NewLine,
+                "[OK] SetFlashbackBufferMinutes: flashback setting 0 ok",
+                "[OK] SetFlashbackGpuDecode: flashback setting 1 ok"),
+            result,
+            "flashback_settings formatted success");
+
         var flashbackToolsRootText = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs")
             .Replace("\r\n", "\n");
         var flashbackToolsActionText = flashbackToolsRootText;
@@ -4182,6 +4241,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertDoesNotContain(flashbackToolsRootText, "public static partial class FlashbackTools");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_enabled");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_apply");
+        AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_settings");
         AssertContains(flashbackToolsRootText, "public static async Task<CallToolResult> flashback_segments");
         AssertContains(flashbackToolsRootText, "FlashbackGetSegments");
         AssertContains(flashbackToolsActionText, "public static async Task<CallToolResult> flashback_action");
@@ -4698,6 +4758,17 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertEqual(0, deviceExitCode, "device audio-select exit code");
         AssertSsctlCommandRequest(deviceRequest, "SelectAudioInputDevice", ("deviceName", "Synthetic Mic"));
 
+        var micPipeName = $"ssctl-device-mic-{Guid.NewGuid():N}";
+        var micArguments = new List<string> { "device", "mic-select", "USB Microphone" };
+        var (micExitCode, micRequest) = await CaptureSsctlRequestAsync(
+                context,
+                micPipeName,
+                micArguments)
+            .ConfigureAwait(false);
+
+        AssertEqual(0, micExitCode, "device mic-select exit code");
+        AssertSsctlCommandRequest(micRequest, "SelectMicrophoneDevice", ("deviceName", "USB Microphone"));
+
         var deviceRefreshPipeName = $"ssctl-device-refresh-{Guid.NewGuid():N}";
         var deviceRefreshArguments = new List<string> { "device", "refresh" };
         var (deviceRefreshExitCode, deviceRefreshRequest) = await CaptureSsctlRequestAsync(
@@ -4740,6 +4811,17 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
         AssertEqual(0, previewExitCode, "preview start exit code");
         AssertSsctlCommandRequest(previewRequest, "SetPreviewEnabled", ("enabled", true));
+
+        var micVolumePipeName = $"ssctl-mic-volume-{Guid.NewGuid():N}";
+        var micVolumeArguments = new List<string> { "set", "mic-volume", "44.5" };
+        var (micVolumeExitCode, micVolumeRequest) = await CaptureSsctlRequestAsync(
+                context,
+                micVolumePipeName,
+                micVolumeArguments)
+            .ConfigureAwait(false);
+
+        AssertEqual(0, micVolumeExitCode, "set mic-volume exit code");
+        AssertSsctlCommandRequest(micVolumeRequest, "SetMicrophoneVolume", ("microphoneVolumePercent", 44.5d));
     }
 
     internal static async Task SsctlCommandHandlers_RouteRecordingsCommands()
@@ -4904,6 +4986,26 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             flashbackClearRangeRequest,
             "FlashbackAction",
             ("action", "clear-in-out-points"));
+
+        var flashbackBufferPipeName = $"ssctl-flashback-buffer-{Guid.NewGuid():N}";
+        var (flashbackBufferExitCode, flashbackBufferRequest) = await CaptureSsctlRequestAsync(
+                context,
+                flashbackBufferPipeName,
+                new List<string> { "flashback", "buffer", "15" })
+            .ConfigureAwait(false);
+
+        AssertEqual(0, flashbackBufferExitCode, "flashback buffer exit code");
+        AssertSsctlCommandRequest(flashbackBufferRequest, "SetFlashbackBufferMinutes", ("minutes", 15));
+
+        var flashbackGpuDecodePipeName = $"ssctl-flashback-gpu-decode-{Guid.NewGuid():N}";
+        var (flashbackGpuDecodeExitCode, flashbackGpuDecodeRequest) = await CaptureSsctlRequestAsync(
+                context,
+                flashbackGpuDecodePipeName,
+                new List<string> { "flashback", "gpu-decode", "off" })
+            .ConfigureAwait(false);
+
+        AssertEqual(0, flashbackGpuDecodeExitCode, "flashback gpu-decode exit code");
+        AssertSsctlCommandRequest(flashbackGpuDecodeRequest, "SetFlashbackGpuDecode", ("enabled", false));
     }
 
     internal static async Task SsctlCommandHandlers_RouteObservabilityCommands()
@@ -5078,6 +5180,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.GetCaptureOptions");
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.SelectDevice");
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.SelectAudioInputDevice");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.SelectMicrophoneDevice");
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.SetCustomAudioInput");
 
         AssertContains(commandHandlersRootSource, "// Window command family.");
@@ -5116,6 +5219,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(commandHandlersRootSource, "HandleFlashbackAsync");
         AssertContains(commandHandlersRootSource, "return HandleFlashbackActionAsync(context, subcommand);");
         AssertContains(commandHandlersRootSource, "return HandleFlashbackExportAsync(context);");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.SetFlashbackBufferMinutes");
+        AssertContains(commandHandlersRootSource, "AutomationCommandKind.SetFlashbackGpuDecode");
         AssertContains(commandHandlersRootSource, "private static Task<int> HandleFlashbackActionAsync(CommandContext context, string subcommand)");
         AssertContains(commandHandlersRootSource, "AutomationCommandKind.FlashbackAction");
         AssertContains(commandHandlersRootSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
@@ -5196,6 +5301,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             "GetPerformanceTimeline",
             "SelectDevice",
             "SelectAudioInputDevice",
+            "SelectMicrophoneDevice",
             "SetCustomAudioInput",
             "ArmClose",
             "WindowAction",
@@ -5209,6 +5315,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             "VerifyLastRecording",
             "SetFlashbackEnabled",
             "SetFlashbackTimelineVisible",
+            "SetFlashbackBufferMinutes",
+            "SetFlashbackGpuDecode",
             "RestartFlashback",
             "FlashbackAction",
             "FlashbackExport",
@@ -5255,7 +5363,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             "SetDeviceAudioMode",
             "SetAnalogAudioGain",
             "SetOutputPath",
-            "SetMicrophoneEnabled"
+            "SetMicrophoneEnabled",
+            "SetMicrophoneVolume"
         })
         {
             AssertContains(captureControlsSource, $"SendSetValueAsync(context, AutomationCommandKind.{commandName},");
@@ -5305,6 +5414,10 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(helpWriterText, "private static void WriteWaitVerifySection(TextWriter writer)");
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackExport);");
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.FlashbackGetSegments);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SelectMicrophoneDevice);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetMicrophoneVolume);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackBufferMinutes);");
+        AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackGpuDecode);");
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFrameTimeOverlayVisible);");
         AssertContains(helpWriterText, "WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackTimelineVisible);");
         AssertContains(helpWriterText, "DiagnosticSessionOptions.CliUsage");
@@ -5319,6 +5432,10 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertEqual(BuildExpectedSsctlHelpOutput(diagnosticSessionCliUsage), helpOutput, "full ssctl help output");
         AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.FlashbackExport).CliHelp}");
         AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.FlashbackGetSegments).CliHelp}");
+        AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SelectMicrophoneDevice).CliHelp}");
+        AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetMicrophoneVolume).CliHelp}");
+        AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetFlashbackBufferMinutes).CliHelp}");
+        AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetFlashbackGpuDecode).CliHelp}");
         AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetFrameTimeOverlayVisible).CliHelp}");
         AssertContains(helpOutput, $"  {AutomationCommandCatalog.Get(AutomationCommandKind.SetFlashbackTimelineVisible).CliHelp}");
 
@@ -5386,16 +5503,20 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             HelpLine(AutomationCommandKind.SetOutputPath),
             HelpLine(AutomationCommandKind.SetShowAllCaptureOptions),
             HelpLine(AutomationCommandKind.SetMicrophoneEnabled),
+            HelpLine(AutomationCommandKind.SetMicrophoneVolume),
             "",
             "Device:",
             HelpLine(AutomationCommandKind.RefreshDevices),
             "  device list",
             HelpLine(AutomationCommandKind.SelectDevice),
             HelpLine(AutomationCommandKind.SelectAudioInputDevice),
+            HelpLine(AutomationCommandKind.SelectMicrophoneDevice),
             HelpLine(AutomationCommandKind.SetCustomAudioInput),
             "",
             "Flashback:",
             HelpLine(AutomationCommandKind.SetFlashbackEnabled),
+            HelpLine(AutomationCommandKind.SetFlashbackBufferMinutes),
+            HelpLine(AutomationCommandKind.SetFlashbackGpuDecode),
             HelpLine(AutomationCommandKind.SetFlashbackTimelineVisible),
             "  flashback play [<ms>]",
             "  flashback pause",
@@ -8640,7 +8761,11 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         ("SetFlashbackTimelineVisible", 50),
         ("GetAutomationManifest", 51),
         ("SetFullScreenEnabled", 52),
-        ("OpenRecordingsFolder", 53)
+        ("OpenRecordingsFolder", 53),
+        ("SelectMicrophoneDevice", 54),
+        ("SetMicrophoneVolume", 55),
+        ("SetFlashbackBufferMinutes", 56),
+        ("SetFlashbackGpuDecode", 57)
     ];
 
     internal static Task AutomationCommandCatalog_CoversCommandsAndPolicyMetadata()
@@ -8740,6 +8865,42 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
             pathPolicyType,
             "SetFlashbackEnabled",
             timeoutMs: 305000,
+            requiresReadyDevices: false,
+            pathPolicy: "None",
+            payloadShapeContains: "enabled");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SelectMicrophoneDevice",
+            timeoutMs: 15000,
+            requiresReadyDevices: true,
+            pathPolicy: "None",
+            payloadShapeContains: "deviceName");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetMicrophoneVolume",
+            timeoutMs: 15000,
+            requiresReadyDevices: false,
+            pathPolicy: "None",
+            payloadShapeContains: "microphoneVolumePercent");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetFlashbackBufferMinutes",
+            timeoutMs: 305000,
+            requiresReadyDevices: false,
+            pathPolicy: "None",
+            payloadShapeContains: "minutes");
+        AssertCatalogMetadata(
+            catalogType,
+            enumType,
+            pathPolicyType,
+            "SetFlashbackGpuDecode",
+            timeoutMs: 15000,
             requiresReadyDevices: false,
             pathPolicy: "None",
             payloadShapeContains: "enabled");
@@ -8893,7 +9054,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
 
     internal static Task AutomationManifest_SerializationIsStable()
     {
-        const string ExpectedManifestSha256 = "BACAB32C533218A600BF0458C60D9BBB44ECBC8E64D274E5A5F10C598755C385";
+        const string ExpectedManifestSha256 = "B8D65718E363691C2AED2DDEAD87F3AE7B22DF56946B0D0590F8566F6175A3D6";
         var catalogType = RequireAutomationContractType("Sussudio.Tools.AutomationCommandCatalog");
         var createManifestJson = RequireNonPublicStaticMethod(catalogType, "CreateManifestJson");
         var first = (string)createManifestJson.Invoke(null, Array.Empty<object>())!;
@@ -9325,6 +9486,12 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
                 "WasapiPlaybackQueueDepth": 0,
                 "WasapiPlaybackQueueDropCount": 0,
                 "WasapiPlaybackLastRenderTickMs": 0,
+                "AudioBufferHealthStatus": "Healthy",
+                "AudioBufferHealthReason": "No audio buffer underrun or overrun counters have moved for the active audio path.",
+                "AudioBufferUnderrunDetected": false,
+                "AudioBufferOverrunDetected": false,
+                "AudioBufferUnderrunEvents": 0,
+                "AudioBufferOverrunEvents": 0,
                 "OutputPath": "",
                 "RecordingTime": "00:00:00",
                 "RecordingSizeInfo": "0 B",
@@ -9427,6 +9594,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
         AssertContains(formatted, "== Thread Health ==");
         AssertContains(formatted, "WASAPI Playback:");
+        AssertContains(formatted, "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
         AssertContains(formatted, "== Diagnostics ==");
         AssertContains(formatted, "Legacy Score:");
         AssertContains(formatted, "Pipeline Latency: 1ms (app receive -> estimated visible)");
@@ -9586,6 +9754,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(sharedFormatterFlashbackSource, "A/V Drift:");
         AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(sharedFormatterRootSource, "WasapiPlaybackQueueDurationMs");
+        AssertContains(sharedFormatterRootSource, "AudioBufferHealthStatus");
+        AssertContains(sharedFormatterRootSource, "AudioBufferOverrunEvents");
         AssertContains(sharedFormatterThreadHealthSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
         AssertContains(sharedFormatterThreadHealthSource, "AppendSourceReaderThreadHealthLine(builder, snapshot);");
@@ -9597,6 +9767,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(sharedFormatterThreadHealthSource, "WasapiCaptureCallbackSevereGapCount");
         AssertContains(sharedFormatterThreadHealthSource, "private static void AppendWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterThreadHealthSource, "WasapiPlaybackQueueDurationMs");
+        AssertContains(sharedFormatterThreadHealthSource, "Audio Buffer: status=");
         AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot)");
         AssertContains(sharedFormatterMjpegTimingSource, "var mjpegDecodeSamples = Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
         AssertContains(sharedFormatterMjpegTimingSource, "AppendMjpegDecodeTimingLines(builder, snapshot, mjpegDecodeSamples);");
@@ -10442,7 +10613,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Equal(15000, AutomationPipeProtocol.GetDefaultResponseTimeout("GetSnapshot"));
         Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
 
-        foreach (var acceptedName in new[] { "SetFlashbackEnabled", "set-flashback-enabled", "RestartFlashback" })
+        foreach (var acceptedName in new[] { "SetFlashbackEnabled", "set-flashback-enabled", "SetFlashbackBufferMinutes", "RestartFlashback" })
         {
             Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout(acceptedName));
         }
@@ -10462,7 +10633,11 @@ public sealed class AutomationToolContractsProtocolXunitTests
             (AutomationCommandKind.SetMjpegDecoderCount, 32),
             (AutomationCommandKind.SetShowAllCaptureOptions, 33),
             (AutomationCommandKind.SetPreviewVolume, 34),
-            (AutomationCommandKind.SetStatsVisible, 35)
+            (AutomationCommandKind.SetStatsVisible, 35),
+            (AutomationCommandKind.SelectMicrophoneDevice, 54),
+            (AutomationCommandKind.SetMicrophoneVolume, 55),
+            (AutomationCommandKind.SetFlashbackBufferMinutes, 56),
+            (AutomationCommandKind.SetFlashbackGpuDecode, 57)
         })
         {
             Assert.Equal(ordinal, (int)kind);

@@ -670,6 +670,18 @@ internal static class CommandHandlers
                     AutomationCommandKind.SelectAudioInputDevice,
                     new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
                     includeData: false).ConfigureAwait(false);
+            case "mic-select":
+            case "microphone-select":
+                if (context.Rest.Count < 2)
+                {
+                    throw new UsageException("device mic-select <name>");
+                }
+
+                return await HandleSimpleCommandAsync(
+                    context,
+                    AutomationCommandKind.SelectMicrophoneDevice,
+                    new Dictionary<string, object?> { ["deviceName"] = JoinRemaining(context.Rest, 1) },
+                    includeData: false).ConfigureAwait(false);
             case "custom-audio":
                 EnsureArgCount(context.Rest, 2, "device custom-audio on|off");
                 return await HandleSimpleCommandAsync(
@@ -706,6 +718,7 @@ internal static class CommandHandlers
             "output" => SendSetValueAsync(context, AutomationCommandKind.SetOutputPath, "outputPath", JoinRemaining(context.Rest, 1), "set output <path>"),
             "show-all" => SendSetValueAsync(context, AutomationCommandKind.SetShowAllCaptureOptions, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set show-all on|off")), "set show-all on|off"),
             "mic" or "microphone" => SendSetValueAsync(context, AutomationCommandKind.SetMicrophoneEnabled, "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set mic on|off")), "set mic on|off"),
+            "mic-volume" or "microphone-volume" => SendSetValueAsync(context, AutomationCommandKind.SetMicrophoneVolume, "microphoneVolumePercent", ParseDouble(RequireWord(context.Rest, 1, "set mic-volume <value>")), "set mic-volume <value>"),
             _ => throw new UsageException($"Unknown set command '{subcommand}'.")
         };
     }
@@ -884,7 +897,7 @@ internal static class CommandHandlers
     // Flashback command family.
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|timeline|play|pause|go-live|seek|begin-scrub|update-scrub|end-scrub|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
+        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|timeline|buffer|gpu-decode|play|pause|go-live|seek|begin-scrub|update-scrub|end-scrub|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
         switch (subcommand)
         {
             case "timeline":
@@ -907,6 +920,21 @@ internal static class CommandHandlers
             case "apply":
             case "restart":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.RestartFlashback, includeData: false);
+            case "buffer":
+            case "buffer-duration":
+                EnsureArgCount(context.Rest, 2, "flashback buffer <minutes>");
+                return HandleSimpleCommandAsync(
+                    context,
+                    Sussudio.Models.AutomationCommandKind.SetFlashbackBufferMinutes,
+                    new Dictionary<string, object?> { ["minutes"] = ParseInt(RequireWord(context.Rest, 1, "flashback buffer <minutes>")) },
+                    includeData: false);
+            case "gpu-decode":
+                EnsureArgCount(context.Rest, 2, "flashback gpu-decode on|off");
+                return HandleSimpleCommandAsync(
+                    context,
+                    Sussudio.Models.AutomationCommandKind.SetFlashbackGpuDecode,
+                    new Dictionary<string, object?> { ["enabled"] = ParseOnOff(RequireWord(context.Rest, 1, "flashback gpu-decode on|off")) },
+                    includeData: false);
             case "play":
             case "pause":
             case "go-live":
@@ -926,7 +954,7 @@ internal static class CommandHandlers
             case "segments":
                 return HandleSimpleCommandAsync(context, Sussudio.Models.AutomationCommandKind.FlashbackGetSegments, includeData: true);
             default:
-                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, play, pause, go-live, seek, begin-scrub, update-scrub, end-scrub, set-in, set-out, clear-range, export, or segments.");
+                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, timeline, buffer, gpu-decode, play, pause, go-live, seek, begin-scrub, update-scrub, end-scrub, set-in, set-out, clear-range, export, segments, or apply.");
         }
     }
 

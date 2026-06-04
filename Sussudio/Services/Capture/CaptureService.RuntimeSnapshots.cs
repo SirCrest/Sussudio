@@ -738,6 +738,96 @@ public partial class CaptureService
         public long? RuntimeAvSyncEncoderCorrectionSamples { get; init; }
     }
 
+    private const long AudioBufferBoundaryDropWarningFrames = 960;
+
+    private readonly record struct AudioBufferHealthSnapshotFields(
+        string Status,
+        string Reason,
+        bool UnderrunDetected,
+        bool OverrunDetected,
+        long UnderrunEvents,
+        long OverrunEvents);
+
+    private static AudioBufferHealthSnapshotFields EvaluateAudioBufferHealth(
+        bool isAudioPreviewActive,
+        bool isRecording,
+        RuntimeIngestAudioSnapshotFields ingestAudio,
+        RuntimeRecordingIntegritySnapshotFields recordingIntegrity)
+    {
+        var captureGlitches = Math.Max(0, ingestAudio.WasapiCaptureAudioGlitchCount);
+        var playbackUnderruns = Math.Max(0, ingestAudio.WasapiPlaybackRenderSilenceCount);
+        var playbackQueueDrops = Math.Max(0, ingestAudio.WasapiPlaybackQueueDropCount);
+        var recordingAudioDrops = Math.Max(0, recordingIntegrity.AudioDropEvents);
+        var recordingBoundaryDrops = recordingIntegrity.AudioFramesArrived > recordingIntegrity.AudioFramesWrittenToSink
+            ? recordingIntegrity.AudioFramesArrived - recordingIntegrity.AudioFramesWrittenToSink
+            : 0;
+        var significantBoundaryDrop = recordingBoundaryDrops > AudioBufferBoundaryDropWarningFrames;
+
+        var underrunEvents = captureGlitches + playbackUnderruns;
+        var overrunEvents = playbackQueueDrops + recordingAudioDrops + (significantBoundaryDrop ? 1 : 0);
+        var underrunDetected = underrunEvents > 0;
+        var overrunDetected = overrunEvents > 0;
+        if (underrunDetected || overrunDetected)
+        {
+            var reasons = new List<string>();
+            if (captureGlitches > 0)
+            {
+                reasons.Add($"captureGlitches={captureGlitches}");
+            }
+
+            if (playbackUnderruns > 0)
+            {
+                reasons.Add($"playbackUnderruns={playbackUnderruns}");
+            }
+
+            if (playbackQueueDrops > 0)
+            {
+                reasons.Add($"playbackQueueDrops={playbackQueueDrops}");
+            }
+
+            if (recordingAudioDrops > 0)
+            {
+                reasons.Add($"recordingAudioDrops={recordingAudioDrops}");
+            }
+
+            if (significantBoundaryDrop)
+            {
+                reasons.Add($"recordingBoundaryDrops={recordingBoundaryDrops}");
+            }
+
+            return new AudioBufferHealthSnapshotFields(
+                "Degraded",
+                string.Join("; ", reasons),
+                underrunDetected,
+                overrunDetected,
+                underrunEvents,
+                overrunEvents);
+        }
+
+        var audioPathActive =
+            ingestAudio.AudioReaderActive ||
+            isAudioPreviewActive ||
+            (isRecording && recordingIntegrity.AudioEnabled) ||
+            recordingIntegrity.AudioCaptureActive ||
+            ingestAudio.WasapiPlaybackRenderCallbackCount > 0;
+
+        return audioPathActive
+            ? new AudioBufferHealthSnapshotFields(
+                "Healthy",
+                "No audio buffer underrun or overrun counters have moved for the active audio path.",
+                UnderrunDetected: false,
+                OverrunDetected: false,
+                UnderrunEvents: 0,
+                OverrunEvents: 0)
+            : new AudioBufferHealthSnapshotFields(
+                "Inactive",
+                "No audio capture, monitoring, or recording buffer path is active.",
+                UnderrunDetected: false,
+                OverrunDetected: false,
+                UnderrunEvents: 0,
+                OverrunEvents: 0);
+    }
+
     // Pure runtime snapshot DTO construction from already-sampled field groups.
     private static class CaptureRuntimeSnapshotAssembler
     {
@@ -757,6 +847,11 @@ public partial class CaptureService
             var observedP010BitDepthSampleCount = observedTelemetry.ObservedP010BitDepthSampleCount;
             var observedP010Low2BitNonZeroPercent = observedTelemetry.ObservedP010Low2BitNonZeroPercent;
             var observedP010Likely8BitUpscaled = observedTelemetry.ObservedP010Likely8BitUpscaled;
+            var audioBufferHealth = EvaluateAudioBufferHealth(
+                fields.IsAudioPreviewActive,
+                fields.IsRecording,
+                ingestAudio,
+                recordingIntegrity);
 
             return new CaptureRuntimeSnapshot
             {
@@ -816,6 +911,12 @@ public partial class CaptureService
                 WasapiPlaybackOutputPeak = ingestAudio.WasapiPlaybackOutputPeak,
                 WasapiPlaybackOutputRms = ingestAudio.WasapiPlaybackOutputRms,
                 WasapiPlaybackOutputLevelLastTickMs = ingestAudio.WasapiPlaybackOutputLevelLastTickMs,
+                AudioBufferHealthStatus = audioBufferHealth.Status,
+                AudioBufferHealthReason = audioBufferHealth.Reason,
+                AudioBufferUnderrunDetected = audioBufferHealth.UnderrunDetected,
+                AudioBufferOverrunDetected = audioBufferHealth.OverrunDetected,
+                AudioBufferUnderrunEvents = audioBufferHealth.UnderrunEvents,
+                AudioBufferOverrunEvents = audioBufferHealth.OverrunEvents,
                 CurrentDeviceId = fields.CurrentDeviceId,
                 CurrentDeviceName = fields.CurrentDeviceName,
                 ActiveAudioDeviceId = fields.ActiveAudioDeviceId,

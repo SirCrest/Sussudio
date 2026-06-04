@@ -102,14 +102,19 @@ internal static class Formatters
         builder.AppendLine("== Capture Options ==");
         builder.AppendLine($"Selected Device: {AutomationSnapshotFormatter.Get(data, "SelectedDeviceId")}");
         builder.AppendLine($"Selected Audio Input: {AutomationSnapshotFormatter.Get(data, "SelectedAudioInputDeviceId")}");
+        builder.AppendLine($"Selected Microphone: {AutomationSnapshotFormatter.Get(data, "SelectedMicrophoneDeviceId")}");
         builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(data, "SelectedResolution")} | Frame Rate: {AutomationSnapshotFormatter.Get(data, "SelectedFrameRate")}");
         builder.AppendLine($"Format: {AutomationSnapshotFormatter.Get(data, "SelectedRecordingFormat")} | Quality: {AutomationSnapshotFormatter.Get(data, "SelectedQuality")} | Preset: {AutomationSnapshotFormatter.Get(data, "SelectedPreset")}");
         builder.AppendLine($"Split Encode: {AutomationSnapshotFormatter.Get(data, "SelectedSplitEncodeMode")} | Video Format: {AutomationSnapshotFormatter.Get(data, "SelectedVideoFormat")} | MJPEG Decoders: {AutomationSnapshotFormatter.Get(data, "MjpegDecoderCount")}");
         builder.AppendLine($"Preview Volume: {AutomationSnapshotFormatter.Get(data, "PreviewVolumePercent")}% | Stats Visible: {AutomationSnapshotFormatter.Get(data, "IsStatsVisible")}");
+        builder.AppendLine($"Microphone Enabled: {AutomationSnapshotFormatter.Get(data, "IsMicrophoneEnabled")} | Volume: {AutomationSnapshotFormatter.Get(data, "MicrophoneVolumePercent")}%");
+        builder.AppendLine($"Flashback: Enabled={AutomationSnapshotFormatter.Get(data, "IsFlashbackEnabled")} | Buffer={AutomationSnapshotFormatter.Get(data, "FlashbackBufferMinutes")}m | GPU Decode={AutomationSnapshotFormatter.Get(data, "FlashbackGpuDecode")}");
         builder.AppendLine();
         AppendNamedOptions(builder, "Devices", data, "Devices", includeId: true);
         builder.AppendLine();
         AppendNamedOptions(builder, "Audio Input Devices", data, "AudioInputDevices", includeId: true);
+        builder.AppendLine();
+        AppendNamedOptions(builder, "Microphone Devices", data, "MicrophoneDevices", includeId: true);
         builder.AppendLine();
         AppendResolutionOptions(builder, data);
         builder.AppendLine();
@@ -126,6 +131,8 @@ internal static class Formatters
         AppendStringOptions(builder, "Video Formats", data, "VideoFormats");
         builder.AppendLine();
         AppendIntOptions(builder, "MJPEG Decoder Counts", data, "MjpegDecoderCounts");
+        builder.AppendLine();
+        AppendIntOptions(builder, "Flashback Buffer Minutes", data, "FlashbackBufferMinuteOptions");
         return builder.ToString().TrimEnd();
     }
 
@@ -141,6 +148,8 @@ internal static class Formatters
         AppendNamedOptions(builder, "Capture Devices", data, "Devices", includeId: true);
         builder.AppendLine();
         AppendNamedOptions(builder, "Audio Input Devices", data, "AudioInputDevices", includeId: true);
+        builder.AppendLine();
+        AppendNamedOptions(builder, "Microphone Devices", data, "MicrophoneDevices", includeId: true);
         return builder.ToString().TrimEnd();
     }
 
@@ -572,6 +581,11 @@ internal static class Formatters
             $"queueDepth={AutomationSnapshotFormatter.Get(snapshot, "WasapiPlaybackQueueDepth")} " +
             $"drops={AutomationSnapshotFormatter.Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
             $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
+        builder.AppendLine(
+            $"Audio Buffer: status={AutomationSnapshotFormatter.Get(snapshot, "AudioBufferHealthStatus")} " +
+            $"underrun={AutomationSnapshotFormatter.Get(snapshot, "AudioBufferUnderrunDetected")} overrun={AutomationSnapshotFormatter.Get(snapshot, "AudioBufferOverrunDetected")} " +
+            $"underrunEvents={AutomationSnapshotFormatter.Get(snapshot, "AudioBufferUnderrunEvents")} overrunEvents={AutomationSnapshotFormatter.Get(snapshot, "AudioBufferOverrunEvents")} " +
+            $"reason={AutomationSnapshotFormatter.Get(snapshot, "AudioBufferHealthReason", string.Empty)}");
     }
 
     private static void AppendSnapshotRecordingSection(StringBuilder builder, JsonElement snapshot)

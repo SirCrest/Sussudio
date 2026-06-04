@@ -198,6 +198,10 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.RecordingIntegritySummary_SurfacesActiveQueueAndAudioDrops();
 
     [Fact]
+    public Task AudioBufferHealthClassifiesUnderAndOverruns()
+        => global::Program.AudioBufferHealth_ClassifiesUnderAndOverruns();
+
+    [Fact]
     public Task CaptureServiceRecordingIntegrityOwnershipLivesWithRecordingLifecycle()
         => global::Program.CaptureService_RecordingIntegrityLivesWithRecordingLifecycle();
 }
@@ -1833,6 +1837,54 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task AudioBufferHealth_ClassifiesUnderAndOverruns()
+    {
+        var inactive = InvokeEvaluateAudioBufferHealth();
+        AssertEqual("Inactive", GetStringProperty(inactive, "Status"), "inactive audio buffer status");
+        AssertEqual(false, GetBoolProperty(inactive, "UnderrunDetected"), "inactive underrun");
+        AssertEqual(false, GetBoolProperty(inactive, "OverrunDetected"), "inactive overrun");
+        AssertContains(GetStringProperty(inactive, "Reason"), "No audio capture");
+
+        var healthy = InvokeEvaluateAudioBufferHealth(
+            audioReaderActive: true,
+            isAudioPreviewActive: true,
+            recordingAudioEnabled: true,
+            recordingAudioCaptureActive: true,
+            recordingAudioFramesArrived: 48_000,
+            recordingAudioFramesWrittenToSink: 48_000);
+        AssertEqual("Healthy", GetStringProperty(healthy, "Status"), "healthy audio buffer status");
+        AssertEqual(0L, GetLongProperty(healthy, "UnderrunEvents"), "healthy underrun events");
+        AssertEqual(0L, GetLongProperty(healthy, "OverrunEvents"), "healthy overrun events");
+        AssertContains(GetStringProperty(healthy, "Reason"), "No audio buffer underrun or overrun counters");
+
+        var degraded = InvokeEvaluateAudioBufferHealth(
+            audioReaderActive: true,
+            isAudioPreviewActive: true,
+            isRecording: true,
+            captureGlitches: 2,
+            playbackRenderSilence: 3,
+            playbackQueueDrops: 4,
+            recordingAudioEnabled: true,
+            recordingAudioCaptureActive: true,
+            recordingAudioFramesArrived: 50_000,
+            recordingAudioFramesWrittenToSink: 48_500,
+            recordingAudioDropEvents: 5);
+        AssertEqual("Degraded", GetStringProperty(degraded, "Status"), "degraded audio buffer status");
+        AssertEqual(true, GetBoolProperty(degraded, "UnderrunDetected"), "degraded underrun");
+        AssertEqual(true, GetBoolProperty(degraded, "OverrunDetected"), "degraded overrun");
+        AssertEqual(5L, GetLongProperty(degraded, "UnderrunEvents"), "degraded underrun events");
+        AssertEqual(10L, GetLongProperty(degraded, "OverrunEvents"), "degraded overrun events");
+
+        var reason = GetStringProperty(degraded, "Reason");
+        AssertContains(reason, "captureGlitches=2");
+        AssertContains(reason, "playbackUnderruns=3");
+        AssertContains(reason, "playbackQueueDrops=4");
+        AssertContains(reason, "recordingAudioDrops=5");
+        AssertContains(reason, "recordingBoundaryDrops=1500");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps()
     {
         var unifiedText = ReadUnifiedVideoCaptureSource();
@@ -2025,6 +2077,46 @@ static partial class Program
             ?? throw new InvalidOperationException("BuildRecordingIntegritySummary returned null.");
     }
 
+    private static object InvokeEvaluateAudioBufferHealth(
+        bool audioReaderActive = false,
+        bool isAudioPreviewActive = false,
+        bool isRecording = false,
+        long captureGlitches = 0,
+        int playbackRenderSilence = 0,
+        int playbackQueueDrops = 0,
+        bool recordingAudioEnabled = false,
+        bool recordingAudioCaptureActive = false,
+        long recordingAudioFramesArrived = 0,
+        long recordingAudioFramesWrittenToSink = 0,
+        long recordingAudioDropEvents = 0)
+    {
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
+        var ingestType = serviceType.GetNestedType("RuntimeIngestAudioSnapshotFields", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("RuntimeIngestAudioSnapshotFields missing.");
+        var recordingIntegrityType = serviceType.GetNestedType("RuntimeRecordingIntegritySnapshotFields", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("RuntimeRecordingIntegritySnapshotFields missing.");
+
+        var ingest = Activator.CreateInstance(ingestType, nonPublic: true)
+            ?? throw new InvalidOperationException("Could not create RuntimeIngestAudioSnapshotFields.");
+        SetPropertyBackingField(ingest, "AudioReaderActive", audioReaderActive);
+        SetPropertyBackingField(ingest, "WasapiCaptureAudioGlitchCount", captureGlitches);
+        SetPropertyBackingField(ingest, "WasapiPlaybackRenderSilenceCount", playbackRenderSilence);
+        SetPropertyBackingField(ingest, "WasapiPlaybackQueueDropCount", playbackQueueDrops);
+
+        var recordingIntegrity = Activator.CreateInstance(recordingIntegrityType, nonPublic: true)
+            ?? throw new InvalidOperationException("Could not create RuntimeRecordingIntegritySnapshotFields.");
+        SetPropertyBackingField(recordingIntegrity, "AudioEnabled", recordingAudioEnabled);
+        SetPropertyBackingField(recordingIntegrity, "AudioCaptureActive", recordingAudioCaptureActive);
+        SetPropertyBackingField(recordingIntegrity, "AudioFramesArrived", recordingAudioFramesArrived);
+        SetPropertyBackingField(recordingIntegrity, "AudioFramesWrittenToSink", recordingAudioFramesWrittenToSink);
+        SetPropertyBackingField(recordingIntegrity, "AudioDropEvents", recordingAudioDropEvents);
+
+        var method = serviceType.GetMethod("EvaluateAudioBufferHealth", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("EvaluateAudioBufferHealth missing.");
+        return method.Invoke(null, new object?[] { isAudioPreviewActive, isRecording, ingest, recordingIntegrity })
+            ?? throw new InvalidOperationException("EvaluateAudioBufferHealth returned null.");
+    }
+
     internal static Task RecordingIntegritySummary_DefaultsAreExplicit()
     {
         var summaryType = RequireType("Sussudio.Models.RecordingIntegritySummary");
@@ -2087,6 +2179,12 @@ static partial class Program
             AssertProperty(snapshotType, "RecordingIntegrityEncoderAvSyncDriftMs", typeof(double?));
             AssertProperty(snapshotType, "RecordingIntegrityEncoderAvSyncCorrectionSamples", typeof(long?));
             AssertProperty(snapshotType, "RecordingIntegrityReason", typeof(string));
+            AssertProperty(snapshotType, "AudioBufferHealthStatus", typeof(string));
+            AssertProperty(snapshotType, "AudioBufferHealthReason", typeof(string));
+            AssertProperty(snapshotType, "AudioBufferUnderrunDetected", typeof(bool));
+            AssertProperty(snapshotType, "AudioBufferOverrunDetected", typeof(bool));
+            AssertProperty(snapshotType, "AudioBufferUnderrunEvents", typeof(long));
+            AssertProperty(snapshotType, "AudioBufferOverrunEvents", typeof(long));
         }
 
         return Task.CompletedTask;
@@ -2723,6 +2821,11 @@ static partial class Program
         AssertNearlyEqual(0.0, GetDoubleProperty(snapshot, "WasapiPlaybackEndpointQueuedDurationMs"), 0.0001, "WasapiPlaybackEndpointQueuedDurationMs");
         AssertNearlyEqual(0.0, GetDoubleProperty(snapshot, "WasapiPlaybackBufferedDurationMs"), 0.0001, "WasapiPlaybackBufferedDurationMs");
         AssertNearlyEqual(0.0, GetDoubleProperty(snapshot, "WasapiPlaybackStreamLatencyMs"), 0.0001, "WasapiPlaybackStreamLatencyMs");
+        AssertEqual("Inactive", GetStringProperty(snapshot, "AudioBufferHealthStatus"), "AudioBufferHealthStatus");
+        AssertEqual(false, GetBoolProperty(snapshot, "AudioBufferUnderrunDetected"), "AudioBufferUnderrunDetected");
+        AssertEqual(false, GetBoolProperty(snapshot, "AudioBufferOverrunDetected"), "AudioBufferOverrunDetected");
+        AssertEqual(0L, GetLongProperty(snapshot, "AudioBufferUnderrunEvents"), "AudioBufferUnderrunEvents");
+        AssertEqual(0L, GetLongProperty(snapshot, "AudioBufferOverrunEvents"), "AudioBufferOverrunEvents");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
     }

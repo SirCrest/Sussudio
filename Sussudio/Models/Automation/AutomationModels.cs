@@ -215,6 +215,7 @@ public sealed class AutomationOptionsSnapshot
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
     public AutomationDeviceOption[] Devices { get; init; } = Array.Empty<AutomationDeviceOption>();
     public AutomationDeviceOption[] AudioInputDevices { get; init; } = Array.Empty<AutomationDeviceOption>();
+    public AutomationDeviceOption[] MicrophoneDevices { get; init; } = Array.Empty<AutomationDeviceOption>();
     public AutomationResolutionOption[] Resolutions { get; init; } = Array.Empty<AutomationResolutionOption>();
     public AutomationFrameRateOption[] FrameRates { get; init; } = Array.Empty<AutomationFrameRateOption>();
     public AutomationStringOption[] RecordingFormats { get; init; } = Array.Empty<AutomationStringOption>();
@@ -223,8 +224,10 @@ public sealed class AutomationOptionsSnapshot
     public AutomationStringOption[] SplitEncodeModes { get; init; } = Array.Empty<AutomationStringOption>();
     public AutomationStringOption[] VideoFormats { get; init; } = Array.Empty<AutomationStringOption>();
     public AutomationIntOption[] MjpegDecoderCounts { get; init; } = Array.Empty<AutomationIntOption>();
+    public AutomationIntOption[] FlashbackBufferMinuteOptions { get; init; } = Array.Empty<AutomationIntOption>();
     public string? SelectedDeviceId { get; init; }
     public string? SelectedAudioInputDeviceId { get; init; }
+    public string? SelectedMicrophoneDeviceId { get; init; }
     public string? SelectedResolution { get; init; }
     public double SelectedFrameRate { get; init; }
     public string SelectedRecordingFormat { get; init; } = string.Empty;
@@ -234,6 +237,11 @@ public sealed class AutomationOptionsSnapshot
     public string SelectedVideoFormat { get; init; } = string.Empty;
     public int MjpegDecoderCount { get; init; }
     public double PreviewVolumePercent { get; init; }
+    public bool IsMicrophoneEnabled { get; init; }
+    public double MicrophoneVolumePercent { get; init; }
+    public int FlashbackBufferMinutes { get; init; }
+    public bool FlashbackGpuDecode { get; init; }
+    public bool IsFlashbackEnabled { get; init; }
     public bool IsStatsVisible { get; init; }
 }
 
@@ -602,6 +610,12 @@ public sealed class CaptureRuntimeSnapshot
     public double WasapiPlaybackOutputPeak { get; init; }
     public double WasapiPlaybackOutputRms { get; init; }
     public long WasapiPlaybackOutputLevelLastTickMs { get; init; }
+    public string AudioBufferHealthStatus { get; init; } = "Inactive";
+    public string AudioBufferHealthReason { get; init; } = "No audio capture, monitoring, or recording buffer path is active.";
+    public bool AudioBufferUnderrunDetected { get; init; }
+    public bool AudioBufferOverrunDetected { get; init; }
+    public long AudioBufferUnderrunEvents { get; init; }
+    public long AudioBufferOverrunEvents { get; init; }
 
     // Reader transport diagnostics
     public long MfSourceReaderFramesDelivered { get; init; }

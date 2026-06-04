@@ -151,6 +151,14 @@ internal static class AutomationOptionsSnapshotBuilder
                     IsSelected = string.Equals(device.Id, input.SelectedAudioInputDeviceId, StringComparison.OrdinalIgnoreCase)
                 })
                 .ToArray(),
+            MicrophoneDevices = input.MicrophoneDevices
+                .Select(device => new AutomationDeviceOption
+                {
+                    Id = device.Id,
+                    Name = device.Name,
+                    IsSelected = string.Equals(device.Id, input.SelectedMicrophoneDeviceId, StringComparison.OrdinalIgnoreCase)
+                })
+                .ToArray(),
             Resolutions = input.Resolutions
                 .Select(option => new AutomationResolutionOption
                 {
@@ -185,8 +193,16 @@ internal static class AutomationOptionsSnapshotBuilder
                     IsSelected = value == clampedDecoderCount
                 })
                 .ToArray(),
+            FlashbackBufferMinuteOptions = input.FlashbackBufferMinuteOptions
+                .Select(value => new AutomationIntOption
+                {
+                    Value = value,
+                    IsSelected = value == input.FlashbackBufferMinutes
+                })
+                .ToArray(),
             SelectedDeviceId = input.SelectedDeviceId,
             SelectedAudioInputDeviceId = input.SelectedAudioInputDeviceId,
+            SelectedMicrophoneDeviceId = input.SelectedMicrophoneDeviceId,
             SelectedResolution = input.SelectedResolution,
             SelectedFrameRate = input.SelectedFrameRate,
             SelectedRecordingFormat = input.SelectedRecordingFormat,
@@ -196,6 +212,11 @@ internal static class AutomationOptionsSnapshotBuilder
             SelectedVideoFormat = input.SelectedVideoFormat,
             MjpegDecoderCount = clampedDecoderCount,
             PreviewVolumePercent = input.PreviewVolume * 100.0,
+            IsMicrophoneEnabled = input.IsMicrophoneEnabled,
+            MicrophoneVolumePercent = input.MicrophoneVolume,
+            FlashbackBufferMinutes = input.FlashbackBufferMinutes,
+            FlashbackGpuDecode = input.FlashbackGpuDecode,
+            IsFlashbackEnabled = input.IsFlashbackEnabled,
             IsStatsVisible = input.IsStatsVisible
         };
     }
@@ -222,6 +243,7 @@ internal sealed class AutomationOptionsSnapshotInput
     public DateTimeOffset TimestampUtc { get; init; }
     public AutomationOptionsDeviceInput[] Devices { get; init; } = Array.Empty<AutomationOptionsDeviceInput>();
     public AutomationOptionsDeviceInput[] AudioInputDevices { get; init; } = Array.Empty<AutomationOptionsDeviceInput>();
+    public AutomationOptionsDeviceInput[] MicrophoneDevices { get; init; } = Array.Empty<AutomationOptionsDeviceInput>();
     public AutomationOptionsResolutionInput[] Resolutions { get; init; } = Array.Empty<AutomationOptionsResolutionInput>();
     public AutomationOptionsFrameRateInput[] FrameRates { get; init; } = Array.Empty<AutomationOptionsFrameRateInput>();
     public string[] RecordingFormats { get; init; } = Array.Empty<string>();
@@ -229,8 +251,10 @@ internal sealed class AutomationOptionsSnapshotInput
     public string[] Presets { get; init; } = Array.Empty<string>();
     public string[] SplitEncodeModes { get; init; } = Array.Empty<string>();
     public string[] VideoFormats { get; init; } = Array.Empty<string>();
+    public int[] FlashbackBufferMinuteOptions { get; init; } = Array.Empty<int>();
     public string? SelectedDeviceId { get; init; }
     public string? SelectedAudioInputDeviceId { get; init; }
+    public string? SelectedMicrophoneDeviceId { get; init; }
     public string? SelectedResolution { get; init; }
     public double SelectedFrameRate { get; init; }
     public string SelectedRecordingFormat { get; init; } = string.Empty;
@@ -240,6 +264,11 @@ internal sealed class AutomationOptionsSnapshotInput
     public string SelectedVideoFormat { get; init; } = string.Empty;
     public int MjpegDecoderCount { get; init; }
     public double PreviewVolume { get; init; }
+    public bool IsMicrophoneEnabled { get; init; }
+    public double MicrophoneVolume { get; init; }
+    public int FlashbackBufferMinutes { get; init; }
+    public bool FlashbackGpuDecode { get; init; }
+    public bool IsFlashbackEnabled { get; init; }
     public bool IsStatsVisible { get; init; }
 }
 

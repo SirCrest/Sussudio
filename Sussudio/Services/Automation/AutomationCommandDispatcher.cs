@@ -663,6 +663,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             case AutomationCommandKind.SelectAudioInputDevice:
                 return await ExecuteSelectAudioInputDeviceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
+            case AutomationCommandKind.SelectMicrophoneDevice:
+                return await ExecuteSelectMicrophoneDeviceCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
             case AutomationCommandKind.GetCaptureOptions:
                 return await ExecuteGetCaptureOptionsCommandAsync(correlationId, cancellationToken).ConfigureAwait(false);
 
@@ -732,8 +735,17 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             case AutomationCommandKind.SetFlashbackEnabled:
                 return await ExecuteSetFlashbackEnabledCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
+            case AutomationCommandKind.SetFlashbackBufferMinutes:
+                return await ExecuteSetFlashbackBufferMinutesCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.SetFlashbackGpuDecode:
+                return await ExecuteSetFlashbackGpuDecodeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
             case AutomationCommandKind.SetMicrophoneEnabled:
                 return await ExecuteSetMicrophoneEnabledCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
+
+            case AutomationCommandKind.SetMicrophoneVolume:
+                return await ExecuteSetMicrophoneVolumeCommandAsync(payload, correlationId, cancellationToken).ConfigureAwait(false);
 
             default:
                 return CreateResponse(
@@ -773,6 +785,17 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var deviceName = GetString(payload, "deviceName");
         await _deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
         return CreateAcknowledgedResponse(correlationId, "Audio input device selection requested.");
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteSelectMicrophoneDeviceCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var deviceId = GetString(payload, "deviceId");
+        var deviceName = GetString(payload, "deviceName");
+        await _deviceSelectionPort.SelectMicrophoneDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
+        return CreateAcknowledgedResponse(correlationId, "Microphone device selection requested.");
     }
 
     private async Task<AutomationCommandResponse> ExecuteGetCaptureOptionsCommandAsync(
@@ -850,6 +873,16 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
         await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteSetMicrophoneVolumeCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var volume = RequireDouble(payload, "microphoneVolumePercent");
+        await _audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, $"Microphone volume set to {Math.Clamp(volume, 0.0, 100.0):0.###}%.");
     }
 
     private async Task<AutomationCommandResponse> ExecuteFlashbackActionCommandAsync(
@@ -986,6 +1019,26 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
         await _flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Flashback {(enabled ? "enabled" : "disabled")}.");
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteSetFlashbackBufferMinutesCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var minutes = GetInt(payload, "minutes") ?? throw new InvalidOperationException("Missing 'minutes' parameter.");
+        await _flashbackPort.SetFlashbackBufferMinutesAsync(minutes, cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, $"Flashback buffer duration set to {minutes} minute{(minutes == 1 ? string.Empty : "s")}.");
+    }
+
+    private async Task<AutomationCommandResponse> ExecuteSetFlashbackGpuDecodeCommandAsync(
+        JsonElement payload,
+        string correlationId,
+        CancellationToken cancellationToken)
+    {
+        var enabled = RequireBool(payload, "enabled");
+        await _flashbackPort.SetFlashbackGpuDecodeAsync(enabled, cancellationToken).ConfigureAwait(false);
+        return CreateResponse(correlationId, $"Flashback GPU decode {(enabled ? "enabled" : "disabled")}.");
     }
 
     private async Task<AutomationCommandResponse> ExecuteSetFullScreenEnabledCommandAsync(

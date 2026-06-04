@@ -83,7 +83,11 @@ namespace Sussudio.Models
         SetFlashbackTimelineVisible = 50,
         GetAutomationManifest = 51,
         SetFullScreenEnabled = 52,
-        OpenRecordingsFolder = 53
+        OpenRecordingsFolder = 53,
+        SelectMicrophoneDevice = 54,
+        SetMicrophoneVolume = 55,
+        SetFlashbackBufferMinutes = 56,
+        SetFlashbackGpuDecode = 57
     }
 }
 
@@ -352,6 +356,7 @@ namespace Sussudio.Tools
             Set(entries, AutomationCommandKind.RefreshDevices, "{}", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "device refresh", "Refresh capture and audio device lists.");
             Set(entries, AutomationCommandKind.SelectDevice, "{ deviceId?: string, deviceName?: string }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "device select <name>", "Select a capture device.", Optional("deviceId", AutomationPayloadFieldType.String), Optional("deviceName", AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.SelectAudioInputDevice, "{ deviceId?: string, deviceName?: string }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "device audio-select <name>", "Select an audio input device.", Optional("deviceId", AutomationPayloadFieldType.String), Optional("deviceName", AutomationPayloadFieldType.String));
+            Set(entries, AutomationCommandKind.SelectMicrophoneDevice, "{ deviceId?: string, deviceName?: string }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "device mic-select <name>", "Select a microphone input device.", Optional("deviceId", AutomationPayloadFieldType.String), Optional("deviceName", AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.SetCustomAudioInput, "{ enabled: bool }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "device custom-audio on|off", "Enable or disable custom audio input.", Required("enabled", AutomationPayloadFieldType.Boolean));
             Set(entries, AutomationCommandKind.SetResolution, "{ resolution: string }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set resolution <value>", "Set capture resolution.", Required("resolution", AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.SetFrameRate, "{ frameRate: double }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set fps <value>", "Set capture frame rate.", Required("frameRate", AutomationPayloadFieldType.Number));
@@ -377,6 +382,7 @@ namespace Sussudio.Tools
             Set(entries, AutomationCommandKind.SetDeviceAudioMode, "{ mode: string }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set audio-mode hdmi|analog", "Set device audio mode.", Required("mode", AutomationPayloadFieldType.String));
             Set(entries, AutomationCommandKind.SetAnalogAudioGain, "{ gain: double }", ready: true, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set gain <value>", "Set analog audio input gain.", Required("gain", AutomationPayloadFieldType.Number));
             Set(entries, AutomationCommandKind.SetMicrophoneEnabled, "{ enabled: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set mic on|off", "Enable or disable microphone recording.", Required("enabled", AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.SetMicrophoneVolume, "{ microphoneVolumePercent: double }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "set mic-volume <value>", "Set selected microphone endpoint volume.", Required("microphoneVolumePercent", AutomationPayloadFieldType.Number));
         }
 
         private static void RegisterUiEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)
@@ -401,6 +407,8 @@ namespace Sussudio.Tools
             Set(entries, AutomationCommandKind.FlashbackGetSegments, "{}", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "flashback segments", "List flashback buffer segments.");
             Set(entries, AutomationCommandKind.RestartFlashback, "{}", ready: false, timeoutMs: AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "flashback apply", "Restart Flashback to apply deferred settings.");
             Set(entries, AutomationCommandKind.SetFlashbackEnabled, "{ enabled: bool }", ready: false, timeoutMs: AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "flashback on|off", "Enable or disable Flashback.", Required("enabled", AutomationPayloadFieldType.Boolean));
+            Set(entries, AutomationCommandKind.SetFlashbackBufferMinutes, "{ minutes: int }", ready: false, timeoutMs: AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs, pathPolicy: AutomationCommandPathPolicy.None, "flashback buffer <minutes>", "Set Flashback rolling-buffer duration in minutes.", Required("minutes", AutomationPayloadFieldType.Integer));
+            Set(entries, AutomationCommandKind.SetFlashbackGpuDecode, "{ enabled: bool }", ready: false, timeoutMs: DefaultTimeout, pathPolicy: AutomationCommandPathPolicy.None, "flashback gpu-decode on|off", "Enable or disable Flashback GPU decode.", Required("enabled", AutomationPayloadFieldType.Boolean));
         }
 
         private static void RegisterVerificationEntries(Dictionary<AutomationCommandKind, AutomationCommandMetadata> entries)

@@ -42,6 +42,7 @@ public interface IAutomationDeviceSelectionPort
     Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default);
     Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default);
     Task SelectAudioInputDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default);
+    Task SelectMicrophoneDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default);
     Task SetCustomAudioInputEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
 }
 
@@ -73,6 +74,7 @@ public interface IAutomationAudioPort
     Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default);
     Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default);
     Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
+    Task SetMicrophoneVolumeAsync(double microphoneVolumePercent, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -104,6 +106,8 @@ public interface IAutomationUiPort
 public interface IAutomationFlashbackPort
 {
     Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
+    Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default);
+    Task SetFlashbackGpuDecodeAsync(bool enabled, CancellationToken cancellationToken = default);
     Task RestartFlashbackAsync(CancellationToken cancellationToken = default);
     Task<bool> ExecuteFlashbackActionAsync(
         AutomationFlashbackAction action,

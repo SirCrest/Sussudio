@@ -17,7 +17,7 @@ $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path -LiteralPath $Root).Path
 
 $excludeDirs = @(
-    ".git", ".vs", ".vscode", "bin", "obj", "packages", "TestResults", "artifacts", "node_modules"
+    ".git", ".vs", ".vscode", "bin", "obj", "packages", ".tmp_nuget_packages", "TestResults", "artifacts", "node_modules"
 )
 
 function Get-RepositoryStatusSnapshot {

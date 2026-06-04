@@ -192,7 +192,7 @@ public sealed class AutomationContractsProtocolXunitTests
     {
         Assert.Equal("SussudioAutomation", AutomationPipeProtocol.DefaultPipeName);
         Assert.Equal("SUSSUDIO_AUTOMATION_TOKEN", AutomationPipeProtocol.AutomationKeyEnvVar);
-        Assert.Equal(1, AutomationPipeProtocol.CommandManifestRevision);
+        Assert.Equal(2, AutomationPipeProtocol.CommandManifestRevision);
         Assert.Equal(5000, AutomationPipeProtocol.DefaultConnectTimeoutMs);
         Assert.Equal(15000, AutomationPipeProtocol.DefaultResponseTimeoutMs);
         Assert.Equal(60000, AutomationPipeProtocol.ExtendedResponseTimeoutMs);
@@ -227,6 +227,7 @@ public sealed class AutomationContractsProtocolXunitTests
                 Assert.Equal(15000, AutomationPipeProtocol.GetDefaultResponseTimeout("GetSnapshot"));
                 Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
                 Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled"));
+                Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackBufferMinutes"));
                 Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("RestartFlashback"));
                 Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetRecordingEnabled"));
                 Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("set-recording-enabled"));
@@ -882,10 +883,13 @@ static partial class Program
         AssertContains(customCommandsText, "ExecuteSetAnalogAudioGainCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.SetMicrophoneEnabled:");
         AssertContains(customCommandsText, "ExecuteSetMicrophoneEnabledCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "case AutomationCommandKind.SetMicrophoneVolume:");
+        AssertContains(customCommandsText, "ExecuteSetMicrophoneVolumeCommandAsync(payload, correlationId, cancellationToken)");
 
         AssertDoesNotContain(customCommandsText, "_viewModel.SetDeviceAudioModeAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetAnalogAudioGainAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneEnabledAsync");
+        AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneVolumeAsync");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetDeviceAudioModeCommandAsync(");
         AssertContains(audioControlCommandsText, "var mode = RequireString(payload, \"mode\");");
         AssertContains(audioControlCommandsText, "_audioPort.SetDeviceAudioModeAsync(mode, cancellationToken)");
@@ -898,6 +902,10 @@ static partial class Program
         AssertContains(audioControlCommandsText, "Missing 'enabled' parameter.");
         AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken)");
         AssertContains(audioControlCommandsText, "Microphone {(enabled ? \"enabled\" : \"disabled\")}.");
+        AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetMicrophoneVolumeCommandAsync(");
+        AssertContains(audioControlCommandsText, "var volume = RequireDouble(payload, \"microphoneVolumePercent\");");
+        AssertContains(audioControlCommandsText, "_audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken)");
+        AssertContains(audioControlCommandsText, "Microphone volume set to {Math.Clamp(volume, 0.0, 100.0):0.###}%.");
 
         return Task.CompletedTask;
     }
@@ -977,12 +985,15 @@ static partial class Program
         AssertContains(customCommandsText, "ExecuteSelectDeviceCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.SelectAudioInputDevice:");
         AssertContains(customCommandsText, "ExecuteSelectAudioInputDeviceCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "case AutomationCommandKind.SelectMicrophoneDevice:");
+        AssertContains(customCommandsText, "ExecuteSelectMicrophoneDeviceCommandAsync(payload, correlationId, cancellationToken)");
         AssertContains(customCommandsText, "case AutomationCommandKind.GetCaptureOptions:");
         AssertContains(customCommandsText, "ExecuteGetCaptureOptionsCommandAsync(correlationId, cancellationToken)");
 
         AssertDoesNotContain(customCommandsText, "_viewModel.RefreshDevicesForAutomationAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SelectDeviceAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SelectAudioInputDeviceAsync");
+        AssertDoesNotContain(customCommandsText, "_viewModel.SelectMicrophoneDeviceAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.GetAutomationOptionsSnapshotAsync");
 
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteRefreshDevicesCommandAsync(");
@@ -994,6 +1005,9 @@ static partial class Program
         AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken)");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectAudioInputDeviceCommandAsync(");
         AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken)");
+        AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteSelectMicrophoneDeviceCommandAsync(");
+        AssertContains(deviceCommandsText, "_deviceSelectionPort.SelectMicrophoneDeviceAsync(deviceId, deviceName, cancellationToken)");
+        AssertContains(deviceCommandsText, "Microphone device selection requested.");
         AssertContains(deviceCommandsText, "private async Task<AutomationCommandResponse> ExecuteGetCaptureOptionsCommandAsync(");
         AssertContains(deviceCommandsText, "_snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertContains(deviceCommandsText, "Capture options retrieved.");
@@ -1361,17 +1375,25 @@ static partial class Program
         AssertContains(customCommandsText, "ExecuteFlashbackGetSegmentsCommandAsync(correlationId, cancellationToken)");
         AssertContains(customCommandsText, "ExecuteRestartFlashbackCommandAsync(correlationId, cancellationToken)");
         AssertContains(customCommandsText, "ExecuteSetFlashbackEnabledCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "ExecuteSetFlashbackBufferMinutesCommandAsync(payload, correlationId, cancellationToken)");
+        AssertContains(customCommandsText, "ExecuteSetFlashbackGpuDecodeCommandAsync(payload, correlationId, cancellationToken)");
 
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackActionCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackExportCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteFlashbackGetSegmentsCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteRestartFlashbackCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackEnabledCommandAsync(");
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackBufferMinutesCommandAsync(");
+        AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackGpuDecodeCommandAsync(");
         AssertContains(flashbackCommandsText, "_flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.GetFlashbackSegmentsAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.RestartFlashbackAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackBufferMinutesAsync(minutes, cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackGpuDecodeAsync(enabled, cancellationToken)");
+        AssertContains(flashbackCommandsText, "Flashback buffer duration set to {minutes} minute");
+        AssertContains(flashbackCommandsText, "Flashback GPU decode {(enabled ? \"enabled\" : \"disabled\")}.");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.FlashbackCommands.cs")),
@@ -1939,7 +1961,10 @@ static partial class Program
             "FlashbackExport" => $"{{\"seconds\":1,\"outputPath\":{JsonString(outputPath)},\"force\":true}}",
             "VerifyFile" => CreateVerifyFilePayload(tempRoot),
             "SetMicrophoneEnabled" => "{\"enabled\":false}",
+            "SetMicrophoneVolume" => "{\"microphoneVolumePercent\":50}",
             "SetFlashbackEnabled" => "{\"enabled\":false}",
+            "SetFlashbackBufferMinutes" => "{\"minutes\":5}",
+            "SetFlashbackGpuDecode" => "{\"enabled\":true}",
             "SetFrameTimeOverlayVisible" => "{\"visible\":false}",
             "SetFlashbackTimelineVisible" => "{\"visible\":false}",
             "SetFullScreenEnabled" => "{\"enabled\":false}",
@@ -2087,11 +2112,20 @@ static partial class Program
         var openRecordingsFolder = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "OpenRecordingsFolder") })!;
         AssertEqual(false, openRecordingsFolder, "OpenRecordingsFolder does not require ready devices");
 
+        var setMicrophoneVolume = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetMicrophoneVolume") })!;
+        AssertEqual(false, setMicrophoneVolume, "SetMicrophoneVolume does not require ready devices");
+
+        var setFlashbackBufferMinutes = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFlashbackBufferMinutes") })!;
+        AssertEqual(false, setFlashbackBufferMinutes, "SetFlashbackBufferMinutes does not require ready devices");
+
         var setResolution = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetResolution") })!;
         AssertEqual(true, setResolution, "SetResolution requires ready devices");
 
         var setFrameRate = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFrameRate") })!;
         AssertEqual(true, setFrameRate, "SetFrameRate requires ready devices");
+
+        var selectMicrophoneDevice = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SelectMicrophoneDevice") })!;
+        AssertEqual(true, selectMicrophoneDevice, "SelectMicrophoneDevice requires ready devices");
 
         return Task.CompletedTask;
     }
@@ -5276,10 +5310,14 @@ static partial class Program
             false,
             automationInterfaceType.GetProperty("IsMicrophoneEnabled") != null,
             "IAutomationViewModel sync microphone setter");
+        AssertTaskReturningMethod(automationInterfaceType, "SelectMicrophoneDeviceAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "SetMicrophoneEnabledAsync", resultType: null);
+        AssertTaskReturningMethod(automationInterfaceType, "SetMicrophoneVolumeAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "SetHdrEnabledAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "SetTrueHdrPreviewEnabledAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackEnabledAsync", resultType: null);
+        AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackBufferMinutesAsync", resultType: null);
+        AssertTaskReturningMethod(automationInterfaceType, "SetFlashbackGpuDecodeAsync", resultType: null);
         AssertTaskReturningMethod(automationInterfaceType, "ExecuteFlashbackActionAsync", typeof(bool));
         AssertTaskReturningMethod(
             automationInterfaceType,
@@ -5395,8 +5433,10 @@ static partial class Program
         AssertContains(dispatcherText, "await previewRecordingHandler.InvokeAsync(_previewRecordingPort, payload, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _deviceSelectionPort.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _deviceSelectionPort.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _deviceSelectionPort.SelectMicrophoneDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _snapshotQueryPort.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _audioPort.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _audioPort.SetMicrophoneVolumeAsync(volume, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _captureSettingsPort.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _previewRecordingPort.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _probePort.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);");
@@ -5404,6 +5444,8 @@ static partial class Program
         AssertContains(dispatcherText, "await _uiPort.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _snapshotQueryPort.GetAudioRampTraceSnapshotAsync(maxEntries, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackBufferMinutesAsync(minutes, cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "await _flashbackPort.SetFlashbackGpuDecodeAsync(enabled, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "await _flashbackPort.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "vm.SetHdrEnabledAsync(v, ct)");
         AssertContains(dispatcherText, "vm.SetTrueHdrPreviewEnabledAsync(v, ct)");
@@ -5411,6 +5453,8 @@ static partial class Program
         AssertContains(viewModelDispatchText, "registration.Dispose();\n                registration = default;\n\n                if (cancellationToken.IsCancellationRequested)");
 
         AssertContains(automationText, "public Task<bool> ExecuteFlashbackActionAsync(");
+        AssertContains(automationText, "public async Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default)");
+        AssertContains(automationText, "public async Task SetFlashbackGpuDecodeAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "public void ReportFlashbackPlaybackRejection(string action, string logToken)");
         AssertContains(automationText, "lastFailure={lastFailure}");
         AssertContains(automationText, "StatusText = message;");
@@ -5787,8 +5831,13 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);");
+        AssertContains(automationAudioText, "public async Task SelectMicrophoneDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "Cannot change microphone device while recording. Stop the recording first.");
+        AssertContains(automationAudioText, "SelectedMicrophoneDevice = request.Target;");
         AssertContains(automationAudioText, "public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)");
+        AssertContains(automationAudioText, "public Task SetMicrophoneVolumeAsync(double microphoneVolumePercent, CancellationToken cancellationToken = default)");
+        AssertContains(automationAudioText, "MicrophoneVolume = Math.Clamp(microphoneVolumePercent, 0.0, 100.0);");
         AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_NOOP reason=recording_active_idempotent requested={enabled}\");");
         AssertContains(automationAudioText, "Logger.Log($\"MIC_TOGGLE_REFUSED reason=recording_active requested={enabled} current={request.CurrentMicEnabled}\");");
         AssertContains(automationAudioText, "Cannot change microphone enable state while recording. Stop the recording first.");
@@ -5798,6 +5847,7 @@ static partial class Program
         AssertContains(automationAudioText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                SaveSettingsOrThrow();\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
         AssertContains(automationUiText, "public Task SetPreviewVolumeAsync");
         AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
+        AssertContains(viewModelText, "return ResolveByName(MicrophoneDevices, deviceName, d => d.Name);");
         AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
         AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);\n\n                _micMonitorEnabled = enabled;");
 
@@ -5892,6 +5942,9 @@ static partial class Program
         AssertContains(automationOptionsText, "GetAutomationOptionsSnapshotAsync");
         AssertContains(automationOptionsText, "InvokeOnUiThreadAsync(() =>");
         AssertContains(automationOptionsText, "AvailableFrameRates");
+        AssertContains(automationOptionsText, "MicrophoneDevices");
+        AssertContains(automationOptionsText, "IsMicrophoneEnabled = IsMicrophoneEnabled");
+        AssertContains(automationOptionsText, "SupportedFlashbackBufferMinutes");
         AssertContains(automationOptionsText, "FrameRateTimingPolicy.IsFrameRateMatch(option.Value, selectedFrameRate)");
         AssertContains(automationOptionsText, "AutomationOptionsSnapshotBuilder.Build(input)");
         AssertNoRegex(
@@ -5902,8 +5955,13 @@ static partial class Program
         AssertContains(automationOptionsBuilderText, "internal sealed class AutomationOptionsSnapshotInput");
         AssertContains(automationOptionsBuilderText, "BuildStringOptions(input.RecordingFormats, input.SelectedRecordingFormat)");
         AssertContains(automationOptionsBuilderText, "MjpegDecoderCounts = Enumerable.Range(1, 8)");
+        AssertContains(automationOptionsBuilderText, "MicrophoneDevices = input.MicrophoneDevices");
+        AssertContains(automationOptionsBuilderText, "FlashbackBufferMinuteOptions = input.FlashbackBufferMinuteOptions");
         AssertContains(automationOptionsBuilderText, "DisableReason = option.DisableReason ?? string.Empty");
         AssertContains(automationOptionsBuilderText, "PreviewVolumePercent = input.PreviewVolume * 100.0");
+        AssertContains(automationOptionsBuilderText, "IsMicrophoneEnabled = input.IsMicrophoneEnabled");
+        AssertContains(automationOptionsBuilderText, "MicrophoneVolumePercent = input.MicrophoneVolume");
+        AssertContains(automationOptionsBuilderText, "FlashbackGpuDecode = input.FlashbackGpuDecode");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationOptionsSnapshot.cs")),
@@ -6087,10 +6145,26 @@ static partial class Program
         AssertContains(viewModelFlashbackStateText, "private int _flashbackExportOperationId;");
         AssertMemberContains(flashbackPlaybackText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
         AssertMemberContains(flashbackSettingsText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
-        AssertMemberContains(flashbackSettingsText, "RestartFlashbackAsync", "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
+        AssertContains(rawFlashbackSettingsText, "Flashback buffer minutes must be one of: 1, 2, 5, 10, 15, or 30.");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "if (FlashbackBufferMinutes == minutes)");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "Changed: false");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "if (!state.Changed)");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "_suppressFlashbackSettingsUpdate = true;");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "await RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackBufferMinutesAsync", "_sessionCoordinator.UpdateFlashbackSettingsAsync(");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "if (FlashbackGpuDecode == enabled)");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "Changed: false");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "if (!state.Changed)");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "_suppressFlashbackSettingsUpdate = true;");
+        AssertMemberContains(flashbackSettingsText, "SetFlashbackGpuDecodeAsync", "_sessionCoordinator.UpdateFlashbackSettingsAsync(");
+        var restartFlashbackAsyncText = ExtractMemberCodeFromDeclaration(
+            rawFlashbackSettingsText,
+            "public async Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
+        AssertContains(restartFlashbackAsyncText, "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
+        AssertContains(restartFlashbackAsyncText, "_sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken)");
 
         AssertDoesNotContain(flashbackSettingsText, "public async Task SetRecordingFormatAsync");
+        AssertContains(flashbackSettingsText, "private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(flashbackSettingsText, "OnFlashbackBufferMinutesChanged", "Interlocked.Increment(ref _flashbackSettingsRestartGeneration)");
@@ -6145,6 +6219,8 @@ static partial class Program
             "ExportFlashbackAutomationAsync",
             "GetFlashbackSegments",
             "SetFlashbackEnabledAsync",
+            "SetFlashbackBufferMinutesAsync",
+            "SetFlashbackGpuDecodeAsync",
             "RestartFlashbackAsync"
         })
         {
@@ -7479,6 +7555,8 @@ static partial class Program
         AssertContains(snapshotFlatteningText, "SourceReaderReadOutstanding = audioAndIngestFlattening.SourceReader.ReadOutstanding,");
         AssertContains(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = audioAndIngestFlattening.WasapiCapture.AudioLevelEventsFired,");
         AssertContains(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlayback.BufferedDurationMs,");
+        AssertContains(snapshotFlatteningText, "AudioBufferHealthStatus = audioAndIngestFlattening.BufferHealth.Status,");
+        AssertContains(snapshotFlatteningText, "AudioBufferUnderrunEvents = audioAndIngestFlattening.BufferHealth.UnderrunEvents,");
         AssertDoesNotContain(snapshotFlatteningText, "AudioPeak = viewModelSnapshot.AudioPeak,");
         AssertDoesNotContain(snapshotFlatteningText, "AudioPeak = audioAndIngest.AudioPeak,");
         AssertDoesNotContain(snapshotFlatteningText, "AudioSignalPresent = audioSignal.SignalPresent,");
@@ -7506,7 +7584,9 @@ static partial class Program
         AssertContains(audioProjectionText, "SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),");
         AssertContains(audioProjectionText, "WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),");
         AssertContains(audioProjectionText, "WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)");
+        AssertContains(audioProjectionText, "BufferHealth = BuildAudioBufferHealthFlattenedProjection(audioAndIngest.Wasapi)");
         AssertContains(audioProjectionText, "private readonly record struct AudioAndIngestFlattenedProjection");
+        AssertContains(audioProjectionText, "public AudioBufferHealthFlattenedProjection BufferHealth { get; init; }");
         AssertDoesNotContain(audioProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
         AssertDoesNotContain(snapshotFlatteningText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
         AssertDoesNotContain(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
@@ -7535,7 +7615,10 @@ static partial class Program
         AssertContains(wasapiAudioProjectionText, "private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(wasapiAudioProjectionText, "CaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
         AssertContains(wasapiAudioProjectionText, "PlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
+        AssertContains(wasapiAudioProjectionText, "BufferHealthStatus = captureRuntime.AudioBufferHealthStatus,");
         AssertContains(wasapiAudioProjectionText, "private readonly record struct WasapiAudioProjection");
+        AssertContains(wasapiAudioProjectionText, "private static AudioBufferHealthFlattenedProjection BuildAudioBufferHealthFlattenedProjection(");
+        AssertContains(wasapiAudioProjectionText, "UnderrunEvents = wasapi.BufferUnderrunEvents");
         AssertContains(wasapiAudioProjectionText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
         AssertContains(wasapiAudioProjectionText, "AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,");
         AssertContains(wasapiAudioProjectionText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");

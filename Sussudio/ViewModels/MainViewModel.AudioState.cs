@@ -729,6 +729,11 @@ public partial class MainViewModel
 
         SaveSettings();
 
+        if (_suppressMicrophoneMonitorUpdate)
+        {
+            return;
+        }
+
         if (IsMicrophoneEnabled && !IsRecording && value != null)
         {
             EnqueueUiOperation(

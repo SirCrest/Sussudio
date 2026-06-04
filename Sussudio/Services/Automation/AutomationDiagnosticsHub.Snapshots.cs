@@ -1165,6 +1165,12 @@ public sealed partial class AutomationDiagnosticsHub
             NegotiatedFrameRateArg = runtimeSnapshot.NegotiatedFrameRateArg,
             NegotiatedFrameRateNumerator = runtimeSnapshot.NegotiatedFrameRateNumerator,
             NegotiatedFrameRateDenominator = runtimeSnapshot.NegotiatedFrameRateDenominator,
+            AudioBufferHealthStatus = runtimeSnapshot.AudioBufferHealthStatus,
+            AudioBufferHealthReason = runtimeSnapshot.AudioBufferHealthReason,
+            AudioBufferUnderrunDetected = runtimeSnapshot.AudioBufferUnderrunDetected,
+            AudioBufferOverrunDetected = runtimeSnapshot.AudioBufferOverrunDetected,
+            AudioBufferUnderrunEvents = runtimeSnapshot.AudioBufferUnderrunEvents,
+            AudioBufferOverrunEvents = runtimeSnapshot.AudioBufferOverrunEvents,
             FlashbackExportOutputPath = filePath,
             FlashbackExportVerificationFormat = runtimeSnapshot.FlashbackExportVerificationFormat,
             FlashbackCodecDowngradeReason = runtimeSnapshot.FlashbackCodecDowngradeReason

@@ -43,16 +43,18 @@ public static class CaptureSettingsTools
 }
 
 [McpServerToolType]
-// MCP tools for refreshing and selecting capture/audio devices.
+// MCP tools for refreshing and selecting capture/audio/microphone devices.
 public static class DeviceTools
 {
-    [McpServerTool, Description("Select capture device, audio input device, refresh device list, or toggle custom audio input")]
+    [McpServerTool, Description("Select capture device, audio input device, microphone device, refresh device list, or toggle custom audio input")]
     public static async Task<CallToolResult> configure_device(
         PipeClient pipeClient,
         [Description("Capture device id to select")] string? deviceId = null,
         [Description("Capture device name to select when id is unknown")] string? deviceName = null,
         [Description("Audio input device id to select")] string? audioDeviceId = null,
         [Description("Audio input device name to select when id is unknown")] string? audioDeviceName = null,
+        [Description("Microphone device id to select")] string? microphoneDeviceId = null,
+        [Description("Microphone device name to select when id is unknown")] string? microphoneDeviceName = null,
         [Description("Refresh the device list before making selections")] bool refresh = false,
         [Description("Enable or disable custom audio input")] bool? customAudioInput = null)
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
@@ -79,6 +81,15 @@ public static class DeviceTools
                     {
                         ["deviceId"] = string.IsNullOrWhiteSpace(audioDeviceId) ? null : audioDeviceId,
                         ["deviceName"] = string.IsNullOrWhiteSpace(audioDeviceName) ? null : audioDeviceName
+                    }),
+                ToolCommandFormatter.Optional(
+                    AutomationCommandKind.SelectMicrophoneDevice,
+                    "SelectMicrophoneDevice",
+                    !string.IsNullOrWhiteSpace(microphoneDeviceId) || !string.IsNullOrWhiteSpace(microphoneDeviceName),
+                    new Dictionary<string, object?>
+                    {
+                        ["deviceId"] = string.IsNullOrWhiteSpace(microphoneDeviceId) ? null : microphoneDeviceId,
+                        ["deviceName"] = string.IsNullOrWhiteSpace(microphoneDeviceName) ? null : microphoneDeviceName
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SetCustomAudioInput,
@@ -129,12 +140,14 @@ public static class CaptureOptionsTools
 // MCP tools for pipeline/debug knobs that affect capture and preview behavior.
 public static class PipelineSettingsTools
 {
-    [McpServerTool, Description("Configure pipeline settings: HDR, audio capture, audio preview, true HDR preview, and output path. Only provided parameters are changed.")]
+    [McpServerTool, Description("Configure pipeline settings: HDR, audio capture, audio preview, microphone recording/volume, true HDR preview, and output path. Only provided parameters are changed.")]
     public static async Task<CallToolResult> configure_pipeline(
         PipeClient pipeClient,
         [Description("Enable or disable HDR")] bool? hdrEnabled = null,
         [Description("Enable or disable audio capture")] bool? audioEnabled = null,
         [Description("Enable or disable audio preview")] bool? audioPreviewEnabled = null,
+        [Description("Enable or disable microphone recording")] bool? microphoneEnabled = null,
+        [Description("Selected microphone endpoint volume percentage from 0 to 100")] double? microphoneVolumePercent = null,
         [Description("Enable or disable true HDR preview (GPU HDR tone-mapping). Must stop preview first.")] bool? trueHdrPreviewEnabled = null,
         [Description("Output folder path for recordings")] string? outputPath = null)
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
@@ -144,6 +157,8 @@ public static class PipelineSettingsTools
                 ToolCommandFormatter.Optional(AutomationCommandKind.SetTrueHdrPreviewEnabled, "SetTrueHdrPreviewEnabled", "enabled", trueHdrPreviewEnabled),
                 ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioEnabled, "SetAudioEnabled", "enabled", audioEnabled),
                 ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioPreviewEnabled, "SetAudioPreviewEnabled", "enabled", audioPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneEnabled, "SetMicrophoneEnabled", "enabled", microphoneEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneVolume, "SetMicrophoneVolume", "microphoneVolumePercent", microphoneVolumePercent),
                 ToolCommandFormatter.Optional(AutomationCommandKind.SetOutputPath, "SetOutputPath", "outputPath", outputPath))
             .ConfigureAwait(false);
 
@@ -426,6 +441,18 @@ public static class FlashbackTools
                 label: "RestartFlashback")
             .ConfigureAwait(false);
     }
+
+    [McpServerTool, Description("Configure Flashback settings: rolling-buffer duration and GPU decode. Only provided parameters are changed. Use flashback_apply to restart manually when needed.")]
+    public static async Task<CallToolResult> flashback_settings(
+        PipeClient pipeClient,
+        [Description("Rolling-buffer duration in minutes. Allowed values: 1, 2, 5, 10, 15, 30.")] int? bufferMinutes = null,
+        [Description("True to enable Flashback GPU decode, false to disable it")] bool? gpuDecode = null)
+        => await ToolCommandFormatter.ExecuteBatchResultAsync(
+                pipeClient,
+                "No Flashback setting changes requested.",
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackBufferMinutes, "SetFlashbackBufferMinutes", "minutes", bufferMinutes),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackGpuDecode, "SetFlashbackGpuDecode", "enabled", gpuDecode))
+            .ConfigureAwait(false);
 
     [McpServerTool, Description("List all flashback buffer segments with their file paths, durations, and frame counts")]
     public static async Task<CallToolResult> flashback_segments(PipeClient pipeClient)

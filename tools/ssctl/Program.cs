@@ -259,6 +259,7 @@ internal static class SsctlHelpWriter
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetOutputPath);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetShowAllCaptureOptions);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetMicrophoneEnabled);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.SetMicrophoneVolume);
         writer.WriteLine();
     }
 
@@ -269,6 +270,7 @@ internal static class SsctlHelpWriter
         writer.WriteLine("  device list");
         WriteCatalogHelpLine(writer, AutomationCommandKind.SelectDevice);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SelectAudioInputDevice);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.SelectMicrophoneDevice);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetCustomAudioInput);
         writer.WriteLine();
     }
@@ -277,6 +279,8 @@ internal static class SsctlHelpWriter
     {
         writer.WriteLine("Flashback:");
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackEnabled);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackBufferMinutes);
+        WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackGpuDecode);
         WriteCatalogHelpLine(writer, AutomationCommandKind.SetFlashbackTimelineVisible);
         writer.WriteLine("  flashback play [<ms>]");
         writer.WriteLine("  flashback pause");

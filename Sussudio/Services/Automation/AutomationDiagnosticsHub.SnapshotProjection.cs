@@ -1459,6 +1459,12 @@ public sealed partial class AutomationDiagnosticsHub
             WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlayback.BufferedDurationMs,
             WasapiPlaybackStreamLatencyMs = audioAndIngestFlattening.WasapiPlayback.StreamLatencyMs,
             WasapiPlaybackLastRenderTickMs = audioAndIngestFlattening.WasapiPlayback.LastRenderTickMs,
+            AudioBufferHealthStatus = audioAndIngestFlattening.BufferHealth.Status,
+            AudioBufferHealthReason = audioAndIngestFlattening.BufferHealth.Reason,
+            AudioBufferUnderrunDetected = audioAndIngestFlattening.BufferHealth.UnderrunDetected,
+            AudioBufferOverrunDetected = audioAndIngestFlattening.BufferHealth.OverrunDetected,
+            AudioBufferUnderrunEvents = audioAndIngestFlattening.BufferHealth.UnderrunEvents,
+            AudioBufferOverrunEvents = audioAndIngestFlattening.BufferHealth.OverrunEvents,
             MemoryPreference = captureTransportFlattening.MemoryPreference,
             VideoRequestedSubtype = captureTransportFlattening.VideoRequestedSubtype,
             VideoNegotiatedSubtype = captureTransportFlattening.VideoNegotiatedSubtype,
@@ -4143,7 +4149,13 @@ public sealed partial class AutomationDiagnosticsHub
             PlaybackEndpointQueuedDurationMs = captureRuntime.WasapiPlaybackEndpointQueuedDurationMs,
             PlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,
             PlaybackStreamLatencyMs = captureRuntime.WasapiPlaybackStreamLatencyMs,
-            PlaybackLastRenderTickMs = captureRuntime.WasapiPlaybackLastRenderTickMs
+            PlaybackLastRenderTickMs = captureRuntime.WasapiPlaybackLastRenderTickMs,
+            BufferHealthStatus = captureRuntime.AudioBufferHealthStatus,
+            BufferHealthReason = captureRuntime.AudioBufferHealthReason,
+            BufferUnderrunDetected = captureRuntime.AudioBufferUnderrunDetected,
+            BufferOverrunDetected = captureRuntime.AudioBufferOverrunDetected,
+            BufferUnderrunEvents = captureRuntime.AudioBufferUnderrunEvents,
+            BufferOverrunEvents = captureRuntime.AudioBufferOverrunEvents
         };
 
     private readonly record struct WasapiAudioProjection
@@ -4169,6 +4181,34 @@ public sealed partial class AutomationDiagnosticsHub
         public double PlaybackBufferedDurationMs { get; init; }
         public double PlaybackStreamLatencyMs { get; init; }
         public long PlaybackLastRenderTickMs { get; init; }
+        public string BufferHealthStatus { get; init; }
+        public string BufferHealthReason { get; init; }
+        public bool BufferUnderrunDetected { get; init; }
+        public bool BufferOverrunDetected { get; init; }
+        public long BufferUnderrunEvents { get; init; }
+        public long BufferOverrunEvents { get; init; }
+    }
+
+    private static AudioBufferHealthFlattenedProjection BuildAudioBufferHealthFlattenedProjection(
+        WasapiAudioProjection wasapi)
+        => new()
+        {
+            Status = wasapi.BufferHealthStatus,
+            Reason = wasapi.BufferHealthReason,
+            UnderrunDetected = wasapi.BufferUnderrunDetected,
+            OverrunDetected = wasapi.BufferOverrunDetected,
+            UnderrunEvents = wasapi.BufferUnderrunEvents,
+            OverrunEvents = wasapi.BufferOverrunEvents
+        };
+
+    private readonly record struct AudioBufferHealthFlattenedProjection
+    {
+        public string Status { get; init; }
+        public string Reason { get; init; }
+        public bool UnderrunDetected { get; init; }
+        public bool OverrunDetected { get; init; }
+        public long UnderrunEvents { get; init; }
+        public long OverrunEvents { get; init; }
     }
 
     private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(
@@ -4279,7 +4319,8 @@ public sealed partial class AutomationDiagnosticsHub
             Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),
             SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),
             WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),
-            WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)
+            WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi),
+            BufferHealth = BuildAudioBufferHealthFlattenedProjection(audioAndIngest.Wasapi)
         };
 
     private readonly record struct AudioAndIngestFlattenedProjection
@@ -4289,6 +4330,7 @@ public sealed partial class AutomationDiagnosticsHub
         public SourceReaderFlattenedProjection SourceReader { get; init; }
         public WasapiCaptureFlattenedProjection WasapiCapture { get; init; }
         public WasapiPlaybackFlattenedProjection WasapiPlayback { get; init; }
+        public AudioBufferHealthFlattenedProjection BufferHealth { get; init; }
     }
 
     private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(

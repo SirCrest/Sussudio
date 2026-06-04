@@ -19,6 +19,8 @@ public partial class MainViewModel
     private int _flashbackExportOperationId;
     private int _flashbackSettingsRestartGeneration;
     private Task? _pendingFlashbackCycleTask;
+    private bool _suppressFlashbackSettingsUpdate;
+    private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };
 
     [ObservableProperty]
     public partial bool FlashbackGpuDecode { get; set; } = true;
@@ -80,6 +82,99 @@ public partial class MainViewModel
     public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
         => _sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken);
 
+    public async Task SetFlashbackBufferMinutesAsync(int minutes, CancellationToken cancellationToken = default)
+    {
+        if (Array.IndexOf(SupportedFlashbackBufferMinutes, minutes) < 0)
+        {
+            throw new InvalidOperationException("Flashback buffer minutes must be one of: 1, 2, 5, 10, 15, or 30.");
+        }
+
+        var state = await InvokeOnUiThreadAsync(
+            () =>
+            {
+                if (FlashbackBufferMinutes == minutes)
+                {
+                    return (
+                        Changed: false,
+                        IsPreviewing,
+                        IsRecording,
+                        IsLoadingSettings: _isLoadingSettings,
+                        GpuDecode: FlashbackGpuDecode);
+                }
+
+                _suppressFlashbackSettingsUpdate = true;
+                try
+                {
+                    FlashbackBufferMinutes = minutes;
+                }
+                finally
+                {
+                    _suppressFlashbackSettingsUpdate = false;
+                }
+
+                SaveSettingsOrThrow();
+                return (
+                    Changed: true,
+                    IsPreviewing,
+                    IsRecording,
+                    IsLoadingSettings: _isLoadingSettings,
+                    GpuDecode: FlashbackGpuDecode);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        if (!state.Changed)
+        {
+            return;
+        }
+
+        if (state.IsPreviewing && !state.IsRecording && !state.IsLoadingSettings)
+        {
+            await RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await _sessionCoordinator.UpdateFlashbackSettingsAsync(
+            minutes,
+            state.GpuDecode,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task SetFlashbackGpuDecodeAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        var state = await InvokeOnUiThreadAsync(
+            () =>
+            {
+                if (FlashbackGpuDecode == enabled)
+                {
+                    return (Changed: false, BufferMinutes: FlashbackBufferMinutes);
+                }
+
+                _suppressFlashbackSettingsUpdate = true;
+                try
+                {
+                    FlashbackGpuDecode = enabled;
+                }
+                finally
+                {
+                    _suppressFlashbackSettingsUpdate = false;
+                }
+
+                SaveSettingsOrThrow();
+                return (Changed: true, BufferMinutes: FlashbackBufferMinutes);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        if (!state.Changed)
+        {
+            return;
+        }
+
+        await _sessionCoordinator.UpdateFlashbackSettingsAsync(
+            state.BufferMinutes,
+            enabled,
+            cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
     {
         var settings = await InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken).ConfigureAwait(false);
@@ -96,6 +191,10 @@ public partial class MainViewModel
     partial void OnFlashbackBufferMinutesChanged(int value)
     {
         SaveSettings();
+        if (_suppressFlashbackSettingsUpdate)
+        {
+            return;
+        }
 
         // Push into the active CaptureSettings so RestartFlashbackAsync sees the new value.
         var updateTask = _sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode);
@@ -114,6 +213,11 @@ public partial class MainViewModel
 
     partial void OnFlashbackGpuDecodeChanged(bool value)
     {
+        if (_suppressFlashbackSettingsUpdate)
+        {
+            return;
+        }
+
         // Push into CaptureSettings so rebuilds (e.g., after buffer-duration restart
         // or format-change cycle) use the latest GPU decode preference.
         TrackFlashbackCoordinatorTask(

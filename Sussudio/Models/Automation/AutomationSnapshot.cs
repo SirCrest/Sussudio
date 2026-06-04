@@ -256,6 +256,12 @@ public sealed class AutomationSnapshot
     public double WasapiPlaybackBufferedDurationMs { get; init; }
     public double WasapiPlaybackStreamLatencyMs { get; init; }
     public long WasapiPlaybackLastRenderTickMs { get; init; }
+    public string AudioBufferHealthStatus { get; init; } = "Inactive";
+    public string AudioBufferHealthReason { get; init; } = "No audio capture, monitoring, or recording buffer path is active.";
+    public bool AudioBufferUnderrunDetected { get; init; }
+    public bool AudioBufferOverrunDetected { get; init; }
+    public long AudioBufferUnderrunEvents { get; init; }
+    public long AudioBufferOverrunEvents { get; init; }
 
     // === Memory & GC ===
     public double MemoryWorkingSetMb { get; init; }

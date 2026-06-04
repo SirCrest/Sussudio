@@ -1445,6 +1445,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                         Name = device.Name
                     })
                     .ToArray(),
+                MicrophoneDevices = MicrophoneDevices
+                    .Select(device => new AutomationOptionsDeviceInput
+                    {
+                        Id = device.Id,
+                        Name = device.Name
+                    })
+                    .ToArray(),
                 Resolutions = AvailableResolutions
                     .Select(option => new AutomationOptionsResolutionInput
                     {
@@ -1471,8 +1478,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 Presets = AvailablePresets.ToArray(),
                 SplitEncodeModes = AvailableSplitEncodeModes.ToArray(),
                 VideoFormats = AvailableVideoFormats.ToArray(),
+                FlashbackBufferMinuteOptions = SupportedFlashbackBufferMinutes,
                 SelectedDeviceId = SelectedDevice?.Id,
                 SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+                SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,
                 SelectedResolution = SelectedResolution,
                 SelectedFrameRate = selectedFrameRate,
                 SelectedRecordingFormat = SelectedRecordingFormat,
@@ -1482,6 +1491,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 SelectedVideoFormat = SelectedVideoFormat,
                 MjpegDecoderCount = MjpegDecoderCount,
                 PreviewVolume = PreviewVolume,
+                IsMicrophoneEnabled = IsMicrophoneEnabled,
+                MicrophoneVolume = MicrophoneVolume,
+                FlashbackBufferMinutes = FlashbackBufferMinutes,
+                FlashbackGpuDecode = FlashbackGpuDecode,
+                IsFlashbackEnabled = IsFlashbackEnabled,
                 IsStatsVisible = IsStatsVisible
             };
 
@@ -1538,6 +1552,59 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
+    }
+
+    public async Task SelectMicrophoneDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
+    {
+        var request = await InvokeOnUiThreadAsync(
+            () =>
+            {
+                var target = ResolveMicrophoneDevice(deviceId, deviceName);
+                if (target == null)
+                {
+                    throw new InvalidOperationException($"Microphone device not found. Id='{deviceId ?? "(null)"}', Name='{deviceName ?? "(null)"}'.");
+                }
+
+                return (
+                    IsRecording,
+                    IsMicrophoneEnabled,
+                    CurrentDeviceId: SelectedMicrophoneDevice?.Id,
+                    Target: target);
+            },
+            cancellationToken).ConfigureAwait(false);
+
+        if (request.IsRecording &&
+            !string.Equals(request.CurrentDeviceId, request.Target.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Cannot change microphone device while recording. Stop the recording first.");
+        }
+
+        if (!request.IsRecording)
+        {
+            await _sessionCoordinator.UpdateMicrophoneMonitorAsync(
+                request.IsMicrophoneEnabled,
+                request.Target.Id,
+                request.Target.Name,
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        await InvokeOnUiThreadAsync(
+            () =>
+            {
+                _suppressMicrophoneMonitorUpdate = true;
+                try
+                {
+                    SelectedMicrophoneDevice = request.Target;
+                }
+                finally
+                {
+                    _suppressMicrophoneMonitorUpdate = false;
+                }
+
+                SaveSettingsOrThrow();
+                return Task.CompletedTask;
+            },
+            cancellationToken).ConfigureAwait(false);
     }
 
     public Task SetCustomAudioInputEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
@@ -1628,6 +1695,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return SetMicrophoneEnabledAutomationAsync(enabled, cancellationToken);
     }
 
+    public Task SetMicrophoneVolumeAsync(double microphoneVolumePercent, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            MicrophoneVolume = Math.Clamp(microphoneVolumePercent, 0.0, 100.0);
+            SaveSettingsOrThrow();
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
     public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)
         => _captureSettingsAutomationController.SetResolutionAsync(resolution, cancellationToken);
 
@@ -1715,6 +1792,25 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!string.IsNullOrWhiteSpace(deviceName))
         {
             return ResolveByName(AudioInputDevices, deviceName, d => d.Name);
+        }
+
+        return null;
+    }
+
+    private AudioInputDevice? ResolveMicrophoneDevice(string? deviceId, string? deviceName)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceId))
+        {
+            var byId = MicrophoneDevices.FirstOrDefault(d => string.Equals(d.Id, deviceId, StringComparison.OrdinalIgnoreCase));
+            if (byId != null)
+            {
+                return byId;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(deviceName))
+        {
+            return ResolveByName(MicrophoneDevices, deviceName, d => d.Name);
         }
 
         return null;

@@ -160,6 +160,11 @@ internal static class AutomationSnapshotFormatter
             $"streamLatencyMs={Get(snapshot, "WasapiPlaybackStreamLatencyMs")} " +
             $"drops={Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
             $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
+        builder.AppendLine(
+            $"Audio Buffer: status={Get(snapshot, "AudioBufferHealthStatus")} " +
+            $"underrun={Get(snapshot, "AudioBufferUnderrunDetected")} overrun={Get(snapshot, "AudioBufferOverrunDetected")} " +
+            $"underrunEvents={Get(snapshot, "AudioBufferUnderrunEvents")} overrunEvents={Get(snapshot, "AudioBufferOverrunEvents")} " +
+            $"reason={Get(snapshot, "AudioBufferHealthReason", string.Empty)}");
     }
 
     private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)

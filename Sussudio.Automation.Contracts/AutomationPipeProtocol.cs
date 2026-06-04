@@ -26,7 +26,7 @@ public static class AutomationPipeProtocol
     // the AutomationCommandKind section in
     // Sussudio.Automation.Contracts/AutomationCommandCatalog.cs for the
     // maintainer rules.
-    public const int CommandManifestRevision = 1;
+    public const int CommandManifestRevision = 2;
 
     public const int DefaultConnectTimeoutMs = 5000;
     public const int DefaultResponseTimeoutMs = 15000;

@@ -992,10 +992,18 @@ public sealed class SnapshotModelsTests
         AssertNotNull(optionsType.GetProperty("SplitEncodeModes"), "AutomationOptionsSnapshot.SplitEncodeModes");
         AssertNotNull(optionsType.GetProperty("VideoFormats"), "AutomationOptionsSnapshot.VideoFormats");
         AssertNotNull(optionsType.GetProperty("MjpegDecoderCounts"), "AutomationOptionsSnapshot.MjpegDecoderCounts");
+        AssertNotNull(optionsType.GetProperty("MicrophoneDevices"), "AutomationOptionsSnapshot.MicrophoneDevices");
+        AssertNotNull(optionsType.GetProperty("FlashbackBufferMinuteOptions"), "AutomationOptionsSnapshot.FlashbackBufferMinuteOptions");
         AssertNotNull(optionsType.GetProperty("SelectedPreset"), "AutomationOptionsSnapshot.SelectedPreset");
         AssertNotNull(optionsType.GetProperty("SelectedSplitEncodeMode"), "AutomationOptionsSnapshot.SelectedSplitEncodeMode");
         AssertNotNull(optionsType.GetProperty("SelectedVideoFormat"), "AutomationOptionsSnapshot.SelectedVideoFormat");
+        AssertNotNull(optionsType.GetProperty("SelectedMicrophoneDeviceId"), "AutomationOptionsSnapshot.SelectedMicrophoneDeviceId");
         AssertNotNull(optionsType.GetProperty("PreviewVolumePercent"), "AutomationOptionsSnapshot.PreviewVolumePercent");
+        AssertNotNull(optionsType.GetProperty("IsMicrophoneEnabled"), "AutomationOptionsSnapshot.IsMicrophoneEnabled");
+        AssertNotNull(optionsType.GetProperty("MicrophoneVolumePercent"), "AutomationOptionsSnapshot.MicrophoneVolumePercent");
+        AssertNotNull(optionsType.GetProperty("FlashbackBufferMinutes"), "AutomationOptionsSnapshot.FlashbackBufferMinutes");
+        AssertNotNull(optionsType.GetProperty("FlashbackGpuDecode"), "AutomationOptionsSnapshot.FlashbackGpuDecode");
+        AssertNotNull(optionsType.GetProperty("IsFlashbackEnabled"), "AutomationOptionsSnapshot.IsFlashbackEnabled");
         AssertNotNull(optionsType.GetProperty("IsStatsVisible"), "AutomationOptionsSnapshot.IsStatsVisible");
 
         var presetsProperty = optionsType.GetProperty("Presets")
@@ -1005,6 +1013,10 @@ public sealed class SnapshotModelsTests
         var decoderCountsProperty = optionsType.GetProperty("MjpegDecoderCounts")
             ?? throw new InvalidOperationException("AutomationOptionsSnapshot.MjpegDecoderCounts missing.");
         AssertEqual(intOptionType, decoderCountsProperty.PropertyType.GetElementType(), "AutomationOptionsSnapshot.MjpegDecoderCounts[] element type");
+
+        var flashbackBufferOptionsProperty = optionsType.GetProperty("FlashbackBufferMinuteOptions")
+            ?? throw new InvalidOperationException("AutomationOptionsSnapshot.FlashbackBufferMinuteOptions missing.");
+        AssertEqual(intOptionType, flashbackBufferOptionsProperty.PropertyType.GetElementType(), "AutomationOptionsSnapshot.FlashbackBufferMinuteOptions[] element type");
 
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
         AssertNotNull(snapshotType.GetProperty("SelectedVideoFormat"), "AutomationSnapshot.SelectedVideoFormat");
@@ -2017,6 +2029,9 @@ public sealed class ViewModelBuildersTests
                 CreateInput(deviceInputType, ("Id", "DEVICE-B"), ("Name", "Device B")))),
             ("AudioInputDevices", InputArray(deviceInputType,
                 CreateInput(deviceInputType, ("Id", "audio-a"), ("Name", "Audio A")))),
+            ("MicrophoneDevices", InputArray(deviceInputType,
+                CreateInput(deviceInputType, ("Id", "mic-a"), ("Name", "Mic A")),
+                CreateInput(deviceInputType, ("Id", "MIC-B"), ("Name", "Mic B")))),
             ("Resolutions", InputArray(resolutionInputType,
                 CreateInput(resolutionInputType,
                     ("Value", "1920x1080"),
@@ -2050,8 +2065,10 @@ public sealed class ViewModelBuildersTests
             ("Presets", new[] { "Quality", "Speed" }),
             ("SplitEncodeModes", new[] { "Auto", "Disabled" }),
             ("VideoFormats", new[] { "Auto", "MJPG" }),
+            ("FlashbackBufferMinuteOptions", new[] { 1, 2, 5, 10, 15, 30 }),
             ("SelectedDeviceId", "device-b"),
             ("SelectedAudioInputDeviceId", "AUDIO-A"),
+            ("SelectedMicrophoneDeviceId", "mic-b"),
             ("SelectedResolution", "1920X1080"),
             ("SelectedFrameRate", 60d),
             ("SelectedRecordingFormat", "av1"),
@@ -2061,6 +2078,11 @@ public sealed class ViewModelBuildersTests
             ("SelectedVideoFormat", "mjpg"),
             ("MjpegDecoderCount", 99),
             ("PreviewVolume", 0.425d),
+            ("IsMicrophoneEnabled", true),
+            ("MicrophoneVolume", 62.5d),
+            ("FlashbackBufferMinutes", 10),
+            ("FlashbackGpuDecode", true),
+            ("IsFlashbackEnabled", false),
             ("IsStatsVisible", true));
 
         var build = builderType.GetMethod("Build", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!;
@@ -2069,10 +2091,16 @@ public sealed class ViewModelBuildersTests
         Assert.Equal(timestamp, Get(snapshot, "TimestampUtc"));
         Assert.Equal("device-b", Get(snapshot, "SelectedDeviceId"));
         Assert.Equal("AUDIO-A", Get(snapshot, "SelectedAudioInputDeviceId"));
+        Assert.Equal("mic-b", Get(snapshot, "SelectedMicrophoneDeviceId"));
         Assert.Equal("1920X1080", Get(snapshot, "SelectedResolution"));
         Assert.Equal(60d, Get(snapshot, "SelectedFrameRate"));
         Assert.Equal(8, Get(snapshot, "MjpegDecoderCount"));
         Assert.Equal(42.5d, Get(snapshot, "PreviewVolumePercent"));
+        Assert.True((bool)Get(snapshot, "IsMicrophoneEnabled")!);
+        Assert.Equal(62.5d, Get(snapshot, "MicrophoneVolumePercent"));
+        Assert.Equal(10, Get(snapshot, "FlashbackBufferMinutes"));
+        Assert.True((bool)Get(snapshot, "FlashbackGpuDecode")!);
+        Assert.False((bool)Get(snapshot, "IsFlashbackEnabled")!);
         Assert.True((bool)Get(snapshot, "IsStatsVisible")!);
 
         var devices = (Array)Get(snapshot, "Devices")!;
@@ -2081,6 +2109,10 @@ public sealed class ViewModelBuildersTests
 
         var audioDevices = (Array)Get(snapshot, "AudioInputDevices")!;
         Assert.True((bool)Get(audioDevices.GetValue(0)!, "IsSelected")!);
+
+        var microphoneDevices = (Array)Get(snapshot, "MicrophoneDevices")!;
+        Assert.False((bool)Get(microphoneDevices.GetValue(0)!, "IsSelected")!);
+        Assert.True((bool)Get(microphoneDevices.GetValue(1)!, "IsSelected")!);
 
         var resolutions = (Array)Get(snapshot, "Resolutions")!;
         Assert.Equal(string.Empty, Get(resolutions.GetValue(0)!, "DisableReason"));
@@ -2106,6 +2138,11 @@ public sealed class ViewModelBuildersTests
             Assert.Equal(i + 1, Get(option, "Value"));
             Assert.Equal(i == 7, (bool)Get(option, "IsSelected")!);
         }
+
+        var flashbackBufferMinuteOptions = (Array)Get(snapshot, "FlashbackBufferMinuteOptions")!;
+        Assert.Equal(6, flashbackBufferMinuteOptions.Length);
+        Assert.Equal(10, Get(flashbackBufferMinuteOptions.GetValue(3)!, "Value"));
+        Assert.True((bool)Get(flashbackBufferMinuteOptions.GetValue(3)!, "IsSelected")!);
     }
 
     [Fact]
