@@ -396,6 +396,10 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_DeviceCommands_LiveWithCustomRouter();
 
     [Fact]
+    public Task AutomationDispatcherNewAudioAndFlashbackCommandsRoutePayloads()
+        => global::Program.AutomationCommandDispatcher_NewAudioAndFlashbackCommands_RoutePayloads();
+
+    [Fact]
     public Task AutomationDispatcherFlashbackFailuresReturnPlaybackDiagnostics()
         => global::Program.AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics();
 
@@ -1015,6 +1019,101 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static async Task AutomationCommandDispatcher_NewAudioAndFlashbackCommands_RoutePayloads()
+    {
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
+        var snapshot = Activator.CreateInstance(snapshotType)
+                       ?? throw new InvalidOperationException("Failed to create AutomationSnapshot.");
+        var calls = new List<string>();
+
+        var viewModel = CreateConfiguredProxy(viewModelType, (method, args) =>
+        {
+            switch (method?.Name)
+            {
+                case "get_IsInitialized":
+                    return true;
+
+                case "SelectMicrophoneDeviceAsync":
+                    calls.Add($"SelectMicrophoneDevice:{args![0]}:{args[1]}");
+                    AssertEqual("mic-id", args[0], "SelectMicrophoneDeviceAsync deviceId");
+                    AssertEqual("Desk Mic", args[1], "SelectMicrophoneDeviceAsync deviceName");
+                    return Task.CompletedTask;
+
+                case "SetMicrophoneVolumeAsync":
+                    calls.Add($"SetMicrophoneVolume:{args![0]}");
+                    AssertEqual(66.5d, (double)args[0]!, "SetMicrophoneVolumeAsync volume");
+                    return Task.CompletedTask;
+
+                case "SetFlashbackBufferMinutesAsync":
+                    calls.Add($"SetFlashbackBufferMinutes:{args![0]}");
+                    AssertEqual(15, (int)args[0]!, "SetFlashbackBufferMinutesAsync minutes");
+                    return Task.CompletedTask;
+
+                case "SetFlashbackGpuDecodeAsync":
+                    calls.Add($"SetFlashbackGpuDecode:{args![0]}");
+                    AssertEqual(false, (bool)args[0]!, "SetFlashbackGpuDecodeAsync enabled");
+                    return Task.CompletedTask;
+
+                default:
+                    return GetDefaultReturnValue(method);
+            }
+        });
+        var diagnostics = CreateConfiguredProxy(diagnosticsType, (method, _) =>
+            method?.Name == "GetLatestSnapshot"
+                ? snapshot
+                : GetDefaultReturnValue(method));
+        var dispatcher = CreateAutomationCommandDispatcher(
+            viewModel,
+            diagnostics,
+            CreateThrowingProxy(windowControlType),
+            authToken: null);
+
+        var selectMic = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("SelectMicrophoneDevice", null, "{\"deviceId\":\"mic-id\",\"deviceName\":\"Desk Mic\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(selectMic, success: true, errorCode: null, status: "ok", "select microphone routes payload");
+        AssertEqual("Microphone device selection requested.", (string)GetPublicProperty(selectMic, "Message")!, "select microphone response message");
+        AssertEqual("acknowledged", GetAutomationLifecycle(selectMic), "select microphone lifecycle");
+
+        var micVolume = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("SetMicrophoneVolume", null, "{\"microphoneVolumePercent\":66.5}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(micVolume, success: true, errorCode: null, status: "ok", "microphone volume routes payload");
+        AssertEqual("Microphone volume set to 66.5%.", (string)GetPublicProperty(micVolume, "Message")!, "microphone volume response message");
+        AssertEqual("completed", GetAutomationLifecycle(micVolume), "microphone volume lifecycle");
+
+        var flashbackBuffer = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("SetFlashbackBufferMinutes", null, "{\"minutes\":\"15\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(flashbackBuffer, success: true, errorCode: null, status: "ok", "flashback buffer routes payload");
+        AssertEqual("Flashback buffer duration set to 15 minutes.", (string)GetPublicProperty(flashbackBuffer, "Message")!, "flashback buffer response message");
+        AssertEqual("completed", GetAutomationLifecycle(flashbackBuffer), "flashback buffer lifecycle");
+
+        var flashbackGpuDecode = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("SetFlashbackGpuDecode", null, "{\"enabled\":false}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(flashbackGpuDecode, success: true, errorCode: null, status: "ok", "flashback gpu-decode routes payload");
+        AssertEqual("Flashback GPU decode disabled.", (string)GetPublicProperty(flashbackGpuDecode, "Message")!, "flashback gpu-decode response message");
+        AssertEqual("completed", GetAutomationLifecycle(flashbackGpuDecode), "flashback gpu-decode lifecycle");
+
+        AssertEqual(
+            string.Join(
+                "|",
+                "SelectMicrophoneDevice:mic-id:Desk Mic",
+                "SetMicrophoneVolume:66.5",
+                "SetFlashbackBufferMinutes:15",
+                "SetFlashbackGpuDecode:False"),
+            string.Join("|", calls),
+            "dispatcher command payload forwarding order");
+    }
+
     internal static Task AutomationCommandDispatcher_EntryPipeline_LivesInRootDispatcher()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
@@ -1566,6 +1665,13 @@ static partial class Program
         var actualStatus = GetPublicProperty(response, "Status")!;
         var actualStatusName = JsonNamingPolicy.SnakeCaseLower.ConvertName(actualStatus.ToString()!);
         AssertEqual(status, actualStatusName, $"{scenario}: Status");
+    }
+
+    private static string GetAutomationLifecycle(object response)
+    {
+        var lifecycle = GetPublicProperty(response, "CommandLifecycle")
+            ?? throw new InvalidOperationException("AutomationCommandResponse.CommandLifecycle was missing.");
+        return JsonNamingPolicy.SnakeCaseLower.ConvertName(lifecycle.ToString()!);
     }
 
     private static object? GetPublicProperty(object instance, string propertyName)

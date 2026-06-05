@@ -1857,6 +1857,29 @@ static partial class Program
         AssertEqual(0L, GetLongProperty(healthy, "OverrunEvents"), "healthy overrun events");
         AssertContains(GetStringProperty(healthy, "Reason"), "No audio buffer underrun or overrun counters");
 
+        var boundaryDropAtLimit = InvokeEvaluateAudioBufferHealth(
+            audioReaderActive: true,
+            isRecording: true,
+            recordingAudioEnabled: true,
+            recordingAudioCaptureActive: true,
+            recordingAudioFramesArrived: 48_960,
+            recordingAudioFramesWrittenToSink: 48_000);
+        AssertEqual("Healthy", GetStringProperty(boundaryDropAtLimit, "Status"), "boundary drop at warning limit should stay healthy");
+        AssertEqual(false, GetBoolProperty(boundaryDropAtLimit, "OverrunDetected"), "boundary drop at warning limit overrun");
+        AssertEqual(0L, GetLongProperty(boundaryDropAtLimit, "OverrunEvents"), "boundary drop at warning limit overrun events");
+
+        var boundaryDropOverLimit = InvokeEvaluateAudioBufferHealth(
+            audioReaderActive: true,
+            isRecording: true,
+            recordingAudioEnabled: true,
+            recordingAudioCaptureActive: true,
+            recordingAudioFramesArrived: 48_961,
+            recordingAudioFramesWrittenToSink: 48_000);
+        AssertEqual("Degraded", GetStringProperty(boundaryDropOverLimit, "Status"), "boundary drop over warning limit should degrade");
+        AssertEqual(true, GetBoolProperty(boundaryDropOverLimit, "OverrunDetected"), "boundary drop over warning limit overrun");
+        AssertEqual(1L, GetLongProperty(boundaryDropOverLimit, "OverrunEvents"), "boundary drop over warning limit overrun events");
+        AssertContains(GetStringProperty(boundaryDropOverLimit, "Reason"), "recordingBoundaryDrops=961");
+
         var degraded = InvokeEvaluateAudioBufferHealth(
             audioReaderActive: true,
             isAudioPreviewActive: true,

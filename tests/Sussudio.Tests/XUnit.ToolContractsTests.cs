@@ -205,6 +205,104 @@ public sealed class SsctlFormatterContractsTests
     }
 
     [Fact]
+    public Task OptionsOutputPreservesMicrophoneAndFlashbackSelections()
+    {
+        var assemblyPath = global::Program.SsctlAssemblyRelativePath;
+        var ssctlAssembly = ToolFormatterTestAssembly.Load(assemblyPath);
+        var formatterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.Formatters")
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters type not found.");
+        var formatOptions = formatterType.GetMethod("FormatOptions", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatOptions not found.");
+
+        const string json = """
+                            {
+                              "Success": true,
+                              "Data": {
+                                "SelectedDeviceId": "capture-1",
+                                "SelectedAudioInputDeviceId": "line-in",
+                                "SelectedMicrophoneDeviceId": "mic-usb",
+                                "SelectedResolution": "3840x2160",
+                                "SelectedFrameRate": 120,
+                                "SelectedRecordingFormat": "HEVC",
+                                "SelectedQuality": "High",
+                                "SelectedPreset": "P5",
+                                "SelectedSplitEncodeMode": "Auto",
+                                "SelectedVideoFormat": "MJPG",
+                                "MjpegDecoderCount": 4,
+                                "PreviewVolumePercent": 42.5,
+                                "IsStatsVisible": true,
+                                "IsMicrophoneEnabled": true,
+                                "MicrophoneVolumePercent": 68.5,
+                                "IsFlashbackEnabled": true,
+                                "FlashbackBufferMinutes": 15,
+                                "FlashbackGpuDecode": false,
+                                "Devices": [
+                                  { "Name": "4K X", "Id": "capture-1", "IsSelected": true }
+                                ],
+                                "AudioInputDevices": [
+                                  { "Name": "Line In", "Id": "line-in", "IsSelected": true }
+                                ],
+                                "MicrophoneDevices": [
+                                  { "Name": "Desk Mic", "Id": "mic-desk", "IsSelected": false },
+                                  { "Name": "USB Microphone", "Id": "mic-usb", "IsSelected": true }
+                                ],
+                                "Resolutions": [
+                                  { "Value": "3840x2160", "Width": 3840, "Height": 2160, "IsSelected": true }
+                                ],
+                                "FrameRates": [
+                                  { "FriendlyValue": "120", "Value": 120, "ExactValueArg": "120/1", "IsSelected": true }
+                                ],
+                                "RecordingFormats": [
+                                  { "Label": "HEVC", "Value": "HEVC", "IsSelected": true }
+                                ],
+                                "Qualities": [
+                                  { "Value": "High", "IsSelected": true }
+                                ],
+                                "Presets": [
+                                  { "Value": "P5", "IsSelected": true }
+                                ],
+                                "SplitEncodeModes": [
+                                  { "Value": "Auto", "IsSelected": true }
+                                ],
+                                "VideoFormats": [
+                                  { "Value": "MJPG", "IsSelected": true }
+                                ],
+                                "MjpegDecoderCounts": [
+                                  { "Value": 4, "IsSelected": true }
+                                ],
+                                "FlashbackBufferMinuteOptions": [
+                                  { "Value": 5, "IsSelected": false },
+                                  { "Value": 15, "IsSelected": true },
+                                  { "Value": 30, "IsEnabled": false, "DisableReason": "Requires restart" }
+                                ]
+                              }
+                            }
+                            """;
+
+        using var document = JsonDocument.Parse(json);
+        var output = formatOptions.Invoke(null, new object[] { document.RootElement })?.ToString()
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatOptions returned null.");
+
+        AssertContains(output, "== Capture Options ==");
+        AssertContains(output, "Selected Device: capture-1");
+        AssertContains(output, "Selected Audio Input: line-in");
+        AssertContains(output, "Selected Microphone: mic-usb");
+        AssertContains(output, "Microphone Enabled: true | Volume: 68.5%");
+        AssertContains(output, "Flashback: Enabled=true | Buffer=15m | GPU Decode=false");
+        AssertContains(output, "== Microphone Devices ==");
+        AssertContains(output, "- Desk Mic (mic-desk)");
+        AssertContains(output, "* USB Microphone (mic-usb)");
+        AssertContains(output, "== Flashback Buffer Minutes ==");
+        AssertContains(output, "- 5");
+        AssertContains(output, "* 15");
+        AssertContains(output, "- 30 [disabled: Requires restart]");
+        AssertOccursBefore(output, "== Microphone Devices ==", "== Resolutions ==");
+        AssertOccursBefore(output, "== MJPEG Decoder Counts ==", "== Flashback Buffer Minutes ==");
+
+        return Task.CompletedTask;
+    }
+
+    [Fact]
     public Task TimelineOutputPreservesTableAndSummary()
     {
         var assemblyPath = global::Program.SsctlAssemblyRelativePath;

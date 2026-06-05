@@ -1562,16 +1562,28 @@ static partial class Program
         AssertContains(streamTemplatesText, "inputCodec->codec_id != templateCodec->codec_id");
         AssertContains(streamTemplatesText, "private static bool VideoDimensionsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
         AssertContains(streamTemplatesText, "return !inputHasCompleteDimensions && templateHasCompleteDimensions;");
-        AssertContains(streamTemplatesText, "inputCodec->sample_rate != templateCodec->sample_rate");
-        AssertContains(streamTemplatesText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
         AssertContains(streamTemplatesText, "private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
-        AssertContains(streamTemplatesText, "return inputCodec->format == templateCodec->format;");
+        AssertContains(streamTemplatesText, "private static bool AudioParamsMatchOrCanUseTemplate(\n        int inputSampleRate,");
+        AssertContains(streamTemplatesText, "inputSampleRate != templateSampleRate");
+        AssertContains(streamTemplatesText, "inputChannelCount != templateChannelCount");
+        AssertContains(streamTemplatesText, "return inputSampleFormat == templateSampleFormat;");
 
         return Task.CompletedTask;
     }
 
     internal static Task FlashbackExporter_PreservesLaterValidMicrophoneStreamTemplate()
     {
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var templateStreamScore = exporterType.GetMethod(
+                "TemplateStreamContributesToTemplateScore",
+                BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TemplateStreamContributesToTemplateScore not found.");
+        var avMediaType = templateStreamScore.GetParameters()[0].ParameterType;
+        var audioParamsMatch = exporterType
+            .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+            .Single(method =>
+                method.Name == "AudioParamsMatchOrCanUseTemplate" &&
+                method.GetParameters().Length == 6);
         var sourceText = ReadFlashbackExporterSource();
         var streamsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
@@ -1579,12 +1591,63 @@ static partial class Program
             sourceText,
             "private bool TryInitializeSegmentOutputTemplate(",
             "    private bool TryOpenSegmentInputForExport");
+        var audioType = Enum.Parse(avMediaType, "AVMEDIA_TYPE_AUDIO");
+        var videoType = Enum.Parse(avMediaType, "AVMEDIA_TYPE_VIDEO");
+        var subtitleType = Enum.Parse(avMediaType, "AVMEDIA_TYPE_SUBTITLE");
+
+        AssertEqual(
+            false,
+            (bool)templateStreamScore.Invoke(null, new object?[] { audioType, 0, 0, 0, 2 })!,
+            "audio template stream without sample rate is not usable");
+        AssertEqual(
+            false,
+            (bool)templateStreamScore.Invoke(null, new object?[] { audioType, 0, 0, 48000, 0 })!,
+            "audio template stream without channels is not usable");
+        AssertEqual(
+            true,
+            (bool)templateStreamScore.Invoke(null, new object?[] { audioType, 0, 0, 48000, 2 })!,
+            "audio template stream with sample rate and channels is usable");
+        AssertEqual(
+            false,
+            (bool)templateStreamScore.Invoke(null, new object?[] { videoType, 0, 1080, 0, 0 })!,
+            "video template stream without width is not usable");
+        AssertEqual(
+            true,
+            (bool)templateStreamScore.Invoke(null, new object?[] { videoType, 1920, 1080, 0, 0 })!,
+            "video template stream with dimensions is usable");
+        AssertEqual(
+            true,
+            (bool)templateStreamScore.Invoke(null, new object?[] { subtitleType, 0, 0, 0, 0 })!,
+            "non-audio/video streams keep their template slot");
+
+        AssertEqual(
+            true,
+            (bool)audioParamsMatch.Invoke(null, new object?[] { 0, 2, 8, 48000, 2, 8 })!,
+            "incomplete input sample rate can use complete template audio params");
+        AssertEqual(
+            false,
+            (bool)audioParamsMatch.Invoke(null, new object?[] { 48000, 2, 8, 44100, 2, 8 })!,
+            "audio sample-rate mismatch is rejected");
+        AssertEqual(
+            false,
+            (bool)audioParamsMatch.Invoke(null, new object?[] { 48000, 2, 8, 48000, 1, 8 })!,
+            "audio channel mismatch is rejected");
+        AssertEqual(
+            false,
+            (bool)audioParamsMatch.Invoke(null, new object?[] { 48000, 2, 8, 48000, 2, 9 })!,
+            "audio sample-format mismatch is rejected");
+        AssertEqual(
+            true,
+            (bool)audioParamsMatch.Invoke(null, new object?[] { 48000, 2, 8, 48000, 2, 8 })!,
+            "matching complete audio params are accepted");
 
         AssertContains(streamsText, "private static int CountUsableTemplateStreams(AVFormatContext* inputContext, int inputStreamCount)");
-        AssertContains(streamsText, "if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO &&\n                (inStream->codecpar->ch_layout.nb_channels <= 0 || inStream->codecpar->sample_rate <= 0))");
+        AssertContains(streamsText, "private static bool TemplateStreamContributesToTemplateScore(");
+        AssertContains(streamsText, "AVMediaType.AVMEDIA_TYPE_AUDIO => channelCount > 0 && sampleRate > 0,");
+        AssertContains(streamsText, "AVMediaType.AVMEDIA_TYPE_VIDEO => width > 0 && height > 0,");
         AssertContains(streamsText, "private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
-        AssertContains(streamsText, "var inputAudioParamsIncomplete = inputCodec->sample_rate <= 0 || inputCodec->ch_layout.nb_channels <= 0;");
-        AssertContains(streamsText, "var templateHasCompleteAudioParams = templateCodec->sample_rate > 0 && templateCodec->ch_layout.nb_channels > 0;");
+        AssertContains(streamsText, "var inputAudioParamsIncomplete = inputSampleRate <= 0 || inputChannelCount <= 0;");
+        AssertContains(streamsText, "var templateHasCompleteAudioParams = templateSampleRate > 0 && templateChannelCount > 0;");
         AssertContains(streamsText, "return templateHasCompleteAudioParams;");
         AssertContains(streamsText, "if (!AudioParamsMatchOrCanUseTemplate(inputCodec, templateCodec))");
         AssertContains(streamsText, "audio_params expected=");

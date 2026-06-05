@@ -395,20 +395,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var inStream = inputContext->streams[streamIndex];
             var codecType = inStream->codecpar->codec_type;
 
-            // Skip audio streams with incomplete codec params (0 channels or 0 sample_rate)
-            if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO &&
-                (inStream->codecpar->ch_layout.nb_channels <= 0 || inStream->codecpar->sample_rate <= 0))
+            // Skip streams with incomplete codec params.
+            if (!TemplateStreamContributesToTemplateScore(
+                    codecType,
+                    inStream->codecpar->width,
+                    inStream->codecpar->height,
+                    inStream->codecpar->sample_rate,
+                    inStream->codecpar->ch_layout.nb_channels))
             {
-                Logger.Log($"FLASHBACK_EXPORT_STREAM_SKIP input_index={streamIndex} reason='invalid_audio_params' channels={inStream->codecpar->ch_layout.nb_channels} sample_rate={inStream->codecpar->sample_rate}");
-                streamMap[streamIndex] = -1;
-                continue;
-            }
-
-            // Skip video streams with incomplete params
-            if (codecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
-                (inStream->codecpar->width <= 0 || inStream->codecpar->height <= 0))
-            {
-                Logger.Log($"FLASHBACK_EXPORT_STREAM_SKIP input_index={streamIndex} reason='invalid_video_params' width={inStream->codecpar->width} height={inStream->codecpar->height}");
+                if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO)
+                {
+                    Logger.Log($"FLASHBACK_EXPORT_STREAM_SKIP input_index={streamIndex} reason='invalid_audio_params' channels={inStream->codecpar->ch_layout.nb_channels} sample_rate={inStream->codecpar->sample_rate}");
+                }
+                else
+                {
+                    Logger.Log($"FLASHBACK_EXPORT_STREAM_SKIP input_index={streamIndex} reason='invalid_video_params' width={inStream->codecpar->width} height={inStream->codecpar->height}");
+                }
                 streamMap[streamIndex] = -1;
                 continue;
             }
@@ -440,14 +442,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var inStream = inputContext->streams[streamIndex];
             var codecType = inStream->codecpar->codec_type;
 
-            if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO &&
-                (inStream->codecpar->ch_layout.nb_channels <= 0 || inStream->codecpar->sample_rate <= 0))
-            {
-                continue;
-            }
-
-            if (codecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
-                (inStream->codecpar->width <= 0 || inStream->codecpar->height <= 0))
+            if (!TemplateStreamContributesToTemplateScore(
+                    codecType,
+                    inStream->codecpar->width,
+                    inStream->codecpar->height,
+                    inStream->codecpar->sample_rate,
+                    inStream->codecpar->ch_layout.nb_channels))
             {
                 continue;
             }
@@ -456,6 +456,21 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return usableStreamCount;
+    }
+
+    private static bool TemplateStreamContributesToTemplateScore(
+        AVMediaType codecType,
+        int width,
+        int height,
+        int sampleRate,
+        int channelCount)
+    {
+        return codecType switch
+        {
+            AVMediaType.AVMEDIA_TYPE_AUDIO => channelCount > 0 && sampleRate > 0,
+            AVMediaType.AVMEDIA_TYPE_VIDEO => width > 0 && height > 0,
+            _ => true
+        };
     }
 
     private static string? FindSegmentStreamLayoutMismatch(
@@ -535,24 +550,41 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     private static bool AudioParamsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)
     {
-        var inputAudioParamsIncomplete = inputCodec->sample_rate <= 0 || inputCodec->ch_layout.nb_channels <= 0;
-        var templateHasCompleteAudioParams = templateCodec->sample_rate > 0 && templateCodec->ch_layout.nb_channels > 0;
+        return AudioParamsMatchOrCanUseTemplate(
+            inputCodec->sample_rate,
+            inputCodec->ch_layout.nb_channels,
+            inputCodec->format,
+            templateCodec->sample_rate,
+            templateCodec->ch_layout.nb_channels,
+            templateCodec->format);
+    }
+
+    private static bool AudioParamsMatchOrCanUseTemplate(
+        int inputSampleRate,
+        int inputChannelCount,
+        int inputSampleFormat,
+        int templateSampleRate,
+        int templateChannelCount,
+        int templateSampleFormat)
+    {
+        var inputAudioParamsIncomplete = inputSampleRate <= 0 || inputChannelCount <= 0;
+        var templateHasCompleteAudioParams = templateSampleRate > 0 && templateChannelCount > 0;
         if (inputAudioParamsIncomplete)
         {
             return templateHasCompleteAudioParams;
         }
 
-        if (inputCodec->sample_rate != templateCodec->sample_rate)
+        if (inputSampleRate != templateSampleRate)
         {
             return false;
         }
 
-        if (inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels)
+        if (inputChannelCount != templateChannelCount)
         {
             return false;
         }
 
-        return inputCodec->format == templateCodec->format;
+        return inputSampleFormat == templateSampleFormat;
     }
 
     private static int FindVideoStreamIndex(AVFormatContext* inputContext)
