@@ -295,7 +295,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             useExternalMjpegDecode,
             mjpegDecoderCount,
             width,
-            height);
+            height,
+            fps);
 
         var capture = new MfSourceReaderVideoCapture();
         try
@@ -566,7 +567,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         bool useExternalMjpegDecode,
         int mjpegDecoderCount,
         int width,
-        int height)
+        int height,
+        double fps)
     {
         if (!useExternalMjpegDecode)
         {
@@ -582,7 +584,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 height,
                 OnMjpegPipelineFrameEmitted,
                 OnMjpegPipelineFatalError,
-                OnMjpegPipelinePreviewFrameDecoded);
+                OnMjpegPipelinePreviewFrameDecoded,
+                fps,
+                strictFrameConsumerActive: () =>
+                    Volatile.Read(ref _recordingActive) ||
+                    Volatile.Read(ref _flashbackSink) != null);
             return mjpegPipeline;
         }
         catch (Exception ex)
@@ -687,6 +693,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             frame.SequenceNumber,
             FrameLedgerStage.StrictOrderReleased,
             subsystem: "mjpeg");
+
+        // Visual cadence tracking compares consecutive frames, so it must run
+        // on this strictly ordered single-threaded path — the preview fork can
+        // deliver frames out of order from multiple decode workers.
+        TrackPreviewVisualFrame(
+            frame.Span,
+            frame.Width,
+            frame.Height,
+            frame.PixelFormat,
+            frame.ArrivalTick,
+            frame.SequenceNumber);
 
         EnqueueRecordingFrame(frame);
         EnqueueFlashbackFrame(frame);
@@ -905,13 +922,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             FrameLedgerStage.PreviewEnqueued,
             subsystem: "preview",
             accepted: true);
-        TrackPreviewVisualFrame(
-            frame.Memory.Span,
-            frame.Width,
-            frame.Height,
-            frame.PixelFormat,
-            frame.ArrivalTick,
-            frame.SequenceNumber);
 
         var previewSink = Volatile.Read(ref _previewSink);
         var jitterBuffer = Volatile.Read(ref _mjpegPreviewJitterBuffer);

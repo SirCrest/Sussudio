@@ -106,21 +106,33 @@ internal sealed partial class D3D11PreviewRenderer
             return true;
         }
 
-        if (_deviceContext == null || _inputTexture == null || _stagingTexture == null)
+        if (_deviceContext == null || _inputTextures.Length == 0 || _inputViews.Length != _inputTextures.Length)
+        {
+            return false;
+        }
+
+        // Advance the upload ring so this write never lands on the texture the
+        // previous frame's VideoProcessorBlt may still be consuming.
+        var ringIndex = _inputTextureRingIndex;
+        _inputTextureRingIndex = (ringIndex + 1) % _inputTextures.Length;
+        var inputTexture = _inputTextures[ringIndex];
+        var stagingTexture = ringIndex < _stagingTextures.Length ? _stagingTextures[ringIndex] : null;
+        var ringInputView = _inputViews[ringIndex];
+        if (inputTexture == null || stagingTexture == null || ringInputView == null)
         {
             return false;
         }
 
         if (frame.RawData != null)
         {
-            if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, frame.IsHdr, _stagingTexture, _inputTexture))
+            if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, frame.IsHdr, stagingTexture, inputTexture))
             {
                 return false;
             }
         }
         else if (frame.FrameLease != null)
         {
-            if (!UploadRawFrameToTexture(frame.FrameLease.Memory.Span, frame.Width, frame.Height, frame.IsHdr, _stagingTexture, _inputTexture))
+            if (!UploadRawFrameToTexture(frame.FrameLease.Memory.Span, frame.Width, frame.Height, frame.IsHdr, stagingTexture, inputTexture))
             {
                 return false;
             }
@@ -130,8 +142,8 @@ internal sealed partial class D3D11PreviewRenderer
             return false;
         }
 
-        inputView = _inputView;
-        return inputView != null;
+        inputView = ringInputView;
+        return true;
     }
 
     private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex)

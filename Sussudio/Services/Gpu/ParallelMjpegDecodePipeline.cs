@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Threading;
 using System.Threading.Channels;
 using FFmpeg.AutoGen;
@@ -43,6 +44,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         long CompressedDropsQueueFull,
         long CompressedDropsByteBudget,
         long CompressedDropsDisposed,
+        long LoadShedDrops,
         long DecodeFailures,
         long ReorderCollisions,
         long EmitFailures,
@@ -107,7 +109,18 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private long _startupInvalidCompressedDrops;
     private int _compressedQueueDepth;
     private long _compressedQueueBytes;
+    private long _loadShedDrops;
     private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;
+    private readonly long _shedAgeTicks;
+    private readonly Func<bool>? _strictFrameConsumerActive;
+    private readonly bool _earlyPreviewForkEnabled =
+        EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_PREVIEW_EARLY_FORK", 1, 0, 1) != 0;
+    private readonly bool _loadSheddingEnabled =
+        EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_LOAD_SHED", 1, 0, 1) != 0;
+    private readonly string _decodeMmcssTask =
+        Environment.GetEnvironmentVariable("SUSSUDIO_MJPEG_DECODE_MMCSS_TASK") ?? "Playback";
+    private readonly int _decodeMmcssPriority =
+        EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_DECODE_MMCSS_PRIORITY", 0, -2, 2);
 
     private readonly record struct MjpegWorkItem(
         byte[] JpegBuffer,
@@ -197,6 +210,31 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)
         => data.Length >= 2 && data[0] == 0xFF && data[1] == 0xD8;
 
+    private bool ShouldShedStaleCompressedFrame(long arrivalTick)
+    {
+        if (!_loadSheddingEnabled || _shedAgeTicks <= 0)
+        {
+            return false;
+        }
+
+        // Only shed under real backlog: a transient single-frame burst should
+        // still be decoded so preview cadence stays intact.
+        if (Volatile.Read(ref _compressedQueueDepth) <= _decoderCount)
+        {
+            return false;
+        }
+
+        if (Stopwatch.GetTimestamp() - arrivalTick <= _shedAgeTicks)
+        {
+            return false;
+        }
+
+        // Recording/Flashback require every frame; with no gate installed,
+        // assume a strict consumer exists and never shed.
+        var strictFrameConsumerActive = _strictFrameConsumerActive;
+        return strictFrameConsumerActive != null && !strictFrameConsumerActive();
+    }
+
     private void DecrementCompressedQueueDepth(string operation)
     {
         while (true)
@@ -237,6 +275,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     {
         var decoder = _decoders[workerIndex];
         var reader = _workQueue.Reader;
+        // Decode workers are the heaviest CPU consumers in the app and run
+        // alongside games; without MMCSS they are the first threads starved,
+        // which is exactly the stutter the jitter buffer then has to hide.
+        using var mmcss = MmcssThreadRegistration.TryRegister(_decodeMmcssTask, _decodeMmcssPriority, message => Logger.Log(message));
 
         try
         {
@@ -255,6 +297,23 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 DecrementCompressedQueueDepth("dequeue");
                 Interlocked.Add(ref _compressedQueueBytes, -item.JpegLength);
                 Interlocked.Increment(ref _compressedFramesDequeued);
+
+                if (ShouldShedStaleCompressedFrame(item.ArrivalTick))
+                {
+                    ArrayPool<byte>.Shared.Return(item.JpegBuffer);
+                    Interlocked.Increment(ref _totalFramesDropped);
+                    var shedDrops = Interlocked.Increment(ref _loadShedDrops);
+                    MarkKnownMissing(item.SeqNo, "load_shed_stale");
+                    if (shedDrops == 1 || shedDrops % 60 == 0)
+                    {
+                        Logger.Log(
+                            $"MJPEG_PIPELINE_LOAD_SHED seq={item.SeqNo} sheds={shedDrops} " +
+                            $"ageMs={GetElapsedMilliseconds(item.ArrivalTick, Stopwatch.GetTimestamp()):0.##} " +
+                            $"depth={Volatile.Read(ref _compressedQueueDepth)}");
+                    }
+
+                    continue;
+                }
 
                 var decodeStart = Stopwatch.GetTimestamp();
                 var decodeSucceeded = false;
@@ -288,6 +347,16 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                         Interlocked.Increment(ref _totalFramesDropped);
                         MarkKnownMissing(item.SeqNo, "decode_failed");
                         continue;
+                    }
+
+                    if (_earlyPreviewForkEnabled)
+                    {
+                        // Fork to preview before the strict reorder ring so a slow
+                        // neighboring decode cannot delay this frame's submission.
+                        // The jitter buffer re-orders by sequence number and
+                        // deadline-skips gaps on its own; only recording/Flashback
+                        // need the strict in-order emit below.
+                        NotifyPreviewFrameDecoded(pooledFrame);
                     }
 
                     if (!TryAddDecodedFrame(item.SeqNo, pooledFrame, pooledFrame.DecodedTick))
@@ -434,6 +503,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             CompressedDropsQueueFull: Interlocked.Read(ref _compressedDropsQueueFull),
             CompressedDropsByteBudget: Interlocked.Read(ref _compressedDropsByteBudget),
             CompressedDropsDisposed: Interlocked.Read(ref _compressedDropsDisposed),
+            LoadShedDrops: Interlocked.Read(ref _loadShedDrops),
             DecodeFailures: Interlocked.Read(ref _decodeFailures),
             ReorderCollisions: Interlocked.Read(ref _reorderCollisions),
             EmitFailures: Interlocked.Read(ref _emitFailures),
@@ -507,7 +577,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         int height,
         EmitFrameCallback emitCallback,
         Action<Exception>? fatalErrorCallback = null,
-        PreviewFrameCallback? previewCallback = null)
+        PreviewFrameCallback? previewCallback = null,
+        double fps = 0,
+        Func<bool>? strictFrameConsumerActive = null)
     {
         ArgumentNullException.ThrowIfNull(emitCallback);
         if (width <= 0 || height <= 0)
@@ -521,6 +593,13 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _emitCallback = emitCallback;
         _previewCallback = previewCallback;
         _fatalErrorCallback = fatalErrorCallback;
+        _strictFrameConsumerActive = strictFrameConsumerActive;
+        // Every MJPEG frame is a keyframe, so a backlogged compressed frame can
+        // be skipped without corrupting anything downstream — but only when no
+        // strict consumer (recording/Flashback) needs the full sequence.
+        _shedAgeTicks = fps > 0
+            ? (long)Math.Round(Stopwatch.Frequency * 3.0 / fps)
+            : (long)Math.Round(Stopwatch.Frequency * 0.025);
         _decodedReorderCapacity = ResolveDecodedReorderCapacity(width, height);
         _decoders = new SoftwareMjpegDecoder[_decoderCount];
         _workers = new Thread[_decoderCount];
@@ -548,7 +627,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             Logger.Log(
                 $"PARALLEL_MJPEG_PIPELINE_INIT decoders={_decoderCount} width={width} height={height} " +
                 $"compressed_queue_capacity={Math.Max(32, _decoderCount * WorkQueueItemCapacityPerDecoder)} " +
-                $"compressed_byte_budget={_compressedQueueByteBudget} decoded_reorder_capacity={_decodedReorderCapacity}");
+                $"compressed_byte_budget={_compressedQueueByteBudget} decoded_reorder_capacity={_decodedReorderCapacity} " +
+                $"early_preview_fork={_earlyPreviewForkEnabled} load_shedding={_loadSheddingEnabled} " +
+                $"shed_age_ms={_shedAgeTicks * 1000.0 / Stopwatch.Frequency:0.##} " +
+                $"strict_consumer_gate={(_strictFrameConsumerActive != null).ToString().ToLowerInvariant()}");
         }
         catch
         {
@@ -1088,7 +1170,11 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
             try
             {
-                NotifyPreviewFrameDecoded(frame.Frame);
+                if (!_earlyPreviewForkEnabled)
+                {
+                    NotifyPreviewFrameDecoded(frame.Frame);
+                }
+
                 _emitCallback(frame.Frame);
                 emitted = true;
             }
@@ -1162,7 +1248,11 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         {
             try
             {
-                NotifyPreviewFrameDecoded(frame.Frame);
+                if (!_earlyPreviewForkEnabled)
+                {
+                    NotifyPreviewFrameDecoded(frame.Frame);
+                }
+
                 _emitCallback(frame.Frame);
                 Interlocked.Increment(ref _totalFramesEmitted);
             }
@@ -1320,22 +1410,46 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
                 }
 
                 var uvDestination = nv12Ptr + yBytes;
+                var uvWidth = _width / 2;
                 for (var row = 0; row < _height / 2; row++)
                 {
                     var uRow = _decodedFrame->data[1] + (row * _decodedFrame->linesize[1]);
                     var vRow = _decodedFrame->data[2] + (row * _decodedFrame->linesize[2]);
                     var destRow = uvDestination + (row * _width);
-
-                    for (var column = 0; column < _width / 2; column++)
-                    {
-                        destRow[column * 2] = uRow[column];
-                        destRow[(column * 2) + 1] = vRow[column];
-                    }
+                    InterleaveUvRow(uRow, vRow, destRow, uvWidth);
                 }
             }
         }
 
         return true;
+    }
+
+    // Interleaves planar U/V rows into NV12's UV plane. The scalar loop is the
+    // largest per-frame CPU cost after the JPEG decode itself at 4K120, so use
+    // 128-bit vectors when available: widening U/V to ushort lanes and OR-ing
+    // V into the high byte produces the interleaved little-endian byte pairs.
+    private static void InterleaveUvRow(byte* uRow, byte* vRow, byte* destRow, int uvWidth)
+    {
+        var column = 0;
+        if (Vector128.IsHardwareAccelerated && uvWidth >= Vector128<byte>.Count)
+        {
+            var vectorEnd = uvWidth - (uvWidth % Vector128<byte>.Count);
+            for (; column < vectorEnd; column += Vector128<byte>.Count)
+            {
+                var u = Vector128.Load(uRow + column);
+                var v = Vector128.Load(vRow + column);
+                var (uLow, uHigh) = Vector128.Widen(u);
+                var (vLow, vHigh) = Vector128.Widen(v);
+                (uLow | Vector128.ShiftLeft(vLow, 8)).AsByte().Store(destRow + (column * 2));
+                (uHigh | Vector128.ShiftLeft(vHigh, 8)).AsByte().Store(destRow + (column * 2) + Vector128<byte>.Count);
+            }
+        }
+
+        for (; column < uvWidth; column++)
+        {
+            destRow[column * 2] = uRow[column];
+            destRow[(column * 2) + 1] = vRow[column];
+        }
     }
 
     public void Initialize(int width, int height)

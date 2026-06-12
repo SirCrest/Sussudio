@@ -393,9 +393,14 @@ internal sealed partial class D3D11PreviewRenderer
     private ID3D11VideoProcessorEnumerator? _videoProcessorEnumerator;
     private ID3D11VideoProcessor? _videoProcessor;
     private ID3D11VideoProcessorOutputView? _outputView;
-    private ID3D11Texture2D? _inputTexture;
-    private ID3D11Texture2D? _stagingTexture;
-    private ID3D11VideoProcessorInputView? _inputView;
+    // Raw-frame uploads cycle through a small texture ring instead of a single
+    // input texture: writing into a texture the previous frame's
+    // VideoProcessorBlt may still be reading forces the driver to stall or
+    // rename a 4K NV12 resource every frame.
+    private ID3D11Texture2D?[] _inputTextures = Array.Empty<ID3D11Texture2D?>();
+    private ID3D11Texture2D?[] _stagingTextures = Array.Empty<ID3D11Texture2D?>();
+    private ID3D11VideoProcessorInputView?[] _inputViews = Array.Empty<ID3D11VideoProcessorInputView?>();
+    private int _inputTextureRingIndex;
     private ID3D11Texture2D? _hdrInputTexture;
     private ID3D11Texture2D? _hdrStagingTexture;
     private ID3D11ShaderResourceView? _hdrYPlaneSRV;
@@ -1122,9 +1127,11 @@ internal sealed partial class D3D11PreviewRenderer
         }
 
         var targetFormat = isHdr ? Format.P010 : Format.NV12;
-        if (_inputTexture != null &&
-            _stagingTexture != null &&
-            _inputView != null &&
+        if (_inputTextures.Length == _inputTextureRingSize &&
+            _inputViews.Length == _inputTextureRingSize &&
+            _inputTextures[0] != null &&
+            _stagingTextures[0] != null &&
+            _inputViews[0] != null &&
             _configuredInputWidth == width &&
             _configuredInputHeight == height &&
             _configuredInputFormat == targetFormat)
@@ -1132,12 +1139,8 @@ internal sealed partial class D3D11PreviewRenderer
             return;
         }
 
-        _inputView?.Dispose();
-        _inputView = null;
-        _inputTexture?.Dispose();
-        _inputTexture = null;
-        _stagingTexture?.Dispose();
-        _stagingTexture = null;
+        DisposeProcessorInputResources();
+        DisposeInputTextureResources();
 
         var inputDescription = new Texture2DDescription(
             targetFormat,
@@ -1165,16 +1168,23 @@ internal sealed partial class D3D11PreviewRenderer
             0,
             ResourceOptionFlags.None);
 
-        _inputTexture = _device.CreateTexture2D(inputDescription);
-        _stagingTexture = _device.CreateTexture2D(stagingDescription);
-
         var inputViewDescription = new VideoProcessorInputViewDescription
         {
             ViewDimension = VideoProcessorInputViewDimension.Texture2D,
             Texture2D = new Texture2DVideoProcessorInputView { MipSlice = 0, ArraySlice = 0 }
         };
 
-        _inputView = _videoDevice.CreateVideoProcessorInputView(_inputTexture, _videoProcessorEnumerator, inputViewDescription);
+        _inputTextures = new ID3D11Texture2D?[_inputTextureRingSize];
+        _stagingTextures = new ID3D11Texture2D?[_inputTextureRingSize];
+        _inputViews = new ID3D11VideoProcessorInputView?[_inputTextureRingSize];
+        for (var i = 0; i < _inputTextureRingSize; i++)
+        {
+            _inputTextures[i] = _device.CreateTexture2D(inputDescription);
+            _stagingTextures[i] = _device.CreateTexture2D(stagingDescription);
+            _inputViews[i] = _videoDevice.CreateVideoProcessorInputView(_inputTextures[i]!, _videoProcessorEnumerator, inputViewDescription);
+        }
+
+        _inputTextureRingIndex = 0;
         _configuredInputFormat = targetFormat;
     }
 
@@ -1283,16 +1293,30 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void DisposeProcessorInputResources()
     {
-        _inputView?.Dispose();
-        _inputView = null;
+        foreach (var inputView in _inputViews)
+        {
+            inputView?.Dispose();
+        }
+
+        _inputViews = Array.Empty<ID3D11VideoProcessorInputView?>();
     }
 
     private void DisposeInputTextureResources()
     {
-        _stagingTexture?.Dispose();
-        _stagingTexture = null;
-        _inputTexture?.Dispose();
-        _inputTexture = null;
+        foreach (var stagingTexture in _stagingTextures)
+        {
+            stagingTexture?.Dispose();
+        }
+
+        _stagingTextures = Array.Empty<ID3D11Texture2D?>();
+
+        foreach (var inputTexture in _inputTextures)
+        {
+            inputTexture?.Dispose();
+        }
+
+        _inputTextures = Array.Empty<ID3D11Texture2D?>();
+        _inputTextureRingIndex = 0;
     }
 
     private void DisposeHdrInputResources()

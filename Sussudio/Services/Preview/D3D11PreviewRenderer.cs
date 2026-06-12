@@ -65,6 +65,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
     private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
     private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
+    private readonly bool _renderStaleDropEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_STALE_DROP", 1, 0, 1) != 0;
+    private readonly int _inputTextureRingSize = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_INPUT_TEXTURE_RING", 3, 1, 4);
     private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK") ?? "Playback";
     private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
     private readonly int _nativeStopFenceTimeoutMs = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS", 1000, 100, 10000);
@@ -850,6 +852,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return true;
         }
 
+        frame = SkipStalePendingFrames(frame);
+
         if (Volatile.Read(ref _stopRequested) != 0)
         {
             TrackFrameDropped(frame, "renderer-stopped");
@@ -907,6 +911,46 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         return true;
+    }
+
+    // The jitter buffer is the pacer of record; this queue is only a shock
+    // absorber. Present(1) blocks per vsync, so once frames back up here each
+    // one displays a full refresh late and latency ratchets until something
+    // drops. Skip ahead to the newest still-fresh frame instead of presenting
+    // a stale backlog one vsync at a time.
+    private PendingFrame SkipStalePendingFrames(PendingFrame frame)
+    {
+        if (!_renderStaleDropEnabled)
+        {
+            return frame;
+        }
+
+        while (!_pendingFrames.IsEmpty && IsStaleScheduledFrame(frame, Stopwatch.GetTimestamp()))
+        {
+            if (!TryDequeuePendingFrame(out var newer))
+            {
+                break;
+            }
+
+            TrackFrameDropped(frame, "stale-before-render");
+            frame.Dispose();
+            frame = newer;
+        }
+
+        return frame;
+    }
+
+    private bool IsStaleScheduledFrame(PendingFrame frame, long nowTick)
+    {
+        // Only jitter-scheduled live frames carry a scheduler tick; redraws and
+        // direct submissions are never dropped here.
+        if (frame.SchedulerSubmitTick <= 0 || !frame.CountForPresentCadence)
+        {
+            return false;
+        }
+
+        var sourceIntervalTicks = Math.Max(1, (long)Math.Round(Stopwatch.Frequency / Math.Max(1.0, _startupFps)));
+        return nowTick - frame.SchedulerSubmitTick > (sourceIntervalTicks * 3) / 2;
     }
 
     private void ConfigureFrameLatencyWaitableObject()
@@ -1819,6 +1863,11 @@ public readonly record struct PresentCadenceMetrics(
                 var presentCount = (long)stats.PresentCount;
                 var presentRefreshCount = (long)stats.PresentRefreshCount;
                 var syncRefreshCount = (long)stats.SyncRefreshCount;
+                UpdateMeasuredRefreshInterval(
+                    _dxgiFrameStatisticsSyncQpcTime,
+                    _dxgiFrameStatisticsSyncRefreshCount,
+                    stats.SyncQPCTime,
+                    syncRefreshCount);
                 _dxgiFrameStatisticsSyncQpcTime = stats.SyncQPCTime;
 
                 if (_dxgiFrameStatisticsHasBaseline &&
@@ -1905,8 +1954,52 @@ public readonly record struct PresentCadenceMetrics(
         return visibleTick;
     }
 
+    // Measured from DXGI frame statistics so display-clock pacing tracks the
+    // monitor's real refresh rate. Assuming the display runs at the capture fps
+    // walks the present grid off the actual vblank whenever they differ
+    // (144 Hz panel with a 120 fps source, 119.88 vs 120.000, ...), producing
+    // beat-frequency judder no amount of buffering can absorb.
+    private long _measuredRefreshIntervalTicks;
+
+    private void UpdateMeasuredRefreshInterval(
+        long previousSyncQpcTime,
+        long previousSyncRefreshCount,
+        long syncQpcTime,
+        long syncRefreshCount)
+    {
+        if (previousSyncQpcTime <= 0 || previousSyncRefreshCount <= 0)
+        {
+            return;
+        }
+
+        var qpcDelta = syncQpcTime - previousSyncQpcTime;
+        var refreshDelta = syncRefreshCount - previousSyncRefreshCount;
+        if (qpcDelta <= 0 || refreshDelta <= 0 || refreshDelta > 100)
+        {
+            return;
+        }
+
+        var sampleTicks = qpcDelta / refreshDelta;
+        var minTicks = Stopwatch.Frequency / 500; // 500 Hz
+        var maxTicks = Stopwatch.Frequency / 20;  // 20 Hz
+        if (sampleTicks < minTicks || sampleTicks > maxTicks)
+        {
+            return;
+        }
+
+        var current = Interlocked.Read(ref _measuredRefreshIntervalTicks);
+        var smoothed = current > 0 ? current + ((sampleTicks - current) / 8) : sampleTicks;
+        Interlocked.Exchange(ref _measuredRefreshIntervalTicks, smoothed);
+    }
+
     private long GetEstimatedDisplayFrameIntervalTicks()
     {
+        var measured = Interlocked.Read(ref _measuredRefreshIntervalTicks);
+        if (measured > 0)
+        {
+            return measured;
+        }
+
         var fps = Math.Max(1.0, _startupFps);
         return Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
     }
@@ -2104,6 +2197,7 @@ public readonly record struct PresentCadenceMetrics(
     {
         Interlocked.Exchange(ref _lastPresentTick, 0);
         Interlocked.Exchange(ref _presentCadenceBaselinePending, 0);
+        Interlocked.Exchange(ref _measuredRefreshIntervalTicks, 0);
         lock (_presentCadenceLock)
         {
             Array.Clear(_presentIntervalWindowMs, 0, _presentIntervalWindowMs.Length);

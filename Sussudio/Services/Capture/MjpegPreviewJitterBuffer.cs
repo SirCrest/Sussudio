@@ -266,6 +266,19 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private void EmitLoop()
     {
         using var mmcss = MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority, message => Logger.Log(message));
+        CreateHighResolutionTimer();
+        try
+        {
+            RunEmitLoop();
+        }
+        finally
+        {
+            CloseHighResolutionTimer();
+        }
+    }
+
+    private void RunEmitLoop()
+    {
         var primed = false;
         var nextDueTick = 0L;
 
@@ -1029,6 +1042,32 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
     }
 
+    // Owned exclusively by the emit thread; created in EmitLoop, closed when
+    // the loop exits. High-resolution waitable timers (Win10 1803+) give
+    // ~0.5 ms wake precision without the Sleep+SpinWait fallback's CPU burn,
+    // which costs up to ~2 ms of spinning per emitted frame at 120 fps.
+    private IntPtr _highResolutionTimer;
+
+    private void CreateHighResolutionTimer()
+    {
+        _highResolutionTimer = CreateWaitableTimerExW(
+            IntPtr.Zero,
+            IntPtr.Zero,
+            CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+            TIMER_ALL_ACCESS);
+        Logger.Log($"MJPEG_PREVIEW_JITTER_TIMER highResolution={_highResolutionTimer != IntPtr.Zero}");
+    }
+
+    private void CloseHighResolutionTimer()
+    {
+        var handle = _highResolutionTimer;
+        _highResolutionTimer = IntPtr.Zero;
+        if (handle != IntPtr.Zero)
+        {
+            _ = CloseHandle(handle);
+        }
+    }
+
     private void WaitForTicks(long ticks)
     {
         var deadline = Stopwatch.GetTimestamp() + ticks;
@@ -1042,6 +1081,18 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             }
 
             var ms = remainingTicks * 1000.0 / Stopwatch.Frequency;
+            if (_highResolutionTimer != IntPtr.Zero && ms >= 0.7)
+            {
+                // Timer-sleep until just before the deadline, leaving a short
+                // spin window to absorb the timer's residual imprecision.
+                var dueTime100ns = -(long)Math.Round((ms - 0.3) * 10_000.0);
+                if (SetWaitableTimer(_highResolutionTimer, ref dueTime100ns, 0, IntPtr.Zero, IntPtr.Zero, false))
+                {
+                    _ = WaitForSingleObject(_highResolutionTimer, (uint)Math.Ceiling(ms));
+                    continue;
+                }
+            }
+
             if (ms >= 2.0)
             {
                 Thread.Sleep(Math.Max(1, (int)Math.Floor(ms - 0.5)));
@@ -1233,4 +1284,31 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
     [DllImport("winmm.dll")]
     private static extern uint timeEndPeriod(uint uPeriod);
+
+    private const uint CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002;
+    private const uint TIMER_ALL_ACCESS = 0x001F0003;
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern IntPtr CreateWaitableTimerExW(
+        IntPtr timerAttributes,
+        IntPtr timerName,
+        uint flags,
+        uint desiredAccess);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWaitableTimer(
+        IntPtr timer,
+        ref long dueTime,
+        int period,
+        IntPtr completionRoutine,
+        IntPtr argToCompletionRoutine,
+        [MarshalAs(UnmanagedType.Bool)] bool resume);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseHandle(IntPtr handle);
 }
