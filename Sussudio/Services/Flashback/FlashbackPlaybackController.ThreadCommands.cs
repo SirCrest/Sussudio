@@ -401,11 +401,11 @@ internal sealed partial class FlashbackPlaybackController
                     break;
 
                 case CommandKind.EndScrub:
-                    HandleEndScrubCommand(cmd, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
+                    HandleEndScrubCommand(cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
                     break;
 
                 case CommandKind.Play:
-                    HandlePlayCommand(cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
+                    HandlePlayCommand(commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch);
                     break;
 
                 case CommandKind.Pause:
@@ -462,6 +462,7 @@ internal sealed partial class FlashbackPlaybackController
     }
 
     private void HandlePlayCommand(
+        Channel<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -490,7 +491,10 @@ internal sealed partial class FlashbackPlaybackController
             frozenValidStart = _bufferManager.ValidStartPts;
         decoder ??= CreateDecoder();
         var prevFile = _currentOpenFilePath;
-        var pendingPlayTarget = pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart);
+        var pendingPlayTarget = ClampPlaybackTargetToMinimumLiveLead(
+            pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart),
+            frozenValidStart,
+            "play");
         EnsureFileOpen(decoder, ref fileOpen, pendingPlayTarget);
         if (!IsDecoderFileReady(decoder, fileOpen))
         {
@@ -538,7 +542,7 @@ internal sealed partial class FlashbackPlaybackController
         frameDuration = ResolveFrameDuration(decoder);
         RestoreAudioCallback(decoder, seekTarget.Ticks);
         SafeFlushPlayback("play");
-        PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, seekTarget, "play", cts.Token);
+        PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, seekTarget, "play", cts.Token);
         SafeResumePlaybackRendering("play");
         pacingStopwatch.Restart();
 
@@ -650,7 +654,11 @@ internal sealed partial class FlashbackPlaybackController
         SafePauseRendering("seek");
 
         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
-        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);
+        var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(
+            SaturatingAdd(cmd.Position, frozenValidStart),
+            frozenValidStart,
+            "seek");
+        cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, frozenValidStart), frozenValidStart) };
         if (ShouldYieldSeekToQueuedPlay(commandChannel))
         {
             PlaybackPosition = cmd.Position;
@@ -706,7 +714,7 @@ internal sealed partial class FlashbackPlaybackController
             frameDuration = ResolveFrameDuration(decoder);
             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
             SafeFlushPlayback("seek_resume");
-            PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, coalescedSeekTarget, "seek_resume", cts.Token);
+            PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, coalescedSeekTarget, "seek_resume", cts.Token);
             SafeResumePlaybackRendering("seek_resume");
             pacingStopwatch.Restart();
         }
@@ -845,6 +853,7 @@ internal sealed partial class FlashbackPlaybackController
 
     private void HandleEndScrubCommand(
         PlaybackCommand cmd,
+        Channel<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -861,11 +870,15 @@ internal sealed partial class FlashbackPlaybackController
             MarkCommandNoOp(CommandKind.EndScrub, "not_scrubbing", cmd.Position);
             return;
         }
-        var endScrubPosition = ClampPosition(cmd.Position, frozenValidStart);
+        var requestedEndScrubPosition = ClampPosition(cmd.Position, frozenValidStart);
+        var endScrubTarget = ClampPlaybackTargetToMinimumLiveLead(
+            SaturatingAdd(requestedEndScrubPosition, frozenValidStart),
+            frozenValidStart,
+            "end_scrub");
+        var endScrubPosition = ClampPosition(SaturatingSubtract(endScrubTarget, frozenValidStart), frozenValidStart);
         PlaybackPosition = endScrubPosition;
         isScrubbing = false;
         isPlaying = _wasPlayingBeforeScrub;
-        var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);
         if (isPlaying)
         {
             pendingExactResumeTarget = null;
@@ -893,7 +906,7 @@ internal sealed partial class FlashbackPlaybackController
             {
                 RestoreAudioCallback(decoder, endScrubTarget.Ticks);
                 SafeFlushPlayback("end_scrub_resume");
-                PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, endScrubTarget, "end_scrub_resume", cts.Token);
+                PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, endScrubTarget, "end_scrub_resume", cts.Token);
                 SafeResumePlaybackRendering("end_scrub_resume");
             }
             pacingStopwatch.Restart();

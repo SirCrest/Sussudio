@@ -1274,6 +1274,10 @@ public sealed class McpDiagnosticSessionResultSurfaceContractsTests
         => global::Program.DiagnosticSessionResultBuilder_OwnsSummaryConstruction();
 
     [Fact]
+    public Task ResultBuilderClassifiesFlashbackPlaybackStutterCause()
+        => global::Program.DiagnosticSessionResultBuilder_ClassifiesFlashbackPlaybackStutterCause();
+
+    [Fact]
     public Task ResultBuilderDiagnosticHealthVerdictLivesWithAnalysis()
         => global::Program.DiagnosticSessionResultBuilder_DiagnosticHealthVerdictLivesWithAnalysis();
 
@@ -2369,6 +2373,9 @@ static partial class Program
         AssertContains(resultText, "// Flashback playback stage and seek summary.");
         AssertContains(resultText, "public long FlashbackPlaybackSubmitFailuresAtEnd { get; init; }");
         AssertContains(resultText, "public bool FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd { get; init; }");
+        AssertContains(resultText, "// Flashback playback stutter classification summary.");
+        AssertContains(resultText, "public string FlashbackPlaybackLikelyStutterCause { get; init; } = \"none\";");
+        AssertContains(resultText, "public string FlashbackPlaybackLikelyStutterEvidence { get; init; } = string.Empty;");
         AssertContains(resultText, "// Flashback recording summary.");
         AssertContains(resultText, "public bool FlashbackRecordingBackendObserved { get; init; }");
         AssertContains(resultText, "// Flashback export summary.");
@@ -2525,6 +2532,9 @@ static partial class Program
         AssertContains(formatterRootText, "\"Flashback Playback Commands: \"");
         AssertContains(formatterRootText, "private static void AppendFlashbackPlaybackStages(");
         AssertContains(formatterRootText, "\"Flashback Playback Stages: \"");
+        AssertContains(formatterRootText, "private static void AppendFlashbackPlaybackStutter(");
+        AssertContains(formatterRootText, "\"Flashback Playback Stutter: \"");
+        AssertContains(formatterRootText, "FormatOptional(result.FlashbackPlaybackLikelyStutterEvidence)");
         AssertContains(formatterRootText, "private static void AppendFlashbackRecording(");
         AssertContains(formatterRootText, "\"Flashback Recording: \"");
         AssertContains(formatterRootText, "private static void AppendFlashbackExport(");
@@ -2568,6 +2578,7 @@ static partial class Program
         AssertContains(formatterRootText, "absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##}");
         AssertContains(formatterRootText, "private static void AppendFlashbackPlaybackDecode(");
         AssertContains(formatterRootText, "\"Flashback Playback Decode: \"");
+        AssertContains(formatterRootText, "AppendFlashbackPlaybackStutter(builder, result);");
         AssertContains(formatterRootText, "FormatOptional(result.PreviewD3DLatestSlowFrameReason)");
         AssertContains(formatterRootText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertContains(formatterRootText, "VisualCadenceLongestRepeatRunAtEnd");
@@ -2580,7 +2591,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
+    internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
     {
         AssertDiagnosticSessionResultBuilderCoreOwnership();
         AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership();
@@ -2591,6 +2602,142 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertDiagnosticSessionResultBuilderSummaryArtifactHandoffOwnership();
 
         return Task.CompletedTask;
+    }
+
+    internal static Task DiagnosticSessionResultBuilder_ClassifiesFlashbackPlaybackStutterCause()
+    {
+        var assembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
+        var resultBuilderType = assembly.GetType("Sussudio.Tools.DiagnosticSessionResultBuilder")
+            ?? throw new InvalidOperationException("DiagnosticSessionResultBuilder type was not found.");
+        var classify = resultBuilderType.GetMethod(
+                "ClassifyFlashbackPlaybackStutterCause",
+                BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Flashback playback stutter classifier was not found.");
+
+        var none = Invoke();
+        AssertEqual("none", GetClassificationCause(none), "no stutter classification");
+        AssertEqual(string.Empty, GetClassificationEvidence(none), "no stutter evidence");
+
+        AssertClassification(
+            Invoke(renderSilenceDelta: 1),
+            "render_underrun",
+            "renderSilenceDelta=1",
+            "submitFailuresDelta=0");
+        AssertClassification(
+            Invoke(submitFailuresDelta: 2),
+            "render_underrun",
+            "submitFailuresDelta=2");
+        AssertClassification(
+            Invoke(audioMasterStaleFallbacksDelta: 1),
+            "audio_master_stale_clock",
+            "staleFallbacksDelta=1");
+        AssertClassification(
+            Invoke(audioMasterDriftOutlierFallbacksDelta: 1),
+            "audio_master_drift_outlier_clock",
+            "driftOutlierFallbacksDelta=1");
+        AssertClassification(
+            Invoke(maxPendingCommandsObserved: 4),
+            "command_backlog",
+            "maxPending=4");
+        AssertClassification(
+            Invoke(writeHeadWaitsDelta: 1),
+            "segment_reopen_stall",
+            "writeHeadWaitsDelta=1");
+        AssertClassification(
+            Invoke(captureSevereGapDelta: 1),
+            "capture_callback_gap",
+            "captureSevereGapsDelta=1");
+        AssertClassification(
+            Invoke(maxDecodeMsObserved: 80, maxDecodePhaseObserved: "read"),
+            "decode_stall",
+            "decodeMaxMsObserved=80",
+            "phaseObserved=read");
+        AssertClassification(
+            Invoke(slowFramePercentAtEnd: 8),
+            "unknown",
+            "slowPctEnd=8");
+
+        return Task.CompletedTask;
+
+        object Invoke(
+            long renderSilenceDelta = 0,
+            long playbackQueueDropDelta = 0,
+            double playbackBufferedDurationMsAtEnd = 32.0,
+            double playbackQueueDurationMsAtEnd = 32.0,
+            long submitFailuresDelta = 0,
+            long audioMasterStaleFallbacksDelta = 0,
+            long audioMasterDriftOutlierFallbacksDelta = 0,
+            double maxAbsAvDriftMsObserved = 0.0,
+            int pendingCommandsAtEnd = 0,
+            int maxPendingCommandsObserved = 0,
+            int maxCommandQueueLatencyMsObserved = 0,
+            long commandDropsDelta = 0,
+            long commandSkippedNotReadyDelta = 0,
+            long segmentSwitchesDelta = 0,
+            long fmp4ReopensDelta = 0,
+            long writeHeadWaitsDelta = 0,
+            long lastWriteHeadWaitGapMsAtEnd = 0,
+            long captureSevereGapDelta = 0,
+            double captureMaxCallbackIntervalMsAtEnd = 0.0,
+            double maxDecodeP99MsObserved = 0.0,
+            double maxDecodeMsObserved = 0.0,
+            string maxDecodePhaseObserved = "",
+            double slowFramePercentAtEnd = 0.0,
+            double maxSlowFramePercentObserved = 0.0,
+            long droppedFramesDelta = 0,
+            double onePercentLowFpsAtEnd = 0.0,
+            double minOnePercentLowFpsObserved = 0.0,
+            double targetFps = 120.0)
+            => classify.Invoke(
+                    null,
+                    new object?[]
+                    {
+                        renderSilenceDelta,
+                        playbackQueueDropDelta,
+                        playbackBufferedDurationMsAtEnd,
+                        playbackQueueDurationMsAtEnd,
+                        submitFailuresDelta,
+                        audioMasterStaleFallbacksDelta,
+                        audioMasterDriftOutlierFallbacksDelta,
+                        maxAbsAvDriftMsObserved,
+                        pendingCommandsAtEnd,
+                        maxPendingCommandsObserved,
+                        maxCommandQueueLatencyMsObserved,
+                        commandDropsDelta,
+                        commandSkippedNotReadyDelta,
+                        segmentSwitchesDelta,
+                        fmp4ReopensDelta,
+                        writeHeadWaitsDelta,
+                        lastWriteHeadWaitGapMsAtEnd,
+                        captureSevereGapDelta,
+                        captureMaxCallbackIntervalMsAtEnd,
+                        maxDecodeP99MsObserved,
+                        maxDecodeMsObserved,
+                        maxDecodePhaseObserved,
+                        slowFramePercentAtEnd,
+                        maxSlowFramePercentObserved,
+                        droppedFramesDelta,
+                        onePercentLowFpsAtEnd,
+                        minOnePercentLowFpsObserved,
+                        targetFps
+                    }) ??
+                throw new InvalidOperationException("Flashback playback stutter classification returned null.");
+
+        static void AssertClassification(object classification, string expectedCause, params string[] expectedEvidence)
+        {
+            AssertEqual(expectedCause, GetClassificationCause(classification), $"classification cause {expectedCause}");
+            var evidence = GetClassificationEvidence(classification);
+            foreach (var token in expectedEvidence)
+            {
+                AssertContains(evidence, token);
+            }
+        }
+
+        static string GetClassificationCause(object classification)
+            => GetPropertyValue(classification, "Cause") as string ?? string.Empty;
+
+        static string GetClassificationEvidence(object classification)
+            => GetPropertyValue(classification, "Evidence") as string ?? string.Empty;
     }
 
     private static void AssertDiagnosticSessionResultBuilderPreviewProjectionOwnership()
@@ -3007,6 +3154,7 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(flatteningText, "var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;");
         AssertContains(flatteningText, "var flashbackPlaybackAudioMasterResult = flashbackPlaybackResult.AudioMasterResult;");
         AssertContains(flatteningText, "var flashbackPlaybackStagesResult = flashbackPlaybackResult.StagesResult;");
+        AssertContains(flatteningText, "var flashbackPlaybackStutterResult = flashbackPlaybackResult.StutterResult;");
         AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(");
         AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackResultProjection BuildFlashbackPlaybackResultProjection(");
         AssertContains(flashbackPlaybackResultText, "CommandsResult: commandsResult");
@@ -3015,6 +3163,18 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(flashbackPlaybackResultText, "DecodeResult: decodeResult");
         AssertContains(flashbackPlaybackResultText, "AudioMasterResult: audioMasterResult");
         AssertContains(flashbackPlaybackResultText, "StagesResult: stagesResult");
+        AssertContains(flashbackPlaybackResultText, "StutterResult: stutterResult");
+        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackStutterResultProjection(");
+        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackStutterResultProjection BuildFlashbackPlaybackStutterResultProjection(");
+        AssertContains(flashbackPlaybackResultText, "internal static FlashbackPlaybackStutterClassification ClassifyFlashbackPlaybackStutterCause(");
+        AssertContains(flashbackPlaybackResultText, "\"render_underrun\"");
+        AssertContains(flashbackPlaybackResultText, "\"audio_master_stale_clock\"");
+        AssertContains(flashbackPlaybackResultText, "\"audio_master_drift_outlier_clock\"");
+        AssertContains(flashbackPlaybackResultText, "\"command_backlog\"");
+        AssertContains(flashbackPlaybackResultText, "\"segment_reopen_stall\"");
+        AssertContains(flashbackPlaybackResultText, "\"capture_callback_gap\"");
+        AssertContains(flashbackPlaybackResultText, "\"decode_stall\"");
+        AssertContains(flashbackPlaybackResultText, "\"unknown\"");
         AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackCommandsResultProjection(");
         AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackCommandsResultProjection BuildFlashbackPlaybackCommandsResultProjection(");
         AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
@@ -3050,6 +3210,8 @@ internal static Task DiagnosticSessionResultBuilder_OwnsSummaryConstruction()
         AssertContains(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = flashbackPlaybackDecodeResult.FlashbackPlaybackMaxDecodePhaseAtEnd,");
         AssertContains(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = flashbackPlaybackAudioMasterResult.FlashbackPlaybackAudioMasterFallbacksAtEnd,");
         AssertContains(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsDelta,");
+        AssertContains(flatteningText, "FlashbackPlaybackLikelyStutterCause = flashbackPlaybackStutterResult.FlashbackPlaybackLikelyStutterCause,");
+        AssertContains(flatteningText, "FlashbackPlaybackLikelyStutterEvidence = flashbackPlaybackStutterResult.FlashbackPlaybackLikelyStutterEvidence,");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved: playbackSessionMetrics.MinOnePercentLowFpsObserved");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd: playbackResultMetrics.MaxDecodePhaseAtEnd");

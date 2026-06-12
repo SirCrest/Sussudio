@@ -1723,10 +1723,19 @@ static partial class Program
         AssertContains(flashbackBufferSource, "FLASHBACK_RETIRE_MARKER");
         AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
         AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
-        AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\")");
-        AssertContains(flashbackBufferSource, "DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"disk_budget\")");
+        AssertContains(flashbackBufferSource, "TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"valid_window\", out var pendingDelete)");
+        AssertContains(flashbackBufferSource, "TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"disk_budget\", out var pendingDelete)");
+        AssertContains(flashbackBufferSource, "private void QueueEvictedSegmentDeletes(List<PendingEvictedSegmentDelete>? pendingDeletes)");
+        AssertContains(flashbackBufferSource, "private void DeleteEvictedFileWithRetry(PendingEvictedSegmentDelete pendingDelete, bool parkedRetry)");
+        AssertContains(flashbackBufferSource, "private void RetryParkedEvictionDeletes()");
+        AssertContains(flashbackBufferSource, "private void SweepParkedEvictionDeletesBestEffort(string operation)");
+        AssertContains(flashbackBufferSource, "SweepParkedEvictionDeletesBestEffort(\"dispose\");");
+        AssertContains(flashbackBufferSource, "_parkedEvictionDeletes[pendingDelete.FullPath] = pendingDelete;");
         AssertContains(flashbackBufferSource, "private static bool DeleteEvictedFile");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_EVICT_DELETE_WARN");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_EVICT_DELETE_PARKED");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_EVICT_DELETE_PARKED_RECOVERED");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_EVICT_DELETE_ABANDONED");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_SEGMENT_EVICT_DELETED");
         AssertContains(flashbackBufferSource, "public void MarkActiveSegmentStart(string path, TimeSpan startPts)");
         AssertContains(flashbackSource, "_bufferManager.MarkActiveSegmentStart(tsPath, _segmentStartPts);");
@@ -5116,10 +5125,13 @@ static partial class Program
 
         AssertContains(source, "if (string.IsNullOrWhiteSpace(path))\n        {\n            Logger.Log(\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=empty_path\");\n            return;\n        }");
         AssertContains(source, "if (endPts <= startPts)\n        {\n            Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=invalid_range path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}\");\n            return;\n        }");
-        AssertContains(source, "if (!IsPathInSessionDirectory(path))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'\");\n                return;\n            }");
-        AssertContains(source, "if (!File.Exists(path))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file path='{Path.GetFileName(path)}'\");\n                return;\n            }");
+        AssertContains(source, "if (!IsPathInSessionDirectory(path))");
+        AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session");
+        AssertContains(source, "if (!File.Exists(path))");
+        AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file");
         AssertContains(source, "var existingIndex = _completedSegments.FindIndex(seg => IsSameSegmentPath(seg.Path, path));");
-        AssertContains(source, "if (existingIndex >= 0)\n            {\n                if (!TryExtendCompletedSegment(existingIndex, path, startPts, endPts, safeSizeBytes, pathIsActiveSegment))");
+        AssertContains(source, "if (existingIndex >= 0)");
+        AssertContains(source, "if (!TryExtendCompletedSegment(existingIndex, path, startPts, endPts, safeSizeBytes, pathIsActiveSegment, ref pendingDeletes))");
         AssertContains(source, "private bool TryExtendCompletedSegment(");
         AssertContains(source, "if (!pathIsActiveSegment && !existing.AllowSamePathExtension)");
         AssertContains(source, "AllowSamePathExtension = pathIsActiveSegment");
@@ -5131,7 +5143,8 @@ static partial class Program
         AssertContains(source, "var safeSizeBytes = Math.Max(0, sizeBytes);");
         AssertContains(source, "private int _completedSegmentSequence;");
         AssertContains(source, "var sequenceNumber = _completedSegmentSequence++;");
-        AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes)\n            {\n                AllowSamePathExtension = pathIsActiveSegment\n            });");
+        AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes)");
+        AssertContains(source, "AllowSamePathExtension = pathIsActiveSegment");
         AssertContains(source, "_completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);");
         AssertContains(source, "_previousActiveSegmentBytes = pathIsActiveSegment ? safeSizeBytes : 0;");
         AssertContains(source, "_completedSegmentSequence = 0;");
@@ -5476,7 +5489,7 @@ static partial class Program
         AssertContains(queryText, "public string? ActiveFilePath");
         AssertContains(queryText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
         AssertContains(queryText, "public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)");
-        AssertContains(queryText, "private string? GetOldestExistingSegmentPath()");
+        AssertContains(queryText, "private static string? GetOldestExistingSegmentPath(IEnumerable<string> completedPaths)");
         AssertContains(queryText, "public string? GetNextSegmentFile(string currentPath)");
         AssertContains(queryText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(queryText, "public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)");
@@ -5550,8 +5563,13 @@ static partial class Program
         AssertContains(evictionText, "public TimeSpan RecordingEndPts");
         AssertContains(evictionText, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
         AssertContains(evictionText, "private void EvictOldestSegments()");
-        AssertContains(evictionText, "private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)");
-        AssertContains(evictionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)");
+        AssertContains(evictionText, "private void EvictOldestSegmentsLocked(List<PendingEvictedSegmentDelete> pendingDeletes)");
+        AssertContains(evictionText, "private void QueueEvictedSegmentDeletes(List<PendingEvictedSegmentDelete>? pendingDeletes)");
+        AssertContains(evictionText, "private bool TryCreatePendingEvictionDelete(");
+        AssertContains(evictionText, "private void DeleteEvictedFileWithRetry(PendingEvictedSegmentDelete pendingDelete, bool parkedRetry)");
+        AssertContains(evictionText, "private void RetryParkedEvictionDeletes()");
+        AssertContains(evictionText, "private void SweepParkedEvictionDeletesBestEffort(string operation)");
+        AssertContains(evictionText, "private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason, int attempt)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.Purge.cs")),
@@ -5696,9 +5714,9 @@ static partial class Program
         AssertContains(source, "Path.GetFullPath(left)");
         AssertContains(source, "Path.GetFullPath(right)");
         AssertContains(source, "FLASHBACK_BUFFER_PATH_COMPARE_WARN");
-        AssertContains(source, "if (IsSameSegmentPath(_completedSegments[i].Path, currentPath))");
-        AssertContains(source, "if (IsSameSegmentPath(seg.Path, path) && File.Exists(seg.Path))");
-        AssertContains(source, "if (IsSameSegmentPath(_activeSegmentPath, path) &&");
+        AssertContains(source, "if (IsSameSegmentPath(completedPaths[i], currentPath))");
+        AssertContains(source, "if (IsSameSegmentPath(seg.Path, path))");
+        AssertContains(source, "IsSameSegmentPath(_activeSegmentPath, path) &&");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -5829,8 +5847,8 @@ static partial class Program
     internal static Task FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles()
     {
         var source = ReadFlashbackBufferManagerSource();
-        AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
-        AssertContains(source, "if (TryGetExistingActiveSegmentPath(out var activePath))");
+        AssertContains(source, "if (_activeSegmentPath is { } activePath)");
+        AssertContains(source, "return result\n            .Where(segment => File.Exists(segment.Path))\n            .ToList();");
         AssertContains(source, "SequenceNumber = Math.Max(0, _nextSegmentIndex - 1),");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
@@ -5874,7 +5892,7 @@ static partial class Program
     internal static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
     {
         var source = ReadFlashbackBufferManagerSource();
-        AssertContains(source, "return TryGetExistingActiveSegmentPath(out var activePath)\n                    ? activePath\n                    : null;");
+        AssertContains(source, "return IsExistingPath(activePath)\n                ? activePath\n                : null;");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -5893,7 +5911,8 @@ static partial class Program
     internal static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
     {
         var source = ReadFlashbackBufferManagerSource();
-        AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (TryGetExistingActiveSegmentPath(out _) ? 1 : 0);");
+        AssertContains(source, "completedPaths = _completedSegments.Select(seg => seg.Path).ToList();");
+        AssertContains(source, "return completedPaths.Count(File.Exists) +\n                (IsExistingPath(activePath) ? 1 : 0);");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -5965,8 +5984,8 @@ static partial class Program
         AssertContains(cleanupText, "Directory.EnumerateFiles(tempDirectory, \"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(cleanupText, "Directory.Delete(fullPath, recursive: true);");
 
-        AssertContains(bufferText, "if (IsSameSegmentPath(_activeSegmentPath, currentPath))\n                return TryGetExistingActiveSegmentPath(out var activePath) ? activePath : null;");
-        AssertContains(bufferText, "return GetOldestExistingSegmentPath()\n                ?? (TryGetExistingActiveSegmentPath(out var fallbackActivePath) ? fallbackActivePath : null);");
+        AssertContains(bufferText, "if (IsSameSegmentPath(activePath, currentPath))\n            return IsExistingPath(activePath) ? activePath : null;");
+        AssertContains(bufferText, "return GetOldestExistingSegmentPath(completedPaths)\n            ?? (IsExistingPath(activePath) ? activePath : null);");
         AssertContains(bufferText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(playbackSegmentEdgesText, "TrySwitchToNextSegment(");
         AssertContains(playbackSegmentSwitchText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
@@ -6424,7 +6443,7 @@ static partial class Program
             AssertEqual(300L, (long)GetPrivateField(manager, "_completedSegmentBytes")!, "Completed byte cache retains rejected segment");
 
             var source = ReadFlashbackBufferManagerSource();
-            AssertContains(source, "if (DeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"valid_window\"))");
+            AssertContains(source, "if (TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"valid_window\", out var pendingDelete))");
             AssertContains(source, "private static bool DeleteEvictedFile");
             AssertContains(source, "FLASHBACK_BUFFER_EVICT_DELETE_WARN");
         }

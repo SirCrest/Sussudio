@@ -2922,10 +2922,12 @@ static partial class Program
         var sourceText = ReadFlashbackPlaybackControllerPlaybackSource();
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
-        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);";
+        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(";
         const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n        decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
         AssertContains(sourceText, seekClampBeforeOpen);
+        AssertContains(sourceText, "SaturatingAdd(cmd.Position, frozenValidStart),\n            frozenValidStart,\n            \"seek\");");
+        AssertContains(sourceText, "cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, frozenValidStart), frozenValidStart) };");
         AssertContains(sourceText, "if (ShouldYieldSeekToQueuedPlay(commandChannel))\n        {\n            PlaybackPosition = cmd.Position;\n            pendingExactResumeTarget = seekResumeTarget;");
         AssertContains(sourceText, "decoder ??= CreateDecoder();\n        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);");
         AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
@@ -3098,8 +3100,7 @@ static partial class Program
         AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused);");
         AssertContains(pauseFromLiveBlock, "frozen_frame=true");
         AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
-        AssertContains(sourceText, "var backoff = TimeSpan.FromSeconds(1.0 / fps);");
-        AssertContains(sourceText, "return latestPts - backoff;");
+        AssertContains(sourceText, "return ClampPlaybackTargetToMinimumLiveLead(latestPts, frozenValidStart, \"pause_from_live\");");
         AssertDoesNotContain(pauseFromLiveBlock, "SeekAndDisplayExactFrame");
         AssertDoesNotContain(sourceText, "private void SeekAndDisplayExactFrame");
 
@@ -3144,6 +3145,10 @@ static partial class Program
         var audioPrebufferText = audioRoutingText;
         var audioMasterText = audioRoutingText;
         var audioMasterFallbacksText = audioMasterText;
+        var resumePlaybackRenderingBlock = ExtractTextBetween(
+            audioRoutingText,
+            "private void SafeResumePlaybackRendering(string operation)",
+            "\n    private void SafeFlushPlayback(string operation)");
         var playbackTimingText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs")
             .Replace("\r\n", "\n");
         var playbackSoftwareBudgetText = playbackTimingText;
@@ -3165,6 +3170,8 @@ static partial class Program
         AssertContains(sourceText, "private void SafeResumeRendering(string operation)");
         AssertContains(sourceText, "private void SafeResumePlaybackRendering(string operation)");
         AssertContains(sourceText, "private void SafeFlushPlayback(string operation)");
+        AssertContains(resumePlaybackRenderingBlock, "audioPlayback?.ResumeRendering(\n                PlaybackAudioPrebufferTargetMs,\n                PlaybackAudioPrebufferTimeoutMs);");
+        AssertDoesNotContain(resumePlaybackRenderingBlock, "_audioPlayback?.ResumeRendering();");
         AssertContains(audioPreviewGuardsText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(audioPreviewGuardsText, "private void SafeResumePreviewSubmission(string operation)");
         AssertContains(audioPreviewGuardsText, "private void SafePauseRendering(string operation)");
@@ -3176,6 +3183,14 @@ static partial class Program
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferRetryDelayMs = 20;");
         AssertContains(sourceText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
+        AssertContains(sourceText, "private const int AudioRenderStateTransitionTimeoutMs = 100;");
+        AssertContains(sourceText, "private static readonly TimeSpan MinimumPlaybackLiveLead =");
+        // The minimum live lead must stay strictly greater than
+        // ActiveFmp4ReopenNearLiveGuard (250ms) so clamped targets keep the
+        // active-fMP4 reopen recovery path available.
+        AssertContains(sourceText, "TimeSpan.FromMilliseconds(Math.Max(300.0, PlaybackAudioPrebufferTargetMs));");
+        AssertContains(sourceText, "private TimeSpan ClampPlaybackTargetToMinimumLiveLead(");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_LIVE_LEAD_CLAMP operation={operation}");
         AssertContains(audioPrebufferText, "private const double PlaybackAudioPrebufferTargetMs = 180.0;");
         AssertContains(audioPrebufferText, "private const double PlaybackAudioPrebufferDiscardThresholdMs = 250.0;");
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferTimeoutMs = 1000;");
@@ -3184,17 +3199,23 @@ static partial class Program
         AssertContains(sourceText, "var prebufferedFrames = new Queue<DecodedVideoFrame>();");
         AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"command_{cmd.Kind}\");");
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
+        AssertContains(sourceText, "Channel<PlaybackCommand> commandChannel,");
         AssertContains(sourceText, "TimeSpan resumeTarget,");
         AssertContains(sourceText, "while (decodedFrames < PlaybackAudioPrebufferDecodeFrameBudget)");
+        AssertContains(sourceText, "if (commandChannel.Reader.TryPeek(out var pendingCommand))");
+        AssertContains(sourceText, "command_pending={commandPending} pending_command={pendingCommandKind}");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"audio_prebuffer_{operation}\");");
         AssertContains(sourceText, "released_frames={prebufferReleasedFrames}");
         AssertDoesNotContain(sourceText, "prebufferedFrames.Enqueue(frame);");
         AssertContains(sourceText, "cancellationToken.WaitHandle.WaitOne(waitMs)");
         AssertContains(sourceText, "bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs");
-        AssertContains(sourceText, "rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, cancellationToken);");
+        AssertContains(sourceText, "prebufferAudioGateTicks = Interlocked.Read(ref _lastAudioPtsTicks);");
+        AssertContains(sourceText, "prebufferAudioGateTicks = 0;\n            discarded = true;");
+        AssertContains(sourceText, "rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, prebufferAudioGateTicks, cancellationToken);");
         AssertContains(sourceText, "private bool TryRewindPlaybackAudioPrebuffer(");
         AssertContains(sourceText, "TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, resumeTarget, $\"prebuffer_discard_{operation}\", cancellationToken)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND operation={operation}");
+        AssertContains(sourceText, "audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds}");
         AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"prebuffer_discard_{operation}\");");
         AssertContains(sourceText, "eof_retries={eofRetries}");
         AssertContains(sourceText, "rewound={rewound}");
@@ -3210,9 +3231,12 @@ static partial class Program
         AssertContains(sourceText, "case FlashbackPlaybackState.Paused:\n            case FlashbackPlaybackState.Scrubbing:\n                SuppressLiveAudio();\n                SafePauseRendering(operation);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_RENDER_STATE_TIMEOUT");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN op=suppress operation={operation} type={ex.GetType().Name}");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN op=pause operation={operation} type={ex.GetType().Name}");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN op=flush operation={operation} type={ex.GetType().Name}");
+        AssertContains(sourceText, "WaitForRenderingPaused(AudioRenderStateTransitionTimeoutMs)");
+        AssertContains(sourceText, "WaitForRenderingRunning(AudioRenderStateTransitionTimeoutMs)");
         AssertContains(sourceText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"scrub_no_file\")");
         AssertContains(sourceText, "RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"go_live\")");
@@ -3226,16 +3250,19 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_DROP reason={invalidReason}");
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, $\"playback_audio_{invalidReason}\");");
         AssertContains(sourceText, "private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)");
-        AssertContains(audioCallbackText, "private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)");
+        AssertContains(audioCallbackText, "private void RestoreAudioCallback(\n        FlashbackDecoder decoder,\n        long audioStartGateTicks = 0,\n        long lastAcceptedAudioPtsTicks = 0)");
+        AssertContains(audioCallbackText, "var normalizedLastAcceptedAudioPtsTicks = Math.Max(0, lastAcceptedAudioPtsTicks);");
+        AssertContains(audioCallbackText, "Interlocked.Exchange(ref _lastAudioPtsTicks, normalizedLastAcceptedAudioPtsTicks);");
         AssertContains(audioCallbackText, "private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)");
         AssertContains(audioCallbackText, "private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)");
-        AssertContains(audioRoutingText, "private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)");
+        AssertContains(audioRoutingText, "private void RestoreAudioCallback(\n        FlashbackDecoder decoder,\n        long audioStartGateTicks = 0,\n        long lastAcceptedAudioPtsTicks = 0)");
         AssertContains(audioRoutingText, "private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)");
         AssertContains(audioRoutingText, "private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)");
         AssertContains(sourceText, "reason = \"length_exceeds_buffer\";");
         AssertContains(sourceText, "reason = \"unaligned_length\";");
         AssertContains(sourceText, "private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_RETURN_WARN");
+        AssertContains(sourceText, "chunk.Pts.Ticks <= prevPts");
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, \"playback_audio_non_monotonic_pts\");");
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, \"playback_audio_before_gate\");");
         AssertContains(sourceText, "pb.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);");
@@ -3255,8 +3282,10 @@ static partial class Program
         AssertContains(sourceText, "TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"play\")");
         AssertContains(sourceText, "SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"playback_decode\");");
         AssertContains(sourceText, "private void UpdateDecoderHwAccel(FlashbackDecoder decoder)");
-        AssertContains(sourceText, "const double MaxAudioMasterCorrectionMs = 250.0;");
-        AssertContains(sourceText, "const double syncThresholdMs = 100.0;");
+        AssertContains(sourceText, "const double syncThresholdMs = 40.0;");
+        AssertContains(sourceText, "const double MaxAudioMasterCorrectionMs = 500.0;");
+        AssertContains(sourceText, "const double AudioMasterCorrectionGain = 0.10;");
+        AssertContains(sourceText, "const double MaxAudioMasterCorrectionFrameRatio = 0.25;");
         AssertContains(sourceText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
         AssertContains(audioMasterClockText, "private long _audioClockPtsTicks;");
         AssertContains(audioMasterClockText, "private long _audioClockWallTicks;");
@@ -3292,11 +3321,11 @@ static partial class Program
         AssertContains(sourceText, "CommitAudioMasterFallback(");
         AssertContains(sourceText, "if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)\n            {\n                // WASAPI render PTS can lag decoded video by the endpoint buffer/device");
         AssertContains(sourceText, "WallClockPace(pacingStopwatch, frameDuration);\n                return;");
-        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token);");
+        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"seek_resume\");");
-        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, endScrubTarget, \"end_scrub_resume\", cts.Token);");
+        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, endScrubTarget, \"end_scrub_resume\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"end_scrub_resume\");");
-        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, seekTarget, \"play\", cts.Token);");
+        AssertContains(sourceText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, seekTarget, \"play\", cts.Token);");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"play\");");
         AssertContains(sourceText, "private void ResetPlaybackPtsCadenceBaseline()");
         AssertContains(playbackSegmentSwitchText, "ResetPlaybackPtsCadenceBaseline();\n            pacingStopwatch.Restart();\n            playbackContinues = true;\n            return true;");
@@ -3304,24 +3333,38 @@ static partial class Program
         AssertContains(sourceText, "_pendingAudioMasterFallbackReason = reason;");
         AssertContains(sourceText, "CommitAudioMasterFallback(");
         AssertContains(sourceText, "_pendingAudioMasterFallbackReason,");
-        AssertContains(sourceText, "var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));");
+        AssertContains(sourceText, "(diffMs - syncThresholdMs) * AudioMasterCorrectionGain");
         AssertContains(sourceText, "adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);");
-        AssertContains(sourceText, "var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));");
+        AssertContains(sourceText, "(-diffMs - syncThresholdMs) * AudioMasterCorrectionGain");
         AssertContains(sourceText, "adjustedDelayMs = Math.Max(0, nominalDelayMs - Math.Max(0, correctionMs));");
         AssertDoesNotContain(sourceText, "adjustedDelayMs = nominalDelayMs * 2;");
         AssertDoesNotContain(sourceText, "adjustedDelayMs = Math.Max(0, nominalDelayMs + diffMs);");
-        AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested) return;");
+        AssertContains(wasapiPlaybackText, "private readonly ManualResetEventSlim _renderPausedAcknowledged = new(false);");
+        AssertContains(wasapiPlaybackText, "private readonly ManualResetEventSlim _renderRunningAcknowledged = new(true);");
+        AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)");
         AssertContains(wasapiPlaybackText, "_resumeRequested = false;\n        _pauseRequested = true;");
-        AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;");
+        AssertContains(wasapiPlaybackText, "_renderRunningAcknowledged.Reset();\n        _renderPausedAcknowledged.Reset();");
+        AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)");
         AssertContains(wasapiPlaybackText, "public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)");
         AssertContains(wasapiPlaybackText, "Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));");
         AssertContains(wasapiPlaybackText, "_resumeRequested = true;\n        _renderEvent?.Set();");
+        AssertContains(wasapiPlaybackText, "public bool WaitForRenderingPaused(int timeoutMs)");
+        AssertContains(wasapiPlaybackText, "public bool WaitForRenderingRunning(int timeoutMs)");
+        AssertContains(wasapiPlaybackText, "private bool WaitForRenderState(bool paused, int timeoutMs)");
+        AssertContains(wasapiPlaybackText, "return _renderPausedAcknowledged.Wait(boundedTimeoutMs);");
+        AssertContains(wasapiPlaybackText, "return _renderRunningAcknowledged.Wait(boundedTimeoutMs);");
         AssertContains(wasapiPlaybackRenderText, "internal sealed class WasapiAudioPlayback : IDisposable");
         AssertContains(wasapiPlaybackRenderText, "private void RenderThreadMain()");
         AssertContains(wasapiPlaybackRenderText, "if (!_resumeRequested)\n                {\n                    continue;\n                }");
+        AssertContains(wasapiPlaybackRenderText, "_renderPausedAcknowledged.Set();");
+        AssertContains(wasapiPlaybackRenderText, "_renderRunningAcknowledged.Set();");
         AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
         AssertContains(wasapiPlaybackRenderText, "WaitForResumePrebuffer();");
         AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1}");
+        // A queued pause must escape the resume prebuffer wait promptly instead of
+        // blocking the render thread for up to the full prebuffer timeout.
+        AssertContains(wasapiPlaybackRenderText, "if (_pauseRequested)\n            {\n                pausePending = true;\n                break;\n            }");
+        AssertContains(wasapiPlaybackRenderText, "pause_pending={pausePending}");
         AssertContains(wasapiPlaybackRenderText, "private int PlaybackBufferedFramesForResume()");
         AssertEqual(
             false,
@@ -3509,10 +3552,11 @@ static partial class Program
         AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
         AssertContains(sourceText, "TimeSpan? pendingExactResumeTarget = null;");
-        AssertContains(sourceText, "var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);");
+        AssertContains(sourceText, "var seekResumeTarget = ClampPlaybackTargetToMinimumLiveLead(");
         AssertContains(sourceText, "var coalescedSeekTarget = seekResumeTarget;");
         AssertContains(sourceText, "pendingExactResumeTarget = seekResumeTarget;");
-        AssertContains(sourceText, "var pendingPlayTarget = pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart);");
+        AssertContains(sourceText, "var pendingPlayTarget = ClampPlaybackTargetToMinimumLiveLead(");
+        AssertContains(sourceText, "pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart),");
         AssertContains(sourceText, "var requireExactResumeSeek = pendingExactResumeTarget.HasValue;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RESUME_EXACT_SEEK");
         AssertContains(sourceText, "if (ShouldYieldSeekToQueuedPlay(commandChannel))");
@@ -5297,10 +5341,12 @@ static partial class Program
             sourceText,
             "private void HandleEndScrubCommand(",
             "    private void HandleNudgeCommand(");
-        AssertContains(endScrubBlock, "var endScrubPosition = ClampPosition(cmd.Position, frozenValidStart);");
+        AssertContains(endScrubBlock, "var requestedEndScrubPosition = ClampPosition(cmd.Position, frozenValidStart);");
+        AssertContains(endScrubBlock, "var endScrubTarget = ClampPlaybackTargetToMinimumLiveLead(");
+        AssertContains(endScrubBlock, "SaturatingAdd(requestedEndScrubPosition, frozenValidStart),");
+        AssertContains(endScrubBlock, "var endScrubPosition = ClampPosition(SaturatingSubtract(endScrubTarget, frozenValidStart), frozenValidStart);");
         AssertContains(endScrubBlock, "PlaybackPosition = endScrubPosition;");
         AssertDoesNotContain(endScrubBlock, "TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks))");
-        AssertContains(endScrubBlock, "var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);");
         AssertDoesNotContain(endScrubBlock, "var endScrubTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(sourceText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
         AssertContains(commandQueueText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
@@ -5781,7 +5827,7 @@ static partial class Program
         AssertContains(threadSeekCommandsText, "private void HandleUpdateScrubCommand(");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackPlaybackController.ThreadSeekCommands.cs")), "Seek/scrub command handlers stay folded into ThreadCommands.cs");
         AssertContains(threadPlayCommandText, "private void HandlePlayCommand(");
-        AssertContains(threadPlayCommandText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, ref fileOpen, seekTarget, \"play\", cts.Token);");
+        AssertContains(threadPlayCommandText, "PrimePlaybackAudioBuffer(decoder, prebufferedFrames, commandChannel, ref fileOpen, seekTarget, \"play\", cts.Token);");
         AssertContains(threadPauseCommandText, "private void HandlePauseCommand(");
         AssertContains(threadCommandDispatchText, "private void HandleGoLiveCommand(");
         AssertContains(threadNudgeCommandText, "private void HandleNudgeCommand(");
@@ -5950,7 +5996,7 @@ static partial class Program
         AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "if (commandChannel.Reader.TryPeek(out _))\n            {\n                ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip_command_pending\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_COMMAND_PENDING count={skipped}");
-        AssertContains(sourceText, "const double FrameSkipThresholdMs = 500.0;");
+        AssertContains(sourceText, "const double FrameSkipThresholdMs = 250.0;");
         // Frame-skip catch-up loop must re-sync the audio clock each iteration so a
         // long catch-up burst does not extrapolate from a stale wall-time anchor.
         AssertContains(sourceText, "private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)");

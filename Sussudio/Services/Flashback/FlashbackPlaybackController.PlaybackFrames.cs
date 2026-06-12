@@ -265,20 +265,7 @@ internal sealed partial class FlashbackPlaybackController
             return frozenValidStart;
         }
 
-        var fps = _bufferManager.EncodeFrameRate;
-        if (!double.IsFinite(fps) || fps <= 0)
-        {
-            fps = FallbackPlaybackFrameRate;
-        }
-
-        fps = Math.Min(fps, MaxPlaybackFrameRate);
-        var backoff = TimeSpan.FromSeconds(1.0 / fps);
-        if (latestPts - frozenValidStart <= backoff)
-        {
-            return latestPts;
-        }
-
-        return latestPts - backoff;
+        return ClampPlaybackTargetToMinimumLiveLead(latestPts, frozenValidStart, "pause_from_live");
     }
 
     private TimeSpan ResolveFrameDuration(FlashbackDecoder decoder)
@@ -649,7 +636,7 @@ internal sealed partial class FlashbackPlaybackController
         // advanced _audioClockPtsTicks. Extrapolating from the original capture
         // diverges from the actual audio clock the longer the loop runs and can
         // either exit early (false-recovered) or burn the full skip cap unnecessarily.
-        const double FrameSkipThresholdMs = 500.0;
+        const double FrameSkipThresholdMs = 250.0;
         const int MaxSkipFrames = 30; // cap to prevent infinite skip loops
         if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out var driftMs) ||
             driftMs >= -FrameSkipThresholdMs)

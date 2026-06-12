@@ -491,6 +491,16 @@ static partial class Program
             listField.SetValue(manager, list);
         }
 
+        // GetUninitializedObject skips field initializers; the parked-eviction
+        // map must exist for Dispose/eviction paths to run.
+        var parkedField = managerType.GetField("_parkedEvictionDeletes", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        if (parkedField.GetValue(manager) == null)
+        {
+            parkedField.SetValue(
+                manager,
+                Activator.CreateInstance(parkedField.FieldType, StringComparer.OrdinalIgnoreCase)!);
+        }
+
         return manager;
     }
 

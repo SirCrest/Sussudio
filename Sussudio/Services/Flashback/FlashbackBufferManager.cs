@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,6 +20,8 @@ internal sealed class FlashbackBufferManager : IDisposable
 {
     private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
     private const string RetiredSessionMarkerFileName = ".flashback-retired-session";
+    private const int EvictedSegmentDeleteMaxAttempts = 3;
+    private const int EvictedSegmentDeleteRetryDelayMs = 250;
     private readonly object _indexLock = new();
     private readonly FlashbackBufferOptions _options;
     private string? _sessionId;
@@ -51,6 +54,23 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         public bool AllowSamePathExtension { get; init; }
     }
+
+    private readonly record struct PendingEvictedSegmentDelete(
+        string FullPath,
+        string SessionRoot,
+        long SizeBytes,
+        string Reason);
+
+    private static List<PendingEvictedSegmentDelete> EnsurePendingEvictionDeleteList(
+        ref List<PendingEvictedSegmentDelete>? pendingDeletes)
+        => pendingDeletes ??= new List<PendingEvictedSegmentDelete>();
+
+    // Evicted segments whose async delete kept failing (typically the playback
+    // decoder still holds the file open). Keyed by full path; retried on later
+    // eviction passes and swept once more at dispose. Bounded by segment count.
+    private readonly ConcurrentDictionary<string, PendingEvictedSegmentDelete> _parkedEvictionDeletes =
+        new(StringComparer.OrdinalIgnoreCase);
+
     public FlashbackBufferManager(FlashbackBufferOptions? options = null)
     {
         _options = options ?? new FlashbackBufferOptions();
@@ -252,6 +272,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             return;
         }
 
+        List<PendingEvictedSegmentDelete>? pendingDeletes = null;
         var ptsTicks = pts.Ticks;
         // Atomic monotonic update
         long current;
@@ -284,12 +305,14 @@ internal sealed class FlashbackBufferManager : IDisposable
                         if (_completedSegments.Count > 0 &&
                             _completedSegments[0].EndPts.Ticks <= Interlocked.Read(ref _validStartPtsTicks))
                         {
-                            EvictOldestSegments();
+                            EvictOldestSegmentsLocked(EnsurePendingEvictionDeleteList(ref pendingDeletes));
                         }
                     }
                 }
             }
         }
+
+        QueueEvictedSegmentDeletes(pendingDeletes);
     }
 
     /// <summary>
@@ -304,6 +327,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             return;
         }
 
+        List<PendingEvictedSegmentDelete>? pendingDeletes = null;
         lock (_indexLock)
         {
             if (_disposed)
@@ -349,9 +373,11 @@ internal sealed class FlashbackBufferManager : IDisposable
                         $"FLASHBACK_BUFFER_DISK_EVICT excess_bytes={excessBytes} evicted_seconds={TimeSpan.FromTicks(evictTicks).TotalSeconds:F2}");
                 }
 
-                EvictOldestSegments();
+                EvictOldestSegmentsLocked(EnsurePendingEvictionDeleteList(ref pendingDeletes));
             }
         }
+
+        QueueEvictedSegmentDeletes(pendingDeletes);
     }
 
     /// <summary>Sets the file extension for new segments (e.g. ".ts" or ".mp4").</summary>
@@ -422,6 +448,10 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public void Dispose()
     {
+        // Final chance for parked eviction deletes before the session directory
+        // teardown below; must stay outside _indexLock.
+        SweepParkedEvictionDeletesBestEffort("dispose");
+
         lock (_indexLock)
         {
             if (_disposed)
@@ -891,65 +921,73 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
 
         var safeSizeBytes = Math.Max(0, sizeBytes);
-        lock (_indexLock)
+        List<PendingEvictedSegmentDelete>? pendingDeletes = null;
+        try
         {
-            if (_disposed)
+            lock (_indexLock)
             {
-                Logger.Log("FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
-                return;
-            }
-
-            if (!IsPathInSessionDirectory(path))
-            {
-                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'");
-                return;
-            }
-
-            if (!File.Exists(path))
-            {
-                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file path='{Path.GetFileName(path)}'");
-                return;
-            }
-
-            var pathIsActiveSegment = IsSameSegmentPath(_activeSegmentPath, path);
-            var existingIndex = _completedSegments.FindIndex(seg => IsSameSegmentPath(seg.Path, path));
-            if (existingIndex >= 0)
-            {
-                if (!TryExtendCompletedSegment(existingIndex, path, startPts, endPts, safeSizeBytes, pathIsActiveSegment))
+                if (_disposed)
                 {
-                    Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'");
+                    Logger.Log("FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
+                    return;
                 }
 
-                return;
-            }
+                if (!IsPathInSessionDirectory(path))
+                {
+                    Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'");
+                    return;
+                }
 
-            if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)
-            {
-                var previous = _completedSegments[^1];
-                Logger.Log(
-                    $"FLASHBACK_BUFFER_SEGMENT_SKIP reason=non_monotonic path='{Path.GetFileName(path)}' " +
-                    $"start_ms={(long)startPts.TotalMilliseconds} previous_end_ms={(long)previous.EndPts.TotalMilliseconds}");
-                return;
-            }
+                if (!File.Exists(path))
+                {
+                    Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file path='{Path.GetFileName(path)}'");
+                    return;
+                }
 
-            if (safeSizeBytes >= _previousActiveSegmentBytes)
-            {
-                Interlocked.Add(ref _totalBytesWritten, safeSizeBytes - _previousActiveSegmentBytes);
-            }
+                var pathIsActiveSegment = IsSameSegmentPath(_activeSegmentPath, path);
+                var existingIndex = _completedSegments.FindIndex(seg => IsSameSegmentPath(seg.Path, path));
+                if (existingIndex >= 0)
+                {
+                    if (!TryExtendCompletedSegment(existingIndex, path, startPts, endPts, safeSizeBytes, pathIsActiveSegment, ref pendingDeletes))
+                    {
+                        Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'");
+                    }
 
-            var sequenceNumber = _completedSegmentSequence++;
-            _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes)
-            {
-                AllowSamePathExtension = pathIsActiveSegment
-            });
-            _completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);
-            _previousActiveSegmentBytes = pathIsActiveSegment ? safeSizeBytes : 0;
-            Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={safeSizeBytes}");
+                    return;
+                }
 
-            if (!(Volatile.Read(ref _evictionPauseCount) > 0))
-            {
-                EvictOldestSegments();
+                if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)
+                {
+                    var previous = _completedSegments[^1];
+                    Logger.Log(
+                        $"FLASHBACK_BUFFER_SEGMENT_SKIP reason=non_monotonic path='{Path.GetFileName(path)}' " +
+                        $"start_ms={(long)startPts.TotalMilliseconds} previous_end_ms={(long)previous.EndPts.TotalMilliseconds}");
+                    return;
+                }
+
+                if (safeSizeBytes >= _previousActiveSegmentBytes)
+                {
+                    Interlocked.Add(ref _totalBytesWritten, safeSizeBytes - _previousActiveSegmentBytes);
+                }
+
+                var sequenceNumber = _completedSegmentSequence++;
+                _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes)
+                {
+                    AllowSamePathExtension = pathIsActiveSegment
+                });
+                _completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);
+                _previousActiveSegmentBytes = pathIsActiveSegment ? safeSizeBytes : 0;
+                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={safeSizeBytes}");
+
+                if (!(Volatile.Read(ref _evictionPauseCount) > 0))
+                {
+                    EvictOldestSegmentsLocked(EnsurePendingEvictionDeleteList(ref pendingDeletes));
+                }
             }
+        }
+        finally
+        {
+            QueueEvictedSegmentDeletes(pendingDeletes);
         }
     }
 
@@ -959,7 +997,8 @@ internal sealed class FlashbackBufferManager : IDisposable
         TimeSpan startPts,
         TimeSpan endPts,
         long sizeBytes,
-        bool pathIsActiveSegment)
+        bool pathIsActiveSegment,
+        ref List<PendingEvictedSegmentDelete>? pendingDeletes)
     {
         if (existingIndex != _completedSegments.Count - 1)
         {
@@ -1005,7 +1044,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         if (!(Volatile.Read(ref _evictionPauseCount) > 0))
         {
-            EvictOldestSegments();
+            EvictOldestSegmentsLocked(EnsurePendingEvictionDeleteList(ref pendingDeletes));
         }
 
         return true;
@@ -1018,11 +1057,16 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         get
         {
+            List<string> completedPaths;
+            string? activePath;
             lock (_indexLock)
             {
-                return _completedSegments.Count(seg => File.Exists(seg.Path)) +
-                    (TryGetExistingActiveSegmentPath(out _) ? 1 : 0);
+                completedPaths = _completedSegments.Select(seg => seg.Path).ToList();
+                activePath = _activeSegmentPath;
             }
+
+            return completedPaths.Count(File.Exists) +
+                (IsExistingPath(activePath) ? 1 : 0);
         }
     }
 
@@ -1030,21 +1074,20 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         get
         {
+            string? activePath;
             lock (_indexLock)
             {
-                return TryGetExistingActiveSegmentPath(out var activePath)
-                    ? activePath
-                    : null;
+                activePath = _activeSegmentPath;
             }
+
+            return IsExistingPath(activePath)
+                ? activePath
+                : null;
         }
     }
 
-    private bool TryGetExistingActiveSegmentPath(
-        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? path)
-    {
-        path = _activeSegmentPath;
-        return path != null && File.Exists(path);
-    }
+    private static bool IsExistingPath([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path)
+        => path != null && File.Exists(path);
 
     private TimeSpan GetActiveSegmentStartPts()
     {
@@ -1061,16 +1104,12 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()
     {
+        List<FlashbackSegmentInfo> result;
         lock (_indexLock)
         {
-            var result = new List<FlashbackSegmentInfo>(_completedSegments.Count + 1);
+            result = new List<FlashbackSegmentInfo>(_completedSegments.Count + 1);
             foreach (var seg in _completedSegments)
             {
-                if (!File.Exists(seg.Path))
-                {
-                    continue;
-                }
-
                 result.Add(new FlashbackSegmentInfo
                 {
                     Path = seg.Path,
@@ -1082,7 +1121,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 });
             }
 
-            if (TryGetExistingActiveSegmentPath(out var activePath))
+            if (_activeSegmentPath is { } activePath)
             {
                 var activeStartPts = GetActiveSegmentStartPts();
                 var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));
@@ -1097,9 +1136,11 @@ internal sealed class FlashbackBufferManager : IDisposable
                     IsActive = true
                 });
             }
-
-            return result;
         }
+
+        return result
+            .Where(segment => File.Exists(segment.Path))
+            .ToList();
     }
 
     private bool IsPathInSessionDirectory(string path)
@@ -1136,40 +1177,52 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// </summary>
     public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)
     {
+        string? targetPath = null;
+        var beforeFirstCompletedSegment = false;
+        List<string> completedPaths;
+        string? activePath;
         lock (_indexLock)
         {
             foreach (var seg in _completedSegments)
             {
                 if (absolutePts >= seg.StartPts && absolutePts < seg.EndPts)
                 {
-                    return File.Exists(seg.Path)
-                        ? seg.Path
-                        : GetOldestExistingSegmentPath();
+                    targetPath = seg.Path;
+                    break;
                 }
             }
 
-            if (_completedSegments.Count > 0 && absolutePts < _completedSegments[0].StartPts)
-            {
-                return GetOldestExistingSegmentPath()
-                    ?? (TryGetExistingActiveSegmentPath(out var activePath) ? activePath : null);
-            }
-
-            if (TryGetExistingActiveSegmentPath(out var existingActivePath))
-            {
-                return existingActivePath;
-            }
-
-            return GetOldestExistingSegmentPath();
+            beforeFirstCompletedSegment = _completedSegments.Count > 0 && absolutePts < _completedSegments[0].StartPts;
+            completedPaths = _completedSegments.Select(seg => seg.Path).ToList();
+            activePath = _activeSegmentPath;
         }
+
+        if (IsExistingPath(targetPath))
+        {
+            return targetPath;
+        }
+
+        if (beforeFirstCompletedSegment)
+        {
+            return GetOldestExistingSegmentPath(completedPaths)
+                ?? (IsExistingPath(activePath) ? activePath : null);
+        }
+
+        if (IsExistingPath(activePath))
+        {
+            return activePath;
+        }
+
+        return GetOldestExistingSegmentPath(completedPaths);
     }
 
-    private string? GetOldestExistingSegmentPath()
+    private static string? GetOldestExistingSegmentPath(IEnumerable<string> completedPaths)
     {
-        foreach (var seg in _completedSegments)
+        foreach (var path in completedPaths)
         {
-            if (File.Exists(seg.Path))
+            if (File.Exists(path))
             {
-                return seg.Path;
+                return path;
             }
         }
 
@@ -1184,58 +1237,69 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// </summary>
     public string? GetNextSegmentFile(string currentPath)
     {
+        List<string> completedPaths;
+        string? activePath;
         lock (_indexLock)
         {
-            for (int i = 0; i < _completedSegments.Count; i++)
-            {
-                if (IsSameSegmentPath(_completedSegments[i].Path, currentPath))
-                {
-                    for (var nextIndex = i + 1; nextIndex < _completedSegments.Count; nextIndex++)
-                    {
-                        var nextPath = _completedSegments[nextIndex].Path;
-                        if (File.Exists(nextPath))
-                            return nextPath;
-                    }
-
-                    return TryGetExistingActiveSegmentPath(out var activePath)
-                        ? activePath
-                        : null;
-                }
-            }
-
-            if (IsSameSegmentPath(_activeSegmentPath, currentPath))
-                return TryGetExistingActiveSegmentPath(out var activePath) ? activePath : null;
-
-            return GetOldestExistingSegmentPath()
-                ?? (TryGetExistingActiveSegmentPath(out var fallbackActivePath) ? fallbackActivePath : null);
+            completedPaths = _completedSegments.Select(seg => seg.Path).ToList();
+            activePath = _activeSegmentPath;
         }
+
+        for (int i = 0; i < completedPaths.Count; i++)
+        {
+            if (IsSameSegmentPath(completedPaths[i], currentPath))
+            {
+                for (var nextIndex = i + 1; nextIndex < completedPaths.Count; nextIndex++)
+                {
+                    var nextPath = completedPaths[nextIndex];
+                    if (File.Exists(nextPath))
+                        return nextPath;
+                }
+
+                return IsExistingPath(activePath) ? activePath : null;
+            }
+        }
+
+        if (IsSameSegmentPath(activePath, currentPath))
+            return IsExistingPath(activePath) ? activePath : null;
+
+        return GetOldestExistingSegmentPath(completedPaths)
+            ?? (IsExistingPath(activePath) ? activePath : null);
     }
 
     public TimeSpan? GetSegmentStartPts(string path)
     {
+        string? matchedPath = null;
+        TimeSpan? matchedStart = null;
         lock (_indexLock)
         {
             foreach (var seg in _completedSegments)
             {
-                if (IsSameSegmentPath(seg.Path, path) && File.Exists(seg.Path))
+                if (IsSameSegmentPath(seg.Path, path))
                 {
-                    return seg.StartPts;
+                    matchedPath = seg.Path;
+                    matchedStart = seg.StartPts;
+                    break;
                 }
             }
 
-            if (IsSameSegmentPath(_activeSegmentPath, path) &&
-                _activeSegmentPath != null &&
-                File.Exists(_activeSegmentPath))
+            if (matchedStart == null &&
+                IsSameSegmentPath(_activeSegmentPath, path) &&
+                _activeSegmentPath != null)
             {
-                return GetActiveSegmentStartPts();
+                matchedPath = _activeSegmentPath;
+                matchedStart = GetActiveSegmentStartPts();
             }
-
-            return null;
         }
+
+        return matchedStart.HasValue && IsExistingPath(matchedPath)
+            ? matchedStart
+            : null;
     }
 
     public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)
     {
+        List<string> paths;
         lock (_indexLock)
         {
             if (outPoint <= inPoint)
@@ -1243,20 +1307,22 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return Array.Empty<string>();
             }
 
-            var paths = new List<string>();
+            paths = new List<string>();
             foreach (var seg in _completedSegments)
             {
-                if (seg.StartPts < outPoint && seg.EndPts > inPoint && File.Exists(seg.Path))
+                if (seg.StartPts < outPoint && seg.EndPts > inPoint)
                 {
                     paths.Add(seg.Path);
                 }
             }
-
-            // Do not include the active segment. It is still being written to and may not
-            // have valid headers yet. After ForceRotateForExport, all relevant data is
-            // in the completed segments.
-            return paths;
         }
+
+        // Do not include the active segment. It is still being written to and may not
+        // have valid headers yet. After ForceRotateForExport, all relevant data is
+        // in the completed segments.
+        return paths
+            .Where(File.Exists)
+            .ToList();
     }
 
     public long MaxDiskBytes => _options.MaxDiskBytes;
@@ -1353,6 +1419,17 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     private void EvictOldestSegments()
     {
+        List<PendingEvictedSegmentDelete>? pendingDeletes = null;
+        lock (_indexLock)
+        {
+            EvictOldestSegmentsLocked(EnsurePendingEvictionDeleteList(ref pendingDeletes));
+        }
+
+        QueueEvictedSegmentDeletes(pendingDeletes);
+    }
+
+    private void EvictOldestSegmentsLocked(List<PendingEvictedSegmentDelete> pendingDeletes)
+    {
         // Must be called under _indexLock
         if (IsSessionPreservedForRecoveryUnsafe())
         {
@@ -1370,8 +1447,9 @@ internal sealed class FlashbackBufferManager : IDisposable
             var oldest = _completedSegments[0];
             if (oldest.EndPts <= validStart)
             {
-                if (DeleteFileForEviction(oldest.Path, oldest.SizeBytes, "valid_window"))
+                if (TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, "valid_window", out var pendingDelete))
                 {
+                    pendingDeletes.Add(pendingDelete);
                     evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
                     _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                     _completedSegments.RemoveAt(0);
@@ -1379,7 +1457,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 }
                 else
                 {
-                    break; // Can't delete - file is locked, stop evicting
+                    break; // Can't safely unlink this segment, stop evicting.
                 }
             }
             else
@@ -1392,8 +1470,9 @@ internal sealed class FlashbackBufferManager : IDisposable
         while (_completedSegments.Count > 0 && _completedSegmentBytes > _options.MaxDiskBytes)
         {
             var oldest = _completedSegments[0];
-            if (DeleteFileForEviction(oldest.Path, oldest.SizeBytes, "disk_budget"))
+            if (TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, "disk_budget", out var pendingDelete))
             {
+                pendingDeletes.Add(pendingDelete);
                 evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
                 _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                 _completedSegments.RemoveAt(0);
@@ -1401,7 +1480,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
             else
             {
-                break; // Can't delete - file is locked, stop evicting
+                break; // Can't safely unlink this segment, stop evicting.
             }
         }
 
@@ -1412,8 +1491,83 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-    private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)
+    private void QueueEvictedSegmentDeletes(List<PendingEvictedSegmentDelete>? pendingDeletes)
     {
+        // A non-null list means an eviction pass ran; use it as the hook to
+        // retry parked deletes even when this pass produced no new ones.
+        if (pendingDeletes == null)
+        {
+            return;
+        }
+
+        foreach (var pendingDelete in pendingDeletes)
+        {
+            QueueEvictedSegmentDelete(pendingDelete, parkedRetry: false);
+        }
+
+        RetryParkedEvictionDeletes();
+    }
+
+    private void QueueEvictedSegmentDelete(PendingEvictedSegmentDelete pendingDelete, bool parkedRetry)
+    {
+        ThreadPool.QueueUserWorkItem(
+            static state =>
+            {
+                var (manager, delete, isParkedRetry) =
+                    ((FlashbackBufferManager, PendingEvictedSegmentDelete, bool))state!;
+                manager.DeleteEvictedFileWithRetry(delete, isParkedRetry);
+            },
+            (this, pendingDelete, parkedRetry));
+    }
+
+    private void RetryParkedEvictionDeletes()
+    {
+        foreach (var parkedPath in _parkedEvictionDeletes.Keys)
+        {
+            if (_parkedEvictionDeletes.TryRemove(parkedPath, out var parkedDelete))
+            {
+                QueueEvictedSegmentDelete(parkedDelete, parkedRetry: true);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Final synchronous best-effort pass over parked eviction deletes. Runs
+    /// outside <see cref="_indexLock"/>; files that still cannot be deleted are
+    /// logged as abandoned and left for startup cache cleanup.
+    /// </summary>
+    private void SweepParkedEvictionDeletesBestEffort(string operation)
+    {
+        foreach (var parkedPath in _parkedEvictionDeletes.Keys)
+        {
+            if (!_parkedEvictionDeletes.TryRemove(parkedPath, out var parkedDelete))
+            {
+                continue;
+            }
+
+            if (DeleteEvictedFile(
+                    parkedDelete.FullPath,
+                    parkedDelete.SessionRoot,
+                    parkedDelete.SizeBytes,
+                    parkedDelete.Reason,
+                    EvictedSegmentDeleteMaxAttempts + 1))
+            {
+                continue;
+            }
+
+            Logger.Log(
+                $"FLASHBACK_BUFFER_EVICT_DELETE_ABANDONED op={operation} reason={parkedDelete.Reason} " +
+                $"path='{parkedDelete.FullPath}' attempts={EvictedSegmentDeleteMaxAttempts + 1}");
+        }
+    }
+
+    private bool TryCreatePendingEvictionDelete(
+        string filePath,
+        long sizeBytes,
+        string reason,
+        out PendingEvictedSegmentDelete pendingDelete)
+    {
+        pendingDelete = default;
         if (string.IsNullOrWhiteSpace(_sessionDirectory))
         {
             Logger.Log($"FLASHBACK_BUFFER_EVICT_DELETE_SKIP reason=no_session path='{filePath}'");
@@ -1439,10 +1593,58 @@ internal sealed class FlashbackBufferManager : IDisposable
             return false;
         }
 
-        return DeleteEvictedFile(fullPath, sessionRoot, sizeBytes, reason);
+        if (!FlashbackSessionRecoveryScanner.IsPathUnderDirectory(fullPath, sessionRoot))
+        {
+            Logger.Log($"FLASHBACK_BUFFER_EVICT_DELETE_SKIP reason=outside_session path='{fullPath}'");
+            return false;
+        }
+
+        pendingDelete = new PendingEvictedSegmentDelete(
+            fullPath,
+            sessionRoot,
+            Math.Max(0, sizeBytes),
+            reason);
+        return true;
     }
 
-    private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)
+    private void DeleteEvictedFileWithRetry(PendingEvictedSegmentDelete pendingDelete, bool parkedRetry)
+    {
+        for (var attempt = 1; attempt <= EvictedSegmentDeleteMaxAttempts; attempt++)
+        {
+            if (DeleteEvictedFile(
+                    pendingDelete.FullPath,
+                    pendingDelete.SessionRoot,
+                    pendingDelete.SizeBytes,
+                    pendingDelete.Reason,
+                    attempt))
+            {
+                if (parkedRetry)
+                {
+                    Logger.Log(
+                        $"FLASHBACK_BUFFER_EVICT_DELETE_PARKED_RECOVERED reason={pendingDelete.Reason} " +
+                        $"path='{pendingDelete.FullPath}' attempt={attempt}");
+                }
+
+                return;
+            }
+
+            if (attempt < EvictedSegmentDeleteMaxAttempts)
+            {
+                Thread.Sleep(EvictedSegmentDeleteRetryDelayMs);
+            }
+        }
+
+        // Park instead of abandoning: the file is already unlinked from the
+        // index, so without a later retry it would be orphaned until the next
+        // app start (e.g. the decoder holds the oldest segment during a pause).
+        _parkedEvictionDeletes[pendingDelete.FullPath] = pendingDelete;
+        Logger.Log(
+            $"FLASHBACK_BUFFER_EVICT_DELETE_PARKED reason={pendingDelete.Reason} " +
+            $"path='{pendingDelete.FullPath}' attempts={EvictedSegmentDeleteMaxAttempts} " +
+            $"parked_total={_parkedEvictionDeletes.Count}");
+    }
+
+    private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason, int attempt)
     {
         if (!FlashbackSessionRecoveryScanner.IsPathUnderDirectory(fullPath, sessionRoot))
         {
@@ -1457,7 +1659,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             var elapsedMs = System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             Logger.Log(
                 $"FLASHBACK_BUFFER_SEGMENT_EVICT_DELETED reason={reason} " +
-                $"path='{Path.GetFileName(fullPath)}' size_bytes={Math.Max(0, sizeBytes)} elapsed_ms={elapsedMs:0.###}");
+                $"path='{Path.GetFileName(fullPath)}' size_bytes={Math.Max(0, sizeBytes)} " +
+                $"attempt={attempt} elapsed_ms={elapsedMs:0.###}");
             return true;
         }
         catch (Exception ex)
@@ -1465,7 +1668,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             var elapsedMs = System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds;
             Logger.Log(
                 $"FLASHBACK_BUFFER_EVICT_DELETE_WARN reason={reason} path='{fullPath}' " +
-                $"type={ex.GetType().Name} msg='{ex.Message}' elapsed_ms={elapsedMs:0.###}");
+                $"type={ex.GetType().Name} msg='{ex.Message}' attempt={attempt} elapsed_ms={elapsedMs:0.###}");
             return false;
         }
     }

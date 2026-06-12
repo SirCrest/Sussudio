@@ -118,6 +118,7 @@ internal static class DiagnosticSessionResultBuilder
         var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;
         var flashbackPlaybackAudioMasterResult = flashbackPlaybackResult.AudioMasterResult;
         var flashbackPlaybackStagesResult = flashbackPlaybackResult.StagesResult;
+        var flashbackPlaybackStutterResult = flashbackPlaybackResult.StutterResult;
         var flashbackRecordingResult = resultProjections.FlashbackRecording;
         var flashbackExportResult = resultProjections.FlashbackExport;
         var previewResult = resultProjections.Preview;
@@ -248,6 +249,8 @@ internal static class DiagnosticSessionResultBuilder
             FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsAtEnd,
             FlashbackPlaybackSeekForwardDecodeCapHitsDelta = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsDelta,
             FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd = flashbackPlaybackStagesResult.FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd,
+            FlashbackPlaybackLikelyStutterCause = flashbackPlaybackStutterResult.FlashbackPlaybackLikelyStutterCause,
+            FlashbackPlaybackLikelyStutterEvidence = flashbackPlaybackStutterResult.FlashbackPlaybackLikelyStutterEvidence,
             FlashbackRecordingBackendObserved = flashbackRecordingResult.FlashbackRecordingBackendObserved,
             FlashbackRecordingFileGrowthObserved = flashbackRecordingResult.FlashbackRecordingFileGrowthObserved,
             FlashbackRecordingVideoFramesSubmittedDelta = flashbackRecordingResult.FlashbackRecordingVideoFramesSubmittedDelta,
@@ -1180,7 +1183,12 @@ private sealed record DiagnosticSessionResultAnalysis(
         DiagnosticSessionFlashbackPlaybackOnePercentLowResultProjection OnePercentLowResult,
         DiagnosticSessionFlashbackPlaybackDecodeResultProjection DecodeResult,
         DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection AudioMasterResult,
-        DiagnosticSessionFlashbackPlaybackStagesResultProjection StagesResult);
+        DiagnosticSessionFlashbackPlaybackStagesResultProjection StagesResult,
+        DiagnosticSessionFlashbackPlaybackStutterResultProjection StutterResult);
+
+    internal readonly record struct FlashbackPlaybackStutterClassification(
+        string Cause,
+        string Evidence);
 
     private static DiagnosticSessionFlashbackPlaybackResultProjection BuildFlashbackPlaybackResultProjection(
         DiagnosticSessionResultAnalysis analysis)
@@ -1193,6 +1201,15 @@ private sealed record DiagnosticSessionResultAnalysis(
         var decodeResult = BuildFlashbackPlaybackDecodeResultProjection(playbackSessionMetrics, playbackResultMetrics);
         var audioMasterResult = BuildFlashbackPlaybackAudioMasterResultProjection(playbackSessionMetrics, playbackResultMetrics);
         var stagesResult = BuildFlashbackPlaybackStagesResultProjection(playbackSessionMetrics, playbackResultMetrics);
+        var stutterResult = BuildFlashbackPlaybackStutterResultProjection(
+            commandsResult,
+            cadenceResult,
+            onePercentLowResult,
+            decodeResult,
+            audioMasterResult,
+            stagesResult,
+            playbackSessionMetrics,
+            playbackResultMetrics);
 
         return new DiagnosticSessionFlashbackPlaybackResultProjection(
             CommandsResult: commandsResult,
@@ -1200,7 +1217,211 @@ private sealed record DiagnosticSessionResultAnalysis(
             OnePercentLowResult: onePercentLowResult,
             DecodeResult: decodeResult,
             AudioMasterResult: audioMasterResult,
-            StagesResult: stagesResult);
+            StagesResult: stagesResult,
+            StutterResult: stutterResult);
+    }
+
+    private readonly record struct DiagnosticSessionFlashbackPlaybackStutterResultProjection(
+        string FlashbackPlaybackLikelyStutterCause,
+        string FlashbackPlaybackLikelyStutterEvidence);
+
+    private static DiagnosticSessionFlashbackPlaybackStutterResultProjection BuildFlashbackPlaybackStutterResultProjection(
+        DiagnosticSessionFlashbackPlaybackCommandsResultProjection commandsResult,
+        DiagnosticSessionFlashbackPlaybackCadenceResultProjection cadenceResult,
+        DiagnosticSessionFlashbackPlaybackOnePercentLowResultProjection onePercentLowResult,
+        DiagnosticSessionFlashbackPlaybackDecodeResultProjection decodeResult,
+        DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection audioMasterResult,
+        DiagnosticSessionFlashbackPlaybackStagesResultProjection stagesResult,
+        FlashbackPlaybackSessionMetrics playbackSessionMetrics,
+        FlashbackPlaybackResultMetrics playbackResultMetrics)
+    {
+        var endSnapshot = playbackResultMetrics.EndSnapshot;
+        var baselineSnapshot = playbackSessionMetrics.BaselineSnapshot;
+        var classification = ClassifyFlashbackPlaybackStutterCause(
+            renderSilenceDelta: GetResetAwareCounterDelta(endSnapshot, baselineSnapshot, "WasapiPlaybackRenderSilenceCount"),
+            playbackQueueDropDelta: GetResetAwareCounterDelta(endSnapshot, baselineSnapshot, "WasapiPlaybackQueueDropCount"),
+            playbackBufferedDurationMsAtEnd: GetDouble(endSnapshot, "WasapiPlaybackBufferedDurationMs"),
+            playbackQueueDurationMsAtEnd: GetDouble(endSnapshot, "WasapiPlaybackQueueDurationMs"),
+            submitFailuresDelta: stagesResult.FlashbackPlaybackSubmitFailuresDelta,
+            audioMasterStaleFallbacksDelta: GetResetAwareCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackAudioMasterStaleFallbacks"),
+            audioMasterDriftOutlierFallbacksDelta: GetResetAwareCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks"),
+            maxAbsAvDriftMsObserved: audioMasterResult.FlashbackPlaybackMaxAbsAvDriftMsObserved,
+            pendingCommandsAtEnd: commandsResult.FlashbackPlaybackPendingCommandsAtEnd,
+            maxPendingCommandsObserved: commandsResult.FlashbackPlaybackMaxPendingCommandsObserved,
+            maxCommandQueueLatencyMsObserved: commandsResult.FlashbackPlaybackMaxCommandQueueLatencyMsObserved,
+            commandDropsDelta: GetCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackCommandsDropped"),
+            commandSkippedNotReadyDelta: GetCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackCommandsSkippedNotReady"),
+            segmentSwitchesDelta: GetCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackSegmentSwitches"),
+            fmp4ReopensDelta: GetCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackFmp4Reopens"),
+            writeHeadWaitsDelta: GetCounterDelta(endSnapshot, baselineSnapshot, "FlashbackPlaybackWriteHeadWaits"),
+            lastWriteHeadWaitGapMsAtEnd: stagesResult.FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd,
+            captureSevereGapDelta: GetResetAwareCounterDelta(endSnapshot, baselineSnapshot, "WasapiCaptureCallbackSevereGapCount"),
+            captureMaxCallbackIntervalMsAtEnd: GetDouble(endSnapshot, "WasapiCaptureCallbackMaxIntervalMs"),
+            maxDecodeP99MsObserved: decodeResult.FlashbackPlaybackMaxDecodeP99MsObserved,
+            maxDecodeMsObserved: decodeResult.FlashbackPlaybackMaxDecodeMsObserved,
+            maxDecodePhaseObserved: decodeResult.FlashbackPlaybackMaxDecodePhaseObserved,
+            slowFramePercentAtEnd: cadenceResult.FlashbackPlaybackSlowFramePercentAtEnd,
+            maxSlowFramePercentObserved: cadenceResult.FlashbackPlaybackMaxSlowFramePercentObserved,
+            droppedFramesDelta: cadenceResult.FlashbackPlaybackDroppedFramesDelta,
+            onePercentLowFpsAtEnd: onePercentLowResult.FlashbackPlaybackOnePercentLowFpsAtEnd,
+            minOnePercentLowFpsObserved: onePercentLowResult.FlashbackPlaybackMinOnePercentLowFpsObserved,
+            targetFps: GetFlashbackPlaybackTargetFps(endSnapshot));
+
+        return new DiagnosticSessionFlashbackPlaybackStutterResultProjection(
+            FlashbackPlaybackLikelyStutterCause: classification.Cause,
+            FlashbackPlaybackLikelyStutterEvidence: classification.Evidence);
+    }
+
+    internal static FlashbackPlaybackStutterClassification ClassifyFlashbackPlaybackStutterCause(
+        long renderSilenceDelta,
+        long playbackQueueDropDelta,
+        double playbackBufferedDurationMsAtEnd,
+        double playbackQueueDurationMsAtEnd,
+        long submitFailuresDelta,
+        long audioMasterStaleFallbacksDelta,
+        long audioMasterDriftOutlierFallbacksDelta,
+        double maxAbsAvDriftMsObserved,
+        int pendingCommandsAtEnd,
+        int maxPendingCommandsObserved,
+        int maxCommandQueueLatencyMsObserved,
+        long commandDropsDelta,
+        long commandSkippedNotReadyDelta,
+        long segmentSwitchesDelta,
+        long fmp4ReopensDelta,
+        long writeHeadWaitsDelta,
+        long lastWriteHeadWaitGapMsAtEnd,
+        long captureSevereGapDelta,
+        double captureMaxCallbackIntervalMsAtEnd,
+        double maxDecodeP99MsObserved,
+        double maxDecodeMsObserved,
+        string maxDecodePhaseObserved,
+        double slowFramePercentAtEnd,
+        double maxSlowFramePercentObserved,
+        long droppedFramesDelta,
+        double onePercentLowFpsAtEnd,
+        double minOnePercentLowFpsObserved,
+        double targetFps)
+    {
+        var cadenceStress = HasFlashbackPlaybackCadenceStress(
+            slowFramePercentAtEnd,
+            maxSlowFramePercentObserved,
+            droppedFramesDelta,
+            onePercentLowFpsAtEnd,
+            minOnePercentLowFpsObserved,
+            targetFps);
+
+        if (renderSilenceDelta > 0 ||
+            playbackQueueDropDelta > 0 ||
+            submitFailuresDelta > 0 ||
+            (cadenceStress && playbackBufferedDurationMsAtEnd <= 1.0 && playbackQueueDurationMsAtEnd <= 1.0))
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "render_underrun",
+                $"renderSilenceDelta={renderSilenceDelta} queueDropsDelta={playbackQueueDropDelta} submitFailuresDelta={submitFailuresDelta} bufferedMsEnd={playbackBufferedDurationMsAtEnd:0.##} queueMsEnd={playbackQueueDurationMsAtEnd:0.##}");
+        }
+
+        if (audioMasterStaleFallbacksDelta > 0)
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "audio_master_stale_clock",
+                $"staleFallbacksDelta={audioMasterStaleFallbacksDelta} driftOutlierFallbacksDelta={audioMasterDriftOutlierFallbacksDelta} absAvDriftMsMax={maxAbsAvDriftMsObserved:0.##}");
+        }
+
+        const double maxHealthyAvDriftMs = 250.0;
+        if (audioMasterDriftOutlierFallbacksDelta > 0 ||
+            maxAbsAvDriftMsObserved > maxHealthyAvDriftMs)
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "audio_master_drift_outlier_clock",
+                $"driftOutlierFallbacksDelta={audioMasterDriftOutlierFallbacksDelta} absAvDriftMsMax={maxAbsAvDriftMsObserved:0.##} budgetMs={maxHealthyAvDriftMs:0.##}");
+        }
+
+        const int commandBacklogPendingThreshold = 4;
+        const int commandBacklogLatencyMsThreshold = 250;
+        if (pendingCommandsAtEnd > 0 ||
+            maxPendingCommandsObserved >= commandBacklogPendingThreshold ||
+            maxCommandQueueLatencyMsObserved >= commandBacklogLatencyMsThreshold ||
+            commandDropsDelta > 0 ||
+            commandSkippedNotReadyDelta > 0)
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "command_backlog",
+                $"pendingEnd={pendingCommandsAtEnd} maxPending={maxPendingCommandsObserved} maxLatencyMs={maxCommandQueueLatencyMsObserved} droppedDelta={commandDropsDelta} skippedDelta={commandSkippedNotReadyDelta}");
+        }
+
+        if (writeHeadWaitsDelta > 0 ||
+            lastWriteHeadWaitGapMsAtEnd > 0 ||
+            (cadenceStress && (segmentSwitchesDelta > 0 || fmp4ReopensDelta > 0)))
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "segment_reopen_stall",
+                $"segmentSwitchesDelta={segmentSwitchesDelta} fmp4ReopensDelta={fmp4ReopensDelta} writeHeadWaitsDelta={writeHeadWaitsDelta} lastWriteHeadGapMsEnd={lastWriteHeadWaitGapMsAtEnd}");
+        }
+
+        const double captureCallbackGapMsThreshold = 100.0;
+        if (captureSevereGapDelta > 0 ||
+            (cadenceStress && captureMaxCallbackIntervalMsAtEnd >= captureCallbackGapMsThreshold))
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "capture_callback_gap",
+                $"captureSevereGapsDelta={captureSevereGapDelta} captureMaxIntervalMsEnd={captureMaxCallbackIntervalMsAtEnd:0.##} thresholdMs={captureCallbackGapMsThreshold:0.##}");
+        }
+
+        var frameBudgetMs = targetFps > 0 ? 1000.0 / targetFps : 16.67;
+        var decodeP99StallThresholdMs = Math.Max(25.0, frameBudgetMs * 2.0);
+        var decodeMaxStallThresholdMs = Math.Max(50.0, frameBudgetMs * 4.0);
+        if ((cadenceStress && maxDecodeP99MsObserved >= decodeP99StallThresholdMs) ||
+            maxDecodeMsObserved >= decodeMaxStallThresholdMs)
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "decode_stall",
+                $"decodeP99MsMax={maxDecodeP99MsObserved:0.##} decodeMaxMsObserved={maxDecodeMsObserved:0.##} phaseObserved={FormatOptional(maxDecodePhaseObserved)} p99ThresholdMs={decodeP99StallThresholdMs:0.##} maxThresholdMs={decodeMaxStallThresholdMs:0.##}");
+        }
+
+        if (cadenceStress)
+        {
+            return new FlashbackPlaybackStutterClassification(
+                "unknown",
+                $"slowPctEnd={slowFramePercentAtEnd:0.##} slowPctMax={maxSlowFramePercentObserved:0.##} droppedFramesDelta={droppedFramesDelta} onePercentLowEnd={onePercentLowFpsAtEnd:0.##} onePercentLowMin={minOnePercentLowFpsObserved:0.##} targetFps={targetFps:0.##}");
+        }
+
+        return new FlashbackPlaybackStutterClassification("none", string.Empty);
+    }
+
+    private static bool HasFlashbackPlaybackCadenceStress(
+        double slowFramePercentAtEnd,
+        double maxSlowFramePercentObserved,
+        long droppedFramesDelta,
+        double onePercentLowFpsAtEnd,
+        double minOnePercentLowFpsObserved,
+        double targetFps)
+    {
+        var onePercentLowFloor = targetFps > 0 ? targetFps * 0.80 : 0.0;
+        return droppedFramesDelta > 0 ||
+               slowFramePercentAtEnd > 0 ||
+               maxSlowFramePercentObserved > 0 ||
+               (onePercentLowFloor > 0 &&
+                onePercentLowFpsAtEnd > 0 &&
+                onePercentLowFpsAtEnd < onePercentLowFloor) ||
+               (onePercentLowFloor > 0 &&
+                minOnePercentLowFpsObserved > 0 &&
+                minOnePercentLowFpsObserved < onePercentLowFloor);
+    }
+
+    private static double GetFlashbackPlaybackTargetFps(JsonElement snapshot)
+    {
+        var targetFps = GetDouble(snapshot, "FlashbackPlaybackTargetFps");
+        if (targetFps <= 0)
+        {
+            targetFps = GetDouble(snapshot, "SelectedExactFrameRate");
+        }
+
+        if (targetFps <= 0)
+        {
+            targetFps = GetDouble(snapshot, "ExpectedCaptureFrameRate");
+        }
+
+        return targetFps;
     }
 
     private readonly record struct DiagnosticSessionFlashbackPlaybackCommandsResultProjection(

@@ -2039,6 +2039,12 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private const int PlaybackAudioPrebufferTimeoutMs = 1000;
     private const int PlaybackAudioPrebufferRetryDelayMs = 20;
     private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
+    private const int AudioRenderStateTransitionTimeoutMs = 100;
+    // Must stay strictly greater than ActiveFmp4ReopenNearLiveGuard (250ms):
+    // clamped targets at exactly the guard distance would fall inside the
+    // skip-reopen zone and lose the stale-fragment-index recovery path.
+    private static readonly TimeSpan MinimumPlaybackLiveLead =
+        TimeSpan.FromMilliseconds(Math.Max(300.0, PlaybackAudioPrebufferTargetMs));
 
     private void ApplyAudioRoutingForState(string operation)
     {
@@ -2142,7 +2148,15 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     {
         try
         {
-            _audioPlayback?.PauseRendering();
+            var audioPlayback = _audioPlayback;
+            audioPlayback?.PauseRendering();
+            if (audioPlayback != null &&
+                !audioPlayback.WaitForRenderingPaused(AudioRenderStateTransitionTimeoutMs))
+            {
+                Logger.Log(
+                    $"FLASHBACK_PLAYBACK_AUDIO_RENDER_STATE_TIMEOUT op=pause operation={operation} " +
+                    $"expected=paused timeout_ms={AudioRenderStateTransitionTimeoutMs}");
+            }
         }
         catch (Exception ex)
         {
@@ -2154,7 +2168,15 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     {
         try
         {
-            _audioPlayback?.ResumeRendering();
+            var audioPlayback = _audioPlayback;
+            audioPlayback?.ResumeRendering();
+            if (audioPlayback != null &&
+                !audioPlayback.WaitForRenderingRunning(AudioRenderStateTransitionTimeoutMs))
+            {
+                Logger.Log(
+                    $"FLASHBACK_PLAYBACK_AUDIO_RENDER_STATE_TIMEOUT op=resume operation={operation} " +
+                    $"expected=running timeout_ms={AudioRenderStateTransitionTimeoutMs}");
+            }
         }
         catch (Exception ex)
         {
@@ -2166,7 +2188,17 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     {
         try
         {
-            _audioPlayback?.ResumeRendering();
+            var audioPlayback = _audioPlayback;
+            audioPlayback?.ResumeRendering(
+                PlaybackAudioPrebufferTargetMs,
+                PlaybackAudioPrebufferTimeoutMs);
+            if (audioPlayback != null &&
+                !audioPlayback.WaitForRenderingRunning(AudioRenderStateTransitionTimeoutMs))
+            {
+                Logger.Log(
+                    $"FLASHBACK_PLAYBACK_AUDIO_RENDER_STATE_TIMEOUT op=resume_playback operation={operation} " +
+                    $"expected=running timeout_ms={AudioRenderStateTransitionTimeoutMs}");
+            }
         }
         catch (Exception ex)
         {
@@ -2186,9 +2218,40 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         }
     }
 
+    private TimeSpan ClampPlaybackTargetToMinimumLiveLead(
+        TimeSpan target,
+        TimeSpan frozenValidStart,
+        string operation)
+    {
+        var latestPts = _bufferManager.LatestPts;
+        if (latestPts <= frozenValidStart ||
+            latestPts - frozenValidStart <= MinimumPlaybackLiveLead)
+        {
+            return target;
+        }
+
+        var latestSafeTarget = latestPts - MinimumPlaybackLiveLead;
+        if (latestSafeTarget < frozenValidStart)
+        {
+            latestSafeTarget = frozenValidStart;
+        }
+
+        if (target <= latestSafeTarget)
+        {
+            return target;
+        }
+
+        Logger.Log(
+            $"FLASHBACK_PLAYBACK_LIVE_LEAD_CLAMP operation={operation} " +
+            $"target_ms={(long)target.TotalMilliseconds} clamped_ms={(long)latestSafeTarget.TotalMilliseconds} " +
+            $"latest_ms={(long)latestPts.TotalMilliseconds} lead_ms={(long)MinimumPlaybackLiveLead.TotalMilliseconds}");
+        return latestSafeTarget;
+    }
+
     private void PrimePlaybackAudioBuffer(
         FlashbackDecoder decoder,
         Queue<DecodedVideoFrame> prebufferedFrames,
+        Channel<PlaybackCommand> commandChannel,
         ref bool fileOpen,
         TimeSpan resumeTarget,
         string operation,
@@ -2210,10 +2273,20 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         var discarded = false;
         var rewound = false;
         var prebufferReleasedFrames = 0;
+        var prebufferAudioGateTicks = 0L;
+        var commandPending = false;
+        var pendingCommandKind = CommandKind.Stop;
 
         while (decodedFrames < PlaybackAudioPrebufferDecodeFrameBudget)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (commandChannel.Reader.TryPeek(out var pendingCommand))
+            {
+                commandPending = true;
+                pendingCommandKind = pendingCommand.Kind;
+                break;
+            }
+
             if (audioPlayback.PlaybackBufferedDurationMs >= PlaybackAudioPrebufferTargetMs)
             {
                 break;
@@ -2260,6 +2333,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         }
 
         var bufferedMs = audioPlayback.PlaybackBufferedDurationMs;
+        prebufferAudioGateTicks = Interlocked.Read(ref _lastAudioPtsTicks);
         if (bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs)
         {
             ClearPrebufferedFrames(prebufferedFrames, $"prebuffer_discard_{operation}");
@@ -2273,18 +2347,19 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             }
 
             bufferedMs = audioPlayback.PlaybackBufferedDurationMs;
+            prebufferAudioGateTicks = 0;
             discarded = true;
         }
 
         if (decodedFrames > 0)
         {
-            rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, cancellationToken);
+            rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, prebufferAudioGateTicks, cancellationToken);
         }
 
         if (logResult || timedOut || reachedEnd || skippedForSoftwareBudget)
         {
             Logger.Log(
-                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
+                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} command_pending={commandPending} pending_command={pendingCommandKind} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
         }
     }
 
@@ -2293,21 +2368,23 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         ref bool fileOpen,
         TimeSpan resumeTarget,
         string operation,
+        long prebufferAudioGateTicks,
         CancellationToken cancellationToken)
     {
         try
         {
             decoder.AudioChunkCallback = null;
             cancellationToken.ThrowIfCancellationRequested();
+            var audioGateTicks = Math.Max(resumeTarget.Ticks, Math.Max(0, prebufferAudioGateTicks));
             if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, resumeTarget, $"prebuffer_discard_{operation}", cancellationToken))
             {
                 Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND_FAIL operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds}");
-                RestoreAudioCallback(decoder, resumeTarget.Ticks);
+                RestoreAudioCallback(decoder, audioGateTicks, prebufferAudioGateTicks);
                 return false;
             }
 
-            RestoreAudioCallback(decoder, resumeTarget.Ticks);
-            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds}");
+            RestoreAudioCallback(decoder, audioGateTicks, prebufferAudioGateTicks);
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds} audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds}");
             return true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -2317,19 +2394,24 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=prebuffer_rewind operation={operation} target_ms={(long)resumeTarget.TotalMilliseconds} type={ex.GetType().Name} msg='{ex.Message}'");
-            RestoreAudioCallback(decoder, resumeTarget.Ticks);
+            var audioGateTicks = Math.Max(resumeTarget.Ticks, Math.Max(0, prebufferAudioGateTicks));
+            RestoreAudioCallback(decoder, audioGateTicks, prebufferAudioGateTicks);
             return false;
         }
     }
 
-    private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)
+    private void RestoreAudioCallback(
+        FlashbackDecoder decoder,
+        long audioStartGateTicks = 0,
+        long lastAcceptedAudioPtsTicks = 0)
     {
         // Audio start gate: drop any audio chunk with PTS before this value.
         // This filters stale audio from keyframe-to-target decode after a seek.
+        var normalizedLastAcceptedAudioPtsTicks = Math.Max(0, lastAcceptedAudioPtsTicks);
         var videoPtsGate = audioStartGateTicks > 0
-            ? audioStartGateTicks
+            ? Math.Max(audioStartGateTicks, normalizedLastAcceptedAudioPtsTicks)
             : Interlocked.Read(ref _lastVideoPtsTicks);
-        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+        Interlocked.Exchange(ref _lastAudioPtsTicks, normalizedLastAcceptedAudioPtsTicks);
 
         if (_audioPlayback == null)
         {
@@ -2355,7 +2437,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
             // Skip invalid or non-monotonic PTS (L8 fix).
             var prevPts = Interlocked.Read(ref _lastAudioPtsTicks);
-            if (chunk.Pts.Ticks <= 0 || chunk.Pts.Ticks < prevPts)
+            if (chunk.Pts.Ticks <= 0 || chunk.Pts.Ticks <= prevPts)
             {
                 ReturnPlaybackAudioChunkBestEffort(chunk, "playback_audio_non_monotonic_pts");
                 return;
@@ -2543,11 +2625,13 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             var diffMs = diffTicks / (double)TimeSpan.TicksPerMillisecond;
             var nominalDelayMs = frameDuration.TotalMilliseconds;
 
-            // At HFR, per-frame corrections are very visible. Short fMP4
-            // fragments keep audio close, so tolerate sub-100ms drift and only
-            // correct when sync moves outside that band.
-            const double syncThresholdMs = 100.0;
-            const double MaxAudioMasterCorrectionMs = 250.0;
+            // At HFR, per-frame corrections are visible, so correct
+            // proportionally once drift is outside the lip-sync band instead
+            // of accepting a persistent 100ms error.
+            const double syncThresholdMs = 40.0;
+            const double MaxAudioMasterCorrectionMs = 500.0;
+            const double AudioMasterCorrectionGain = 0.10;
+            const double MaxAudioMasterCorrectionFrameRatio = 0.25;
 
             if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)
             {
@@ -2563,16 +2647,21 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             double adjustedDelayMs;
             if (diffMs > syncThresholdMs)
             {
-                // Video ahead: add a tiny correction without tanking HFR cadence.
+                // Video ahead: add bounded delay so audio can catch up.
                 Interlocked.Increment(ref _playbackAudioMasterDelayDoubles);
-                var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));
+                var correctionMs = Math.Min(
+                    (diffMs - syncThresholdMs) * AudioMasterCorrectionGain,
+                    nominalDelayMs * MaxAudioMasterCorrectionFrameRatio);
                 adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);
             }
             else if (diffMs < -syncThresholdMs)
             {
-                // Video behind: shave a tiny correction without creating bursts.
+                // Video behind: shave bounded delay; frame skip owns larger
+                // video-behind errors before this point.
                 Interlocked.Increment(ref _playbackAudioMasterDelayShrinks);
-                var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));
+                var correctionMs = Math.Min(
+                    (-diffMs - syncThresholdMs) * AudioMasterCorrectionGain,
+                    nominalDelayMs * MaxAudioMasterCorrectionFrameRatio);
                 adjustedDelayMs = Math.Max(0, nominalDelayMs - Math.Max(0, correctionMs));
                 if (adjustedDelayMs <= 0)
                 {

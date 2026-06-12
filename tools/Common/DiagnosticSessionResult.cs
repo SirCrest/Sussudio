@@ -269,6 +269,10 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackSeekForwardDecodeCapHitsDelta { get; init; }
     public bool FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd { get; init; }
 
+    // Flashback playback stutter classification summary.
+    public string FlashbackPlaybackLikelyStutterCause { get; init; } = "none";
+    public string FlashbackPlaybackLikelyStutterEvidence { get; init; } = string.Empty;
+
     // Flashback recording summary.
     public bool FlashbackRecordingBackendObserved { get; init; }
     public bool FlashbackRecordingFileGrowthObserved { get; init; }
@@ -432,6 +436,7 @@ public static class DiagnosticSessionResultFormatter
         AppendFlashbackPlaybackPerformance(builder, result);
         AppendFlashbackPlaybackDecode(builder, result);
         AppendFlashbackPlaybackStages(builder, result);
+        AppendFlashbackPlaybackStutter(builder, result);
         AppendFlashbackRecording(builder, result);
         AppendFlashbackExport(builder, result);
     }
@@ -557,6 +562,14 @@ public static class DiagnosticSessionResultFormatter
             $"seekCapHitsDelta={result.FlashbackPlaybackSeekForwardDecodeCapHitsDelta} " +
             $"lastSeekCapEnd={result.FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd} " +
             $"lastWriteHeadGapMsEnd={result.FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd}");
+    }
+
+    private static void AppendFlashbackPlaybackStutter(StringBuilder builder, DiagnosticSessionResult result)
+    {
+        builder.AppendLine(
+            "Flashback Playback Stutter: " +
+            $"cause={FormatOptional(result.FlashbackPlaybackLikelyStutterCause)} " +
+            $"evidence={FormatOptional(result.FlashbackPlaybackLikelyStutterEvidence)}");
     }
 
     private static void AppendFlashbackRecording(StringBuilder builder, DiagnosticSessionResult result)

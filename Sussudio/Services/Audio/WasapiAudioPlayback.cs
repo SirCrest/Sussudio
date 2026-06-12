@@ -45,6 +45,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _started;
     private int _disposed;
     private int _renderingPaused; // 0 = active, 1 = paused
+    private readonly ManualResetEventSlim _renderPausedAcknowledged = new(false);
+    private readonly ManualResetEventSlim _renderRunningAcknowledged = new(true);
     private volatile bool _pauseRequested;
     private volatile bool _resumeRequested;
     private int _resumePrebufferFrames;
@@ -261,6 +263,13 @@ internal sealed class WasapiAudioPlayback : IDisposable
         try
         {
             _currentVolume = _targetVolume;
+            _pauseRequested = false;
+            _resumeRequested = false;
+            Volatile.Write(ref _resumePrebufferFrames, 0);
+            Volatile.Write(ref _resumePrebufferTimeoutMs, 0);
+            Interlocked.Exchange(ref _renderingPaused, 0);
+            _renderPausedAcknowledged.Reset();
+            _renderRunningAcknowledged.Set();
             WasapiComInterop.ThrowIfFailed(_audioClient!.Start(), "IAudioClient.Start(render)");
 
             _renderThread = new Thread(RenderThreadMain)
@@ -283,25 +292,71 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public void PauseRendering()
     {
         if (Volatile.Read(ref _started) == 0) return;
-        if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested) return;
+        if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)
+        {
+            _renderPausedAcknowledged.Set();
+            _renderRunningAcknowledged.Reset();
+            return;
+        }
 
         _resumeRequested = false;
         _pauseRequested = true;
+        _renderRunningAcknowledged.Reset();
+        _renderPausedAcknowledged.Reset();
         _renderEvent?.Set();
     }
 
     public void ResumeRendering(double prebufferMs = 0, int prebufferTimeoutMs = 0)
     {
         if (Volatile.Read(ref _started) == 0) return;
-        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;
+        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)
+        {
+            _renderRunningAcknowledged.Set();
+            _renderPausedAcknowledged.Reset();
+            return;
+        }
 
         var prebufferFrames = prebufferMs > 0
             ? (int)Math.Ceiling(prebufferMs * OutputSampleRate / 1000.0)
             : 0;
         Volatile.Write(ref _resumePrebufferFrames, Math.Max(0, prebufferFrames));
         Volatile.Write(ref _resumePrebufferTimeoutMs, Math.Max(0, prebufferTimeoutMs));
+        _renderPausedAcknowledged.Reset();
+        _renderRunningAcknowledged.Reset();
         _resumeRequested = true;
         _renderEvent?.Set();
+    }
+
+    public bool WaitForRenderingPaused(int timeoutMs)
+        => WaitForRenderState(paused: true, timeoutMs);
+
+    public bool WaitForRenderingRunning(int timeoutMs)
+        => WaitForRenderState(paused: false, timeoutMs);
+
+    private bool WaitForRenderState(bool paused, int timeoutMs)
+    {
+        if (Volatile.Read(ref _started) == 0)
+        {
+            return true;
+        }
+
+        var boundedTimeoutMs = Math.Max(0, timeoutMs);
+        if (paused)
+        {
+            if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested)
+            {
+                return true;
+            }
+
+            return _renderPausedAcknowledged.Wait(boundedTimeoutMs);
+        }
+
+        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested)
+        {
+            return true;
+        }
+
+        return _renderRunningAcknowledged.Wait(boundedTimeoutMs);
     }
 
     /// <summary>
@@ -335,6 +390,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
         try
         {
             _renderEvent?.Set();
+            _renderPausedAcknowledged.Set();
+            _renderRunningAcknowledged.Set();
             _audioClient?.Stop();
         }
         catch (Exception ex)
@@ -374,6 +431,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
         Stop();
         _renderEvent?.Dispose();
         _renderEvent = null;
+        _renderPausedAcknowledged.Dispose();
+        _renderRunningAcknowledged.Dispose();
         WasapiComInterop.ReleaseComObject(ref _audioRenderClient);
         WasapiComInterop.ReleaseComObject(ref _audioClient3);
         WasapiComInterop.ReleaseComObject(ref _audioClient);
@@ -550,6 +609,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
                 Flush();
                 Interlocked.Exchange(ref _renderingPaused, 1);
+                _renderRunningAcknowledged.Reset();
+                _renderPausedAcknowledged.Set();
                 Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
                 if (!_resumeRequested)
                 {
@@ -562,6 +623,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 _resumeRequested = false;
                 if (Volatile.Read(ref _renderingPaused) == 0)
                 {
+                    _renderPausedAcknowledged.Reset();
+                    _renderRunningAcknowledged.Set();
                     Logger.Log("WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
                     continue;
                 }
@@ -577,6 +640,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 }
 
                 Interlocked.Exchange(ref _renderingPaused, 0);
+                _renderPausedAcknowledged.Reset();
+                _renderRunningAcknowledged.Set();
                 Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
                 continue;
             }
@@ -605,11 +670,20 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
         var start = Stopwatch.GetTimestamp();
         var timedOut = false;
+        var pausePending = false;
         var bufferedFrames = PlaybackBufferedFramesForResume();
         while (bufferedFrames < targetFrames &&
                Volatile.Read(ref _started) != 0 &&
                Volatile.Read(ref _disposed) == 0)
         {
+            // A queued pause must not wait out a dry prebuffer (up to the full
+            // timeout); bail so RenderThreadMain can process it promptly.
+            if (_pauseRequested)
+            {
+                pausePending = true;
+                break;
+            }
+
             var elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
             if (timeoutMs <= 0 || elapsedMs >= timeoutMs)
             {
@@ -623,7 +697,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
         var waitedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
         Logger.Log(
-            $"WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1} actual_ms={FramesToMilliseconds(bufferedFrames):F1} waited_ms={waitedMs:F1} timed_out={timedOut}");
+            $"WASAPI_PLAYBACK_RENDER_PREBUFFER target_ms={FramesToMilliseconds(targetFrames):F1} actual_ms={FramesToMilliseconds(bufferedFrames):F1} waited_ms={waitedMs:F1} timed_out={timedOut} pause_pending={pausePending}");
     }
 
     private int PlaybackBufferedFramesForResume()

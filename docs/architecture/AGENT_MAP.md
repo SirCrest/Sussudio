@@ -2647,7 +2647,8 @@ Primary owners:
   the result-build request handoff created by `DiagnosticSessionRunner.cs` and
   consumed by the result builder. It also owns diagnostic-session metric
   preparation for validation/result projections, analysis warning emission,
-  Flashback playback/export analysis warning text, threshold guards, tolerated
+  Flashback playback/export analysis warning text, Flashback playback
+  stutter-cause classification, threshold guards, tolerated
   Flashback scenario warning classification, diagnostic-session validation
   handoff order for Flashback playback, cleanup lifecycle restore, preview
   scheduler analysis, and diagnostic health. It also owns cleanup restore

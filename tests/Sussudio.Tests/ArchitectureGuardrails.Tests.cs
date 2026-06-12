@@ -519,6 +519,9 @@ static partial class Program
         AssertContains(scriptText, "function Get-CapturedSourceInput");
         AssertContains(scriptText, "function Split-CapturedSourceLines");
         AssertContains(scriptText, "function Sum-NonBlankLines");
+        AssertContains(scriptText, "\".claude\"");
+        AssertContains(scriptText, "\".agents\"");
+        AssertContains(scriptText, "\".codex\"");
         AssertContains(scriptText, "[System.Security.Cryptography.SHA256]::Create()");
         AssertContains(scriptText, "$sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($raw))");
         AssertContains(scriptText, "$capturedInputs = @($allCs | ForEach-Object { Get-CapturedSourceInput $_ })");
@@ -538,6 +541,7 @@ static partial class Program
         AssertContains(baselineText, $"| Core app nonblank LoC (Sussudio/) | {coreNonBlankLines} |");
         AssertContains(baselineText, $"| Sussudio.Tests .cs files | {sussudioTestFiles.Length} |");
         AssertContains(baselineText, $"| Sussudio.Tests nonblank LoC | {sussudioTestNonBlankLines} |");
+        AssertDoesNotContain(baselineText, ".claude/worktrees");
 
         return Task.CompletedTask;
     }
