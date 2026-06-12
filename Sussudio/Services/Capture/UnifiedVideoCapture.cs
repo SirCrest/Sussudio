@@ -70,6 +70,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private Action<string>? _pixelFormatDetectedCallback;
     private int _pixelFormatObserverFired;
     private volatile bool _previewSuppressed;
+    private readonly bool _pooledCpuFanoutEnabled =
+        EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_POOLED_FANOUT", 1, 0, 1) != 0;
 
     public bool IsP010 => Volatile.Read(ref _isP010);
     public int Width => Volatile.Read(ref _width);
@@ -676,13 +678,82 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         var isP010 = Volatile.Read(ref _isP010);
         FirePixelFormatObserverOnce(isP010 ? "P010" : "NV12");
 
+        var previewSink = Volatile.Read(ref _previewSink);
+        var previewWanted = !_previewSuppressed && previewSink != null && !frameData.IsEmpty;
+
+        if (_pooledCpuFanoutEnabled && !frameData.IsEmpty)
+        {
+            FanOutPooledCpuFrame(
+                frameData,
+                width,
+                height,
+                isP010,
+                arrivalTick,
+                sourceSequence,
+                previewWanted ? previewSink : null);
+            return;
+        }
+
         EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);
         EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);
 
-        var previewSink = Volatile.Read(ref _previewSink);
-        if (!_previewSuppressed && previewSink != null && !frameData.IsEmpty)
+        if (previewWanted)
         {
-            SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick, sourceSequence);
+            SubmitPreviewRawFrame(previewSink!, frameData, width, height, isP010, arrivalTick, sourceSequence);
+        }
+    }
+
+    // Single-copy fan-out for uncompressed CPU frames: the MF buffer is only
+    // valid while this callback runs, so each consumer otherwise copies the
+    // full frame inline on the capture read loop (~12 MB per consumer per
+    // frame at 4K NV12, ~25 MB at P010). Copy once into a pooled frame and
+    // hand refcounted leases to recording, Flashback, and preview instead.
+    private void FanOutPooledCpuFrame(
+        ReadOnlySpan<byte> frameData,
+        int width,
+        int height,
+        bool isP010,
+        long arrivalTick,
+        long sourceSequence,
+        IPreviewFrameSink? previewSink)
+    {
+        var recordingWanted = Volatile.Read(ref _recordingActive) && Volatile.Read(ref _recordingEncoder) != null;
+        var flashbackWanted = Volatile.Read(ref _flashbackSink) != null;
+        if (!recordingWanted && !flashbackWanted && previewSink == null)
+        {
+            return;
+        }
+
+        var frame = PooledVideoFrame.Rent(
+            sourceSequence,
+            arrivalTick,
+            decodedTick: arrivalTick,
+            width,
+            height,
+            isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
+            frameData.Length);
+        try
+        {
+            frameData.CopyTo(frame.Span);
+
+            if (recordingWanted)
+            {
+                EnqueueRecordingFrame(frame);
+            }
+
+            if (flashbackWanted)
+            {
+                EnqueueFlashbackFrame(frame);
+            }
+
+            if (previewSink != null)
+            {
+                SubmitPreviewFrameLease(previewSink, frame, isP010, sourceSequence);
+            }
+        }
+        finally
+        {
+            frame.Dispose();
         }
     }
 
@@ -959,6 +1030,80 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
+    private void SubmitPreviewFrameLease(
+        IPreviewFrameSink previewSink,
+        PooledVideoFrame frame,
+        bool isP010,
+        long sourceSequence)
+    {
+        try
+        {
+            // Visual cadence tracking compares consecutive frames; this runs on
+            // the single-threaded capture read loop, so ordering holds.
+            TrackPreviewVisualFrame(
+                frame.Span,
+                frame.Width,
+                frame.Height,
+                frame.PixelFormat,
+                frame.ArrivalTick,
+                sequenceNumber: sourceSequence);
+
+            if (!frame.TryAddLease(out var lease))
+            {
+                Interlocked.Increment(ref _videoFramesDropped);
+                _frameLedger.RecordEvent(
+                    sourceSequence,
+                    FrameLedgerStage.PreviewEnqueued,
+                    subsystem: "preview",
+                    byteDepth: frame.Length,
+                    accepted: false,
+                    reason: "lease_unavailable");
+                return;
+            }
+
+            var ownedLease = lease;
+            try
+            {
+                var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
+                var submitTick = Stopwatch.GetTimestamp();
+                previewSink.SubmitRawFrameLease(
+                    ownedLease!,
+                    isHdr: isP010,
+                    PreviewFrameTracking.Default with
+                    {
+                        ArrivalTick = frame.ArrivalTick,
+                        SourceSequenceNumber = sourceSequence,
+                        PreviewPresentId = previewPresentId,
+                        SchedulerSubmitTick = submitTick,
+                    });
+                ownedLease = null;
+            }
+            finally
+            {
+                ownedLease?.Dispose();
+            }
+
+            _frameLedger.RecordEvent(
+                sourceSequence,
+                FrameLedgerStage.PreviewEnqueued,
+                subsystem: "preview",
+                byteDepth: frame.Length,
+                accepted: true);
+        }
+        catch (Exception ex)
+        {
+            Interlocked.Increment(ref _videoFramesDropped);
+            _frameLedger.RecordEvent(
+                sourceSequence,
+                FrameLedgerStage.PreviewEnqueued,
+                subsystem: "preview",
+                byteDepth: frame.Length,
+                accepted: false,
+                reason: "exception");
+            Logger.Log($"UNIFIED_VIDEO_PREVIEW_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
     private unsafe void SubmitPreviewRawFrame(
         IPreviewFrameSink previewSink,
         ReadOnlySpan<byte> frameData,
@@ -1141,14 +1286,15 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
+            var isP010 = frame.PixelFormat == PooledVideoPixelFormat.P010;
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010);
             if (frame.Length < expectedSize)
             {
                 Interlocked.Increment(ref _videoFramesDropped);
                 RecordRecordingEnqueue(frame.SequenceNumber, accepted: false, reason: "frame_size_mismatch");
                 Logger.Log(
                     "UNIFIED_VIDEO_FRAME_SIZE_MISMATCH " +
-                    $"expected={expectedSize} actual={frame.Length} width={frame.Width} height={frame.Height} isP010=false");
+                    $"expected={expectedSize} actual={frame.Length} width={frame.Width} height={frame.Height} isP010={isP010}");
                 return;
             }
 
@@ -1302,7 +1448,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(
+                frame.Width,
+                frame.Height,
+                frame.PixelFormat == PooledVideoPixelFormat.P010);
             if (frame.Length < expectedSize)
             {
                 RecordFlashbackRecordingAccounting(sink, accepted: false, frame.SequenceNumber, "frame_size_mismatch");

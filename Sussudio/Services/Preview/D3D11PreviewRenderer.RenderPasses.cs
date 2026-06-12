@@ -463,13 +463,17 @@ internal sealed partial class D3D11PreviewRenderer
 
             var inputStart = Stopwatch.GetTimestamp();
             EnsureHdrInputResources(frame.Width, frame.Height);
-            if (_hdrInputTexture == null ||
-                _hdrStagingTexture == null ||
-                _hdrYPlaneSRV == null ||
-                _hdrUVPlaneSRV == null)
+            if (_hdrInputTextures.Length == 0 || _hdrInputTextures[0] == null)
             {
                 return;
             }
+
+            var ringIndex = _hdrInputRingIndex;
+            _hdrInputRingIndex = (ringIndex + 1) % _hdrInputTextures.Length;
+            var hdrInputTexture = _hdrInputTextures[ringIndex]!;
+            var hdrStagingTexture = _hdrStagingTextures[ringIndex]!;
+            var hdrYPlaneSRV = _hdrYPlaneSRVs[ringIndex]!;
+            var hdrUVPlaneSRV = _hdrUVPlaneSRVs[ringIndex]!;
             inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
 
             if (frame.D3DTexture != null)
@@ -478,17 +482,17 @@ internal sealed partial class D3D11PreviewRenderer
                 var srcDesc = frame.D3DTexture.Description;
                 var planeOffset = (int)(srcDesc.ArraySize * Math.Max(1, srcDesc.MipLevels));
 
-                _deviceContext.CopySubresourceRegion(_hdrInputTexture, 0, 0, 0, 0,
+                _deviceContext.CopySubresourceRegion(hdrInputTexture, 0, 0, 0, 0,
                     frame.D3DTexture, (uint)frame.D3DSubresourceIndex);
 
-                _deviceContext.CopySubresourceRegion(_hdrInputTexture, 1, 0, 0, 0,
+                _deviceContext.CopySubresourceRegion(hdrInputTexture, 1, 0, 0, 0,
                     frame.D3DTexture, (uint)(frame.D3DSubresourceIndex + planeOffset));
                 inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
             }
             else if (frame.RawData != null)
             {
                 inputStart = Stopwatch.GetTimestamp();
-                if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
+                if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, true, hdrStagingTexture, hdrInputTexture))
                 {
                     return;
                 }
@@ -497,7 +501,7 @@ internal sealed partial class D3D11PreviewRenderer
             else if (frame.FrameLease != null)
             {
                 inputStart = Stopwatch.GetTimestamp();
-                if (!UploadRawFrameToTexture(frame.FrameLease.Memory.Span, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
+                if (!UploadRawFrameToTexture(frame.FrameLease.Memory.Span, frame.Width, frame.Height, true, hdrStagingTexture, hdrInputTexture))
                 {
                     return;
                 }
@@ -527,8 +531,8 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.PSSetShader(pixelShader, EmptyClassInstances, 0);
             _samplerArray[0] = _linearSampler!;
             _deviceContext.PSSetSamplers(0, 1, _samplerArray);
-            _srvArray2[0] = _hdrYPlaneSRV!;
-            _srvArray2[1] = _hdrUVPlaneSRV!;
+            _srvArray2[0] = hdrYPlaneSRV;
+            _srvArray2[1] = hdrUVPlaneSRV;
             _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
 
             UpdateViewportConstantBuffer(viewport);

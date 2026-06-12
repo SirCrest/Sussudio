@@ -401,10 +401,14 @@ internal sealed partial class D3D11PreviewRenderer
     private ID3D11Texture2D?[] _stagingTextures = Array.Empty<ID3D11Texture2D?>();
     private ID3D11VideoProcessorInputView?[] _inputViews = Array.Empty<ID3D11VideoProcessorInputView?>();
     private int _inputTextureRingIndex;
-    private ID3D11Texture2D? _hdrInputTexture;
-    private ID3D11Texture2D? _hdrStagingTexture;
-    private ID3D11ShaderResourceView? _hdrYPlaneSRV;
-    private ID3D11ShaderResourceView? _hdrUVPlaneSRV;
+    // The HDR shader path rings its input resources for the same reason as the
+    // SDR ring above — a CPU P010 upload at 4K is ~25 MB, and writing into the
+    // texture the previous Draw is still sampling forces a stall or rename.
+    private ID3D11Texture2D?[] _hdrInputTextures = Array.Empty<ID3D11Texture2D?>();
+    private ID3D11Texture2D?[] _hdrStagingTextures = Array.Empty<ID3D11Texture2D?>();
+    private ID3D11ShaderResourceView?[] _hdrYPlaneSRVs = Array.Empty<ID3D11ShaderResourceView?>();
+    private ID3D11ShaderResourceView?[] _hdrUVPlaneSRVs = Array.Empty<ID3D11ShaderResourceView?>();
+    private int _hdrInputRingIndex;
     private int _hdrInputConfiguredWidth;
     private int _hdrInputConfiguredHeight;
     private bool _hdrPlaneViewsUnavailable;
@@ -1200,24 +1204,15 @@ internal sealed partial class D3D11PreviewRenderer
             return;
         }
 
-        if (_hdrInputTexture != null &&
-            _hdrStagingTexture != null &&
-            _hdrYPlaneSRV != null &&
-            _hdrUVPlaneSRV != null &&
+        if (_hdrInputTextures.Length == _inputTextureRingSize &&
+            _hdrInputTextures[0] != null &&
             _hdrInputConfiguredWidth == width &&
             _hdrInputConfiguredHeight == height)
         {
             return;
         }
 
-        _hdrYPlaneSRV?.Dispose();
-        _hdrYPlaneSRV = null;
-        _hdrUVPlaneSRV?.Dispose();
-        _hdrUVPlaneSRV = null;
-        _hdrInputTexture?.Dispose();
-        _hdrInputTexture = null;
-        _hdrStagingTexture?.Dispose();
-        _hdrStagingTexture = null;
+        DisposeHdrInputRingResources();
 
         var inputDescription = new Texture2DDescription(
             Format.P010,
@@ -1245,29 +1240,40 @@ internal sealed partial class D3D11PreviewRenderer
             0,
             ResourceOptionFlags.None);
 
-        _hdrInputTexture = _device.CreateTexture2D(inputDescription);
-        _hdrStagingTexture = _device.CreateTexture2D(stagingDescription);
+        _hdrInputTextures = new ID3D11Texture2D?[_inputTextureRingSize];
+        _hdrStagingTextures = new ID3D11Texture2D?[_inputTextureRingSize];
+        _hdrYPlaneSRVs = new ID3D11ShaderResourceView?[_inputTextureRingSize];
+        _hdrUVPlaneSRVs = new ID3D11ShaderResourceView?[_inputTextureRingSize];
 
-        _hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);
-        _hdrUVPlaneSRV = CreateHdrPlaneView(Format.R16G16_UNorm, planeSlice: 1);
-
-        if (_hdrYPlaneSRV == null && _hdrUVPlaneSRV == null)
+        for (var slot = 0; slot < _inputTextureRingSize; slot++)
         {
-            _hdrInputTexture.Dispose();
-            _hdrInputTexture = null;
-            _hdrStagingTexture.Dispose();
-            _hdrStagingTexture = null;
-            _hdrPlaneViewsUnavailable = true;
-            return;
+            var inputTexture = _device.CreateTexture2D(inputDescription);
+            _hdrInputTextures[slot] = inputTexture;
+            _hdrStagingTextures[slot] = _device.CreateTexture2D(stagingDescription);
+
+            var yPlaneSRV = CreateHdrPlaneView(inputTexture, Format.R16_UNorm, planeSlice: 0);
+            var uvPlaneSRV = CreateHdrPlaneView(inputTexture, Format.R16G16_UNorm, planeSlice: 1);
+            if (yPlaneSRV == null || uvPlaneSRV == null)
+            {
+                yPlaneSRV?.Dispose();
+                uvPlaneSRV?.Dispose();
+                DisposeHdrInputRingResources();
+                _hdrPlaneViewsUnavailable = true;
+                return;
+            }
+
+            _hdrYPlaneSRVs[slot] = yPlaneSRV;
+            _hdrUVPlaneSRVs[slot] = uvPlaneSRV;
         }
 
+        _hdrInputRingIndex = 0;
         _hdrInputConfiguredWidth = width;
         _hdrInputConfiguredHeight = height;
     }
 
-    private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)
+    private ID3D11ShaderResourceView? CreateHdrPlaneView(ID3D11Texture2D inputTexture, Format format, uint planeSlice)
     {
-        if (_device == null || _hdrInputTexture == null)
+        if (_device == null)
         {
             throw new InvalidOperationException("HDR shader input texture has not been created.");
         }
@@ -1275,7 +1281,7 @@ internal sealed partial class D3D11PreviewRenderer
         if (_device3 != null)
         {
             var srvDesc = new ShaderResourceViewDescription1(
-                _hdrInputTexture,
+                inputTexture,
                 ShaderResourceViewDimension.Texture2D,
                 format,
                 0,
@@ -1284,7 +1290,7 @@ internal sealed partial class D3D11PreviewRenderer
                 1,
                 planeSlice);
 
-            return _device3.CreateShaderResourceView1(_hdrInputTexture, srvDesc);
+            return _device3.CreateShaderResourceView1(inputTexture, srvDesc);
         }
 
         Logger.Log("D3D11_RENDERER_WARN Device3 not available for P010 plane views â€” HDR shader path disabled, falling back to VideoProcessor");
@@ -1319,18 +1325,43 @@ internal sealed partial class D3D11PreviewRenderer
         _inputTextureRingIndex = 0;
     }
 
-    private void DisposeHdrInputResources()
+    private void DisposeHdrInputRingResources()
     {
-        _hdrYPlaneSRV?.Dispose();
-        _hdrYPlaneSRV = null;
-        _hdrUVPlaneSRV?.Dispose();
-        _hdrUVPlaneSRV = null;
-        _hdrStagingTexture?.Dispose();
-        _hdrStagingTexture = null;
-        _hdrInputTexture?.Dispose();
-        _hdrInputTexture = null;
+        foreach (var planeView in _hdrYPlaneSRVs)
+        {
+            planeView?.Dispose();
+        }
+
+        _hdrYPlaneSRVs = Array.Empty<ID3D11ShaderResourceView?>();
+
+        foreach (var planeView in _hdrUVPlaneSRVs)
+        {
+            planeView?.Dispose();
+        }
+
+        _hdrUVPlaneSRVs = Array.Empty<ID3D11ShaderResourceView?>();
+
+        foreach (var stagingTexture in _hdrStagingTextures)
+        {
+            stagingTexture?.Dispose();
+        }
+
+        _hdrStagingTextures = Array.Empty<ID3D11Texture2D?>();
+
+        foreach (var inputTexture in _hdrInputTextures)
+        {
+            inputTexture?.Dispose();
+        }
+
+        _hdrInputTextures = Array.Empty<ID3D11Texture2D?>();
+        _hdrInputRingIndex = 0;
         _hdrInputConfiguredWidth = 0;
         _hdrInputConfiguredHeight = 0;
+    }
+
+    private void DisposeHdrInputResources()
+    {
+        DisposeHdrInputRingResources();
         _hdrPlaneViewsUnavailable = false;
     }
 

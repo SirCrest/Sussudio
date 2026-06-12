@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Capture;
 
@@ -31,6 +32,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
     private readonly object _sync = new();
     private readonly object _cadenceLock = new();
+    private readonly string _readLoopMmcssTask =
+        Environment.GetEnvironmentVariable("SUSSUDIO_CAPTURE_READLOOP_MMCSS_TASK") ?? "Capture";
+    private readonly int _readLoopMmcssPriority =
+        EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_READLOOP_MMCSS_PRIORITY", 1, -2, 2);
     private IMFSourceReader? _sourceReader;
     private IMFMediaSource? _mediaSource;
     private CancellationTokenSource? _readCts;
@@ -1061,6 +1066,15 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)
     {
         Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
+
+        // On uncompressed paths this is the only capture-side thread, and frame
+        // delivery (including every consumer's synchronous copy) runs inline on
+        // it while the MF buffer is locked — so it must stay scheduled ahead of
+        // game threads or frames are lost at the source.
+        using var mmcss = MmcssThreadRegistration.TryRegister(
+            _readLoopMmcssTask,
+            _readLoopMmcssPriority,
+            message => Log(message));
 
         while (!ct.IsCancellationRequested)
         {
