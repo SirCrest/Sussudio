@@ -621,12 +621,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
         {
-            var stopException = new InvalidOperationException(
-                $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
-            SignalFatalError(
-                stopException,
-                $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
-            throw stopException;
+            // Stop must never throw — a wedged emitter must not block reinit or preview-stop.
+            // Log and proceed; Dispose drains the ring with its own bounded timeout and does not throw.
+            Logger.Log(
+                $"UNIFIED_VIDEO_MJPEG_STOP_TIMEOUT reason='{failureReason ?? "unknown"}' — forcing cleanup");
         }
 
         lock (_sync)

@@ -617,6 +617,9 @@ public sealed class AutomationSnapshot
     public long MjpegCompressedQueueByteBudget { get; init; }
     public long MjpegReorderSkips { get; init; }
     public int MjpegReorderBufferDepth { get; init; }
+    public int MjpegPeakReorderDepth { get; init; }
+    public long MjpegPeakCompressedQueueBytes { get; init; }
+    public long MjpegReorderRingForceDrops { get; init; }
     public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();
 
     public bool MjpegPreviewJitterEnabled { get; init; }

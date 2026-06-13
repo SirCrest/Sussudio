@@ -132,6 +132,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _flashbackExportLastForceRotateFallbackOutPointMs;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
+    private int _audioSwitchGeneration;
     private bool _mfConvertersDisabled;
     private uint? _actualWidth;
     private uint? _actualHeight;
@@ -177,6 +178,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     public bool IsInitialized => _isInitialized;
     public bool IsVideoPreviewActive => _isVideoPreviewActive;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
+    public Task? GetPendingDeferredCaptureCleanupTask() => _videoPipeline.PendingDeferredCaptureCleanupTask;
     public CaptureSessionState SessionState => CurrentSessionState;
     public long SessionGeneration => CaptureSnapshotProducerEpoch();
 
@@ -1174,8 +1176,11 @@ internal sealed class CaptureRecordingBackendResources
 
 internal sealed class CaptureVideoPipelineResources
 {
+    private static readonly int DeferredCaptureCleanupSinkTimeoutMs = 5000;
+
     public UnifiedVideoCapture? Capture { get; set; }
     public IPreviewFrameSink? PreviewFrameSink { get; set; }
+    public Task? PendingDeferredCaptureCleanupTask { get; private set; }
     public UnifiedVideoCapture.MjpegPipelineTimingMetrics LastMjpegPipelineTimingMetrics { get; private set; }
     public ParallelMjpegDecodePipeline.PipelineTimingMetrics? LastFullMjpegPipelineTimingMetrics { get; private set; }
 
@@ -1251,12 +1256,21 @@ internal sealed class CaptureVideoPipelineResources
             Logger.Log($"UNIFIED_VIDEO_DEFERRED_PREVIEW_DETACH_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}");
         }
 
-        return Task.Run(async () =>
+        var cleanupTask = Task.Run(async () =>
         {
             Exception? cleanupFailure = null;
             try
             {
-                await sinkCompletionTask.ConfigureAwait(false);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var completed = await Task.WhenAny(sinkCompletionTask, Task.Delay(DeferredCaptureCleanupSinkTimeoutMs)).ConfigureAwait(false);
+                if (completed != sinkCompletionTask)
+                {
+                    Logger.Log($"DEFERRED_CAPTURE_CLEANUP_SINK_TIMEOUT reason='{reason}' ms={sw.ElapsedMilliseconds}");
+                }
+                else
+                {
+                    await sinkCompletionTask.ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -1294,6 +1308,8 @@ internal sealed class CaptureVideoPipelineResources
                 }
             }
         });
+        PendingDeferredCaptureCleanupTask = cleanupTask;
+        return cleanupTask;
     }
 
     internal readonly record struct CaptureMjpegTimingSnapshot(

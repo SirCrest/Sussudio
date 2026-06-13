@@ -53,6 +53,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         long CompressedQueueByteBudget,
         long ReorderSkips,
         int ReorderBufferDepth,
+        int PeakReorderDepth,
+        long PeakCompressedQueueBytes,
+        long ReorderRingForceDrops,
         PerDecoderMetrics[] PerDecoder);
 
     public readonly record struct PerDecoderMetrics(
@@ -63,7 +66,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         double MaxMs);
 
     private const int WorkQueueItemCapacityPerDecoder = 8;
-    private const long DefaultCompressedQueueByteBudget = 512L * 1024 * 1024;
+    private const long DefaultCompressedQueueByteBudget = 64L * 1024 * 1024;
 
     private readonly EmitFrameCallback _emitCallback;
     private readonly PreviewFrameCallback? _previewCallback;
@@ -110,6 +113,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private int _compressedQueueDepth;
     private long _compressedQueueBytes;
     private long _loadShedDrops;
+    private int _peakReorderDepth;
+    private long _peakCompressedQueueBytes;
+    private long _reorderForceDrops;
     private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;
     private readonly long _shedAgeTicks;
     private readonly Func<bool>? _strictFrameConsumerActive;
@@ -177,6 +183,12 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             }
 
             return false;
+        }
+
+        var currentPeak = Interlocked.Read(ref _peakCompressedQueueBytes);
+        if (queuedBytes > currentPeak)
+        {
+            Interlocked.CompareExchange(ref _peakCompressedQueueBytes, queuedBytes, currentPeak);
         }
 
         Interlocked.Increment(ref _compressedFramesQueued);
@@ -512,6 +524,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             CompressedQueueByteBudget: _compressedQueueByteBudget,
             ReorderSkips: Interlocked.Read(ref _reorderSkips),
             ReorderBufferDepth: Volatile.Read(ref _reorderBufferDepth),
+            PeakReorderDepth: Volatile.Read(ref _peakReorderDepth),
+            PeakCompressedQueueBytes: Interlocked.Read(ref _peakCompressedQueueBytes),
+            ReorderRingForceDrops: Interlocked.Read(ref _reorderForceDrops),
             PerDecoder: perDecoder);
     }
 
@@ -601,6 +616,12 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             ? (long)Math.Round(Stopwatch.Frequency * 3.0 / fps)
             : (long)Math.Round(Stopwatch.Frequency * 0.025);
         _decodedReorderCapacity = ResolveDecodedReorderCapacity(width, height);
+        var overrideMb = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_COMPRESSED_BUDGET_MB", 0, 0, 4096);
+        if (overrideMb > 0)
+        {
+            _compressedQueueByteBudget = (long)overrideMb * 1024 * 1024;
+        }
+
         _decoders = new SoftwareMjpegDecoder[_decoderCount];
         _workers = new Thread[_decoderCount];
         _workQueue = Channel.CreateBounded<MjpegWorkItem>(new BoundedChannelOptions(
@@ -761,8 +782,17 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             var remaining = GetRemainingTimeout(deadline);
             if (remaining <= TimeSpan.Zero || !emitThread.Join(remaining))
             {
-                failureReason = "emitter_timeout";
-                return false;
+                // Workers have exited but the emitter is wedged (waiting on a gap in the
+                // ring). Drain the ring so the emit-loop exit condition becomes satisfiable
+                // (_stopped && !HasAliveWorkers() && depth==0), then retry the join with
+                // a short timeout.
+                DiscardRemainingReorderFrames("emitter_drain_on_stop");
+                SignalEmitter("emitter_drain_on_stop");
+                if (!emitThread.Join(TimeSpan.FromMilliseconds(500)))
+                {
+                    failureReason = "emitter_timeout";
+                    return false;
+                }
             }
         }
 
@@ -961,6 +991,32 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         Logger.Log(
             $"MJPEG_REORDER_STRICT_WAIT nextEmit={_nextEmitSeq} " +
             $"depth={Volatile.Read(ref _reorderBufferDepth)} waited_ms={nowTickMs - missingSince}");
+
+        // Backstop: if the ring has frames but the lowest available sequence is above
+        // _nextEmitSeq, the emitter is waiting on a sequence that will never arrive.
+        // Register every gap in [_nextEmitSeq, lowestAvailable) so the emitter unblocks
+        // within ~1 s even if Part (a) ever misses a case.
+        lock (_reorderLock)
+        {
+            if (_reorderFrames.Count > 0)
+            {
+                var lowestAvailable = PeekFirstSequenceUnderLock();
+                if (lowestAvailable > _nextEmitSeq)
+                {
+                    var from = _nextEmitSeq;
+                    for (var gap = _nextEmitSeq; gap < lowestAvailable; gap++)
+                    {
+                        _knownMissingSequences.Add(gap);
+                    }
+
+                    Logger.Log(
+                        $"MJPEG_REORDER_STRICT_ADVANCE from={from} to={lowestAvailable} gap={lowestAvailable - from}");
+                    Monitor.PulseAll(_reorderLock);
+                }
+            }
+        }
+
+        SignalEmitter("strict_advance");
     }
 
     private void MarkKnownMissing(long seqNo, string reason)
@@ -1057,12 +1113,25 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     {
         lock (_reorderLock)
         {
+            var waitCount = 0;
             while (!_stopped &&
                    Volatile.Read(ref _fatalErrorSignaled) == 0 &&
                    _reorderFrames.Count >= _decodedReorderCapacity &&
                    seqNo != _nextEmitSeq)
             {
                 Monitor.Wait(_reorderLock, TimeSpan.FromMilliseconds(8));
+                waitCount++;
+                if (waitCount >= 2 &&
+                    _reorderFrames.Count >= _decodedReorderCapacity &&
+                    !_stopped &&
+                    Volatile.Read(ref _fatalErrorSignaled) == 0)
+                {
+                    // Ring still full after bounded wait — force-drop oldest to
+                    // keep workers flowing. A stalled worker would block the
+                    // entire compressed queue and stall recording/Flashback.
+                    ForceDropOldestReorderFrameUnderLock();
+                    waitCount = 0;
+                }
             }
 
             if (_stopped || Volatile.Read(ref _fatalErrorSignaled) != 0)
@@ -1086,10 +1155,54 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             }
 
             _reorderFrames.Add(seqNo, new DecodedFrame(seqNo, frame, decodedTick));
-            Volatile.Write(ref _reorderBufferDepth, _reorderFrames.Count);
+            var depth = _reorderFrames.Count;
+            Volatile.Write(ref _reorderBufferDepth, depth);
+            if (depth > Volatile.Read(ref _peakReorderDepth))
+            {
+                Volatile.Write(ref _peakReorderDepth, depth);
+            }
+
             Monitor.PulseAll(_reorderLock);
             return true;
         }
+    }
+
+    // Called under _reorderLock only. Removes the oldest entry from the reorder
+    // ring to unblock a worker when the ring is full beyond the bounded wait.
+    private void ForceDropOldestReorderFrameUnderLock()
+    {
+        if (_reorderFrames.Count == 0)
+        {
+            return;
+        }
+
+        var seqNo = PeekFirstSequenceUnderLock();
+        var oldest = _reorderFrames[seqNo];
+        _reorderFrames.Remove(seqNo);
+        Volatile.Write(ref _reorderBufferDepth, _reorderFrames.Count);
+
+        // Force-drop must register the gap so the emitter never waits on a destroyed frame.
+        if (seqNo >= _nextEmitSeq)
+        {
+            _knownMissingSequences.Add(seqNo);
+            if (seqNo == _nextEmitSeq)
+            {
+                _nextEmitSeq++;
+            }
+        }
+
+        Monitor.PulseAll(_reorderLock);
+
+        var drops = Interlocked.Increment(ref _reorderForceDrops);
+        Interlocked.Increment(ref _totalFramesDropped);
+        if (drops == 1 || drops % 30 == 0)
+        {
+            Logger.Log(
+                $"MJPEG_REORDER_RING_FULL_DROP seq={oldest.SeqNo} drops={drops} " +
+                $"capacity={_decodedReorderCapacity} depth={Volatile.Read(ref _reorderBufferDepth)}");
+        }
+
+        oldest.Frame.Dispose();
     }
 
     private void DiscardStaleReorderFrames()
@@ -1271,9 +1384,13 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private static int ResolveDecodedReorderCapacity(int width, int height)
     {
-        var nv12Bytes = Math.Max(1L, (long)width * height * 3 / 2);
-        var budgetedFrames = DefaultDecodedReorderByteBudget / nv12Bytes;
-        return (int)Math.Clamp(budgetedFrames, MinDecodedReorderCapacity, MaxDecodedReorderCapacity);
+        // Out-of-order window is bounded by decoder count; empirically ≤6 frames at 4K120.
+        // Formula: decoderCount * 2 + 4 for 6 workers = 16 slots ≈ 190 MB at 4K NV12.
+        // Byte-budget constant is retained for diagnostics compatibility.
+        _ = width;
+        _ = height;
+        var overrideSlots = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_REORDER_SLOTS", 0, 0, 240);
+        return overrideSlots > 0 ? overrideSlots : 16;
     }
 }
 

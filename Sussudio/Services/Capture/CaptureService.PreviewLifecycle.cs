@@ -231,6 +231,20 @@ public partial class CaptureService
         WasapiAudioCapture? wasapiCapture = null;
         try
         {
+            var pendingCaptureCleanup = _videoPipeline.PendingDeferredCaptureCleanupTask;
+            if (pendingCaptureCleanup is { IsCompleted: false })
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                await pendingCaptureCleanup.WaitAsync(transitionToken).ConfigureAwait(false);
+                Logger.Log($"PREVIEW_REOPEN_WAITED_FOR_DEFERRED_CLEANUP ms={sw.ElapsedMilliseconds}");
+            }
+            else if (_recordingBackend.PendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrain)
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                await pendingLibAvDrain.WaitAsync(transitionToken).ConfigureAwait(false);
+                Logger.Log($"PREVIEW_REOPEN_WAITED_FOR_DEFERRED_CLEANUP ms={sw.ElapsedMilliseconds}");
+            }
+
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=create_uvc");
             unifiedVideoCapture = new UnifiedVideoCapture();
             AttachUnifiedVideoCapture(unifiedVideoCapture);
@@ -951,6 +965,7 @@ public partial class CaptureService
         => RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
             transitionToken.ThrowIfCancellationRequested();
+            var switchGen = Interlocked.Increment(ref _audioSwitchGeneration);
             var previousDeviceId = _audioDeviceId;
             var previousDeviceName = _audioDeviceName;
 
@@ -967,11 +982,10 @@ public partial class CaptureService
                 return;
             }
 
-            Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"}");
+            Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"} gen={switchGen}");
 
             var activeSink = _isRecording ? _recordingBackend.Sink : null;
             var oldCapture = _previewAudioGraph.ProgramCapture;
-            var committedSwitchToken = CancellationToken.None;
 
             var resolvedId = audioDeviceId ?? _currentDevice?.AudioDeviceId;
             if (!string.IsNullOrEmpty(resolvedId))
@@ -979,7 +993,7 @@ public partial class CaptureService
                 var newCapture = new WasapiAudioCapture();
                 try
                 {
-                    await newCapture.InitializeAsync(resolvedId, committedSwitchToken).ConfigureAwait(false);
+                    await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
                     newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     newCapture.CaptureFailed += OnWasapiCaptureFailed;
                     newCapture.Start();
@@ -1002,6 +1016,23 @@ public partial class CaptureService
                     throw;
                 }
 
+                if (switchGen != Volatile.Read(ref _audioSwitchGeneration))
+                {
+                    Logger.Log($"AUDIO_INPUT_SWITCH_ABORT reason=generation_mismatch gen={switchGen}");
+                    try
+                    {
+                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                    }
+
+                    return;
+                }
+
                 _previewAudioGraph.DetachCapture(
                     oldCapture,
                     OnWasapiAudioLevelUpdated,
@@ -1011,6 +1042,7 @@ public partial class CaptureService
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
                 _previewAudioGraph.ResetCaptureFault();
+                Logger.Log($"AUDIO_INPUT_SWITCH_COMMITTED gen={switchGen} device={audioDeviceName ?? audioDeviceId}");
 
                 AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
 
@@ -1023,9 +1055,18 @@ public partial class CaptureService
                 {
                     if (_isAudioPreviewActive)
                     {
-                        await _previewAudioGraph.StartPlaybackAsync(
-                            committedSwitchToken,
-                            _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                        try
+                        {
+                            await _previewAudioGraph.StartPlaybackAsync(
+                                transitionToken,
+                                _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                        }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            _isAudioPreviewActive = false;
+                            Logger.Log($"AUDIO_INPUT_SWITCH_PLAYBACK_START_FAILED gen={switchGen} device={audioDeviceName ?? resolvedId} type={ex.GetType().Name} hr=0x{ex.HResult:X8}");
+                            throw;
+                        }
                     }
 
                     Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");

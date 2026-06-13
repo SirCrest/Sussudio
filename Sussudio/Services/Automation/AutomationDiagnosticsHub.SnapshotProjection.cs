@@ -1831,6 +1831,9 @@ public sealed partial class AutomationDiagnosticsHub
             MjpegCompressedQueueByteBudget = mjpegFlattening.CompressedQueueByteBudget,
             MjpegReorderSkips = mjpegFlattening.ReorderSkips,
             MjpegReorderBufferDepth = mjpegFlattening.ReorderBufferDepth,
+            MjpegPeakReorderDepth = mjpegFlattening.PeakReorderDepth,
+            MjpegPeakCompressedQueueBytes = mjpegFlattening.PeakCompressedQueueBytes,
+            MjpegReorderRingForceDrops = mjpegFlattening.ReorderRingForceDrops,
             MjpegPreviewJitterEnabled = mjpegPreviewJitterFlattening.Queue.Enabled,
             MjpegPreviewJitterTargetDepth = mjpegPreviewJitterFlattening.Queue.TargetDepth,
             MjpegPreviewJitterMaxDepth = mjpegPreviewJitterFlattening.Queue.MaxDepth,
@@ -2775,6 +2778,9 @@ public sealed partial class AutomationDiagnosticsHub
             CompressedQueueByteBudget = health.MjpegCompressedQueueByteBudget,
             ReorderSkips = health.MjpegReorderSkips,
             ReorderBufferDepth = health.MjpegReorderBufferDepth,
+            PeakReorderDepth = health.MjpegPeakReorderDepth,
+            PeakCompressedQueueBytes = health.MjpegPeakCompressedQueueBytes,
+            ReorderRingForceDrops = health.MjpegReorderRingForceDrops,
             PreviewJitter = previewJitter,
             PacketHash = packetHash,
         };
@@ -2799,6 +2805,9 @@ public sealed partial class AutomationDiagnosticsHub
         public long CompressedQueueByteBudget { get; init; }
         public long ReorderSkips { get; init; }
         public int ReorderBufferDepth { get; init; }
+        public int PeakReorderDepth { get; init; }
+        public long PeakCompressedQueueBytes { get; init; }
+        public long ReorderRingForceDrops { get; init; }
         public MjpegPreviewJitterProjection PreviewJitter { get; init; }
         public MjpegPacketHashProjection PacketHash { get; init; }
     }
@@ -3285,6 +3294,9 @@ public sealed partial class AutomationDiagnosticsHub
             CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,
             ReorderSkips = mjpeg.ReorderSkips,
             ReorderBufferDepth = mjpeg.ReorderBufferDepth,
+            PeakReorderDepth = mjpeg.PeakReorderDepth,
+            PeakCompressedQueueBytes = mjpeg.PeakCompressedQueueBytes,
+            ReorderRingForceDrops = mjpeg.ReorderRingForceDrops,
         };
     }
 
@@ -3306,6 +3318,9 @@ public sealed partial class AutomationDiagnosticsHub
         public long CompressedQueueByteBudget { get; init; }
         public long ReorderSkips { get; init; }
         public int ReorderBufferDepth { get; init; }
+        public int PeakReorderDepth { get; init; }
+        public long PeakCompressedQueueBytes { get; init; }
+        public long ReorderRingForceDrops { get; init; }
     }
 
     private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)

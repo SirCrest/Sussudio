@@ -29,7 +29,9 @@ internal static class MfInteropHelpers
             return;
         }
 
-        throw new InvalidOperationException($"{operation} failed (hr=0x{hr:X8}).");
+        // Preserve the real HRESULT so callers can detect specific failures
+        // (e.g. device-busy 0xC00D36E6/0x80070001) by HResult, not message parsing.
+        throw new InvalidOperationException($"{operation} failed (hr=0x{hr:X8}).") { HResult = hr };
     }
 
     public static void AddStartupReference()
@@ -276,6 +278,21 @@ internal interface IMFActivate : IMFAttributes
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMFMediaSource
 {
+    // IMFMediaEventGenerator vtable slots 3-6
+    [PreserveSig] int GetEvent(int dwFlags, [MarshalAs(UnmanagedType.IUnknown)] out object ppEvent);
+    [PreserveSig] int BeginGetEvent([MarshalAs(UnmanagedType.IUnknown)] object pCallback, [MarshalAs(UnmanagedType.IUnknown)] object punkState);
+    [PreserveSig] int EndGetEvent([MarshalAs(UnmanagedType.IUnknown)] object pResult, [MarshalAs(UnmanagedType.IUnknown)] out object ppEvent);
+    [PreserveSig] int QueueEvent(int met, ref Guid guidExtendedType, int hrStatus, IntPtr pvValue);
+
+    // IMFMediaSource vtable slots 7-12
+    [PreserveSig] int GetCharacteristics(out int pdwCharacteristics);
+    [PreserveSig] int CreatePresentationDescriptor([MarshalAs(UnmanagedType.IUnknown)] out object ppPresentationDescriptor);
+    [PreserveSig] int Start([MarshalAs(UnmanagedType.IUnknown)] object pPresentationDescriptor, ref Guid pguidTimeFormat, IntPtr pvarStartPosition);
+    [PreserveSig] int Stop();
+    [PreserveSig] int Pause();
+
+    // Device must be fully closed synchronously before the next open.
+    [PreserveSig] int Shutdown();
 }
 
 [ComImport]

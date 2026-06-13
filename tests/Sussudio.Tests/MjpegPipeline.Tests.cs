@@ -74,6 +74,10 @@ namespace Sussudio.Tests
             => global::Program.ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal();
 
         [Fact]
+        public Task ParallelMjpegDecodePipelineForceDropRegistersKnownMissing()
+            => global::Program.ParallelMjpegDecodePipeline_ForceDropRegistersKnownMissing();
+
+        [Fact]
         public Task FrameFingerprintCadenceTrackerCurrentDuplicateRunLowersUniqueFps()
             => global::Program.FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps();
 
@@ -682,6 +686,7 @@ static partial class Program
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
+        AssertContains(source, "MJPEG_REORDER_STRICT_ADVANCE");
         AssertContains(source, "SortedDictionary<long, DecodedFrame>");
         AssertContains(source, "DefaultDecodedReorderByteBudget");
         AssertContains(source, "TryAddDecodedFrame");
@@ -1007,6 +1012,78 @@ static partial class Program
         AssertEqual(1L, (long)(GetPrivateField(pipeline, "_reorderSkips") ?? -1L), "known loss is counted as a reorder skip");
 
         return Task.CompletedTask;
+    }
+
+    internal static Task ParallelMjpegDecodePipeline_ForceDropRegistersKnownMissing()
+    {
+        // ForceDropOldestReorderFrameUnderLock must add the dropped seqNo to _knownMissingSequences
+        // so the emitter never waits forever on a frame that was destroyed by the ring-full eviction.
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
+        var reorderLock = new object();
+        var reorderFrames = CreateSortedDictionary(pipelineType);
+        var knownMissing = new SortedSet<long>();
+        using var emitSignal = new AutoResetEvent(false);
+
+        SetPrivateField(pipeline, "_reorderLock", reorderLock);
+        SetPrivateField(pipeline, "_reorderFrames", reorderFrames);
+        SetPrivateField(pipeline, "_knownMissingSequences", knownMissing);
+        SetPrivateField(pipeline, "_emitSignal", emitSignal);
+        SetPrivateField(pipeline, "_nextEmitSeq", 0L);
+        SetPrivateField(pipeline, "_reorderBufferDepth", 0);
+
+        // Insert a decoded frame at seq=0 (which is also _nextEmitSeq).
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
+        var nv12 = Enum.Parse(formatType, "Nv12");
+        var pool = new TrackingArrayPool();
+        var frame = CreatePooledVideoFrame(frameType, nv12, 0L, 100L, 200L, 16, 16, 384, pool);
+        InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, seqNo: 0L, frame);
+
+        lock (reorderLock)
+        {
+            InvokeNonPublicInstanceMethod(pipeline, "ForceDropOldestReorderFrameUnderLock", Array.Empty<object?>());
+        }
+
+        // After the force-drop, seq=0 must be in _knownMissingSequences or _nextEmitSeq must have advanced.
+        var nextEmitSeqAfter = (long)(GetPrivateField(pipeline, "_nextEmitSeq") ?? 0L);
+        var knownMissingAfter = (SortedSet<long>)(GetPrivateField(pipeline, "_knownMissingSequences")
+            ?? throw new InvalidOperationException("_knownMissingSequences missing."));
+
+        AssertEqual(true, nextEmitSeqAfter == 1L || knownMissingAfter.Contains(0L),
+            "force-drop of seq==_nextEmitSeq must register gap (either advance or add to known-missing)");
+
+        return Task.CompletedTask;
+    }
+
+    private static object CreateSortedDictionary(Type pipelineType)
+    {
+        var fieldType = pipelineType.GetField("_reorderFrames", BindingFlags.NonPublic | BindingFlags.Instance)?.FieldType
+            ?? throw new InvalidOperationException("_reorderFrames field not found.");
+        return Activator.CreateInstance(fieldType)
+            ?? throw new InvalidOperationException("Could not create SortedDictionary.");
+    }
+
+    private static void InsertDecodedFrame(
+        object pipeline,
+        Type pipelineType,
+        object reorderLock,
+        object reorderFrames,
+        long seqNo,
+        object frame)
+    {
+        var decodedFrameType = pipelineType.GetNestedType("DecodedFrame", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("DecodedFrame nested type not found.");
+        var decodedFrame = Activator.CreateInstance(decodedFrameType, seqNo, frame, Stopwatch.GetTimestamp())
+            ?? throw new InvalidOperationException("Could not create DecodedFrame.");
+        var addMethod = reorderFrames.GetType().GetMethod("Add")
+            ?? throw new InvalidOperationException("SortedDictionary.Add not found.");
+        lock (reorderLock)
+        {
+            addMethod.Invoke(reorderFrames, new object[] { seqNo, decodedFrame });
+        }
+
+        SetPrivateField(pipeline, "_reorderBufferDepth", 1);
     }
 
     internal static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()

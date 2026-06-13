@@ -164,7 +164,39 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             MfInteropHelpers.AddStartupReference();
             startupHeld = true;
 
-            mediaSource = CreateMediaSource(deviceSymbolicLink);
+            // Device open may transiently fail with busy HRESULTs right after a prior holder releases.
+            const int deviceOpenMaxAttempts = 4;
+            const int hrDeviceBusyDirect = unchecked((int)0x80070001);
+            const int hrDeviceBusyActivate = unchecked((int)0xC00D36E6);
+            var deviceOpenDelaysMs = new[] { 150, 300, 600 };
+            Exception? deviceOpenLastEx = null;
+            for (var deviceOpenAttempt = 1; deviceOpenAttempt <= deviceOpenMaxAttempts; deviceOpenAttempt++)
+            {
+                try
+                {
+                    mediaSource = CreateMediaSource(deviceSymbolicLink);
+                    if (deviceOpenAttempt > 1)
+                    {
+                        Log($"MF_SOURCE_OPEN_BUSY_RECOVERED attempt={deviceOpenAttempt}");
+                    }
+
+                    deviceOpenLastEx = null;
+                    break;
+                }
+                catch (Exception ex) when (IsDeviceBusyHResult(ex, hrDeviceBusyDirect, hrDeviceBusyActivate) &&
+                                            deviceOpenAttempt < deviceOpenMaxAttempts)
+                {
+                    deviceOpenLastEx = ex;
+                    var hr = GetDeviceBusyHResult(ex, hrDeviceBusyDirect, hrDeviceBusyActivate);
+                    Log($"MF_SOURCE_OPEN_BUSY_RETRY attempt={deviceOpenAttempt} hr=0x{hr:X8} device='{deviceSymbolicLink}'");
+                    Thread.Sleep(deviceOpenDelaysMs[deviceOpenAttempt - 1]);
+                }
+            }
+
+            if (deviceOpenLastEx != null)
+            {
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(deviceOpenLastEx).Throw();
+            }
 
             disableConverters = !useConvertedMjpegNv12 && !useRawMjpgOutput;
             MfInteropHelpers.ThrowIfFailed(
@@ -1380,6 +1412,19 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
 
         WasapiComInterop.ReleaseComObject(ref sourceReader);
+
+        if (mediaSource != null)
+        {
+            try
+            {
+                mediaSource.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                Log($"MF_SOURCE_SHUTDOWN_FAIL hr=0x{ex.HResult:X8}");
+            }
+        }
+
         WasapiComInterop.ReleaseComObject(ref mediaSource);
     }
 
@@ -1387,6 +1432,22 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     {
         Debug.WriteLine(message);
         Logger.Log(message);
+    }
+
+    private static bool IsDeviceBusyHResult(Exception ex, int hrDirect, int hrActivate)
+        => GetDeviceBusyHResult(ex, hrDirect, hrActivate) != 0;
+
+    private static int GetDeviceBusyHResult(Exception ex, int hrDirect, int hrActivate)
+    {
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            if (e.HResult == hrDirect || e.HResult == hrActivate)
+            {
+                return e.HResult;
+            }
+        }
+
+        return 0;
     }
 
     private void SignalFatalError(Exception ex)

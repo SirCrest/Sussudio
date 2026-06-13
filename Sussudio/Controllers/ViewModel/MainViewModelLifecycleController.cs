@@ -832,6 +832,8 @@ internal sealed class MainViewModelPreviewReinitializeControllerContext
     public required Action ReleaseReinitializeGate { get; init; }
     public required Func<string, Task> NotifyPreviewReinitRequestedAsync { get; init; }
     public required Func<Task> NotifyRendererStopAsync { get; init; }
+    public required Func<Task?> PendingDeferredCaptureCleanupTask { get; init; }
+    public required int ReinitDeviceBusyCleanupTimeoutMs { get; init; }
 }
 
 /// <summary>
@@ -964,6 +966,80 @@ internal sealed class MainViewModelPreviewReinitializeController
             _context.SetStatusText($"Failed to apply format: {ex.Message}");
             success = false;
         }
+        catch (Exception ex) when (IsDeviceBusyException(ex) && shouldRestartPreview)
+        {
+            Logger.LogException(ex);
+            Logger.Log($"REINIT_DEVICE_BUSY reason='{reason}' hr=0x{ex.HResult:X8} — awaiting deferred cleanup then retrying");
+            var retried = false;
+            try
+            {
+                var pendingCleanup = _context.PendingDeferredCaptureCleanupTask();
+                if (pendingCleanup is { IsCompleted: false })
+                {
+                    await Task.WhenAny(pendingCleanup, Task.Delay(_context.ReinitDeviceBusyCleanupTimeoutMs)).ConfigureAwait(true);
+                }
+
+                for (var attempt = 1; attempt <= 2; attempt++)
+                {
+                    Logger.Log($"REINIT_DEVICE_BUSY_RETRY attempt={attempt} reason='{reason}'");
+                    try
+                    {
+                        await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);
+                        if (_context.IsInitialized() && !_context.CancelPreviewRestartAfterReinitialize())
+                        {
+                            await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);
+                        }
+
+                        success =
+                            _context.IsInitialized() &&
+                            (!shouldRestartPreview ||
+                             _context.CancelPreviewRestartAfterReinitialize() ||
+                             _context.IsPreviewing());
+                        if (success)
+                        {
+                            var selectedFormat = _context.SelectedFormat()!;
+                            _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
+                            retried = true;
+                            break;
+                        }
+                    }
+                    catch (Exception retryEx)
+                    {
+                        Logger.Log($"REINIT_DEVICE_BUSY_RETRY_FAIL attempt={attempt} reason='{reason}' type={retryEx.GetType().Name} hr=0x{retryEx.HResult:X8} msg='{retryEx.Message}'");
+                    }
+                }
+
+                if (!retried)
+                {
+                    await CleanupFailedPreviewRestartAsync(reason).ConfigureAwait(true);
+                    var recoveryOutcome = "fail";
+                    try
+                    {
+                        await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);
+                        if (_context.IsInitialized())
+                        {
+                            await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);
+                        }
+
+                        recoveryOutcome = _context.IsPreviewing() ? "ok" : "fail";
+                    }
+                    catch (Exception recoveryEx)
+                    {
+                        Logger.Log($"REINIT_RECOVERY_RESTART_FAULT reason='{reason}' type={recoveryEx.GetType().Name} msg='{recoveryEx.Message}'");
+                    }
+
+                    Logger.Log($"REINIT_RECOVERY_RESTART outcome={recoveryOutcome} reason='{reason}'");
+                    _context.SetStatusText($"Failed to apply format: {ex.Message}");
+                    success = false;
+                }
+            }
+            catch (Exception outerEx)
+            {
+                Logger.Log($"REINIT_DEVICE_BUSY_OUTER_FAULT reason='{reason}' type={outerEx.GetType().Name} msg='{outerEx.Message}'");
+                _context.SetStatusText($"Failed to apply format: {ex.Message}");
+                success = false;
+            }
+        }
         catch (Exception ex)
         {
             Logger.LogException(ex);
@@ -987,6 +1063,31 @@ internal sealed class MainViewModelPreviewReinitializeController
         }
 
         return success;
+    }
+
+    private static bool IsDeviceBusyException(Exception? ex)
+    {
+        unchecked
+        {
+            for (var current = ex; current is not null; current = current.InnerException)
+            {
+                if (current.HResult == (int)0xC00D36E6 || current.HResult == (int)0x80070001)
+                {
+                    return true;
+                }
+
+                // Defensive: some MF failures surface the HRESULT only in the message text.
+                var message = current.Message;
+                if (!string.IsNullOrEmpty(message)
+                    && (message.Contains("0xC00D36E6", StringComparison.OrdinalIgnoreCase)
+                        || message.Contains("0x80070001", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     private async Task CleanupFailedPreviewRestartAsync(string reason)
