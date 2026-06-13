@@ -831,7 +831,10 @@ static partial class Program
         long emitFailures = 0,
         int compressedQueueDepth = 0,
         long compressedQueueBytes = 0,
-        long compressedQueueByteBudget = 0)
+        long compressedQueueByteBudget = 0,
+        int peakReorderDepth = 0,
+        long peakCompressedQueueBytes = 0,
+        long reorderRingForceDrops = 0)
     {
         var type = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
         var perDecoderArray = Array.CreateInstance(
@@ -874,6 +877,9 @@ static partial class Program
                    compressedQueueByteBudget,
                    reorderSkips,
                    reorderBufferDepth,
+                   peakReorderDepth,
+                   peakCompressedQueueBytes,
+                   reorderRingForceDrops,
                    perDecoderArray)
                ?? throw new InvalidOperationException("Failed to create full MJPEG pipeline timing metrics.");
     }

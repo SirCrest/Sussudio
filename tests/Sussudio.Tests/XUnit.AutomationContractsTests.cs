@@ -3403,12 +3403,12 @@ static partial class Program
             captureServiceText,
             "public Task UpdateAudioInputAsync",
             "private void OnWasapiAudioLevelUpdated");
-        AssertContains(updateAudioInput, "var committedSwitchToken = CancellationToken.None;");
-        AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)");
+        AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, transitionToken)");
         AssertContains(updateAudioInput, "await _previewAudioGraph.StartPlaybackAsync(");
+        AssertContains(updateAudioInput, "transitionToken,");
         AssertOccursBefore(
             updateAudioInput,
-            "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)",
+            "await newCapture.InitializeAsync(resolvedId, transitionToken)",
             "_previewAudioGraph.DetachCapture(");
         AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
         AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
@@ -3434,6 +3434,9 @@ static partial class Program
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN");
         AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
+        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_PLAYBACK_START_FAILED");
+        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_COMMITTED");
+        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_ABORT");
 
         AssertContains(captureServiceText, "await _flashbackBackend.StartPreviewBackendAsync(");
         AssertContains(captureServiceText, "new FlashbackPreviewBackendStartRequest(");
@@ -5314,8 +5317,11 @@ static partial class Program
         AssertContains(flashbackPropertyChangedText, "private void InitializeFlashbackPropertyChangedController()");
         AssertContains(flashbackPropertyChangedText, "ApplyTimelineLockout = ApplyFlashbackTimelineLockout,");
         AssertContains(flashbackPropertyChangedText, "ApplyTimelineVisibility = ApplyFlashbackTimelineVisibility,");
+        AssertContains(flashbackPropertyChangedText, "IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,");
+        AssertContains(flashbackPropertyChangedText, "UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackEnabled):");
         AssertContains(flashbackPropertyChangedControllerText, "_context.ApplyTimelineLockout();");
+        AssertContains(flashbackPropertyChangedControllerText, "_context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());");
         AssertContains(flashbackPropertyChangedControllerText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):");
         AssertContains(flashbackPropertyChangedControllerText, "_context.ApplyTimelineVisibility(_context.IsTimelineVisible());");
         AssertContains(flashbackTimelineText, "private FlashbackTimelineController _flashbackTimelineController = null!;");
@@ -6682,6 +6688,7 @@ static partial class Program
         var settingsServiceText = ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
+        AssertContains(settingsServiceText, "public string? SelectedVideoFormat { get; set; }");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Runtime", "SettingsService.cs")),
@@ -6810,6 +6817,10 @@ static partial class Program
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.Settings.cs")),
             "old settings pass-through partial removed");
         AssertDoesNotContain(settingsPersistenceText, "RebuildResolutionOptions();\n        SaveSettings();");
+        AssertContains(settingsProjectionText, "string? SelectedVideoFormat");
+        AssertContains(settingsProjectionText, "SelectedVideoFormat: settings.SelectedVideoFormat");
+        AssertContains(settingsProjectionText, "SelectedVideoFormat = input.SelectedVideoFormat,");
+        AssertContains(settingsPersistenceText, "_pendingSavedVideoFormat = loadPlan.SelectedVideoFormat;");
 
         var settingsServiceType = RequireType("Sussudio.Services.Runtime.SettingsService");
         var userSettingsType = RequireType("Sussudio.Services.Runtime.UserSettings");
@@ -6965,6 +6976,7 @@ static partial class Program
         AssertEqual(33d, GetPropertyValue(settings, "AnalogAudioGainPercent"), "settings save analog gain");
         AssertEqual(false, GetPropertyValue(settings, "FlashbackGpuDecode"), "settings save flashback gpu decode");
         AssertEqual(12, GetPropertyValue(settings, "FlashbackBufferMinutes"), "settings save flashback buffer minutes");
+        AssertEqual("Auto", GetPropertyValue(settings, "SelectedVideoFormat"), "settings save selected video format");
 
         return Task.CompletedTask;
     }
@@ -6983,7 +6995,8 @@ static partial class Program
         AssertContains(automationSettingsText, "public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)");
         AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetFrameRateAsync(frameRate, cancellationToken);");
         AssertContains(automationSettingsText, "public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)");
-        AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken);");
+        AssertContains(automationSettingsText, "=> RunPersistedSettingsAutomationAsync(");
+        AssertContains(automationSettingsText, "_captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken),");
         AssertContains(automationSettingsText, "public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)");
         AssertContains(automationSettingsText, "=> _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);");
         AssertDoesNotContain(automationSettingsText, "private async Task SetAutomationCaptureModeAsync(");
@@ -7250,7 +7263,8 @@ static partial class Program
         string selectedDeviceAudioMode,
         double analogAudioGainPercent,
         bool flashbackGpuDecode,
-        int flashbackBufferMinutes)
+        int flashbackBufferMinutes,
+        string selectedVideoFormat = "Auto")
     {
         var inputType = RequireType("Sussudio.ViewModels.MainViewModelSettingsSaveInput");
         var input = InvokeSingleConstructor(inputType,
@@ -7274,7 +7288,8 @@ static partial class Program
             selectedDeviceAudioMode,
             analogAudioGainPercent,
             flashbackGpuDecode,
-            flashbackBufferMinutes);
+            flashbackBufferMinutes,
+            selectedVideoFormat);
 
         var projectionType = RequireType("Sussudio.ViewModels.MainViewModelSettingsPersistenceProjection");
         var buildSaveSettings = projectionType.GetMethod(

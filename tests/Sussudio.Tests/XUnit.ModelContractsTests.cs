@@ -615,6 +615,9 @@ public sealed class SnapshotModelsTests
         "MjpegCompressedQueueByteBudget",
         "MjpegReorderSkips",
         "MjpegReorderBufferDepth",
+        "MjpegPeakReorderDepth",
+        "MjpegPeakCompressedQueueBytes",
+        "MjpegReorderRingForceDrops",
     };
 
     private static readonly string[] MjpegDecoderAutomationSnapshotProperties =
@@ -1361,6 +1364,9 @@ public sealed class SnapshotModelsTests
                 new("MjpegCompressedQueueByteBudget", typeof(long)),
                 new("MjpegReorderSkips", typeof(long)),
                 new("MjpegReorderBufferDepth", typeof(int)),
+                new("MjpegPeakReorderDepth", typeof(int)),
+                new("MjpegPeakCompressedQueueBytes", typeof(long)),
+                new("MjpegReorderRingForceDrops", typeof(long)),
                 new("MjpegPreviewJitterEnabled", typeof(bool)),
                 new("MjpegPreviewJitterTargetDepth", typeof(int)),
                 new("MjpegPreviewJitterMaxDepth", typeof(int)),
@@ -2317,9 +2323,9 @@ public sealed class ViewModelBuildersTests
         AssertContains(liveSignalText, "frameRateValue.Value.ToString(\"0.00\")");
         AssertContains(liveSignalText, "runtime.ReaderSourceSubtype ??");
         AssertContains(liveSignalText, "runtime.LatestObservedFramePixelFormat ??");
-        AssertContains(liveSignalText, "\"hevc_nvenc\" => \" / HEVC\"");
-        AssertContains(liveSignalText, "\"h264_nvenc\" => \" / H264\"");
-        AssertContains(liveSignalText, "\"av1_nvenc\" => \" / AV1\"");
+        AssertContains(liveSignalText, "\"hevc_nvenc\" => \" → HEVC\"");
+        AssertContains(liveSignalText, "\"h264_nvenc\" => \" → H264\"");
+        AssertContains(liveSignalText, "\"av1_nvenc\" => \" → AV1\"");
         AssertContains(liveSignalText, "? unavailableText");
         Assert.True(
             liveSignalText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) <
@@ -2348,7 +2354,7 @@ public sealed class ViewModelBuildersTests
             ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build returned null.");
         Assert.Equal("3840x2160", GetStringProperty(actualPresentation, "Resolution"));
         Assert.Equal("119.88", GetStringProperty(actualPresentation, "FrameRate"));
-        Assert.Equal("RGB32 / AV1", GetStringProperty(actualPresentation, "PixelFormat"));
+        Assert.Equal("RGB32 → AV1", GetStringProperty(actualPresentation, "PixelFormat"));
 
         var fallbackRuntime = Activator.CreateInstance(snapshotType)
             ?? throw new InvalidOperationException("Failed to create fallback CaptureRuntimeSnapshot.");
@@ -2365,7 +2371,7 @@ public sealed class ViewModelBuildersTests
             ?? throw new InvalidOperationException("LiveSignalTextPresentationBuilder.Build returned null.");
         Assert.Equal("1280x720", GetStringProperty(fallbackPresentation, "Resolution"));
         Assert.Equal("30.00", GetStringProperty(fallbackPresentation, "FrameRate"));
-        Assert.Equal("MJPG / HEVC", GetStringProperty(fallbackPresentation, "PixelFormat"));
+        Assert.Equal("MJPG → HEVC", GetStringProperty(fallbackPresentation, "PixelFormat"));
 
         var unavailablePresentation = buildMethod.Invoke(
                 null,

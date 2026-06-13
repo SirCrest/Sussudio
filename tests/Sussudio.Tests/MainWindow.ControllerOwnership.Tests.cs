@@ -218,6 +218,9 @@ static partial class Program
         AssertContains(flashbackText, "=> _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);");
         AssertContains(flashbackControllerText, "internal sealed class FlashbackPropertyChangedController");
         AssertContains(flashbackControllerText, "case nameof(MainViewModel.IsFlashbackTimelineVisible):");
+        AssertContains(flashbackControllerText, "public required Func<bool> IsFlashbackEnabled { get; init; }");
+        AssertContains(flashbackControllerText, "public required Action<bool> UpdateFlashbackKeepAliveHint { get; init; }");
+        AssertContains(flashbackControllerText, "_context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());");
 
         return Task.CompletedTask;
     }
@@ -499,6 +502,9 @@ static partial class Program
         AssertContains(adapterText, "StopPreviewFadeInTimer = StopPreviewFadeInTimer,");
         AssertContains(adapterText, "FadeOutVideoFrameShadow = FadeOutVideoFrameShadow,");
         AssertContains(adapterText, "FadeInVideoFrameShadow = FadeInVideoFrameShadow,");
+        AssertContains(adapterText, "GetIsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,");
+        AssertContains(adapterText, "UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,");
+        AssertContains(adapterText, "private void UpdateFlashbackKeepAliveHint(bool isFlashbackEnabled)");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AddPreviewShellEntranceAnimations(storyboard, easing, beginMs, durationMs);");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.ResetPreviewContentTransform();");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AnimatePreviewOutAsync();");
@@ -514,6 +520,9 @@ static partial class Program
         AssertContains(controllerText, "_context.FadeInVideoFrameShadow(0, 400);");
         AssertContains(controllerText, "public void PrepareStartupPresentation()");
         AssertContains(controllerText, "public void RevealUnavailablePlaceholder()");
+        AssertContains(controllerText, "_context.UpdateFlashbackKeepAliveHint(_context.GetIsFlashbackEnabled());");
+        AssertContains(controllerText, "public required Func<bool> GetIsFlashbackEnabled { get; init; }");
+        AssertContains(controllerText, "public required Action<bool> UpdateFlashbackKeepAliveHint { get; init; }");
         AssertContains(controllerText, "public static void FadeOutElement(UIElement element)");
         AssertContains(controllerText, "private Task AnimatePreviewTransitionAsync(");
         AssertContains(controllerText, "private static Task BeginStoryboardAsync(");

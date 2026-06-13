@@ -8778,6 +8778,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureModeOptionsControllerText, ".SelectModeTupleFormats(BuildCaptureFormatSelectionRequest(");
         AssertContains(captureModeOptionsControllerText, "_context.AvailableVideoFormats.Clear();");
         AssertContains(captureModeOptionsControllerText, "internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext");
+        AssertContains(captureModeOptionsControllerText, "public required Func<string?> GetPendingSavedVideoFormat { get; init; }");
+        AssertContains(captureModeOptionsControllerText, "public required Action ClearPendingSavedVideoFormat { get; init; }");
+        AssertContains(captureModeOptionsControllerText, "_context.GetPendingSavedVideoFormat()");
+        AssertContains(captureModeOptionsControllerText, "_context.ClearPendingSavedVideoFormat()");
         AssertDoesNotContain(captureModeOptionsControllerText, "_viewModel.");
         AssertDoesNotContain(captureModeTransactionsText, "FrameRateTimingPolicy.SelectPreferredFrameRateFormat(");
         AssertDoesNotContain(captureModeTransactionsText, "private static bool IsHdrModeCandidate(");

@@ -3265,6 +3265,8 @@ static partial class Program
         AssertContains(mjpegStartupSource, "private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(");
         AssertContains(mjpegStartupSource, "private void InstallMjpegPreviewJitterBuffer(double fps)");
         AssertContains(mjpegLifecycleSource, "private void StopAndDisposeMjpegPipeline(ParallelMjpegDecodePipeline mjpegPipelineToStop)");
+        AssertContains(mjpegLifecycleSource, "UNIFIED_VIDEO_MJPEG_STOP_TIMEOUT");
+        AssertDoesNotContain(mjpegLifecycleSource, "CPU MJPEG pipeline stop did not quiesce cleanly");
         AssertContains(mjpegLifecycleSource, "private static void DisposeMjpegPipelineResources(");
         AssertContains(mjpegLifecycleSource, "private void OnMjpegPipelineFatalError(Exception ex)");
         AssertEqual(
@@ -3671,6 +3673,8 @@ static partial class Program
 
     internal static async Task UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails()
     {
+        // Stop must never throw — a wedged or self-join pipeline must not block reinit/preview-stop.
+        // StopAndDisposeMjpegPipeline logs UNIFIED_VIDEO_MJPEG_STOP_TIMEOUT and forces cleanup.
         var unifiedVideoCapture = CreateInstance("Sussudio.Services.Capture.UnifiedVideoCapture");
         var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var pipeline = CreateUninitializedObject(pipelineType);
@@ -3679,39 +3683,22 @@ static partial class Program
         SetPrivateField(unifiedVideoCapture, "_mjpegPipeline", pipeline);
         SetPrivateField(pipeline, "_emitThread", Thread.CurrentThread);
 
-        try
+        var stopAsync = unifiedVideoCapture.GetType().GetMethod("StopAsync", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("UnifiedVideoCapture.StopAsync method not found.");
+        if (stopAsync.Invoke(unifiedVideoCapture, null) is not Task stopTask)
         {
-            var stopAsync = unifiedVideoCapture.GetType().GetMethod("StopAsync", BindingFlags.Public | BindingFlags.Instance)
-                ?? throw new InvalidOperationException("UnifiedVideoCapture.StopAsync method not found.");
-            if (stopAsync.Invoke(unifiedVideoCapture, null) is not Task stopTask)
-            {
-                throw new InvalidOperationException("UnifiedVideoCapture.StopAsync did not return a Task.");
-            }
-
-            try
-            {
-                await stopTask.ConfigureAwait(false);
-                throw new InvalidOperationException("UnifiedVideoCapture.StopAsync unexpectedly succeeded.");
-            }
-            catch (InvalidOperationException ex)
-            {
-                AssertContains(ex.Message, "emitter_self_join");
-            }
-
-            var retainedPipeline = GetPrivateField(unifiedVideoCapture, "_mjpegPipeline");
-            AssertEqual(pipeline, retainedPipeline, "UnifiedVideoCapture._mjpegPipeline retained on stop failure");
+            throw new InvalidOperationException("UnifiedVideoCapture.StopAsync did not return a Task.");
         }
-        finally
-        {
-            SetPrivateField(pipeline, "_emitThread", null);
-            SetPrivateField(unifiedVideoCapture, "_mjpegPipeline", null);
 
-            var disposeMethod = pipelineType.GetMethod("Dispose", BindingFlags.Public | BindingFlags.Instance)
-                ?? throw new InvalidOperationException("ParallelMjpegDecodePipeline.Dispose method not found.");
-            disposeMethod.Invoke(pipeline, null);
+        // StopAsync must complete without throwing even when TryStop returns false.
+        await stopTask.ConfigureAwait(false);
 
-            await DisposeValueTaskAsync(unifiedVideoCapture).ConfigureAwait(false);
-        }
+        // Pipeline must be nulled out — forcing cleanup means the reference is released.
+        var pipelineAfterStop = GetPrivateField(unifiedVideoCapture, "_mjpegPipeline");
+        AssertEqual(null, pipelineAfterStop, "UnifiedVideoCapture._mjpegPipeline nulled on forced-cleanup stop");
+
+        SetPrivateField(pipeline, "_emitThread", null);
+        await DisposeValueTaskAsync(unifiedVideoCapture).ConfigureAwait(false);
     }
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
     {
