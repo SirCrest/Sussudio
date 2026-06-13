@@ -37,6 +37,7 @@ public partial class MainViewModel
     private double? _pendingSavedMicrophoneVolume;
     private string? _pendingSavedMicrophoneVolumeDeviceId;
     private int _audioEnabledChangeGeneration;
+    private int _audioInputSwitchGeneration;
     private bool _suppressAudioPreviewEnabledChangeOperation;
     private bool _suppressMicrophoneMonitorUpdate;
 
@@ -214,7 +215,8 @@ public partial class MainViewModel
             }
         }
 
-        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio toggle"), "custom audio toggle");
+        var audioInputSwitchGen = Interlocked.Increment(ref _audioInputSwitchGeneration);
+        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio toggle", audioInputSwitchGen), "custom audio toggle");
         SaveSettings();
     }
 
@@ -230,11 +232,12 @@ public partial class MainViewModel
             return;
         }
 
-        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio device change"), "custom audio device change");
+        var audioInputSwitchGen = Interlocked.Increment(ref _audioInputSwitchGeneration);
+        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio device change", audioInputSwitchGen), "custom audio device change");
         SaveSettings();
     }
 
-    private async Task ApplyAudioInputSelectionAsync(string reason)
+    private async Task ApplyAudioInputSelectionAsync(string reason, int generation = 0)
     {
         if (!IsInitialized)
         {
@@ -268,6 +271,17 @@ public partial class MainViewModel
             if (shouldRampMonitoring)
             {
                 await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);
+            }
+
+            if (generation != 0 && generation != Volatile.Read(ref _audioInputSwitchGeneration))
+            {
+                Logger.Log($"AUDIO_INPUT_SWITCH_SKIP reason=stale_generation captured={generation} current={Volatile.Read(ref _audioInputSwitchGeneration)}");
+                if (shouldRampMonitoring)
+                {
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                }
+
+                return;
             }
 
             await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);

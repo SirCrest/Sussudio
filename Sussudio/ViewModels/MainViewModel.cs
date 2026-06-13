@@ -52,7 +52,8 @@ internal readonly record struct MainViewModelSettingsLoadPlan(
     string? PendingAudioDeviceId,
     string? PendingMicrophoneDeviceId,
     string? PendingDeviceAudioMode,
-    double? PendingAnalogAudioGainPercent);
+    double? PendingAnalogAudioGainPercent,
+    string? SelectedVideoFormat);
 
 internal readonly record struct MainViewModelSettingsSaveInput(
     string? SelectedDeviceId,
@@ -75,7 +76,8 @@ internal readonly record struct MainViewModelSettingsSaveInput(
     string SelectedDeviceAudioMode,
     double AnalogAudioGainPercent,
     bool FlashbackGpuDecode,
-    int FlashbackBufferMinutes);
+    int FlashbackBufferMinutes,
+    string SelectedVideoFormat);
 
 /// <summary>
 /// Pure settings projection between persisted settings and MainViewModel load state.
@@ -136,7 +138,8 @@ internal static class MainViewModelSettingsPersistenceProjection
             PendingAudioDeviceId: settings.SelectedAudioInputDeviceId,
             PendingMicrophoneDeviceId: settings.SelectedMicrophoneDeviceId,
             PendingDeviceAudioMode: settings.SelectedDeviceAudioMode,
-            PendingAnalogAudioGainPercent: settings.AnalogAudioGainPercent);
+            PendingAnalogAudioGainPercent: settings.AnalogAudioGainPercent,
+            SelectedVideoFormat: settings.SelectedVideoFormat);
     }
 
     internal static UserSettings BuildSaveSettings(MainViewModelSettingsSaveInput input)
@@ -164,6 +167,7 @@ internal static class MainViewModelSettingsPersistenceProjection
             AnalogAudioGainPercent = input.AnalogAudioGainPercent,
             FlashbackGpuDecode = input.FlashbackGpuDecode,
             FlashbackBufferMinutes = input.FlashbackBufferMinutes,
+            SelectedVideoFormat = input.SelectedVideoFormat,
         };
     }
 
@@ -308,6 +312,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    internal void TriggerSaveSettings() => _ = SaveSettings();
+
     private bool SaveSettings()
     {
         if (_isLoadingSettings)
@@ -339,7 +345,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SelectedDeviceAudioMode,
                     AnalogAudioGainPercent,
                     FlashbackGpuDecode,
-                    FlashbackBufferMinutes));
+                    FlashbackBufferMinutes,
+                    SelectedVideoFormat));
 
             if (SettingsService.Save(settings, out var settingsSaveFailure))
             {
@@ -493,6 +500,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _pendingSavedMicrophoneDeviceId = loadPlan.PendingMicrophoneDeviceId;
         _pendingSavedDeviceAudioMode = loadPlan.PendingDeviceAudioMode;
         _pendingSavedAnalogAudioGainPercent = loadPlan.PendingAnalogAudioGainPercent;
+        _pendingSavedVideoFormat = loadPlan.SelectedVideoFormat;
     }
 
     public Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
@@ -598,6 +606,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isChangingDevice;
     private bool _isLoadingSettings;
     private string? _pendingSavedDeviceId;
+    private string? _pendingSavedVideoFormat;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private bool _pendingModeOptionsRefresh;
     private bool _suppressFormatChangeReinitialize;
@@ -1712,7 +1721,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         => _captureSettingsAutomationController.SetFrameRateAsync(frameRate, cancellationToken);
 
     public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
-        => _captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken);
+        => RunPersistedSettingsAutomationAsync(
+            _captureSettingsAutomationController.SetVideoFormatAsync(videoFormat, cancellationToken),
+            cancellationToken);
 
     public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
         => _captureSettingsAutomationController.SetMjpegDecoderCountAsync(decoderCount, cancellationToken);
@@ -2815,6 +2826,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SetHdrResolutionSupportHint = value => viewModel.HdrResolutionSupportHint = value,
                     SetDisabledResolutionReason = value => viewModel.DisabledResolutionReason = value,
                     SetStatusText = value => viewModel.StatusText = value,
+                    GetPendingSavedVideoFormat = () => viewModel._pendingSavedVideoFormat,
+                    ClearPendingSavedVideoFormat = () => viewModel._pendingSavedVideoFormat = null,
                 },
                 viewModel._frameRateTimingResolver);
         }
@@ -2905,6 +2918,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                             ReleaseReinitializeGate = () => viewModel._previewReinitializeGate.Release(),
                             NotifyPreviewReinitRequestedAsync = viewModel.NotifyPreviewReinitRequestedAsync,
                             NotifyRendererStopAsync = viewModel.NotifyRendererStopAsync,
+                            PendingDeferredCaptureCleanupTask = () => viewModel._captureService.GetPendingDeferredCaptureCleanupTask(),
+                            ReinitDeviceBusyCleanupTimeoutMs = 5000,
                         },
                         controller),
                     SelectedDevice = () => viewModel.SelectedDevice,

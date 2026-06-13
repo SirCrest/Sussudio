@@ -800,6 +800,8 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required Action<string> SetHdrResolutionSupportHint { get; init; }
     public required Action<string> SetDisabledResolutionReason { get; init; }
     public required Action<string> SetStatusText { get; init; }
+    public required Func<string?> GetPendingSavedVideoFormat { get; init; }
+    public required Action ClearPendingSavedVideoFormat { get; init; }
 
     public delegate bool TryGetEffectiveResolutionSelectionDelegate(out string resolutionKey, out uint width, out uint height);
     public delegate bool TryResolveResolutionKeyDelegate(string? resolutionValue, out string resolutionKey);
@@ -845,6 +847,26 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
         foreach (var format in nextFormats)
         {
             _context.AvailableVideoFormats.Add(format);
+        }
+
+        var pendingSaved = _context.GetPendingSavedVideoFormat();
+        if (pendingSaved != null)
+        {
+            _context.ClearPendingSavedVideoFormat();
+            if (_context.AvailableVideoFormats.Any(format => string.Equals(format, pendingSaved, StringComparison.OrdinalIgnoreCase)))
+            {
+                var previousSuppress = _context.IsSuppressFormatChangeReinitialize();
+                _context.SetSuppressFormatChangeReinitialize(true);
+                try
+                {
+                    _context.SetSelectedVideoFormat(pendingSaved);
+                }
+                finally
+                {
+                    _context.SetSuppressFormatChangeReinitialize(previousSuppress);
+                }
+                return;
+            }
         }
 
         if (!_context.AvailableVideoFormats.Any(format => string.Equals(format, _context.GetSelectedVideoFormat(), StringComparison.OrdinalIgnoreCase)))

@@ -210,6 +210,13 @@
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="FlashbackKeepAliveHintText"
+                                   AutomationProperties.AutomationId="FlashbackKeepAliveHintText"
+                                   Text="Flashback is still recording — the capture device remains in use."
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   Visibility="Collapsed"/>
                     </StackPanel>
 
                     <!-- Preview Loading Overlay -->

@@ -654,6 +654,8 @@ internal sealed class FlashbackPropertyChangedControllerContext
     public required Func<bool> IsExporting { get; init; }
     public required Action<bool> ApplyTimelineVisibility { get; init; }
     public required Action ApplyTimelineLockout { get; init; }
+    public required Func<bool> IsFlashbackEnabled { get; init; }
+    public required Action<bool> UpdateFlashbackKeepAliveHint { get; init; }
     public required Action UpdateState { get; init; }
     public required Action UpdateBuffer { get; init; }
     public required Action UpdatePlaybackPosition { get; init; }
@@ -683,6 +685,7 @@ internal sealed class FlashbackPropertyChangedController
 
             case nameof(MainViewModel.IsFlashbackEnabled):
                 _context.ApplyTimelineLockout();
+                _context.UpdateFlashbackKeepAliveHint(_context.IsFlashbackEnabled());
                 return true;
 
             case nameof(MainViewModel.FlashbackState):

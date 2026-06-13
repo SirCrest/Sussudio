@@ -44,6 +44,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _initialized;
     private int _started;
     private int _disposed;
+    private static string? _cachedDeviceId;
+    private static string _cachedFormatMode = "native";
+    private static readonly object _formatCacheLock = new();
     private int _renderingPaused; // 0 = active, 1 = paused
     private readonly ManualResetEventSlim _renderPausedAcknowledged = new(false);
     private readonly ManualResetEventSlim _renderRunningAcknowledged = new(true);
@@ -151,6 +154,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         IAudioRenderClient? audioRenderClient = null;
         AutoResetEvent? renderEvent = null;
         IntPtr desiredFormat = IntPtr.Zero;
+        IntPtr fallbackFormat = IntPtr.Zero;
 
         try
         {
@@ -159,6 +163,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device),
                 "IMMDeviceEnumerator.GetDefaultAudioEndpoint");
 
+            device.GetId(out var deviceId);
             audioClient = WasapiComInterop.ActivateAudioClient(device, out audioClient3);
             desiredFormat = WasapiComInterop.AllocFloatStereo48kFormat();
 
@@ -166,28 +171,94 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 WasapiComInterop.AUDCLNT_SHAREMODE_SHARED,
                 desiredFormat,
                 out var closestMatch);
-            if (closestMatch != IntPtr.Zero)
-            {
-                WasapiComInterop.CoTaskMemFree(closestMatch);
-            }
 
-            if (hr != WasapiComInterop.S_OK)
+            string formatMode;
+            bool initialized;
+            if (hr == WasapiComInterop.S_OK)
             {
-                throw new InvalidOperationException(
-                    "Default render endpoint does not support f32le 48kHz stereo monitoring playback.");
-            }
+                if (closestMatch != IntPtr.Zero)
+                {
+                    WasapiComInterop.CoTaskMemFree(closestMatch);
+                    closestMatch = IntPtr.Zero;
+                }
 
-            if (!WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat))
+                initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat);
+                if (!initialized)
+                {
+                    WasapiComInterop.ThrowIfFailed(
+                        audioClient.Initialize(
+                            WasapiComInterop.AUDCLNT_SHAREMODE_SHARED,
+                            WasapiComInterop.AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                            0,
+                            0,
+                            desiredFormat,
+                            IntPtr.Zero),
+                        "IAudioClient.Initialize(render)");
+                }
+
+                formatMode = "native";
+            }
+            else
             {
-                WasapiComInterop.ThrowIfFailed(
-                    audioClient.Initialize(
+                if (closestMatch != IntPtr.Zero)
+                {
+                    WasapiComInterop.CoTaskMemFree(closestMatch);
+                    closestMatch = IntPtr.Zero;
+                }
+
+                const uint autoConvertFlags =
+                    WasapiComInterop.AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM |
+                    WasapiComInterop.AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+
+                initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(
+                    audioClient3, desiredFormat, extraStreamFlags: autoConvertFlags);
+                if (!initialized)
+                {
+                    var hrInit = audioClient.Initialize(
                         WasapiComInterop.AUDCLNT_SHAREMODE_SHARED,
-                        WasapiComInterop.AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                        WasapiComInterop.AUDCLNT_STREAMFLAGS_EVENTCALLBACK | autoConvertFlags,
                         0,
                         0,
                         desiredFormat,
-                        IntPtr.Zero),
-                    "IAudioClient.Initialize(render)");
+                        IntPtr.Zero);
+
+                    if (hrInit < 0)
+                    {
+                        WasapiComInterop.ThrowIfFailed(
+                            audioClient.GetMixFormat(out fallbackFormat),
+                            "IAudioClient.GetMixFormat(render-fallback)");
+
+                        WasapiComInterop.ThrowIfFailed(
+                            audioClient.Initialize(
+                                WasapiComInterop.AUDCLNT_SHAREMODE_SHARED,
+                                WasapiComInterop.AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+                                0,
+                                0,
+                                fallbackFormat,
+                                IntPtr.Zero),
+                            "IAudioClient.Initialize(render)");
+
+                        formatMode = "mixformat";
+                    }
+                    else
+                    {
+                        formatMode = "autoconvert";
+                    }
+                }
+                else
+                {
+                    formatMode = "autoconvert";
+                }
+            }
+
+            lock (_formatCacheLock)
+            {
+                if (!string.Equals(_cachedDeviceId, deviceId, StringComparison.Ordinal))
+                {
+                    _cachedDeviceId = deviceId;
+                    _cachedFormatMode = formatMode;
+                    Logger.Log($"AUDIO_PLAYBACK_FORMAT_NEGOTIATED requested=f32le48k2ch result={formatMode} mode={formatMode}");
+                }
             }
 
             WasapiComInterop.ThrowIfFailed(
@@ -224,7 +295,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             Volatile.Write(ref _endpointQueuedFrames, 0);
             Interlocked.Exchange(ref _lastRenderCallbackTickMs, 0);
             Interlocked.Exchange(ref _initialized, 1);
-            Logger.Log("WASAPI playback initialized (f32le 48kHz stereo).");
+            Logger.Log($"WASAPI playback initialized (f32le 48kHz stereo, mode={formatMode}).");
             return Task.CompletedTask;
         }
         catch (Exception ex)
@@ -243,6 +314,11 @@ internal sealed class WasapiAudioPlayback : IDisposable
             if (desiredFormat != IntPtr.Zero)
             {
                 WasapiComInterop.CoTaskMemFree(desiredFormat);
+            }
+
+            if (fallbackFormat != IntPtr.Zero)
+            {
+                WasapiComInterop.CoTaskMemFree(fallbackFormat);
             }
         }
     }

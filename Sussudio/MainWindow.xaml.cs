@@ -500,6 +500,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsExporting = () => ViewModel.IsFlashbackExporting,
             ApplyTimelineVisibility = ApplyFlashbackTimelineVisibility,
             ApplyTimelineLockout = ApplyFlashbackTimelineLockout,
+            IsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
+            UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
             UpdateState = UpdateFlashbackStateUI,
             UpdateBuffer = UpdateFlashbackBufferPresentation,
             UpdatePlaybackPosition = UpdateFlashbackPositionUI,
@@ -925,7 +927,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             EnsureFormatSelection = EnsureFormatSelection,
             EnsureQualitySelection = EnsureQualitySelection,
             EnsurePresetSelection = EnsurePresetSelection,
-            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection
+            EnsureSplitEncodeModeSelection = EnsureSplitEncodeModeSelection,
+            SaveSettings = () => ViewModel.TriggerSaveSettings()
         });
     }
 
@@ -1113,6 +1116,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AttachAudioMeterActivationBindings();
 
         ApplyInitialFlashbackSettings();
+        FlashbackKeepAliveHintText.Visibility = Visibility.Collapsed;
 
         // Bind all collections to ComboBoxes
         AttachCaptureSelectionBindings();
@@ -2107,6 +2111,8 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             StopPreviewStartupOverlay = StopPreviewStartupOverlay,
             FadeOutVideoFrameShadow = FadeOutVideoFrameShadow,
             FadeInVideoFrameShadow = FadeInVideoFrameShadow,
+            GetIsFlashbackEnabled = () => ViewModel.IsFlashbackEnabled,
+            UpdateFlashbackKeepAliveHint = UpdateFlashbackKeepAliveHint,
         });
     }
 
@@ -2127,6 +2133,9 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
 
     private void RevealPreviewUnavailablePlaceholder()
         => _previewTransitionAnimationController.RevealUnavailablePlaceholder();
+
+    private void UpdateFlashbackKeepAliveHint(bool isFlashbackEnabled)
+        => FlashbackKeepAliveHintText.Visibility = isFlashbackEnabled ? Visibility.Visible : Visibility.Collapsed;
 
     private void InitializePreviewReinitTransitionController()
         => _previewReinitTransitionController = new PreviewReinitTransitionController();

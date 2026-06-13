@@ -532,6 +532,8 @@ internal sealed class PreviewTransitionAnimationControllerContext
     public required Action StopPreviewStartupOverlay { get; init; }
     public required Action<int> FadeOutVideoFrameShadow { get; init; }
     public required Action<int, int> FadeInVideoFrameShadow { get; init; }
+    public required Func<bool> GetIsFlashbackEnabled { get; init; }
+    public required Action<bool> UpdateFlashbackKeepAliveHint { get; init; }
 }
 
 internal sealed class PreviewTransitionAnimationController
@@ -639,6 +641,7 @@ internal sealed class PreviewTransitionAnimationController
         _context.StopPreviewFadeInTimer();
         ResetPreviewContentTransform();
         _ = AnimatePreviewShellInAsync(300);
+        _context.UpdateFlashbackKeepAliveHint(_context.GetIsFlashbackEnabled());
         FadeInElement(_context.NoDevicePlaceholder);
     }
 

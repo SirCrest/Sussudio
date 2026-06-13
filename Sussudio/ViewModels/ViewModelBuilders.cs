@@ -54,9 +54,9 @@ internal static class LiveSignalTextPresentationBuilder
             runtime.RequestedPixelFormat;
         var codecSuffix = encoderCodecName switch
         {
-            "hevc_nvenc" => " / HEVC",
-            "h264_nvenc" => " / H264",
-            "av1_nvenc" => " / AV1",
+            "hevc_nvenc" => " → HEVC",
+            "h264_nvenc" => " → H264",
+            "av1_nvenc" => " → AV1",
             _ => ""
         };
         var pixelFormatText = string.IsNullOrWhiteSpace(pixelFormat)

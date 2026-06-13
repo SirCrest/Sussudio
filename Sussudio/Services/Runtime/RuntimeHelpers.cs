@@ -35,6 +35,7 @@ public class UserSettings
     public double? AnalogAudioGainPercent { get; set; }
     public bool? FlashbackGpuDecode { get; set; }
     public int? FlashbackBufferMinutes { get; set; }
+    public string? SelectedVideoFormat { get; set; }
 }
 
 [JsonSerializable(typeof(UserSettings))]

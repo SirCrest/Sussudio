@@ -420,6 +420,8 @@ internal static class WasapiComInterop
     internal const int AUDCLNT_SHAREMODE_EXCLUSIVE = 1;
     internal const uint AUDCLNT_STREAMFLAGS_EVENTCALLBACK = 0x00040000;
     internal const uint AUDCLNT_STREAMFLAGS_LOOPBACK = 0x00020000;
+    internal const uint AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM = 0x80000000;
+    internal const uint AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY = 0x08000000;
     internal const uint AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY = 0x00000001;
     internal const uint AUDCLNT_BUFFERFLAGS_SILENT = 0x00000002;
     internal const uint AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR = 0x00000004;
@@ -730,7 +732,7 @@ internal static class WasapiComInterop
         return (IAudioClient)clientObject;
     }
 
-    internal static bool TryInitializeSharedStreamWithAudioClient3(IAudioClient3? audioClient3, IntPtr format)
+    internal static bool TryInitializeSharedStreamWithAudioClient3(IAudioClient3? audioClient3, IntPtr format, uint extraStreamFlags = 0)
     {
         if (audioClient3 == null)
         {
@@ -749,7 +751,7 @@ internal static class WasapiComInterop
         }
 
         hr = audioClient3.InitializeSharedAudioStream(
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+            AUDCLNT_STREAMFLAGS_EVENTCALLBACK | extraStreamFlags,
             defaultPeriodInFrames,
             format,
             IntPtr.Zero);

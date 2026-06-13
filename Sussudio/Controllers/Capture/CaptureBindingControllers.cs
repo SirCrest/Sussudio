@@ -221,6 +221,7 @@ internal sealed class CaptureOptionBindingControllerContext
     public required Action EnsureQualitySelection { get; init; }
     public required Action EnsurePresetSelection { get; init; }
     public required Action EnsureSplitEncodeModeSelection { get; init; }
+    public required Action SaveSettings { get; init; }
 }
 
 internal sealed class CaptureOptionBindingController
@@ -314,6 +315,7 @@ internal sealed class CaptureOptionBindingController
             if (_context.VideoFormatComboBox.SelectedItem is string videoFormat)
             {
                 _context.ViewModel.SelectedVideoFormat = videoFormat;
+                _context.SaveSettings();
             }
 
             _context.UpdateDecoderCountVisibility();
