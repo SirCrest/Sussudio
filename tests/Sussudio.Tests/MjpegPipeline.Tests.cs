@@ -26,8 +26,8 @@ namespace Sussudio.Tests
             => global::Program.UnifiedVideoCapture_CpuMjpegEmitReportsNv12();
 
         [Fact]
-        public Task UnifiedVideoCaptureRetainsMjpegPipelineWhenStopFails()
-            => global::Program.UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails();
+        public Task UnifiedVideoCaptureNullsMjpegPipelineWhenStopFails()
+            => global::Program.UnifiedVideoCapture_NullsMjpegPipeline_WhenStopFails();
 
         [Fact]
         public Task ParallelMjpegDecodePipelineLifecycleLivesWithRoot()

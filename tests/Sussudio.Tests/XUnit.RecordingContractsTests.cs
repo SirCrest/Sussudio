@@ -3671,7 +3671,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static async Task UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails()
+    internal static async Task UnifiedVideoCapture_NullsMjpegPipeline_WhenStopFails()
     {
         // Stop must never throw — a wedged or self-join pipeline must not block reinit/preview-stop.
         // StopAndDisposeMjpegPipeline logs UNIFIED_VIDEO_MJPEG_STOP_TIMEOUT and forces cleanup.
@@ -3683,12 +3683,7 @@ static partial class Program
         SetPrivateField(unifiedVideoCapture, "_mjpegPipeline", pipeline);
         SetPrivateField(pipeline, "_emitThread", Thread.CurrentThread);
 
-        var stopAsync = unifiedVideoCapture.GetType().GetMethod("StopAsync", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("UnifiedVideoCapture.StopAsync method not found.");
-        if (stopAsync.Invoke(unifiedVideoCapture, null) is not Task stopTask)
-        {
-            throw new InvalidOperationException("UnifiedVideoCapture.StopAsync did not return a Task.");
-        }
+        var stopTask = (Task)InvokeInstanceMethod(unifiedVideoCapture, "StopAsync");
 
         // StopAsync must complete without throwing even when TryStop returns false.
         await stopTask.ConfigureAwait(false);
@@ -3697,7 +3692,6 @@ static partial class Program
         var pipelineAfterStop = GetPrivateField(unifiedVideoCapture, "_mjpegPipeline");
         AssertEqual(null, pipelineAfterStop, "UnifiedVideoCapture._mjpegPipeline nulled on forced-cleanup stop");
 
-        SetPrivateField(pipeline, "_emitThread", null);
         await DisposeValueTaskAsync(unifiedVideoCapture).ConfigureAwait(false);
     }
     private static readonly string[] CaptureServiceFlashbackOrchestrationFiles =
