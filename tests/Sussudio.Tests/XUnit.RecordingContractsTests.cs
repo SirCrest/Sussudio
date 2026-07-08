@@ -1722,7 +1722,9 @@ static partial class Program
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_RETIRE_SESSION");
         AssertContains(flashbackBufferSource, "FLASHBACK_RETIRE_MARKER");
         AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
-        AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
+        AssertContains(flashbackCleanupSource, "IsPreserveMarkerActive(fullPath, nowUtc)");
+        AssertContains(flashbackCleanupSource, "internal static readonly TimeSpan RecoveryPreserveRetention = TimeSpan.FromDays(7);");
+        AssertContains(flashbackCleanupSource, "FLASHBACK_RECOVERY_PRESERVE_EXPIRED");
         AssertContains(flashbackBufferSource, "TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"valid_window\", out var pendingDelete)");
         AssertContains(flashbackBufferSource, "TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"disk_budget\", out var pendingDelete)");
         AssertContains(flashbackBufferSource, "private void QueueEvictedSegmentDeletes(List<PendingEvictedSegmentDelete>? pendingDeletes)");

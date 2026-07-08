@@ -493,7 +493,7 @@ public sealed class CaptureServiceLifecycleOwnershipTests
         AssertContains(cleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
         AssertContains(cleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
         AssertContains(cleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
-        AssertContains(cleanupText, "_flashbackBackend.PreserveRecoverySegments(\"device_lost\");");
+        AssertContains(cleanupText, "_flashbackBackend.PreserveRecoverySegments(\"backend_fatal\");");
         AssertDoesNotContain(cleanupText, "_sessionState =");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackBackendFailureCleanup.cs")),

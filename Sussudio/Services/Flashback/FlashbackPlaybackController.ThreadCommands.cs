@@ -343,7 +343,7 @@ internal sealed partial class FlashbackPlaybackController
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
         RestoreLiveAudio();
         SafeResumePreviewSubmission(operation);
-        SetState(FlashbackPlaybackState.Live);
+        SetState(FlashbackPlaybackState.Live, operation);
     }
 
     private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)
@@ -506,7 +506,7 @@ internal sealed partial class FlashbackPlaybackController
             RestoreLiveAudio();
             SafeResumePreviewSubmission("play_no_file");
             SafeResumeRendering("play_no_file");
-            SetState(FlashbackPlaybackState.Live);
+            SetState(FlashbackPlaybackState.Live, "play_no_file");
             return;
         }
         var requireExactResumeSeek = pendingExactResumeTarget.HasValue;
@@ -546,7 +546,7 @@ internal sealed partial class FlashbackPlaybackController
         SafeResumePlaybackRendering("play");
         pacingStopwatch.Restart();
 
-        SetState(FlashbackPlaybackState.Playing);
+        SetState(FlashbackPlaybackState.Playing, "user");
         Logger.Log($"FLASHBACK_PLAYBACK_PLAY pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
         return;
     }
@@ -566,7 +566,7 @@ internal sealed partial class FlashbackPlaybackController
             isPlaying = false;
             SafePauseRendering("pause");
             pacingStopwatch.Stop();
-            SetState(FlashbackPlaybackState.Paused);
+            SetState(FlashbackPlaybackState.Paused, "user");
             Logger.Log($"FLASHBACK_PLAYBACK_PAUSE pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
         }
         else if (State == FlashbackPlaybackState.Live)
@@ -582,7 +582,7 @@ internal sealed partial class FlashbackPlaybackController
             {
                 PlaybackPosition = pausePos;
                 pendingExactResumeTarget = SaturatingAdd(pausePos, frozenValidStart);
-                SetState(FlashbackPlaybackState.Paused);
+                SetState(FlashbackPlaybackState.Paused, "user");
                 Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_DEFER_DISPLAY pos_ms={(long)pausePos.TotalMilliseconds}");
                 return;
             }
@@ -597,7 +597,7 @@ internal sealed partial class FlashbackPlaybackController
                 RestoreLiveAudio();
                 SafeResumePreviewSubmission("pause_from_live_no_file");
                 SafeResumeRendering("pause_from_live_no_file");
-                SetState(FlashbackPlaybackState.Live);
+                SetState(FlashbackPlaybackState.Live, "pause_from_live_no_file");
                 Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_NO_FILE pos_ms={(long)pausePos.TotalMilliseconds}");
                 return;
             }
@@ -611,7 +611,7 @@ internal sealed partial class FlashbackPlaybackController
 
             pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
 
-            SetState(FlashbackPlaybackState.Paused);
+            SetState(FlashbackPlaybackState.Paused, "user");
             Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)PlaybackPosition.TotalMilliseconds} target_ms={(long)pauseTarget.TotalMilliseconds} frozen_frame=true");
         }
         return;
@@ -664,7 +664,7 @@ internal sealed partial class FlashbackPlaybackController
             PlaybackPosition = cmd.Position;
             pendingExactResumeTarget = seekResumeTarget;
             MarkCommandNoOp(CommandKind.Seek, "superseded_by_play", cmd.Position);
-            SetState(FlashbackPlaybackState.Paused);
+            SetState(FlashbackPlaybackState.Paused, "user");
             return;
         }
         decoder ??= CreateDecoder();
@@ -679,7 +679,7 @@ internal sealed partial class FlashbackPlaybackController
             RestoreLiveAudio();
             SafeResumePreviewSubmission("seek_no_file");
             SafeResumeRendering("seek_no_file");
-            SetState(FlashbackPlaybackState.Live);
+            SetState(FlashbackPlaybackState.Live, "seek_no_file");
             return;
         }
 
@@ -722,7 +722,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             pendingExactResumeTarget = seekResumeTarget;
         }
-        SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
+        SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused, "user");
         Logger.Log($"FLASHBACK_PLAYBACK_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds} resumePlay={isPlaying}");
         return;
     }
@@ -760,7 +760,7 @@ internal sealed partial class FlashbackPlaybackController
         SafeSuppressPreviewSubmission("begin_scrub");
         SuppressLiveAudio();
         SafePauseRendering("begin_scrub");
-        SetState(FlashbackPlaybackState.Scrubbing);
+        SetState(FlashbackPlaybackState.Scrubbing, "user");
 
         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
         decoder ??= CreateDecoder();
@@ -776,7 +776,7 @@ internal sealed partial class FlashbackPlaybackController
             RestoreLiveAudio();
             SafeResumePreviewSubmission("scrub_no_file");
             SafeResumeRendering("scrub_no_file");
-            SetState(FlashbackPlaybackState.Live);
+            SetState(FlashbackPlaybackState.Live, "scrub_no_file");
             return;
         }
         if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token))
@@ -838,7 +838,7 @@ internal sealed partial class FlashbackPlaybackController
             RestoreLiveAudio();
             SafeResumePreviewSubmission("scrub_update_no_file");
             SafeResumeRendering("scrub_update_no_file");
-            SetState(FlashbackPlaybackState.Live);
+            SetState(FlashbackPlaybackState.Live, "scrub_update_no_file");
             Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE pos_ms={(long)cmd.Position.TotalMilliseconds}");
             return;
         }
@@ -915,7 +915,7 @@ internal sealed partial class FlashbackPlaybackController
         {
             pendingExactResumeTarget = endScrubTarget;
         }
-        SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
+        SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused, "user");
         var endScrubBufDur = _bufferManager.BufferedDuration;
         Logger.Log($"FLASHBACK_ENDSCRUB pos_ms={(long)PlaybackPosition.TotalMilliseconds} bufferDur_ms={(long)endScrubBufDur.TotalMilliseconds} gapFromLive_ms={SaturatingSubtract(endScrubBufDur, PlaybackPosition).TotalMilliseconds:F0} resumePlay={isPlaying}");
         return;
@@ -947,7 +947,7 @@ internal sealed partial class FlashbackPlaybackController
             RestoreLiveAudio();
             SafeResumePreviewSubmission("nudge_no_file");
             SafeResumeRendering("nudge_no_file");
-            SetState(FlashbackPlaybackState.Live);
+            SetState(FlashbackPlaybackState.Live, "nudge_no_file");
             Logger.Log($"FLASHBACK_PLAYBACK_NUDGE_NO_FILE pos_ms={(long)nudgedPos.TotalMilliseconds}");
             return;
         }

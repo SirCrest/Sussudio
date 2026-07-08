@@ -339,6 +339,14 @@ internal sealed record FlashbackBufferOptions
     public TimeSpan SegmentDuration { get; init; } = TimeSpan.FromMinutes(10);
 
     /// <summary>
+    /// Test seam for the free-disk-space probe. When null (the production
+    /// default), FlashbackBufferManager falls back to
+    /// FlashbackStartupCacheCleanup.TryGetTempDriveAvailableFreeBytes against
+    /// <see cref="TempDirectory"/>.
+    /// </summary>
+    public Func<long>? FreeDiskBytesProvider { get; init; }
+
+    /// <summary>
     /// Safety cap derived from BufferDuration. Not user-configurable - just a guardrail
     /// against bugs in PTS-based eviction.
     /// </summary>

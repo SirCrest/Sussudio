@@ -114,6 +114,22 @@ add xUnit alongside, and port incrementally.
 - `HarnessCore.cs` owns the legacy runner entry point and the xUnit bootstrap
   helper that initializes the staged app assembly before wrappers call legacy
   reflection helpers.
+- `tests/Sussudio.Tests/XUnit.FlashbackFatalPathContractsTests.cs` owns the
+  2026-07 flashback hardening contracts for the fatal-error path: cleanup
+  preserves DVR history (no purge), unconditional recovery preserve, and the
+  bounded auto-restart scheduler in `CaptureService.Flashback.cs`.
+- `tests/Sussudio.Tests/XUnit.FlashbackDiskPolicyTests.cs` owns the behavioral
+  checks for the flashback free-disk policy (`IsDiskSpaceLow` /
+  `IsDiskCriticallyLow` via the injectable `FreeDiskBytesProvider` seam) and
+  the 7-day recovery-preserve marker aging in startup cache cleanup.
+- `tests/Sussudio.Tests/XUnit.FlashbackSinkHardeningTests.cs` owns the encoder
+  sink hardening source contracts: depth-aware force-rotate enqueue guard,
+  consecutive rotation-failure escalation, drain-aware recording end, and the
+  disk-critical fail-fast in `OnVideoFrameEncoded`.
+- `tests/Sussudio.Tests/XUnit.FlashbackResumeHardeningTests.cs` owns the
+  playback resume hardening source contracts: keep-frames audio prebuffer
+  (bounded, CPU frames only, rewind only on release) and the
+  `StateChanged` event raised from `SetState` with a transition reason.
 - `XUnit.ToolContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,

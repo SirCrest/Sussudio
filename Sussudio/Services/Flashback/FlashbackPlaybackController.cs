@@ -877,12 +877,22 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }
 
-    private void SetState(FlashbackPlaybackState newState)
+    public event Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? StateChanged;
+
+    private void SetState(FlashbackPlaybackState newState, string reason = "")
     {
         var oldState = _state;
         if (oldState == newState) return;
         _state = newState;
-        Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState}");
+        Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState} reason='{reason}'");
+        try
+        {
+            StateChanged?.Invoke(oldState, newState, reason);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_STATE_EVENT_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private void DetachPreviewComponentsAfterStopTimeout()
@@ -2039,6 +2049,10 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private const int PlaybackAudioPrebufferTimeoutMs = 1000;
     private const int PlaybackAudioPrebufferRetryDelayMs = 20;
     private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
+    // Cap on decoded video frames held across the audio prebuffer. CPU frames only:
+    // a D3D11VA frame pins a decoder-pool surface, and pool depth is not guaranteed
+    // to cover the prebuffer budget, so hardware frames keep the release+rewind path.
+    private const int PlaybackAudioPrebufferMaxHeldFrames = 32;
     private const int AudioRenderStateTransitionTimeoutMs = 100;
     // Must stay strictly greater than ActiveFmp4ReopenNearLiveGuard (250ms):
     // clamped targets at exactly the guard distance would fall inside the
@@ -2272,6 +2286,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         var skippedForSoftwareBudget = false;
         var discarded = false;
         var rewound = false;
+        var releasedAnyFrame = false;
         var prebufferReleasedFrames = 0;
         var prebufferAudioGateTicks = 0L;
         var commandPending = false;
@@ -2322,8 +2337,25 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             }
 
             decodedFrames++;
-            ReleaseHeldFrameBestEffort(frame, $"audio_prebuffer_{operation}");
-            prebufferReleasedFrames++;
+            if (!releasedAnyFrame &&
+                !frame.IsD3D11Texture &&
+                prebufferedFrames.Count < PlaybackAudioPrebufferMaxHeldFrames)
+            {
+                prebufferedFrames.Enqueue(frame);
+            }
+            else
+            {
+                if (!releasedAnyFrame && prebufferedFrames.Count > 0)
+                {
+                    // Cap hit (or hw frame appeared): fall back wholesale to the
+                    // rewind path. All-or-nothing — a partial kept queue plus a
+                    // forward decoder position would leave a hole in the middle.
+                    ClearPrebufferedFrames(prebufferedFrames, $"prebuffer_cap_{operation}");
+                }
+                releasedAnyFrame = true;
+                ReleaseHeldFrameBestEffort(frame, $"audio_prebuffer_{operation}");
+                prebufferReleasedFrames++;
+            }
 
             if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= PlaybackAudioPrebufferTimeoutMs)
             {
@@ -2336,6 +2368,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         prebufferAudioGateTicks = Interlocked.Read(ref _lastAudioPtsTicks);
         if (bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs)
         {
+            // Discard releases any frames kept above, so the rewind must run
+            // even if none were released in the main loop above.
+            releasedAnyFrame = true;
             ClearPrebufferedFrames(prebufferedFrames, $"prebuffer_discard_{operation}");
             try
             {
@@ -2351,7 +2386,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             discarded = true;
         }
 
-        if (decodedFrames > 0)
+        if (releasedAnyFrame && decodedFrames > 0)
         {
             rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, prebufferAudioGateTicks, cancellationToken);
         }
@@ -2359,7 +2394,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         if (logResult || timedOut || reachedEnd || skippedForSoftwareBudget)
         {
             Logger.Log(
-                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} command_pending={commandPending} pending_command={pendingCommandKind} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
+                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} command_pending={commandPending} pending_command={pendingCommandKind} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound} released_any={releasedAnyFrame} held={prebufferedFrames.Count}");
         }
     }
 

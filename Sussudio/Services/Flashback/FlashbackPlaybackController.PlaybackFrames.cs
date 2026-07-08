@@ -1156,6 +1156,6 @@ internal sealed partial class FlashbackPlaybackController
             SafeResumeRendering(operation);
         }
 
-        SetState(FlashbackPlaybackState.Live);
+        SetState(FlashbackPlaybackState.Live, operation);
     }
 }

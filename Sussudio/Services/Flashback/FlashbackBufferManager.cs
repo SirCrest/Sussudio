@@ -145,6 +145,47 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public bool EvictionPaused => Volatile.Read(ref _evictionPauseCount) > 0;
 
+    private const long SoftMinFreeDiskBytes = 2L * 1024 * 1024 * 1024;   // evict below this
+    private const long HardMinFreeDiskBytes = 512L * 1024 * 1024;        // critical below this
+    private const int FreeDiskProbeIntervalMs = 5_000;
+    private long _lastFreeDiskProbeMs;
+    private long _lastFreeDiskBytes = -1;
+
+    /// <summary>
+    /// True when free disk space on the flashback temp drive has dropped below
+    /// <see cref="SoftMinFreeDiskBytes"/>. Probed at most every
+    /// <see cref="FreeDiskProbeIntervalMs"/> to keep this cheap to poll from the
+    /// encoder loop and the UI.
+    /// </summary>
+    public bool IsDiskSpaceLow
+    {
+        get { var free = ProbeFreeDiskBytes(); return free >= 0 && free < SoftMinFreeDiskBytes; }
+    }
+
+    /// <summary>
+    /// True when free disk space has dropped below <see cref="HardMinFreeDiskBytes"/> -
+    /// the point where continuing to write risks a native encoder write failure.
+    /// </summary>
+    public bool IsDiskCriticallyLow
+    {
+        get { var free = ProbeFreeDiskBytes(); return free >= 0 && free < HardMinFreeDiskBytes; }
+    }
+
+    private long ProbeFreeDiskBytes()
+    {
+        var now = Environment.TickCount64;
+        if (now - Interlocked.Read(ref _lastFreeDiskProbeMs) < FreeDiskProbeIntervalMs)
+        {
+            return Interlocked.Read(ref _lastFreeDiskBytes);
+        }
+
+        Interlocked.Exchange(ref _lastFreeDiskProbeMs, now);
+        var free = _options.FreeDiskBytesProvider?.Invoke()
+            ?? FlashbackStartupCacheCleanup.TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);
+        Interlocked.Exchange(ref _lastFreeDiskBytes, free);
+        return free;
+    }
+
     private static long AddNonNegativeSaturated(long left, long right)
     {
         left = Math.Max(0, left);
@@ -327,6 +368,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             return;
         }
 
+        // Probe free disk space before taking _indexLock - DriveInfo/GetDiskFreeSpaceEx
+        // is a syscall and must never run while holding the lock other encoder-thread
+        // callers (UpdateLatestPts, OnSegmentCompleted) also contend for.
+        var freeBytes = ProbeFreeDiskBytes();
+
         List<PendingEvictedSegmentDelete>? pendingDeletes = null;
         lock (_indexLock)
         {
@@ -374,6 +420,41 @@ internal sealed class FlashbackBufferManager : IDisposable
                 }
 
                 EvictOldestSegmentsLocked(EnsurePendingEvictionDeleteList(ref pendingDeletes));
+            }
+
+            // Free-space pressure: evict oldest completed segments regardless of the
+            // configured budget when the drive itself is running out. Never evict the
+            // last completed segment (playback/export need at least one).
+            if (!(Volatile.Read(ref _evictionPauseCount) > 0) &&
+                freeBytes >= 0 && freeBytes < SoftMinFreeDiskBytes &&
+                _completedSegments.Count > 1)
+            {
+                var deficit = SoftMinFreeDiskBytes - freeBytes;
+                long reclaimed = 0;
+                while (_completedSegments.Count > 1 && reclaimed < deficit)
+                {
+                    var oldest = _completedSegments[0];
+                    if (!TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, "low_disk", out var pendingDelete))
+                    {
+                        break;
+                    }
+
+                    EnsurePendingEvictionDeleteList(ref pendingDeletes).Add(pendingDelete);
+                    reclaimed = AddNonNegativeSaturated(reclaimed, oldest.SizeBytes);
+                    _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
+                    _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, oldest.SizeBytes);
+                    _completedSegments.RemoveAt(0);
+                }
+
+                if (reclaimed > 0)
+                {
+                    // _validStartPtsTicks must advance to the new oldest segment's start
+                    // so playback/UI don't reference evicted time.
+                    Interlocked.Exchange(ref _validStartPtsTicks,
+                        Math.Max(Interlocked.Read(ref _validStartPtsTicks),
+                                 _completedSegments[0].StartPts.Ticks));
+                    Logger.Log($"FLASHBACK_BUFFER_LOW_DISK_EVICT free_bytes={freeBytes} reclaimed_bytes={reclaimed} remaining_segments={_completedSegments.Count}");
+                }
             }
         }
 
