@@ -130,6 +130,15 @@ add xUnit alongside, and port incrementally.
   playback resume hardening source contracts: keep-frames audio prebuffer
   (bounded, CPU frames only, rewind only on release) and the
   `StateChanged` event raised from `SetState` with a transition reason.
+- `tests/Sussudio.Tests/XUnit.FlashbackUiHealthTests.cs` owns the flashback
+  UI health surfacing contracts: the `FlashbackHealthMessage` ViewModel
+  property, the involuntary snap-to-live reason filter, the
+  `FlashbackHealthInfoBar` AutomationId, and the resubscribe-on-controller-
+  rebuild logic in the flashback status poll.
+- `tests/Sussudio.Tests/XUnit.FlashbackUxSeamTests.cs` owns the playback UX
+  seam contracts: pause-from-live bounded forward-decode to the pause target,
+  the `PreWarm()` no-command warm-up API, and the `GapFromLive` fallback
+  before the first decoded frame.
 - `XUnit.ToolContractsTests.cs` owns the former legacy MCP tool execution
   groups: window/preview wait, screenshot, frame-capture, window action,
   preview-toggle/probe, PresentMon correlation, performance timeline,

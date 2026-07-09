@@ -16,6 +16,16 @@ internal sealed partial class FlashbackPlaybackController
 
     private const int CommandQueueCapacity = 256;
 
+    // Bounded forward-decode budget for pause-from-live frame accuracy (below):
+    // one GOP at the current encode frame rate, clamped so a missing/zero
+    // encode frame rate still gets a usable budget and a corrupt value can't
+    // spin the decode loop indefinitely.
+    private const int PauseFromLiveMinForwardDecodeFrames = 30;
+    private const int PauseFromLiveMaxForwardDecodeFramesCap = 240;
+
+    private int PauseFromLiveMaxForwardDecodeFrames =>
+        Math.Clamp((int)Math.Ceiling(_bufferManager.EncodeFrameRate), PauseFromLiveMinForwardDecodeFrames, PauseFromLiveMaxForwardDecodeFramesCap);
+
     private static readonly TimeSpan PlaybackThreadStopTimeout = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PreviewDetachThreadStopTimeout = TimeSpan.FromSeconds(10);
 
@@ -608,6 +618,13 @@ internal sealed partial class FlashbackPlaybackController
                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "pause_from_live_display_failed");
                 return;
             }
+
+            // The keyframe just displayed can be up to one GOP behind pauseTarget
+            // (the live-derived pause point). Forward-decode toward it so the user
+            // sees roughly the frame they paused on instead of a stale keyframe.
+            // On decode failure this leaves the keyframe display in place and does
+            // not snap to live -- scrub-settle-grade refinement is out of scope here.
+            DecodeForwardToPauseTarget(decoder, commandChannel, pauseTarget, frozenValidStart, PauseFromLiveMaxForwardDecodeFrames, cts.Token);
 
             pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
 

@@ -4,8 +4,10 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.UI.Dispatching;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
 
 namespace Sussudio.ViewModels;
 
@@ -21,6 +23,25 @@ public partial class MainViewModel
     private Task? _pendingFlashbackCycleTask;
     private bool _suppressFlashbackSettingsUpdate;
     private static readonly int[] SupportedFlashbackBufferMinutes = { 1, 2, 5, 10, 15, 30 };
+
+    // UI health surfacing (F1-UI/F8-UI). Reasons in this set are voluntary
+    // transitions to Live and must not raise the involuntary snap-to-live
+    // notice: "" (default/no-reason SetState calls), "user" (explicit
+    // play/pause/seek/scrub/nudge user actions), "go_live"/"thread_stop"
+    // (playback thread exiting cleanly via GoLive or a normal stop).
+    private static readonly HashSet<string> FlashbackVoluntaryLiveReasons =
+        new(StringComparer.Ordinal) { "", "user", "go_live", "thread_stop" };
+
+    private const string FlashbackSnapToLiveHealthMessage = "Returned to live — playback error.";
+    private const string FlashbackDeadBackendHealthMessage = "Flashback is not running — use Restart Flashback.";
+    private static readonly TimeSpan FlashbackHealthMessageClearDelay = TimeSpan.FromSeconds(5);
+
+    private FlashbackPlaybackController? _flashbackHealthSubscribedController;
+    private FlashbackPlaybackController? _flashbackPreWarmedController;
+    private DispatcherQueueTimer? _flashbackHealthClearTimer;
+
+    [ObservableProperty]
+    public partial string FlashbackHealthMessage { get; set; } = "";
 
     [ObservableProperty]
     public partial bool FlashbackGpuDecode { get; set; } = true;
@@ -75,6 +96,13 @@ public partial class MainViewModel
         if (!value)
         {
             IsFlashbackTimelineVisible = false;
+            // A stale "not running" banner would be confusing once the user has
+            // explicitly turned flashback off; the transient snap notice is left
+            // alone here since it clears itself on its own timer.
+            if (FlashbackHealthMessage == FlashbackDeadBackendHealthMessage)
+            {
+                FlashbackHealthMessage = "";
+            }
         }
     }
 
@@ -379,8 +407,30 @@ public partial class MainViewModel
             FlashbackInPoint = null;
             FlashbackOutPoint = null;
             _flashbackBitrateSamples.Clear();
+
+            // Dead-backend banner: the toggle says flashback should be running
+            // but the buffer manager reports inactive (fatal error exhausted
+            // auto-restart, or startup never brought the backend up). Persistent
+            // until the backend comes back or the user disables the toggle.
+            if (IsFlashbackEnabled)
+            {
+                FlashbackHealthMessage = FlashbackDeadBackendHealthMessage;
+            }
+            else if (FlashbackHealthMessage == FlashbackDeadBackendHealthMessage)
+            {
+                FlashbackHealthMessage = "";
+            }
+
+            DetachFlashbackStateChangedSubscription();
             return;
         }
+
+        if (FlashbackHealthMessage == FlashbackDeadBackendHealthMessage)
+        {
+            FlashbackHealthMessage = "";
+        }
+
+        RefreshFlashbackStateChangedSubscription();
 
         FlashbackBufferFilledDuration = bufferStatus.FilledDuration;
         FlashbackBufferDiskBytes = bufferStatus.DiskBytes;
@@ -406,6 +456,118 @@ public partial class MainViewModel
         {
             if (FlashbackState != FlashbackPlaybackState.Live)
                 FlashbackState = FlashbackPlaybackState.Live;
+        }
+    }
+
+    /// <summary>
+    /// Re-attaches the involuntary snap-to-live subscription when the backend
+    /// controller instance changes. Must be called from the same 250 ms poll
+    /// that reads buffer status, since <see cref="FlashbackPlaybackController"/>
+    /// is rebuilt on every backend cycle
+    /// (<c>FlashbackBackendResources.CycleSinkOnlyAsync</c>).
+    /// </summary>
+    private void RefreshFlashbackStateChangedSubscription()
+    {
+        var current = _sessionCoordinator.FlashbackPlaybackControllerInstance;
+        if (ReferenceEquals(current, _flashbackHealthSubscribedController))
+        {
+            return;
+        }
+
+        if (_flashbackHealthSubscribedController != null)
+        {
+            _flashbackHealthSubscribedController.StateChanged -= OnFlashbackPlaybackStateChanged;
+        }
+
+        _flashbackHealthSubscribedController = current;
+
+        if (current != null)
+        {
+            current.StateChanged += OnFlashbackPlaybackStateChanged;
+        }
+    }
+
+    private void DetachFlashbackStateChangedSubscription()
+    {
+        if (_flashbackHealthSubscribedController == null)
+        {
+            return;
+        }
+
+        _flashbackHealthSubscribedController.StateChanged -= OnFlashbackPlaybackStateChanged;
+        _flashbackHealthSubscribedController = null;
+    }
+
+    /// <summary>
+    /// Involuntary snap-to-live notice (F8-UI). Raised from the playback thread
+    /// via <see cref="FlashbackPlaybackController.StateChanged"/> — marshal to
+    /// the UI thread before touching any bound property.
+    /// </summary>
+    private void OnFlashbackPlaybackStateChanged(
+        FlashbackPlaybackState oldState,
+        FlashbackPlaybackState newState,
+        string reason)
+    {
+        if (newState != FlashbackPlaybackState.Live || FlashbackVoluntaryLiveReasons.Contains(reason))
+        {
+            return;
+        }
+
+        if (!_dispatcherQueue.TryEnqueue(() =>
+        {
+            FlashbackHealthMessage = FlashbackSnapToLiveHealthMessage;
+            ScheduleFlashbackHealthMessageClear();
+        }))
+        {
+            Logger.Log($"FLASHBACK_HEALTH_UI_ENQUEUE_FAILED reason='{reason}'");
+        }
+    }
+
+    private void ScheduleFlashbackHealthMessageClear()
+    {
+        _flashbackHealthClearTimer ??= _dispatcherQueue.CreateTimer();
+        _flashbackHealthClearTimer.Stop();
+        _flashbackHealthClearTimer.Tick -= FlashbackHealthClearTimer_Tick;
+        _flashbackHealthClearTimer.Tick += FlashbackHealthClearTimer_Tick;
+        _flashbackHealthClearTimer.Interval = FlashbackHealthMessageClearDelay;
+        _flashbackHealthClearTimer.IsRepeating = false;
+        _flashbackHealthClearTimer.Start();
+    }
+
+    private void FlashbackHealthClearTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        sender.Stop();
+        // Only clear the transient snap notice; a persistent dead-backend
+        // banner set in the meantime must not be swallowed by this timer.
+        if (FlashbackHealthMessage == FlashbackSnapToLiveHealthMessage)
+        {
+            FlashbackHealthMessage = "";
+        }
+    }
+
+    /// <summary>
+    /// Pre-warm hook: nudges the playback thread up once per controller
+    /// instance so the first interaction after the flashback timeline opens
+    /// isn't cold. No-op when there is no active controller or it has already
+    /// been pre-warmed. Failures are swallowed and logged — pre-warming is a
+    /// latency optimization, not a correctness requirement.
+    /// </summary>
+    public void PreWarmFlashbackPlayback()
+    {
+        var controller = _sessionCoordinator.FlashbackPlaybackControllerInstance;
+        if (controller == null || controller.IsDisposed || ReferenceEquals(controller, _flashbackPreWarmedController))
+        {
+            return;
+        }
+
+        _flashbackPreWarmedController = controller;
+        try
+        {
+            controller.PreWarm();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREWARM_UI_WARN type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 

@@ -31,6 +31,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private FlashbackPropertyChangedController _flashbackPropertyChangedController = null!;
     private FlashbackCommandController _flashbackCommandController = null!;
     private FlashbackExportProgressPresentationController _flashbackExportProgressPresentationController = null!;
+    private FlashbackHealthPresentationController _flashbackHealthPresentationController = null!;
     private FlashbackMarkerPresentationController _flashbackMarkerPresentationController = null!;
     private FlashbackPlayheadMotionController _flashbackPlayheadMotionController = null!;
     private FlashbackPlaybackPresentationController _flashbackPlaybackPresentationController = null!;
@@ -135,6 +136,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeFlashbackPlaybackPresentationController();
         InitializeFlashbackPlaybackUiCoordinator();
         InitializeFlashbackExportProgressPresentationController();
+        InitializeFlashbackHealthPresentationController();
         InitializeFlashbackPropertyChangedController();
     }
 
@@ -509,12 +511,28 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             UpdateExportProgress = UpdateFlashbackExportProgress,
             UpdateExportingPresentation = UpdateFlashbackExportingPresentation,
             SyncGpuDecodeSetting = SyncFlashbackGpuDecodeSetting,
-            SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting
+            SyncBufferDurationSetting = SyncFlashbackBufferDurationSetting,
+            UpdateHealthMessage = UpdateFlashbackHealthPresentation
         });
     }
 
     private bool TryHandleFlashbackPropertyChanged(string propertyName)
         => _flashbackPropertyChangedController.TryHandlePropertyChanged(propertyName);
+
+    private void InitializeFlashbackHealthPresentationController()
+    {
+        _flashbackHealthPresentationController = new FlashbackHealthPresentationController(
+            new FlashbackHealthPresentationControllerContext
+            {
+                FlashbackHealthInfoBar = FlashbackHealthInfoBar,
+            });
+    }
+
+    private void UpdateFlashbackHealthPresentation()
+        => _flashbackHealthPresentationController.UpdateMessage(ViewModel.FlashbackHealthMessage);
+
+    private void FlashbackHealthRestartButton_Click(object sender, RoutedEventArgs e)
+        => _flashbackCommandController.ApplySettings(nameof(FlashbackHealthRestartButton_Click));
 
     private void InitializeWindowShutdownCleanupController()
     {

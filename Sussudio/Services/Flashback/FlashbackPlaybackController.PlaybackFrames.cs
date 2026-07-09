@@ -571,6 +571,70 @@ internal sealed partial class FlashbackPlaybackController
         return gotFrame;
     }
 
+    /// <summary>
+    /// After a pause-from-live keyframe seek, forward-decodes toward the live-
+    /// derived pause target (<paramref name="pauseTargetFilePts"/>, absolute file
+    /// PTS space) so the displayed frame is close to what the user saw when they
+    /// pressed pause, rather than up to one GOP stale. Every intermediate frame is
+    /// released; only the final frame is submitted, the same way
+    /// <see cref="SeekAndDisplayKeyframe"/> submits its frame. Bails out and keeps
+    /// whatever keyframe is already displayed -- no snap-to-live -- on decode
+    /// failure or if a newer command is already queued.
+    /// </summary>
+    private void DecodeForwardToPauseTarget(
+        FlashbackDecoder decoder,
+        Channel<PlaybackCommand> commandChannel,
+        TimeSpan pauseTargetFilePts,
+        TimeSpan frozenValidStart,
+        int maxForwardDecodeFrames,
+        CancellationToken cancellationToken)
+    {
+        var displayedFilePts = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
+        if (displayedFilePts >= pauseTargetFilePts)
+        {
+            return;
+        }
+
+        for (var decodedCount = 0; decodedCount < maxForwardDecodeFrames; decodedCount++)
+        {
+            if (commandChannel.Reader.TryPeek(out _))
+            {
+                // A newer command already arrived -- keep the keyframe already
+                // displayed rather than spend time closing the gap for a frame
+                // that command is about to replace anyway.
+                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_YIELD frames_decoded={decodedCount}");
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken))
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_NO_FRAME frames_decoded={decodedCount}");
+                return;
+            }
+
+            var budgetExhausted = decodedCount == maxForwardDecodeFrames - 1;
+            if (frame.Pts < pauseTargetFilePts && !budgetExhausted)
+            {
+                ReleaseHeldFrameBestEffort(frame, "pause_forward_decode_skip");
+                continue;
+            }
+
+            if (!TrySubmitAndHoldFrame(frame, "pause_forward_decode"))
+            {
+                return;
+            }
+
+            Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
+            var actualPosition = SaturatingSubtract(frame.Pts, frozenValidStart);
+            if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
+            PlaybackPosition = actualPosition;
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_PAUSE_FORWARD_DECODE_OK frames_decoded={decodedCount + 1} pos_ms={(long)actualPosition.TotalMilliseconds} budget={maxForwardDecodeFrames}");
+            return;
+        }
+    }
+
     private void RecordSeekDisplayDecodeFailure(CommandKind kind, TimeSpan bufferPosition, TimeSpan filePts)
     {
         Interlocked.Increment(ref _playbackDecodeErrorSnaps);

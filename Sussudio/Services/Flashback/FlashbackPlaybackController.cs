@@ -61,7 +61,11 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Pause,
         GoLive,
         Nudge,
-        Stop
+        Stop,
+        // Not a real playback command -- only used to attribute PreWarm's
+        // EnsurePlaybackThread call in diagnostics/failure logging. Never
+        // enqueued onto the command channel.
+        Warm
     }
 
     private readonly struct PlaybackCommand
@@ -173,7 +177,23 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         {
             var latest = _bufferManager.LatestPts;
             var lastFrame = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
-            if (lastFrame == TimeSpan.Zero) return TimeSpan.Zero;
+            if (lastFrame == TimeSpan.Zero)
+            {
+                if (_state == FlashbackPlaybackState.Live) return TimeSpan.Zero;
+
+                // No frame has been decoded yet since leaving Live (e.g. between
+                // issuing Pause/Seek and the playback thread displaying its first
+                // frame) -- _lastVideoPtsTicks briefly reads 0 and would otherwise
+                // report a "-0:00" gap instead of the real distance from live.
+                // Estimate the same way HandleEndOfSegment's fallback does:
+                // PlaybackPosition is relative to the valid-start captured when
+                // leaving Live, which is still _bufferManager.ValidStartPts here
+                // because no time has passed for eviction to move it before the
+                // first frame lands.
+                var estimatedAbsPts = SaturatingAdd(PlaybackPosition, _bufferManager.ValidStartPts);
+                var estimatedGap = latest - estimatedAbsPts;
+                return estimatedGap > TimeSpan.Zero ? estimatedGap : TimeSpan.Zero;
+            }
             var gap = latest - lastFrame;
             return gap > TimeSpan.Zero ? gap : TimeSpan.Zero;
         }
@@ -399,6 +419,33 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         if (applyRouting)
         {
             ApplyPreviewRoutingForState("preview_update");
+        }
+    }
+
+    /// <summary>
+    /// Pre-starts the playback thread (thread creation, MMCSS registration)
+    /// without issuing any command, so the first real Pause/Seek/BeginScrub
+    /// doesn't pay that one-time cost. Decoder creation and file-open remain
+    /// lazy -- those only happen inside a command handler on the playback
+    /// thread -- so this only removes the thread-startup portion of the
+    /// first-interaction latency. Safe to call repeatedly; a no-op if the
+    /// thread is already running.
+    /// </summary>
+    public void PreWarm()
+    {
+        if (!_initialized || _disposedFlag != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var ok = EnsurePlaybackThread(CommandKind.Warm);
+            Logger.Log($"FLASHBACK_PLAYBACK_PREWARM ok={ok}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREWARM ok=false type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
