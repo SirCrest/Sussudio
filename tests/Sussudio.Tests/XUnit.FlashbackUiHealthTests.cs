@@ -103,9 +103,18 @@ public sealed class FlashbackUiHealthTests
 
         var vmSource = ViewModelSource();
         var preWarmMethod = SourceSlice.Method(vmSource, "public void PreWarmFlashbackPlayback()");
-        // Guard: no-op on missing/disposed controller or one already pre-warmed.
-        Assert.Contains("controller == null || controller.IsDisposed || ReferenceEquals(controller, _flashbackPreWarmedController)", preWarmMethod);
+        // Guard: no-op on missing/disposed/uninitialized controller or one already
+        // pre-warmed. The IsInitialized gate is load-bearing: PreWarm() no-ops
+        // silently before Initialize(), so latching early would consume the one
+        // warm-up this instance gets.
+        Assert.Contains("controller == null || controller.IsDisposed || !controller.IsInitialized ||", preWarmMethod);
+        Assert.Contains("ReferenceEquals(controller, _flashbackPreWarmedController)", preWarmMethod);
         Assert.Contains("controller.PreWarm();", preWarmMethod);
+
+        // The poll must re-attempt: polling starts before the controller is
+        // initialized, and the controller is rebuilt on backend cycles.
+        var pollMethod = SourceSlice.Method(vmSource, "public void UpdateFlashbackBufferStatus()");
+        Assert.Contains("PreWarmFlashbackPlayback();", pollMethod);
     }
 }
 

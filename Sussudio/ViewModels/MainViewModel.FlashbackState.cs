@@ -431,6 +431,10 @@ public partial class MainViewModel
         }
 
         RefreshFlashbackStateChangedSubscription();
+        // Re-attempt per poll tick: polling starts before the controller is
+        // initialized (and the controller is rebuilt on backend cycles), so the
+        // one-shot call in StartStatusPolling alone never lands the warm-up.
+        PreWarmFlashbackPlayback();
 
         FlashbackBufferFilledDuration = bufferStatus.FilledDuration;
         FlashbackBufferDiskBytes = bufferStatus.DiskBytes;
@@ -555,7 +559,10 @@ public partial class MainViewModel
     public void PreWarmFlashbackPlayback()
     {
         var controller = _sessionCoordinator.FlashbackPlaybackControllerInstance;
-        if (controller == null || controller.IsDisposed || ReferenceEquals(controller, _flashbackPreWarmedController))
+        // IsInitialized gate: PreWarm() no-ops silently before Initialize() runs,
+        // so latching an uninitialized controller would consume its only warm-up.
+        if (controller == null || controller.IsDisposed || !controller.IsInitialized ||
+            ReferenceEquals(controller, _flashbackPreWarmedController))
         {
             return;
         }
