@@ -31,8 +31,9 @@ still pre-release and rough in places, but the core pipeline works.
 - **Direct3D 11** for preview rendering and video processing.
 - **WASAPI** for audio capture and monitoring.
 - **FFmpeg/libav** (via FFmpeg.AutoGen) for encoding and muxing, with **NVENC**
-  doing the heavy lifting. The native FFmpeg DLLs aren't in the repo — drop
-  them in `Sussudio/ffmpeg/` locally.
+  doing the heavy lifting. Release downloads bundle the native FFmpeg DLLs; if
+  you're building from source, drop them in `Sussudio/ffmpeg/` yourself (they
+  aren't checked into the repo).
 
 ## What supports it
 
