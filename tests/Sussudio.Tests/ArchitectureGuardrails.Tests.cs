@@ -97,14 +97,14 @@ static partial class Program
 
     internal static Task ArchitectureAgentMap_CoversAutomationConsumerChecklist()
     {
-        var readmeText = ReadRepoFile("README.md")
+        var contractsDocText = ReadRepoFile("docs/architecture/AUTOMATION_CONTRACTS.md")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
-        var consumers = ExtractReadmeAutomationConsumers(readmeText).ToArray();
+        var consumers = ExtractAutomationConsumerChecklist(contractsDocText).ToArray();
         var missing = new List<string>();
 
-        AssertEqual(8, consumers.Length, "README automation consumer checklist count");
+        AssertEqual(8, consumers.Length, "AUTOMATION_CONTRACTS.md automation consumer checklist count");
 
         foreach (var consumer in consumers)
         {
@@ -637,17 +637,17 @@ static partial class Program
         }
     }
 
-    private static IEnumerable<string> ExtractReadmeAutomationConsumers(string readmeText)
+    private static IEnumerable<string> ExtractAutomationConsumerChecklist(string contractsDocText)
     {
         const string marker = "Then keep these consumers in sync:";
-        var markerIndex = readmeText.IndexOf(marker, StringComparison.Ordinal);
+        var markerIndex = contractsDocText.IndexOf(marker, StringComparison.Ordinal);
         if (markerIndex < 0)
         {
-            throw new InvalidOperationException("README.md automation consumer checklist marker was not found.");
+            throw new InvalidOperationException("AUTOMATION_CONTRACTS.md automation consumer checklist marker was not found.");
         }
 
         var checklistStart = markerIndex + marker.Length;
-        var checklistText = readmeText.Substring(checklistStart);
+        var checklistText = contractsDocText.Substring(checklistStart);
         var started = false;
         foreach (var line in checklistText.Split('\n'))
         {
