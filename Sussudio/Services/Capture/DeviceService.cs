@@ -497,7 +497,26 @@ public class DeviceService
 
             var json = JsonSerializer.Serialize(cache, DeviceFormatCacheJsonContext.Default.DeviceFormatCacheFile);
             var path = GetCacheFilePath(device.Id);
-            File.WriteAllText(path, json);
+            var tempPath = $"{path}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, path, overwrite: true);
+            }
+            finally
+            {
+                try
+                {
+                    if (File.Exists(tempPath))
+                    {
+                        File.Delete(tempPath);
+                    }
+                }
+                catch (Exception cleanupEx)
+                {
+                    Logger.Log($"FORMAT_CACHE: failed to clean temporary cache '{tempPath}' ({cleanupEx.GetType().Name}: {cleanupEx.Message})");
+                }
+            }
             Logger.Log($"FORMAT_CACHE: saved {formats.Count} formats for {device.Name}");
         }
         catch (Exception ex)

@@ -3873,7 +3873,9 @@ static partial class Program
         AssertContains(metricsText, "_playbackDecodeDurationCount = 0;");
         AssertContains(metricsText, "public readonly record struct PlaybackCadenceMetrics(");
         AssertContains(metricsText, "public PlaybackCadenceMetrics GetPlaybackCadenceMetrics()");
-        AssertContains(metricsText, "private static double PercentileFromSorted(double[] sortedSamples, double percentile)");
+        AssertContains(metricsText, "PercentileHelpers.FromSorted(sorted, 0.95)");
+        AssertContains(metricsText, "PercentileHelpers.FromSorted(samples, 0.99)");
+        AssertDoesNotContain(metricsText, "private static double PercentileFromSorted");
         AssertContains(metricsText, "public readonly record struct PlaybackDecodeMetrics(");
         AssertContains(metricsText, "public PlaybackDecodeMetrics GetPlaybackDecodeMetrics()");
         AssertContains(metricsText, "private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];");

@@ -1425,21 +1425,25 @@ static partial class Program
         var inputResourcesText = resourcesText;
         var hdrInputResourcesText = resourcesText;
 
-        AssertContains(inputResourcesText, "private ID3D11Texture2D? _inputTexture;");
+        AssertContains(inputResourcesText, "private ID3D11Texture2D?[] _inputTextures = Array.Empty<ID3D11Texture2D?>();");
+        AssertContains(inputResourcesText, "private ID3D11Texture2D?[] _stagingTextures = Array.Empty<ID3D11Texture2D?>();");
+        AssertContains(inputResourcesText, "private ID3D11VideoProcessorInputView?[] _inputViews = Array.Empty<ID3D11VideoProcessorInputView?>();");
         AssertContains(inputResourcesText, "private void EnsureInputResources(int width, int height, bool isHdr)");
         AssertContains(inputResourcesText, "private void DisposeProcessorInputResources()");
         AssertContains(inputResourcesText, "private void DisposeInputTextureResources()");
-        AssertContains(inputResourcesText, "_inputTexture = _device.CreateTexture2D(inputDescription);");
+        AssertContains(inputResourcesText, "_inputTextures[i] = _device.CreateTexture2D(inputDescription);");
+        AssertContains(inputResourcesText, "foreach (var inputTexture in _inputTextures)");
         AssertContains(videoProcessorPipelineText, "DisposeHdrInputResources();");
-        AssertContains(hdrInputResourcesText, "private ID3D11Texture2D? _hdrInputTexture;");
-        AssertContains(hdrInputResourcesText, "private ID3D11ShaderResourceView? _hdrYPlaneSRV;");
+        AssertContains(hdrInputResourcesText, "private ID3D11Texture2D?[] _hdrInputTextures = Array.Empty<ID3D11Texture2D?>();");
+        AssertContains(hdrInputResourcesText, "private ID3D11ShaderResourceView?[] _hdrYPlaneSRVs = Array.Empty<ID3D11ShaderResourceView?>();");
         AssertContains(hdrInputResourcesText, "private bool _hdrPlaneViewsUnavailable;");
         AssertContains(hdrInputResourcesText, "private void EnsureHdrInputResources(int width, int height)");
-        AssertContains(hdrInputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)");
+        AssertContains(hdrInputResourcesText, "private ID3D11ShaderResourceView? CreateHdrPlaneView(ID3D11Texture2D inputTexture, Format format, uint planeSlice)");
         AssertContains(hdrInputResourcesText, "private void DisposeHdrInputResources()");
-        AssertContains(hdrInputResourcesText, "_hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);");
-        AssertDoesNotContain(rootText, "private ID3D11Texture2D? _inputTexture;");
-        AssertDoesNotContain(rootText, "private ID3D11ShaderResourceView? _hdrYPlaneSRV;");
+        AssertContains(hdrInputResourcesText, "_hdrYPlaneSRVs[slot] = yPlaneSRV;");
+        AssertContains(hdrInputResourcesText, "foreach (var inputTexture in _hdrInputTextures)");
+        AssertDoesNotContain(rootText, "private ID3D11Texture2D?[] _inputTextures");
+        AssertDoesNotContain(rootText, "private ID3D11ShaderResourceView?[] _hdrYPlaneSRVs");
         AssertDoesNotContain(rootText, "private void EnsureInputResources(int width, int height, bool isHdr)");
         AssertDoesNotContain(rootText, "private void EnsureHdrInputResources(int width, int height)");
 
@@ -7433,6 +7437,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
 
         AssertContains(shutdownCleanupControllerText, "internal sealed class WindowShutdownCleanupControllerContext");
         AssertContains(shutdownCleanupControllerText, "internal sealed class WindowShutdownCleanupController");
+        AssertContains(shutdownCleanupControllerText, "await Logger.ShutdownAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);");
         AssertContains(shutdownCleanupControllerText, "public async Task RunAsync()");
         AssertContains(shutdownCleanupControllerText, "_context.CancelNativeShellRevealAfterFirstFrame();");
         AssertContains(shutdownCleanupControllerText, "if (!_context.LifecycleController.TryBeginCleanup())");

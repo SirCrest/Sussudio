@@ -917,6 +917,8 @@ internal sealed class WindowShutdownCleanupController
         {
             Logger.Log($"ViewModel dispose during window close failed: {ex.Message}");
         }
+
+        await Logger.ShutdownAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
     }
 
     private void LogWindowClosedTrigger()

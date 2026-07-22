@@ -1180,8 +1180,8 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
         var sorted = (double[])samples.Clone();
         Array.Sort(sorted);
-        var p95 = PercentileFromSorted(sorted, 0.95);
-        var p99 = PercentileFromSorted(sorted, 0.99);
+        var p95 = PercentileHelpers.FromSorted(sorted, 0.95);
+        var p99 = PercentileHelpers.FromSorted(sorted, 0.99);
         var max = sorted[^1];
         var slow = Interlocked.Read(ref _playbackSlowFrameCount);
         var totalFrames = Math.Max(1, Interlocked.Read(ref _playbackFrameCount));
@@ -1219,21 +1219,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         return new PlaybackDecodeMetrics(
             samples.Length,
             total / samples.Length,
-            PercentileFromSorted(samples, 0.95),
-            PercentileFromSorted(samples, 0.99),
+            PercentileHelpers.FromSorted(samples, 0.95),
+            PercentileHelpers.FromSorted(samples, 0.99),
             samples[^1]);
-    }
-
-    private static double PercentileFromSorted(double[] sortedSamples, double percentile)
-    {
-        if (sortedSamples.Length == 0)
-        {
-            return 0;
-        }
-
-        var index = (int)Math.Ceiling(percentile * sortedSamples.Length) - 1;
-        index = Math.Clamp(index, 0, sortedSamples.Length - 1);
-        return sortedSamples[index];
     }
 
     private void TrackPlaybackCadence(double intervalMs, double expectedFrameMs)

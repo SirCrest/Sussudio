@@ -24,7 +24,7 @@ mentions the moved files.
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | service state, construction, public event/property surface, initialization owner, transition transaction/state-sampling owner, resource holder aggregates, and lifecycle guards, preview start/stop/recycle/fast-path/reuse predicates/fresh-pipeline/video-pipeline handoff/disposal transition owner, audio preview lifecycle/volume/event/startup/rollback and live audio input switching owner, microphone monitor state/event/disposal/update/restart owner, preview audio resource owner, active recording backend resource owner, video pipeline resource owner, cleanup/disposal, resource-release helper, failure callback, failure-telemetry, fatal cleanup, and Flashback backend failure cleanup/device-lost owner, Flashback public state, segment access, enable/disable, restart, settings, buffer/GPU/format, encoder-cycle owner, preview backend startup/disposal, artifact-cleanup adapter, buffer cycle coordination, and recording backend/capability/session-context/frame-rate/start/finalize/export-finalize/boundary snapshot/reconciliation owner, Flashback export diagnostics/progress/fallback lifecycle, failure taxonomy, health projection, entry/routing and backend snapshot/lock handoff, core lifetime, request assembly, segment metadata mapping, live-export throttle policy, segment path normalization, segment PTS timestamp repair, range-resolution, buffer-position clamps, PTS offset math, and force-rotate preparation owner, health snapshot sampler with capture cadence/MJPEG/source telemetry, Flashback backend/queue, Flashback playback, and recording health field projections, health snapshot DTO assembler and handoff owner, recording integrity active-backend resolver, counter/audio DTO capture, normalized summary input, status/reason evaluation, and integrity logging owner, recording start transition/router, context request assembly, rollback-state holder, transient recording rollback, standard LibAv recording start/video/audio startup, and recording outcome-state owner, recording stop transition/finalization router owner, LibAv recording finalization/video-boundary/sink/idle-preview/preview-restore owner, runtime/diagnostics snapshot sampler with ingest/audio, reader/transport, recording-integrity, HDR/encoder pipeline, source-telemetry projections, diagnostics compatibility, read-only automation probes, preview-frame capture waits, shared snapshot utilities/recording stats/format/observed frames/A/V sync/source telemetry snapshot policy, source telemetry polling/fallback merge, capture-format and observed pixel telemetry owner, private assembly handoff models, and final runtime snapshot DTO construction |
 | App shell | `Sussudio/App.xaml.cs` | XAML partial root, FFmpeg startup check, global handler hookup, recoverable/fatal exception policy plus emergency recording finalization, single-instance guard, startup identity logging, and MainWindow activation |
 | App surface helpers | `Sussudio/AppSurface.cs` | compact app-facing display formatters plus the XAML bool/inverse/visibility converter types used by hand-bound WinUI controls; keep public converter type names and `Sussudio.DisplayFormatters` stable |
-| App runtime | `Sussudio/AppRuntime.cs` | public cached repo/temp/log path API, repo-root and log-root resolution policy, latest-build fallback, marker discovery, guarded directory creation, trace fallback diagnostics, nonblocking log writer state, rotation, channel saturation fallback, direct write path, diagnostics/system evidence, structured snapshot JSON routing, exception formatting, fatal breadcrumbs, and source-generated JSON context for known log payloads |
+| App runtime | `Sussudio/AppRuntime.cs` | public cached repo/temp/log path API, repo-root and log-root resolution policy, latest-build fallback, marker discovery, guarded directory creation, trace fallback diagnostics, nonblocking log writer state, rotation, enqueue-or-drop channel saturation accounting with consumer-side aggregate reporting, bounded graceful shutdown drain, direct fatal-breadcrumb write path, diagnostics/system evidence, structured snapshot JSON routing, exception formatting, fatal breadcrumbs, and source-generated JSON context for known log payloads |
 | App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | app identity/assets/packages/runtime config in the project file; publish flags, locale stripping, and latest-build staging in imported targets |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | device enumeration orchestration, priority/capability scoring, Native XU interface path resolution, audio endpoint association, persisted format cache, inline/background format probing, shared MF startup/attribute helpers and symbolic-link matching, shared MF constants/P/Invokes, MF video device enumeration, WASAPI capture endpoint enumeration, native MF format probing and subtype/FourCC naming, direct/fallback MF source activation |
 | Native XU KS bridge | `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` | KS category constants and DTOs, SetupAPI interface enumeration, file-handle open policy, topology node parsing, XU GET/SET transfer helpers, P/Invoke declarations and structs; shared 4K X identity/selected-interface/transport-gate support |
@@ -217,8 +217,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state, server start/stop/dispose, the accept
   loop, per-connection safety/disposal, request-session handoff, error/timeout
-  responses, fallback trace logging, per-request JSON framing, client PID
-  logging, dispatch timeouts, late dispatch observation, response writing,
+  responses, fallback trace logging, bounded per-request JSON line framing,
+  oversize-request rejection, client PID logging, dispatch timeouts, late
+  dispatch observation, response writing,
   Windows pipe security descriptor setup, fallback policy, P/Invoke, and secure
   stream creation.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs` owns polling,
@@ -970,7 +971,7 @@ Primary current owners:
   budget, `StopRecordingAndWaitAsync` wait race, timeout/failure breadcrumbs,
   status text, shutdown-content dim/restore policy, timer stops, event detaches,
   preview shutdown, post-close recording finalization handoff, automation
-  disposal, NVML disposal, and ViewModel disposal.
+  disposal, NVML disposal, ViewModel disposal, and final bounded logger drain.
 - `Sussudio/MainWindow.xaml.cs` owns the XAML/AppWindow close adapter:
   `RegisterCloseLifecycle`, `CloseAsync`, and the stable
   `RequestWindowClose()` adapter.
@@ -1583,7 +1584,7 @@ Primary current owners:
   legacy offline harness catalog.
 - `Sussudio/Services/Runtime/RuntimeHelpers.cs` owns runtime helper types
   shared across multiple services: AtomicMax, TelemetryAgeHelper,
-  EnvironmentHelpers, RingBufferHelpers, shared minimum-window-size Win32
+  EnvironmentHelpers, RingBufferHelpers, PercentileHelpers, shared minimum-window-size Win32
   subclassing, LocalAppData user-settings persistence and source-generated JSON
   context, bounded external process supervision contracts and runner, and
   best-effort MMCSS worker registration.

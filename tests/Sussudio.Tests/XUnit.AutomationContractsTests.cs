@@ -76,6 +76,10 @@ public sealed class AutomationAppSurfaceContractsTests
         => global::Program.NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation();
 
     [Fact]
+    public Task AutomationPipeServerRequestLimitHandlesCrLfBoundary()
+        => global::Program.NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary();
+
+    [Fact]
     public Task MainWindowWiresAutomationPipeAuthFallbackPolicy()
         => global::Program.MainWindowAutomation_WiresPipeAuthFallbackPolicy();
 
@@ -330,6 +334,10 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherWaitAndAssertCommandsLiveWithSupportOwners()
         => global::Program.AutomationCommandDispatcher_WaitAndAssertCommands_LiveWithSupportOwners();
+
+    [Fact]
+    public Task AutomationDispatcherAssertSnapshotBoundsAndEvaluatesRequests()
+        => global::Program.AutomationCommandDispatcher_AssertSnapshot_BoundsAndEvaluatesRequests();
 
     [Fact]
     public Task AutomationDispatcherEntryPipelineLivesInRootDispatcher()
@@ -849,6 +857,72 @@ static partial class Program
             "assert-snapshot command body folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task AutomationCommandDispatcher_AssertSnapshot_BoundsAndEvaluatesRequests()
+    {
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var refreshCount = 0;
+
+        var diagnostics = CreateConfiguredProxy(diagnosticsType, (method, _) =>
+        {
+            if (method?.Name == "GetLatestSnapshot")
+            {
+                return snapshot;
+            }
+
+            if (method?.Name == "RefreshSnapshotNowAsync")
+            {
+                Interlocked.Increment(ref refreshCount);
+                return CreateTaskFromResult(method.ReturnType.GetGenericArguments()[0], snapshot);
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var dispatcher = CreateAutomationCommandDispatcher(
+            CreateConfiguredProxy(viewModelType, (method, _) => GetDefaultReturnValue(method)),
+            diagnostics,
+            CreateThrowingProxy(windowControlType),
+            authToken: null);
+
+        const string assertion = "{\"field\":\"PreviewFramesDisplayed\",\"op\":\"eq\",\"value\":\"0\"}";
+        var oversizedPayload = "{\"assertions\":[" + string.Join(',', Enumerable.Repeat(assertion, 1025)) + "]}";
+        var oversizedResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("AssertSnapshot", null, oversizedPayload))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(oversizedResponse, success: false, errorCode: "command-failed", status: "error", "oversized assertions are rejected");
+        AssertEqual(0, Volatile.Read(ref refreshCount), "oversized assertions do not refresh snapshot");
+
+        var knownFieldResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "AssertSnapshot",
+                    null,
+                    "{\"assertions\":[{\"field\":\"previewframesdisplayed\",\"op\":\"eq\",\"value\":\"0\"}]}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(knownFieldResponse, success: true, errorCode: null, status: "ok", "known fields remain case-insensitive");
+        AssertEqual(1, Volatile.Read(ref refreshCount), "valid assertion refreshes once");
+
+        var unknownFieldResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest(
+                    "AssertSnapshot",
+                    null,
+                    "{\"assertions\":[{\"field\":\"arbitrary-unknown-field\",\"op\":\"eq\",\"value\":\"0\"}]}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(unknownFieldResponse, success: false, errorCode: "assertion-failed", status: "error", "unknown fields remain assertion failures");
+        AssertEqual(2, Volatile.Read(ref refreshCount), "unknown-field assertion refreshes once");
+
+        var malformedResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("AssertSnapshot", null, "{}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(malformedResponse, success: false, errorCode: "command-failed", status: "error", "malformed assertions are rejected");
+        AssertEqual(2, Volatile.Read(ref refreshCount), "malformed assertions do not refresh snapshot");
     }
 
     internal static Task AutomationCommandDispatcher_IntrospectionCommands_LiveWithCustomRouter()
@@ -2741,8 +2815,105 @@ static partial class Program
         AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
         AssertContains(pipeServerText, "\"request-timeout\"");
+        AssertContains(pipeServerText, "private const int MaxRequestCharacters = 1024 * 1024;");
+        AssertContains(pipeServerText, "ReadRequestLineAsync(reader, requestCancellation.Token)");
+        AssertContains(pipeServerText, "request.Length > MaxRequestCharacters + 1");
+        AssertContains(pipeServerText, "request.Length == MaxRequestCharacters + 1 && request[^1] != '\\r'");
+        AssertContains(pipeServerText, "\"request-too-large\"");
+        AssertDoesNotContain(pipeServerText, "reader.ReadLineAsync().WaitAsync(requestCancellation.Token)");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary()
+    {
+        const int maxCharacters = 1024 * 1024;
+        var serverType = RequireType("Sussudio.Services.Automation.NamedPipeAutomationServer");
+        var sessionType = serverType.GetNestedType("ConnectionSession", BindingFlags.NonPublic)
+                          ?? throw new InvalidOperationException("NamedPipeAutomationServer.ConnectionSession was not found.");
+        var readMethod = sessionType.GetMethod("ReadRequestLineAsync", BindingFlags.NonPublic | BindingFlags.Static)
+                         ?? throw new InvalidOperationException("ConnectionSession.ReadRequestLineAsync was not found.");
+
+        static async Task<string?> InvokeReadAsync(MethodInfo method, string input, bool splitCrLf = false)
+        {
+            var bytes = Encoding.UTF8.GetBytes(input);
+            using Stream stream = splitCrLf
+                ? new SplitReadStream(bytes, maxCharacters + 1)
+                : new MemoryStream(bytes);
+            using var reader = new StreamReader(stream, Encoding.UTF8, false, 4096, leaveOpen: false);
+            var task = (Task)method.Invoke(null, new object[] { reader, CancellationToken.None })!;
+            await task.ConfigureAwait(false);
+            return (string?)task.GetType().GetProperty("Result")!.GetValue(task);
+        }
+
+        var atLimit = new string('x', maxCharacters);
+        var accepted = await InvokeReadAsync(readMethod, atLimit + "\r\n", splitCrLf: true).ConfigureAwait(false);
+        AssertEqual(maxCharacters, accepted!.Length, "CRLF framing is excluded from request limit");
+
+        try
+        {
+            await InvokeReadAsync(readMethod, atLimit + "x\r\n").ConfigureAwait(false);
+            throw new InvalidOperationException("Expected oversized request to be rejected.");
+        }
+        catch (Exception ex) when (ex.GetType().Name == "AutomationRequestTooLargeException")
+        {
+        }
+    }
+
+    private sealed class SplitReadStream : Stream
+    {
+        private readonly MemoryStream _inner;
+        private readonly long _splitOffset;
+
+        public SplitReadStream(byte[] bytes, long splitOffset)
+        {
+            _inner = new MemoryStream(bytes, writable: false);
+            _splitOffset = splitOffset;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => _inner.Length;
+        public override long Position
+        {
+            get => _inner.Position;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => _inner.Read(buffer, offset, LimitReadCount(count));
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            => _inner.ReadAsync(buffer[..LimitReadCount(buffer.Length)], cancellationToken);
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        private int LimitReadCount(int requested)
+        {
+            if (_inner.Position < _splitOffset && _inner.Position + requested > _splitOffset)
+            {
+                return checked((int)(_splitOffset - _inner.Position));
+            }
+
+            return requested;
+        }
     }
 
     internal static Task MainWindowAutomation_WiresPipeAuthFallbackPolicy()
@@ -2963,7 +3134,15 @@ static partial class Program
         AssertContains(loggerText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
         AssertContains(loggerText, "Channel.CreateBounded<string>");
         AssertContains(loggerText, "private static async Task RunLogWriterAsync()");
+        AssertContains(loggerText, "public static async Task ShutdownAsync(TimeSpan timeout)");
+        AssertContains(loggerText, "LogChannel.Writer.TryComplete();");
+        AssertContains(loggerText, "await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);");
+        AssertDoesNotContain(loggerText, "LogWriterCancellation");
         AssertContains(loggerText, "private static void WriteDirect(string entry)");
+        var logMethod = ExtractTextBetween(loggerText, "public static void Log(string message", "public static void LogVerbose(");
+        AssertContains(logMethod, "LogChannel.Writer.TryWrite(logMessage)");
+        AssertDoesNotContain(logMethod, "WriteDirect(");
+        AssertDoesNotContain(logMethod, "File.");
         AssertContains(loggerText, "private static void RotatePriorLog()");
         AssertContains(loggerText, "public static void LogSystemInfo()");
         AssertContains(loggerText, "new ManagementObjectSearcher(");
@@ -9587,7 +9766,11 @@ static partial class Program
         AssertContains(dispatcherText, "private async Task<AutomationCommandResponse> ExecuteGetSnapshotCommandAsync(");
         AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(");
-        AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);\n        var assertions = ParseAssertions(payload);");
+        AssertContains(dispatcherText, "var assertions = ParseAssertions(payload);\n        var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "private const int MaxSnapshotAssertionCount = 1024;");
+        AssertContains(dispatcherText, "var assertionCount = assertionsElement.GetArrayLength();");
+        AssertContains(dispatcherText, "SnapshotPropertyMap.Properties.TryGetValue(assertion.Field, out var property)");
+        AssertDoesNotContain(dispatcherText, "ConcurrentDictionary<string, PropertyInfo?>");
         AssertContains(dispatcherText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync");
         AssertContains(dispatcherText, "return (true, snapshot);");
         AssertContains(dispatcherText, "snapshot: snapshot");
