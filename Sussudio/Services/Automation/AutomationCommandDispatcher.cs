@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -1182,15 +1181,20 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 throw new InvalidOperationException($"Unknown window action: {action}");
         }
     }
-    private static readonly ConcurrentDictionary<string, PropertyInfo?> SnapshotPropertyCache = new(StringComparer.OrdinalIgnoreCase);
+    private const int MaxSnapshotAssertionCount = 1024;
+
+    private static class SnapshotPropertyMap
+    {
+        internal static readonly Dictionary<string, PropertyInfo> Properties = CreateSnapshotPropertyMap();
+    }
 
     private async Task<AutomationCommandResponse> ExecuteAssertSnapshotCommandAsync(
         JsonElement payload,
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
         var assertions = ParseAssertions(payload);
+        var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
         var failures = new List<string>();
         foreach (var assertion in assertions)
         {
@@ -1227,7 +1231,14 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             throw new InvalidOperationException("AssertSnapshot requires an 'assertions' array.");
         }
 
-        var assertions = new List<SnapshotAssertion>();
+        var assertionCount = assertionsElement.GetArrayLength();
+        if (assertionCount > MaxSnapshotAssertionCount)
+        {
+            throw new InvalidOperationException(
+                $"AssertSnapshot accepts at most {MaxSnapshotAssertionCount} assertions per request; received {assertionCount}.");
+        }
+
+        var assertions = new List<SnapshotAssertion>(assertionCount);
         foreach (var item in assertionsElement.EnumerateArray())
         {
             if (item.ValueKind != JsonValueKind.Object)
@@ -1264,12 +1275,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         SnapshotAssertion assertion,
         out string? failure)
     {
-        var property = SnapshotPropertyCache.GetOrAdd(
-            assertion.Field,
-            field => typeof(AutomationSnapshot).GetProperty(
-                field,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase));
-        if (property == null)
+        if (!SnapshotPropertyMap.Properties.TryGetValue(assertion.Field, out var property))
         {
             failure = $"field-not-found({assertion.Field})";
             return false;
@@ -1308,6 +1314,17 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             ? null
             : $"assertion-failed(field={property.Name},op={op},expected={expected},actual={actualText})";
         return result;
+    }
+
+    private static Dictionary<string, PropertyInfo> CreateSnapshotPropertyMap()
+    {
+        var properties = new Dictionary<string, PropertyInfo>(StringComparer.OrdinalIgnoreCase);
+        foreach (var property in typeof(AutomationSnapshot).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            properties.Add(property.Name, property);
+        }
+
+        return properties;
     }
 
     private static bool TryCompareNumeric(object? actual, string expected, string op, out bool result)

@@ -1722,7 +1722,9 @@ static partial class Program
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_RETIRE_SESSION");
         AssertContains(flashbackBufferSource, "FLASHBACK_RETIRE_MARKER");
         AssertContains(flashbackCleanupSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
-        AssertContains(flashbackCleanupSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
+        AssertContains(flashbackCleanupSource, "IsPreserveMarkerActive(fullPath, nowUtc)");
+        AssertContains(flashbackCleanupSource, "internal static readonly TimeSpan RecoveryPreserveRetention = TimeSpan.FromDays(7);");
+        AssertContains(flashbackCleanupSource, "FLASHBACK_RECOVERY_PRESERVE_EXPIRED");
         AssertContains(flashbackBufferSource, "TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"valid_window\", out var pendingDelete)");
         AssertContains(flashbackBufferSource, "TryCreatePendingEvictionDelete(oldest.Path, oldest.SizeBytes, \"disk_budget\", out var pendingDelete)");
         AssertContains(flashbackBufferSource, "private void QueueEvictedSegmentDeletes(List<PendingEvictedSegmentDelete>? pendingDeletes)");
@@ -3208,7 +3210,7 @@ static partial class Program
         AssertOccursBefore(rawIngress, "FrameLedgerStage.CompressedQueued", "return;");
         AssertOccursBefore(rawIngress, "FirePixelFormatObserverOnce(isP010 ? \"P010\" : \"NV12\");", "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);");
         AssertOccursBefore(rawIngress, "EnqueueRecordingFrame(frameData, width, height, isP010, sourceSequence);", "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);");
-        AssertOccursBefore(rawIngress, "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);", "SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick, sourceSequence);");
+        AssertOccursBefore(rawIngress, "EnqueueFlashbackFrame(frameData, width, height, isP010, sourceSequence);", "SubmitPreviewRawFrame(previewSink!, frameData, width, height, isP010, arrivalTick, sourceSequence);");
 
         var mjpegIngress = ExtractSourceBlock(
             frameIngressSource,

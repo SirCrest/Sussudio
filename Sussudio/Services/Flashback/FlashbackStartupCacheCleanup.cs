@@ -19,6 +19,14 @@ internal static class FlashbackStartupCacheCleanup
     private const int MaxStaleRootSegmentFilesPerInit = 128;
     private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
 
+    /// <summary>
+    /// A recovery-preserve marker (set unconditionally on any fatal flashback error,
+    /// see CaptureService.BeginFlashbackBackendCleanup) keeps a session directory
+    /// alive across startup cleanup passes, but only for this long - otherwise a
+    /// preserved session would leak disk space forever.
+    /// </summary>
+    internal static readonly TimeSpan RecoveryPreserveRetention = TimeSpan.FromDays(7);
+
     internal static void CleanupStaleSessionDirectories(string tempDirectory, string currentSessionDirectory)
     {
         try
@@ -64,7 +72,7 @@ internal static class FlashbackStartupCacheCleanup
                     continue;
                 }
 
-                if (File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName)))
+                if (IsPreserveMarkerActive(fullPath, nowUtc))
                 {
                     Logger.Log($"FLASHBACK_STALE_SESSION_PRESERVE_SKIP dir='{fullPath}'");
                     continue;
@@ -122,6 +130,41 @@ internal static class FlashbackStartupCacheCleanup
         {
             Logger.Log($"FLASHBACK_STALE_SESSION_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// True when <paramref name="sessionDirectory"/> carries an active (unexpired)
+    /// recovery-preserve marker. Also used by <see cref="FlashbackStartupSessionCacheBudget"/>
+    /// so both startup cleanup passes age preserved sessions the same way.
+    /// </summary>
+    internal static bool IsPreserveMarkerActive(string sessionDirectory, DateTime nowUtc)
+    {
+        var markerPath = Path.Combine(sessionDirectory, RecoveryPreserveMarkerFileName);
+        if (!File.Exists(markerPath))
+        {
+            return false;
+        }
+
+        DateTime markerUtc;
+        try
+        {
+            var text = File.ReadAllText(markerPath).Trim();
+            markerUtc = DateTimeOffset.TryParse(text, out var parsed)
+                ? parsed.UtcDateTime
+                : File.GetLastWriteTimeUtc(markerPath);
+        }
+        catch
+        {
+            markerUtc = File.GetLastWriteTimeUtc(markerPath);
+        }
+
+        if (nowUtc - markerUtc <= RecoveryPreserveRetention)
+        {
+            return true;
+        }
+
+        Logger.Log($"FLASHBACK_RECOVERY_PRESERVE_EXPIRED dir='{sessionDirectory}' age_days={(nowUtc - markerUtc).TotalDays:F1}");
+        return false;
     }
 
     internal static long TryGetTempDriveAvailableFreeBytes(string tempDirectory)
@@ -208,7 +251,6 @@ internal static class FlashbackStartupSessionCacheBudget
     private const int MaxStartupCacheSessionDirectoryScansPerInit = 256;
     private const int MaxStartupCacheSessionDirectoriesPerInit = 32;
     private const long StartupCacheBudgetMultiplier = 2;
-    private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
 
     internal record StartupCacheCleanupResult(
         long BudgetBytes,
@@ -242,6 +284,7 @@ internal static class FlashbackStartupSessionCacheBudget
         {
             var tempRoot = FlashbackSessionRecoveryScanner.EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
             var currentFullPath = Path.GetFullPath(currentSessionDirectory);
+            var nowUtc = DateTime.UtcNow;
             var candidates = new List<StartupCacheCandidate>();
             var scannedCount = 0;
             var deletedCount = 0;
@@ -280,7 +323,7 @@ internal static class FlashbackStartupSessionCacheBudget
                     continue;
                 }
 
-                if (File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName)))
+                if (FlashbackStartupCacheCleanup.IsPreserveMarkerActive(fullPath, nowUtc))
                 {
                     Logger.Log($"FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP dir='{fullPath}'");
                     continue;

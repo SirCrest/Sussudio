@@ -780,8 +780,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
         var sorted = intervalsMs.ToArray();
         Array.Sort(sorted);
-        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
-        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
         var severeGapPercent = severeGapCount <= 0
             ? 0
             : (double)severeGapCount / Math.Max(1, sampleCount) * 100.0;

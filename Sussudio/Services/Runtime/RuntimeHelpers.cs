@@ -281,6 +281,39 @@ internal static class RingBufferHelpers
     }
 }
 
+// Shared nearest-rank percentile selection for already-sorted telemetry
+// samples. Collection, copying, and sorting remain with each metric owner so
+// this helper cannot extend locks or change hot-path allocation behavior.
+internal static class PercentileHelpers
+{
+    public static int NearestRankIndex(int sampleCount, double percentile)
+    {
+        if (sampleCount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(sampleCount), sampleCount, "Sample count must be positive.");
+        }
+
+        ValidatePercentile(percentile);
+        return Math.Clamp((int)Math.Ceiling(percentile * sampleCount) - 1, 0, sampleCount - 1);
+    }
+
+    public static double FromSorted(ReadOnlySpan<double> sortedSamples, double percentile)
+    {
+        ValidatePercentile(percentile);
+        return sortedSamples.IsEmpty
+            ? 0
+            : sortedSamples[NearestRankIndex(sortedSamples.Length, percentile)];
+    }
+
+    private static void ValidatePercentile(double percentile)
+    {
+        if (!double.IsFinite(percentile) || percentile <= 0 || percentile > 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(percentile), percentile, "Percentile must be greater than zero and no greater than one.");
+        }
+    }
+}
+
 // Common "how old is this telemetry sample" computation. Several diagnostics
 // surfaces (snapshot builders, view-model age refresh, automation hub) need the
 // same clamped, floor-rounded seconds-since-timestamp value, plus a short-circuit

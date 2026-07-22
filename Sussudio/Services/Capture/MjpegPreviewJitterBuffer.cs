@@ -903,8 +903,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
 
         Array.Sort(sorted);
-        var p95Index = Math.Min((int)(sorted.Length * 0.95), sorted.Length - 1);
-        return (sorted.Length, sum / sorted.Length, sorted[p95Index], max);
+        return (sorted.Length, sum / sorted.Length, PercentileHelpers.FromSorted(sorted, 0.95), max);
     }
 
     private static double ElapsedMs(long startTick, long endTick)

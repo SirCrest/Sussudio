@@ -219,6 +219,7 @@ public sealed class FlashbackModelsTests
                 Property("BufferDuration", typeof(TimeSpan), SetterExpectation.InitOnly),
                 String("TempDirectory", SetterExpectation.InitOnly, NullabilityExpectation.NotNull),
                 Property("SegmentDuration", typeof(TimeSpan), SetterExpectation.InitOnly),
+                Property("FreeDiskBytesProvider", typeof(Func<long>), SetterExpectation.InitOnly, NullabilityExpectation.Nullable),
                 Property("MaxDiskBytes", typeof(long), SetterExpectation.None)
             });
         AssertDeclaredProperties(
@@ -2772,7 +2773,7 @@ static partial class Program
         AssertContains(playbackStateText, "public bool IsInitialized => _initialized;");
         AssertContains(playbackStateText, "public bool IsDisposed => _disposedFlag != 0;");
         AssertContains(playbackStateText, "public string DecoderHwAccel => _decoderHwAccel;");
-        AssertContains(playbackStateText, "private void SetState(FlashbackPlaybackState newState)");
+        AssertContains(playbackStateText, "private void SetState(FlashbackPlaybackState newState, string reason = \"\")");
         AssertContains(rootText, "private readonly FlashbackBufferManager _bufferManager;");
 
         return Task.CompletedTask;
@@ -3053,7 +3054,7 @@ static partial class Program
         AssertContains(playbackFramesText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(playbackFramesText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();");
         AssertContains(playbackFramesText, "SafeResumePreviewSubmission(operation);");
-        AssertContains(playbackFramesText, "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(playbackFramesText, "SetState(FlashbackPlaybackState.Live, operation);");
         AssertContains(sourceText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)\n    {\n        try\n        {\n            if (decoder.IsOpen) decoder.CloseFile();\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'\");\n        }\n    }");
         var ensureFileOpenBlock = ExtractTextBetween(
             sourceText,
@@ -3097,7 +3098,7 @@ static partial class Program
         AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))");
         AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"pause_from_live_display_failed\");");
         AssertContains(pauseFromLiveBlock, "pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
-        AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused);");
+        AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused, \"user\");");
         AssertContains(pauseFromLiveBlock, "frozen_frame=true");
         AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
         AssertContains(sourceText, "return ClampPlaybackTargetToMinimumLiveLead(latestPts, frozenValidStart, \"pause_from_live\");");
@@ -3124,7 +3125,7 @@ static partial class Program
         AssertContains(nudgeBlock, "RestoreLiveAudio();");
         AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SafeResumeRendering(\"nudge_no_file\");");
-        AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live, \"nudge_no_file\");");
         AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge, cts.Token))");
         AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"nudge_display_failed\");");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
@@ -3206,7 +3207,15 @@ static partial class Program
         AssertContains(sourceText, "command_pending={commandPending} pending_command={pendingCommandKind}");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"audio_prebuffer_{operation}\");");
         AssertContains(sourceText, "released_frames={prebufferReleasedFrames}");
-        AssertDoesNotContain(sourceText, "prebufferedFrames.Enqueue(frame);");
+        // Keep-frames prebuffer (fix A): CPU frames decoded for the audio prebuffer
+        // are retained in prebufferedFrames (bounded) so the resume does not
+        // rewind-seek and re-decode the interval; the rewind runs only when
+        // frames had to be released (hw frames, cap overflow, or discard).
+        AssertContains(sourceText, "private const int PlaybackAudioPrebufferMaxHeldFrames = 32;");
+        AssertContains(sourceText, "prebufferedFrames.Count < PlaybackAudioPrebufferMaxHeldFrames)");
+        AssertContains(sourceText, "prebufferedFrames.Enqueue(frame);");
+        AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"prebuffer_cap_{operation}\");");
+        AssertContains(sourceText, "if (releasedAnyFrame && decodedFrames > 0)");
         AssertContains(sourceText, "cancellationToken.WaitHandle.WaitOne(waitMs)");
         AssertContains(sourceText, "bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs");
         AssertContains(sourceText, "prebufferAudioGateTicks = Interlocked.Read(ref _lastAudioPtsTicks);");
@@ -3545,7 +3554,7 @@ static partial class Program
         AssertContains(sourceText, "return gotFrame;");
         AssertContains(sourceText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";\n        ReleasePlaybackFrameForLive(operation);");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation);");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"seek_display_failed\");");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"begin_scrub_display_failed\");");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"scrub_update_display_failed\");");
@@ -3864,7 +3873,9 @@ static partial class Program
         AssertContains(metricsText, "_playbackDecodeDurationCount = 0;");
         AssertContains(metricsText, "public readonly record struct PlaybackCadenceMetrics(");
         AssertContains(metricsText, "public PlaybackCadenceMetrics GetPlaybackCadenceMetrics()");
-        AssertContains(metricsText, "private static double PercentileFromSorted(double[] sortedSamples, double percentile)");
+        AssertContains(metricsText, "PercentileHelpers.FromSorted(sorted, 0.95)");
+        AssertContains(metricsText, "PercentileHelpers.FromSorted(samples, 0.99)");
+        AssertDoesNotContain(metricsText, "private static double PercentileFromSorted");
         AssertContains(metricsText, "public readonly record struct PlaybackDecodeMetrics(");
         AssertContains(metricsText, "public PlaybackDecodeMetrics GetPlaybackDecodeMetrics()");
         AssertContains(metricsText, "private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];");
@@ -3916,7 +3927,7 @@ static partial class Program
         AssertContains(playbackFrameOwnershipText, "RestoreLiveAudio();");
         AssertContains(playbackFrameOwnershipText, "SafeResumePreviewSubmission(operation);");
         AssertContains(playbackFrameOwnershipText, "SafeResumeRendering(operation);");
-        AssertContains(playbackFrameOwnershipText, "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(playbackFrameOwnershipText, "SetState(FlashbackPlaybackState.Live, operation);");
         AssertDoesNotContain(rootText, "private DecodedVideoFrame _previousHeldFrame;");
         AssertDoesNotContain(rootText, "private bool _hasPreviousHeldFrame;");
         AssertEqual(
@@ -4038,7 +4049,7 @@ static partial class Program
         AssertDoesNotContain(sourceText, "frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0");
         AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                RestoreLiveAfterPlaybackSubmitFailure(decoder, ref fileOpen, \"playback_submit_failed\");\n                return false;\n            }");
         AssertContains(sourceText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
-        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        if (resumeRendering)\n        {\n            SafeResumeRendering(operation);\n        }\n\n        SetState(FlashbackPlaybackState.Live, operation);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
         AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId, countForPresentCadence);\n            HoldSubmittedFrame(frame);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");
@@ -4233,9 +4244,20 @@ static partial class Program
             SetPrivateField(sink, "_started", true);
             SetPrivateField(sink, "_forceRotateDraining", true);
 
-            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining rejects CPU video");
-            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining rejects GPU video");
+            // Depth-aware guard: while force-rotate is draining, enqueues are only
+            // rejected once the queue fills toward ForceRotateQueueGuardRatio —
+            // an empty queue keeps accepting so exports no longer punch a video
+            // gap into the DVR buffer.
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining accepts CPU video below guard ratio");
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining accepts GPU video below guard ratio");
 
+            SetPrivateField(sink, "_videoQueueDepth", 180); // == DefaultVideoQueueCapacity
+            SetPrivateField(sink, "_gpuQueueDepth", 8);     // == GpuQueueCapacity
+            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining rejects CPU video at guard ratio");
+            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining rejects GPU video at guard ratio");
+
+            SetPrivateField(sink, "_videoQueueDepth", 0);
+            SetPrivateField(sink, "_gpuQueueDepth", 0);
             SetPrivateField(sink, "_forceRotateDraining", false);
             AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "CPU video accepted after force-rotate drain clears");
             AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "GPU video accepted after force-rotate drain clears");
@@ -5328,7 +5350,7 @@ static partial class Program
         AssertContains(updateScrubBlock, "MarkCommandNoOp(CommandKind.UpdateScrub, \"superseded_by_control\", cmd.Position);");
         AssertContains(updateScrubBlock, "FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE");
         AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
-        AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
+        AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live, \"scrub_update_no_file\")");
         AssertContains(commandQueueText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
         AssertContains(sourceText, "return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
         AssertContains(commandQueueText, "private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)");
@@ -5856,7 +5878,7 @@ static partial class Program
         AssertContains(threadCommandDispatchText, "RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");\n        Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");");
         AssertDoesNotContain(threadLoopText, "isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, \"thread_stop\");");
         AssertContains(sourceText, "private void RestoreLiveForPlaybackThreadExit(");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SetState(FlashbackPlaybackState.Live, operation);");
         AssertDoesNotContain(sourceText, "_suppressAudioUntilPtsTicks");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.GoLive, \"live_thread_not_running\");\n            return false;\n        }");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.Nudge, \"live_thread_not_running\", delta: delta);\n            return false;\n        }");

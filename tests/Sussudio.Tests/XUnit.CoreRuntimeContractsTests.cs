@@ -573,6 +573,7 @@ public class RuntimeHelpersTests
     private const string TelemetryAgeHelperType = "Sussudio.Services.Runtime.TelemetryAgeHelper";
     private const string EnvironmentHelpersType = "Sussudio.Services.Runtime.EnvironmentHelpers";
     private const string RingBufferHelpersType = "Sussudio.Services.Runtime.RingBufferHelpers";
+    private const string PercentileHelpersType = "Sussudio.Services.Runtime.PercentileHelpers";
 
     [Fact]
     public void AtomicMax_Int_UpdatesWhenCandidateIsGreater()
@@ -730,6 +731,38 @@ public class RuntimeHelpersTests
         Assert.Empty(empty);
     }
 
+    [Theory]
+    [InlineData(1, 0.95, 0)]
+    [InlineData(2, 0.95, 1)]
+    [InlineData(19, 0.95, 18)]
+    [InlineData(20, 0.95, 18)]
+    [InlineData(21, 0.95, 19)]
+    [InlineData(100, 0.95, 94)]
+    [InlineData(100, 0.99, 98)]
+    public void PercentileHelpers_NearestRankIndex_UsesConsistentBoundaries(
+        int sampleCount,
+        double percentile,
+        int expectedIndex)
+    {
+        var method = ResolveNearestRankIndex();
+        var result = (int)method.Invoke(null, new object[] { sampleCount, percentile })!;
+        Assert.Equal(expectedIndex, result);
+    }
+
+    [Fact]
+    public void PercentileHelpers_NearestRankIndex_RejectsInvalidInputs()
+    {
+        var method = ResolveNearestRankIndex();
+
+        var invalidCount = Assert.Throws<TargetInvocationException>(() =>
+            method.Invoke(null, new object[] { 0, 0.95 }));
+        Assert.IsType<ArgumentOutOfRangeException>(invalidCount.InnerException);
+
+        var invalidPercentile = Assert.Throws<TargetInvocationException>(() =>
+            method.Invoke(null, new object[] { 10, 0.0 }));
+        Assert.IsType<ArgumentOutOfRangeException>(invalidPercentile.InnerException);
+    }
+
     private static MethodInfo ResolveStatic(string typeName, string methodName, Type[] signature)
     {
         var type = SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
@@ -756,6 +789,9 @@ public class RuntimeHelpersTests
 
     private static MethodInfo ResolveCopyDouble()
         => ResolveStatic(RingBufferHelpersType, "Copy", new[] { typeof(double[]), typeof(int), typeof(int), typeof(int?) });
+
+    private static MethodInfo ResolveNearestRankIndex()
+        => ResolveStatic(PercentileHelpersType, "NearestRankIndex", new[] { typeof(int), typeof(double) });
 
     private static void AssertBoolEnv(MethodInfo method, string name, string? raw, bool expectedReturn, bool expectedValue)
     {

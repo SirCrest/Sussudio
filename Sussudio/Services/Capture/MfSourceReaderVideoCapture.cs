@@ -198,6 +198,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(deviceOpenLastEx).Throw();
             }
 
+            if (mediaSource == null)
+            {
+                throw new InvalidOperationException("Media Foundation device activation completed without returning a media source.");
+            }
+
             disableConverters = !useConvertedMjpegNv12 && !useRawMjpgOutput;
             MfInteropHelpers.ThrowIfFailed(
                 MfInterop.MFCreateAttributes(out readerAttributes, useConvertedMjpegNv12 ? 3 : 2),
@@ -1329,10 +1334,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
         var sorted = (double[])samples.Clone();
         Array.Sort(sorted);
-        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
-        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
-        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
-        var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
+        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
+        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
         var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
         var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
         var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, sampleCount + estimatedDroppedFrames);

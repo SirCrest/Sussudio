@@ -1738,9 +1738,12 @@ internal sealed class VideoQueueLatencyTracker
             total += copy[i];
         }
 
-        var p95Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.95) - 1, 0, copy.Length - 1);
-        var p99Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.99) - 1, 0, copy.Length - 1);
-        return (copy.Length, total / copy.Length, copy[p95Index], copy[p99Index], copy[^1]);
+        return (
+            copy.Length,
+            total / copy.Length,
+            PercentileHelpers.FromSorted(copy, 0.95),
+            PercentileHelpers.FromSorted(copy, 0.99),
+            copy[^1]);
     }
 
     public void ResetAll()

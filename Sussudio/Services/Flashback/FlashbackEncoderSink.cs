@@ -68,6 +68,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _segmentStartBytes;
     private long _lastDiskBytesUpdateMs;
     private long _segmentRotationFailures;
+    private const int MaxConsecutiveRotationFailures = 3;
+    private int _consecutiveRotationFailures;
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
     private long _videoFramesEnqueued;
@@ -702,8 +704,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Give encoding loop time to drain remaining queued frames.
-            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            // Give encoding loop time to drain remaining queued frames — bounded
+            // wait instead of a fixed delay so a fast-draining queue isn't taxed
+            // and a slow one (deep backlog) isn't cut short of its tail frames.
+            await WaitForEncodeQueueDrainAsync(TimeSpan.FromMilliseconds(750), cancellationToken).ConfigureAwait(false);
 
             // Check if the encoding loop crashed during the recording
             var failure = _encodingFailure;
@@ -757,6 +761,30 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     $"duration_s={NonNegativeDuration(LastRecordingEndPts, LastRecordingStartPts).TotalSeconds:F1}");
             }
         }
+    }
+
+    private async Task WaitForEncodeQueueDrainAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        var deadline = Environment.TickCount64 + (long)timeout.TotalMilliseconds;
+        while (Environment.TickCount64 < deadline)
+        {
+            if (Volatile.Read(ref _videoQueueDepth) == 0 &&
+                Volatile.Read(ref _audioQueueDepth) == 0 &&
+                Volatile.Read(ref _microphoneQueueDepth) == 0 &&
+                Volatile.Read(ref _gpuQueueDepth) == 0)
+            {
+                return;
+            }
+
+            if (Volatile.Read(ref _encodingFailure) != null || _encodingTask?.IsCompleted == true)
+            {
+                return; // loop is dead; waiting longer cannot drain anything
+            }
+
+            await Task.Delay(15, cancellationToken).ConfigureAwait(false);
+        }
+
+        Logger.Log($"FLASHBACK_RECORDING_END_DRAIN_TIMEOUT vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
     }
 
     private static long ToNonNegativeLongSaturated(double value)
@@ -1453,7 +1481,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (Volatile.Read(ref _forceRotateDraining))
         {
-            return "force_rotate_draining";
+            // Mirror the audio path: only reject while the queue is actually
+            // filling up toward the guard ratio. Unconditional rejection here
+            // punched a video gap into the DVR buffer on every export.
+            var depth = isGpu ? Volatile.Read(ref _gpuQueueDepth) : Volatile.Read(ref _videoQueueDepth);
+            var capacity = isGpu ? GpuQueueCapacity : Volatile.Read(ref _videoQueueCapacity);
+            if (IsForceRotateQueueGuarded(depth, capacity))
+            {
+                return "force_rotate_draining";
+            }
         }
 
         var failure = Volatile.Read(ref _encodingFailure);
@@ -2104,6 +2140,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             _lastDiskBytesUpdateMs = nowMs;
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
+            if (_bufferManager.IsDiskCriticallyLow)
+            {
+                FailEncoding(new IOException(
+                    "Flashback stopped: drive with the flashback cache is critically low on space."));
+                return;
+            }
         }
 
         // NOTE: This event fires on the encoding background thread, NOT the UI thread.
@@ -2170,6 +2212,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
             _lastDiskBytesUpdateMs = Environment.TickCount64;
 
+            Interlocked.Exchange(ref _consecutiveRotationFailures, 0);
+
             Logger.Log(
                 $"FLASHBACK_SINK_ROTATE new_segment='{Path.GetFileName(newPath)}' " +
                 $"prev_bytes={segmentBytes} " +
@@ -2184,6 +2228,19 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             Interlocked.Increment(ref _segmentRotationFailures);
+
+            // A wedged rotation (e.g. persistent file-handle contention) never
+            // completes the active segment and eviction can't reclaim it. After
+            // repeated consecutive failures, fail the encoder so the fatal path
+            // (preserve + auto-restart, see CaptureService) gets a fresh sink and
+            // segment file rather than growing the active segment unbounded.
+            var consecutive = Interlocked.Increment(ref _consecutiveRotationFailures);
+            if (consecutive >= MaxConsecutiveRotationFailures)
+            {
+                Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_ESCALATE consecutive={consecutive}");
+                FailEncoding(new IOException(
+                    $"Flashback segment rotation failed {consecutive} consecutive times: {ex.Message}", ex));
+            }
 
             // Register the segment that was open before the rotation attempt so its
             // data remains visible in the buffer index even though rotation failed.
@@ -2398,12 +2455,26 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, "before_drain", inFlightCount);
             if (!forceRotateDrainAborted)
             {
+                // Snapshot the depth queued when this phase started. Below the
+                // guard ratio, producers may keep trickling packets in during the
+                // drain (see GetVideoEnqueueRejectReason) — bound by the snapshot
+                // so a sustained trickle can't extend the drain indefinitely.
+                // Anything enqueued after this point lands in the post-rotation
+                // segment, which is harmless (exports cut by PTS range).
+                var audioDrainBudget = Volatile.Read(ref _audioQueueDepth);
+                var audioRounds = 0;
                 while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))
                 {
                     inFlightCount++;
+                    audioRounds++;
                     if (ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount))
                     {
                         forceRotateDrainAborted = true;
+                        break;
+                    }
+
+                    if (audioRounds * AudioDrainBatchLimit >= audioDrainBudget)
+                    {
                         break;
                     }
                 }
@@ -2413,12 +2484,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             if (!forceRotateDrainAborted && _microphoneEnabled && microphoneQueue != null)
             {
+                var microphoneDrainBudget = Volatile.Read(ref _microphoneQueueDepth);
+                var microphoneRounds = 0;
                 while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))
                 {
                     inFlightCount++;
+                    microphoneRounds++;
                     if (ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount))
                     {
                         forceRotateDrainAborted = true;
+                        break;
+                    }
+
+                    if (microphoneRounds * AudioDrainBatchLimit >= microphoneDrainBudget)
+                    {
                         break;
                     }
                 }
@@ -2428,12 +2507,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             if (!forceRotateDrainAborted && gpuQueue != null)
             {
+                var gpuDrainBudget = Volatile.Read(ref _gpuQueueDepth);
+                var gpuRounds = 0;
                 while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))
                 {
                     inFlightCount++;
+                    gpuRounds++;
                     if (ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount))
                     {
                         forceRotateDrainAborted = true;
+                        break;
+                    }
+
+                    if (gpuRounds * GpuDrainBatchLimit >= gpuDrainBudget)
+                    {
                         break;
                     }
                 }
@@ -2443,12 +2530,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             if (!forceRotateDrainAborted)
             {
+                var videoDrainBudget = Volatile.Read(ref _videoQueueDepth);
+                var videoRounds = 0;
                 while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))
                 {
                     inFlightCount++;
+                    videoRounds++;
                     if (ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount))
                     {
                         forceRotateDrainAborted = true;
+                        break;
+                    }
+
+                    if (videoRounds * VideoDrainBatchLimit >= videoDrainBudget)
+                    {
                         break;
                     }
                 }

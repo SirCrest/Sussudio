@@ -713,9 +713,9 @@ private readonly object _recordingFailureTelemetryLock = new();
 
     private void BeginFlashbackBackendCleanup(Exception ex)
     {
-        // Centralised TDR guard: if the triggering exception is a GPU device-loss
-        // (DXGI_ERROR_DEVICE_REMOVED / _HUNG / _RESET), preserve flashback segments
-        // BEFORE entering the async cleanup task. This mirrors the sibling pattern at
+        // Unconditional preserve BEFORE entering the async cleanup task: a fatal
+        // error must never destroy the user's DVR history, regardless of what kind
+        // of exception triggered cleanup. This mirrors the sibling pattern at
         // buffer_cycle_failed / recording_finalize_failed, which both call
         // PreserveRecoverySegments before invoking BeginFlashbackBackendCleanup.
         // PreserveRecoverySegments is idempotent (sets a bool flag), so the
@@ -723,10 +723,12 @@ private readonly object _recordingFailureTelemetryLock = new();
         // ResolveSegmentPurge (inside DisposeFlashbackPreviewBackendAsync) to
         // short-circuit the purge regardless of the purgeSegments argument, and
         // MarkSessionPreservedForRecovery suppresses Directory.Delete in
-        // FlashbackBufferManager.Dispose so segment files survive on disk.
+        // FlashbackBufferManager.Dispose so segment files survive on disk. Bounded
+        // startup cleanup (retire markers + Task 2 preserved-session aging) reclaims
+        // the disk later instead of an immediate purge.
+        _flashbackBackend.PreserveRecoverySegments("backend_fatal");
         if (IsGpuDeviceLost(ex))
         {
-            _flashbackBackend.PreserveRecoverySegments("device_lost");
             Logger.Log($"FLASHBACK_BACKEND_FATAL_DEVICE_LOST type={ex.GetType().Name} preserving_segments=true");
         }
 
@@ -754,10 +756,11 @@ private readonly object _recordingFailureTelemetryLock = new();
                     var preserveDedicatedRecordingMic = _isRecording && !IsFlashbackRecordingBackendActive();
                     await DisposeFlashbackPreviewBackendAsync(
                         CancellationToken.None,
-                        purgeSegments: true,
+                        purgeSegments: false,
                         detachMicrophoneWriter: !preserveDedicatedRecordingMic).ConfigureAwait(false);
 
                     StatusChanged?.Invoke(this, $"Flashback error: {ex.Message}");
+                    TryScheduleFlashbackAutoRestart(ex, generationAtFault);
                 }
                 finally
                 {

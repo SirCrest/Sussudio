@@ -161,6 +161,80 @@ public partial class CaptureService
         cancellationToken.ThrowIfCancellationRequested();
     }
 
+    private const int MaxFlashbackAutoRestartAttempts = 2;
+    private static readonly TimeSpan FlashbackAutoRestartDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan FlashbackAutoRestartHealthyWindow = TimeSpan.FromSeconds(60);
+    private int _flashbackAutoRestartAttempts;
+    private long _lastFlashbackAutoRestartTick;
+
+    /// <summary>
+    /// Schedules a bounded, delayed attempt to bring the flashback backend back up
+    /// after a fatal error already preserved its history (see
+    /// <see cref="BeginFlashbackBackendCleanup"/>). Bounded to
+    /// <see cref="MaxFlashbackAutoRestartAttempts"/> tries so a persistently faulting
+    /// backend does not spin forever; the attempt counter resets once a restart
+    /// survives <see cref="FlashbackAutoRestartHealthyWindow"/> without another fault.
+    /// </summary>
+    private void TryScheduleFlashbackAutoRestart(Exception cause, long generationAtFault)
+    {
+        // Reset the attempt counter when the last restart survived the healthy window.
+        var now = Environment.TickCount64;
+        var last = Interlocked.Read(ref _lastFlashbackAutoRestartTick);
+        if (last > 0 && now - last > (long)FlashbackAutoRestartHealthyWindow.TotalMilliseconds)
+        {
+            Interlocked.Exchange(ref _flashbackAutoRestartAttempts, 0);
+        }
+
+        if (!_flashbackEnabled || _isRecording)
+        {
+            Logger.Log($"FLASHBACK_AUTO_RESTART_SKIP reason=state enabled={_flashbackEnabled} recording={_isRecording}");
+            return;
+        }
+
+        var attempt = Interlocked.Increment(ref _flashbackAutoRestartAttempts);
+        if (attempt > MaxFlashbackAutoRestartAttempts)
+        {
+            Logger.Log($"FLASHBACK_AUTO_RESTART_GIVE_UP attempts={attempt - 1} cause={cause.GetType().Name}");
+            StatusChanged?.Invoke(this, "Flashback stopped after repeated errors — use Restart Flashback to retry.");
+            return;
+        }
+
+        Interlocked.Exchange(ref _lastFlashbackAutoRestartTick, now);
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(FlashbackAutoRestartDelay).ConfigureAwait(false);
+                await RunTransitionAsync(CurrentSessionState, async transitionToken =>
+                {
+                    if (CurrentSessionGeneration != generationAtFault ||
+                        !_flashbackEnabled || _isRecording || _flashbackBackend.Sink != null)
+                    {
+                        Logger.Log("FLASHBACK_AUTO_RESTART_SKIP reason=stale_or_already_running");
+                        return;
+                    }
+
+                    var capture = _videoPipeline.Capture;
+                    var settings = _currentSettings;
+                    if (capture == null || settings == null)
+                    {
+                        Logger.Log("FLASHBACK_AUTO_RESTART_SKIP reason=no_capture_or_settings");
+                        return;
+                    }
+
+                    await EnsureFlashbackPreviewBackendAsync(capture, settings, transitionToken).ConfigureAwait(false);
+                    Logger.Log($"FLASHBACK_AUTO_RESTART_OK attempt={attempt}");
+                    StatusChanged?.Invoke(this, "Flashback recovered after an error.");
+                }, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception restartEx)
+            {
+                Logger.Log($"FLASHBACK_AUTO_RESTART_FAIL attempt={attempt} type={restartEx.GetType().Name} msg='{restartEx.Message}'");
+                StatusChanged?.Invoke(this, $"Flashback restart failed: {restartEx.Message}");
+            }
+        });
+    }
+
     private async Task EnsureFlashbackPreviewBackendAsync(
         UnifiedVideoCapture unifiedVideoCapture,
         CaptureSettings settings,

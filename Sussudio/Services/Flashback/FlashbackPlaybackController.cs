@@ -61,7 +61,11 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Pause,
         GoLive,
         Nudge,
-        Stop
+        Stop,
+        // Not a real playback command -- only used to attribute PreWarm's
+        // EnsurePlaybackThread call in diagnostics/failure logging. Never
+        // enqueued onto the command channel.
+        Warm
     }
 
     private readonly struct PlaybackCommand
@@ -173,7 +177,23 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         {
             var latest = _bufferManager.LatestPts;
             var lastFrame = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
-            if (lastFrame == TimeSpan.Zero) return TimeSpan.Zero;
+            if (lastFrame == TimeSpan.Zero)
+            {
+                if (_state == FlashbackPlaybackState.Live) return TimeSpan.Zero;
+
+                // No frame has been decoded yet since leaving Live (e.g. between
+                // issuing Pause/Seek and the playback thread displaying its first
+                // frame) -- _lastVideoPtsTicks briefly reads 0 and would otherwise
+                // report a "-0:00" gap instead of the real distance from live.
+                // Estimate the same way HandleEndOfSegment's fallback does:
+                // PlaybackPosition is relative to the valid-start captured when
+                // leaving Live, which is still _bufferManager.ValidStartPts here
+                // because no time has passed for eviction to move it before the
+                // first frame lands.
+                var estimatedAbsPts = SaturatingAdd(PlaybackPosition, _bufferManager.ValidStartPts);
+                var estimatedGap = latest - estimatedAbsPts;
+                return estimatedGap > TimeSpan.Zero ? estimatedGap : TimeSpan.Zero;
+            }
             var gap = latest - lastFrame;
             return gap > TimeSpan.Zero ? gap : TimeSpan.Zero;
         }
@@ -399,6 +419,33 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         if (applyRouting)
         {
             ApplyPreviewRoutingForState("preview_update");
+        }
+    }
+
+    /// <summary>
+    /// Pre-starts the playback thread (thread creation, MMCSS registration)
+    /// without issuing any command, so the first real Pause/Seek/BeginScrub
+    /// doesn't pay that one-time cost. Decoder creation and file-open remain
+    /// lazy -- those only happen inside a command handler on the playback
+    /// thread -- so this only removes the thread-startup portion of the
+    /// first-interaction latency. Safe to call repeatedly; a no-op if the
+    /// thread is already running.
+    /// </summary>
+    public void PreWarm()
+    {
+        if (!_initialized || _disposedFlag != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var ok = EnsurePlaybackThread(CommandKind.Warm);
+            Logger.Log($"FLASHBACK_PLAYBACK_PREWARM ok={ok}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREWARM ok=false type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
@@ -877,12 +924,22 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }
 
-    private void SetState(FlashbackPlaybackState newState)
+    public event Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? StateChanged;
+
+    private void SetState(FlashbackPlaybackState newState, string reason = "")
     {
         var oldState = _state;
         if (oldState == newState) return;
         _state = newState;
-        Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState}");
+        Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState} reason='{reason}'");
+        try
+        {
+            StateChanged?.Invoke(oldState, newState, reason);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_STATE_EVENT_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private void DetachPreviewComponentsAfterStopTimeout()
@@ -1123,8 +1180,8 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
         var sorted = (double[])samples.Clone();
         Array.Sort(sorted);
-        var p95 = PercentileFromSorted(sorted, 0.95);
-        var p99 = PercentileFromSorted(sorted, 0.99);
+        var p95 = PercentileHelpers.FromSorted(sorted, 0.95);
+        var p99 = PercentileHelpers.FromSorted(sorted, 0.99);
         var max = sorted[^1];
         var slow = Interlocked.Read(ref _playbackSlowFrameCount);
         var totalFrames = Math.Max(1, Interlocked.Read(ref _playbackFrameCount));
@@ -1162,21 +1219,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         return new PlaybackDecodeMetrics(
             samples.Length,
             total / samples.Length,
-            PercentileFromSorted(samples, 0.95),
-            PercentileFromSorted(samples, 0.99),
+            PercentileHelpers.FromSorted(samples, 0.95),
+            PercentileHelpers.FromSorted(samples, 0.99),
             samples[^1]);
-    }
-
-    private static double PercentileFromSorted(double[] sortedSamples, double percentile)
-    {
-        if (sortedSamples.Length == 0)
-        {
-            return 0;
-        }
-
-        var index = (int)Math.Ceiling(percentile * sortedSamples.Length) - 1;
-        index = Math.Clamp(index, 0, sortedSamples.Length - 1);
-        return sortedSamples[index];
     }
 
     private void TrackPlaybackCadence(double intervalMs, double expectedFrameMs)
@@ -2039,6 +2084,10 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private const int PlaybackAudioPrebufferTimeoutMs = 1000;
     private const int PlaybackAudioPrebufferRetryDelayMs = 20;
     private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
+    // Cap on decoded video frames held across the audio prebuffer. CPU frames only:
+    // a D3D11VA frame pins a decoder-pool surface, and pool depth is not guaranteed
+    // to cover the prebuffer budget, so hardware frames keep the release+rewind path.
+    private const int PlaybackAudioPrebufferMaxHeldFrames = 32;
     private const int AudioRenderStateTransitionTimeoutMs = 100;
     // Must stay strictly greater than ActiveFmp4ReopenNearLiveGuard (250ms):
     // clamped targets at exactly the guard distance would fall inside the
@@ -2272,6 +2321,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         var skippedForSoftwareBudget = false;
         var discarded = false;
         var rewound = false;
+        var releasedAnyFrame = false;
         var prebufferReleasedFrames = 0;
         var prebufferAudioGateTicks = 0L;
         var commandPending = false;
@@ -2322,8 +2372,25 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             }
 
             decodedFrames++;
-            ReleaseHeldFrameBestEffort(frame, $"audio_prebuffer_{operation}");
-            prebufferReleasedFrames++;
+            if (!releasedAnyFrame &&
+                !frame.IsD3D11Texture &&
+                prebufferedFrames.Count < PlaybackAudioPrebufferMaxHeldFrames)
+            {
+                prebufferedFrames.Enqueue(frame);
+            }
+            else
+            {
+                if (!releasedAnyFrame && prebufferedFrames.Count > 0)
+                {
+                    // Cap hit (or hw frame appeared): fall back wholesale to the
+                    // rewind path. All-or-nothing — a partial kept queue plus a
+                    // forward decoder position would leave a hole in the middle.
+                    ClearPrebufferedFrames(prebufferedFrames, $"prebuffer_cap_{operation}");
+                }
+                releasedAnyFrame = true;
+                ReleaseHeldFrameBestEffort(frame, $"audio_prebuffer_{operation}");
+                prebufferReleasedFrames++;
+            }
 
             if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= PlaybackAudioPrebufferTimeoutMs)
             {
@@ -2336,6 +2403,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         prebufferAudioGateTicks = Interlocked.Read(ref _lastAudioPtsTicks);
         if (bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs)
         {
+            // Discard releases any frames kept above, so the rewind must run
+            // even if none were released in the main loop above.
+            releasedAnyFrame = true;
             ClearPrebufferedFrames(prebufferedFrames, $"prebuffer_discard_{operation}");
             try
             {
@@ -2351,7 +2421,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             discarded = true;
         }
 
-        if (decodedFrames > 0)
+        if (releasedAnyFrame && decodedFrames > 0)
         {
             rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, prebufferAudioGateTicks, cancellationToken);
         }
@@ -2359,7 +2429,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         if (logResult || timedOut || reachedEnd || skippedForSoftwareBudget)
         {
             Logger.Log(
-                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} command_pending={commandPending} pending_command={pendingCommandKind} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound}");
+                $"FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation} frames={decodedFrames} released_frames={prebufferReleasedFrames} buffered_ms={bufferedMs:F1} target_ms={PlaybackAudioPrebufferTargetMs:F1} discard_threshold_ms={PlaybackAudioPrebufferDiscardThresholdMs:F1} audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds} elapsed_ms={Stopwatch.GetElapsedTime(start).TotalMilliseconds:F1} timed_out={timedOut} eos={reachedEnd} eof_retries={eofRetries} command_pending={commandPending} pending_command={pendingCommandKind} software_budget={skippedForSoftwareBudget} discarded={discarded} rewound={rewound} released_any={releasedAnyFrame} held={prebufferedFrames.Count}");
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -19,6 +20,7 @@ namespace Sussudio.Services.Automation;
 public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 {
     public const string DefaultPipeName = AutomationPipeProtocol.DefaultPipeName;
+    private const int MaxRequestCharacters = 1024 * 1024;
 
     private readonly IAutomationCommandDispatcher _commandDispatcher;
     private readonly string _pipeName;
@@ -300,7 +302,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
             try
             {
-                var requestLine = await reader.ReadLineAsync().WaitAsync(requestCancellation.Token).ConfigureAwait(false);
+                var requestLine = await ReadRequestLineAsync(reader, requestCancellation.Token).ConfigureAwait(false);
                 var request = string.IsNullOrWhiteSpace(requestLine)
                     ? null
                     : JsonSerializer.Deserialize<AutomationCommandRequest>(requestLine, _owner._jsonOptions);
@@ -324,6 +326,10 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             {
                 response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
             }
+            catch (AutomationRequestTooLargeException ex)
+            {
+                response = CreateErrorResponse(ex.Message, "request-too-large");
+            }
             catch (OperationCanceledException)
             {
                 var timedOut = requestTimeout.IsCancellationRequested;
@@ -343,6 +349,58 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
             var responseLine = JsonSerializer.Serialize(response, _owner._jsonOptions);
             await writer.WriteLineAsync(responseLine).ConfigureAwait(false);
+        }
+
+        private static async Task<string?> ReadRequestLineAsync(
+            StreamReader reader,
+            CancellationToken cancellationToken)
+        {
+            var buffer = ArrayPool<char>.Shared.Rent(4096);
+            try
+            {
+                var request = new StringBuilder();
+                while (true)
+                {
+                    var read = await reader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
+                    if (read == 0)
+                    {
+                        if (request.Length > MaxRequestCharacters)
+                        {
+                            throw new AutomationRequestTooLargeException(MaxRequestCharacters);
+                        }
+
+                        return request.Length == 0 ? null : request.ToString();
+                    }
+
+                    var newlineIndex = buffer.AsSpan(0, read).IndexOf('\n');
+                    var appendCount = newlineIndex >= 0 ? newlineIndex : read;
+                    request.Append(buffer, 0, appendCount);
+                    if (newlineIndex >= 0)
+                    {
+                        if (request.Length > 0 && request[^1] == '\r')
+                        {
+                            request.Length--;
+                        }
+
+                        if (request.Length > MaxRequestCharacters)
+                        {
+                            throw new AutomationRequestTooLargeException(MaxRequestCharacters);
+                        }
+
+                        return request.ToString();
+                    }
+
+                    if (request.Length > MaxRequestCharacters + 1 ||
+                        (request.Length == MaxRequestCharacters + 1 && request[^1] != '\r'))
+                    {
+                        throw new AutomationRequestTooLargeException(MaxRequestCharacters);
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(buffer);
+            }
         }
 
         private void LogReceivedRequest(AutomationCommandRequest request)
@@ -607,6 +665,14 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     {
         public AutomationPipeSecurityException(string message, Exception? innerException = null)
             : base(message, innerException)
+        {
+        }
+    }
+
+    private sealed class AutomationRequestTooLargeException : Exception
+    {
+        public AutomationRequestTooLargeException(int maxCharacters)
+            : base($"Request payload exceeds the {maxCharacters}-character limit.")
         {
         }
     }

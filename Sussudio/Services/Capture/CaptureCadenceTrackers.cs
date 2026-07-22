@@ -235,8 +235,7 @@ internal sealed class FrameFingerprintCadenceTracker
 
         var sorted = (double[])values.Clone();
         Array.Sort(sorted);
-        var p95Index = Math.Clamp((int)Math.Ceiling((sorted.Length - 1) * 0.95), 0, sorted.Length - 1);
-        return (sum / values.Length, sorted[p95Index]);
+        return (sum / values.Length, PercentileHelpers.FromSorted(sorted, 0.95));
     }
 
     private static double ComputeDuplicatePercent(int[] duplicateFlags)
@@ -699,8 +698,7 @@ internal sealed class VisualCadenceTracker
 
         var sorted = (double[])values.Clone();
         Array.Sort(sorted);
-        var p95Index = Math.Clamp((int)Math.Ceiling((sorted.Length - 1) * 0.95), 0, sorted.Length - 1);
-        return (sum / values.Length, sorted[p95Index]);
+        return (sum / values.Length, PercentileHelpers.FromSorted(sorted, 0.95));
     }
 
     private static string ResolveMotionConfidence(long samples, double averageDelta, double repeatPercent, int changeIntervalCount)

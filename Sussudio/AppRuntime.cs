@@ -5,6 +5,7 @@ using System.IO;
 using System.Management;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -252,10 +253,11 @@ public static class RuntimePaths
 }
 
 // Lightweight asynchronous debug logger. Logging must never block or crash
-// capture paths, so messages go through a bounded channel with a direct
-// best-effort fallback when the writer is saturated.
+// capture paths, so messages go through a bounded channel; saturation is
+// counted and reported in aggregate by the background writer.
 public static class Logger
 {
+    private const int MaxDrainBatchEntries = 256;
     private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("Sussudio_Debug.log");
 
     private static readonly object LockObject = new();
@@ -265,10 +267,11 @@ public static class Logger
         SingleWriter = false,
         FullMode = BoundedChannelFullMode.Wait
     });
-    private static readonly CancellationTokenSource LogWriterCancellation = new();
+    private static readonly Task LogWriterTask;
     public static bool VerboseEnabled { get; set; }
     private static int _systemInfoLogged;
     private static long _droppedLogMessages;
+    private static long _unreportedDroppedLogMessages;
 
     // Categorized init outcome so callers can distinguish "log file isn't being
     // written" from "log file rotation failed but writer started anyway".
@@ -284,6 +287,7 @@ public static class Logger
     }
 
     public static LoggerInitState InitState { get; private set; } = LoggerInitState.NotInitialized;
+    private static long DroppedMessageCount => Interlocked.Read(ref _droppedLogMessages);
 
     static Logger()
     {
@@ -308,11 +312,12 @@ public static class Logger
 
         try
         {
-            _ = Task.Run(RunLogWriterAsync);
+            LogWriterTask = Task.Run(RunLogWriterAsync);
             InitState = fileIoOk ? LoggerInitState.Healthy : LoggerInitState.FileIoFailed;
         }
         catch
         {
+            LogWriterTask = Task.CompletedTask;
             InitState = LoggerInitState.WriterStartFailed;
         }
     }
@@ -330,14 +335,8 @@ public static class Logger
             return;
         }
 
-        var dropped = Interlocked.Increment(ref _droppedLogMessages);
-        if (dropped == 1 || dropped % 100 == 0)
-        {
-            WriteDirect($"[{timestamp}] [Logger] Warning: log channel saturated, dropped messages={dropped}\n");
-        }
-
-        // Best-effort fallback path when the channel is saturated.
-        WriteDirect(logMessage);
+        Interlocked.Increment(ref _droppedLogMessages);
+        Interlocked.Increment(ref _unreportedDroppedLogMessages);
     }
 
     public static void LogVerbose(string message, [CallerMemberName] string caller = "")
@@ -350,21 +349,50 @@ public static class Logger
         Log(message, caller);
     }
 
+    public static async Task ShutdownAsync(TimeSpan timeout)
+    {
+        LogChannel.Writer.TryComplete();
+        try
+        {
+            await LogWriterTask.WaitAsync(timeout).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            Trace.TraceWarning($"Logger shutdown drain timed out after {timeout.TotalMilliseconds:0} ms.");
+        }
+    }
+
     private static async Task RunLogWriterAsync()
     {
         try
         {
-            while (await LogChannel.Reader.WaitToReadAsync(LogWriterCancellation.Token))
+            while (await LogChannel.Reader.WaitToReadAsync())
             {
-                while (LogChannel.Reader.TryRead(out var entry))
+                var batch = new StringBuilder();
+                var entries = 0;
+                while (entries < MaxDrainBatchEntries && LogChannel.Reader.TryRead(out var entry))
                 {
-                    WriteDirect(entry);
+                    batch.Append(entry);
+                    entries++;
+                }
+
+                var droppedInBatch = Interlocked.Exchange(ref _unreportedDroppedLogMessages, 0);
+                if (droppedInBatch > 0)
+                {
+                    batch.Append('[')
+                        .Append(DateTime.Now.ToString("HH:mm:ss.fff"))
+                        .Append("] [Logger] Warning: log channel saturated, dropped_in_batch=")
+                        .Append(droppedInBatch)
+                        .Append(" dropped_total=")
+                        .Append(DroppedMessageCount)
+                        .Append('\n');
+                }
+
+                if (batch.Length > 0)
+                {
+                    WriteDirect(batch.ToString());
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during shutdown.
         }
         catch (Exception ex)
         {

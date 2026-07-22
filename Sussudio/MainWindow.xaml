@@ -242,6 +242,24 @@
                      VerticalAlignment="Top"
                      Margin="16,8,16,0"/>
 
+            <!-- Flashback health InfoBar — involuntary snap-to-live notice and dead-backend banner.
+                 Offset below DiskWarningInfoBar so both can be open without overlapping. -->
+            <InfoBar x:Name="FlashbackHealthInfoBar"
+                     AutomationProperties.AutomationId="FlashbackHealthInfoBar"
+                     Title="Flashback"
+                     Severity="Warning"
+                     IsOpen="False"
+                     IsClosable="False"
+                     VerticalAlignment="Top"
+                     Margin="16,64,16,0">
+                <InfoBar.ActionButton>
+                    <Button x:Name="FlashbackHealthRestartButton"
+                            AutomationProperties.AutomationId="FlashbackHealthRestartButton"
+                            Content="Restart Flashback"
+                            Click="FlashbackHealthRestartButton_Click"/>
+                </InfoBar.ActionButton>
+            </InfoBar>
+
         </Grid>
 
         <!-- Stats Dock Panel — full-height right column, outside preview grid -->

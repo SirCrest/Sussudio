@@ -4496,11 +4496,15 @@ public class StatsHardwareRowsTests
             4L,
             5L,
             6L,
+            7L,
             4,
             5L * 1024L * 1024L,
             10L * 1024L * 1024L,
             2L,
             6,
+            8,
+            6L * 1024L * 1024L,
+            1L,
             perDecoder);
     }
 

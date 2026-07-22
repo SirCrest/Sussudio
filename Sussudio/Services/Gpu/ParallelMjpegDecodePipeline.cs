@@ -579,8 +579,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
 
         Array.Sort(sorted);
-        var p95Index = Math.Min((int)(sampleCount * 0.95), sampleCount - 1);
-        return (sampleCount, sum / sampleCount, sorted[p95Index], max);
+        return (sampleCount, sum / sampleCount, PercentileHelpers.FromSorted(sorted, 0.95), max);
     }
 
     private static double GetElapsedMilliseconds(long startTimestamp, long endTimestamp)

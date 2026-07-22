@@ -227,6 +227,10 @@ internal sealed class FlashbackPollingController
         _statusTimer.Tick -= StatusTimer_Tick;
         _statusTimer.Tick += StatusTimer_Tick;
         _statusTimer.Start();
+
+        // Pre-warm hook: nudge the playback thread up as soon as the timeline
+        // panel starts polling, so the first play/pause/scrub isn't cold.
+        _context.ViewModel.PreWarmFlashbackPlayback();
     }
 
     public void StopStatusPolling()
@@ -647,6 +651,30 @@ internal sealed class FlashbackExportProgressPresentationController
     }
 }
 
+internal sealed class FlashbackHealthPresentationControllerContext
+{
+    public required InfoBar FlashbackHealthInfoBar { get; init; }
+}
+
+// Presents the UI health surfacing message (involuntary snap-to-live notice,
+// dead-backend banner) set by MainViewModel.FlashbackState.cs. Empty message
+// means hidden.
+internal sealed class FlashbackHealthPresentationController
+{
+    private readonly FlashbackHealthPresentationControllerContext _context;
+
+    public FlashbackHealthPresentationController(FlashbackHealthPresentationControllerContext context)
+    {
+        _context = context;
+    }
+
+    public void UpdateMessage(string message)
+    {
+        _context.FlashbackHealthInfoBar.Message = message;
+        _context.FlashbackHealthInfoBar.IsOpen = !string.IsNullOrEmpty(message);
+    }
+}
+
 internal sealed class FlashbackPropertyChangedControllerContext
 {
     public required Func<bool> IsTimelineVisible { get; init; }
@@ -664,6 +692,7 @@ internal sealed class FlashbackPropertyChangedControllerContext
     public required Action<bool> UpdateExportingPresentation { get; init; }
     public required Action SyncGpuDecodeSetting { get; init; }
     public required Action SyncBufferDurationSetting { get; init; }
+    public required Action UpdateHealthMessage { get; init; }
 }
 
 internal sealed class FlashbackPropertyChangedController
@@ -720,6 +749,10 @@ internal sealed class FlashbackPropertyChangedController
 
             case nameof(MainViewModel.FlashbackBufferMinutes):
                 _context.SyncBufferDurationSetting();
+                return true;
+
+            case nameof(MainViewModel.FlashbackHealthMessage):
+                _context.UpdateHealthMessage();
                 return true;
 
             default:

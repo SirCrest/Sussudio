@@ -1649,10 +1649,8 @@ public readonly record struct PresentCadenceMetrics(
         var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
         var sorted = (double[])samples.Clone();
         Array.Sort(sorted);
-        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
-        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
-        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
-        var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
+        var p95IntervalMs = PercentileHelpers.FromSorted(sorted, 0.95);
+        var p99IntervalMs = PercentileHelpers.FromSorted(sorted, 0.99);
         var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
         var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
         var slowPercent = slowFrameCount <= 0
@@ -2472,13 +2470,11 @@ public readonly record struct PresentCadenceMetrics(
             }
         }
 
-        var p95Index = (int)Math.Ceiling((samples.Length - 1) * 0.95);
-        var p99Index = (int)Math.Ceiling((samples.Length - 1) * 0.99);
         return new CpuStageTimingMetrics(
             samples.Length,
             sum / samples.Length,
-            samples[Math.Clamp(p95Index, 0, samples.Length - 1)],
-            samples[Math.Clamp(p99Index, 0, samples.Length - 1)],
+            PercentileHelpers.FromSorted(samples, 0.95),
+            PercentileHelpers.FromSorted(samples, 0.99),
             max);
     }
 
