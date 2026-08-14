@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -15,6 +16,18 @@ namespace Sussudio.Services.Recording;
 /// </summary>
 internal sealed unsafe partial class LibAvEncoder : IDisposable
 {
+    internal sealed record MuxPhaseTimingSnapshot(
+        string Operation,
+        double DrainMs,
+        double TrailerMs,
+        double CloseIoMs,
+        double OpenOutputMs,
+        double HeaderMs,
+        double TotalMs)
+    {
+        public static readonly MuxPhaseTimingSnapshot Empty = new("none", 0, 0, 0, 0, 0, 0);
+    }
+
     /// <summary>Forwards to <see cref="FfmpegLogSuppressionScope.SuppressRecoverableSeekFfmpegLogs"/>.</summary>
     internal static IDisposable SuppressRecoverableSeekFfmpegLogs()
         => FfmpegLogSuppressionScope.SuppressRecoverableSeekFfmpegLogs();
@@ -35,6 +48,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     private bool _headerWritten;
     private AVRational _cachedVideoTimeBase;
     private bool _flushSent;
+    private MuxPhaseTimingSnapshot _lastMuxPhaseTiming = MuxPhaseTimingSnapshot.Empty;
     private AVBufferRef* _hwDeviceCtx;
     private AVBufferRef* _hwFramesCtx;
     private AVFrame* _hwFrame;
@@ -52,6 +66,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     public long DroppedFrameCount => _droppedFrameCount;
     public long VideoPacketsWritten => Interlocked.Read(ref _videoPacketsWritten);
     public long TotalBytesWritten => _totalBytesWritten;
+    internal MuxPhaseTimingSnapshot LastMuxPhaseTiming => Volatile.Read(ref _lastMuxPhaseTiming);
     public bool IsEncoding => _isOpen;
     public string VideoCodecName => _options?.CodecName ?? string.Empty;
     public string OutputPath => _options?.OutputPath ?? string.Empty;
@@ -739,49 +754,69 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             Directory.CreateDirectory(outputDirectory);
         }
 
-        if (_audio.CodecCtx != null)
-        {
-            // Do not flush partial AAC frames while rotating; partial flushes act
-            // like end-of-stream for the encoder and break the next segment.
-            DrainBufferedFrames(ref _audio, flushPartialFrame: false);
-            DrainStreamEncoderPackets(ref _audio);
-        }
+        var operationStartedAt = Stopwatch.GetTimestamp();
+        var drainMs = 0.0;
+        var trailerMs = 0.0;
+        var closeIoMs = 0.0;
+        var openOutputMs = 0.0;
+        var headerMs = 0.0;
 
-        if (_mic.CodecCtx != null)
-        {
-            DrainBufferedFrames(ref _mic, flushPartialFrame: false);
-            DrainStreamEncoderPackets(ref _mic);
-        }
-
-        DrainEncoderPackets();
-
-        if (_headerWritten && _formatCtx != null)
-        {
-            ThrowIfError(ffmpeg.av_write_trailer(_formatCtx), "av_write_trailer(rotate)");
-        }
-
-        // Capture totals after drains/trailer and before segment state reset.
-        var previousTotalBytes = _totalBytesWritten;
-
-        CloseCurrentOutputIo();
-        FreeCurrentOutputContext();
         try
         {
-            ReinitializeOutputContext(newPath);
+            var phaseStartedAt = Stopwatch.GetTimestamp();
+            if (_audio.CodecCtx != null)
+            {
+                // Do not flush partial AAC frames while rotating; partial flushes act
+                // like end-of-stream for the encoder and break the next segment.
+                DrainBufferedFrames(ref _audio, flushPartialFrame: false);
+                DrainStreamEncoderPackets(ref _audio);
+            }
+
+            if (_mic.CodecCtx != null)
+            {
+                DrainBufferedFrames(ref _mic, flushPartialFrame: false);
+                DrainStreamEncoderPackets(ref _mic);
+            }
+
+            DrainEncoderPackets();
+            drainMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
+
+            phaseStartedAt = Stopwatch.GetTimestamp();
+            if (_headerWritten && _formatCtx != null)
+            {
+                ThrowIfError(ffmpeg.av_write_trailer(_formatCtx), "av_write_trailer(rotate)");
+            }
+            trailerMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
+
+            // Capture totals after drains/trailer and before segment state reset.
+            var previousTotalBytes = _totalBytesWritten;
+
+            phaseStartedAt = Stopwatch.GetTimestamp();
+            CloseCurrentOutputIo();
+            FreeCurrentOutputContext();
+            closeIoMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
+            try
+            {
+                ReinitializeOutputContext(newPath, out openOutputMs, out headerMs);
+            }
+            catch (Exception ex)
+            {
+                _isOpen = false;
+                Logger.Log($"LIBAV_ENCODER_ROTATE_FAILED path='{newPath}' error={ex.Message}");
+                throw;
+            }
+
+            ResetSegmentRuntimeState();
+            _options = options with { OutputPath = newPath };
+
+            Logger.Log(
+                $"LIBAV_ENCODER_ROTATE old_output='{previousPath}' new_output='{newPath}' frames={previousEncodedFrames} bytes={previousTotalBytes}");
+            return new RotateOutputResult(previousPath, previousEncodedFrames, previousTotalBytes);
         }
-        catch (Exception ex)
+        finally
         {
-            _isOpen = false;
-            Logger.Log($"LIBAV_ENCODER_ROTATE_FAILED path='{newPath}' error={ex.Message}");
-            throw;
+            PublishMuxPhaseTiming("rotate", drainMs, trailerMs, closeIoMs, openOutputMs, headerMs, operationStartedAt);
         }
-
-        ResetSegmentRuntimeState();
-        _options = options with { OutputPath = newPath };
-
-        Logger.Log(
-            $"LIBAV_ENCODER_ROTATE old_output='{previousPath}' new_output='{newPath}' frames={previousEncodedFrames} bytes={previousTotalBytes}");
-        return new RotateOutputResult(previousPath, previousEncodedFrames, previousTotalBytes);
     }
 
     private void CloseCurrentOutputIo()
@@ -809,8 +844,10 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         _headerWritten = false;
     }
 
-    private void ReinitializeOutputContext(string outputPath)
+    private void ReinitializeOutputContext(string outputPath, out double openOutputMs, out double headerMs)
     {
+        openOutputMs = 0;
+        headerMs = 0;
         var containerFormat = _options?.ContainerFormat ?? "mp4";
         AVFormatContext* formatCtx = null;
         ThrowIfError(
@@ -828,14 +865,18 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         ReinitializeMicrophoneStream();
         ReinitializeVideoBitstreamFilter();
 
+        var phaseStartedAt = Stopwatch.GetTimestamp();
         ThrowIfError(ffmpeg.avio_open2(&_formatCtx->pb, outputPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2(rotate)");
+        openOutputMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
 
         AVDictionary* muxerOptions = null;
         try
         {
+            phaseStartedAt = Stopwatch.GetTimestamp();
             ApplyMp4MuxerOptions(containerFormat, _options?.FragmentedMp4 ?? false, &muxerOptions, "rotate");
             ThrowIfError(ffmpeg.avformat_write_header(_formatCtx, &muxerOptions), "avformat_write_header(rotate)");
             _headerWritten = true;
+            headerMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
         }
         finally
         {
@@ -945,13 +986,11 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             return;
         }
 
-        var movflags = fragmentedMp4
-            ? "frag_keyframe+empty_moov"
-            : "+faststart";
-        ThrowIfError(ffmpeg.av_dict_set(muxerOptions, "movflags", movflags, 0), $"av_dict_set(movflags,{operation})");
-
         if (fragmentedMp4)
         {
+            ThrowIfError(
+                ffmpeg.av_dict_set(muxerOptions, "movflags", "frag_keyframe+empty_moov", 0),
+                $"av_dict_set(movflags,{operation})");
             // Keep active Flashback playback A/V interleaving tight. Keyframe-only
             // fragmentation can batch about a GOP of video before matching audio.
             ThrowIfError(ffmpeg.av_dict_set(muxerOptions, "frag_duration", "100000", 0), $"av_dict_set(frag_duration,{operation})");
@@ -1028,6 +1067,8 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
 
     private void CleanupResources(bool writeTrailer)
     {
+        var operationStartedAt = Stopwatch.GetTimestamp();
+        var trailerMs = 0.0;
         var outputPath = _options?.OutputPath;
         var normalClose = _isOpen;
 
@@ -1035,7 +1076,9 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         {
             if (writeTrailer && _headerWritten && _formatCtx != null)
             {
+                var phaseStartedAt = Stopwatch.GetTimestamp();
                 var trailerResult = ffmpeg.av_write_trailer(_formatCtx);
+                trailerMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
                 if (trailerResult < 0)
                 {
                     Logger.Log(
@@ -1067,7 +1110,42 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
                         $"LIBAV_ENCODER_CLEANUP init_failed=true output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} mic_samples={finalMicSamplesReceived} file_bytes={outputBytes}");
                 }
             }
+
+            // Normal local recordings keep the standard moov-at-end layout.
+            // Omitting +faststart avoids FFmpeg's file-sized relocation pass at
+            // Stop while retaining an ordinary non-fragmented MP4 container.
+            PublishMuxPhaseTiming(
+                _options?.FragmentedMp4 == true ? "fragmented_close" : "normal_mp4_finalize",
+                0,
+                trailerMs,
+                0,
+                0,
+                0,
+                operationStartedAt);
         }
+    }
+
+    private void PublishMuxPhaseTiming(
+        string operation,
+        double drainMs,
+        double trailerMs,
+        double closeIoMs,
+        double openOutputMs,
+        double headerMs,
+        long operationStartedAt)
+    {
+        var timing = new MuxPhaseTimingSnapshot(
+            operation,
+            drainMs,
+            trailerMs,
+            closeIoMs,
+            openOutputMs,
+            headerMs,
+            Stopwatch.GetElapsedTime(operationStartedAt).TotalMilliseconds);
+        Volatile.Write(ref _lastMuxPhaseTiming, timing);
+        Logger.Log(
+            $"LIBAV_MUX_PHASE operation={timing.Operation} drain_ms={timing.DrainMs:F1} trailer_ms={timing.TrailerMs:F1} " +
+            $"close_io_ms={timing.CloseIoMs:F1} open_output_ms={timing.OpenOutputMs:F1} header_ms={timing.HeaderMs:F1} total_ms={timing.TotalMs:F1}");
     }
 
     private long ReleaseNativeResources(bool useCudaHardwareFrames)
@@ -1263,7 +1341,7 @@ internal sealed record LibAvEncoderOptions
     public string SplitEncodeMode { get; init; } = "Auto";
     public int GopSize { get; init; } = -1;
     /// <summary>
-    /// Use frag_keyframe+empty_moov instead of faststart for MP4.
+    /// Use frag_keyframe+empty_moov instead of the normal moov-at-end MP4 layout.
     /// Required for flashback segments that are read while still being written.
     /// </summary>
     public bool FragmentedMp4 { get; init; }

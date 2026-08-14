@@ -4301,22 +4301,35 @@ public class StatsPresentationTests
 public class StatsHardwareRowsTests
 {
     [Fact]
-    public void HardwareRowsInputProvider_PreservesSamplingPolicy()
+    public void HardwareRowsInputProvider_ReturnsNoDecodeInputWithoutMetrics()
     {
         var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
         var getDecodeRowsInput = providerType.GetMethod("GetDecodeRowsInput", ReflectionFlags.Instance)
                                  ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetDecodeRowsInput not found.");
-        var getGpuRowsInput = providerType.GetMethod("GetGpuRowsInput", ReflectionFlags.Instance)
-                              ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetGpuRowsInput not found.");
-
         var nullMetricsProvider = CreateStatsHardwareRowsInputProvider(null, 3, null);
         Assert.Null(getDecodeRowsInput.Invoke(nullMetricsProvider, null));
+    }
+
+    [Fact]
+    public void HardwareRowsInputProvider_ReturnsNoDecodeInputWithoutDecoders()
+    {
+        var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
+        var getDecodeRowsInput = providerType.GetMethod("GetDecodeRowsInput", ReflectionFlags.Instance)
+                                 ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetDecodeRowsInput not found.");
 
         var zeroDecoderProvider = CreateStatsHardwareRowsInputProvider(
             CreateStatsHardwarePipelineTimingMetrics(decoderCount: 0),
             3,
             null);
         Assert.Null(getDecodeRowsInput.Invoke(zeroDecoderProvider, null));
+    }
+
+    [Fact]
+    public void HardwareRowsInputProvider_ProjectsPendingPreviewFrames()
+    {
+        var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
+        var getDecodeRowsInput = providerType.GetMethod("GetDecodeRowsInput", ReflectionFlags.Instance)
+                                 ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetDecodeRowsInput not found.");
 
         var validProvider = CreateStatsHardwareRowsInputProvider(
             CreateStatsHardwarePipelineTimingMetrics(),
@@ -4325,23 +4338,26 @@ public class StatsHardwareRowsTests
         var decodeInput = getDecodeRowsInput.Invoke(validProvider, null)
                           ?? throw new InvalidOperationException("Provider returned null decode input for valid metrics.");
         Assert.Equal(7, Convert.ToInt32(GetPropertyValue(decodeInput, "PendingPreviewFrameCount"), CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void HardwareRowsInputProvider_ReturnsNoGpuInputWithoutGpuTelemetry()
+    {
+        var providerType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputProvider");
+        var getGpuRowsInput = providerType.GetMethod("GetGpuRowsInput", ReflectionFlags.Instance)
+                              ?? throw new InvalidOperationException("StatsHardwareRowsInputProvider.GetGpuRowsInput not found.");
+        var validProvider = CreateStatsHardwareRowsInputProvider(CreateStatsHardwarePipelineTimingMetrics(), 7, null);
         Assert.Null(getGpuRowsInput.Invoke(validProvider, null));
     }
 
     [Fact]
-    public void HardwareRowsPresentation_FormatsDecodeAndGpuRows()
+    public void HardwareRowsPresentation_FormatsDecodeRows()
     {
         using var culture = CultureScope.Use("en-US");
 
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
         var buildDecodeRows = builderType.GetMethod("BuildHardwareDecodeRows", ReflectionFlags.Static)
                               ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareDecodeRows not found.");
-        var buildGpuRows = builderType.GetMethod("BuildHardwareGpuRows", ReflectionFlags.Static)
-                           ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareGpuRows not found.");
-        var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
-        var buildGpuInput = inputBuilderType.GetMethod("BuildGpuRowsInput", ReflectionFlags.Static)
-                            ?? throw new InvalidOperationException("StatsHardwareRowsInputBuilder.BuildGpuRowsInput not found.");
-
         var decodeRows = StatsHardwareRowsToMap(buildDecodeRows.Invoke(null, new object?[]
         {
             CreateStatsHardwareMjpegMetrics()
@@ -4355,11 +4371,31 @@ public class StatsHardwareRowsTests
         Assert.Equal("compressed=4 (5.0/10.0MB)  reorder=6  preview=3  skips=2", decodeRows["Buffers"]);
         Assert.Equal("4.50 / 7.75ms", decodeRows["Thread 0"]);
         Assert.Equal("5.25 / 8.50ms", decodeRows["Thread 1"]);
+    }
+
+    [Fact]
+    public void HardwareRowsPresentation_ReportsUnavailableGpuTelemetry()
+    {
+        var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
+        var buildGpuRows = builderType.GetMethod("BuildHardwareGpuRows", ReflectionFlags.Static)
+                           ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareGpuRows not found.");
+        var inputBuilderType = RequireType("Sussudio.Controllers.StatsHardwareRowsInputBuilder");
+        var buildGpuInput = inputBuilderType.GetMethod("BuildGpuRowsInput", ReflectionFlags.Static)
+                            ?? throw new InvalidOperationException("StatsHardwareRowsInputBuilder.BuildGpuRowsInput not found.");
 
         var unavailableGpuRows = StatsHardwareRowsToMap(buildGpuRows.Invoke(null, new object?[] { null })
                                  ?? throw new InvalidOperationException("BuildHardwareGpuRows returned null for unavailable snapshot."));
         Assert.Equal("NVML not available", unavailableGpuRows["Status"]);
         Assert.Null(buildGpuInput.Invoke(null, new object?[] { null }));
+    }
+
+    [Fact]
+    public void HardwareRowsPresentation_FormatsGpuRows()
+    {
+        using var culture = CultureScope.Use("en-US");
+        var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
+        var buildGpuRows = builderType.GetMethod("BuildHardwareGpuRows", ReflectionFlags.Static)
+                           ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareGpuRows not found.");
 
         var gpuRows = StatsHardwareRowsToMap(buildGpuRows.Invoke(null, new[]
         {
@@ -4376,6 +4412,15 @@ public class StatsHardwareRowsTests
         Assert.Equal("66\u00B0C", gpuRows["Temperature"]);
         Assert.Equal("123.5W", gpuRows["Power"]);
         Assert.Equal("2500 MHz (Mem: 7000 MHz)", gpuRows["Clocks"]);
+    }
+
+    [Fact]
+    public void HardwareRowsPresentation_UsesFallbacksForMissingGpuFields()
+    {
+        using var culture = CultureScope.Use("en-US");
+        var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
+        var buildGpuRows = builderType.GetMethod("BuildHardwareGpuRows", ReflectionFlags.Static)
+                           ?? throw new InvalidOperationException("StatsPresentationBuilder.BuildHardwareGpuRows not found.");
 
         var fallbackGpuRows = StatsHardwareRowsToMap(buildGpuRows.Invoke(null, new[]
         {

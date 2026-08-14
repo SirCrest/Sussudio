@@ -2851,10 +2851,9 @@ owner, fold it back into that owner and update the source-shape tests and
 
 2. Reduce custom regression harness size.
 
-   `tests/Sussudio.Tests/HarnessCore.cs` keeps the legacy runner entry point and
-   no-op `RunAllChecksAsync` compatibility shim. Keep the executable runner as
-   the offline `dotnet exec` validation shim until the
-   repo deliberately retires that workflow; new checks should live in focused
+   `tests/Sussudio.Tests/HarnessCore.cs` keeps the assembly-load smoke entry
+   point. Keep that explicit `dotnet exec` validation step until the repo
+   deliberately retires the workflow; regression checks should live in focused
    xUnit files or focused partial contract files. MCP tool
    surface tests are now split into command-routing, diagnostic-session tool,
    diagnostic-session ownership, diagnostic-session result ownership,

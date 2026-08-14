@@ -1,5 +1,7 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace Sussudio.Tests;
@@ -11,24 +13,25 @@ namespace Sussudio.Tests;
 /// </summary>
 public sealed class FlashbackUiHealthTests
 {
-    private static string ViewModelSource() =>
-        File.ReadAllText(TestPaths.Repo("Sussudio/ViewModels/MainViewModel.FlashbackState.cs"));
+    private static string ViewModelSource()
+        => RuntimeContractSource.ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs");
 
-    private static string UiControllersSource() =>
-        File.ReadAllText(TestPaths.Repo("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs"));
+    private static string UiControllersSource()
+        => RuntimeContractSource.ReadRepoFile("Sussudio/Controllers/Flashback/FlashbackUiControllers.cs");
 
-    private static string MainWindowXaml() =>
-        File.ReadAllText(TestPaths.Repo("Sussudio/MainWindow.xaml"));
+    private static string MainWindowXaml()
+        => RuntimeContractSource.ReadRepoFile("Sussudio/MainWindow.xaml");
 
     [Fact]
-    public void FlashbackHealthMessage_PropertyExists_AndIsRaisedThroughPropertyChangedSwitch()
+    public void FlashbackHealthMessage_PropertyExists()
     {
         var vmSource = ViewModelSource();
         Assert.Contains("public partial string FlashbackHealthMessage { get; set; }", vmSource);
+    }
 
-        // CommunityToolkit's [ObservableProperty] raises INotifyPropertyChanged
-        // automatically; the UI-facing switch in FlashbackUiControllers.cs is
-        // what actually reacts to it and must carry a case for the new property.
+    [Fact]
+    public void FlashbackHealthMessage_PropertyChangedControllerRoutesToHealthPresenter()
+    {
         var uiSource = UiControllersSource();
         Assert.Contains("case nameof(MainViewModel.FlashbackHealthMessage):", uiSource);
         Assert.Contains("public required Action UpdateHealthMessage { get; init; }", uiSource);
@@ -37,17 +40,23 @@ public sealed class FlashbackUiHealthTests
     [Fact]
     public void InvoluntaryLiveReasonFilter_ExcludesExactlyTheVoluntarySet()
     {
-        var vmSource = ViewModelSource();
-        Assert.Contains(
-            "new(StringComparer.Ordinal) { \"\", \"user\", \"go_live\", \"thread_stop\" }",
-            vmSource);
+        var viewModelType = SussudioAssembly.Load().GetType(
+            "Sussudio.ViewModels.MainViewModel", throwOnError: true)!;
+        var reasonsField = viewModelType.GetField(
+            "FlashbackVoluntaryLiveReasons",
+            BindingFlags.Static | BindingFlags.NonPublic);
+
+        var reasons = Assert.IsAssignableFrom<ISet<string>>(reasonsField?.GetValue(null));
+        Assert.Equal(
+            new[] { "", "go_live", "thread_stop", "user" },
+            reasons.OrderBy(reason => reason, StringComparer.Ordinal));
     }
 
     [Fact]
     public void OnFlashbackPlaybackStateChanged_SkipsVoluntaryReasons_AndMarshalsToDispatcher()
     {
         var source = ViewModelSource();
-        var method = SourceSlice.Method(source, "private void OnFlashbackPlaybackStateChanged(");
+        var method = global::Program.ExtractDeclaredMemberCode(source, "private void OnFlashbackPlaybackStateChanged(");
         Assert.Contains("FlashbackVoluntaryLiveReasons.Contains(reason)", method);
         Assert.Contains("_dispatcherQueue.TryEnqueue(", method);
         Assert.Contains("FlashbackSnapToLiveHealthMessage", method);
@@ -69,11 +78,11 @@ public sealed class FlashbackUiHealthTests
     public void UpdateFlashbackBufferStatus_ResubscribesOnControllerInstanceChange()
     {
         var source = ViewModelSource();
-        var pollMethod = SourceSlice.Method(source, "public void UpdateFlashbackBufferStatus()");
+        var pollMethod = global::Program.ExtractDeclaredMemberCode(source, "public void UpdateFlashbackBufferStatus()");
         Assert.Contains("RefreshFlashbackStateChangedSubscription();", pollMethod);
         Assert.Contains("DetachFlashbackStateChangedSubscription();", pollMethod);
 
-        var refreshMethod = SourceSlice.Method(source, "private void RefreshFlashbackStateChangedSubscription()");
+        var refreshMethod = global::Program.ExtractDeclaredMemberCode(source, "private void RefreshFlashbackStateChangedSubscription()");
         // Must cache the last-seen instance, unsubscribe from the stale one,
         // and subscribe to the new one — the controller is rebuilt on every
         // backend cycle (FlashbackBackendResources.CycleSinkOnlyAsync).
@@ -86,7 +95,7 @@ public sealed class FlashbackUiHealthTests
     public void UpdateFlashbackBufferStatus_SetsPersistentDeadBackendBanner_WhenEnabledButInactive()
     {
         var source = ViewModelSource();
-        var pollMethod = SourceSlice.Method(source, "public void UpdateFlashbackBufferStatus()");
+        var pollMethod = global::Program.ExtractDeclaredMemberCode(source, "public void UpdateFlashbackBufferStatus()");
         // The dead-backend branch lives inside the `!bufferStatus.IsActive` guard
         // and is gated on the enabled toggle so a user-initiated disable doesn't
         // read as a failure.
@@ -98,11 +107,11 @@ public sealed class FlashbackUiHealthTests
     public void PreWarmFlashbackPlayback_IsCalledOncePerInstance_FromStartStatusPolling()
     {
         var uiSource = UiControllersSource();
-        var startPolling = SourceSlice.Method(uiSource, "public void StartStatusPolling()");
+        var startPolling = global::Program.ExtractDeclaredMemberCode(uiSource, "public void StartStatusPolling()");
         Assert.Contains("_context.ViewModel.PreWarmFlashbackPlayback();", startPolling);
 
         var vmSource = ViewModelSource();
-        var preWarmMethod = SourceSlice.Method(vmSource, "public void PreWarmFlashbackPlayback()");
+        var preWarmMethod = global::Program.ExtractDeclaredMemberCode(vmSource, "public void PreWarmFlashbackPlayback()");
         // Guard: no-op on missing/disposed/uninitialized controller or one already
         // pre-warmed. The IsInitialized gate is load-bearing: PreWarm() no-ops
         // silently before Initialize(), so latching early would consume the one
@@ -113,77 +122,7 @@ public sealed class FlashbackUiHealthTests
 
         // The poll must re-attempt: polling starts before the controller is
         // initialized, and the controller is rebuilt on backend cycles.
-        var pollMethod = SourceSlice.Method(vmSource, "public void UpdateFlashbackBufferStatus()");
+        var pollMethod = global::Program.ExtractDeclaredMemberCode(vmSource, "public void UpdateFlashbackBufferStatus()");
         Assert.Contains("PreWarmFlashbackPlayback();", pollMethod);
-    }
-}
-
-// TestPaths/SourceSlice do not exist as shared helpers in the test project (the
-// established convention here is Assembly.LoadFrom + reflection against the
-// staged Sussudio.dll — see MIGRATION.md — rather than a compile-time
-// ProjectReference or a shared source-slicing utility). Per the plan's fallback
-// instruction, these are private, file-scoped copies rather than edits to any
-// shared test file. (Mirrors the copy in XUnit.FlashbackSinkHardeningTests.cs.)
-file static class TestPaths
-{
-    public static string Repo(string relativePath) => Path.Combine(FindRepoRoot(), relativePath);
-
-    private static string FindRepoRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory != null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "Sussudio.slnx")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        throw new InvalidOperationException(
-            $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
-    }
-}
-
-file static class SourceSlice
-{
-    /// <summary>
-    /// Returns the source text of the method whose declaration starts with
-    /// <paramref name="signaturePrefix"/> (e.g. "private void Foo"), from its
-    /// signature through the matching closing brace of its body.
-    /// </summary>
-    public static string Method(string source, string signaturePrefix)
-    {
-        var start = source.IndexOf(signaturePrefix, StringComparison.Ordinal);
-        if (start < 0)
-        {
-            throw new InvalidOperationException($"Could not find method starting with '{signaturePrefix}'.");
-        }
-
-        var braceOpen = source.IndexOf('{', start);
-        if (braceOpen < 0)
-        {
-            throw new InvalidOperationException($"Could not find method body open brace for '{signaturePrefix}'.");
-        }
-
-        var depth = 0;
-        for (var i = braceOpen; i < source.Length; i++)
-        {
-            if (source[i] == '{')
-            {
-                depth++;
-            }
-            else if (source[i] == '}')
-            {
-                depth--;
-                if (depth == 0)
-                {
-                    return source.Substring(start, i - start + 1);
-                }
-            }
-        }
-
-        throw new InvalidOperationException($"Could not find matching closing brace for '{signaturePrefix}'.");
     }
 }

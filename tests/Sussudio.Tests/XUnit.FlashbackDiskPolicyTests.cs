@@ -14,28 +14,28 @@ namespace Sussudio.Tests;
 // XUnit.RecordingContractsTests.cs) rather than a direct `using` + `new`.
 public sealed class FlashbackDiskPolicyTests
 {
-    [Fact]
-    public void LowFreeSpace_ShrinksEffectiveBudget_AndEvicts()
+    [Theory]
+    [InlineData((2L * 1024 * 1024 * 1024) - 1, true)]
+    [InlineData(2L * 1024 * 1024 * 1024, false)]
+    [InlineData((2L * 1024 * 1024 * 1024) + 1, false)]
+    public void LowFreeSpace_UsesExclusiveTwoGibibyteThreshold(long freeBytes, bool expected)
     {
-        var options = CreateOptions(
-            bufferMinutes: 5,
-            segmentMinutes: 1,
-            // New test seam: injectable free-space provider.
-            freeDiskBytesProvider: () => 1L * 1024 * 1024 * 1024); // 1 GiB free
+        var options = CreateOptions(freeDiskBytesProvider: () => freeBytes);
         using var manager = CreateManager(options);
 
-        // SoftMinFreeDiskBytes default is 2 GiB => manager must report pressure.
-        Assert.True(GetBoolProperty(manager, "IsDiskSpaceLow"));
-        Assert.False(GetBoolProperty(manager, "IsDiskCriticallyLow"));
+        Assert.Equal(expected, GetBoolProperty(manager, "IsDiskSpaceLow"));
     }
 
-    [Fact]
-    public void CriticallyLowFreeSpace_SetsCriticalFlag()
+    [Theory]
+    [InlineData((512L * 1024 * 1024) - 1, true)]
+    [InlineData(512L * 1024 * 1024, false)]
+    [InlineData((512L * 1024 * 1024) + 1, false)]
+    public void CriticallyLowFreeSpace_UsesExclusive512MebibyteThreshold(long freeBytes, bool expected)
     {
-        var options = CreateOptions(freeDiskBytesProvider: () => 256L * 1024 * 1024); // 256 MiB
+        var options = CreateOptions(freeDiskBytesProvider: () => freeBytes);
         using var manager = CreateManager(options);
 
-        Assert.True(GetBoolProperty(manager, "IsDiskCriticallyLow"));
+        Assert.Equal(expected, GetBoolProperty(manager, "IsDiskCriticallyLow"));
     }
 
     [Fact]
@@ -88,16 +88,11 @@ public sealed class FlashbackDiskPolicyTests
     private static Type RequireType(string typeName)
         => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
 
-    private static object CreateOptions(
-        double bufferMinutes = 5,
-        double segmentMinutes = 1,
-        Func<long>? freeDiskBytesProvider = null)
+    private static object CreateOptions(Func<long>? freeDiskBytesProvider = null)
     {
         var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
         var options = Activator.CreateInstance(optionsType)
             ?? throw new InvalidOperationException("Failed to create FlashbackBufferOptions.");
-        SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(bufferMinutes));
-        SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(segmentMinutes));
         if (freeDiskBytesProvider != null)
         {
             SetPropertyBackingField(options, "FreeDiskBytesProvider", freeDiskBytesProvider);

@@ -210,7 +210,7 @@ public sealed class CoreRuntimeContractsTests
 public sealed class RuntimeContractsTests
 {
     [Fact]
-    public void RuntimePaths_GetRepoLogFile_ReturnsPathUnderRepoRoot()
+    public void RuntimePaths_GetRepoLogFile_ReturnsPathUnderLogRoot()
     {
         var runtimePathsType = SussudioAssembly.Load().GetType("Sussudio.RuntimePaths", throwOnError: true)!;
         var getRepoLogFile = runtimePathsType.GetMethod(
@@ -224,25 +224,32 @@ public sealed class RuntimeContractsTests
 
         var logPath = Assert.IsType<string>(getRepoLogFile!.Invoke(null, new object[] { "test.log" }));
 
-        Assert.Contains("test.log", logPath);
-        Assert.True(Path.IsPathRooted(logPath), $"GetRepoLogFile returned non-rooted path: {logPath}");
+        var getRepoLogRoot = runtimePathsType.GetMethod("GetRepoLogRoot", BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(getRepoLogRoot);
+        var logRoot = Assert.IsType<string>(getRepoLogRoot!.Invoke(null, null));
+
+        Assert.Equal(Path.Combine(logRoot, "test.log"), logPath);
     }
 
     [Fact]
-    public void RuntimePaths_PathsContainExpectedDirectoryNames()
+    public void RuntimePaths_GetRepoLogRoot_UsesLogsDirectory()
     {
         var runtimePathsType = SussudioAssembly.Load().GetType("Sussudio.RuntimePaths", throwOnError: true)!;
 
         var getRepoLogRoot = runtimePathsType.GetMethod("GetRepoLogRoot", BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(getRepoLogRoot);
+        var logRoot = Assert.IsType<string>(getRepoLogRoot!.Invoke(null, null));
+        Assert.Contains("logs", logRoot);
+    }
+
+    [Fact]
+    public void RuntimePaths_GetRepoTempRoot_UsesTempDirectory()
+    {
+        var runtimePathsType = SussudioAssembly.Load().GetType("Sussudio.RuntimePaths", throwOnError: true)!;
         var getRepoTempRoot = runtimePathsType.GetMethod("GetRepoTempRoot", BindingFlags.Public | BindingFlags.Static);
 
-        Assert.NotNull(getRepoLogRoot);
         Assert.NotNull(getRepoTempRoot);
-
-        var logRoot = Assert.IsType<string>(getRepoLogRoot!.Invoke(null, null));
         var tempRoot = Assert.IsType<string>(getRepoTempRoot!.Invoke(null, null));
-
-        Assert.Contains("logs", logRoot);
         Assert.Contains("temp", tempRoot);
     }
 
@@ -282,19 +289,37 @@ public sealed class RuntimeContractsTests
     {
         var asm = SussudioAssembly.Load();
         var specType = asm.GetType("Sussudio.Services.Runtime.ProcessSpec", throwOnError: true)!;
-        var resultType = asm.GetType("Sussudio.Services.Runtime.ProcessRunResult", throwOnError: true)!;
-
         var spec = Activator.CreateInstance(specType)!;
 
         Assert.Equal(30_000, specType.GetProperty("TimeoutMs")!.GetValue(spec));
+    }
+
+    [Fact]
+    public void ProcessSpec_DefaultOptionalValues_AreExplicit()
+    {
+        var asm = SussudioAssembly.Load();
+        var specType = asm.GetType("Sussudio.Services.Runtime.ProcessSpec", throwOnError: true)!;
+        var spec = Activator.CreateInstance(specType)!;
+
         Assert.Equal(string.Empty, specType.GetProperty("Arguments")!.GetValue(spec));
         Assert.Equal(typeof(ProcessPriorityClass?), specType.GetProperty("PriorityClass")!.PropertyType);
+    }
+
+    [Fact]
+    public void ProcessRunResult_DefaultStreams_AreEmpty()
+    {
+        var asm = SussudioAssembly.Load();
+        var resultType = asm.GetType("Sussudio.Services.Runtime.ProcessRunResult", throwOnError: true)!;
 
         Assert.NotNull(resultType.GetProperty("Started"));
         Assert.NotNull(resultType.GetProperty("TimedOut"));
         Assert.Equal(string.Empty, resultType.GetProperty("StdOut")!.GetValue(Activator.CreateInstance(resultType)!));
         Assert.Equal(string.Empty, resultType.GetProperty("StdErr")!.GetValue(Activator.CreateInstance(resultType)!));
+    }
 
+    [Fact]
+    public void ProcessSupervisor_AppliesRequestedPriority()
+    {
         var sourceText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/RuntimeHelpers.cs");
         Assert.Contains("process.PriorityClass = priorityClass;", sourceText);
         Assert.False(
@@ -303,13 +328,10 @@ public sealed class RuntimeContractsTests
     }
 
     [Fact]
-    public void ExternalProcessProbes_UseBoundedProcessSupervisor()
+    public void FfmpegRuntimeLocator_ProbeUsesBoundedProcessSupervisor()
     {
         var ffmpegText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
-        var hdrText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
-
         Assert.Contains("internal static class FfmpegRuntimeLocator", ffmpegText);
         Assert.DoesNotContain("partial class FfmpegRuntimeLocator", ffmpegText);
         Assert.Contains("internal static bool TryResolveNativeRuntimeRoot", ffmpegText);
@@ -321,6 +343,14 @@ public sealed class RuntimeContractsTests
         Assert.Contains("TimeoutMs = ProbeTimeoutMs", ffmpegText);
         Assert.Contains("if (!result.Started || result.TimedOut || result.ExitCode != 0)", ffmpegText);
         Assert.Contains("return result.Started && !result.TimedOut && result.ExitCode == 0;", ffmpegText);
+    }
+
+    [Fact]
+    public void LibAvRecordingSink_UsesBoundedProcessSupervisorForValidation()
+    {
+        var hdrText = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
+            .Replace("\r\n", "\n");
+
         Assert.Contains("private const int ValidationTimeoutMs = 30_000;", hdrText);
         Assert.Contains("new ProcessSupervisor().RunAsync", hdrText);
         Assert.Contains("validator-timeout", hdrText);
@@ -356,6 +386,28 @@ public sealed class RuntimeContractsTests
             Assert.True(resolved);
             Assert.Equal(localFfmpegDir, runtimeArgs[1]?.ToString());
 
+        }
+        finally
+        {
+            if (Directory.Exists(tempRoot))
+            {
+                Directory.Delete(tempRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void FfmpegRuntimeLocator_FindsToolsInAppLocalRuntimeFolder()
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"ec-ffmpeg-tools-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(tempRoot, "ffmpeg"));
+        var localFfmpegDir = Path.Combine(tempRoot, "ffmpeg");
+
+        try
+        {
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffmpeg.exe"), Array.Empty<byte>());
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffprobe.exe"), Array.Empty<byte>());
+            var locatorType = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.FfmpegRuntimeLocator", throwOnError: true)!;
             var findToolPath = locatorType.GetMethod(
                 "FindToolPath",
                 ReflectionFlags.Static,
@@ -364,11 +416,8 @@ public sealed class RuntimeContractsTests
                 modifiers: null);
             Assert.NotNull(findToolPath);
 
-            var ffmpegPath = findToolPath!.Invoke(null, new object?[] { "ffmpeg.exe", tempRoot })?.ToString();
-            var ffprobePath = findToolPath.Invoke(null, new object?[] { "ffprobe.exe", tempRoot })?.ToString();
-
-            Assert.Equal(Path.Combine(localFfmpegDir, "ffmpeg.exe"), ffmpegPath);
-            Assert.Equal(Path.Combine(localFfmpegDir, "ffprobe.exe"), ffprobePath);
+            Assert.Equal(Path.Combine(localFfmpegDir, "ffmpeg.exe"), findToolPath!.Invoke(null, new object?[] { "ffmpeg.exe", tempRoot }));
+            Assert.Equal(Path.Combine(localFfmpegDir, "ffprobe.exe"), findToolPath.Invoke(null, new object?[] { "ffprobe.exe", tempRoot }));
         }
         finally
         {
@@ -448,29 +497,31 @@ public class CapturePoliciesTests
     private const string DisabledTelemetryProviderType = "Sussudio.Services.Telemetry.DisabledSourceSignalTelemetryProvider";
 
     [Fact]
-    public void Sussudio_Services_Capture_HdrOutputPolicy_GatesOnHdrEnabledAndMode()
+    public void Sussudio_Services_Capture_HdrOutputPolicy_RequiresHdrEnabled()
     {
         var asm = SussudioAssembly.Load();
-        var policy = asm.GetType("Sussudio.Services.Capture.HdrOutputPolicy", throwOnError: true)!;
-        var settingsType = asm.GetType("Sussudio.Models.CaptureSettings", throwOnError: true)!;
-        var modeType = asm.GetType("Sussudio.Models.HdrOutputMode", throwOnError: true)!;
-        var hdrEnabledProp = settingsType.GetProperty("HdrEnabled")!;
-        var hdrModeProp = settingsType.GetProperty("HdrOutputMode")!;
-        var isEnabled = policy.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)!;
+        var disabled = CreateCaptureSettings(asm, hdrEnabled: false, hdrOutputMode: "Hdr10Pq");
+        var isEnabled = GetHdrOutputPolicyIsEnabled(asm);
 
-        var disabled = Activator.CreateInstance(settingsType)!;
-        hdrEnabledProp.SetValue(disabled, false);
-        hdrModeProp.SetValue(disabled, Enum.Parse(modeType, "Hdr10Pq"));
         Assert.False((bool)isEnabled.Invoke(null, new object?[] { disabled })!);
+    }
 
-        var enabledOff = Activator.CreateInstance(settingsType)!;
-        hdrEnabledProp.SetValue(enabledOff, true);
-        hdrModeProp.SetValue(enabledOff, Enum.Parse(modeType, "Off"));
+    [Fact]
+    public void Sussudio_Services_Capture_HdrOutputPolicy_RequiresHdr10PqMode()
+    {
+        var asm = SussudioAssembly.Load();
+        var enabledOff = CreateCaptureSettings(asm, hdrEnabled: true, hdrOutputMode: "Off");
+        var isEnabled = GetHdrOutputPolicyIsEnabled(asm);
+
         Assert.False((bool)isEnabled.Invoke(null, new object?[] { enabledOff })!);
+    }
 
-        var enabledHdr10 = Activator.CreateInstance(settingsType)!;
-        hdrEnabledProp.SetValue(enabledHdr10, true);
-        hdrModeProp.SetValue(enabledHdr10, Enum.Parse(modeType, "Hdr10Pq"));
+    [Fact]
+    public void Sussudio_Services_Capture_HdrOutputPolicy_EnablesHdr10PqWithoutForceOff()
+    {
+        var asm = SussudioAssembly.Load();
+        var enabledHdr10 = CreateCaptureSettings(asm, hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
+        var isEnabled = GetHdrOutputPolicyIsEnabled(asm);
         using (EnvVarScope.Push("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null))
         {
             Assert.True((bool)isEnabled.Invoke(null, new object?[] { enabledHdr10 })!);
@@ -585,7 +636,7 @@ public class RuntimeHelpersTests
     }
 
     [Fact]
-    public void AtomicMax_Int_NoOpWhenCandidateIsLessOrEqual()
+    public void AtomicMax_Int_NoOpWhenCandidateIsLess()
     {
         var method = ResolveAtomicMaxInt();
 
@@ -593,6 +644,12 @@ public class RuntimeHelpersTests
         method.Invoke(null, lessArgs);
         Assert.Equal(10, (int)lessArgs[0]);
 
+    }
+
+    [Fact]
+    public void AtomicMax_Int_NoOpWhenCandidateIsEqual()
+    {
+        var method = ResolveAtomicMaxInt();
         var equalArgs = new object[] { 10, 10 };
         method.Invoke(null, equalArgs);
         Assert.Equal(10, (int)equalArgs[0]);
@@ -606,6 +663,12 @@ public class RuntimeHelpersTests
         method.Invoke(null, args);
         Assert.Equal(7L, (long)args[0]);
 
+    }
+
+    [Fact]
+    public void AtomicMax_Long_NoOpWhenCandidateIsLess()
+    {
+        var method = ResolveAtomicMaxLong();
         var noOpArgs = new object[] { 100L, 50L };
         method.Invoke(null, noOpArgs);
         Assert.Equal(100L, (long)noOpArgs[0]);
@@ -641,16 +704,29 @@ public class RuntimeHelpersTests
     }
 
     [Fact]
-    public void TelemetryAgeHelper_ReportedAgeShortCircuitsAndClamps()
+    public void TelemetryAgeHelper_UsesNonNegativeReportedAge()
     {
         var method = ResolveReportedOverload();
         var now = DateTimeOffset.UtcNow;
         var result = (int?)method.Invoke(null, new object?[] { 42, now.AddSeconds(-1), now });
         Assert.Equal(42, result);
 
+    }
+
+    [Fact]
+    public void TelemetryAgeHelper_ClampsNegativeReportedAge()
+    {
+        var method = ResolveReportedOverload();
+        var now = DateTimeOffset.UtcNow;
         var negativeReported = (int?)method.Invoke(null, new object?[] { -5, null, now });
         Assert.Equal(0, negativeReported);
+    }
 
+    [Fact]
+    public void TelemetryAgeHelper_CalculatesAgeWhenReportedAgeIsMissing()
+    {
+        var method = ResolveReportedOverload();
+        var now = DateTimeOffset.UtcNow;
         var fallthrough = (int?)method.Invoke(null, new object?[] { null, now.AddSeconds(-3), now });
         Assert.Equal(3, fallthrough);
     }

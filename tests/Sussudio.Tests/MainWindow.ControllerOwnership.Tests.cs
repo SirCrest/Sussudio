@@ -2460,42 +2460,93 @@ namespace Sussudio.Tests
     }
 
     [Fact]
-    public void StatsSnapshotBuilder_MapsHealthAndRendererMetrics()
+    public void StatsSnapshotBuilder_MapsSourceCadenceMetrics()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal(60, GetIntProperty(snapshot, "SourceCadenceSamples"));
+        AssertNearlyEqual(119.8d, GetDoubleProperty(snapshot, "SourceObservedFps"), 0.0001);
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_MapsPreviewCadenceMetrics()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal(20, GetIntProperty(snapshot, "PreviewCadenceSamples"));
+        AssertNearlyEqual(118.2d, GetDoubleProperty(snapshot, "PreviewOnePercentLowFps"), 0.0001);
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_SanitizesPreviewSlowPercentBeforeScoring()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        AssertNearlyEqual(0.0d, GetDoubleProperty(snapshot, "PreviewSlowPct"), 0.0001);
+        AssertNearlyEqual(99.5d, GetDoubleProperty(snapshot, "PerformanceScore"), 0.0001);
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_CarriesPresentationState()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.True(GetBoolProperty(snapshot, "Previewing"));
+        Assert.False(GetBoolProperty(snapshot, "Recording"));
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_ConvertsNegotiatedCaptureWidth()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal(1920, GetIntProperty(snapshot, "CaptureWidth"));
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_PreservesTelemetryProvenance()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal("NativeXu", GetStringProperty(snapshot, "TelemetryOrigin"));
+        Assert.Equal("High", GetStringProperty(snapshot, "TelemetryConfidence"));
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_AppendsCaptureFormatToTelemetryDetails()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal(2, GetCountProperty(GetPropertyValue(snapshot, "SourceTelemetryDetails")));
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_ClassifiesSourceCadenceDrops()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal("Warning", GetStringProperty(snapshot, "DiagnosticHealthStatus"));
+        Assert.Equal("source_capture", GetStringProperty(snapshot, "DiagnosticLikelyStage"));
+    }
+
+    [Fact]
+    public void StatsSnapshotBuilder_PreservesPreviewIntervalSamples()
+    {
+        var snapshot = BuildStatsSnapshot();
+
+        Assert.Equal(2, GetCountProperty(GetPropertyValue(snapshot, "PreviewRecentPresentIntervalsMs")));
+    }
+
+    private static object BuildStatsSnapshot()
     {
         var health = CreateInstance("Sussudio.Models.CaptureHealthSnapshot");
-        SetPropertyOrBackingField(health, "ExpectedFrameRate", 120d);
         SetPropertyOrBackingField(health, "NegotiatedWidth", 1920u);
-        SetPropertyOrBackingField(health, "NegotiatedHeight", 1080u);
-        SetPropertyOrBackingField(health, "NegotiatedFrameRate", 120d);
         SetPropertyOrBackingField(health, "ReaderSourceSubtype", "MJPG");
         SetPropertyOrBackingField(health, "CaptureCadenceSampleCount", 60);
         SetPropertyOrBackingField(health, "CaptureCadenceObservedFps", 119.8d);
-        SetPropertyOrBackingField(health, "CaptureCadenceAverageIntervalMs", 8.33d);
-        SetPropertyOrBackingField(health, "CaptureCadenceP95IntervalMs", 8.75d);
-        SetPropertyOrBackingField(health, "CaptureCadenceJitterStdDevMs", 0.12d);
         SetPropertyOrBackingField(health, "CaptureCadenceEstimatedDropPercent", 0.5d);
-        SetPropertyOrBackingField(health, "CaptureCadenceEstimatedDroppedFrames", 2L);
-        SetPropertyOrBackingField(health, "VideoFramesArrived", 240L);
-        SetPropertyOrBackingField(health, "VideoFramesDropped", 3L);
-        SetPropertyOrBackingField(health, "VisualCadenceSampleCount", 30);
-        SetPropertyOrBackingField(health, "VisualCadenceOutputObservedFps", 120d);
-        SetPropertyOrBackingField(health, "VisualCadenceChangeObservedFps", 119d);
-        SetPropertyOrBackingField(health, "VisualCadenceMotionConfidence", "HighMotion");
-        SetPropertyOrBackingField(health, "VisualCenterCadenceMotionConfidence", "HighMotion");
         SetPropertyOrBackingField(health, "SourceTelemetryOrigin", ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"));
         SetPropertyOrBackingField(health, "SourceTelemetryConfidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "High"));
-        SetPropertyOrBackingField(health, "SourceWidth", 3840);
-        SetPropertyOrBackingField(health, "SourceHeight", 2160);
-        SetPropertyOrBackingField(health, "SourceFrameRateExact", 119.88d);
-        SetPropertyOrBackingField(health, "SourceIsHdr", true);
-        SetPropertyOrBackingField(health, "SourceVideoFormat", "YCbCr422");
-        SetPropertyOrBackingField(health, "SourceColorimetry", "BT.2020");
-        SetPropertyOrBackingField(health, "AvSyncCaptureDriftMs", -1.25d);
-        SetPropertyOrBackingField(health, "EncoderCodecName", "hevc_nvenc");
-        SetPropertyOrBackingField(health, "EncoderWidth", 1920);
-        SetPropertyOrBackingField(health, "EncoderHeight", 1080);
-        SetPropertyOrBackingField(health, "EncoderFrameRate", 120d);
-        SetPropertyOrBackingField(health, "EncoderTargetBitRate", 50_000_000u);
 
         var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
         var details = Array.CreateInstance(detailType, 1);
@@ -2532,24 +2583,8 @@ namespace Sussudio.Tests
         var builderType = RequireType("Sussudio.StatsSnapshotBuilder");
         var build = builderType.GetMethod("Build", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("StatsSnapshotBuilder.Build was not found.");
-        var snapshot = build.Invoke(null, new[] { health, renderMetrics, viewState })
+        return build.Invoke(null, new[] { health, renderMetrics, viewState })
             ?? throw new InvalidOperationException("StatsSnapshotBuilder.Build returned null.");
-
-        Assert.Equal(60, GetIntProperty(snapshot, "SourceCadenceSamples"));
-        AssertNearlyEqual(119.8d, GetDoubleProperty(snapshot, "SourceObservedFps"), 0.0001);
-        Assert.Equal(20, GetIntProperty(snapshot, "PreviewCadenceSamples"));
-        AssertNearlyEqual(118.2d, GetDoubleProperty(snapshot, "PreviewOnePercentLowFps"), 0.0001);
-        AssertNearlyEqual(0.0d, GetDoubleProperty(snapshot, "PreviewSlowPct"), 0.0001);
-        AssertNearlyEqual(99.5d, GetDoubleProperty(snapshot, "PerformanceScore"), 0.0001);
-        Assert.True(GetBoolProperty(snapshot, "Previewing"));
-        Assert.False(GetBoolProperty(snapshot, "Recording"));
-        Assert.Equal(1920, GetIntProperty(snapshot, "CaptureWidth"));
-        Assert.Equal("NativeXu", GetStringProperty(snapshot, "TelemetryOrigin"));
-        Assert.Equal("High", GetStringProperty(snapshot, "TelemetryConfidence"));
-        Assert.Equal("Warning", GetStringProperty(snapshot, "DiagnosticHealthStatus"));
-        Assert.Equal("source_capture", GetStringProperty(snapshot, "DiagnosticLikelyStage"));
-        Assert.Equal(2, GetCountProperty(GetPropertyValue(snapshot, "SourceTelemetryDetails")));
-        Assert.Equal(2, GetCountProperty(GetPropertyValue(snapshot, "PreviewRecentPresentIntervalsMs")));
     }
 
     private static Type RequireType(string typeName)

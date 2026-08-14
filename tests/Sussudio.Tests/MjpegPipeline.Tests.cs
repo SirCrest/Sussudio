@@ -16,6 +16,9 @@ namespace Sussudio.Tests
 {
     public sealed class MjpegPipelineContractsTests
     {
+        private const string GpuNativeMjpegDecodeEnvironmentVariable = "SUSSUDIO_MJPEG_GPU_NATIVE_DECODE";
+        private static readonly object GpuNativeMjpegPreferenceEnvironmentLock = new();
+
         public MjpegPipelineContractsTests()
         {
             global::Program.EnsureTargetAssemblyLoadedForXUnit();
@@ -28,6 +31,157 @@ namespace Sussudio.Tests
         [Fact]
         public Task UnifiedVideoCaptureNullsMjpegPipelineWhenStopFails()
             => global::Program.UnifiedVideoCapture_NullsMjpegPipeline_WhenStopFails();
+
+        [Fact]
+        public void SourceReaderGpuNativeMjpegCapabilityRequiresD3DAndDecodedOutput()
+        {
+            var captureType = RequireType("Sussudio.Services.Capture.MfSourceReaderVideoCapture");
+            var capture = Activator.CreateInstance(captureType)!;
+
+            SetPrivateField(captureType, capture, "_isHighFrameRateMjpegMode", false);
+            SetPrivateField(captureType, capture, "_sourceReaderD3DEnabled", true);
+            SetPrivateField(captureType, capture, "_isCompressedMjpgOutput", false);
+            Assert.False((bool)captureType.GetProperty("IsGpuNativeMjpegDecodeActive")!.GetValue(capture)!);
+
+            SetPrivateField(captureType, capture, "_isHighFrameRateMjpegMode", true);
+            SetPrivateField(captureType, capture, "_sourceReaderD3DEnabled", true);
+            SetPrivateField(captureType, capture, "_isCompressedMjpgOutput", false);
+            Assert.True((bool)captureType.GetProperty("IsGpuNativeMjpegDecodeActive")!.GetValue(capture)!);
+
+            SetPrivateField(captureType, capture, "_isCompressedMjpgOutput", true);
+            Assert.False((bool)captureType.GetProperty("IsGpuNativeMjpegDecodeActive")!.GetValue(capture)!);
+
+            SetPrivateField(captureType, capture, "_isCompressedMjpgOutput", false);
+            SetPrivateField(captureType, capture, "_sourceReaderD3DEnabled", false);
+            Assert.False((bool)captureType.GetProperty("IsGpuNativeMjpegDecodeActive")!.GetValue(capture)!);
+        }
+
+        [Fact]
+        public void GpuNativeMjpegPreference_DefaultsToEnabledForHighFrameRateMjpeg()
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: null,
+                () => Assert.True(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true)));
+        }
+
+        [Fact]
+        public void GpuNativeMjpegPreference_HonorsExplicitOptOut()
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: "0",
+                () => Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode: true)));
+        }
+
+        [Fact]
+        public void GpuNativeMjpegPreference_RejectsNonHighFrameRateMode()
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: null,
+                () =>
+                {
+                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
+                        useMjpegHighFrameRateMode: false,
+                        requireP010: false,
+                        requestedPixelFormat: "MJPG");
+
+                    Assert.False(isMjpegHighFrameRateDecode);
+                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                });
+        }
+
+        [Fact]
+        public void GpuNativeMjpegPreference_RejectsNonMjpegInput()
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: null,
+                () =>
+                {
+                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
+                        useMjpegHighFrameRateMode: true,
+                        requireP010: false,
+                        requestedPixelFormat: "NV12");
+
+                    Assert.False(isMjpegHighFrameRateDecode);
+                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                });
+        }
+
+        [Fact]
+        public void GpuNativeMjpegPreference_RejectsP010Request()
+        {
+            WithGpuNativeMjpegDecodeEnvironment(
+                value: null,
+                () =>
+                {
+                    var isMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
+                        useMjpegHighFrameRateMode: true,
+                        requireP010: true,
+                        requestedPixelFormat: "MJPG");
+
+                    Assert.False(isMjpegHighFrameRateDecode);
+                    Assert.False(ShouldPreferGpuNativeMjpegDecode(isMjpegHighFrameRateDecode));
+                });
+        }
+
+        [Fact]
+        public async Task GpuNativeMjpegInitialization_AttemptsNativeFirst()
+        {
+            var probe = await RunMjpegInitializationAsync(
+                preferGpuNative: true,
+                static (_, _) => null);
+
+            Assert.False(probe.UsesExternalDecode);
+            Assert.Equal(new[] { false }, probe.Attempts);
+            Assert.Null(probe.ReportedNativeFailure);
+        }
+
+        [Fact]
+        public async Task GpuNativeMjpegInitialization_RetriesSoftwareAfterNativeFailure()
+        {
+            var nativeFailure = new InvalidOperationException("native unavailable");
+            var probe = await RunMjpegInitializationAsync(
+                preferGpuNative: true,
+                (useExternalDecode, _) => useExternalDecode ? null : nativeFailure);
+
+            Assert.True(probe.UsesExternalDecode);
+            Assert.Equal(new[] { false, true }, probe.Attempts);
+            Assert.Same(nativeFailure, probe.ReportedNativeFailure);
+        }
+
+        [Fact]
+        public async Task SoftwareMjpegInitialization_DoesNotAttemptNative()
+        {
+            var probe = await RunMjpegInitializationAsync(
+                preferGpuNative: false,
+                static (_, _) => null);
+
+            Assert.True(probe.UsesExternalDecode);
+            Assert.Equal(new[] { true }, probe.Attempts);
+            Assert.Null(probe.ReportedNativeFailure);
+        }
+
+        [Fact]
+        public async Task GpuNativeMjpegInitialization_PropagatesSoftwareFallbackFailure()
+        {
+            var nativeFailure = new InvalidOperationException("native unavailable");
+            var softwareFailure = new InvalidOperationException("software unavailable");
+            var attempts = new List<bool>();
+            Exception? reportedNativeFailure = null;
+
+            var error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => InvokeMjpegInitializationAsync(
+                    preferGpuNative: true,
+                    useExternalDecode =>
+                    {
+                        attempts.Add(useExternalDecode);
+                        return Task.FromException(useExternalDecode ? softwareFailure : nativeFailure);
+                    },
+                    failure => reportedNativeFailure = failure));
+
+            Assert.Same(softwareFailure, error);
+            Assert.Equal(new[] { false, true }, attempts);
+            Assert.Same(nativeFailure, reportedNativeFailure);
+        }
 
         [Fact]
         public Task ParallelMjpegDecodePipelineLifecycleLivesWithRoot()
@@ -152,24 +306,18 @@ namespace Sussudio.Tests
         {
             var method = RequirePipelineMethod("ComputeTimingMetrics");
 
-            var samples = new double[20];
-            for (var i = 0; i < 19; i++)
-            {
-                samples[i] = 5.0;
-            }
-
-            samples[19] = 50.0;
+            var samples = Enumerable.Range(1, 20).Select(static value => (double)value).ToArray();
 
             var result = method.Invoke(null, new object[] { samples });
             var resultType = result!.GetType();
 
             var maxField = resultType.GetField("Item4")!;
             var max = Convert.ToDouble(maxField.GetValue(result));
-            Assert.True(max >= 50.0, $"Max should be >= 50.0, got {max}");
+            Assert.Equal(20.0, max);
 
             var p95Field = resultType.GetField("Item3")!;
             var p95 = Convert.ToDouble(p95Field.GetValue(result));
-            Assert.True(p95 >= 5.0, $"P95 should be >= 5.0, got {p95}");
+            Assert.Equal(19.0, p95);
         }
 
         [Fact]
@@ -228,7 +376,7 @@ namespace Sussudio.Tests
         }
 
         [Fact]
-        public void SoftwareMjpegDecoderPropertiesExposeCorrectDimensions()
+        public void SoftwareMjpegDecoderLivesWithPipelineWorker()
         {
             var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
             var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
@@ -262,8 +410,99 @@ namespace Sussudio.Tests
                 ?? throw new InvalidOperationException($"{methodName} not found.");
         }
 
+        private static void SetPrivateField(Type type, object instance, string fieldName, object value)
+        {
+            var field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field!.SetValue(instance, value);
+        }
+
+        private static bool IsMjpegHighFrameRateDecode(
+            bool useMjpegHighFrameRateMode,
+            bool requireP010,
+            string? requestedPixelFormat)
+            => InvokeUnifiedVideoCapturePolicy(
+                "IsMjpegHighFrameRateDecode",
+                useMjpegHighFrameRateMode,
+                requireP010,
+                requestedPixelFormat);
+
+        private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode)
+            => InvokeUnifiedVideoCapturePolicy(
+                "ShouldPreferGpuNativeMjpegDecode",
+                isMjpegHighFrameRateDecode);
+
+        private static bool InvokeUnifiedVideoCapturePolicy(string methodName, params object?[] arguments)
+        {
+            var captureType = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture");
+            var method = captureType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException($"UnifiedVideoCapture.{methodName} was not found.");
+            return (bool)method.Invoke(null, arguments)!;
+        }
+
+        private static async Task<MjpegInitializationProbe> RunMjpegInitializationAsync(
+            bool preferGpuNative,
+            Func<bool, int, Exception?> failureFactory)
+        {
+            var attempts = new List<bool>();
+            Exception? reportedNativeFailure = null;
+
+            var usesExternalDecode = await InvokeMjpegInitializationAsync(
+                preferGpuNative,
+                useExternalDecode =>
+                {
+                    attempts.Add(useExternalDecode);
+                    var failure = failureFactory(useExternalDecode, attempts.Count);
+                    return failure == null ? Task.CompletedTask : Task.FromException(failure);
+                },
+                failure => reportedNativeFailure = failure);
+
+            return new MjpegInitializationProbe(usesExternalDecode, attempts, reportedNativeFailure);
+        }
+
+        private static async Task<bool> InvokeMjpegInitializationAsync(
+            bool preferGpuNative,
+            Func<bool, Task> initializeAsync,
+            Action<Exception> reportNativeFailure)
+        {
+            var captureType = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture");
+            var method = captureType.GetMethod(
+                "InitializeMjpegSourceReaderWithFallbackAsync",
+                BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException(
+                    "UnifiedVideoCapture.InitializeMjpegSourceReaderWithFallbackAsync was not found.");
+            var task = method.Invoke(
+                    null,
+                    new object[] { preferGpuNative, initializeAsync, reportNativeFailure }) as Task<bool>
+                ?? throw new InvalidOperationException(
+                    "InitializeMjpegSourceReaderWithFallbackAsync did not return Task<bool>.");
+            return await task.ConfigureAwait(false);
+        }
+
+        private static void WithGpuNativeMjpegDecodeEnvironment(string? value, Action assertion)
+        {
+            lock (GpuNativeMjpegPreferenceEnvironmentLock)
+            {
+                var originalValue = Environment.GetEnvironmentVariable(GpuNativeMjpegDecodeEnvironmentVariable);
+                try
+                {
+                    Environment.SetEnvironmentVariable(GpuNativeMjpegDecodeEnvironmentVariable, value);
+                    assertion();
+                }
+                finally
+                {
+                    Environment.SetEnvironmentVariable(GpuNativeMjpegDecodeEnvironmentVariable, originalValue);
+                }
+            }
+        }
+
         private static Type RequireType(string typeName)
             => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+        private sealed record MjpegInitializationProbe(
+            bool UsesExternalDecode,
+            IReadOnlyList<bool> Attempts,
+            Exception? ReportedNativeFailure);
 
         private static string ReadRepoFile(string relativePath)
             => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");

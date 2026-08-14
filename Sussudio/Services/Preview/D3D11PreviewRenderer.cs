@@ -92,6 +92,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private int _configuredInputHeight;
     private int _configuredOutputWidth;
     private int _configuredOutputHeight;
+    private int _requestedOutputWidth;
+    private int _requestedOutputHeight;
+    private long _lastOutputResizeTick;
+    private long _outputResizeCount;
     private Format _configuredInputFormat = Format.Unknown;
     private bool _configuredHdr;
     private bool _fullRangeInput;
@@ -283,9 +287,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Volatile.Write(ref _panelPixelWidth, pixelWidth);
         Volatile.Write(ref _panelPixelHeight, pixelHeight);
         Volatile.Write(ref _rasterizationScale, rasterizationScale);
+        var target = PreviewOutputSizePolicy.Resolve(
+            pixelWidth,
+            pixelHeight,
+            Math.Max(1, Volatile.Read(ref _naturalWidth)),
+            Math.Max(1, Volatile.Read(ref _naturalHeight)));
+        Volatile.Write(ref _requestedOutputWidth, target.Width);
+        Volatile.Write(ref _requestedOutputHeight, target.Height);
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
         SignalFrameReady("panel_size_changed");
-        Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
+        Logger.Log($"D3D11 preview panel size requested width={pixelWidth} height={pixelHeight} target={target.Width}x{target.Height} scale={rasterizationScale}.");
     }
 
     public void SubmitRawFrame(
@@ -695,6 +706,15 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Volatile.Write(ref _naturalHeight, height);
             if (Volatile.Read(ref _panelPixelWidth) <= 0) Volatile.Write(ref _panelPixelWidth, width);
             if (Volatile.Read(ref _panelPixelHeight) <= 0) Volatile.Write(ref _panelPixelHeight, height);
+            var outputTarget = PreviewOutputSizePolicy.Resolve(
+                Volatile.Read(ref _panelPixelWidth),
+                Volatile.Read(ref _panelPixelHeight),
+                width,
+                height);
+            Volatile.Write(ref _requestedOutputWidth, outputTarget.Width);
+            Volatile.Write(ref _requestedOutputHeight, outputTarget.Height);
+            Interlocked.Exchange(ref _lastOutputResizeTick, 0);
+            Interlocked.Exchange(ref _outputResizeCount, 0);
 
             _configuredInputWidth = 0;
             _configuredInputHeight = 0;
@@ -854,6 +874,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
         frame = SkipStalePendingFrames(frame);
 
+        TryResizeOutputForPendingFrame();
+
         if (Volatile.Read(ref _stopRequested) != 0)
         {
             TrackFrameDropped(frame, "renderer-stopped");
@@ -911,6 +933,30 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         return true;
+    }
+
+    private void TryResizeOutputForPendingFrame()
+    {
+        var target = new PreviewOutputSize(
+            Math.Max(1, Volatile.Read(ref _requestedOutputWidth)),
+            Math.Max(1, Volatile.Read(ref _requestedOutputHeight)));
+        var current = new PreviewOutputSize(_configuredOutputWidth, _configuredOutputHeight);
+        if (!PreviewOutputSizePolicy.ShouldResize(current, target))
+        {
+            return;
+        }
+
+        var now = Environment.TickCount64;
+        var lastResize = Interlocked.Read(ref _lastOutputResizeTick);
+        if (lastResize != 0 && now - lastResize < PreviewOutputSizePolicy.ResizeDebounceMilliseconds)
+        {
+            return;
+        }
+
+        ResizeCompositionSwapChain(target);
+        Interlocked.Exchange(ref _lastOutputResizeTick, now);
+        var resizeCount = Interlocked.Increment(ref _outputResizeCount);
+        Logger.Log($"D3D11_PREVIEW_OUTPUT_RESIZED width={target.Width} height={target.Height} count={resizeCount} debounceMs={PreviewOutputSizePolicy.ResizeDebounceMilliseconds}.");
     }
 
     // The jitter buffer is the pacer of record; this queue is only a shock

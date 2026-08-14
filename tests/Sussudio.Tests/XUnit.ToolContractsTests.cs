@@ -39,8 +39,139 @@ public sealed class AutomationSnapshotFormatterContractsTests
 }
 public sealed class SsctlFormatterContractsTests
 {
+    [Theory]
+    [InlineData("== Sussudio State ==")]
+    [InlineData("== Capture Settings ==")]
+    [InlineData("== Audio ==")]
+    [InlineData("== Video Pipeline ==")]
+    [InlineData("== Thread Health ==")]
+    [InlineData("== Recording ==")]
+    [InlineData("== Flashback ==")]
+    [InlineData("== Diagnostics ==")]
+    [InlineData("== Performance ==")]
+    [InlineData("== Memory & GC ==")]
+    [InlineData("== Capture Cadence ==")]
+    [InlineData("== MJPEG Pipeline Timing ==")]
+    [InlineData("== AV Sync ==")]
+    [InlineData("== Preview ==")]
+    [InlineData("== Source ==")]
+    public void SnapshotFormatter_EmitsSection(string section)
+        => AssertContains(FormatRepresentativeSnapshot(), section);
+
+    [Theory]
+    [InlineData("Capture Commands:")]
+    [InlineData("Process CPU:")]
+    [InlineData("Legacy Score:")]
+    [InlineData("Frame Time:")]
+    [InlineData("Pipeline Latency: 1ms (app receive -> estimated visible)")]
+    [InlineData("Average Rate:")]
+    public void SnapshotFormatter_EmitsCoreField(string field)
+        => AssertContains(FormatRepresentativeSnapshot(), field);
+
     [Fact]
-    public Task EmitsCoreSnapshotSections()
+    public void SnapshotFormatter_OrdersSections()
+    {
+        var output = FormatRepresentativeSnapshot();
+        var sections = new[]
+        {
+            "== Sussudio State ==",
+            "== Capture Settings ==",
+            "== Audio ==",
+            "== Video Pipeline ==",
+            "== Thread Health ==",
+            "== Recording ==",
+            "== Flashback ==",
+            "== Diagnostics ==",
+            "== Performance ==",
+            "== Memory & GC ==",
+            "== Capture Cadence ==",
+            "== MJPEG Pipeline Timing ==",
+            "== AV Sync ==",
+            "== Preview ==",
+            "== Source =="
+        };
+
+        for (var i = 1; i < sections.Length; i++)
+        {
+            AssertOccursBefore(output, sections[i - 1], sections[i]);
+        }
+    }
+
+    [Fact]
+    public void SnapshotFormatter_FormatsD3dDiagnostics()
+    {
+        var output = FormatRepresentativeSnapshot();
+
+        AssertContains(output, "D3D CPU timing: input/upload avg=0.1ms P95=0.2ms P99=0.3ms max=0.4ms | render-submit avg=0.5ms P95=0.6ms P99=0.7ms max=0.8ms | present-call avg=0.9ms P95=1.0ms P99=1.1ms max=1.2ms | total-frame avg=1.3ms P95=1.4ms P99=1.5ms max=1.6ms samples=120");
+        AssertContains(output, "D3D pipeline latency: avg=7.8ms P95=8.9ms P99=9.9ms max=12.3ms last=8.4ms samples=120");
+        AssertContains(output, "D3D frame-latency wait: enabled=true handle=true calls=118 signaled=110 timeouts=8 unexpected=0 lastResult=0 last=0.05ms avg=0.2ms P95=0.8ms max=2.0ms samples=118");
+        AssertContains(output, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
+        AssertContains(output, "D3D Ownership: submitted present=41 sourceSeq=9000 pts=123456 | rendered present=42 sourceSeq=9001 pts=123789 schedulerToPresent=7.7ms pipeline=8.4ms | lastDrop=none dropPts=0");
+        AssertContains(output, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
+    }
+
+    [Fact]
+    public void SnapshotFormatter_OrdersD3dDiagnostics()
+    {
+        var output = FormatRepresentativeSnapshot();
+
+        AssertOccursBefore(output, "D3D CPU timing:", "D3D pipeline latency:");
+        AssertOccursBefore(output, "D3D pipeline latency:", "D3D frame-latency wait:");
+        AssertOccursBefore(output, "D3D frame-latency wait:", "D3D DXGI stats:");
+        AssertOccursBefore(output, "D3D DXGI stats:", "D3D Ownership:");
+        AssertOccursBefore(output, "D3D Ownership:", "D3D Slow Frames:");
+    }
+
+    [Fact]
+    public void SnapshotFormatter_FormatsAudioBufferHealth()
+        => AssertContains(
+            FormatRepresentativeSnapshot(),
+            "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
+
+    [Fact]
+    public void SnapshotFormatter_FormatsAvSync()
+    {
+        var output = FormatRepresentativeSnapshot();
+
+        AssertContains(output, "Capture Drift: 1.5ms | Rate: 0.1ms/s");
+        AssertContains(output, "Encoder Drift: -0.5ms | Correction Samples: 2");
+    }
+
+    [Fact]
+    public void SnapshotFormatter_FormatsFlashbackEncoding()
+    {
+        var output = FormatRepresentativeSnapshot();
+
+        AssertContains(output, "Encoder: hevc_nvenc 3840x2160 @ 120 fps (120/1) | Target: 12.3 Mbps");
+        AssertContains(output, "Buffer: 45.0s | Disk: 100.0 MB | Written: 150 MB");
+    }
+
+    [Fact]
+    public void SnapshotFormatter_FormatsFlashbackPlayback()
+    {
+        var output = FormatRepresentativeSnapshot();
+
+        AssertContains(output, "submitFailures=1");
+        AssertContains(output, "A/V Drift: -1.5ms");
+    }
+
+    [Fact]
+    public void SnapshotFormatter_OrdersFlashbackSubsections()
+    {
+        var output = FormatRepresentativeSnapshot();
+
+        AssertOccursBefore(output, "Flashback GPU Queue:", "Playback: Paused");
+        AssertOccursBefore(output, "Playback Commands:", "Export: active=");
+        AssertOccursBefore(output, "Export: active=", "Playback Frame Time:");
+    }
+
+    [Fact]
+    public void SnapshotFormatter_FormatsFlashbackFailure()
+        => AssertContains(
+            FormatFailedFlashbackSnapshot(),
+            "Flashback Failure: active=true type=InvalidOperationException msg=Flashback queue overloaded");
+
+    private static string FormatRepresentativeSnapshot()
     {
         var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = ToolFormatterTestAssembly.Load(assemblyPath);
@@ -139,73 +270,59 @@ public sealed class SsctlFormatterContractsTests
             CultureInfo.CurrentUICulture = previousUiCulture;
         }
 
-        AssertContains(output, "== Sussudio State ==");
-        AssertContains(output, "Capture Commands:");
-        AssertContains(output, "== Capture Settings ==");
-        AssertContains(output, "== Audio ==");
-        AssertContains(output, "== Thread Health ==");
-        AssertContains(output, "== Flashback ==");
-        AssertContains(output, "== Diagnostics ==");
-        AssertContains(output, "Process CPU:");
-        AssertContains(output, "Legacy Score:");
-        AssertContains(output, "Frame Time:");
-        AssertContains(output, "Pipeline Latency: 1ms (app receive -> estimated visible)");
-        AssertContains(output, "Average Rate:");
-        AssertContains(output, "D3D CPU timing: input/upload avg=0.1ms P95=0.2ms P99=0.3ms max=0.4ms | render-submit avg=0.5ms P95=0.6ms P99=0.7ms max=0.8ms | present-call avg=0.9ms P95=1.0ms P99=1.1ms max=1.2ms | total-frame avg=1.3ms P95=1.4ms P99=1.5ms max=1.6ms samples=120");
-        AssertContains(output, "D3D pipeline latency: avg=7.8ms P95=8.9ms P99=9.9ms max=12.3ms last=8.4ms samples=120");
-        AssertContains(output, "D3D frame-latency wait: enabled=true handle=true calls=118 signaled=110 timeouts=8 unexpected=0 lastResult=0 last=0.05ms avg=0.2ms P95=0.8ms max=2.0ms samples=118");
-        AssertContains(output, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
-        AssertContains(output, "D3D Ownership: submitted present=41 sourceSeq=9000 pts=123456 | rendered present=42 sourceSeq=9001 pts=123789 schedulerToPresent=7.7ms pipeline=8.4ms | lastDrop=none dropPts=0");
-        AssertContains(output, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
-        AssertContains(output, "Audio Buffer: status=Healthy underrun=false overrun=false underrunEvents=0 overrunEvents=0 reason=No audio buffer underrun or overrun counters have moved for the active audio path.");
-        AssertContains(output, "== MJPEG Pipeline Timing ==");
-        AssertContains(output, "== Preview ==");
-        AssertContains(output, "== Source ==");
-        AssertContains(output, "== AV Sync ==");
-        AssertOccursBefore(output, "== Sussudio State ==", "== Capture Settings ==");
-        AssertOccursBefore(output, "== Capture Settings ==", "== Audio ==");
-        AssertOccursBefore(output, "== Audio ==", "== Video Pipeline ==");
-        AssertOccursBefore(output, "== Video Pipeline ==", "== Thread Health ==");
-        AssertOccursBefore(output, "== Thread Health ==", "== Recording ==");
-        AssertOccursBefore(output, "== Recording ==", "== Flashback ==");
-        AssertOccursBefore(output, "== Flashback ==", "== Diagnostics ==");
-        AssertOccursBefore(output, "== Diagnostics ==", "== Performance ==");
-        AssertOccursBefore(output, "== Performance ==", "== Memory & GC ==");
-        AssertOccursBefore(output, "== Memory & GC ==", "== Capture Cadence ==");
-        AssertOccursBefore(output, "== Capture Cadence ==", "== MJPEG Pipeline Timing ==");
-        AssertOccursBefore(output, "== MJPEG Pipeline Timing ==", "== AV Sync ==");
-        AssertOccursBefore(output, "== AV Sync ==", "== Preview ==");
-        AssertOccursBefore(output, "== Preview ==", "== Source ==");
-        AssertOccursBefore(output, "D3D CPU timing:", "D3D pipeline latency:");
-        AssertOccursBefore(output, "D3D pipeline latency:", "D3D frame-latency wait:");
-        AssertOccursBefore(output, "D3D frame-latency wait:", "D3D DXGI stats:");
-        AssertOccursBefore(output, "D3D DXGI stats:", "D3D Ownership:");
-        AssertOccursBefore(output, "D3D Ownership:", "D3D Slow Frames:");
-        AssertContains(output, "Capture Drift: 1.5ms | Rate: 0.1ms/s");
-        AssertContains(output, "Encoder Drift: -0.5ms | Correction Samples: 2");
-        AssertContains(output, "Encoder: hevc_nvenc 3840x2160 @ 120 fps (120/1) | Target: 12.3 Mbps");
-        AssertContains(output, "Buffer: 45.0s | Disk: 100.0 MB | Written: 150 MB");
-        AssertContains(output, "Written: 150 MB");
-        AssertContains(output, "submitFailures=1");
-        AssertContains(output, "A/V Drift: -1.5ms");
-        AssertOccursBefore(output, "Flashback GPU Queue:", "Playback: Paused");
-        AssertOccursBefore(output, "Playback Commands:", "Export: active=");
-        AssertOccursBefore(output, "Export: active=", "Playback Frame Time:");
-
-        const string failedFlashbackJson = """
-                                          {"Snapshot":{"SessionState":"Error","StatusText":"Flashback failed","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":false,"IsRecording":false,"FlashbackActive":false,"FlashbackEncodingFailed":true,"FlashbackEncodingFailureType":"InvalidOperationException","FlashbackEncodingFailureMessage":"Flashback queue overloaded"}}
-                                          """;
-        using var failedFlashbackDocument = JsonDocument.Parse(failedFlashbackJson);
-        var failedFlashbackOutput = formatSnapshot.Invoke(null, new object[] { failedFlashbackDocument.RootElement })?.ToString()
-            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatSnapshot returned null for failed flashback snapshot.");
-        AssertContains(failedFlashbackOutput, "== Flashback ==");
-        AssertContains(failedFlashbackOutput, "Flashback Failure: active=true type=InvalidOperationException msg=Flashback queue overloaded");
-
-        return Task.CompletedTask;
+        return output;
     }
 
+    private static string FormatFailedFlashbackSnapshot()
+    {
+        var ssctlAssembly = ToolFormatterTestAssembly.Load(global::Program.SsctlAssemblyRelativePath);
+        var formatterType = ssctlAssembly.GetType("Sussudio.Tools.Ssctl.Formatters")
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters type not found.");
+        var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatSnapshot not found.");
+        const string json = """
+                            {"Snapshot":{"SessionState":"Error","StatusText":"Flashback failed","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":false,"IsRecording":false,"FlashbackActive":false,"FlashbackEncodingFailed":true,"FlashbackEncodingFailureType":"InvalidOperationException","FlashbackEncodingFailureMessage":"Flashback queue overloaded"}}
+                            """;
+        using var document = JsonDocument.Parse(json);
+        return formatSnapshot.Invoke(null, new object[] { document.RootElement })?.ToString()
+            ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatSnapshot returned null for failed flashback snapshot.");
+    }
+
+    [Theory]
+    [InlineData("Selected Device: capture-1")]
+    [InlineData("Selected Audio Input: line-in")]
+    [InlineData("Selected Microphone: mic-usb")]
+    [InlineData("Microphone Enabled: true | Volume: 68.5%")]
+    [InlineData("Flashback: Enabled=true | Buffer=15m | GPU Decode=false")]
+    public void OptionsFormatter_EmitsSelectedValue(string selectedValue)
+        => AssertContains(FormatRepresentativeOptions(), selectedValue);
+
+    [Theory]
+    [InlineData("== Capture Options ==")]
+    [InlineData("== Microphone Devices ==")]
+    [InlineData("== Flashback Buffer Minutes ==")]
+    public void OptionsFormatter_EmitsGroup(string group)
+        => AssertContains(FormatRepresentativeOptions(), group);
+
+    [Theory]
+    [InlineData("- Desk Mic (mic-desk)")]
+    [InlineData("* USB Microphone (mic-usb)")]
+    [InlineData("- 5")]
+    [InlineData("* 15")]
+    [InlineData("- 30 [disabled: Requires restart]")]
+    public void OptionsFormatter_EmitsChoice(string choice)
+        => AssertContains(FormatRepresentativeOptions(), choice);
+
     [Fact]
-    public Task OptionsOutputPreservesMicrophoneAndFlashbackSelections()
+    public void OptionsFormatter_OrdersOptionGroups()
+    {
+        var output = FormatRepresentativeOptions();
+
+        AssertOccursBefore(output, "== Microphone Devices ==", "== Resolutions ==");
+        AssertOccursBefore(output, "== MJPEG Decoder Counts ==", "== Flashback Buffer Minutes ==");
+    }
+
+    private static string FormatRepresentativeOptions()
     {
         var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = ToolFormatterTestAssembly.Load(assemblyPath);
@@ -283,27 +400,25 @@ public sealed class SsctlFormatterContractsTests
         var output = formatOptions.Invoke(null, new object[] { document.RootElement })?.ToString()
             ?? throw new InvalidOperationException("Sussudio.Tools.Ssctl.Formatters.FormatOptions returned null.");
 
-        AssertContains(output, "== Capture Options ==");
-        AssertContains(output, "Selected Device: capture-1");
-        AssertContains(output, "Selected Audio Input: line-in");
-        AssertContains(output, "Selected Microphone: mic-usb");
-        AssertContains(output, "Microphone Enabled: true | Volume: 68.5%");
-        AssertContains(output, "Flashback: Enabled=true | Buffer=15m | GPU Decode=false");
-        AssertContains(output, "== Microphone Devices ==");
-        AssertContains(output, "- Desk Mic (mic-desk)");
-        AssertContains(output, "* USB Microphone (mic-usb)");
-        AssertContains(output, "== Flashback Buffer Minutes ==");
-        AssertContains(output, "- 5");
-        AssertContains(output, "* 15");
-        AssertContains(output, "- 30 [disabled: Requires restart]");
-        AssertOccursBefore(output, "== Microphone Devices ==", "== Resolutions ==");
-        AssertOccursBefore(output, "== MJPEG Decoder Counts ==", "== Flashback Buffer Minutes ==");
-
-        return Task.CompletedTask;
+        return output;
     }
 
-    [Fact]
-    public Task TimelineOutputPreservesTableAndSummary()
+    [Theory]
+    [InlineData("Performance Timeline (2 samples)")]
+    [InlineData("Timestamp                | CapAvg | CapP95")]
+    [InlineData("2026-05-15T00:00:00Z")]
+    public void TimelineFormatter_EmitsSampleTable(string tableValue)
+        => AssertContains(FormatRepresentativeTimeline(), tableValue);
+
+    [Theory]
+    [InlineData("== Trend Summary (first vs last sample) ==")]
+    [InlineData("Capture Avg:    8.0ms -> 8.5ms (delta: +0.5ms)")]
+    [InlineData("Video Drops:    2 -> 5 (delta: +3)")]
+    [InlineData("Working Set:    200.0MB -> 205.0MB (delta: +5.0MB)")]
+    public void TimelineFormatter_EmitsTrendSummary(string summaryValue)
+        => AssertContains(FormatRepresentativeTimeline(), summaryValue);
+
+    private static string FormatRepresentativeTimeline()
     {
         var assemblyPath = global::Program.SsctlAssemblyRelativePath;
         var ssctlAssembly = ToolFormatterTestAssembly.Load(assemblyPath);
@@ -406,15 +521,7 @@ public sealed class SsctlFormatterContractsTests
             CultureInfo.CurrentUICulture = previousUiCulture;
         }
 
-        AssertContains(output, "Performance Timeline (2 samples)");
-        AssertContains(output, "Timestamp                | CapAvg | CapP95");
-        AssertContains(output, "2026-05-15T00:00:00Z");
-        AssertContains(output, "== Trend Summary (first vs last sample) ==");
-        AssertContains(output, "Capture Avg:    8.0ms -> 8.5ms (delta: +0.5ms)");
-        AssertContains(output, "Video Drops:    2 -> 5 (delta: +3)");
-        AssertContains(output, "Working Set:    200.0MB -> 205.0MB (delta: +5.0MB)");
-
-        return Task.CompletedTask;
+        return output;
     }
 
     [Fact]
@@ -10716,11 +10823,145 @@ static partial class Program
         using var document = JsonDocument.Parse(requestLine);
         return document.RootElement.Clone();
     }
+
+    internal static async Task AutomationClient_MainSendsSharedEnvelopeForTypedRecordingCommand()
+    {
+        var assembly = LoadToolAssemblyIsolated(global::Program.AutomationClientAssemblyRelativePath);
+        var entryPoint = assembly.GetType("Program")
+            ?? throw new InvalidOperationException("AutomationClient Program type not found.");
+        var main = entryPoint.GetMethod("Main", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("AutomationClient Program.Main not found.");
+        var pipeName = NewMcpToolPipeName("automation-client-shared-envelope");
+        var exitCode = -1;
+
+        var request = await CapturePipeRequestAsync(
+                pipeName,
+                async () =>
+                {
+                    var task = main.Invoke(
+                            null,
+                            new object?[]
+                            {
+                                new[]
+                                {
+                                    "--command", "SetRecordingEnabled",
+                                    "--pipe", pipeName,
+                                    "--payload", "{\"enabled\":true}"
+                                }
+                            }) as Task<int>
+                        ?? throw new InvalidOperationException("AutomationClient Program.Main did not return Task<int>.");
+                    exitCode = await task.ConfigureAwait(false);
+                })
+            .ConfigureAwait(false);
+
+        AssertEqual(0, exitCode, "AutomationClient successful command exit code");
+        AssertCommandRequest(request, "SetRecordingEnabled", ("enabled", true));
+        AssertEqual(
+            AutomationPipeProtocol.CommandManifestRevision,
+            request.GetProperty("manifestRevision").GetInt32(),
+            "AutomationClient shared protocol manifest revision");
+    }
+
+    internal static async Task McpPipeClient_SendsSharedEnvelopeForTypedRecordingCommand()
+    {
+        var pipeName = NewMcpToolPipeName("mcp-shared-envelope");
+        var pipeClient = CreateMcpPipeClient(pipeName);
+        var sendCommand = pipeClient.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .SingleOrDefault(method =>
+            {
+                var parameters = method.GetParameters();
+                return method.Name == "SendCommandAsync" &&
+                       parameters.Length == 3 &&
+                       parameters[0].ParameterType.FullName == "Sussudio.Models.AutomationCommandKind";
+            })
+            ?? throw new InvalidOperationException("MCP PipeClient typed SendCommandAsync overload not found.");
+        var commandKind = Enum.Parse(sendCommand.GetParameters()[0].ParameterType, "SetRecordingEnabled");
+
+        var request = await CapturePipeRequestAsync(
+                pipeName,
+                async () =>
+                {
+                    var task = sendCommand.Invoke(
+                            pipeClient,
+                            new object?[]
+                            {
+                                commandKind,
+                                new Dictionary<string, object?> { ["enabled"] = true },
+                                null
+                            }) as Task
+                        ?? throw new InvalidOperationException("MCP PipeClient typed SendCommandAsync did not return a Task.");
+                    await task.ConfigureAwait(false);
+                })
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetRecordingEnabled", ("enabled", true));
+        AssertEqual(
+            AutomationPipeProtocol.CommandManifestRevision,
+            request.GetProperty("manifestRevision").GetInt32(),
+            "MCP shared protocol manifest revision");
+    }
+
+    internal static async Task SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand()
+    {
+        var assembly = LoadToolAssemblyIsolated(global::Program.SsctlAssemblyRelativePath);
+        var transportType = assembly.GetType("Sussudio.Tools.Ssctl.PipeTransport")
+            ?? throw new InvalidOperationException("ssctl PipeTransport type not found.");
+        var sendCommand = transportType.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .SingleOrDefault(method =>
+            {
+                var parameters = method.GetParameters();
+                return method.Name == "SendCommandAsync" &&
+                       parameters.Length == 4 &&
+                       parameters[0].ParameterType.FullName == "Sussudio.Models.AutomationCommandKind";
+            })
+            ?? throw new InvalidOperationException("ssctl PipeTransport typed SendCommandAsync overload not found.");
+        var pipeName = NewMcpToolPipeName("ssctl-shared-envelope");
+        var transport = Activator.CreateInstance(transportType, pipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create ssctl PipeTransport.");
+        var commandKind = Enum.Parse(sendCommand.GetParameters()[0].ParameterType, "SetRecordingEnabled");
+
+        var request = await CapturePipeRequestAsync(
+                pipeName,
+                async () =>
+                {
+                    var task = sendCommand.Invoke(
+                            transport,
+                            new object?[]
+                            {
+                                commandKind,
+                                new Dictionary<string, object?> { ["enabled"] = true },
+                                null,
+                                CancellationToken.None
+                            }) as Task<JsonElement>
+                        ?? throw new InvalidOperationException("ssctl PipeTransport typed SendCommandAsync did not return Task<JsonElement>.");
+                    await task.ConfigureAwait(false);
+                })
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(request, "SetRecordingEnabled", ("enabled", true));
+        AssertEqual(
+            AutomationPipeProtocol.CommandManifestRevision,
+            request.GetProperty("manifestRevision").GetInt32(),
+            "ssctl shared protocol manifest revision");
+    }
 }
+
 namespace Sussudio.Tests
 {
 public sealed class AutomationToolContractsProtocolXunitTests
 {
+    [Fact]
+    public Task AutomationClient_SendsSharedEnvelopeForTypedRecordingCommand()
+        => global::Program.AutomationClient_MainSendsSharedEnvelopeForTypedRecordingCommand();
+
+    [Fact]
+    public Task McpPipeClient_SendsSharedEnvelopeForTypedRecordingCommand()
+        => global::Program.McpPipeClient_SendsSharedEnvelopeForTypedRecordingCommand();
+
+    [Fact]
+    public Task SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand()
+        => global::Program.SsctlPipeTransport_SendsSharedEnvelopeForTypedRecordingCommand();
+
     [Fact]
     public void SendAutomationCommand_HelperTracksAutomationContractsInputs()
     {
@@ -10735,6 +10976,58 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"", scriptText);
         Assert.DoesNotContain("Sussudio\\Models\\AutomationCommandKind.cs", scriptText);
         Assert.DoesNotContain("Models\\AutomationCommandKind.cs", scriptText);
+    }
+
+    [Fact]
+    public void AutomationClientMain_SourceUsesSharedProtocolTimeoutFallback()
+    {
+        var main = global::Program.ExtractDeclaredMemberCode(
+            RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs"),
+            "public static async Task<int> Main(string[] args)");
+
+        Assert.Contains("AutomationPipeProtocol.ResolveCommand(options.Command)", main);
+        Assert.Contains("AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)", main);
+        Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)", main);
+        Assert.Contains("AutomationPipeClient.SendCommandWithResultAsync(", main);
+    }
+
+    [Fact]
+    public void McpTypedPipeClient_SourceDelegatesTimeoutSelectionToSharedTransport()
+    {
+        var typedSend = global::Program.ExtractDeclaredMemberCode(
+            RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
+                .Replace("\r\n", "\n", StringComparison.Ordinal),
+            "public Task<JsonElement> SendCommandAsync(\n            AutomationCommandKind kind,");
+
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
+        Assert.Contains("responseTimeoutMs: responseTimeoutMs", typedSend);
+        Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", typedSend);
+    }
+
+    [Fact]
+    public void SsctlTypedPipeTransport_SourceDelegatesTimeoutSelectionToSharedTransport()
+    {
+        var typedSend = global::Program.ExtractDeclaredMemberCode(
+            RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
+                .Replace("\r\n", "\n", StringComparison.Ordinal),
+            "public Task<JsonElement> SendCommandAsync(\n        AutomationCommandKind kind,");
+
+        Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
+        Assert.Contains("responseTimeoutOverrideMs: _responseTimeoutOverrideMs", typedSend);
+        Assert.Contains("responseTimeoutMs: responseTimeoutMs", typedSend);
+    }
+
+    [Fact]
+    public void PowerShellWrapper_SourceForwardsExplicitTimeoutOverrideToAutomationClient()
+    {
+        var invocation = ExtractPowerShellInvocationBlock(
+            RuntimeContractSource.ReadRepoFile("tools/send-automation-command.ps1"));
+
+        Assert.Contains("$automationClientPath = Resolve-AutomationClientPath", invocation);
+        Assert.Contains("\"--command\", $Command", invocation);
+        Assert.Contains("if ($ResponseTimeoutMs -gt 0)", invocation);
+        Assert.Contains("\"--response-timeout-ms\", $ResponseTimeoutMs", invocation);
+        Assert.Contains("& dotnet @arguments", invocation);
     }
 
     [Fact]
@@ -10814,6 +11107,20 @@ public sealed class AutomationToolContractsProtocolXunitTests
         return count;
     }
 
+    private static string ExtractPowerShellInvocationBlock(string source)
+    {
+        const string start = "$automationClientPath = Resolve-AutomationClientPath";
+        const string end = "& dotnet @arguments";
+        var startIndex = source.IndexOf(start, StringComparison.Ordinal);
+        var endIndex = source.IndexOf(end, startIndex, StringComparison.Ordinal);
+        if (startIndex < 0 || endIndex < startIndex)
+        {
+            throw new InvalidOperationException("AutomationClient invocation block was not found in send-automation-command.ps1.");
+        }
+
+        return source[startIndex..(endIndex + end.Length)];
+    }
+
     [Fact]
     public void CliCancellationTokens_FlowIntoAutomationPipeTransport()
     {
@@ -10838,33 +11145,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
     }
 
     [Fact]
-    public void AutomationClient_UsesCatalogTimeoutPolicy_ForRecordingAndFlashbackCommands()
+    public void AutomationPipeProtocol_ResolvesCatalogTimeouts_ForRecordingAndFlashbackCommands()
     {
-        var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var catalogEntriesText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var clientText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var pipeClientText = RuntimeContractSource.ReadAutomationPipeClientSource();
-
-        Assert.Contains("public const int DefaultResponseTimeoutMs = 15000;", protocolText);
-        Assert.Contains("public const int ExtendedResponseTimeoutMs = 60000;", protocolText);
-        Assert.Contains("public const int RecordingResponseTimeoutMs = 150000;", protocolText);
-        Assert.Contains("public const int FlashbackMutationResponseTimeoutMs = 305000;", protocolText);
-        Assert.Contains("commandName = ResolveCanonicalCommandName(commandName);", protocolText);
-        Assert.Contains("AutomationCommandCatalog.TryGet(commandName, out var metadata)", protocolText);
-        Assert.Contains("? metadata.ResponseTimeoutMs", protocolText);
-        Assert.Contains("AutomationCommandKind.SetRecordingEnabled", catalogEntriesText);
-        Assert.Contains("AutomationPipeProtocol.RecordingResponseTimeoutMs", catalogEntriesText);
-        Assert.Contains("AutomationCommandKind.FlashbackExport", catalogEntriesText);
-        Assert.Contains("AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs", catalogEntriesText);
-        Assert.DoesNotContain("AlignResponseTimeoutWithServerRequest", protocolText);
-        Assert.DoesNotContain("AlignResponseTimeoutWithServerRequest", pipeClientText);
-        Assert.Contains("AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)", clientText);
-        Assert.Contains("AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName)", clientText);
-        Assert.Contains("public int? ResponseTimeoutMs { get; set; }", clientText);
-
         foreach (var acceptedName in new[] { "SetRecordingEnabled", "setrecordingenabled", "set-recording-enabled", "17" })
         {
             Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout(acceptedName));
@@ -10880,11 +11162,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
     }
 
     [Fact]
-    public void AutomationClient_StaysAlignedWithAdvancedMcpCommandMap()
+    public void AutomationPipeProtocol_ResolvesAdvancedCommandIds()
     {
-        var protocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs");
-        var scriptText = RuntimeContractSource.ReadRepoFile("tools/send-automation-command.ps1");
-
         foreach (var (kind, ordinal) in new[]
         {
             (AutomationCommandKind.GetCaptureOptions, 29),
@@ -10904,104 +11183,6 @@ public sealed class AutomationToolContractsProtocolXunitTests
             Assert.Equal(ordinal, AutomationPipeProtocol.ResolveCommand(kind.ToString()));
         }
 
-        Assert.Contains("Enum.GetValues<AutomationCommandKind>()", protocolText);
-
-        Assert.Contains("AutomationClient\\AutomationClient.csproj", scriptText);
-        Assert.Contains("Get-AutomationClientInputWriteTimeUtc", scriptText);
-        Assert.Contains("Test-AutomationClientBuildFresh", scriptText);
-        Assert.Contains("AutomationClient build failed with exit code $LASTEXITCODE.", scriptText);
-        Assert.Contains("AutomationClient build output is stale after rebuild", scriptText);
-        Assert.Contains("$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"", scriptText);
-        Assert.Contains("\"--command\", $Command", scriptText);
-        Assert.Contains("$payloadBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($PayloadJson))", scriptText);
-        Assert.Contains("\"--payload-base64\", $payloadBase64", scriptText);
-        Assert.Contains("[int]$ResponseTimeoutMs = 0", scriptText);
-        Assert.Contains("\"--response-timeout-ms\", $ResponseTimeoutMs", scriptText);
-        Assert.DoesNotContain("function Resolve-AutomationCommand", scriptText);
-    }
-
-    [Fact]
-    public void PipeClient_UsesSharedProtocol_ForCommandResolution()
-    {
-        var pipeClientText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs");
-
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "McpServer", "PipeClient.cs")),
-            "MCP PipeClient should stay with the host bootstrap owner instead of returning as a tiny adapter file.");
-        Assert.Contains("AutomationPipeProtocol", pipeClientText);
-        Assert.DoesNotContain("CommandMap = new", pipeClientText);
-    }
-
-    [Fact]
-    public void UiAutomationAdapters_UseEnumCommands_WithoutChangingLabelsOrWireNames()
-    {
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "PipeTransport.cs")),
-            "ssctl PipeTransport should stay with the command-handler surface instead of returning as a tiny adapter file.");
-        var ssctlPipeText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var ssctlTransportText = RuntimeContractSource.ReadRepoFile("tools/ssctl/CommandHandlers.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var ssctlUiText = ssctlTransportText;
-        var ssctlFlashbackText = ssctlTransportText;
-        var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var formatterText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/ToolCommandFormatter.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var uiSettingsToolsText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs")
-            .Replace("\r\n", "\n", StringComparison.Ordinal);
-
-        Assert.Contains("SendCommandAsync(\n        AutomationCommandKind kind,", ssctlPipeText);
-        Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n            _pipeName,\n            kind,", ssctlPipeText);
-        Assert.DoesNotContain("AutomationCommandCatalog.Get(kind).Name", ssctlPipeText);
-        Assert.Contains("HandleSimpleCommandAsync(\n        CommandContext context,\n        AutomationCommandKind kind,", ssctlTransportText);
-        Assert.Contains("SendCommandAsync(\n            AutomationCommandKind kind,", mcpPipeText);
-        Assert.Contains("AutomationCommandTransport.SendCommandAsync(\n                _pipeName,\n                kind,", mcpPipeText);
-        Assert.DoesNotContain("AutomationCommandCatalog.Get(kind).Name", mcpPipeText);
-        Assert.Contains("Optional(AutomationCommandKind kind, string label,", formatterText);
-        Assert.Contains("ExecuteAndFormatResultAsync(\n        PipeClient pipeClient,\n        AutomationCommandKind kind,", formatterText);
-        Assert.Contains("pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs)", formatterText);
-
-        Assert.Contains("AutomationCommandKind.SetStatsVisible", ssctlUiText);
-        Assert.Contains("AutomationCommandKind.SetStatsSectionVisible", ssctlUiText);
-        Assert.Contains("AutomationCommandKind.SetSettingsVisible", ssctlUiText);
-        Assert.Contains("AutomationCommandKind.SetFrameTimeOverlayVisible", ssctlUiText);
-        Assert.Contains("AutomationCommandKind.SetFlashbackTimelineVisible", ssctlFlashbackText);
-        Assert.DoesNotContain("\"SetStatsVisible\"", ssctlUiText);
-        Assert.DoesNotContain("\"SetStatsSectionVisible\"", ssctlUiText);
-        Assert.DoesNotContain("\"SetSettingsVisible\"", ssctlUiText);
-        Assert.DoesNotContain("\"SetFrameTimeOverlayVisible\"", ssctlUiText);
-        Assert.DoesNotContain("\"SetFlashbackTimelineVisible\"", ssctlFlashbackText);
-
-        Assert.Contains("ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, \"SetStatsVisible\"", uiSettingsToolsText);
-        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetSettingsVisible, \"SetSettingsVisible\"", uiSettingsToolsText);
-        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFrameTimeOverlayVisible, \"SetFrameTimeOverlayVisible\"", uiSettingsToolsText);
-        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFlashbackTimelineVisible, \"SetFlashbackTimelineVisible\"", uiSettingsToolsText);
-        Assert.Contains("ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetStatsSectionVisible, \"SetStatsSectionVisible\"", uiSettingsToolsText);
-    }
-
-    [Fact]
-    public void AutomationClient_UsesSharedProtocol_ForCommandResolution()
-    {
-        var entryText = RuntimeContractSource.ReadRepoFile("tools/AutomationClient/Program.cs");
-        var clientText = entryText;
-
-        Assert.Contains("AutomationPipeProtocol", clientText);
-        Assert.Contains("var options = ParseArgs(args);", entryText);
-        Assert.Contains("var payload = BuildPayload(options);", entryText);
-        Assert.Contains("public int? ResponseTimeoutMs { get; set; }", entryText);
-        Assert.Contains("private static Options ParseArgs(string[] args)", entryText);
-        Assert.Contains("private static void WriteHelp()", entryText);
-        Assert.Contains("--payload-base64", entryText);
-        Assert.Contains("private static object BuildPayload(Options options)", entryText);
-        Assert.Contains("Convert.FromBase64String(options.PayloadBase64)", entryText);
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "AutomationClient", "Program.Arguments.cs")),
-            "AutomationClient argument parsing should stay with the low-level client entrypoint.");
-        Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "AutomationClient", "Program.Payload.cs")),
-            "AutomationClient payload construction should stay with the low-level client entrypoint.");
-        Assert.DoesNotContain("CommandMap = new", clientText);
     }
 
     [Fact]
@@ -11132,44 +11313,28 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Equal(JsonValueKind.String, response.GetProperty("TimestampUtc").ValueKind);
     }
 
-    [Fact]
-    public void AutomationResponseState_ParsesStatusAndRetryContracts()
+    [Theory]
+    [InlineData("{\"Success\":true,\"Status\":\"ready\",\"RetryAfterMs\":250}", true, true, "ready", 250)]
+    [InlineData("{\"Success\":false,\"RetryAfterMs\":\"500\"}", true, false, null, 500)]
+    [InlineData("{\"Success\":\"true\",\"Status\":42,\"RetryAfterMs\":\"soon\"}", true, false, null, null)]
+    [InlineData("[]", false, false, null, null)]
+    public void AutomationResponseState_ParsesOneResponseEnvelope(
+        string json,
+        bool expectedRead,
+        bool expectedSuccess,
+        string? expectedStatus,
+        int? expectedRetryAfterMs)
     {
         var responseStateType = RequireSharedToolType("Sussudio.Tools.AutomationResponseState");
         var tryRead = RequireNonPublicStaticMethod(responseStateType, "TryRead");
 
         AssertResponseState(
             tryRead,
-            "{\"Success\":true,\"Status\":\"ready\",\"RetryAfterMs\":250}",
-            expectedRead: true,
-            expectedSuccess: true,
-            expectedStatus: "ready",
-            expectedRetryAfterMs: 250,
-            "numeric retry");
-        AssertResponseState(
-            tryRead,
-            "{\"Success\":false,\"RetryAfterMs\":\"500\"}",
-            expectedRead: true,
-            expectedSuccess: false,
-            expectedStatus: null,
-            expectedRetryAfterMs: 500,
-            "string retry");
-        AssertResponseState(
-            tryRead,
-            "{\"Success\":\"true\",\"Status\":42,\"RetryAfterMs\":\"soon\"}",
-            expectedRead: true,
-            expectedSuccess: false,
-            expectedStatus: null,
-            expectedRetryAfterMs: null,
-            "malformed values");
-        AssertResponseState(
-            tryRead,
-            "[]",
-            expectedRead: false,
-            expectedSuccess: false,
-            expectedStatus: null,
-            expectedRetryAfterMs: null,
-            "non-object response");
+            json,
+            expectedRead,
+            expectedSuccess,
+            expectedStatus,
+            expectedRetryAfterMs);
     }
 
     private static string ReadDiagnosticSessionRunnerSource()
@@ -11220,8 +11385,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         bool expectedRead,
         bool expectedSuccess,
         string? expectedStatus,
-        int? expectedRetryAfterMs,
-        string fieldName)
+        int? expectedRetryAfterMs)
     {
         using var document = JsonDocument.Parse(json);
         var args = new object?[] { document.RootElement, null, null, null };

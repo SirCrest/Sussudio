@@ -856,8 +856,10 @@ internal sealed partial class D3D11PreviewRenderer
             throw new InvalidOperationException($"CreateDXGIFactory2 failed: 0x{factoryResult.Code:X8}.");
         }
 
-        var pixelWidth = Math.Max(1, Volatile.Read(ref _startupWidth));
-        var pixelHeight = Math.Max(1, Volatile.Read(ref _startupHeight));
+        // Source dimensions stay in _startup* for input processing.  The
+        // composition target follows the visible panel (stable bucketed size).
+        var pixelWidth = Math.Max(1, Volatile.Read(ref _requestedOutputWidth));
+        var pixelHeight = Math.Max(1, Volatile.Read(ref _requestedOutputHeight));
 
         var swapChainFormat = Format.B8G8R8A8_UNorm;
         _hdrCapableSwapChain = false;
@@ -890,6 +892,45 @@ internal sealed partial class D3D11PreviewRenderer
         _configuredOutputWidth = pixelWidth;
         _configuredOutputHeight = pixelHeight;
         return (_swapChain, pixelWidth, pixelHeight);
+    }
+
+    private void ResizeCompositionSwapChain(PreviewOutputSize target)
+    {
+        if (_swapChain == null || _device == null || _videoDevice == null)
+        {
+            return;
+        }
+
+        // All output views and capture staging references must be released
+        // before ResizeBuffers; input textures deliberately remain source-sized.
+        _outputView?.Dispose();
+        _outputView = null;
+        _swapChainRTV?.Dispose();
+        _swapChainRTV = null;
+        _swapChainBackBuffer?.Dispose();
+        _swapChainBackBuffer = null;
+        DisposeFrameCaptureStagingResources();
+
+        var flags = _waitableSwapChainEnabled
+            ? SwapChainFlags.FrameLatencyWaitableObject
+            : SwapChainFlags.None;
+        var result = _swapChain.ResizeBuffers(
+            (uint)_swapChainBufferCount,
+            (uint)target.Width,
+            (uint)target.Height,
+            Format.Unknown,
+            flags);
+        if (result.Failure)
+        {
+            throw new InvalidOperationException($"D3D11 preview ResizeBuffers failed: 0x{result.Code:X8}.");
+        }
+
+        _configuredOutputWidth = target.Width;
+        _configuredOutputHeight = target.Height;
+        DisposeProcessorResources();
+        ConfigureFrameLatencyWaitableObject();
+        ApplyCompositionScaleTransform(_swapChain);
+        Interlocked.Exchange(ref _swapChainColorSpaceDirty, 1);
     }
 
     private void EnsureHdrCapableSwapChainOrFallbackToSdr(

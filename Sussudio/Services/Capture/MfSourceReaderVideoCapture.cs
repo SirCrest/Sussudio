@@ -61,7 +61,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private int _isReadSampleOutstanding;
     private long _readSampleOutstandingStartTickMs;
     private long _lastFrameDeliveredTickMs;
+#if DEBUG
     private int _vtableDiagDone;
+#endif
     private int _dxgiBufferProbeDone;
     private int _dxgiResourceFailureCount;
     private bool _skipCpuReadback;
@@ -78,6 +80,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     public bool IsCompressedMjpgOutput => Volatile.Read(ref _isCompressedMjpgOutput);
     public bool IsD3DOutputEnabled => Volatile.Read(ref _sourceReaderD3DEnabled);
     public bool IsHighFrameRateMjpegMode => Volatile.Read(ref _isHighFrameRateMjpegMode);
+    // This is deliberately narrower than IsD3DOutputEnabled: normal NV12/P010
+    // capture can use D3D too. It identifies the capability-gated MJPG -> NV12
+    // Media Foundation transform path used by the 4K120 SDR mode.
+    public bool IsGpuNativeMjpegDecodeActive =>
+        IsHighFrameRateMjpegMode &&
+        IsD3DOutputEnabled &&
+        !IsCompressedMjpgOutput;
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);

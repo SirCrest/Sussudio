@@ -14,8 +14,6 @@ using System.Xml.Linq;
 
 static partial class Program
 {
-    private sealed record CheckResult(string Name, bool Passed, string? Detail = null);
-
     private static Assembly? _assembly;
     private static readonly object XUnitTargetAssemblyLoadLock = new();
 
@@ -27,7 +25,7 @@ static partial class Program
         }
     }
 
-    private static async Task<int> Main(string[] args)
+    private static int Main(string[] args)
     {
         var assemblyPath = ResolveAssemblyPath(args);
         if (!File.Exists(assemblyPath))
@@ -39,25 +37,8 @@ static partial class Program
 
         RequireFreshSussudioAssembly(assemblyPath);
         _assembly = Assembly.LoadFrom(assemblyPath);
-
-        var results = await RunAllChecksAsync().ConfigureAwait(false);
-
-        var failed = results.Where(r => !r.Passed).ToList();
-        foreach (var result in results)
-        {
-            Console.WriteLine(result.Passed
-                ? $"PASS: {result.Name}"
-                : $"FAIL: {result.Name} :: {result.Detail}");
-        }
-
-        if (failed.Count == 0)
-        {
-            Console.WriteLine("All runtime snapshot regression checks passed.");
-            return 0;
-        }
-
-        Console.Error.WriteLine($"{failed.Count} regression checks failed.");
-        return 1;
+        Console.WriteLine("Sussudio assembly-load smoke check passed. Run dotnet test for regression coverage.");
+        return 0;
     }
 
     private static string ResolveAssemblyPath(string[] args)
@@ -129,9 +110,6 @@ static partial class Program
 
         return null;
     }
-
-    private static Task<List<CheckResult>> RunAllChecksAsync()
-        => Task.FromResult(new List<CheckResult>());
 
     private enum ConfigSetterExpectation
     {
@@ -614,6 +592,31 @@ static partial class Program
         }
 
         return source.Substring(start, end - start);
+    }
+
+    internal static string ExtractDeclaredMemberCode(string source, string declarationToken)
+    {
+        var code = StripCSharpCommentsAndStringContents(source);
+        var start = code.IndexOf(declarationToken, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            throw new InvalidOperationException($"Declaration '{declarationToken}' was not found.");
+        }
+
+        var openBrace = code.IndexOf('{', start);
+        var semicolon = code.IndexOf(';', start);
+        if (semicolon >= 0 && (openBrace < 0 || semicolon < openBrace))
+        {
+            return source.Substring(start, semicolon - start + 1);
+        }
+
+        if (openBrace < 0)
+        {
+            throw new InvalidOperationException($"Declaration '{declarationToken}' has no body.");
+        }
+
+        var closeBrace = FindMatchingBrace(code, openBrace);
+        return source.Substring(start, closeBrace - start + 1);
     }
 
     private static int FindMatchingBrace(string source, int openBraceIndex)

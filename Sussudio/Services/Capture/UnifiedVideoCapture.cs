@@ -49,6 +49,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private int _disposeStarted;
     private bool _isP010;
     private bool _isHighFrameRateMjpegMode;
+    private bool _isGpuNativeMjpegDecodeActive;
     private bool _strictPreviewTextureRequired;
     private int _fatalErrorSignaled;
     private int _consecutiveTextureFailures;
@@ -78,6 +79,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);
     public bool IsHighFrameRateMjpegMode => Volatile.Read(ref _isHighFrameRateMjpegMode);
+    public bool IsGpuNativeMjpegDecodeActive => Volatile.Read(ref _isGpuNativeMjpegDecodeActive);
     public bool IsSoftwareMjpegPipelineActive => Volatile.Read(ref _mjpegPipeline) != null;
     public string NativeInputFormat => Volatile.Read(ref _nativeInputFormat);
     public string NegotiatedFormat => Volatile.Read(ref _negotiatedFormat);
@@ -289,21 +291,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
-        var useExternalMjpegDecode = ShouldUseExternalMjpegDecode(
+        var useMjpegHighFrameRateDecode = IsMjpegHighFrameRateDecode(
             useMjpegHighFrameRateMode,
             requireP010,
             requestedPixelFormat);
-        var mjpegPipeline = CreateExternalMjpegPipelineIfNeeded(
-            useExternalMjpegDecode,
-            mjpegDecoderCount,
-            width,
-            height,
-            fps);
-
+        var preferGpuNativeMjpegDecode = ShouldPreferGpuNativeMjpegDecode(useMjpegHighFrameRateDecode);
+        var useExternalMjpegDecode = useMjpegHighFrameRateDecode && !preferGpuNativeMjpegDecode;
+        ParallelMjpegDecodePipeline? mjpegPipeline = null;
         var capture = new MfSourceReaderVideoCapture();
-        try
-        {
-            await capture.InitializeAsync(
+
+        Task InitializeSourceReaderAsync(bool useExternalDecode)
+            => capture.InitializeAsync(
                 deviceSymbolicLink,
                 new VideoCaptureNegotiationOptions(
                     Width: width,
@@ -312,9 +310,25 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                     RequireP010: requireP010,
                     RequestedPixelFormat: requestedPixelFormat,
                     UseMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
-                    DxgiDeviceManager: useExternalMjpegDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
-                    UseExternalMjpegDecode: useExternalMjpegDecode))
+                    DxgiDeviceManager: useExternalDecode ? IntPtr.Zero : dxgiDeviceManagerPtr,
+                    UseExternalMjpegDecode: useExternalDecode));
+
+        try
+        {
+            useExternalMjpegDecode = await InitializeMjpegSourceReaderWithFallbackAsync(
+                    preferGpuNativeMjpegDecode,
+                    InitializeSourceReaderAsync,
+                    ex => Logger.Log(
+                        "MJPEG_GPU_NATIVE_UNAVAILABLE " +
+                        $"fallback=software type={ex.GetType().Name} msg={ex.Message}"))
                 .ConfigureAwait(false);
+
+            mjpegPipeline = CreateExternalMjpegPipelineIfNeeded(
+                useExternalMjpegDecode,
+                mjpegDecoderCount,
+                width,
+                height,
+                fps);
         }
         catch
         {
@@ -340,6 +354,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _mjpegPipeline = mjpegPipeline;
             _isP010 = capture.IsP010;
             _isHighFrameRateMjpegMode = capture.IsHighFrameRateMjpegMode;
+            _isGpuNativeMjpegDecodeActive = capture.IsGpuNativeMjpegDecodeActive;
             _strictPreviewTextureRequired =
                 capture.IsHighFrameRateMjpegMode &&
                 capture.IsD3DOutputEnabled &&
@@ -365,7 +380,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _frameLedger.Reset();
         }
 
-        Logger.Log($"MJPEG_CPU_PIPELINE_CONFIG decoders={mjpegDecoderCount} enabled={mjpegPipeline != null}");
+        var mjpegDecodePath = !useMjpegHighFrameRateDecode
+            ? "not_applicable"
+            : capture.IsGpuNativeMjpegDecodeActive ? "gpu_native" : "software";
+        Logger.Log(
+            $"MJPEG_DECODE_PATH path={mjpegDecodePath} " +
+            $"hfr={capture.IsHighFrameRateMjpegMode.ToString().ToLowerInvariant()} " +
+            $"software_decoders={(mjpegPipeline?.DecoderCount ?? 0)} " +
+            $"fallback={(useMjpegHighFrameRateDecode && useExternalMjpegDecode).ToString().ToLowerInvariant()}");
 
         capture.FatalErrorOccurred += OnCaptureFatalError;
     }
@@ -552,17 +574,40 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
     }
 
-    private static bool ShouldUseExternalMjpegDecode(
+    private static bool IsMjpegHighFrameRateDecode(
         bool useMjpegHighFrameRateMode,
         bool requireP010,
         string? requestedPixelFormat)
     {
-        // 4K120 MJPEG is compressed on the USB wire. In that mode the source
-        // reader must hand compressed samples to our decoder instead of trying
-        // to expose D3D textures directly from Media Foundation.
         return useMjpegHighFrameRateMode &&
             !requireP010 &&
             string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode)
+        => isMjpegHighFrameRateDecode &&
+           EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_GPU_NATIVE_DECODE", 1, 0, 1) != 0;
+
+    private static async Task<bool> InitializeMjpegSourceReaderWithFallbackAsync(
+        bool preferGpuNative,
+        Func<bool, Task> initializeAsync,
+        Action<Exception> reportNativeFailure)
+    {
+        var useExternalDecode = !preferGpuNative;
+        try
+        {
+            await initializeAsync(useExternalDecode).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (preferGpuNative)
+        {
+            // Some drivers expose MJPG without a usable D3D11 Media Foundation
+            // transform. Retry only the existing raw-MJPG software path.
+            reportNativeFailure(ex);
+            useExternalDecode = true;
+            await initializeAsync(useExternalDecode).ConfigureAwait(false);
+        }
+
+        return useExternalDecode;
     }
 
     private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(

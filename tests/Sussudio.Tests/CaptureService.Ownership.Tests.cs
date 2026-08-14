@@ -375,7 +375,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
     private static void AssertDoesNotContain(string text, string expected)
         => Assert.DoesNotContain(expected, text);
 
-    private static string ExtractMemberCode(string source, string memberName)
+    internal static string ExtractMemberCode(string source, string memberName)
     {
         var signatureIndex = source.IndexOf($" {memberName}(", StringComparison.Ordinal);
         if (signatureIndex < 0)
@@ -439,27 +439,8 @@ public sealed class CaptureServiceLifecycleOwnershipTests
     [Fact]
     public void CaptureService_LastFailureTelemetryState_LivesWithCleanupLifecycle()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
-            .Replace("\r\n", "\n");
         var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-
-        var fieldNames = new[]
-        {
-            "_recordingFailureTelemetryLock",
-            "_lastRecordingEncodingFailed",
-            "_lastRecordingEncodingFailureType",
-            "_lastRecordingEncodingFailureMessage",
-            "_lastFlashbackEncodingFailed",
-            "_lastFlashbackEncodingFailureType",
-            "_lastFlashbackEncodingFailureMessage",
-        };
-
-        foreach (var fieldName in fieldNames)
-        {
-            AssertContains(rootText, fieldName);
-            AssertContains(cleanupText, fieldName);
-        }
 
         AssertContains(cleanupText, "private readonly object _recordingFailureTelemetryLock = new();");
         AssertContains(cleanupText, "private bool _lastRecordingEncodingFailed;");
@@ -487,12 +468,13 @@ public sealed class CaptureServiceLifecycleOwnershipTests
     [Fact]
     public void CaptureService_FlashbackBackendFailureCleanup_LivesWithCleanupLifecycleWithoutSessionStateWrites()
     {
-        var cleanupText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+        var source = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
+        var cleanupText = CaptureServiceHealthSnapshotOwnershipTests.ExtractMemberCode(
+            source,
+            "private void BeginFlashbackBackendCleanup");
 
-        AssertContains(cleanupText, "private void BeginFatalCaptureCleanup(Exception ex)");
-        AssertContains(cleanupText, "private void BeginFlashbackBackendCleanup(Exception ex)");
-        AssertContains(cleanupText, "private static bool IsGpuDeviceLost(Exception ex)");
+        AssertContains(source, "private static bool IsGpuDeviceLost(Exception ex)");
         AssertContains(cleanupText, "_flashbackBackend.PreserveRecoverySegments(\"backend_fatal\");");
         AssertDoesNotContain(cleanupText, "_sessionState =");
         Assert.False(

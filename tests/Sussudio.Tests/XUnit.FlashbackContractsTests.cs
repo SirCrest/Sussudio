@@ -491,8 +491,8 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure();
 
     [Fact]
-    public Task FlashbackEncoderForceRotateDrainRejectsVideoEnqueues()
-        => global::Program.FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues();
+    public Task FlashbackEncoderForceRotateDrainDoesNotRejectVideoByLifecycleState()
+        => global::Program.FlashbackEncoderSink_ForceRotateDrainingDoesNotRejectVideoByLifecycleState();
 
     [Fact]
     public Task FlashbackEncoderStartFailureRollsBackStartedState()
@@ -4229,7 +4229,7 @@ static partial class Program
 
 
 
-    internal static Task FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues()
+    internal static Task FlashbackEncoderSink_ForceRotateDrainingDoesNotRejectVideoByLifecycleState()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
@@ -4244,23 +4244,15 @@ static partial class Program
             SetPrivateField(sink, "_started", true);
             SetPrivateField(sink, "_forceRotateDraining", true);
 
-            // Depth-aware guard: while force-rotate is draining, enqueues are only
-            // rejected once the queue fills toward ForceRotateQueueGuardRatio —
-            // an empty queue keeps accepting so exports no longer punch a video
-            // gap into the DVR buffer.
-            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining accepts CPU video below guard ratio");
-            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining accepts GPU video below guard ratio");
+            // The encoder-lane fence must not reject live video.
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining accepts CPU video");
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining accepts GPU video");
 
-            SetPrivateField(sink, "_videoQueueDepth", 180); // == DefaultVideoQueueCapacity
-            SetPrivateField(sink, "_gpuQueueDepth", 8);     // == GpuQueueCapacity
-            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining rejects CPU video at guard ratio");
-            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining rejects GPU video at guard ratio");
+            SetPrivateField(sink, "_videoQueueDepth", 180);
+            SetPrivateField(sink, "_gpuQueueDepth", 8);
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining ignores CPU queue depth");
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining ignores GPU queue depth");
 
-            SetPrivateField(sink, "_videoQueueDepth", 0);
-            SetPrivateField(sink, "_gpuQueueDepth", 0);
-            SetPrivateField(sink, "_forceRotateDraining", false);
-            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "CPU video accepted after force-rotate drain clears");
-            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "GPU video accepted after force-rotate drain clears");
         }
         finally
         {
@@ -4312,14 +4304,11 @@ static partial class Program
         AssertContains(sourceText, "Volatile.Write(ref _lastVideoQueueRejectReason, null);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _gpuQueueRejectedFrames, 0);");
         AssertContains(sourceText, "Volatile.Write(ref _lastGpuQueueRejectReason, null);");
-        AssertContains(sourceText, "private const double ForceRotateQueueGuardRatio = 0.65;");
         AssertContains(sourceText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
         AssertContains(sourceText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
         AssertContains(sourceText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
-        AssertContains(sourceText, "return \"force_rotate_draining\";");
-        AssertDoesNotContain(sourceText, "return \"force_rotate_queue_guard\";");
-        AssertContains(sourceText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
-        AssertContains(sourceText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
+        AssertContains(sourceText, "Rotation has an encoder-lane fence.");
+        AssertDoesNotContain(sourceText, "return \"force_rotate_draining\";");
         AssertContains(sourceText, "return \"cancelled\";");
         AssertContains(sourceText, "return \"disposed\";");
         AssertContains(sourceText, "return \"not_started\";");
@@ -4436,18 +4425,20 @@ static partial class Program
 
         var rotateBlock = ExtractTextBetween(
             sinkText,
-            "private bool RotateSegment(TimeSpan currentPts)",
+            "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)",
             "    public FlashbackForceRotateResult ForceRotateForExport");
         AssertContains(rotateBlock, "string? completedPath = null;");
         AssertContains(rotateBlock, "string? newPath = null;");
         AssertContains(rotateBlock, "var encoderRotated = false;");
         AssertContains(rotateBlock, "completedPath = _tsFilePath;");
         AssertContains(rotateBlock, "var completedStartPts = _segmentStartPts;");
-        AssertContains(rotateBlock, "newPath = _bufferManager.GenerateSegmentPath();");
+        AssertContains(rotateBlock, "newPath = preparedPath ?? _bufferManager.GenerateSegmentPath();");
         AssertContains(rotateBlock, "encoderRotated = true;");
         AssertOccursBefore(rotateBlock, "encoderRotated = true;", "_tsFilePath = newPath;");
         AssertOccursBefore(rotateBlock, "_tsFilePath = newPath;", "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);");
-        AssertContains(rotateBlock, "if (newPath != null && !encoderRotated)\n            {\n                _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);\n            }");
+        AssertContains(rotateBlock, "if (newPath != null && !encoderRotated)");
+        AssertContains(rotateBlock, "_bufferManager.AbandonReservedSegmentPath(newPath);");
+        AssertContains(rotateBlock, "_bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);");
 
         var abandonBlock = ExtractTextBetween(
             bufferText,
@@ -4510,12 +4501,13 @@ static partial class Program
         AssertContains(forceRotateBlock, "cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(forceRotateBlock, "if (inPoint < TimeSpan.Zero || outPoint <= inPoint)");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE");
-        AssertOccursBefore(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE", "var request = new ForceRotateRequest();");
+        AssertOccursBefore(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE", "var request = new ForceRotateRequest(preparedPath);");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_INACTIVE");
         AssertContains(forceRotateBlock, "if (_encodingFailure != null || _encodingTask?.IsCompleted == true)");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED");
         AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.Failed();");
-        AssertContains(forceRotateBlock, "var request = new ForceRotateRequest();");
+        AssertContains(forceRotateBlock, "_bufferManager.ReserveSegmentPath();");
+        AssertContains(forceRotateBlock, "var request = new ForceRotateRequest(preparedPath);");
         AssertContains(forceRotateBlock, "if (!_started || _disposed || _encodingFailure != null || _encodingTask?.IsCompleted == true)");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK");
         AssertOccursBefore(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK", "_forceRotateRequest = request;");
@@ -4577,7 +4569,7 @@ static partial class Program
         AssertOccursBefore(executionBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))", "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
         AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain", "var currentPts = ResolveEncoderPts();");
         AssertContains(executionBlock, "if (!localRequest.TryBeginCommit())\n                {\n                    Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate\");\n                    return true;\n                }");
-        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate", "if (!RotateSegment(currentPts))");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate", "if (!RotateSegment(currentPts, localRequest.PreparedPath))");
         AssertContains(sourceText, "private static bool ShouldAbortForceRotateDrain(");
         AssertContains(sourceText, "if (!request.IsCompleted)");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_FORCE_ROTATE_ABORT_DRAIN phase={phase} in_flight_rounds={inFlightRounds}\");");
@@ -4734,7 +4726,7 @@ static partial class Program
 
         AssertContains(encodingProgressText, "private void OnVideoFrameEncoded()");
         AssertContains(encodingProgressText, "private TimeSpan ResolveEncoderPts()");
-        AssertContains(encodingProgressText, "private bool RotateSegment(TimeSpan currentPts)");
+        AssertContains(encodingProgressText, "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)");
         AssertContains(encodingProgressText, "_bufferManager.UpdateLatestPts(pts);");
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE");
@@ -4772,7 +4764,8 @@ static partial class Program
         AssertContains(inputsText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
         AssertContains(inputsText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
         AssertContains(inputsText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
-        AssertContains(inputsText, "return \"force_rotate_draining\";");
+        AssertContains(inputsText, "Rotation has an encoder-lane fence.");
+        AssertDoesNotContain(inputsText, "return \"force_rotate_draining\";");
         AssertContains(inputsText, "? $\"encoding_failed:{failure.GetType().Name}\"");
         AssertContains(inputsText, "return dataIsEmpty ? \"data_empty\" : null;");
         AssertContains(inputsText, "return texture == IntPtr.Zero ? \"null_texture\" : null;");
@@ -4787,10 +4780,12 @@ static partial class Program
         AssertContains(inputsText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
         AssertContains(inputsText, "FLASHBACK_SINK_GPU_QUEUE_REJECT");
         AssertContains(inputsText, "total == 1 || total % 30 == 0");
-        AssertContains(inputsText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
-        AssertContains(inputsText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
         AssertContains(inputsText, "private bool TryEnqueueAudioPacket(");
-        AssertContains(inputsText, "Volatile.Read(ref _forceRotateDraining)");
+        var audioQueueAdmission = ExtractTextBetween(
+            inputsText,
+            "private bool TryEnqueueAudioPacket(",
+            "    private static bool TryWriteAudioPacket(");
+        AssertDoesNotContain(audioQueueAdmission, "Volatile.Read(ref _forceRotateDraining)");
         AssertContains(inputsText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
         AssertContains(inputsText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
         AssertContains(inputsText, "FLASHBACK_SINK_AUDIO_EVICT_PTS");
@@ -4872,7 +4867,7 @@ static partial class Program
         AssertContains(forceRotateText, "private bool _forceRotateDraining;");
         AssertContains(forceRotateText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(forceRotateText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateText, "var request = new ForceRotateRequest();");
+        AssertContains(forceRotateText, "var request = new ForceRotateRequest(preparedPath);");
         AssertContains(forceRotateText, "TryCancelForceRotate(request)");
         AssertContains(forceRotateText, "private bool TryCancelForceRotate(ForceRotateRequest request)");
         AssertContains(forceRotateText, "private void CompletePendingForceRotateWithEmptyResult()");
@@ -4888,7 +4883,7 @@ static partial class Program
         AssertContains(forceRotateText, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
         AssertContains(forceRotateText, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
         AssertContains(forceRotateText, "if (!localRequest.TryBeginCommit())");
-        AssertContains(forceRotateText, "if (!RotateSegment(currentPts))");
+        AssertContains(forceRotateText, "if (!RotateSegment(currentPts, localRequest.PreparedPath))");
         AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));");
         AssertContains(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(rootText, "public bool IsForceRotateActive =>");

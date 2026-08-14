@@ -229,14 +229,14 @@ backing fields.
 
 ## How to run
 
-- Legacy runner:
+- Assembly-load smoke check:
   `dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll "<path-to-Sussudio.dll>"`
 - xUnit cases:
   `dotnet test tests/Sussudio.Tests/Sussudio.Tests.csproj --no-restore`
 
-Both must stay green during the migration. The legacy check catalog is
-currently empty, but the executable runner still provides the offline
-`dotnet exec` validation shim used by architecture cleanup slices.
+Both must stay green during the migration. The executable command only proves
+that the selected, fresh app assembly can be loaded; regression coverage lives
+in xUnit and must be run with `dotnet test`.
 
 ## Migration order
 
@@ -275,9 +275,9 @@ every check has a `[Fact]`/`[Theory]` equivalent:
 - For HDR/P010 paths, prefer behavioural tests that drive the encoder against a
   small fixture buffer. Source-grep contract assertions stay only when the
   public API shape is the contract.
-- Keep the legacy `Program` runner available while the repo still requires
-  the offline `dotnet exec` validation shim; add new coverage to xUnit instead
-  of restoring a harness catalog.
+- Keep the `Program` assembly-load smoke entry point available while the repo
+  still requires the offline `dotnet exec` validation step; add all regression
+  coverage to xUnit.
 
 ## Open work tracked separately
 

@@ -926,6 +926,46 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Reserves a unique future segment name without changing the active segment.
+    /// Export callers can perform path/directory work before asking the encoder
+    /// lane to rotate, so the lane remains limited to muxer state transitions.
+    /// </summary>
+    public string ReserveSegmentPath()
+    {
+        lock (_indexLock)
+        {
+            ThrowIfDisposed();
+            if (string.IsNullOrWhiteSpace(_sessionId))
+                throw new InvalidOperationException("Flashback buffer manager has not been initialized.");
+            if (string.IsNullOrWhiteSpace(_sessionDirectory))
+                throw new InvalidOperationException("Flashback buffer manager session directory has not been initialized.");
+
+            var ext = _segmentExtension ?? ".mp4";
+            return Path.Combine(_sessionDirectory, $"fb_{_sessionId}_{_nextSegmentIndex++:D4}{ext}");
+        }
+    }
+
+    public void ActivateReservedSegmentPath(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        lock (_indexLock)
+        {
+            ThrowIfDisposed();
+            _activeSegmentPath = path;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, GetDefaultActiveSegmentStartPts().Ticks);
+        }
+    }
+
+    public void AbandonReservedSegmentPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        lock (_indexLock)
+        {
+            if (!_disposed) TryDeleteFile(path);
+        }
+    }
+
     public void MarkActiveSegmentStart(string path, TimeSpan startPts)
     {
         if (string.IsNullOrWhiteSpace(path))

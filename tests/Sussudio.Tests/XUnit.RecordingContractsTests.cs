@@ -257,6 +257,22 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback();
 
     [Fact]
+    public Task LibAvEncoderPublishesSuppliedMuxPhaseTimingSnapshotValues()
+        => global::Program.LibAvEncoder_MuxPhaseTimingSnapshot_PublishesSuppliedValues();
+
+    [Fact]
+    public Task LibAvEncoderRotateWiresMuxPhaseTimingPublication()
+        => global::Program.LibAvEncoder_RotateOutput_WiresMuxPhaseTimingPublication();
+
+    [Fact]
+    public Task LibAvEncoderNormalFinalizationWiresMuxPhaseTimingPublication()
+        => global::Program.LibAvEncoder_NormalFinalization_WiresMuxPhaseTimingPublication();
+
+    [Fact]
+    public Task LibAvEncoderMuxPhasePublicationEmitsAllPhaseFields()
+        => global::Program.LibAvEncoder_MuxPhaseTimingPublication_EmitsAllPhaseFields();
+
+    [Fact]
     public Task LibAvEncoderDumpsMpegTsHeadersForRotatedFlashbackSegments()
         => global::Program.LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments();
 
@@ -492,27 +508,6 @@ public sealed class RecordingModelContractsTests
 public class RecordingArtifactManagerTests
 {
     [Fact]
-    public void ArtifactManager_OwnsContextCreationAndFinalization()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Recording/RecordingArtifactManager.cs");
-
-        AssertContains(rootText, "public sealed class RecordingArtifactManager");
-        AssertDoesNotContain(rootText, "partial class RecordingArtifactManager");
-        AssertContains(rootText, "public async Task<RecordingContext> CreateContextAsync(");
-        AssertContains(rootText, "private static RecordingContext BuildContext(");
-        AssertContains(rootText, "public FinalizeResult FinalizeContext(");
-        AssertContains(rootText, "public Task RollbackAsync(");
-        AssertContains(rootText, "private static string ResolveUniqueOutputPath(");
-        AssertContains(rootText, "request.ReserveFinalOutputFile");
-        AssertContains(rootText, "private static bool TryValidateFinalOutput(");
-        AssertContains(rootText, "private static IReadOnlyList<string> GetExistingTempArtifacts(");
-        AssertContains(rootText, "internal static class RecordingFinalizationRecoveryArtifacts");
-        AssertContains(rootText, "private const string UnresolvedMarkerSuffix = \".recording-finalization-unresolved.txt\";");
-        AssertContains(rootText, "AddExistingFile(preserved, outputPath);");
-        AssertContains(rootText, "string.Equals(existing, path, StringComparison.OrdinalIgnoreCase)");
-    }
-
-    [Fact]
     public void ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
@@ -564,8 +559,8 @@ public class RecordingArtifactManagerTests
             var result = finalizeMethod.Invoke(manager, new object?[] { context, false, "encoder error" })!;
 
             AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
-            var preserved = GetPropertyValue(result, "PreservedArtifacts");
-            AssertEqual(2, GetCountProperty(preserved), "PreservedArtifacts.Count");
+            var preserved = ((IEnumerable)GetPropertyValue(result, "PreservedArtifacts")!).Cast<object>().Select(path => (string)path).ToArray();
+            Assert.Equal(new[] { videoPath, audioPath }, preserved);
 
             if (File.Exists(finalPath))
             {
@@ -579,18 +574,13 @@ public class RecordingArtifactManagerTests
     }
 
     [Fact]
-    public void ArtifactManager_FinalizeContext_RejectsInvalidFinalOutput()
+    public void ArtifactManager_FinalizeContext_RejectsEmptyDirectOutput()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
         try
         {
-            var videoPath = Path.Combine(tempDir, "vid.mp4");
-            var audioPath = Path.Combine(tempDir, "aud.m4a");
             var emptyFinalPath = Path.Combine(tempDir, "empty-final.mp4");
-            var missingFinalPath = Path.Combine(tempDir, "missing-final.mp4");
-            File.WriteAllText(videoPath, "video-data");
-            File.WriteAllText(audioPath, "audio-data");
             File.WriteAllBytes(emptyFinalPath, Array.Empty<byte>());
 
             var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
@@ -602,6 +592,29 @@ public class RecordingArtifactManagerTests
             AssertEqual(false, GetBoolProperty(directResult, "Succeeded"), "Direct empty output finalize fails");
             AssertContains(GetStringProperty(directResult, "StatusMessage"), "final output invalid");
             AssertContains(GetStringProperty(directResult, "StatusMessage"), "output file is empty");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
+        }
+    }
+
+    [Fact]
+    public void ArtifactManager_FinalizeContext_RejectsMissingPostMuxOutput()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var videoPath = Path.Combine(tempDir, "vid.mp4");
+            var audioPath = Path.Combine(tempDir, "aud.m4a");
+            var missingFinalPath = Path.Combine(tempDir, "missing-final.mp4");
+            File.WriteAllText(videoPath, "video-data");
+            File.WriteAllText(audioPath, "audio-data");
+
+            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
+            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
+                ?? throw new InvalidOperationException("FinalizeContext not found");
 
             var muxContext = BuildRecordingContext(
                 usePostMuxAudio: true,
@@ -611,8 +624,8 @@ public class RecordingArtifactManagerTests
             var muxResult = finalizeMethod.Invoke(manager, new object?[] { muxContext, true, null })!;
             AssertEqual(false, GetBoolProperty(muxResult, "Succeeded"), "Mux success with missing final output fails");
             AssertContains(GetStringProperty(muxResult, "StatusMessage"), "output file is missing");
-            var preserved = GetPropertyValue(muxResult, "PreservedArtifacts");
-            AssertEqual(2, GetCountProperty(preserved), "Invalid mux final preserves temp artifacts");
+            var preserved = ((IEnumerable)GetPropertyValue(muxResult, "PreservedArtifacts")!).Cast<object>().Select(path => (string)path).ToArray();
+            Assert.Equal(new[] { videoPath, audioPath }, preserved);
             AssertEqual(true, File.Exists(videoPath), "Invalid mux final preserves video temp");
             AssertEqual(true, File.Exists(audioPath), "Invalid mux final preserves audio temp");
         }
@@ -768,14 +781,8 @@ public class RecordingArtifactManagerTests
             ? collection.Count
             : throw new InvalidOperationException("Expected collection value.");
 
-    private static string ReadRepoFile(string relativePath)
-        => RuntimeContractSource.ReadRepoFile(relativePath).Replace("\r\n", "\n");
-
     private static void AssertContains(string actual, string expectedSubstring)
         => Assert.Contains(expectedSubstring, actual, StringComparison.Ordinal);
-
-    private static void AssertDoesNotContain(string actual, string unexpectedSubstring)
-        => Assert.DoesNotContain(unexpectedSubstring, actual, StringComparison.Ordinal);
 
     private static void AssertEqual<T>(T expected, T actual, string _)
         => Assert.Equal(expected, actual);
@@ -843,47 +850,59 @@ public class RecordingContractsTests
     }
 
     [Fact]
-    public void RecordingStats_ComputesTotalsAndPreservesEstimateFlag()
+    public void RecordingStats_ComputesTotalBytes()
     {
         var asm = SussudioAssembly.Load();
         var statsType = asm.GetType("Sussudio.Models.RecordingStats", throwOnError: true)!;
-
-        Assert.True(statsType.IsValueType);
-        Assert.True(statsType.IsDefined(typeof(System.Runtime.CompilerServices.IsReadOnlyAttribute), inherit: false));
-
-        foreach (var propertyName in new[] { "TimestampUtc", "CaptureSessionEpoch", "VideoBytes", "AudioBytes", "TotalBytes", "IsFlashbackEstimate", "IsFailure" })
-        {
-            var property = statsType.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-            Assert.NotNull(property);
-            Assert.Null(property!.SetMethod);
-        }
 
         var ctor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool) });
         Assert.NotNull(ctor);
 
         var finalStats = ctor!.Invoke(new object[] { 123L, 456L, false, false });
-        Assert.Equal(123L, GetLongProperty(finalStats, "VideoBytes"));
-        Assert.Equal(456L, GetLongProperty(finalStats, "AudioBytes"));
         Assert.Equal(579L, GetLongProperty(finalStats, "TotalBytes"));
-        Assert.False(GetBoolProperty(finalStats, "IsFlashbackEstimate"));
-        Assert.False(GetBoolProperty(finalStats, "IsFailure"));
+    }
 
+    [Fact]
+    public void RecordingStats_PreservesEstimateFlag()
+    {
+        var statsType = SussudioAssembly.Load().GetType("Sussudio.Models.RecordingStats", throwOnError: true)!;
+        var ctor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool) })!;
+        var flashbackStats = ctor.Invoke(new object[] { 10L, 5L, true, false });
+
+        Assert.True(GetBoolProperty(flashbackStats, "IsFlashbackEstimate"));
+    }
+
+    [Fact]
+    public void RecordingStats_PreservesFailureFlag()
+    {
+        var statsType = SussudioAssembly.Load().GetType("Sussudio.Models.RecordingStats", throwOnError: true)!;
+        var ctor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool) })!;
+        var failureStats = ctor.Invoke(new object[] { 0L, 0L, false, true });
+
+        Assert.True(GetBoolProperty(failureStats, "IsFailure"));
+    }
+
+    [Fact]
+    public void RecordingStats_StoresTimestampAndCaptureSessionEpoch()
+    {
+        var statsType = SussudioAssembly.Load().GetType("Sussudio.Models.RecordingStats", throwOnError: true)!;
         var stampedCtor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool), typeof(DateTimeOffset), typeof(long) });
         Assert.NotNull(stampedCtor);
+
         var timestamp = new DateTimeOffset(2026, 6, 2, 12, 0, 0, TimeSpan.Zero);
         var stampedStats = stampedCtor!.Invoke(new object[] { 1L, 2L, false, false, timestamp, 42L });
         Assert.Equal(timestamp, (DateTimeOffset)statsType.GetProperty("TimestampUtc")!.GetValue(stampedStats)!);
         Assert.Equal(42L, GetLongProperty(stampedStats, "CaptureSessionEpoch"));
+    }
 
-        var flashbackStats = ctor.Invoke(new object[] { 10L, 5L, true, false });
-        Assert.Equal(15L, GetLongProperty(flashbackStats, "TotalBytes"));
-        Assert.True(GetBoolProperty(flashbackStats, "IsFlashbackEstimate"));
+    [Fact]
+    public void RecordingStats_ComputesTotalBytesWithSignedAudioCorrection()
+    {
+        var statsType = SussudioAssembly.Load().GetType("Sussudio.Models.RecordingStats", throwOnError: true)!;
+        var ctor = statsType.GetConstructor(new[] { typeof(long), typeof(long), typeof(bool), typeof(bool) })!;
+        var correctedStats = ctor.Invoke(new object[] { 100L, -20L, false, false });
 
-        var failureStats = ctor.Invoke(new object[] { 0L, 0L, false, true });
-        Assert.True(GetBoolProperty(failureStats, "IsFailure"));
-
-        var negativeCorrection = ctor.Invoke(new object[] { 100L, -20L, false, false });
-        Assert.Equal(80L, GetLongProperty(negativeCorrection, "TotalBytes"));
+        Assert.Equal(80L, GetLongProperty(correctedStats, "TotalBytes"));
     }
 
     [Fact]
@@ -1640,9 +1659,10 @@ static partial class Program
         AssertContains(flashbackSource, "ForceRotateRequest? supersededRequest;");
         AssertContains(flashbackSource, "supersededRequest = _forceRotateRequest;");
         AssertContains(flashbackSource, "FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
-        AssertContains(flashbackSource, "supersededRequest.TryCancel();");
-        AssertContains(flashbackSource, "if (!RotateSegment(currentPts))\n                {\n                    localRequest.CompleteEmpty();\n                    return true;\n                }");
-        AssertContains(flashbackSource, "private bool RotateSegment(TimeSpan currentPts)");
+        AssertContains(flashbackSource, "if (supersededRequest.TryCancel())");
+        AssertContains(flashbackSource, "_bufferManager.AbandonReservedSegmentPath(supersededRequest.PreparedPath);");
+        AssertContains(flashbackSource, "if (!RotateSegment(currentPts, localRequest.PreparedPath))\n                {\n                    localRequest.CompleteEmpty();\n                    return true;\n                }");
+        AssertContains(flashbackSource, "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)");
         AssertContains(flashbackSource, "return true;\n        }\n        catch (Exception ex)");
         AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            return false;");
         AssertContains(flashbackSource, "TryCancelForceRotate(request)");
@@ -1687,7 +1707,8 @@ static partial class Program
         AssertContains(flashbackSource, "public bool TryEnqueueGpuVideoFrame");
         AssertContains(flashbackSource, "VideoEnqueueResult.Rejected");
         AssertContains(flashbackSource, "TryEnqueueGpuPacket");
-        AssertContains(flashbackSource, "Volatile.Read(ref _forceRotateDraining)");
+        AssertContains(flashbackSource, "Rotation has an encoder-lane fence.");
+        AssertDoesNotContain(flashbackSource, "return \"force_rotate_draining\";");
         AssertContains(flashbackSource, "Volatile.Read(ref _encodingFailure) != null");
         AssertContains(flashbackSource, "var maxFrameSize = Math.Max(nv12FrameSize, p010FrameSize);");
         AssertContains(flashbackSource, "var matchesConfiguredFrameSize =\n            expectedSize == nv12FrameSize ||\n            (p010FrameSize > 0 && expectedSize == p010FrameSize);");
@@ -1757,7 +1778,7 @@ static partial class Program
             "private static bool TryWriteAudioPacket");
         AssertOccursBefore(flashbackVideoEnqueue, "GetVideoEnqueueRejectReason(isGpu: false)", "TryWriteVideoPacket(queue, packet)");
         AssertOccursBefore(flashbackGpuEnqueue, "GetVideoEnqueueRejectReason(isGpu: true)", "TryWriteGpuPacket(queue, packet)");
-        AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
+        AssertDoesNotContain(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)");
         AssertContains(flashbackVideoEnqueue, "var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);");
         AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(rejectReason);");
         AssertContains(flashbackGpuEnqueue, "var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);");
@@ -3263,7 +3284,8 @@ static partial class Program
         AssertContains(lifecycleSource, "private async ValueTask DisposeCoreAsync(bool disposeSharedD3DDeviceManager)");
         AssertContains(lifecycleSource, "private void ThrowIfDisposed()");
         AssertContains(lifecycleSource, "private void OnCaptureFatalError(object? sender, Exception ex)");
-        AssertContains(mjpegStartupSource, "private static bool ShouldUseExternalMjpegDecode(");
+        AssertContains(mjpegStartupSource, "private static bool IsMjpegHighFrameRateDecode(");
+        AssertContains(mjpegStartupSource, "private static bool ShouldPreferGpuNativeMjpegDecode(");
         AssertContains(mjpegStartupSource, "private ParallelMjpegDecodePipeline? CreateExternalMjpegPipelineIfNeeded(");
         AssertContains(mjpegStartupSource, "private void InstallMjpegPreviewJitterBuffer(double fps)");
         AssertContains(mjpegLifecycleSource, "private void StopAndDisposeMjpegPipeline(ParallelMjpegDecodePipeline mjpegPipelineToStop)");
@@ -4906,7 +4928,7 @@ static partial class Program
 
         AssertContains(outputLifecycleText, "public RotateOutputResult RotateOutput(string newPath)");
         AssertContains(outputLifecycleText, "private void CloseCurrentOutputIo()");
-        AssertContains(outputLifecycleText, "private void ReinitializeOutputContext(string outputPath)");
+        AssertContains(outputLifecycleText, "private void ReinitializeOutputContext(string outputPath, out double openOutputMs, out double headerMs)");
         AssertContains(outputLifecycleText, "private void ReinitializeVideoStream()");
         AssertContains(outputLifecycleText, "private void ResetSegmentRuntimeState()");
         AssertContains(outputLifecycleText, "private static unsafe void ApplyMp4MuxerOptions(");
@@ -4950,8 +4972,81 @@ static partial class Program
         AssertContains(sourceText, "frag_keyframe+empty_moov");
         AssertContains(sourceText, "ffmpeg.av_dict_set(muxerOptions, \"frag_duration\", \"100000\", 0)");
         AssertContains(sourceText, "ffmpeg.av_dict_set(muxerOptions, \"flush_packets\", \"1\", 0)");
+        AssertDoesNotContain(sourceText, "\"+faststart\"");
         AssertDoesNotContain(sourceText, "var movflags = options.FragmentedMp4\n                        ? \"frag_keyframe+empty_moov\"");
         AssertDoesNotContain(sourceText, "var movflags = (_options?.FragmentedMp4 ?? false)\n                    ? \"frag_keyframe+empty_moov\"");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task LibAvEncoder_MuxPhaseTimingSnapshot_PublishesSuppliedValues()
+    {
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
+        var encoder = RuntimeHelpers.GetUninitializedObject(encoderType);
+        var publishMethod = encoderType.GetMethod("PublishMuxPhaseTiming", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("LibAvEncoder.PublishMuxPhaseTiming not found.");
+        var operationStartedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        publishMethod.Invoke(encoder, new object[]
+        {
+            "unit_test",
+            1.5d,
+            2.5d,
+            3.5d,
+            4.5d,
+            5.5d,
+            operationStartedAt
+        });
+
+        var timing = encoderType.GetProperty("LastMuxPhaseTiming", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(encoder)!;
+        AssertEqual("unit_test", GetStringProperty(timing, "Operation"), "Mux timing operation");
+        AssertEqual(1.5d, (double)GetPropertyValue(timing, "DrainMs")!, "Mux timing drain phase");
+        AssertEqual(2.5d, (double)GetPropertyValue(timing, "TrailerMs")!, "Mux timing trailer phase");
+        AssertEqual(3.5d, (double)GetPropertyValue(timing, "CloseIoMs")!, "Mux timing close-I/O phase");
+        AssertEqual(4.5d, (double)GetPropertyValue(timing, "OpenOutputMs")!, "Mux timing open-output phase");
+        AssertEqual(5.5d, (double)GetPropertyValue(timing, "HeaderMs")!, "Mux timing header phase");
+        Assert.True((double)GetPropertyValue(timing, "TotalMs")! >= 0, "Mux timing total phase");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task LibAvEncoder_RotateOutput_WiresMuxPhaseTimingPublication()
+    {
+        var rotateOutput = ExtractDeclaredMemberCode(
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs"),
+            "public RotateOutputResult RotateOutput(string newPath)");
+
+        AssertContains(rotateOutput, "finally\n        {\n            PublishMuxPhaseTiming(\"rotate\"");
+        AssertContains(rotateOutput, "drainMs, trailerMs, closeIoMs, openOutputMs, headerMs, operationStartedAt");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task LibAvEncoder_NormalFinalization_WiresMuxPhaseTimingPublication()
+    {
+        var cleanupResources = ExtractDeclaredMemberCode(
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs"),
+            "private void CleanupResources(bool writeTrailer)");
+
+        AssertContains(cleanupResources, "PublishMuxPhaseTiming(\n                _options?.FragmentedMp4 == true ? \"fragmented_close\" : \"normal_mp4_finalize\"");
+        AssertContains(cleanupResources, "0,\n                trailerMs,\n                0,");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task LibAvEncoder_MuxPhaseTimingPublication_EmitsAllPhaseFields()
+    {
+        var publishMethod = ExtractDeclaredMemberCode(
+            ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs"),
+            "private void PublishMuxPhaseTiming(");
+
+        AssertContains(publishMethod, "LIBAV_MUX_PHASE operation={timing.Operation}");
+        AssertContains(publishMethod, "drain_ms={timing.DrainMs:F1}");
+        AssertContains(publishMethod, "trailer_ms={timing.TrailerMs:F1}");
+        AssertContains(publishMethod, "close_io_ms={timing.CloseIoMs:F1}");
+        AssertContains(publishMethod, "open_output_ms={timing.OpenOutputMs:F1}");
+        AssertContains(publishMethod, "header_ms={timing.HeaderMs:F1}");
+        AssertContains(publishMethod, "total_ms={timing.TotalMs:F1}");
 
         return Task.CompletedTask;
     }

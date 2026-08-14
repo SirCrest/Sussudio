@@ -28,7 +28,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int VideoDrainBatchLimit = 24;
     private const int AudioDrainBatchLimit = 128;
     private const int GpuDrainBatchLimit = 16;
-    private const double ForceRotateQueueGuardRatio = 0.65;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
@@ -1239,7 +1238,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)
     {
         var queue = _audioQueue;
-        if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty || Volatile.Read(ref _forceRotateDraining))
+        if (_disposed || !_started || !_audioEnabled || queue == null || samples.IsEmpty)
         {
             return;
         }
@@ -1270,7 +1269,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public void EnqueueMicrophoneSamples(ReadOnlyMemory<byte> samples)
     {
         var queue = _microphoneQueue;
-        if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty || Volatile.Read(ref _forceRotateDraining))
+        if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
         {
             return;
         }
@@ -1334,11 +1333,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return true;
     }
 
-    private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)
-        =>
-            queueCapacity > 0 &&
-            queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio);
-
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
         lock (_videoQueueSync)
@@ -1385,8 +1379,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (_disposed ||
                 !_started ||
                 _cts?.IsCancellationRequested == true ||
-                (Volatile.Read(ref _forceRotateDraining) &&
-                 IsForceRotateQueueGuarded(Volatile.Read(ref queueDepth), AudioQueueCapacity)) ||
                 Volatile.Read(ref _encodingFailure) != null)
             {
                 ReturnBuffer(packet.Buffer);
@@ -1479,18 +1471,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return "cancelled";
         }
 
-        if (Volatile.Read(ref _forceRotateDraining))
-        {
-            // Mirror the audio path: only reject while the queue is actually
-            // filling up toward the guard ratio. Unconditional rejection here
-            // punched a video gap into the DVR buffer on every export.
-            var depth = isGpu ? Volatile.Read(ref _gpuQueueDepth) : Volatile.Read(ref _videoQueueDepth);
-            var capacity = isGpu ? GpuQueueCapacity : Volatile.Read(ref _videoQueueCapacity);
-            if (IsForceRotateQueueGuarded(depth, capacity))
-            {
-                return "force_rotate_draining";
-            }
-        }
+        // Rotation has an encoder-lane fence. Producers continue entering the
+        // bounded queues while it finalizes the old container, so the first
+        // post-fence packets become the new live edge instead of being dropped.
 
         var failure = Volatile.Read(ref _encodingFailure);
         return failure != null
@@ -2183,7 +2166,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             : _ptsBaseOffset + delta;
     }
 
-    private bool RotateSegment(TimeSpan currentPts)
+    private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)
     {
         string? completedPath = null;
         string? newPath = null;
@@ -2192,7 +2175,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             completedPath = _tsFilePath;
             var completedStartPts = _segmentStartPts;
-            newPath = _bufferManager.GenerateSegmentPath();
+            newPath = preparedPath ?? _bufferManager.GenerateSegmentPath();
 
             // RotateOutput flushes encoder queues, writes trailer, then resets
             // TotalBytesWritten to 0 for the new segment. PreviousTotalBytes
@@ -2203,6 +2186,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             _segmentStartPts = currentPts;
             _tsFilePath = newPath;
+            if (preparedPath != null)
+            {
+                _bufferManager.ActivateReservedSegmentPath(newPath);
+            }
             _bufferManager.MarkActiveSegmentStart(newPath, _segmentStartPts);
             Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);
 
@@ -2224,7 +2211,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             if (newPath != null && !encoderRotated)
             {
-                _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+                if (preparedPath != null)
+                {
+                    _bufferManager.AbandonReservedSegmentPath(newPath);
+                }
+                else
+                {
+                    _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+                }
             }
 
             Interlocked.Increment(ref _segmentRotationFailures);
@@ -2340,13 +2334,40 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
         }
 
+        // Prepare the next filename before entering the encoder-lane fence. This
+        // is filesystem/index work only; LibAvEncoder remains owned by the
+        // encoding task until the ordered request is consumed.
+        string preparedPath;
+        try
+        {
+            preparedPath = _bufferManager.ReserveSegmentPath();
+            var preparedDirectory = Path.GetDirectoryName(preparedPath);
+            if (!string.IsNullOrWhiteSpace(preparedDirectory))
+            {
+                Directory.CreateDirectory(preparedDirectory);
+            }
+
+            // Create the directory entry now, away from the encoder owner.
+            // FFmpeg reopens and truncates this placeholder during rotation.
+            using (new FileStream(preparedPath, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+            {
+            }
+            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_PREPARED path='{preparedPath}'");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_PREPARE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            return FlashbackForceRotateResult.Failed();
+        }
+
         // Signal the encoding thread to perform the rotation (all encoder ops must be on that thread)
-        var request = new ForceRotateRequest();
+        var request = new ForceRotateRequest(preparedPath);
         ForceRotateRequest? supersededRequest;
         lock (_sync)
         {
             if (!_started || _disposed || _encodingFailure != null || _encodingTask?.IsCompleted == true)
             {
+                _bufferManager.AbandonReservedSegmentPath(preparedPath);
                 Logger.Log(
                     $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK started={_started} disposed={_disposed} " +
                     $"failed={_encodingFailure != null} completed={_encodingTask?.IsCompleted == true} " +
@@ -2364,7 +2385,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (supersededRequest != null)
         {
             Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
-            supersededRequest.TryCancel();
+            if (supersededRequest.TryCancel())
+            {
+                _bufferManager.AbandonReservedSegmentPath(supersededRequest.PreparedPath);
+            }
         }
 
         SignalWork("force_rotate_request");
@@ -2570,6 +2594,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             var currentPts = ResolveEncoderPts();
 
+            var rotated = false;
             if (currentPts > _segmentStartPts)
             {
                 if (!localRequest.TryBeginCommit())
@@ -2578,13 +2603,19 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return true;
                 }
 
-                if (!RotateSegment(currentPts))
+                if (!RotateSegment(currentPts, localRequest.PreparedPath))
                 {
                     localRequest.CompleteEmpty();
                     return true;
                 }
+
+                rotated = true;
             }
 
+            if (!rotated)
+            {
+                _bufferManager.AbandonReservedSegmentPath(localRequest.PreparedPath);
+            }
             localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));
             return false;
         }
@@ -2614,7 +2645,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
         }
 
-        return request.TryCancel();
+        var cancelled = request.TryCancel();
+        if (cancelled)
+        {
+            _bufferManager.AbandonReservedSegmentPath(request.PreparedPath);
+        }
+
+        return cancelled;
     }
 
     private void CompletePendingForceRotateWithEmptyResult()
@@ -2632,7 +2669,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Volatile.Write(ref _forceRotateDraining, false);
         }
 
-        pendingRequest?.CompleteEmpty();
+        if (pendingRequest != null)
+        {
+            _bufferManager.AbandonReservedSegmentPath(pendingRequest.PreparedPath);
+            pendingRequest.CompleteEmpty();
+        }
     }
 
     private static bool ShouldAbortForceRotateDrain(
@@ -2660,6 +2701,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         private readonly TaskCompletionSource<IReadOnlyList<string>> _completion =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public ForceRotateRequest(string preparedPath)
+        {
+            PreparedPath = preparedPath;
+        }
+
+        public string PreparedPath { get; }
 
         public Task<IReadOnlyList<string>> Task => _completion.Task;
 

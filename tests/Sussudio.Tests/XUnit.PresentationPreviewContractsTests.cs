@@ -182,6 +182,30 @@ public sealed class PresentationPreviewD3DGeometryContractsTests
         => global::Program.D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly();
 
     [Fact]
+    public Task OutputSizingRoundsVisiblePanelToStableBucket()
+        => global::Program.PreviewOutputSizePolicy_RoundsVisiblePanelToStableBucket();
+
+    [Fact]
+    public Task OutputSizingPreservesVisiblePanelAspectRatio()
+        => global::Program.PreviewOutputSizePolicy_PreservesVisiblePanelAspectRatio();
+
+    [Fact]
+    public Task OutputSizingIgnoresSubHysteresisChanges()
+        => global::Program.PreviewOutputSizePolicy_IgnoresSubHysteresisChanges();
+
+    [Fact]
+    public Task OutputSizingNeverUpscalesPastSource()
+        => global::Program.PreviewOutputSizePolicy_NeverUpscalesPastSource();
+
+    [Fact]
+    public Task OutputResizeIsInvokedByRenderLoop()
+        => global::Program.D3D11PreviewRenderer_OutputResize_IsInvokedByRenderLoop();
+
+    [Fact]
+    public Task OutputResizeDoesNotDisposeSourceTextures()
+        => global::Program.D3D11PreviewRenderer_OutputResize_DoesNotDisposeSourceTextures();
+
+    [Fact]
     public Task BlackEdgeCountingWorksCorrectly()
         => global::Program.D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly();
 
@@ -1881,6 +1905,83 @@ static partial class Program
         var allFalse = new[] { false, false, false };
         AssertEqual(0, (int)leadingMethod.Invoke(null, new object[] { allFalse })!, "All false leading");
         AssertEqual(0, (int)trailingMethod.Invoke(null, new object[] { allFalse })!, "All false trailing");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewOutputSizePolicy_RoundsVisiblePanelToStableBucket()
+    {
+        var type = RequireType("Sussudio.Services.Preview.PreviewOutputSizePolicy");
+        var resolve = type.GetMethod("Resolve", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewOutputSizePolicy.Resolve not found.");
+
+        var target = resolve.Invoke(null, new object[] { 1345, 756, 3840, 2160 })!;
+        AssertEqual(1344, GetIntProperty(target, "Width"), "visible panel width rounds to the nearest 64-pixel bucket");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewOutputSizePolicy_PreservesVisiblePanelAspectRatio()
+    {
+        var type = RequireType("Sussudio.Services.Preview.PreviewOutputSizePolicy");
+        var resolve = type.GetMethod("Resolve", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewOutputSizePolicy.Resolve not found.");
+
+        var target = resolve.Invoke(null, new object[] { 1279, 719, 3840, 2160 })!;
+        AssertEqual(1280, GetIntProperty(target, "Width"), "HD output width");
+        AssertEqual(720, GetIntProperty(target, "Height"), "HD output height");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewOutputSizePolicy_IgnoresSubHysteresisChanges()
+    {
+        var policyType = RequireType("Sussudio.Services.Preview.PreviewOutputSizePolicy");
+        var outputSizeType = RequireType("Sussudio.Services.Preview.PreviewOutputSize");
+        var shouldResize = policyType.GetMethod("ShouldResize", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewOutputSizePolicy.ShouldResize not found.");
+
+        var current = Activator.CreateInstance(outputSizeType, 1280, 720)!;
+        var subHysteresisTarget = Activator.CreateInstance(outputSizeType, 1344, 756)!;
+        AssertEqual(false, (bool)shouldResize.Invoke(null, new[] { current, subHysteresisTarget })!, "a 64-pixel bucket change remains below resize hysteresis");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewOutputSizePolicy_NeverUpscalesPastSource()
+    {
+        var type = RequireType("Sussudio.Services.Preview.PreviewOutputSizePolicy");
+        var resolve = type.GetMethod("Resolve", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PreviewOutputSizePolicy.Resolve not found.");
+
+        var sourceCapped = resolve.Invoke(null, new object[] { 3840, 2160, 1920, 1080 })!;
+        AssertEqual(1920, GetIntProperty(sourceCapped, "Width"), "output does not upscale beyond source width");
+        AssertEqual(1080, GetIntProperty(sourceCapped, "Height"), "output does not upscale beyond source height");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_OutputResize_IsInvokedByRenderLoop()
+    {
+        var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs").Replace("\r\n", "\n");
+        var renderLoopStart = rendererText.IndexOf("private bool ProcessRenderThreadFrameOrIdle()", StringComparison.Ordinal);
+        var resizeCall = rendererText.IndexOf("TryResizeOutputForPendingFrame();", renderLoopStart, StringComparison.Ordinal);
+        var nextMethod = rendererText.IndexOf("\n    private ", renderLoopStart + 1, StringComparison.Ordinal);
+
+        AssertEqual(true, renderLoopStart >= 0 && resizeCall > renderLoopStart && resizeCall < nextMethod, "output resizing is dispatched only from the render loop");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task D3D11PreviewRenderer_OutputResize_DoesNotDisposeSourceTextures()
+    {
+        var resourcesText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs").Replace("\r\n", "\n");
+        var resizeStart = resourcesText.IndexOf("private void ResizeCompositionSwapChain(PreviewOutputSize target)", StringComparison.Ordinal);
+        var resizeBuffers = resourcesText.IndexOf("_swapChain.ResizeBuffers(", resizeStart, StringComparison.Ordinal);
+        var inputTextureDispose = resourcesText.IndexOf("DisposeInputTextureResources();", resizeStart, StringComparison.Ordinal);
+        var nextMethod = resourcesText.IndexOf("\n    private ", resizeStart + 1, StringComparison.Ordinal);
+
+        AssertEqual(true, resizeStart >= 0 && resizeBuffers > resizeStart && (inputTextureDispose < 0 || inputTextureDispose > nextMethod), "swap-chain resize leaves source-sized input textures allocated");
 
         return Task.CompletedTask;
     }

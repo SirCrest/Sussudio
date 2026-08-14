@@ -89,13 +89,13 @@ public sealed class AutomationAppSurfaceContractsTests
 }
 
 // Minimal xUnit slice for Sussudio.Converters.BoolConverters. The full
-// behavior matrix is exercised by the legacy Program checks below; this xUnit
-// pair verifies the same Visible/Collapsed mapping so the converters are
-// reachable from the xUnit discovery path too.
+// behavior matrix is exercised by the legacy Program checks below; these
+// focused checks keep the directly executable converter contracts visible in
+// xUnit discovery too.
 public class BoolConvertersTests
 {
     [Fact]
-    public void InverseBoolConverter_InvertsBoolValues()
+    public void InverseBoolConverter_InvertsBooleanValues()
     {
         var asm = SussudioAssembly.Load();
         var converterType = asm.GetType("Sussudio.Converters.InverseBoolConverter", throwOnError: true)!;
@@ -104,19 +104,36 @@ public class BoolConvertersTests
         var instance = Activator.CreateInstance(converterType)!;
         Assert.Equal(false, convert.Invoke(instance, new object?[] { true, typeof(bool), null, "" }));
         Assert.Equal(true, convert.Invoke(instance, new object?[] { false, typeof(bool), null, "" }));
+    }
+
+    [Fact]
+    public void InverseBoolConverter_PreservesNonBooleanValues()
+    {
+        var asm = SussudioAssembly.Load();
+        var converterType = asm.GetType("Sussudio.Converters.InverseBoolConverter", throwOnError: true)!;
+        var convert = ResolveConvertMethod(converterType, "Convert");
+
+        var instance = Activator.CreateInstance(converterType)!;
 
         var sentinel = new object();
         Assert.Same(sentinel, convert.Invoke(instance, new object?[] { sentinel, typeof(bool), null, "" }));
     }
 
     [Fact]
-    public void Sussudio_Converters_BoolConverters_TypesAreDiscoverableAndImplementIValueConverter()
+    public void BoolToVisibilityConverter_ImplementsIValueConverter()
     {
         var asm = SussudioAssembly.Load();
         var boolToVisibility = asm.GetType("Sussudio.Converters.BoolToVisibilityConverter", throwOnError: true)!;
-        var inverseVisibility = asm.GetType("Sussudio.Converters.BoolToInverseVisibilityConverter", throwOnError: true)!;
 
         AssertImplementsValueConverter(boolToVisibility);
+    }
+
+    [Fact]
+    public void BoolToInverseVisibilityConverter_ImplementsIValueConverter()
+    {
+        var asm = SussudioAssembly.Load();
+        var inverseVisibility = asm.GetType("Sussudio.Converters.BoolToInverseVisibilityConverter", throwOnError: true)!;
+
         AssertImplementsValueConverter(inverseVisibility);
 
         // Visibility mapping behavior is exercised by the legacy reflection runner
@@ -192,7 +209,7 @@ public sealed class AutomationContractsProtocolXunitTests
     }
 
     [Fact]
-    public void AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes()
+    public void AutomationPipeProtocol_ExposesStableWireDefaults()
     {
         Assert.Equal("SussudioAutomation", AutomationPipeProtocol.DefaultPipeName);
         Assert.Equal("SUSSUDIO_AUTOMATION_TOKEN", AutomationPipeProtocol.AutomationKeyEnvVar);
@@ -202,7 +219,11 @@ public sealed class AutomationContractsProtocolXunitTests
         Assert.Equal(60000, AutomationPipeProtocol.ExtendedResponseTimeoutMs);
         Assert.Equal(150000, AutomationPipeProtocol.RecordingResponseTimeoutMs);
         Assert.Equal(305000, AutomationPipeProtocol.FlashbackMutationResponseTimeoutMs);
+    }
 
+    [Fact]
+    public void AutomationPipeProtocol_ResolvesCanonicalCommandNames()
+    {
         Assert.Equal(1, AutomationPipeProtocol.ResolveCommand("GetSnapshot"));
         Assert.Equal(1, AutomationPipeProtocol.ResolveCommand("get-snapshot"));
         Assert.Equal(17, AutomationPipeProtocol.ResolveCommand("17"));
@@ -215,7 +236,25 @@ public sealed class AutomationContractsProtocolXunitTests
         Assert.Equal("SetRecordingEnabled", commandName);
         Assert.False(AutomationPipeProtocol.TryGetCommandName(-1, out var unknownCommandName));
         Assert.Equal(string.Empty, unknownCommandName);
+    }
 
+    [Fact]
+    public void AutomationPipeProtocol_UsesCatalogTimeoutPolicy()
+    {
+        Assert.Equal(15000, AutomationPipeProtocol.GetDefaultResponseTimeout("GetSnapshot"));
+        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
+        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled"));
+        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackBufferMinutes"));
+        Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("RestartFlashback"));
+        Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetRecordingEnabled"));
+        Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("set-recording-enabled"));
+        Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("17"));
+        Assert.Equal(60000, AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition));
+    }
+
+    [Fact]
+    public void AutomationPipeProtocol_ResolvesExplicitAndEnvironmentAuthTokens()
+    {
         lock (AutomationTokenLock)
         {
             var previousToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);
@@ -227,36 +266,34 @@ public sealed class AutomationContractsProtocolXunitTests
 
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "   ");
                 Assert.Null(AutomationPipeProtocol.GetConfiguredAuthToken());
-
-                Assert.Equal(15000, AutomationPipeProtocol.GetDefaultResponseTimeout("GetSnapshot"));
-                Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("FlashbackExport"));
-                Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackEnabled"));
-                Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetFlashbackBufferMinutes"));
-                Assert.Equal(305000, AutomationPipeProtocol.GetDefaultResponseTimeout("RestartFlashback"));
-                Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("SetRecordingEnabled"));
-                Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("set-recording-enabled"));
-                Assert.Equal(150000, AutomationPipeProtocol.GetDefaultResponseTimeout("17"));
-                Assert.Equal(60000, AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition));
-
-                Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, "env-token");
-                var payload = new Dictionary<string, object?> { ["enabled"] = true };
-                var envelope = AutomationPipeProtocol.CreateRequestEnvelope(17, payload);
-                Assert.Equal(17, envelope["command"]);
-                Assert.Equal(32, Assert.IsType<string>(envelope["correlationId"]).Length);
-                Assert.Equal(AutomationPipeProtocol.CommandManifestRevision, envelope["manifestRevision"]);
-                Assert.Equal("env-token", envelope["authToken"]);
-                Assert.Same(payload, envelope["payload"]);
-
-                var explicitEnvelope = AutomationPipeProtocol.CreateRequestEnvelope(1, authToken: "explicit-token");
-                Assert.Equal("explicit-token", explicitEnvelope["authToken"]);
-                Assert.Equal(AutomationPipeProtocol.CommandManifestRevision, explicitEnvelope["manifestRevision"]);
-                Assert.IsType<Dictionary<string, object?>>(explicitEnvelope["payload"]);
             }
             finally
             {
                 Environment.SetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar, previousToken);
             }
         }
+    }
+
+    [Fact]
+    public void AutomationPipeProtocol_CreatesACompleteRequestEnvelope()
+    {
+        var payload = new Dictionary<string, object?> { ["enabled"] = true };
+
+        var envelope = AutomationPipeProtocol.CreateRequestEnvelope(17, payload, "explicit-token");
+
+        Assert.Equal(17, envelope["command"]);
+        Assert.True(Guid.TryParseExact(Assert.IsType<string>(envelope["correlationId"]), "N", out _));
+        Assert.Equal(AutomationPipeProtocol.CommandManifestRevision, envelope["manifestRevision"]);
+        Assert.Equal("explicit-token", envelope["authToken"]);
+        Assert.Same(payload, envelope["payload"]);
+    }
+
+    [Fact]
+    public void AutomationPipeProtocol_CreatesAnEmptyPayloadWhenOneIsNotSupplied()
+    {
+        var envelope = AutomationPipeProtocol.CreateRequestEnvelope(1, authToken: "explicit-token");
+
+        Assert.Empty(Assert.IsType<Dictionary<string, object?>>(envelope["payload"]));
     }
 
     [Fact]
@@ -11337,39 +11374,31 @@ public sealed class PreviewPacingClassifierTests
     }
 
     [Fact]
-    public void PreviewPacingClassifier_IsWiredIntoAutomationSnapshots()
+    public void AutomationSnapshot_ExposesPreviewPacingClassificationFields()
     {
         var contractsText = ReadAutomationSnapshotFamilyText();
-        var diagnosticsSnapshotsText = string.Join(
-            "\n",
-            ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs"));
-        var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        var diagnosticsSnapshotProjectionFlatteningText = diagnosticsSnapshotProjectionText;
-        var diagnosticsSnapshotProjectionSnapshotEvaluationText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
-        var diagnosticsSnapshotProjectionCaptureCadenceText = diagnosticsSnapshotProjectionText;
-        var diagnosticsPreviewPacingText = diagnosticsSnapshotsText;
-        var diagnosticsRealtimePreviewCountersText = diagnosticsSnapshotsText;
-        var diagnosticsCountersText = diagnosticsRealtimePreviewCountersText;
-        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
-            + "\n" + diagnosticsSnapshotsText
-            + "\n" + diagnosticsSnapshotProjectionText
-            + "\n" + diagnosticsSnapshotProjectionFlatteningText
-            + "\n" + diagnosticsSnapshotProjectionSnapshotEvaluationText
-            + "\n" + diagnosticsSnapshotProjectionCaptureCadenceText
-            + "\n" + diagnosticsPreviewPacingText
-            + "\n" + diagnosticsCountersText;
 
         Assert.Contains("public string PreviewPacingLikelySlowStage { get; init; }", contractsText);
         Assert.Contains("public string PreviewPacingSlowStageConfidence { get; init; }", contractsText);
         Assert.Contains("public string PreviewPacingSlowStageEvidence { get; init; }", contractsText);
+    }
+
+    [Fact]
+    public void AutomationDiagnosticsHub_ProjectsPreviewPacingClassification()
+    {
+        var diagnosticsSnapshotsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs");
+        var diagnosticsSnapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs");
+        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
+            + "\n" + diagnosticsSnapshotsText
+            + "\n" + diagnosticsSnapshotProjectionText;
+
         Assert.Contains("var previewPacingClassification = ClassifyPreviewPacing(", diagnosticsSnapshotsText);
         Assert.Contains("new PreviewPacingClassificationInput", diagnosticsSnapshotsText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluationFlattening.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionFlatteningText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionSnapshotEvaluationText);
-        Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsSnapshotProjectionSnapshotEvaluationText);
-        Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsPreviewPacingText);
-        Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsPreviewPacingText);
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.PreviewPacing.cs")));
+        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluationFlattening.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
+        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
+        Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsSnapshotProjectionText);
+        Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsSnapshotsText);
+        Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsSnapshotsText);
         Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
         Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
@@ -11378,9 +11407,8 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("RecentPreviewJitterScheduleLateCount = recentPreviewJitter.ScheduleLateCount", diagnosticsHubText);
         Assert.Contains("RecentD3DFrameLatencyWaitTimeoutCount = recentD3DFrameLatencyWaitTimeouts", diagnosticsHubText);
         Assert.Contains("UpdateD3DFrameLatencyWaitRecentCounters", diagnosticsHubText);
-        Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsRealtimePreviewCountersText);
+        Assert.Contains("private long UpdateD3DFrameLatencyWaitRecentCounters(", diagnosticsSnapshotsText);
         Assert.DoesNotContain("private long UpdateD3DFrameLatencyWaitRecentCounters(", ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs"));
-        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Counters.RealtimePreview.cs")));
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageConfidence = previewPacingClassification.Confidence", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageEvidence = previewPacingClassification.Evidence", diagnosticsHubText);
@@ -11388,6 +11416,13 @@ public sealed class PreviewPacingClassifierTests
         Assert.Contains("PreviewPacingSlowStageConfidence = preview.PacingSlowStageConfidence", diagnosticsHubText);
         Assert.Contains("PreviewPacingSlowStageEvidence = preview.PacingSlowStageEvidence", diagnosticsHubText);
         Assert.Contains("PacingLikelySlowStage: snapshot.PreviewPacingLikelySlowStage", diagnosticsHubText);
+    }
+
+    [Fact]
+    public void AutomationDiagnosticsHub_DoesNotRetainSupersededPreviewPacingPartials()
+    {
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.PreviewPacing.cs")));
+        Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Counters.RealtimePreview.cs")));
         Assert.False(File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")));
     }
 
