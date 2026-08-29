@@ -382,8 +382,11 @@ Automation diagnostics ownership:
   `AutomationSnapshot`, plus final process resource
   projection-to-`AutomationSnapshot` field flattening.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
-  owns recording-integrity projection routing, status/reason, video-frame
-  counters, queue/backpressure, audio integrity, A/V sync projection inputs,
+  owns recording-integrity normalization through one canonical
+  `RecordingIntegrityProjection`: build it once from `CaptureRuntimeSnapshot`
+  and map its nested values directly to the final `AutomationSnapshot` wire
+  DTO without mirrored copy-only flattened records. It also owns status/reason,
+  video-frame counters, queue/backpressure, audio integrity, A/V sync inputs,
   recording-pipeline projection routing, encoder queue age/count/failure health,
   conversion/ffmpeg/video ingest queue health, recording video queue latency,
   backpressure, encoder-output health, GPU/CUDA queue health, recording

@@ -199,7 +199,6 @@ public sealed partial class AutomationDiagnosticsHub
         var recordingSettings = projections.RecordingSettings;
         var settingsFlattening = BuildSettingsFlattenedProjection(userSettings, recordingSettings);
         var recordingIntegrity = projections.RecordingIntegrity;
-        var recordingIntegrityFlattening = BuildRecordingIntegrityFlattenedProjection(recordingIntegrity);
         var captureFormat = projections.CaptureFormat;
         var sourceSignal = projections.SourceSignal;
         var sourceTelemetry = projections.SourceTelemetry;
@@ -248,7 +247,7 @@ public sealed partial class AutomationDiagnosticsHub
             audioDropsFlattening,
             captureCommandFlattening,
             settingsFlattening,
-            recordingIntegrityFlattening,
+            recordingIntegrity,
             sourceFlattening,
             processResourceFlattening,
             avSyncFlattening,
@@ -277,7 +276,7 @@ public sealed partial class AutomationDiagnosticsHub
         AudioDropsFlattenedProjection AudioDrops,
         CaptureCommandFlattenedProjection CaptureCommand,
         SettingsFlattenedProjection Settings,
-        RecordingIntegrityFlattenedProjection RecordingIntegrity,
+        RecordingIntegrityProjection RecordingIntegrity,
         SourceFlattenedProjection Source,
         ProcessResourceFlattenedProjection ProcessResource,
         AvSyncFlattenedProjection AvSync,
@@ -1264,7 +1263,7 @@ public sealed partial class AutomationDiagnosticsHub
         var audioDropsFlattening = flattened.AudioDrops;
         var captureCommandFlattening = flattened.CaptureCommand;
         var settingsFlattening = flattened.Settings;
-        var recordingIntegrityFlattening = flattened.RecordingIntegrity;
+        var recordingIntegrity = flattened.RecordingIntegrity;
         var sourceFlattening = flattened.Source;
         var processResourceFlattening = flattened.ProcessResource;
         var avSyncFlattening = flattened.AvSync;
@@ -1480,39 +1479,39 @@ public sealed partial class AutomationDiagnosticsHub
             RecordingBackend = recordingOutputFlattening.Backend,
             AudioPathMode = recordingOutputFlattening.AudioPathMode,
             MuxResult = recordingOutputFlattening.MuxResult,
-            RecordingIntegrityStatus = recordingIntegrityFlattening.Summary.Status,
-            RecordingIntegrityComplete = recordingIntegrityFlattening.Summary.Complete,
-            RecordingIntegrityBackend = recordingIntegrityFlattening.Summary.Backend,
-            RecordingIntegrityCompletedUtc = recordingIntegrityFlattening.Summary.CompletedUtc,
-            RecordingIntegritySourceFrames = recordingIntegrityFlattening.Video.SourceFrames,
-            RecordingIntegrityAcceptedFrames = recordingIntegrityFlattening.Video.AcceptedFrames,
-            RecordingIntegrityPipelineDroppedFrames = recordingIntegrityFlattening.Video.PipelineDroppedFrames,
-            RecordingIntegrityQueueDroppedFrames = recordingIntegrityFlattening.Video.QueueDroppedFrames,
-            RecordingIntegritySubmittedFrames = recordingIntegrityFlattening.Video.SubmittedFrames,
-            RecordingIntegrityEncodedFrames = recordingIntegrityFlattening.Video.EncodedFrames,
-            RecordingIntegrityPacketsWritten = recordingIntegrityFlattening.Video.PacketsWritten,
-            RecordingIntegrityEncoderDroppedFrames = recordingIntegrityFlattening.Video.EncoderDroppedFrames,
-            RecordingIntegritySequenceGaps = recordingIntegrityFlattening.Video.SequenceGaps,
-            RecordingIntegrityQueueMaxDepth = recordingIntegrityFlattening.Backpressure.QueueMaxDepth,
-            RecordingIntegrityQueueOldestFrameAgeMs = recordingIntegrityFlattening.Backpressure.QueueOldestFrameAgeMs,
-            RecordingIntegrityBackpressureWaitMs = recordingIntegrityFlattening.Backpressure.BackpressureWaitMs,
-            RecordingIntegrityBackpressureEvents = recordingIntegrityFlattening.Backpressure.BackpressureEvents,
-            RecordingIntegrityBackpressureMaxWaitMs = recordingIntegrityFlattening.Backpressure.BackpressureMaxWaitMs,
-            RecordingIntegrityAudioStatus = recordingIntegrityFlattening.Audio.AudioStatus,
-            RecordingIntegrityAudioEnabled = recordingIntegrityFlattening.Audio.AudioEnabled,
-            RecordingIntegrityAudioCaptureActive = recordingIntegrityFlattening.Audio.AudioCaptureActive,
-            RecordingIntegrityAudioFramesArrived = recordingIntegrityFlattening.Audio.AudioFramesArrived,
-            RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrityFlattening.Audio.AudioFramesWrittenToSink,
-            RecordingIntegrityAudioSamplesEncoded = recordingIntegrityFlattening.Audio.AudioSamplesEncoded,
-            RecordingIntegrityAudioDropEvents = recordingIntegrityFlattening.Audio.AudioDropEvents,
-            RecordingIntegrityAudioDiscontinuities = recordingIntegrityFlattening.Audio.AudioDiscontinuities,
-            RecordingIntegrityAudioTimestampErrors = recordingIntegrityFlattening.Audio.AudioTimestampErrors,
-            RecordingIntegrityAudioCallbackGaps = recordingIntegrityFlattening.Audio.AudioCallbackGaps,
-            RecordingIntegrityAvSyncDriftMs = recordingIntegrityFlattening.AvSync.AvSyncDriftMs,
-            RecordingIntegrityAvSyncDriftRateMsPerSec = recordingIntegrityFlattening.AvSync.AvSyncDriftRateMsPerSec,
-            RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrityFlattening.AvSync.EncoderAvSyncDriftMs,
-            RecordingIntegrityEncoderAvSyncCorrectionSamples = recordingIntegrityFlattening.AvSync.EncoderAvSyncCorrectionSamples,
-            RecordingIntegrityReason = recordingIntegrityFlattening.Summary.Reason,
+            RecordingIntegrityStatus = recordingIntegrity.Summary.Status,
+            RecordingIntegrityComplete = recordingIntegrity.Summary.Complete,
+            RecordingIntegrityBackend = recordingIntegrity.Summary.Backend,
+            RecordingIntegrityCompletedUtc = recordingIntegrity.Summary.CompletedUtc,
+            RecordingIntegritySourceFrames = recordingIntegrity.Video.SourceFrames,
+            RecordingIntegrityAcceptedFrames = recordingIntegrity.Video.AcceptedFrames,
+            RecordingIntegrityPipelineDroppedFrames = recordingIntegrity.Video.PipelineDroppedFrames,
+            RecordingIntegrityQueueDroppedFrames = recordingIntegrity.Video.QueueDroppedFrames,
+            RecordingIntegritySubmittedFrames = recordingIntegrity.Video.SubmittedFrames,
+            RecordingIntegrityEncodedFrames = recordingIntegrity.Video.EncodedFrames,
+            RecordingIntegrityPacketsWritten = recordingIntegrity.Video.PacketsWritten,
+            RecordingIntegrityEncoderDroppedFrames = recordingIntegrity.Video.EncoderDroppedFrames,
+            RecordingIntegritySequenceGaps = recordingIntegrity.Video.SequenceGaps,
+            RecordingIntegrityQueueMaxDepth = recordingIntegrity.Backpressure.QueueMaxDepth,
+            RecordingIntegrityQueueOldestFrameAgeMs = recordingIntegrity.Backpressure.QueueOldestFrameAgeMs,
+            RecordingIntegrityBackpressureWaitMs = recordingIntegrity.Backpressure.BackpressureWaitMs,
+            RecordingIntegrityBackpressureEvents = recordingIntegrity.Backpressure.BackpressureEvents,
+            RecordingIntegrityBackpressureMaxWaitMs = recordingIntegrity.Backpressure.BackpressureMaxWaitMs,
+            RecordingIntegrityAudioStatus = recordingIntegrity.Audio.AudioStatus,
+            RecordingIntegrityAudioEnabled = recordingIntegrity.Audio.AudioEnabled,
+            RecordingIntegrityAudioCaptureActive = recordingIntegrity.Audio.AudioCaptureActive,
+            RecordingIntegrityAudioFramesArrived = recordingIntegrity.Audio.AudioFramesArrived,
+            RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.Audio.AudioFramesWrittenToSink,
+            RecordingIntegrityAudioSamplesEncoded = recordingIntegrity.Audio.AudioSamplesEncoded,
+            RecordingIntegrityAudioDropEvents = recordingIntegrity.Audio.AudioDropEvents,
+            RecordingIntegrityAudioDiscontinuities = recordingIntegrity.Audio.AudioDiscontinuities,
+            RecordingIntegrityAudioTimestampErrors = recordingIntegrity.Audio.AudioTimestampErrors,
+            RecordingIntegrityAudioCallbackGaps = recordingIntegrity.Audio.AudioCallbackGaps,
+            RecordingIntegrityAvSyncDriftMs = recordingIntegrity.AvSync.AvSyncDriftMs,
+            RecordingIntegrityAvSyncDriftRateMsPerSec = recordingIntegrity.AvSync.AvSyncDriftRateMsPerSec,
+            RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.AvSync.EncoderAvSyncDriftMs,
+            RecordingIntegrityEncoderAvSyncCorrectionSamples = recordingIntegrity.AvSync.EncoderAvSyncCorrectionSamples,
+            RecordingIntegrityReason = recordingIntegrity.Summary.Reason,
             RequestedWidth = captureFormatFlattening.Requested.Width,
             RequestedHeight = captureFormatFlattening.Requested.Height,
             RequestedFrameRate = captureFormatFlattening.Requested.FrameRate,
@@ -3333,17 +3332,6 @@ public sealed partial class AutomationDiagnosticsHub
             AvSync = BuildRecordingIntegrityAvSyncProjection(captureRuntime)
         };
 
-    private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(
-        RecordingIntegrityProjection recordingIntegrity)
-        => new()
-        {
-            Summary = BuildRecordingIntegritySummaryFlattenedProjection(recordingIntegrity.Summary),
-            Video = BuildRecordingIntegrityVideoFlattenedProjection(recordingIntegrity.Video),
-            Backpressure = BuildRecordingIntegrityBackpressureFlattenedProjection(recordingIntegrity.Backpressure),
-            Audio = BuildRecordingIntegrityAudioFlattenedProjection(recordingIntegrity.Audio),
-            AvSync = BuildRecordingIntegrityAvSyncFlattenedProjection(recordingIntegrity.AvSync)
-        };
-
     private readonly record struct RecordingIntegrityProjection
     {
         public RecordingIntegritySummaryProjection Summary { get; init; }
@@ -3364,27 +3352,7 @@ public sealed partial class AutomationDiagnosticsHub
             Reason = captureRuntime.RecordingIntegrityReason
         };
 
-    private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(
-        RecordingIntegritySummaryProjection summary)
-        => new()
-        {
-            Status = summary.Status,
-            Complete = summary.Complete,
-            Backend = summary.Backend,
-            CompletedUtc = summary.CompletedUtc,
-            Reason = summary.Reason
-        };
-
     private readonly record struct RecordingIntegritySummaryProjection
-    {
-        public string Status { get; init; }
-        public bool Complete { get; init; }
-        public string Backend { get; init; }
-        public DateTimeOffset? CompletedUtc { get; init; }
-        public string Reason { get; init; }
-    }
-
-    private readonly record struct RecordingIntegritySummaryFlattenedProjection
     {
         public string Status { get; init; }
         public bool Complete { get; init; }
@@ -3408,35 +3376,7 @@ public sealed partial class AutomationDiagnosticsHub
             SequenceGaps = captureRuntime.RecordingIntegritySequenceGaps
         };
 
-    private static RecordingIntegrityVideoFlattenedProjection BuildRecordingIntegrityVideoFlattenedProjection(
-        RecordingIntegrityVideoProjection video)
-        => new()
-        {
-            SourceFrames = video.SourceFrames,
-            AcceptedFrames = video.AcceptedFrames,
-            PipelineDroppedFrames = video.PipelineDroppedFrames,
-            QueueDroppedFrames = video.QueueDroppedFrames,
-            SubmittedFrames = video.SubmittedFrames,
-            EncodedFrames = video.EncodedFrames,
-            PacketsWritten = video.PacketsWritten,
-            EncoderDroppedFrames = video.EncoderDroppedFrames,
-            SequenceGaps = video.SequenceGaps
-        };
-
     private readonly record struct RecordingIntegrityVideoProjection
-    {
-        public long SourceFrames { get; init; }
-        public long AcceptedFrames { get; init; }
-        public long PipelineDroppedFrames { get; init; }
-        public long QueueDroppedFrames { get; init; }
-        public long SubmittedFrames { get; init; }
-        public long EncodedFrames { get; init; }
-        public long PacketsWritten { get; init; }
-        public long EncoderDroppedFrames { get; init; }
-        public long SequenceGaps { get; init; }
-    }
-
-    private readonly record struct RecordingIntegrityVideoFlattenedProjection
     {
         public long SourceFrames { get; init; }
         public long AcceptedFrames { get; init; }
@@ -3460,27 +3400,7 @@ public sealed partial class AutomationDiagnosticsHub
             BackpressureMaxWaitMs = captureRuntime.RecordingIntegrityBackpressureMaxWaitMs
         };
 
-    private static RecordingIntegrityBackpressureFlattenedProjection BuildRecordingIntegrityBackpressureFlattenedProjection(
-        RecordingIntegrityBackpressureProjection backpressure)
-        => new()
-        {
-            QueueMaxDepth = backpressure.QueueMaxDepth,
-            QueueOldestFrameAgeMs = backpressure.QueueOldestFrameAgeMs,
-            BackpressureWaitMs = backpressure.BackpressureWaitMs,
-            BackpressureEvents = backpressure.BackpressureEvents,
-            BackpressureMaxWaitMs = backpressure.BackpressureMaxWaitMs
-        };
-
     private readonly record struct RecordingIntegrityBackpressureProjection
-    {
-        public int QueueMaxDepth { get; init; }
-        public long QueueOldestFrameAgeMs { get; init; }
-        public long BackpressureWaitMs { get; init; }
-        public long BackpressureEvents { get; init; }
-        public long BackpressureMaxWaitMs { get; init; }
-    }
-
-    private readonly record struct RecordingIntegrityBackpressureFlattenedProjection
     {
         public int QueueMaxDepth { get; init; }
         public long QueueOldestFrameAgeMs { get; init; }
@@ -3505,37 +3425,7 @@ public sealed partial class AutomationDiagnosticsHub
             AudioCallbackGaps = captureRuntime.RecordingIntegrityAudioCallbackGaps
         };
 
-    private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(
-        RecordingIntegrityAudioProjection audio)
-        => new()
-        {
-            AudioStatus = audio.AudioStatus,
-            AudioEnabled = audio.AudioEnabled,
-            AudioCaptureActive = audio.AudioCaptureActive,
-            AudioFramesArrived = audio.AudioFramesArrived,
-            AudioFramesWrittenToSink = audio.AudioFramesWrittenToSink,
-            AudioSamplesEncoded = audio.AudioSamplesEncoded,
-            AudioDropEvents = audio.AudioDropEvents,
-            AudioDiscontinuities = audio.AudioDiscontinuities,
-            AudioTimestampErrors = audio.AudioTimestampErrors,
-            AudioCallbackGaps = audio.AudioCallbackGaps
-        };
-
     private readonly record struct RecordingIntegrityAudioProjection
-    {
-        public string AudioStatus { get; init; }
-        public bool AudioEnabled { get; init; }
-        public bool AudioCaptureActive { get; init; }
-        public long AudioFramesArrived { get; init; }
-        public long AudioFramesWrittenToSink { get; init; }
-        public long AudioSamplesEncoded { get; init; }
-        public long AudioDropEvents { get; init; }
-        public long AudioDiscontinuities { get; init; }
-        public long AudioTimestampErrors { get; init; }
-        public long AudioCallbackGaps { get; init; }
-    }
-
-    private readonly record struct RecordingIntegrityAudioFlattenedProjection
     {
         public string AudioStatus { get; init; }
         public bool AudioEnabled { get; init; }
@@ -3559,39 +3449,12 @@ public sealed partial class AutomationDiagnosticsHub
             EncoderAvSyncCorrectionSamples = captureRuntime.RecordingIntegrityEncoderAvSyncCorrectionSamples
         };
 
-    private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(
-        RecordingIntegrityAvSyncProjection avSync)
-        => new()
-        {
-            AvSyncDriftMs = avSync.AvSyncDriftMs,
-            AvSyncDriftRateMsPerSec = avSync.AvSyncDriftRateMsPerSec,
-            EncoderAvSyncDriftMs = avSync.EncoderAvSyncDriftMs,
-            EncoderAvSyncCorrectionSamples = avSync.EncoderAvSyncCorrectionSamples
-        };
-
     private readonly record struct RecordingIntegrityAvSyncProjection
     {
         public double? AvSyncDriftMs { get; init; }
         public double? AvSyncDriftRateMsPerSec { get; init; }
         public double? EncoderAvSyncDriftMs { get; init; }
         public long? EncoderAvSyncCorrectionSamples { get; init; }
-    }
-
-    private readonly record struct RecordingIntegrityAvSyncFlattenedProjection
-    {
-        public double? AvSyncDriftMs { get; init; }
-        public double? AvSyncDriftRateMsPerSec { get; init; }
-        public double? EncoderAvSyncDriftMs { get; init; }
-        public long? EncoderAvSyncCorrectionSamples { get; init; }
-    }
-
-    private readonly record struct RecordingIntegrityFlattenedProjection
-    {
-        public RecordingIntegritySummaryFlattenedProjection Summary { get; init; }
-        public RecordingIntegrityVideoFlattenedProjection Video { get; init; }
-        public RecordingIntegrityBackpressureFlattenedProjection Backpressure { get; init; }
-        public RecordingIntegrityAudioFlattenedProjection Audio { get; init; }
-        public RecordingIntegrityAvSyncFlattenedProjection AvSync { get; init; }
     }
 
     private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)

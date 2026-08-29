@@ -641,6 +641,10 @@ public sealed class AutomationSnapshotProjectionContractsTests
         => global::Program.AutomationDiagnosticsRecordingOutputProjection_LivesWithSnapshotProjectionRoot();
 
     [Fact]
+    public Task AutomationDiagnosticsRecordingIntegrityProjectionUsesOneMapping()
+        => global::Program.AutomationDiagnosticsRecordingIntegrityProjection_UsesOneMapping();
+
+    [Fact]
     public Task AutomationDiagnosticsProcessResourceProjectionLivesInFocusedPartial()
         => global::Program.AutomationDiagnosticsProcessResourceProjection_LivesInFocusedPartial();
 
@@ -8586,6 +8590,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task AutomationDiagnosticsRecordingIntegrityProjection_UsesOneMapping()
+    {
+        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+            .Replace("\r\n", "\n");
+        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
+
+        AssertContains(snapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
+        AssertContains(snapshotFlatteningText, "var recordingIntegrity = projections.RecordingIntegrity;");
+        AssertContains(snapshotProjectionText, "RecordingIntegrityProjection RecordingIntegrity,");
+        AssertContains(snapshotFlatteningText, "var recordingIntegrity = flattened.RecordingIntegrity;");
+        AssertContains(snapshotFlatteningText, "RecordingIntegrityStatus = recordingIntegrity.Summary.Status,");
+        AssertContains(snapshotFlatteningText, "RecordingIntegrityReason = recordingIntegrity.Summary.Reason,");
+        AssertContains(snapshotProjectionText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(");
+        AssertContains(snapshotProjectionText, "private readonly record struct RecordingIntegrityProjection");
+        AssertDoesNotContain(snapshotProjectionText, "RecordingIntegrityFlattenedProjection");
+        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegritySummaryFlattenedProjection");
+        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityVideoFlattenedProjection");
+        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityBackpressureFlattenedProjection");
+        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityAudioFlattenedProjection");
+        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityAvSyncFlattenedProjection");
+
+        return Task.CompletedTask;
+    }
+
     internal static Task AutomationDiagnosticsRecordingBackendProjection_LivesWithSnapshotProjectionRoot()
     {
         var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
@@ -9536,7 +9564,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var audioDropsFlattening = BuildAudioDropsFlattenedProjection(audioDrops);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureCommandFlattening = BuildCaptureCommandFlattenedProjection(captureCommands);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var settingsFlattening = BuildSettingsFlattenedProjection(userSettings, recordingSettings);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingIntegrityFlattening = BuildRecordingIntegrityFlattenedProjection(recordingIntegrity);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingIntegrity = projections.RecordingIntegrity;");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var processResourceFlattening = BuildProcessResourceFlattenedProjection(processResourceProjection);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);");
@@ -10189,18 +10217,6 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackTimingFlattenedProjection BuildFlashbackPlaybackTimingFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode)");
         AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingIntegrityFlattenedProjection(recordingIntegrity)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityFlattenedProjection BuildRecordingIntegrityFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegritySummaryProjection BuildRecordingIntegritySummaryProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityVideoProjection BuildRecordingIntegrityVideoProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityBackpressureProjection BuildRecordingIntegrityBackpressureProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityAudioProjection BuildRecordingIntegrityAudioProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityAvSyncProjection BuildRecordingIntegrityAvSyncProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegritySummaryFlattenedProjection BuildRecordingIntegritySummaryFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityVideoFlattenedProjection BuildRecordingIntegrityVideoFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityBackpressureFlattenedProjection BuildRecordingIntegrityBackpressureFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityAudioFlattenedProjection BuildRecordingIntegrityAudioFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingIntegrityText, "private static RecordingIntegrityAvSyncFlattenedProjection BuildRecordingIntegrityAvSyncFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingPipelineFlattenedProjection(recordingPipeline)");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineEncoderProjection(health)");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineIngestProjection(health)");
