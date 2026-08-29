@@ -3867,16 +3867,9 @@ static partial class Program
         AssertDoesNotContain(createFlashbackSessionContext, "UseTransportStreamFlashbackCodec");
         AssertContains(captureServiceText, "settings.Format == RecordingFormat.Av1Mp4");
         AssertContains(captureServiceText, "private static string? ResolveFlashbackExportVerificationFormat(");
-        AssertContains(captureServiceText, "forceRotateResult.Status == FlashbackForceRotateStatus.Failed");
-        AssertContains(captureServiceText, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(captureServiceText, "FlashbackExportPlanner.PlanLiveEdge(");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
-        AssertDoesNotContain(
-            ExtractTextBetween(
-                captureServiceText,
-                "if (segmentPaths.Count == 0)",
-                "return FlashbackExportForceRotatePreparation.Ready"),
-            "force_rotate_failed");
         AssertDoesNotContain(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
         AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = settings.NvencPreset;");
         AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
@@ -6621,16 +6614,15 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportForceRotate.cs")),
             "old Flashback export force-rotate partial removed");
-        AssertContains(exportCoreText, "private delegate (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)");
         AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(");
         AssertContains(exportCoreText, "private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)");
         AssertContains(exportOperationsText, "return await ExportFlashbackCoreAsync(");
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
         AssertContains(exportCoreText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportCoreText, "PrepareFlashbackExportForceRotateSegments(");
-        AssertContains(exportCoreText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
-        AssertContains(exportCoreText, "ForceRotateForExport");
+        AssertContains(exportCoreText, "FlashbackExportPlanner.ResolveRange(");
+        AssertContains(exportCoreText, "FlashbackExportPlanner.PlanLiveEdge(");
+        AssertContains(exportCoreText, "FlashbackExportPlanner.CreateRequest(");
         AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
 
         var rangeExport = ExtractMemberCode(exportOperationsText, "ExportFlashbackRangeAsync");
@@ -6680,8 +6672,7 @@ static partial class Program
         AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
         AssertContains(exportCore, "var preparedExport = PrepareFlashbackExportRequest(");
         AssertContains(exportCore, "if (preparedExport.FailureResult is { } preparationFailure)");
-        AssertContains(exportCoreText, "var forceRotateFallbackUsed = false;");
-        AssertContains(exportCoreText, "forceRotateFallbackUsed = true;");
+        AssertContains(exportCoreText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
         AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
         AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
@@ -10811,6 +10802,7 @@ static partial class Program
         var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
+        var plannerText = ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackExportPlanner.cs");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
@@ -10822,10 +10814,10 @@ static partial class Program
         AssertContains(exportCoreText, "private async Task<FinalizeResult> ExportFlashbackCoreAsync");
         AssertContains(exportCoreText, "bufferManager.PauseEviction();");
         AssertContains(exportCoreText, "private FlashbackExportPreparationResult PrepareFlashbackExportRequest(");
-        AssertContains(exportCoreText, "PrepareFlashbackExportForceRotateSegments(");
-        AssertContains(exportCoreText, "private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(");
-        AssertContains(exportCoreText, "ForceRotateForExport");
+        AssertContains(exportCoreText, "FlashbackExportPlanner.PlanLiveEdge(");
+        AssertContains(exportCoreText, "FlashbackExportPlanner.CreateRequest(");
         AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
+        AssertContains(plannerText, "internal static class FlashbackExportPlanner");
         AssertContains(exportDiagnosticsText, "private long BeginFlashbackExportDiagnostics(");
         AssertContains(exportDiagnosticsText, "private void RecordRejectedFlashbackExportDiagnostics(");
         AssertContains(exportDiagnosticsText, "private void CompleteFlashbackExportDiagnostics(");
@@ -10865,25 +10857,9 @@ static partial class Program
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
         AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
-        AssertContains(captureServiceText, "var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);");
-        AssertContains(captureServiceText, "segmentPaths = forceRotateResult.SegmentPaths;");
-        AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)");
-        AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
-        var forceRotateFailedBlock = ExtractTextBetween(
-            exportCoreText,
-            "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)",
-            "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
-        AssertContains(forceRotateFailedBlock, "Flashback export failed: live-edge segment rotation failed.");
-        AssertContains(forceRotateFailedBlock, "preserved_segments={preservedArtifacts.Count}");
-        AssertContains(forceRotateFailedBlock, "return FlashbackExportForceRotatePreparation.Failure(result);");
-        var forceRotateFallbackBlock = ExtractTextBetween(
-            exportCoreText,
-            "if (segmentPaths.Count == 0)",
-            "return FlashbackExportForceRotatePreparation.Ready");
-        AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
-        AssertContains(forceRotateFallbackBlock, "RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);");
-        AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");
-        AssertDoesNotContain(forceRotateFallbackBlock, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(captureServiceText, "var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);");
+        AssertContains(captureServiceText, "RecordFlashbackExportForceRotateFallback(");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(captureServiceText, "captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary)");
         AssertContains(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);");
@@ -10925,19 +10901,13 @@ static partial class Program
         AssertContains(captureServiceText, "return \"InvalidOutputPath\";");
         AssertContains(captureServiceText, "return \"NoMediaWritten\";");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
-        AssertContains(exportCoreText, "ResolveFlashbackExportRangeAfterEvictionPaused(");
-        AssertContains(exportCoreText, "var validStart = manager.ValidStartPts;");
-        AssertContains(exportCoreText, "var bufferedDuration = manager.BufferedDuration;");
-        AssertContains(exportCoreText, "var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);");
-        AssertContains(exportCoreText, "var bufferOutPoint = outPoint.HasValue\n            ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n            : TimeSpan.MaxValue;");
-        AssertContains(exportCoreText, "var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);");
-        AssertContains(exportCoreText, "var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
-        AssertContains(captureServiceText, ".Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))");
-        AssertContains(captureServiceText, "var pathKey = TryGetFullPath(path);");
-        AssertContains(captureServiceText, "segmentInfo.TryGetValue(pathKey, out var info)");
+        AssertContains(plannerText, "internal static FlashbackExportRangeResolution ResolveRange(");
+        AssertContains(plannerText, "internal static FlashbackExportLiveEdgePlan PlanLiveEdge(");
+        AssertContains(plannerText, "internal static FlashbackExportRequestPlan CreateRequest(");
+        AssertContains(captureServiceText, "CaptureFlashbackExportSegmentMetadata(bufferManager)");
+        AssertContains(captureServiceText, "CaptureFlashbackExportPathSnapshots(selectedSegmentPaths)");
         AssertContains(captureServiceText, "private static string? TryGetFullPath(string? path)");
         AssertContains(captureServiceText, "FLASHBACK_PATH_NORMALIZE_WARN");
-        AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
         AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
         AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\");\n        }");
         AssertRegex(
@@ -10963,19 +10933,6 @@ static partial class Program
         AssertDoesNotContain(captureServiceText, "_flashbackBackendLeaseLock.Release();");
         AssertDoesNotContain(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK");
-        AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
-        AssertContains(captureServiceText, "var startPts = FromSegmentMilliseconds(info.StartPtsMs);");
-        AssertContains(captureServiceText, "var endPts = FromSegmentMilliseconds(info.EndPtsMs);");
-        AssertContains(captureServiceText, "if (endPts < startPts)\n                {\n                    endPts = startPts;\n                }");
-        AssertContains(captureServiceText, "StartPts = startPts,\n                    EndPts = endPts");
-        AssertContains(captureServiceText, "private static TimeSpan FromSegmentMilliseconds(long milliseconds)");
-        AssertContains(captureServiceText, "return milliseconds >= TimeSpan.MaxValue.TotalMilliseconds\n            ? TimeSpan.MaxValue\n            : TimeSpan.FromMilliseconds(milliseconds);");
-        AssertContains(exportCoreText, "private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)");
-        AssertContains(captureServiceText, "if (bufferedDuration <= TimeSpan.Zero)\n        {\n            return TimeSpan.Zero;\n        }");
-        AssertContains(exportCoreText, "private static TimeSpan AddFlashbackPtsOffsetOrMax(TimeSpan position, TimeSpan offset)");
-        AssertContains(captureServiceText, "if (position < TimeSpan.Zero)\n        {\n            position = TimeSpan.Zero;\n        }");
-        AssertContains(captureServiceText, "if (offset <= TimeSpan.Zero)\n        {\n            return position;\n        }");
-        AssertContains(captureServiceText, "return position > TimeSpan.MaxValue - offset\n            ? TimeSpan.MaxValue\n            : position + offset;");
         AssertContains(captureServiceText, "var rawTotalSegments = progress.TotalSegments;");
         AssertContains(captureServiceText, "var totalSegments = Math.Max(0, rawTotalSegments);");
         AssertContains(captureServiceText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");

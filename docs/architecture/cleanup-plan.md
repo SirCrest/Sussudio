@@ -1,6 +1,6 @@
 ﻿# Architecture Cleanup Plan
 
-Last reviewed: 2026-05-16.
+Last reviewed: 2026-08-29.
 
 ## Objective
 
@@ -1072,24 +1072,16 @@ capture diagnostics both consume the diagnostic result classification.
 Flashback export entry points now live in
 `Sussudio/Services/Capture/CaptureService.Flashback.cs`.
 Keep range export, last-N export, lock-scoped backend reference capture,
-session/backend lock release before native export, and routing into
-range-resolution and shared-core owners there. Flashback export range
-resolution now lives in
-`Sussudio/Services/Capture/CaptureService.Flashback.cs`.
-Keep range and last-N post-eviction range resolution, buffer position clamps,
-and PTS offset math there. The shared export lifetime now lives in
-`Sussudio/Services/Capture/CaptureService.Flashback.cs`; keep
-export-operation locking, eviction pause/resume, diagnostics completion,
-exporter execution, active-file fallback, `FlashbackExportRequest`
-construction, throttle-provider wiring, partial-fallback result marking, and
-cleanup there. Segment metadata mapping, live-export throttle policy, segment
-path normalization, and segment PTS timestamp repair also live there because
-they are part of `FlashbackExportRequest` assembly. Flashback export
-force-rotate preparation also lives there; keep failure/committed-pending
-outcomes, timeout fallback segment discovery, and related diagnostics/logging
-with the request assembly path. Keep this owner as one in-file `CaptureService`
-body so range entry points and shared export-core helpers stay together without
-fake partial shells.
+session/backend lock release before native export, and routing into the shared
+export core there. `Sussudio/Services/Flashback/FlashbackExportPlanner.cs`
+owns the pure post-eviction range math, force-rotate outcome selection,
+segment metadata mapping, PTS repair, and `FlashbackExportRequest` skeleton.
+`CaptureService.Flashback.cs` keeps export-operation locking, eviction
+pause/resume, live force-rotate and valid-path sampling, path normalization,
+diagnostics/logging, fallback counters, throttle-provider wiring, exporter
+execution, active-file sampling, and cleanup. Keep the planner free of buffer,
+sink, filesystem, lock, clock, and FFmpeg ownership so its behavior remains
+directly testable without changing live export ordering.
 
 Flashback export diagnostics now lives in
 `Sussudio/Services/Capture/CaptureService.Flashback.cs`.

@@ -82,6 +82,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
   timestamp, audio, in/out marker, request validation, segment, cancellation,
   output path/finalization, and source-ownership checks.
+- `XUnit.FlashbackExportPlannerTests.cs` owns executable range, live-edge
+  outcome, preserved-artifact, and export-request planning behavior checks.
 - `XUnit.FlashbackContractsTests.cs` also owns the backing `Program` methods
   for Flashback playback command queue/coalescing/seek-slot/thread lifecycle
   contracts; do not recreate a separate command-queue sidecar unless those

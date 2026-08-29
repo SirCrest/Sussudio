@@ -643,10 +643,6 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_RejectsInvalidExportRanges();
 
     [Fact]
-    public Task FlashbackRejectedExportDiagnosticsPreserveAttemptedRange()
-        => global::Program.FlashbackExportRejectedDiagnostics_PreserveAttemptedRange();
-
-    [Fact]
     public Task FlashbackExporterRejectsEmptySegmentPaths()
         => global::Program.FlashbackExporter_RejectsEmptySegmentPaths();
 
@@ -851,16 +847,6 @@ static partial class Program
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
-        var exportOperationsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var exportCoreText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var exportPlanningText = exportCoreText;
-        var sourceText = exportOperationsText
-            + "\n" + exportCoreText
-            + "\n" + exportPlanningText
-            + "\n" + ReadCaptureServiceRecordingFinalizationSource();
-
         AssertEqual(0, (int)resolve.Invoke(null, new object[] { 0.49, 29L, false })!, "Flashback export throttle idle");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.49, 0L, true })!, "Flashback export throttle high-resolution live baseline");
         AssertEqual(16, (int)resolve.Invoke(null, new object[] { 0.50, 0L, false })!, "Flashback export throttle queue half full");
@@ -869,30 +855,6 @@ static partial class Program
         AssertEqual(20, (int)resolve.Invoke(null, new object[] { 0.0, 50L, false })!, "Flashback export throttle medium frame age");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.85, 0L, false })!, "Flashback export throttle severe queue pressure");
         AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.0, 90L, false })!, "Flashback export throttle severe frame age");
-        AssertContains(sourceText, "throttleHighResolutionBaseline && IsHighResolutionFlashbackExport(flashbackSink)");
-        AssertContains(sourceText, "FastStart = false");
-        AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(");
-        AssertContains(sourceText, "flashbackSink,\n                throttleHighResolutionBaseline)");
-        AssertContains(sourceText, "ct: ct,");
-        AssertContains(sourceText, "requireCompleteLiveEdge: true");
-        AssertContains(sourceText, "throttleHighResolutionBaseline: false");
-        AssertOccursBefore(sourceText, "ct: ct,", "requireCompleteLiveEdge: true");
-        AssertOccursBefore(sourceText, "requireCompleteLiveEdge: true", "throttleHighResolutionBaseline: false");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_LIVE_THROTTLE");
-        AssertContains(exportPlanningText, "private static int ResolveFlashbackExportThrottleDelayMs(");
-        AssertContains(exportPlanningText, "private static IReadOnlyList<FlashbackExportSegment>? BuildFlashbackExportSegments(");
-        AssertEqual(
-            1,
-            exportCoreText.Split("public partial class CaptureService", StringSplitOptions.None).Length - 1,
-            "CaptureService.Flashback.cs stays one in-file CaptureService body after export fold");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportCore.cs")),
-            "CaptureService.FlashbackExportCore.cs folded into CaptureService.Flashback.cs");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.FlashbackExportPlanning.cs")),
-            "CaptureService.FlashbackExportPlanning.cs folded into CaptureService.Flashback.cs");
 
         return Task.CompletedTask;
     }
@@ -1350,33 +1312,6 @@ static partial class Program
         {
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
-    {
-        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-                .Replace("\r\n", "\n");
-
-        AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: CreateFlashbackExportRangeResolver(");
-        AssertContains(captureServiceText, "ResolveFlashbackExportRangeAfterEvictionPaused(");
-        AssertContains(captureServiceText, "if (inPointFilePts.HasValue || outPointFilePts.HasValue)");
-        AssertContains(captureServiceText, "var absoluteInPoint = inPointFilePts ?? validStart;");
-        AssertContains(captureServiceText, "var absoluteOutPoint = outPointFilePts ?? TimeSpan.MaxValue;");
-        AssertContains(captureServiceText, "\"Flashback export in point has been evicted from the buffer.\"");
-        AssertContains(captureServiceText, "\"Flashback export out point has been evicted from the buffer.\"");
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
-        AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
-        AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
-        AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
-        AssertContains(captureServiceText, "FLASHBACK_EXPORT_SNAPSHOT_FAIL op={operationName} type={ex.GetType().Name} msg='{ex.Message}'");
-        AssertContains(captureServiceText, "_flashbackExportInPointMs = inPoint.HasValue ? (long)inPoint.Value.TotalMilliseconds : 0;");
-        AssertContains(captureServiceText, "outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds");
 
         return Task.CompletedTask;
     }

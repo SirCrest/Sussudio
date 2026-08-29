@@ -1479,8 +1479,7 @@ public partial class CaptureService
 
     // Shared Flashback export pipeline: eviction pause, force-rotate, exporter request,
     // diagnostics completion, and cleanup.
-    private delegate (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)
-        FlashbackExportRangeResolver(FlashbackBufferManager manager);
+    private delegate FlashbackExportRangeResolution FlashbackExportRangeResolver(FlashbackBufferManager manager);
 
     private static FlashbackExportRangeResolver CreateFlashbackExportRangeResolver(
         TimeSpan? inPoint,
@@ -1488,16 +1487,31 @@ public partial class CaptureService
         TimeSpan? inPointFilePts,
         TimeSpan? outPointFilePts)
     {
-        return manager => ResolveFlashbackExportRangeAfterEvictionPaused(
-            manager,
+        var selection = new FlashbackExportRangeSelection(
             inPoint,
             outPoint,
             inPointFilePts,
             outPointFilePts);
+        var absoluteSelection = inPointFilePts.HasValue || outPointFilePts.HasValue;
+        return manager =>
+        {
+            var validStart = manager.ValidStartPts;
+            var bufferedDuration = absoluteSelection ? TimeSpan.Zero : manager.BufferedDuration;
+            return FlashbackExportPlanner.ResolveRange(
+                selection,
+                new FlashbackExportBufferTiming(validStart, bufferedDuration));
+        };
     }
 
     private static FlashbackExportRangeResolver CreateFlashbackExportLastNRangeResolver(double seconds)
-        => manager => ResolveFlashbackExportLastNRangeAfterEvictionPaused(manager, seconds);
+        => manager =>
+        {
+            var bufferedDuration = manager.BufferedDuration;
+            var validStart = manager.ValidStartPts;
+            return FlashbackExportPlanner.ResolveLastNRange(
+                seconds,
+                new FlashbackExportBufferTiming(validStart, bufferedDuration));
+        };
 
     private FinalizeResult FailFlashbackExport(
         string outputPath,
@@ -1657,104 +1671,132 @@ public partial class CaptureService
         bool throttleHighResolutionBaseline,
         CancellationToken ct)
     {
-        var forceRotatePreparation = PrepareFlashbackExportForceRotateSegments(
-            bufferManager,
-            flashbackSink,
-            exportId,
+        var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);
+        var stableSegmentPaths = FlashbackExportPlanner.NeedsStableSegmentPaths(forceRotateResult)
+            ? bufferManager.GetValidSegmentPaths(inPoint, outPoint)
+            : null;
+        var liveEdgePlan = FlashbackExportPlanner.PlanLiveEdge(
+            forceRotateResult,
+            requireCompleteLiveEdge,
+            stableSegmentPaths,
+            stableSegmentPaths ?? Array.Empty<string>());
+        if (liveEdgePlan.FailureMessage is { } liveEdgeFailureMessage)
+        {
+            var result = FinalizeResult.Failure(
+                outputPath,
+                liveEdgeFailureMessage,
+                liveEdgePlan.PreservedArtifacts);
+            RecordLastFlashbackExportResult(exportId, result);
+            CompleteFlashbackExportDiagnostics(exportId, result);
+            LogFlashbackExportLiveEdgeFailure(
+                liveEdgePlan.FailureKind,
+                liveEdgePlan.PreservedArtifacts,
+                inPoint,
+                outPoint);
+            return FlashbackExportPreparationResult.Failure(result);
+        }
+
+        if (liveEdgePlan.ForceRotateFallbackUsed)
+        {
+            RecordFlashbackExportForceRotateFallback(
+                exportId,
+                liveEdgePlan.SegmentPaths?.Count ?? 0,
+                inPoint,
+                outPoint);
+            Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout segments={liveEdgePlan.SegmentPaths?.Count ?? 0} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
+        }
+
+        var selectedSegmentPaths = liveEdgePlan.SegmentPaths;
+        var segmentMetadata = selectedSegmentPaths is { Count: > 0 }
+            ? CaptureFlashbackExportSegmentMetadata(bufferManager)
+            : Array.Empty<FlashbackExportSegmentMetadata>();
+        var normalizedSegmentPaths = selectedSegmentPaths is { Count: > 0 }
+            ? CaptureFlashbackExportPathSnapshots(selectedSegmentPaths)
+            : null;
+        var requestPlan = FlashbackExportPlanner.CreateRequest(
             inPoint,
             outPoint,
             outputPath,
-            requireCompleteLiveEdge,
-            ct);
-        if (forceRotatePreparation.FailureResult is { } forceRotateFailure)
+            force,
+            normalizedSegmentPaths,
+            segmentMetadata,
+            selectedSegmentPaths is { Count: > 0 } ? null : bufferManager.ActiveFilePath);
+        if (requestPlan.FailureMessage is { } requestFailureMessage)
         {
-            return FlashbackExportPreparationResult.Failure(forceRotateFailure);
+            var result = FinalizeResult.Failure(outputPath, requestFailureMessage);
+            RecordLastFlashbackExportResult(exportId, result);
+            CompleteFlashbackExportDiagnostics(exportId, result);
+            return FlashbackExportPreparationResult.Failure(result);
         }
 
-        var segmentPaths = forceRotatePreparation.SegmentPaths;
-        var forceRotateFallbackUsed = forceRotatePreparation.ForceRotateFallbackUsed;
-        string? tsPath = null;
-
-        // Fallback: single-file export if no segments available.
-        if (segmentPaths == null)
+        if (requestPlan.UsesActiveFileFallback)
         {
-            tsPath = bufferManager.ActiveFilePath;
-            if (string.IsNullOrWhiteSpace(tsPath))
-            {
-                var result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-                RecordLastFlashbackExportResult(exportId, result);
-                CompleteFlashbackExportDiagnostics(exportId, result);
-                return FlashbackExportPreparationResult.Failure(result);
-            }
-
             Logger.Log(
                 "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK " +
-                $"path='{tsPath}' in_ms={(long)inPoint.TotalMilliseconds} " +
+                $"path='{requestPlan.Request!.InputTsPath}' in_ms={(long)inPoint.TotalMilliseconds} " +
                 $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
         }
 
-        var request = new FlashbackExportRequest
+        var request = requestPlan.Request! with
         {
-            Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths),
-            SegmentPaths = segmentPaths,
-            InputTsPath = tsPath,
-            InPoint = inPoint,
-            OutPoint = outPoint,
-            OutputPath = outputPath,
-            FastStart = false,
-            Force = force,
             AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(
                 flashbackSink,
-                throttleHighResolutionBaseline),
+                throttleHighResolutionBaseline)
         };
 
-        return FlashbackExportPreparationResult.Ready(request, forceRotateFallbackUsed);
+        return FlashbackExportPreparationResult.Ready(request, liveEdgePlan.ForceRotateFallbackUsed);
     }
 
-    private static IReadOnlyList<FlashbackExportSegment>? BuildFlashbackExportSegments(
-        FlashbackBufferManager? bufferManager,
-        IReadOnlyList<string>? segmentPaths)
+    private static IReadOnlyList<FlashbackExportSegmentMetadata> CaptureFlashbackExportSegmentMetadata(
+        FlashbackBufferManager bufferManager)
     {
-        if (segmentPaths is not { Count: > 0 })
-        {
-            return null;
-        }
-
-        var segmentInfo = bufferManager?.GetSegmentInfoList()
+        return bufferManager.GetSegmentInfoList()
             .Where(segment => !segment.IsActive)
-            .Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))
-            .Where(entry => !string.IsNullOrWhiteSpace(entry.Key))
-            .GroupBy(entry => entry.Key!, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.First().Segment, StringComparer.OrdinalIgnoreCase);
-        var segments = new List<FlashbackExportSegment>(segmentPaths.Count);
-        foreach (var path in segmentPaths)
+            .Select(segment => (NormalizedPath: TryGetFullPath(segment.Path), Segment: segment))
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.NormalizedPath))
+            .Select(entry => new FlashbackExportSegmentMetadata(
+                entry.NormalizedPath!,
+                entry.Segment.StartPtsMs,
+                entry.Segment.EndPtsMs))
+            .ToArray();
+    }
+
+    private static IReadOnlyList<FlashbackExportPathSnapshot> CaptureFlashbackExportPathSnapshots(
+        IReadOnlyList<string> segmentPaths)
+        => segmentPaths
+            .Select(path => new FlashbackExportPathSnapshot(path, TryGetFullPath(path)))
+            .ToArray();
+
+    private static void LogFlashbackExportLiveEdgeFailure(
+        FlashbackExportPlanFailureKind failureKind,
+        IReadOnlyList<string> preservedArtifacts,
+        TimeSpan inPoint,
+        TimeSpan outPoint)
+    {
+        switch (failureKind)
         {
-            var pathKey = TryGetFullPath(path);
-            if (segmentInfo != null &&
-                pathKey != null &&
-                segmentInfo.TryGetValue(pathKey, out var info))
-            {
-                var startPts = FromSegmentMilliseconds(info.StartPtsMs);
-                var endPts = FromSegmentMilliseconds(info.EndPtsMs);
-                if (endPts < startPts)
-                {
-                    endPts = startPts;
-                }
-
-                segments.Add(new FlashbackExportSegment
-                {
-                    Path = path,
-                    StartPts = startPts,
-                    EndPts = endPts
-                });
-            }
-            else
-            {
-                segments.Add(new FlashbackExportSegment { Path = path });
-            }
+            case FlashbackExportPlanFailureKind.ForceRotateFailed:
+                Logger.Log(
+                    "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED " +
+                    $"preserved_segments={preservedArtifacts.Count} " +
+                    $"in_ms={(long)inPoint.TotalMilliseconds} " +
+                    $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
+                break;
+            case FlashbackExportPlanFailureKind.ForceRotateCommittedPending:
+                Logger.Log(
+                    "FLASHBACK_EXPORT_FORCE_ROTATE_COMMITTED_PENDING_FAIL " +
+                    $"preserved_segments={preservedArtifacts.Count} " +
+                    $"in_ms={(long)inPoint.TotalMilliseconds} " +
+                    $"out_ms={(long)outPoint.TotalMilliseconds}");
+                break;
+            case FlashbackExportPlanFailureKind.IncompleteLiveEdge:
+                Logger.Log(
+                    "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL " +
+                    $"preserved_segments={preservedArtifacts.Count} " +
+                    $"in_ms={(long)inPoint.TotalMilliseconds} " +
+                    $"out_ms={(long)outPoint.TotalMilliseconds}");
+                break;
         }
-
-        return segments;
     }
 
     private static Func<int>? CreateFlashbackExportThrottleDelayProvider(
@@ -1850,203 +1892,6 @@ public partial class CaptureService
         }
     }
 
-    private static TimeSpan FromSegmentMilliseconds(long milliseconds)
-    {
-        if (milliseconds <= 0)
-        {
-            return TimeSpan.Zero;
-        }
-
-        return milliseconds >= TimeSpan.MaxValue.TotalMilliseconds
-            ? TimeSpan.MaxValue
-            : TimeSpan.FromMilliseconds(milliseconds);
-    }
-
-    private FlashbackExportForceRotatePreparation PrepareFlashbackExportForceRotateSegments(
-        FlashbackBufferManager bufferManager,
-        FlashbackEncoderSink? flashbackSink,
-        long exportId,
-        TimeSpan inPoint,
-        TimeSpan outPoint,
-        string outputPath,
-        bool requireCompleteLiveEdge,
-        CancellationToken ct)
-    {
-        if (flashbackSink == null)
-        {
-            return FlashbackExportForceRotatePreparation.Ready(null, forceRotateFallbackUsed: false);
-        }
-
-        var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);
-        var segmentPaths = forceRotateResult.SegmentPaths;
-        if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)
-        {
-            var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-            var result = FinalizeResult.Failure(
-                outputPath,
-                "Flashback export failed: live-edge segment rotation failed.",
-                preservedArtifacts);
-            RecordLastFlashbackExportResult(exportId, result);
-            CompleteFlashbackExportDiagnostics(exportId, result);
-            Logger.Log(
-                "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED " +
-                $"preserved_segments={preservedArtifacts.Count} " +
-                $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
-            return FlashbackExportForceRotatePreparation.Failure(result);
-        }
-
-        if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)
-        {
-            var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-            var result = FinalizeResult.Failure(
-                outputPath,
-                requireCompleteLiveEdge
-                    ? "Flashback recording finalize failed: live-edge segment was not closed before timeout."
-                    : "Flashback export failed: live-edge segment rotation committed but did not complete before timeout.",
-                preservedArtifacts);
-            RecordLastFlashbackExportResult(exportId, result);
-            CompleteFlashbackExportDiagnostics(exportId, result);
-            Logger.Log(
-                "FLASHBACK_EXPORT_FORCE_ROTATE_COMMITTED_PENDING_FAIL " +
-                $"preserved_segments={preservedArtifacts.Count} " +
-                $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                $"out_ms={(long)outPoint.TotalMilliseconds}");
-            return FlashbackExportForceRotatePreparation.Failure(result);
-        }
-
-        var forceRotateFallbackUsed = false;
-        if (segmentPaths.Count == 0)
-        {
-            if (requireCompleteLiveEdge)
-            {
-                var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-                var result = FinalizeResult.Failure(
-                    outputPath,
-                    "Flashback recording finalize failed: live-edge segment was not closed before timeout.",
-                    preservedArtifacts);
-                RecordLastFlashbackExportResult(exportId, result);
-                CompleteFlashbackExportDiagnostics(exportId, result);
-                Logger.Log(
-                    "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL " +
-                    $"preserved_segments={preservedArtifacts.Count} " +
-                    $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                    $"out_ms={(long)outPoint.TotalMilliseconds}");
-                return FlashbackExportForceRotatePreparation.Failure(result);
-            }
-
-            // ForceRotate timed out (AV1 encoder can be too slow to drain
-            // within the 3-second window). Completed segments before the
-            // active one are already finalized - query them directly.
-            // NOTE: The encoding thread may still be completing the rotation.
-            // This returns only already-completed segments - the live-edge
-            // segment may be missed if it hasn't been finalized yet. This is
-            // acceptable: the previous behavior returned a near-empty file.
-            segmentPaths = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
-            if (segmentPaths is { Count: > 0 })
-            {
-                forceRotateFallbackUsed = true;
-                RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);
-                Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
-            }
-            else
-            {
-                segmentPaths = null;
-            }
-        }
-
-        return FlashbackExportForceRotatePreparation.Ready(segmentPaths, forceRotateFallbackUsed);
-    }
-
-    private static (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)
-        ResolveFlashbackExportRangeAfterEvictionPaused(
-            FlashbackBufferManager manager,
-            TimeSpan? inPoint,
-            TimeSpan? outPoint,
-            TimeSpan? inPointFilePts,
-            TimeSpan? outPointFilePts)
-    {
-        var validStart = manager.ValidStartPts;
-        if (inPointFilePts.HasValue || outPointFilePts.HasValue)
-        {
-            var absoluteInPoint = inPointFilePts ?? validStart;
-            var absoluteOutPoint = outPointFilePts ?? TimeSpan.MaxValue;
-            if (absoluteInPoint < validStart)
-            {
-                return (false, absoluteInPoint, absoluteOutPoint, "Flashback export in point has been evicted from the buffer.");
-            }
-
-            if (absoluteOutPoint != TimeSpan.MaxValue && absoluteOutPoint <= validStart)
-            {
-                return (false, absoluteInPoint, absoluteOutPoint, "Flashback export out point has been evicted from the buffer.");
-            }
-
-            return absoluteOutPoint != TimeSpan.MaxValue && absoluteOutPoint <= absoluteInPoint
-                ? (false, absoluteInPoint, absoluteOutPoint, "Flashback export range is empty or invalid.")
-                : (true, absoluteInPoint, absoluteOutPoint, null);
-        }
-
-        var bufferedDuration = manager.BufferedDuration;
-        var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
-        var bufferOutPoint = outPoint.HasValue
-            ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)
-            : TimeSpan.MaxValue;
-        var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);
-        var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);
-        return fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint
-            ? (false, fileInPoint, fileOutPoint, "Flashback export range is empty or invalid.")
-            : (true, fileInPoint, fileOutPoint, null);
-    }
-
-    private static (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)
-        ResolveFlashbackExportLastNRangeAfterEvictionPaused(FlashbackBufferManager manager, double seconds)
-    {
-        var bufferedDuration = manager.BufferedDuration;
-        var validStart = manager.ValidStartPts;
-        var rangeStart = bufferedDuration.TotalSeconds > seconds
-            ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
-            : TimeSpan.Zero;
-        var fileInPoint = AddFlashbackPtsOffsetOrMax(rangeStart, validStart);
-        return (true, fileInPoint, TimeSpan.MaxValue, null);
-    }
-
-    private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)
-    {
-        if (bufferedDuration <= TimeSpan.Zero)
-        {
-            return TimeSpan.Zero;
-        }
-
-        if (position < TimeSpan.Zero)
-        {
-            return TimeSpan.Zero;
-        }
-
-        return position > bufferedDuration ? bufferedDuration : position;
-    }
-
-    private static TimeSpan AddFlashbackPtsOffsetOrMax(TimeSpan position, TimeSpan offset)
-    {
-        if (position == TimeSpan.MaxValue || offset == TimeSpan.MaxValue)
-        {
-            return TimeSpan.MaxValue;
-        }
-
-        if (position < TimeSpan.Zero)
-        {
-            position = TimeSpan.Zero;
-        }
-
-        if (offset <= TimeSpan.Zero)
-        {
-            return position;
-        }
-
-        return position > TimeSpan.MaxValue - offset
-            ? TimeSpan.MaxValue
-            : position + offset;
-    }
-
     private sealed record FlashbackExportPreparationResult(
         FlashbackExportRequest? Request,
         FinalizeResult? FailureResult,
@@ -2058,20 +1903,6 @@ public partial class CaptureService
             new(request, null, forceRotateFallbackUsed);
 
         public static FlashbackExportPreparationResult Failure(FinalizeResult result) =>
-            new(null, result, false);
-    }
-
-    private sealed record FlashbackExportForceRotatePreparation(
-        IReadOnlyList<string>? SegmentPaths,
-        FinalizeResult? FailureResult,
-        bool ForceRotateFallbackUsed)
-    {
-        public static FlashbackExportForceRotatePreparation Ready(
-            IReadOnlyList<string>? segmentPaths,
-            bool forceRotateFallbackUsed) =>
-            new(segmentPaths, null, forceRotateFallbackUsed);
-
-        public static FlashbackExportForceRotatePreparation Failure(FinalizeResult result) =>
             new(null, result, false);
     }
 
