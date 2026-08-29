@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Channels;
 using Sussudio.Models;
 using Sussudio.Services.Preview;
+using PlaybackCommand = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.Command;
+using CommandKind = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.CommandKind;
 
 namespace Sussudio.Services.Flashback;
 
@@ -583,7 +585,7 @@ internal sealed partial class FlashbackPlaybackController
     /// </summary>
     private void DecodeForwardToPauseTarget(
         FlashbackDecoder decoder,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         TimeSpan pauseTargetFilePts,
         TimeSpan frozenValidStart,
         int maxForwardDecodeFrames,
@@ -597,7 +599,7 @@ internal sealed partial class FlashbackPlaybackController
 
         for (var decodedCount = 0; decodedCount < maxForwardDecodeFrames; decodedCount++)
         {
-            if (commandChannel.Reader.TryPeek(out _))
+            if (commandChannel.TryPeek(out _))
             {
                 // A newer command already arrived -- keep the keyframe already
                 // displayed rather than spend time closing the gap for a frame
@@ -680,7 +682,7 @@ internal sealed partial class FlashbackPlaybackController
     private bool TryResolveAudioDriftFrameSkip(
         FlashbackDecoder decoder,
         Queue<DecodedVideoFrame> prebufferedFrames,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         Stopwatch pacingStopwatch,
         TimeSpan frozenValidStart,
         ref bool fileOpen,
@@ -712,7 +714,7 @@ internal sealed partial class FlashbackPlaybackController
         while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (commandChannel.Reader.TryPeek(out _))
+            if (commandChannel.TryPeek(out _))
             {
                 ReleaseHeldFrameBestEffort(videoFrame, "av_sync_skip_command_pending");
                 Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP_COMMAND_PENDING count={skipped} drift_ms={driftMs:F1}");
@@ -785,7 +787,7 @@ internal sealed partial class FlashbackPlaybackController
     private bool PaceAndDecodeFrame(
         FlashbackDecoder decoder,
         Queue<DecodedVideoFrame> prebufferedFrames,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         Stopwatch pacingStopwatch,
         ref TimeSpan frameDuration,
         ref bool fileOpen,
@@ -873,7 +875,7 @@ internal sealed partial class FlashbackPlaybackController
 
     private bool HandleEndOfSegment(
         FlashbackDecoder decoder,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         Stopwatch pacingStopwatch,
         TimeSpan frozenValidStart,
         ref bool fileOpen,
@@ -933,7 +935,7 @@ internal sealed partial class FlashbackPlaybackController
             }
         }
 
-        if (commandChannel.Reader.TryPeek(out _) || _disposedFlag != 0)
+        if (commandChannel.TryPeek(out _) || _disposedFlag != 0)
         {
             pacingStopwatch.Restart();
             return true;

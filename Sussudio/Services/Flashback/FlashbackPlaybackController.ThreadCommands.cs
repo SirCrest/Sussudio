@@ -7,14 +7,14 @@ using System.Threading.Channels;
 using Sussudio.Models;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
+using CommandKind = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.CommandKind;
+using PlaybackCommand = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.Command;
 
 namespace Sussudio.Services.Flashback;
 
 internal sealed partial class FlashbackPlaybackController
 {
     // --- Playback thread ---
-
-    private const int CommandQueueCapacity = 256;
 
     // Bounded forward-decode budget for pause-from-live frame accuracy (below):
     // one GOP at the current encode frame rate, clamped so a missing/zero
@@ -33,7 +33,6 @@ internal sealed partial class FlashbackPlaybackController
     private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
     private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
 
-    private Channel<PlaybackCommand> _commandChannel;
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
@@ -44,7 +43,9 @@ internal sealed partial class FlashbackPlaybackController
     [DllImport("winmm.dll", ExactSpelling = true)]
     private static extern uint timeEndPeriod(uint uMilliseconds);
 
-    private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)
+    private void PlaybackThreadEntry(
+        CancellationTokenSource cts,
+        FlashbackPlaybackCommandMailbox.Generation commandGeneration)
     {
         FlashbackDecoder? decoder = null;
         var pacingStopwatch = new Stopwatch();
@@ -68,7 +69,7 @@ internal sealed partial class FlashbackPlaybackController
                 PlaybackCommand cmd;
                 if (isPlaying)
                 {
-                    if (!commandChannel.Reader.TryRead(out cmd))
+                    if (!_commandMailbox.TryReadForPlayback(commandGeneration, out cmd))
                     {
                         if (cts.IsCancellationRequested)
                         {
@@ -79,20 +80,19 @@ internal sealed partial class FlashbackPlaybackController
 
                         if (decoder is { IsOpen: true })
                         {
-                            if (!PaceAndDecodeFrame(decoder, prebufferedFrames, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token))
+                            if (!PaceAndDecodeFrame(decoder, prebufferedFrames, commandGeneration.Reader, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token))
                             {
                                 isPlaying = false;
                             }
                         }
                         continue;
                     }
-                    TrackCommandDequeued(cmd);
                 }
                 else
                 {
-                    if (!commandChannel.Reader.TryRead(out cmd))
+                    if (!_commandMailbox.TryReadForPlayback(commandGeneration, out cmd))
                     {
-                        var canRead = commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
+                        var canRead = commandGeneration.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
                         if (!canRead)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed");
@@ -108,16 +108,14 @@ internal sealed partial class FlashbackPlaybackController
                             RestoreLiveForPlaybackThreadExit(ref decoder, ref fileOpen, "thread_disposed");
                             return;
                         }
-                        if (!commandChannel.Reader.TryRead(out cmd))
+                        if (!_commandMailbox.TryReadForPlayback(commandGeneration, out cmd))
                         {
                             continue;
                         }
                     }
-
-                    TrackCommandDequeued(cmd);
                 }
 
-                if (!ExecutePlaybackCommand(ref cmd, commandChannel, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch))
+                if (!ExecutePlaybackCommand(ref cmd, commandGeneration.Reader, cts, ref decoder, ref fileOpen, ref isPlaying, ref isScrubbing, ref frozenValidStart, ref pendingExactResumeTarget, ref frameDuration, prebufferedFrames, pacingStopwatch))
                 {
                     return;
                 }
@@ -136,7 +134,7 @@ internal sealed partial class FlashbackPlaybackController
         }
         finally
         {
-            CompletePlaybackThreadExit(prebufferedFrames, cts, commandChannel);
+            CompletePlaybackThreadExit(prebufferedFrames, cts, commandGeneration);
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
@@ -155,24 +153,22 @@ internal sealed partial class FlashbackPlaybackController
                 }
 
                 Logger.Log("FLASHBACK_PLAYBACK_THREAD_RECOVER reason=stale_stopped");
-                DrainAbandonedCommandsOnThreadExit(_commandChannel);
+                DrainAbandonedCommandsOnThreadExit(_commandMailbox.CurrentGeneration);
                 DisposePlaybackCtsBestEffort(_playCts, "recover_stale_thread");
                 _playCts = null;
                 _playbackThread = null;
-                Interlocked.Exchange(ref _pendingCommands, 0);
-                ClearQueuedCommandSlotsBarrier();
+                _commandMailbox.ResetPendingAndClearSlots();
                 Volatile.Write(ref _playbackThreadStarted, 0);
             }
 
             if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
                 return true;
 
-            // Recreate the command channel because StopPlaybackThread completes it.
-            _commandChannel = CreateCommandChannel();
-            var commandChannel = _commandChannel;
+            // Recreate the bounded mailbox generation because stopping completes it.
+            var commandGeneration = _commandMailbox.RenewGeneration();
             _playCts = new CancellationTokenSource();
             var threadCts = _playCts;
-            _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts, commandChannel))
+            _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts, commandGeneration))
             {
                 Name = "FlashbackPlayback",
                 IsBackground = true,
@@ -209,12 +205,13 @@ internal sealed partial class FlashbackPlaybackController
             var threadWasAlive = Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true };
             var activeKindAtRequest = FormatActiveCommandKind(Volatile.Read(ref _activeCommandKind));
             var activeElapsedMsAtRequest = GetActiveCommandElapsedMs(stopStarted);
+            var commandGeneration = _commandMailbox.CurrentGeneration;
             if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })
             {
                 SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
             }
 
-            _commandChannel.Writer.TryComplete();
+            _commandMailbox.Complete(commandGeneration);
 
             try
             {
@@ -247,7 +244,7 @@ internal sealed partial class FlashbackPlaybackController
                 $"FLASHBACK_PLAYBACK_STOP_THREAD_COMPLETE op={operation} duration_ms={stopElapsedMs:0.###} " +
                 $"thread_was_alive={threadWasAlive} thread_exited={threadExited} " +
                 $"active_at_request={activeKindAtRequest} active_ms_at_request={activeElapsedMsAtRequest:0.###} " +
-                $"pending={Volatile.Read(ref _pendingCommands)}");
+                $"pending={_commandMailbox.PendingCommands}");
 
             if (threadExited)
             {
@@ -255,8 +252,7 @@ internal sealed partial class FlashbackPlaybackController
                 DisposePlaybackCtsBestEffort(_playCts, "stop_thread");
                 _playCts = null;
                 _playbackThread = null;
-                Interlocked.Exchange(ref _pendingCommands, 0);
-                ClearQueuedCommandSlotsBarrier();
+                _commandMailbox.ResetPendingAndClearSlots();
                 Volatile.Write(ref _playbackThreadStarted, 0);
             }
 
@@ -267,12 +263,12 @@ internal sealed partial class FlashbackPlaybackController
     private void CompletePlaybackThreadExit(
         Queue<DecodedVideoFrame> prebufferedFrames,
         CancellationTokenSource cts,
-        Channel<PlaybackCommand> commandChannel)
+        FlashbackPlaybackCommandMailbox.Generation commandGeneration)
     {
         ClearPrebufferedFrames(prebufferedFrames, "thread_exit");
         timeEndPeriod(1);
-        CompleteCommandChannelForThreadExit(commandChannel);
-        DrainAbandonedCommandsOnThreadExit(commandChannel);
+        _commandMailbox.Complete(commandGeneration);
+        DrainAbandonedCommandsOnThreadExit(commandGeneration);
         var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);
         var ownsCts = ReferenceEquals(cts, _playCts);
         if (ownsPlaybackThread)
@@ -291,57 +287,18 @@ internal sealed partial class FlashbackPlaybackController
         ApplyDeferredPreviewAttachAfterStopTimeout();
     }
 
-    private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)
+    private void DrainAbandonedCommandsOnThreadExit(FlashbackPlaybackCommandMailbox.Generation commandGeneration)
     {
-        var abandoned = 0;
-        while (commandChannel.Reader.TryRead(out var command))
-        {
-            DecrementPendingCommands();
-            ClearQueuedCommandSlotForDroppedCommand(command);
-            if (command.Kind != CommandKind.Stop)
-            {
-                abandoned++;
-            }
-        }
+        var abandoned = _commandMailbox.DrainAbandoned(commandGeneration);
 
         if (abandoned > 0)
         {
-            Interlocked.Add(ref _commandsDropped, abandoned);
             if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))
             {
                 SetLastCommandFailure($"abandoned_on_exit:{abandoned}");
             }
-            Logger.Log($"FLASHBACK_PLAYBACK_CMD_ABANDONED count={abandoned}");
-        }
-
-        if (Volatile.Read(ref _pendingCommands) > 0)
-        {
-            Interlocked.Exchange(ref _pendingCommands, 0);
-        }
-
-        ClearQueuedCommandSlotsBarrier();
-    }
-
-    private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)
-    {
-        try
-        {
-            commandChannel.Writer.TryComplete();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_CHANNEL_COMPLETE_WARN type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
-
-    private Channel<PlaybackCommand> CreateCommandChannel()
-        => Channel.CreateBounded<PlaybackCommand>(
-            new BoundedChannelOptions(CommandQueueCapacity)
-            {
-                SingleReader = false,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.Wait
-            });
 
     private void RestoreLiveForPlaybackThreadExit(
         ref FlashbackDecoder? decoder,
@@ -374,7 +331,7 @@ internal sealed partial class FlashbackPlaybackController
 
     private bool ExecutePlaybackCommand(
         ref PlaybackCommand cmd,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -472,7 +429,7 @@ internal sealed partial class FlashbackPlaybackController
     }
 
     private void HandlePlayCommand(
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -562,7 +519,7 @@ internal sealed partial class FlashbackPlaybackController
     }
 
     private void HandlePauseCommand(
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -588,7 +545,7 @@ internal sealed partial class FlashbackPlaybackController
             frozenValidStart = _bufferManager.ValidStartPts;
             var pauseTarget = ResolvePauseFromLiveTarget(frozenValidStart);
             var pausePos = ClampPosition(SaturatingSubtract(pauseTarget, frozenValidStart), frozenValidStart);
-            if (ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))
+            if (_commandMailbox.ShouldYieldPauseFromLiveToQueuedSeekOrPlay(commandChannel))
             {
                 PlaybackPosition = pausePos;
                 pendingExactResumeTarget = SaturatingAdd(pausePos, frozenValidStart);
@@ -636,7 +593,7 @@ internal sealed partial class FlashbackPlaybackController
 
     private void HandleSeekCommand(
         ref PlaybackCommand cmd,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -648,17 +605,17 @@ internal sealed partial class FlashbackPlaybackController
         Queue<DecodedVideoFrame> prebufferedFrames,
         Stopwatch pacingStopwatch)
     {
-        cmd = ResolveSeekCommandPosition(cmd);
-        while (commandChannel.Reader.TryPeek(out var newerSeek) &&
+        cmd = _commandMailbox.ResolveLatestPosition(cmd);
+        while (commandChannel.TryPeek(out var newerSeek) &&
                newerSeek.Kind == CommandKind.Seek)
         {
-            if (!commandChannel.Reader.TryRead(out newerSeek))
+            if (!commandChannel.TryRead(out newerSeek))
             {
                 break;
             }
 
-            TrackCommandDequeued(newerSeek);
-            newerSeek = ResolveSeekCommandPosition(newerSeek);
+            _commandMailbox.TrackCommandDequeued(newerSeek);
+            newerSeek = _commandMailbox.ResolveLatestPosition(newerSeek);
             cmd = newerSeek;
         }
 
@@ -676,7 +633,7 @@ internal sealed partial class FlashbackPlaybackController
             frozenValidStart,
             "seek");
         cmd = cmd with { Position = ClampPosition(SaturatingSubtract(seekResumeTarget, frozenValidStart), frozenValidStart) };
-        if (ShouldYieldSeekToQueuedPlay(commandChannel))
+        if (_commandMailbox.ShouldYieldSeekToQueuedPlay(commandChannel))
         {
             PlaybackPosition = cmd.Position;
             pendingExactResumeTarget = seekResumeTarget;
@@ -807,7 +764,7 @@ internal sealed partial class FlashbackPlaybackController
 
     private void HandleUpdateScrubCommand(
         ref PlaybackCommand cmd,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,
@@ -816,7 +773,7 @@ internal sealed partial class FlashbackPlaybackController
         TimeSpan frozenValidStart)
     {
         pendingExactResumeTarget = null;
-        cmd = ResolveScrubUpdateCommandPosition(cmd);
+        cmd = _commandMailbox.ResolveLatestPosition(cmd);
         if (!isScrubbing)
         {
             MarkCommandNoOp(CommandKind.UpdateScrub, "not_scrubbing", cmd.Position);
@@ -824,20 +781,20 @@ internal sealed partial class FlashbackPlaybackController
         }
         // Drain stale UpdateScrub commands only. Leave control commands queued
         // so their latency/accounting stays tied to the original command.
-        while (commandChannel.Reader.TryPeek(out var newer) &&
+        while (commandChannel.TryPeek(out var newer) &&
                newer.Kind == CommandKind.UpdateScrub)
         {
-            if (!commandChannel.Reader.TryRead(out newer))
+            if (!commandChannel.TryRead(out newer))
             {
                 break;
             }
 
-            TrackCommandDequeued(newer);
-            newer = ResolveScrubUpdateCommandPosition(newer);
+            _commandMailbox.TrackCommandDequeued(newer);
+            newer = _commandMailbox.ResolveLatestPosition(newer);
             cmd = newer;
         }
         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
-        if (ShouldYieldScrubUpdateToQueuedControl(commandChannel))
+        if (_commandMailbox.ShouldYieldScrubUpdateToQueuedControl(commandChannel))
         {
             PlaybackPosition = cmd.Position;
             MarkCommandNoOp(CommandKind.UpdateScrub, "superseded_by_control", cmd.Position);
@@ -870,7 +827,7 @@ internal sealed partial class FlashbackPlaybackController
 
     private void HandleEndScrubCommand(
         PlaybackCommand cmd,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         CancellationTokenSource cts,
         ref FlashbackDecoder? decoder,
         ref bool fileOpen,

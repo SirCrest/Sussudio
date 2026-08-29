@@ -48,7 +48,7 @@ public sealed class FlashbackUxSeamTests
         Assert.DoesNotContain("SeekAndDisplayExactFrame", source);
 
         var method = global::Program.ExtractDeclaredMemberCode(source, "private void DecodeForwardToPauseTarget");
-        Assert.Contains("commandChannel.Reader.TryPeek", method);
+        Assert.Contains("commandChannel.TryPeek", method);
         Assert.Contains("ReleaseHeldFrameBestEffort(frame,", method);
         Assert.Contains("TrySubmitAndHoldFrame(frame,", method);
         Assert.Contains("maxForwardDecodeFrames", method);

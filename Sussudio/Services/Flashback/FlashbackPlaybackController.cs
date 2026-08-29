@@ -12,6 +12,8 @@ using Sussudio.Services.Audio;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Runtime;
+using CommandKind = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.CommandKind;
+using PlaybackCommand = Sussudio.Services.Flashback.FlashbackPlaybackCommandMailbox.Command;
 
 namespace Sussudio.Services.Flashback;
 
@@ -51,97 +53,32 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     // --- Scrub state restoration (M16 fix) ---
     private bool _wasPlayingBeforeScrub;
 
-    private enum CommandKind
-    {
-        Seek,
-        BeginScrub,
-        UpdateScrub,
-        EndScrub,
-        Play,
-        Pause,
-        GoLive,
-        Nudge,
-        Stop,
-        // Not a real playback command -- only used to attribute PreWarm's
-        // EnsurePlaybackThread call in diagnostics/failure logging. Never
-        // enqueued onto the command channel.
-        Warm
-    }
-
-    private readonly struct PlaybackCommand
-    {
-        public CommandKind Kind { get; init; }
-        public TimeSpan Position { get; init; }
-        public TimeSpan Delta { get; init; }
-        public bool HasPositionOverride { get; init; }
-        public SeekIntentSlot? SeekSlot { get; init; }
-        public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }
-        public long QueuedTimestamp { get; init; }
-    }
-
-    private sealed class SeekIntentSlot
-    {
-        public SeekIntentSlot(long ticks)
-        {
-            LatestTicks = ticks;
-        }
-
-        public long LatestTicks;
-    }
-
-    private sealed class ScrubUpdateIntentSlot
-    {
-        public ScrubUpdateIntentSlot(long ticks)
-        {
-            LatestTicks = ticks;
-        }
-
-        public long LatestTicks;
-    }
-
-    private long _commandsEnqueued;
-    private long _commandsProcessed;
-    private long _commandsDropped;
-    private int _pendingCommands;
-    private int _maxPendingCommands;
-    private long _lastCommandQueueLatencyMs;
-    private long _maxCommandQueueLatencyMs;
-    private string _maxCommandQueueLatencyCommand = "None";
-    private long _lastCommandQueuedUtcUnixMs;
-    private long _lastCommandProcessedUtcUnixMs;
-    private string _lastCommandQueued = "None";
-    private string _lastCommandProcessed = "None";
+    private readonly FlashbackPlaybackCommandMailbox _commandMailbox;
     private int _activeCommandKind = -1;
     private long _activeCommandStartedTimestamp;
 
-    public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);
-    public long CommandsProcessed => Interlocked.Read(ref _commandsProcessed);
-    public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
+    public long CommandsEnqueued => _commandMailbox.CommandsEnqueued;
+    public long CommandsProcessed => _commandMailbox.CommandsProcessed;
+    public long CommandsDropped => _commandMailbox.CommandsDropped;
     public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);
-    public long ScrubUpdatesCoalesced => Interlocked.Read(ref _scrubUpdatesCoalesced);
-    public long SeekCommandsCoalesced => Interlocked.Read(ref _seekCommandsCoalesced);
-    public int CommandQueueCapacityCommands => CommandQueueCapacity;
-    public int PendingCommands => Volatile.Read(ref _pendingCommands);
-    public int MaxPendingCommands => Volatile.Read(ref _maxPendingCommands);
-    public long LastCommandQueueLatencyMs => Interlocked.Read(ref _lastCommandQueueLatencyMs);
-    public long MaxCommandQueueLatencyMs => Interlocked.Read(ref _maxCommandQueueLatencyMs);
-    public string MaxCommandQueueLatencyCommand => Volatile.Read(ref _maxCommandQueueLatencyCommand);
-    public long LastCommandQueuedUtcUnixMs => Interlocked.Read(ref _lastCommandQueuedUtcUnixMs);
-    public long LastCommandProcessedUtcUnixMs => Interlocked.Read(ref _lastCommandProcessedUtcUnixMs);
+    public long ScrubUpdatesCoalesced => _commandMailbox.ScrubUpdatesCoalesced;
+    public long SeekCommandsCoalesced => _commandMailbox.SeekCommandsCoalesced;
+    public int CommandQueueCapacityCommands => FlashbackPlaybackCommandMailbox.Capacity;
+    public int PendingCommands => _commandMailbox.PendingCommands;
+    public int MaxPendingCommands => _commandMailbox.MaxPendingCommands;
+    public long LastCommandQueueLatencyMs => _commandMailbox.LastCommandQueueLatencyMs;
+    public long MaxCommandQueueLatencyMs => _commandMailbox.MaxCommandQueueLatencyMs;
+    public string MaxCommandQueueLatencyCommand => _commandMailbox.MaxCommandQueueLatencyCommand;
+    public long LastCommandQueuedUtcUnixMs => _commandMailbox.LastCommandQueuedUtcUnixMs;
+    public long LastCommandProcessedUtcUnixMs => _commandMailbox.LastCommandProcessedUtcUnixMs;
     public long LastCommandFailureUtcUnixMs => Interlocked.Read(ref _lastCommandFailureUtcUnixMs);
-    public string LastCommandQueued => Volatile.Read(ref _lastCommandQueued);
-    public string LastCommandProcessed => Volatile.Read(ref _lastCommandProcessed);
+    public string LastCommandQueued => _commandMailbox.LastCommandQueued;
+    public string LastCommandProcessed => _commandMailbox.LastCommandProcessed;
     public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);
     public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };
 
-    private long _latestScrubUpdateTicks;
-    private long _scrubUpdatesCoalesced;
-    private long _seekCommandsCoalesced;
     private long _commandsSkippedNotReady;
     private long _lastCommandFailureUtcUnixMs;
-    private readonly object _seekSlotSync = new();
-    private SeekIntentSlot? _queuedSeekSlot;
-    private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;
     private string _lastCommandFailure = string.Empty;
 
     private bool IsReady => _initialized && _disposedFlag == 0;
@@ -149,7 +86,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
         _bufferManager = bufferManager ?? throw new ArgumentNullException(nameof(bufferManager));
-        _commandChannel = CreateCommandChannel();
+        _commandMailbox = new FlashbackPlaybackCommandMailbox();
     }
 
     /// <summary>
@@ -217,13 +154,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             position);
     }
 
-    private void MarkCommandQueued(CommandKind kind)
-    {
-        Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        Volatile.Write(ref _lastCommandQueued, kind.ToString());
-        ClearLastCommandFailure();
-    }
-
     private void SetLastSubmitFailure(string failure)
     {
         Volatile.Write(ref _lastSubmitFailure, failure);
@@ -241,85 +171,6 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         Interlocked.Increment(ref _playbackDroppedFrames);
         Volatile.Write(ref _lastPlaybackDropReason, reason);
         Interlocked.Exchange(ref _lastPlaybackDropUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-    }
-
-    private void TrackCoalescedScrubUpdate()
-    {
-        var dropped = Interlocked.Increment(ref _commandsDropped);
-        var coalesced = Interlocked.Increment(ref _scrubUpdatesCoalesced);
-        if (coalesced == 1 || coalesced % 120 == 0)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_COALESCED count={coalesced} dropped={dropped}");
-        }
-    }
-
-    private void TrackCoalescedSeekCommand()
-    {
-        var coalesced = Interlocked.Increment(ref _seekCommandsCoalesced);
-        if (coalesced == 1 || coalesced % 120 == 0)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_SEEK_COALESCED count={coalesced}");
-        }
-    }
-
-    private void TrackCommandDequeued(PlaybackCommand command)
-    {
-        Interlocked.Increment(ref _commandsProcessed);
-        DecrementPendingCommands();
-        TrackCommandQueueLatency(command);
-        Interlocked.Exchange(ref _lastCommandProcessedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        Volatile.Write(ref _lastCommandProcessed, command.Kind.ToString());
-    }
-
-    private void TrackCommandQueueLatency(PlaybackCommand command)
-    {
-        if (command.QueuedTimestamp <= 0)
-        {
-            return;
-        }
-
-        var elapsedTicks = Stopwatch.GetTimestamp() - command.QueuedTimestamp;
-        var latencyMs = Math.Max(0, (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency));
-        Interlocked.Exchange(ref _lastCommandQueueLatencyMs, latencyMs);
-        UpdateMaxCommandQueueLatency(command.Kind, latencyMs);
-    }
-
-    private void UpdateMaxCommandQueueLatency(CommandKind commandKind, long latencyMs)
-    {
-        while (true)
-        {
-            var current = Interlocked.Read(ref _maxCommandQueueLatencyMs);
-            if (latencyMs <= current)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _maxCommandQueueLatencyMs, latencyMs, current) == current)
-            {
-                Volatile.Write(ref _maxCommandQueueLatencyCommand, commandKind.ToString());
-                return;
-            }
-        }
-    }
-
-    private void UpdateMaxPendingCommands(int value)
-        => AtomicMax.Update(ref _maxPendingCommands, value);
-
-    private void DecrementPendingCommands()
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref _pendingCommands);
-            if (current <= 0)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
-            {
-                return;
-            }
-        }
     }
 
     private static string FormatActiveCommandKind(int rawKind)
@@ -453,7 +304,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.BeginScrub, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.BeginScrub)) return false;
-        Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
+        _commandMailbox.SetLatestScrubUpdate(position);
         return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
     }
 
@@ -527,302 +378,55 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
     private bool SendCommand(PlaybackCommand command)
     {
-        lock (_seekSlotSync)
-        {
-            if (!SendCommandCore(command))
-            {
-                return false;
-            }
-
-            if (command.Kind != CommandKind.Seek)
-            {
-                _queuedSeekSlot = null;
-            }
-
-            if (command.Kind != CommandKind.UpdateScrub)
-            {
-                _queuedScrubUpdateSlot = null;
-            }
-
-            return true;
-        }
-    }
-
-    private bool SendCommandCore(PlaybackCommand command)
-    {
         if (_disposedFlag != 0 && command.Kind != CommandKind.Stop)
         {
             return RejectCommand(command.Kind, "disposed", "disposed", false);
         }
 
-        var queuedCommand = new PlaybackCommand
+        if (!_commandMailbox.TryEnqueue(command))
         {
-            Kind = command.Kind,
-            Position = command.Position,
-            Delta = command.Delta,
-            HasPositionOverride = command.HasPositionOverride,
-            SeekSlot = command.SeekSlot,
-            ScrubUpdateSlot = command.ScrubUpdateSlot,
-            QueuedTimestamp = Stopwatch.GetTimestamp()
-        };
-
-        var pending = Interlocked.Increment(ref _pendingCommands);
-        var droppedOldest = false;
-        var droppedCommand = default(PlaybackCommand);
-        if (!_commandChannel.Writer.TryWrite(queuedCommand) &&
-            (!IsCommandChannelOpenForDropRetry() ||
-             !TryDropOldestQueuedCommandForNewCommand(out droppedCommand) ||
-             !(droppedOldest = _commandChannel.Writer.TryWrite(queuedCommand))))
-        {
-            DecrementPendingCommands();
-            Interlocked.Increment(ref _commandsDropped);
-            var detail = FormatCommandDetail(command);
-            SetLastCommandFailure($"write_failed:{command.Kind}{detail}");
-            Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}{detail}");
+            SetLastCommandFailure($"write_failed:{command.Kind}{FormatCommandDetail(command)}");
             return false;
         }
 
-        if (droppedOldest)
-        {
-            TrackDroppedQueuedCommand(droppedCommand, queuedCommand.Kind);
-        }
-
-        Interlocked.Increment(ref _commandsEnqueued);
-        UpdateMaxPendingCommands(pending);
-        MarkCommandQueued(command.Kind);
+        ClearLastCommandFailure();
         return true;
-    }
-
-    private bool IsCommandChannelOpenForDropRetry()
-    {
-        try
-        {
-            var canWrite = _commandChannel.Writer.WaitToWriteAsync();
-            return !canWrite.IsCompletedSuccessfully || canWrite.Result;
-        }
-        catch (Exception ex) when (ex is ChannelClosedException or InvalidOperationException)
-        {
-            return false;
-        }
-    }
-
-    private bool TryDropOldestQueuedCommandForNewCommand(out PlaybackCommand droppedCommand)
-    {
-        if (!_commandChannel.Reader.TryRead(out droppedCommand))
-        {
-            return false;
-        }
-
-        DecrementPendingCommands();
-        return true;
-    }
-
-    private void TrackDroppedQueuedCommand(PlaybackCommand droppedCommand, CommandKind newCommandKind)
-    {
-        ClearQueuedCommandSlotForDroppedCommand(droppedCommand);
-
-        if (droppedCommand.Kind == CommandKind.Stop)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP_OLD kind=Stop new_kind={newCommandKind} reason=channel_full");
-            return;
-        }
-
-        Interlocked.Increment(ref _commandsDropped);
-        var detail = FormatCommandDetail(droppedCommand);
-        Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP_OLD kind={droppedCommand.Kind}{detail} new_kind={newCommandKind} reason=channel_full");
     }
 
     private bool SendSeekCommand(TimeSpan position)
     {
-        lock (_seekSlotSync)
+        if (_commandMailbox.TryEnqueueSeek(position) == FlashbackPlaybackCommandMailbox.EnqueueDisposition.Rejected)
         {
-            if (_queuedSeekSlot is { } queuedSlot)
-            {
-                _queuedScrubUpdateSlot = null;
-                queuedSlot.LatestTicks = position.Ticks;
-                TrackCoalescedSeekCommand();
-                ClearLastCommandFailure();
-                return true;
-            }
-
-            var slot = new SeekIntentSlot(position.Ticks);
-            _queuedSeekSlot = slot;
-            if (!SendCommandCore(new PlaybackCommand { Kind = CommandKind.Seek, Position = position, SeekSlot = slot }))
-            {
-                ClearQueuedSeekSlotUnsafe(slot);
-                return false;
-            }
-
-            _queuedScrubUpdateSlot = null;
-            return true;
+            SetLastCommandFailure($"write_failed:{CommandKind.Seek}{FormatCommandDetail(position: position)}");
+            return false;
         }
+
+        ClearLastCommandFailure();
+        return true;
     }
 
     private bool SendUpdateScrubCommand(TimeSpan position)
     {
-        lock (_seekSlotSync)
+        if (_commandMailbox.TryEnqueueScrubUpdate(position) == FlashbackPlaybackCommandMailbox.EnqueueDisposition.Rejected)
         {
-            Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
-            if (_queuedScrubUpdateSlot is { } queuedSlot)
-            {
-                _queuedSeekSlot = null;
-                queuedSlot.LatestTicks = position.Ticks;
-                TrackCoalescedScrubUpdate();
-                ClearLastCommandFailure();
-                return true;
-            }
-
-            var slot = new ScrubUpdateIntentSlot(position.Ticks);
-            _queuedScrubUpdateSlot = slot;
-            if (!SendCommandCore(new PlaybackCommand { Kind = CommandKind.UpdateScrub, Position = position, ScrubUpdateSlot = slot }))
-            {
-                ClearQueuedScrubUpdateSlotUnsafe(slot);
-                return false;
-            }
-
-            _queuedSeekSlot = null;
-            return true;
+            SetLastCommandFailure($"write_failed:{CommandKind.UpdateScrub}{FormatCommandDetail(position: position)}");
+            return false;
         }
+
+        ClearLastCommandFailure();
+        return true;
     }
 
     private bool SendEndScrubCommand(TimeSpan? position)
     {
-        lock (_seekSlotSync)
+        if (!_commandMailbox.TryEnqueueEndScrub(position, out var command))
         {
-            var commandTicks = position?.Ticks ??
-                               _queuedScrubUpdateSlot?.LatestTicks ??
-                               Interlocked.Read(ref _latestScrubUpdateTicks);
-            var commandPosition = TimeSpan.FromTicks(commandTicks);
-            if (position.HasValue)
-            {
-                Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Value.Ticks);
-            }
-
-            if (!SendCommandCore(new PlaybackCommand
-            {
-                Kind = CommandKind.EndScrub,
-                Position = commandPosition,
-                HasPositionOverride = position.HasValue
-            }))
-            {
-                return false;
-            }
-
-            _queuedSeekSlot = null;
-            _queuedScrubUpdateSlot = null;
-            return true;
-        }
-    }
-
-    private PlaybackCommand ResolveSeekCommandPosition(PlaybackCommand command)
-    {
-        var slot = command.SeekSlot;
-        if (slot is null)
-        {
-            return command;
-        }
-
-        lock (_seekSlotSync)
-        {
-            var resolved = command with { Position = TimeSpan.FromTicks(slot.LatestTicks) };
-            if (ReferenceEquals(_queuedSeekSlot, slot))
-            {
-                _queuedSeekSlot = null;
-            }
-
-            return resolved;
-        }
-    }
-
-    private PlaybackCommand ResolveScrubUpdateCommandPosition(PlaybackCommand command)
-    {
-        var slot = command.ScrubUpdateSlot;
-        if (slot is null)
-        {
-            return command;
-        }
-
-        lock (_seekSlotSync)
-        {
-            var resolved = command with { Position = TimeSpan.FromTicks(slot.LatestTicks) };
-            if (ReferenceEquals(_queuedScrubUpdateSlot, slot))
-            {
-                _queuedScrubUpdateSlot = null;
-            }
-
-            return resolved;
-        }
-    }
-
-    private void ClearQueuedSeekSlotUnsafe(SeekIntentSlot slot)
-    {
-        if (ReferenceEquals(_queuedSeekSlot, slot))
-        {
-            _queuedSeekSlot = null;
-        }
-    }
-
-    private void ClearQueuedScrubUpdateSlotUnsafe(ScrubUpdateIntentSlot slot)
-    {
-        if (ReferenceEquals(_queuedScrubUpdateSlot, slot))
-        {
-            _queuedScrubUpdateSlot = null;
-        }
-    }
-
-    private void ClearQueuedCommandSlotsBarrier()
-    {
-        lock (_seekSlotSync)
-        {
-            _queuedSeekSlot = null;
-            _queuedScrubUpdateSlot = null;
-        }
-    }
-
-    private void ClearQueuedCommandSlotForDroppedCommand(PlaybackCommand command)
-    {
-        lock (_seekSlotSync)
-        {
-            if (command.SeekSlot != null && ReferenceEquals(_queuedSeekSlot, command.SeekSlot))
-            {
-                _queuedSeekSlot = null;
-            }
-
-            if (command.ScrubUpdateSlot != null && ReferenceEquals(_queuedScrubUpdateSlot, command.ScrubUpdateSlot))
-            {
-                _queuedScrubUpdateSlot = null;
-            }
-        }
-    }
-
-    private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)
-    {
-        if (!commandChannel.Reader.TryPeek(out var next))
-        {
+            SetLastCommandFailure($"write_failed:{CommandKind.EndScrub}{FormatCommandDetail(command)}");
             return false;
         }
 
-        return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
-    }
-
-    private static bool ShouldYieldSeekToQueuedPlay(Channel<PlaybackCommand> commandChannel)
-    {
-        if (!commandChannel.Reader.TryPeek(out var next))
-        {
-            return false;
-        }
-
-        return next.Kind is CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
-    }
-
-    private static bool ShouldYieldPauseFromLiveToQueuedSeekOrPlay(Channel<PlaybackCommand> commandChannel)
-    {
-        if (!commandChannel.Reader.TryPeek(out var next))
-        {
-            return false;
-        }
-
-        return next.Kind is CommandKind.Seek or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
+        ClearLastCommandFailure();
+        return true;
     }
 
     private bool RejectCommand(
@@ -2300,7 +1904,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private void PrimePlaybackAudioBuffer(
         FlashbackDecoder decoder,
         Queue<DecodedVideoFrame> prebufferedFrames,
-        Channel<PlaybackCommand> commandChannel,
+        ChannelReader<PlaybackCommand> commandChannel,
         ref bool fileOpen,
         TimeSpan resumeTarget,
         string operation,
@@ -2330,7 +1934,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         while (decodedFrames < PlaybackAudioPrebufferDecodeFrameBudget)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (commandChannel.Reader.TryPeek(out var pendingCommand))
+            if (commandChannel.TryPeek(out var pendingCommand))
             {
                 commandPending = true;
                 pendingCommandKind = pendingCommand.Kind;
