@@ -587,12 +587,12 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackSuppressedExceptionsUseAppLogs();
 
     [Fact]
-    public Task FlashbackExporterCleanupIgnoresNonexistentDirectories()
-        => global::Program.FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory();
+    public Task FlashbackOutputTransactionCleanupIgnoresNonexistentDirectories()
+        => global::Program.FlashbackOutputTransaction_CleanupOrphanedTempFiles_HandlesNonexistentDirectory();
 
     [Fact]
-    public Task FlashbackExporterCleanupDeletesOrphanedTempFiles()
-        => global::Program.FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles();
+    public Task FlashbackOutputTransactionCleanupDeletesOrphanedTempFiles()
+        => global::Program.FlashbackOutputTransaction_CleanupOrphanedTempFiles_DeletesTempFiles();
 
     [Fact]
     public Task FlashbackExporterDoesNotScanUserOutputDirectoryForOrphans()
@@ -603,8 +603,12 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation();
 
     [Fact]
-    public Task FlashbackExporterOwnershipLivesInRootFile()
-        => global::Program.FlashbackExporter_OwnershipLivesInRootFile();
+    public Task FlashbackExporterOwnsFfmpegExportLifecycle()
+        => global::Program.FlashbackExporter_OwnsFfmpegExportLifecycle();
+
+    [Fact]
+    public Task FlashbackOutputTransactionOwnsFilesystemPublication()
+        => global::Program.FlashbackExportOutputTransaction_OwnsFilesystemPublication();
 
     [Fact]
     public Task FlashbackExporterRejectsNullRequests()
@@ -699,8 +703,8 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_RejectsOutputPathThatOverwritesSource();
 
     [Fact]
-    public Task FlashbackExporterInvalidTempOutputPreservesExistingExports()
-        => global::Program.FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport();
+    public Task FlashbackOutputTransactionRejectsEmptyTempAndPreservesExistingOutput()
+        => global::Program.FlashbackOutputTransaction_EmptyTempDoesNotReplaceExistingOutput();
 
     [Fact]
     public Task FlashbackExporterRefusesToOverwriteExistingDestinationWhenForceIsFalse()
@@ -711,12 +715,32 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_RefusesOverwriteWhenForceTrue();
 
     [Fact]
-    public Task FlashbackExporterDoesNotDeleteInvalidMovedFinalOutputs()
-        => global::Program.FlashbackExporter_FinalValidationFailurePreservesMovedOutput();
+    public Task FlashbackOutputTransactionPreservesOutputAfterPostMoveValidationFailure()
+        => global::Program.FlashbackOutputTransaction_PostMoveValidationFailurePreservesOutput();
 
     [Fact]
-    public Task FlashbackExporterCreatesUniqueTempOutputPaths()
-        => global::Program.FlashbackExporter_CreatesUniqueTempOutputPaths();
+    public Task FlashbackOutputTransactionCreatesUniqueTempOutputPaths()
+        => global::Program.FlashbackOutputTransaction_CreatesUniqueTempOutputPaths();
+
+    [Fact]
+    public Task FlashbackOutputTransactionReservationBlocksPathReplacement()
+        => global::Program.FlashbackOutputTransaction_ReservationBlocksPathReplacement();
+
+    [Fact]
+    public Task FlashbackOutputTransactionPublishesWithLiveReservation()
+        => global::Program.FlashbackExportOutputTransaction_PublishesWithLiveReservation();
+
+    [Fact]
+    public Task FlashbackOutputTransactionRefusesDestinationCreatedAfterReservation()
+        => global::Program.FlashbackExportOutputTransaction_RefusesDestinationCreatedAfterReservation();
+
+    [Fact]
+    public Task FlashbackOutputTransactionDoesNotPublishOrDeleteAReplacedTempPath()
+        => global::Program.FlashbackOutputTransaction_ReplacedTempPathIsNeverPublishedOrDeleted();
+
+    [Fact]
+    public Task FlashbackOutputTransactionAbandonDeletesOnlyItsUncommittedTemp()
+        => global::Program.FlashbackOutputTransaction_AbandonDeletesOnlyItsUncommittedTemp();
 }
 
 public sealed class FlashbackPlaybackContractsTests
@@ -1481,11 +1505,6 @@ static partial class Program
         AssertContains(segmentExportLoopBlock, "ReportProgress(");
         AssertContains(segmentExportLoopBlock, "\"segment_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
-        AssertContains(sourceText, "if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
-        AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
-        AssertContains(sourceText, "CloseOutputIo();");
-        AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                    progress,\n                    new ExportProgress(\n                        segIdx + 1,\n                        segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
         AssertContains(sourceText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)\n    {\n        value = NormalizeExportProgress(value, stage);");
@@ -1497,29 +1516,6 @@ static partial class Program
         AssertContains(sourceText, "private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)");
         AssertContains(sourceText, "(now - last) * 1000.0 / Stopwatch.Frequency < ProgressHeartbeatIntervalMs");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_WARN stage={stage} type={ex.GetType().Name} msg='{ex.Message}'\");");
-        AssertContains(sourceText, "private static long GetFileLengthBestEffort(string path)\n    {\n        try\n        {\n            return new FileInfo(path).Length;\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_WARN reason='output_length_unavailable' path='{path}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            return -1;\n        }\n    }");
-        AssertContains(sourceText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
-        AssertContains(sourceText, "outputBytes > 0");
-        AssertContains(sourceText, "Flashback export failed: output file is empty");
-        AssertContains(sourceText, "Flashback export failed: output file length unavailable");
-        AssertContains(sourceText, "private static bool TryFinalizeTempOutputFile(");
-        AssertContains(sourceText, "private bool TryFinalizeActiveOutputFile(");
-        AssertContains(sourceText, "Flashback export failed: temporary output file is empty before replacing");
-        AssertContains(sourceText, "MoveTempFileToOutputPath(tempLease, outputPath);");
-        AssertContains(sourceText, "TryOpenVerifiedTempLeaseHandle(");
-        AssertContains(sourceText, "SetFileInformationByHandle(handle, FileInformationClass.FileRenameInfo");
-        AssertContains(sourceText, "SetFileInformationByHandle(handle!, FileInformationClass.FileDispositionInfo");
-        AssertContains(sourceText, "Flashback export does not overwrite existing files");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN");
-        AssertDoesNotContain(sourceText, "DeleteInvalidFinalOutputIfPresent");
-        AssertDoesNotContain(sourceText, "File.Move(tmpPath, outputPath, overwrite: false)");
-        AssertDoesNotContain(sourceText, "File.Move(tmpPath, outputPath, overwrite: true)");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'\");");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' type={ex.GetType().Name} msg='{ex.Message}'\");");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'\");");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=close_input");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=close_output_io");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=free_output_context");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_UPDATE_WARN");
         AssertDoesNotContain(sourceText, "catch { /* Best-effort: segment may be deleted mid-export; progress tracking is non-critical */ }");
 
@@ -1751,7 +1747,38 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-    internal static Task FlashbackExporter_OwnershipLivesInRootFile()
+    internal static Task FlashbackExportOutputTransaction_OwnsFilesystemPublication()
+    {
+        var transactionText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportOutputTransaction.cs")
+            .Replace("\r\n", "\n");
+        var exporterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+        var finalizeBlock = ExtractTextBetween(
+            exporterText,
+            "private bool TryFinalizeActiveOutputFile(",
+            "private static bool TryValidateSegmentExportInputs(");
+
+        AssertContains(transactionText, "internal sealed class FlashbackExportOutputTransaction : IDisposable");
+        AssertDoesNotContain(transactionText, "partial class FlashbackExportOutputTransaction");
+        AssertContains(transactionText, "internal static bool TryReserve(");
+        AssertContains(transactionText, "internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(transactionText, "private void Abandon()");
+        AssertContains(transactionText, "FileMode.CreateNew");
+        AssertContains(transactionText, "private readonly record struct TempFileIdentity");
+        AssertContains(transactionText, "private bool TryOpenVerifiedHandle(");
+        AssertContains(transactionText, "replaceIfExists: false");
+        AssertContains(transactionText, "SetFileInformationByHandle(handle, FileInformationClass.FileRenameInfo");
+        AssertContains(transactionText, "SetFileInformationByHandle(handle!, FileInformationClass.FileDispositionInfo");
+        AssertContains(transactionText, "internal static void CleanupOrphanedTempFiles(string directory)");
+        AssertDoesNotContain(transactionText, "AVFormatContext");
+        AssertDoesNotContain(transactionText, "av_write_trailer");
+        AssertOccursBefore(finalizeBlock, "av_write_trailer", "CloseOutputIo();");
+        AssertOccursBefore(finalizeBlock, "CloseOutputIo();", "outputTransaction.TryPublish(");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackExporter_OwnsFfmpegExportLifecycle()
     {
         var requestsText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
@@ -1775,7 +1802,6 @@ static partial class Program
         var executionPolicyText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
         var singleFileText = executionPolicyText;
-        var outputFilesText = executionPolicyText;
         var validationText = executionPolicyText;
         var segmentValidationText = validationText;
         var libAvErrorsText = lifecycleText;
@@ -1881,31 +1907,20 @@ static partial class Program
         AssertContains(executionPolicyText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
         AssertContains(executionPolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
         AssertContains(executionPolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
-        AssertContains(outputFilesText, "private static void DeleteTempFileIfPresent(string tmpPath)");
-        AssertContains(outputFilesText, "private static void DeleteTempFileIfPresent(TempOutputLease tempLease)");
-        AssertContains(outputFilesText, "private static bool TryCreateUniqueTempOutputPath(string outputPath, out TempOutputLease tempLease, out string failureMessage)");
-        AssertContains(outputFilesText, "FileMode.CreateNew");
-        AssertContains(outputFilesText, "private sealed class TempOutputLease : IDisposable");
-        AssertContains(outputFilesText, "private readonly record struct TempFileIdentity");
-        AssertContains(outputFilesText, "[StructLayout(LayoutKind.Sequential, Pack = 4)]");
-        AssertContains(outputFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
-        AssertContains(outputFilesText, "private bool TryFinalizeActiveOutputFile(");
-        AssertContains(outputFilesText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
-        AssertContains(outputFilesText, "CloseOutputIo();");
-        AssertContains(outputFilesText, "TryFinalizeTempOutputLeaseFile(tempLease, outputPath, allowOverwrite, out outputBytes, out failureMessage)");
-        AssertContains(outputFilesText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
-        AssertContains(outputFilesText, "_activeTempPath = null;");
+        AssertContains(executionPolicyText, "private bool TryFinalizeActiveOutputFile(");
+        AssertContains(executionPolicyText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
+        AssertContains(executionPolicyText, "CloseOutputIo();");
+        AssertContains(executionPolicyText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage)");
+        AssertContains(executionPolicyText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(singleFileText, "av_write_trailer(_activeOutputContext)");
-        AssertContains(singleFileText, "CloseOutputIo();\n\n        if (!TryFinalizeTempOutputLeaseFile");
-        AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
-        AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
+        AssertContains(singleFileText, "CloseOutputIo();\n\n        if (!outputTransaction.TryPublish");
+        AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure))");
+        AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure))");
         AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
         AssertContains(lifecycleText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(lifecycleText, "private void DisposeExportLockBestEffort()");
         AssertContains(lifecycleText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");
         AssertContains(lifecycleText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
-        AssertContains(validationText, "private static long GetFileLengthBestEffort(string path)");
-        AssertContains(validationText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
         AssertContains(validationText, "private static bool IsSamePath(string? left, string? right)");
         AssertContains(validationText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
         AssertContains(validationText, "private static bool SegmentOverlapsExportRange(");
@@ -2427,7 +2442,7 @@ static partial class Program
 
                 var sourceText = ReadFlashbackExporterSource();
                 AssertDoesNotContain(sourceText, "var tmpPath = outputPath + \".tmp\";");
-                AssertContains(sourceText, "TryCreateUniqueTempOutputPath(outputPath, out tempLease, out var tempOutputFailure)");
+                AssertContains(sourceText, "FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure)");
             }
             finally
             {
@@ -2445,68 +2460,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackExporter_CreatesUniqueTempOutputPaths()
+    internal static Task FlashbackOutputTransaction_CreatesUniqueTempOutputPaths()
     {
-        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
-        var createTemp = exporterType.GetMethod("TryCreateUniqueTempOutputPath", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("TryCreateUniqueTempOutputPath not found.");
-
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_temp_unique_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
-        object? firstLease = null;
-        object? secondLease = null;
+        object? firstTransaction = null;
+        object? secondTransaction = null;
 
         try
         {
             var outputPath = Path.Combine(tempDir, "export.mp4");
-            var firstArgs = new object?[] { outputPath, null, string.Empty };
-            var firstCreated = (bool)(createTemp.Invoke(null, firstArgs)
-                ?? throw new InvalidOperationException("TryCreateUniqueTempOutputPath returned null."));
-            firstLease = firstArgs[1]!;
-            var firstTempPath = GetStringProperty(firstLease, "Path");
+            firstTransaction = ReserveOutputTransaction(outputPath);
+            var firstTempPath = GetOutputTransactionTemporaryPath(firstTransaction);
+            secondTransaction = ReserveOutputTransaction(outputPath);
+            var secondTempPath = GetOutputTransactionTemporaryPath(secondTransaction);
 
-            var secondArgs = new object?[] { outputPath, null, string.Empty };
-            var secondCreated = (bool)(createTemp.Invoke(null, secondArgs)
-                ?? throw new InvalidOperationException("TryCreateUniqueTempOutputPath returned null."));
-            secondLease = secondArgs[1]!;
-            var secondTempPath = GetStringProperty(secondLease, "Path");
-
-            AssertEqual(true, firstCreated, "First temp path is created");
-            AssertEqual(true, secondCreated, "Second temp path is created");
             AssertEqual(true, File.Exists(firstTempPath), "First unique temp file is reserved");
             AssertEqual(true, File.Exists(secondTempPath), "Second unique temp file is reserved");
             AssertEqual(false, string.Equals(firstTempPath, secondTempPath, StringComparison.OrdinalIgnoreCase), "Temp paths are unique per export");
             AssertEqual(false, string.Equals(firstTempPath, outputPath + ".tmp", StringComparison.OrdinalIgnoreCase), "Temp path is not deterministic output-plus-tmp");
             AssertContains(Path.GetFileName(firstTempPath), ".mp4.tmp");
             AssertContains(Path.GetFileName(secondTempPath), ".mp4.tmp");
-
-            var replacementPath = firstTempPath + ".replacement";
-            var replacementBlocked = false;
-            try
-            {
-                File.Move(firstTempPath, replacementPath);
-            }
-            catch (IOException)
-            {
-                replacementBlocked = true;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                replacementBlocked = true;
-            }
-
-            AssertEqual(true, replacementBlocked, "Open temp lease blocks replacement before native writer opens by name");
-            AssertEqual(true, File.Exists(firstTempPath), "First temp path remains reserved after blocked replacement");
-            AssertEqual(false, File.Exists(replacementPath), "Replacement path was not created");
         }
         finally
         {
-            if (firstLease is IDisposable firstDisposable)
+            if (firstTransaction is IDisposable firstDisposable)
             {
                 firstDisposable.Dispose();
             }
 
-            if (secondLease is IDisposable secondDisposable)
+            if (secondTransaction is IDisposable secondDisposable)
             {
                 secondDisposable.Dispose();
             }
@@ -2517,9 +2500,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
+    internal static Task FlashbackOutputTransaction_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
     {
-        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExportOutputTransaction");
         var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CleanupOrphanedTempFiles not found.");
 
@@ -2528,9 +2511,9 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles()
+    internal static Task FlashbackOutputTransaction_CleanupOrphanedTempFiles_DeletesTempFiles()
     {
-        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExportOutputTransaction");
         var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CleanupOrphanedTempFiles not found.");
 
@@ -2588,8 +2571,6 @@ static partial class Program
             "    private FinalizeResult ExportSegmentsCore(");
         AssertDoesNotContain(singleExportBlock, "var tmpPath = outputPath + \".tmp\";");
         AssertDoesNotContain(singleExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
-        AssertContains(singleExportBlock, "TryCreateUniqueTempOutputPath(outputPath, out tempLease, out var tempOutputFailure)");
-        AssertContains(singleExportBlock, "TryValidateDestinationDoesNotExist(outputPath, out var destinationFailure)");
 
         var segmentExportBlock = ExtractTextBetween(
             sourceText,
@@ -2597,44 +2578,38 @@ static partial class Program
             "    private SegmentPacketWriteResult WriteSegmentPacketsToActiveOutput(");
         AssertDoesNotContain(segmentExportBlock, "var tmpPath = outputPath + \".tmp\";");
         AssertDoesNotContain(segmentExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
-        AssertContains(segmentExportBlock, "TryCreateUniqueTempOutputPath(outputPath, out tempLease, out var tempOutputFailure)");
-        AssertContains(segmentExportBlock, "WriteSegmentPacketsToActiveOutput(");
 
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport()
+    internal static Task FlashbackOutputTransaction_EmptyTempDoesNotReplaceExistingOutput()
     {
-        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
-        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
-
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_finalize_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
+        object? transaction = null;
 
         try
         {
             var outputPath = Path.Combine(tempDir, "existing-export.mp4");
-            var tmpPath = outputPath + ".tmp";
             var existingBytes = new byte[] { 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74 };
             File.WriteAllBytes(outputPath, existingBytes);
-            File.WriteAllBytes(tmpPath, Array.Empty<byte>());
-
-            // Pass allowOverwrite=true so we exercise the empty-temp guard rather than
-            // the destination-exists guard: the existing export must still be preserved
-            // when the temp file itself is invalid.
-            var args = new object?[] { tmpPath, outputPath, true, 0L, string.Empty };
-            var finalized = (bool)(finalizeTemp.Invoke(null, args)
-                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
+            transaction = ReserveOutputTransaction(outputPath);
+            var tmpPath = GetOutputTransactionTemporaryPath(transaction);
+            ReleaseOutputTransactionReservation(transaction);
+            var finalized = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage);
 
             AssertEqual(false, finalized, "Invalid temp output is rejected");
-            AssertContains((string)args[4]!, "temporary output file is empty before replacing");
+            AssertContains(failureMessage, "temporary output file is empty before replacing");
             AssertEqual(true, File.Exists(outputPath), "Existing export remains present");
             AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing export length is preserved");
             AssertEqual(false, File.Exists(tmpPath), "Invalid temp output is deleted");
         }
         finally
         {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
 
@@ -2642,85 +2617,191 @@ static partial class Program
     }
 
     internal static Task FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse()
-    {
-        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
-        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
-
-        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_refuse_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-
-        try
-        {
-            var outputPath = Path.Combine(tempDir, "existing-take.mp4");
-            var tmpPath = outputPath + ".tmp";
-            var existingBytes = new byte[] { 0x66, 0x69, 0x72, 0x73, 0x74 };
-            var freshTempBytes = new byte[] { 0x6e, 0x65, 0x77 };
-            File.WriteAllBytes(outputPath, existingBytes);
-            File.WriteAllBytes(tmpPath, freshTempBytes);
-
-            // allowOverwrite=false means destination must be preserved, tmp must be deleted,
-            // and a structured refusal message must surface in the out failureMessage.
-            var args = new object?[] { tmpPath, outputPath, false, 0L, string.Empty };
-            var finalized = (bool)(finalizeTemp.Invoke(null, args)
-                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
-
-            AssertEqual(false, finalized, "Refuse-on-collision rejects the overwrite");
-            AssertContains((string)args[4]!, "destination file already exists");
-            AssertEqual(true, File.Exists(outputPath), "Existing take is preserved on refusal");
-            AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing take bytes are preserved on refusal");
-            AssertEqual(false, File.Exists(tmpPath), "Temporary export is cleaned up on refusal");
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-        }
-
-        return Task.CompletedTask;
-    }
+        => VerifyExporterRefusesExistingDestinationAsync(force: false);
 
     internal static Task FlashbackExporter_RefusesOverwriteWhenForceTrue()
+        => VerifyExporterRefusesExistingDestinationAsync(force: true);
+
+    private static async Task VerifyExporterRefusesExistingDestinationAsync(bool force)
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
-        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
-
-        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_force_{Guid.NewGuid():N}");
+        var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_force_{force}_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
+        object? exporter = null;
 
         try
         {
+            var inputPath = Path.Combine(tempDir, "input.ts");
             var outputPath = Path.Combine(tempDir, "existing-take.mp4");
-            var tmpPath = outputPath + ".tmp";
-            File.WriteAllBytes(outputPath, new byte[] { 0x6f, 0x6c, 0x64 });
-            var freshTempBytes = new byte[] { 0x6e, 0x65, 0x77, 0x65, 0x72 };
-            File.WriteAllBytes(tmpPath, freshTempBytes);
+            var existingBytes = new byte[] { 0x6f, 0x6c, 0x64 };
+            File.WriteAllBytes(inputPath, new byte[] { 0x47 });
+            File.WriteAllBytes(outputPath, existingBytes);
 
-            var args = new object?[] { tmpPath, outputPath, true, 0L, string.Empty };
-            var finalized = (bool)(finalizeTemp.Invoke(null, args)
-                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
+            exporter = Activator.CreateInstance(exporterType)!;
+            var request = Activator.CreateInstance(requestType)!;
+            SetPropertyBackingField(request, "InputTsPath", inputPath);
+            SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
+            SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(1));
+            SetPropertyBackingField(request, "OutputPath", outputPath);
+            SetPropertyBackingField(request, "FastStart", true);
+            SetPropertyBackingField(request, "Force", force);
 
-            AssertEqual(false, finalized, "Force=true refuses the overwrite");
-            AssertContains((string)args[4]!, "Flashback export does not overwrite existing files");
-            AssertEqual(true, File.Exists(outputPath), "Destination remains present after refusal");
-            AssertEqual(3L, new FileInfo(outputPath).Length, "Destination keeps its original bytes");
-            AssertEqual(false, File.Exists(tmpPath), "Temporary export is cleaned up on refusal");
+            var export = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("FlashbackExporter.ExportAsync not found.");
+            var task = export.Invoke(exporter, new object?[] { request, null, CancellationToken.None }) as Task
+                ?? throw new InvalidOperationException("FlashbackExporter.ExportAsync did not return Task.");
+            await task.ConfigureAwait(false);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), $"Force={force} refuses an existing destination");
+            AssertContains(GetStringProperty(result, "StatusMessage"), "Flashback export does not overwrite existing files");
+            AssertEqual(
+                true,
+                existingBytes.AsSpan().SequenceEqual(File.ReadAllBytes(outputPath)),
+                $"Force={force} preserves destination bytes");
+            AssertEqual(0, Directory.EnumerateFiles(tempDir, "*.mp4.tmp").Count(), $"Force={force} creates no temporary output");
         }
         finally
         {
+            if (exporter is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+    }
+
+    internal static Task FlashbackExportOutputTransaction_PublishesWithLiveReservation()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_publish_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        object? transaction = null;
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "final.mp4");
+            var expectedBytes = new byte[] { 0x66, 0x69, 0x6e, 0x61, 0x6c };
+            transaction = ReserveOutputTransaction(outputPath);
+            var tempPath = GetOutputTransactionTemporaryPath(transaction);
+            WriteTransactionTempWhileReservationIsLive(tempPath, expectedBytes);
+
+            var published = PublishOutputTransaction(transaction, outputPath, out var outputBytes, out var failureMessage);
+
+            AssertEqual(true, published, $"Owned temporary output publishes: {failureMessage}");
+            AssertEqual((long)expectedBytes.Length, outputBytes, "Published byte count is reported");
+            AssertEqual(
+                true,
+                expectedBytes.AsSpan().SequenceEqual(File.ReadAllBytes(outputPath)),
+                "Published bytes match the completed temporary output");
+            AssertEqual(false, File.Exists(tempPath), "Temporary path is consumed by publication");
+
+            ((IDisposable)transaction).Dispose();
+            AssertEqual(
+                true,
+                expectedBytes.AsSpan().SequenceEqual(File.ReadAllBytes(outputPath)),
+                "Disposal never removes a published output");
+        }
+        finally
+        {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
 
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackExporter_FinalValidationFailurePreservesMovedOutput()
+    internal static Task FlashbackOutputTransaction_ReservationBlocksPathReplacement()
     {
-        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
-        var finalizeCore = exporterType.GetMethod("TryFinalizeTempOutputFileCore", BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("TryFinalizeTempOutputFileCore not found.");
-        var validatorType = exporterType.GetNestedType("CompletedOutputValidator", BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("CompletedOutputValidator not found.");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_temp_reservation_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        object? transaction = null;
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "export.mp4");
+            transaction = ReserveOutputTransaction(outputPath);
+            var tempPath = GetOutputTransactionTemporaryPath(transaction);
+            var replacementPath = tempPath + ".replacement";
+            var replacementBlocked = false;
+
+            try
+            {
+                File.Move(tempPath, replacementPath);
+            }
+            catch (IOException)
+            {
+                replacementBlocked = true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                replacementBlocked = true;
+            }
+
+            AssertEqual(true, replacementBlocked, "Open reservation blocks replacement before native writer opens by name");
+            AssertEqual(true, File.Exists(tempPath), "Reserved path remains present");
+            AssertEqual(false, File.Exists(replacementPath), "Replacement path was not created");
+        }
+        finally
+        {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackExportOutputTransaction_RefusesDestinationCreatedAfterReservation()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_publish_race_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        object? transaction = null;
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "final.mp4");
+            var existingBytes = new byte[] { 0x65, 0x78, 0x69, 0x73, 0x74, 0x69, 0x6e, 0x67 };
+            transaction = ReserveOutputTransaction(outputPath);
+            var tempPath = GetOutputTransactionTemporaryPath(transaction);
+            WriteTransactionTempWhileReservationIsLive(tempPath, new byte[] { 0x6e, 0x65, 0x77 });
+            File.WriteAllBytes(outputPath, existingBytes);
+
+            var published = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage);
+
+            AssertEqual(false, published, "A destination created after reservation is not replaced");
+            AssertContains(failureMessage, "destination file already exists");
+            AssertEqual(
+                true,
+                existingBytes.AsSpan().SequenceEqual(File.ReadAllBytes(outputPath)),
+                "The raced-in destination keeps its bytes");
+            AssertEqual(false, File.Exists(tempPath), "The owned temporary output is cleaned after refusal");
+        }
+        finally
+        {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackOutputTransaction_PostMoveValidationFailurePreservesOutput()
+    {
+        var transactionType = RequireType("Sussudio.Services.Flashback.FlashbackExportOutputTransaction");
+        var finalizeCore = transactionType.GetMethod("TryPublishCore", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublishCore not found.");
+        var validatorType = transactionType.GetNestedType("CompletedOutputValidator", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.CompletedOutputValidator not found.");
         var validatorMethod = typeof(Program).GetMethod(
             nameof(ValidateFinalOutputFailureAfterMove),
             BindingFlags.Static | BindingFlags.NonPublic)
@@ -2729,29 +2810,166 @@ static partial class Program
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_final_validate_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
+        object? transaction = null;
 
         try
         {
             var outputPath = Path.Combine(tempDir, "final.mp4");
-            var tmpPath = outputPath + ".tmp";
+            transaction = ReserveOutputTransaction(outputPath);
+            var tmpPath = GetOutputTransactionTemporaryPath(transaction);
+            ReleaseOutputTransactionReservation(transaction);
             File.WriteAllBytes(tmpPath, new byte[] { 0x66, 0x69, 0x6e, 0x61, 0x6c });
 
-            var args = new object?[] { tmpPath, outputPath, true, 0L, string.Empty, validator };
-            var finalized = (bool)(finalizeCore.Invoke(null, args)
-                ?? throw new InvalidOperationException("TryFinalizeTempOutputFileCore returned null."));
+            var args = new object?[] { outputPath, 0L, string.Empty, validator };
+            var finalized = (bool)(finalizeCore.Invoke(transaction, args)
+                ?? throw new InvalidOperationException("TryPublishCore returned null."));
 
             AssertEqual(false, finalized, "Final validation failure is rejected");
-            AssertContains((string)args[4]!, "forced final validation failure");
+            AssertContains((string)args[2]!, "forced final validation failure");
             AssertEqual(false, File.Exists(tmpPath), "Temporary output was moved before final validation");
             AssertEqual(true, File.Exists(outputPath), "Invalid moved final output is not deleted by path");
             AssertEqual(5L, new FileInfo(outputPath).Length, "Moved output bytes remain for caller/operator inspection");
         }
         finally
         {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
 
         return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackOutputTransaction_ReplacedTempPathIsNeverPublishedOrDeleted()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_replaced_temp_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        object? transaction = null;
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "final.mp4");
+            transaction = ReserveOutputTransaction(outputPath);
+            var tempPath = GetOutputTransactionTemporaryPath(transaction);
+            ReleaseOutputTransactionReservation(transaction);
+            File.WriteAllBytes(tempPath, new byte[] { 0x6f, 0x77, 0x6e, 0x65, 0x64 });
+
+            var originalPath = tempPath + ".original";
+            File.Move(tempPath, originalPath);
+            var replacementBytes = new byte[] { 0x6e, 0x6f, 0x74, 0x2d, 0x6f, 0x75, 0x72, 0x73 };
+            File.WriteAllBytes(tempPath, replacementBytes);
+
+            var published = PublishOutputTransaction(transaction, outputPath, out _, out var failureMessage);
+
+            AssertEqual(false, published, "Replaced temp path is not published");
+            AssertContains(failureMessage, "temporary output path was replaced");
+            AssertEqual(false, File.Exists(outputPath), "Replacement is not published as final output");
+            AssertEqual(5L, new FileInfo(originalPath).Length, "Original reserved temp remains outside the replacement path");
+            AssertEqual((long)replacementBytes.Length, new FileInfo(tempPath).Length, "Replacement temp remains intact after failed publication");
+
+            ((IDisposable)transaction).Dispose();
+            AssertEqual((long)replacementBytes.Length, new FileInfo(tempPath).Length, "Disposal does not delete a replacement temp path");
+        }
+        finally
+        {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackOutputTransaction_AbandonDeletesOnlyItsUncommittedTemp()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_abandon_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        object? transaction = null;
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "final.mp4");
+            transaction = ReserveOutputTransaction(outputPath);
+            var tempPath = GetOutputTransactionTemporaryPath(transaction);
+            ReleaseOutputTransactionReservation(transaction);
+            File.WriteAllBytes(tempPath, new byte[] { 0x70, 0x61, 0x72, 0x74, 0x69, 0x61, 0x6c });
+
+            ((IDisposable)transaction).Dispose();
+
+            AssertEqual(false, File.Exists(tempPath), "Uncommitted transaction temp is deleted on abandonment");
+            AssertEqual(false, File.Exists(outputPath), "Abandonment never creates a final output");
+        }
+        finally
+        {
+            if (transaction is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static object ReserveOutputTransaction(string outputPath)
+    {
+        var transactionType = RequireType("Sussudio.Services.Flashback.FlashbackExportOutputTransaction");
+        var reserve = transactionType.GetMethod("TryReserve", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryReserve not found.");
+        var args = new object?[] { outputPath, null, string.Empty };
+        var reserved = (bool)(reserve.Invoke(null, args)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryReserve returned null."));
+        AssertEqual(true, reserved, "Temporary output transaction is reserved");
+        return args[1] ?? throw new InvalidOperationException("Temporary output transaction was not returned.");
+    }
+
+    private static string GetOutputTransactionTemporaryPath(object transaction)
+    {
+        var property = transaction.GetType().GetProperty(
+            "TemporaryPath",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TemporaryPath not found.");
+        return property.GetValue(transaction)?.ToString()
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TemporaryPath was null.");
+    }
+
+    private static void ReleaseOutputTransactionReservation(object transaction)
+    {
+        var release = transaction.GetType().GetMethod("ReleaseReservation", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.ReleaseReservation not found.");
+        release.Invoke(transaction, null);
+    }
+
+    private static void WriteTransactionTempWhileReservationIsLive(string tempPath, byte[] bytes)
+    {
+        using var writer = new FileStream(
+            tempPath,
+            FileMode.Open,
+            FileAccess.Write,
+            FileShare.ReadWrite);
+        writer.SetLength(0);
+        writer.Write(bytes, 0, bytes.Length);
+        writer.Flush(flushToDisk: true);
+    }
+
+    private static bool PublishOutputTransaction(
+        object transaction,
+        string outputPath,
+        out long outputBytes,
+        out string failureMessage)
+    {
+        var publish = transaction.GetType().GetMethod("TryPublish", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublish not found.");
+        var args = new object?[] { outputPath, 0L, string.Empty };
+        var published = (bool)(publish.Invoke(transaction, args)
+            ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublish returned null."));
+        outputBytes = (long)args[1]!;
+        failureMessage = (string)args[2]!;
+        return published;
     }
 
     private static Task FlashbackPlaybackController_PublicPlaybackState_LivesInRoot()

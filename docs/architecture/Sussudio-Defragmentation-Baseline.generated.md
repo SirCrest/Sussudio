@@ -1,18 +1,18 @@
-﻿# Sussudio Defragmentation Baseline - Generated
+# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-08-13T20:55:26Z
+Generated UTC: 2026-08-29T22:04:40Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 123 |
+| Production .cs files | 124 |
 | Test .cs files | 19 |
-| Core app .cs files (Sussudio/) | 89 |
-| Core app nonblank LoC (Sussudio/) | 93272 |
+| Core app .cs files (Sussudio/) | 90 |
+| Core app nonblank LoC (Sussudio/) | 93172 |
 | Sussudio.Tests .cs files | 18 |
-| Sussudio.Tests nonblank LoC | 59686 |
+| Sussudio.Tests nonblank LoC | 59905 |
 | Production .cs files under 60 lines | 0 (0.0%) |
 | Production .cs files under 80 lines | 2 (1.6%) |
 
@@ -26,20 +26,20 @@ Root: C:\Users\crest\source\repos\Sussudio
 | FlashbackPlaybackController | 3 | 5095 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | LibAvEncoder | 3 | 3050 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | MainViewModel | 3 | 5240 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
-| LoggingJsonContext | 1 | 573 | Sussudio/AppRuntime.cs |
-| SettingsJsonContext | 1 | 737 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 263 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 716 | Sussudio/Services/Capture/DeviceService.cs |
-| StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
+| LoggingJsonContext | 1 | 573 | Sussudio/AppRuntime.cs |
 | MainWindow | 1 | 2448 | Sussudio/MainWindow.xaml.cs |
+| SettingsJsonContext | 1 | 737 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
+| StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
 
 ## Largest production files
 
 | Lines | Path |
 | ---: | --- |
 | 5175 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
-| 3539 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 3099 | Sussudio/ViewModels/MainViewModel.cs |
+| 2887 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2875 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs |
 | 2760 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2718 | Sussudio/Services/Capture/CaptureService.Flashback.cs |

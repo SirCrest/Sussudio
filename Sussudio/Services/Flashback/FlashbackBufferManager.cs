@@ -489,7 +489,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Directory.CreateDirectory(sessionDirectory);
 
             // Clean up orphaned export temp files from previous sessions.
-            FlashbackExporter.CleanupOrphanedTempFiles(tempDirectory);
+            FlashbackExportOutputTransaction.CleanupOrphanedTempFiles(tempDirectory);
             FlashbackStartupCacheCleanup.CleanupStaleRootSegmentFiles(tempDirectory);
             FlashbackStartupCacheCleanup.CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);
             var cacheCleanup = FlashbackStartupSessionCacheBudget.CleanupSessionCacheBudget(

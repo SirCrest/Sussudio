@@ -450,6 +450,52 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_InitializeClearsRecordingPts();
 
     [Fact]
+    public void FlashbackBufferManagerInitializationDeletesStaleExportTemps()
+    {
+        global::Program.EnsureTargetAssemblyLoadedForXUnit();
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_init_cleanup_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        object? manager = null;
+
+        try
+        {
+            var staleTemp = Path.Combine(tempDir, "abandoned.mp4.tmp");
+            File.WriteAllText(staleTemp, "stale");
+            File.SetLastWriteTimeUtc(staleTemp, DateTime.UtcNow - TimeSpan.FromHours(1));
+
+            var assembly = SussudioAssembly.Load();
+            var optionsType = assembly.GetType("Sussudio.Models.FlashbackBufferOptions", throwOnError: true)!;
+            var options = RuntimeHelpers.GetUninitializedObject(optionsType);
+            SetBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
+            SetBackingField(options, "TempDirectory", tempDir);
+            SetBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
+
+            var managerType = assembly.GetType(
+                "Sussudio.Services.Flashback.FlashbackBufferManager",
+                throwOnError: true)!;
+            manager = Activator.CreateInstance(managerType, new[] { options })
+                ?? throw new InvalidOperationException("FlashbackBufferManager construction failed.");
+            managerType.GetMethod("Initialize")!.Invoke(manager, new object[] { "orphan-cleanup" });
+
+            Assert.False(File.Exists(staleTemp));
+        }
+        finally
+        {
+            (manager as IDisposable)?.Dispose();
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        static void SetBackingField(object instance, string name, object value)
+        {
+            var field = instance.GetType().GetField(
+                $"<{name}>k__BackingField",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} backing field not found.");
+            field.SetValue(instance, value);
+        }
+    }
+
+    [Fact]
     public Task FlashbackBufferManagerSegmentLookupReturnsCorrectFileForPosition()
         => global::Program.FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment();
 
