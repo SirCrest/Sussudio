@@ -58,8 +58,20 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.NativeXuAtCommandProvider_DeviceCommandsOwnPublicCommandSurface();
 
     [Fact]
-    public Task NativeXuRootOwnsTransportAndPayloadDecoding()
-        => global::Program.NativeXuAtCommandProvider_RootOwnsTransportAndPayloadDecoding();
+    public Task NativeXuProtocolOwnsPureFrameAndInfoFrameDecoding()
+        => global::Program.NativeXuAtProtocol_OwnsPureFrameAndInfoFrameDecoding();
+
+    [Fact]
+    public Task NativeXuProtocolBuildsExactAtFrameVectors()
+        => global::Program.NativeXuAtProtocol_BuildsExactAtFrameVectors();
+
+    [Fact]
+    public Task NativeXuProtocolExtractsEnvelopeWithLengthClamping()
+        => global::Program.NativeXuAtProtocol_ExtractsEnvelopeWithLengthClamping();
+
+    [Fact]
+    public Task NativeXuProtocolDecodesAviInfoFrameAndRejectsWrongType()
+        => global::Program.NativeXuAtProtocol_DecodesAviInfoFrameAndRejectsWrongType();
 
     [Fact]
     public Task NativeXuHdrMetadataDecodesEotfFromDataByte()
@@ -1336,48 +1348,124 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task NativeXuAtCommandProvider_RootOwnsTransportAndPayloadDecoding()
+    internal static Task NativeXuAtProtocol_OwnsPureFrameAndInfoFrameDecoding()
     {
         var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
+            .Replace("\r\n", "\n");
+        var protocolText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtProtocol.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
         AssertContains(providerRootText, "private static AtCommandResult SendAtCommand(");
-        AssertContains(providerRootText, "private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
-        AssertContains(providerRootText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
-        AssertContains(providerRootText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
-        AssertContains(providerRootText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
-        AssertContains(providerRootText, "const int HdrStaticMetadataChecksumOffset = 3;");
-        AssertContains(providerRootText, "const int HdrStaticMetadataDataStartOffset = HdrStaticMetadataChecksumOffset + 1;");
-        AssertContains(providerRootText, "const int HdrStaticMetadataEotfOffset = HdrStaticMetadataDataStartOffset;");
-        AssertContains(providerRootText, "buffer[InfoFrameLengthOffset] < 1");
-        AssertContains(providerRootText, "var eotf = buffer[HdrStaticMetadataEotfOffset];");
-        AssertContains(providerRootText, "private static string? InferFrameRateRational(double? frameRate)");
-        AssertContains(providerRootText, "private static SourceTelemetryConfidence ResolveConfidence(");
-        AssertContains(providerRootText, "private static string? TryDecodePrintableAscii(byte[] buffer)");
-        AssertContains(providerRootText, "private static string? DecodeCString(byte[] buffer)");
-        AssertContains(providerRootText, "private static string BoolToToken(bool? value)");
+        AssertContains(providerRootText, "NativeXuAtProtocol.BuildAtReadFrame(cmdCode)");
+        AssertContains(providerRootText, "NativeXuAtProtocol.BuildAtWriteFrame(cmdCode, inputData)");
+        AssertContains(providerRootText, "NativeXuAtProtocol.StripAtFrameEnvelope(responseFrame, responseBytes)");
+        AssertContains(providerRootText, "NativeXuAtProtocol.DecodeAviInfoFrame(results.AviInfo.Response)");
+        AssertContains(providerRootText, "NativeXuAtProtocol.DecodeHdrMetadata(results.HdrMetadata.Response)");
+        AssertDoesNotContain(providerRootText, "private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
+        AssertDoesNotContain(providerRootText, "private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
+        AssertDoesNotContain(providerRootText, "private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
+        AssertDoesNotContain(providerRootText, "private static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertContains(protocolText, "internal static class NativeXuAtProtocol");
+        AssertContains(protocolText, "internal static byte[] BuildAtReadFrame(int cmdCode)");
+        AssertContains(protocolText, "internal static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)");
+        AssertContains(protocolText, "internal static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)");
+        AssertContains(protocolText, "internal static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)");
+        AssertContains(protocolText, "internal static HdrMetadataInfo DecodeHdrMetadata(byte[] buffer)");
+        AssertContains(protocolText, "const int HdrStaticMetadataChecksumOffset = 3;");
+        AssertContains(protocolText, "const int HdrStaticMetadataDataStartOffset = HdrStaticMetadataChecksumOffset + 1;");
+        AssertContains(protocolText, "const int HdrStaticMetadataEotfOffset = HdrStaticMetadataDataStartOffset;");
+        AssertContains(protocolText, "buffer[InfoFrameLengthOffset] < 1");
+        AssertContains(protocolText, "var eotf = buffer[HdrStaticMetadataEotfOffset];");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.AtProtocol.cs")),
-            "AT transport and payload decoding folded into the NativeXuAtCommandProvider root read owner");
+            "the old Native XU provider AT-protocol partial stays removed");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.PayloadDecoding.cs")),
-            "payload decoding folded into the NativeXuAtCommandProvider root read owner");
+            "the old Native XU provider payload-decoding partial stays removed");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.AtProtocol.cs");
         AssertDoesNotContain(probeProjectText, "NativeXuAtCommandProvider.PayloadDecoding.cs");
+        AssertContains(probeProjectText, "NativeXuAtProtocol.cs");
 
         return Task.CompletedTask;
     }
 
+    internal static Task NativeXuAtProtocol_BuildsExactAtFrameVectors()
+    {
+        var protocolType = RequireType("Sussudio.Services.Telemetry.NativeXuAtProtocol");
+        var buildReadFrame = RequireNativeXuAtProtocolMethod(protocolType, "BuildAtReadFrame", typeof(int));
+        var buildWriteFrame = RequireNativeXuAtProtocolMethod(protocolType, "BuildAtWriteFrame", typeof(int), typeof(byte[]));
+
+        Assert.Equal(
+            new byte[] { 0xA1, 0x06, 0x00, 0x00, 0x92, 0x00, 0x00, 0x00, 0xC7 },
+            InvokeByteArray(buildReadFrame, 0x92));
+        Assert.Equal(
+            new byte[] { 0xA1, 0x06, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0x45 },
+            InvokeByteArray(buildReadFrame, 0x12345678));
+        Assert.Equal(
+            new byte[] { 0xA1, 0x07, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x01, 0x23 },
+            InvokeByteArray(buildWriteFrame, 0x34, new byte[] { 0x01 }));
+        Assert.Equal(
+            new byte[] { 0xA1, 0x06, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00, 0x07 },
+            InvokeByteArray(buildWriteFrame, 0x52, Array.Empty<byte>()));
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task NativeXuAtProtocol_ExtractsEnvelopeWithLengthClamping()
+    {
+        var protocolType = RequireType("Sussudio.Services.Telemetry.NativeXuAtProtocol");
+        var stripEnvelope = RequireNativeXuAtProtocolMethod(protocolType, "StripAtFrameEnvelope", typeof(byte[]), typeof(int));
+
+        var responseFrame = new byte[] { 0xA1, 0x06, 0x00, 0x00, 0x78, 0x56, 0x34, 0x12, 0x45 };
+        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, InvokeByteArray(stripEnvelope, responseFrame, responseFrame.Length));
+        Assert.Empty(InvokeByteArray(stripEnvelope, responseFrame, -1));
+        Assert.Empty(InvokeByteArray(stripEnvelope, responseFrame, 5));
+        Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, InvokeByteArray(stripEnvelope, responseFrame, 99));
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task NativeXuAtProtocol_DecodesAviInfoFrameAndRejectsWrongType()
+    {
+        var protocolType = RequireType("Sussudio.Services.Telemetry.NativeXuAtProtocol");
+        var decodeAvi = RequireNativeXuAtProtocolMethod(protocolType, "DecodeAviInfoFrame", typeof(byte[]));
+
+        var avi = decodeAvi.Invoke(null, new object[] { new byte[] { 0x82, 0x02, 0x0D, 0x00, 0x60, 0xC0, 0x68, 0x00 } })
+            ?? throw new InvalidOperationException("DecodeAviInfoFrame returned null.");
+        AssertEqual(true, GetPropertyValue(avi, "HasData"), "AVI InfoFrame presence");
+        AssertEqual("YCbCr420", GetPropertyValue(avi, "ColorSpace"), "AVI InfoFrame color space");
+        AssertEqual("BT.2020", GetPropertyValue(avi, "Colorimetry"), "AVI InfoFrame colorimetry");
+        AssertEqual("Full", GetPropertyValue(avi, "Quantization"), "AVI InfoFrame quantization");
+
+        var invalidAvi = decodeAvi.Invoke(null, new object[] { new byte[] { 0x81, 0x02, 0x0D, 0x00, 0x60, 0xC0, 0x68, 0x00 } })
+            ?? throw new InvalidOperationException("DecodeAviInfoFrame returned null.");
+        AssertEqual(false, GetPropertyValue(invalidAvi, "HasData"), "AVI InfoFrame type validation");
+        return Task.CompletedTask;
+    }
+
+    private static MethodInfo RequireNativeXuAtProtocolMethod(Type protocolType, string methodName, params Type[] parameterTypes)
+        => protocolType.GetMethod(
+               methodName,
+               BindingFlags.NonPublic | BindingFlags.Static,
+               binder: null,
+               types: parameterTypes,
+               modifiers: null)
+           ?? throw new InvalidOperationException($"NativeXuAtProtocol.{methodName} not found.");
+
+    private static byte[] InvokeByteArray(MethodInfo method, params object[] arguments)
+        => method.Invoke(null, arguments) as byte[]
+           ?? throw new InvalidOperationException($"{method.Name} did not return a byte array.");
+
     internal static Task NativeXuAtCommandProvider_HdrMetadataDecodesEotfFromDataByte()
     {
-        var providerType = RequireType("Sussudio.Services.Telemetry.NativeXuAtCommandProvider");
-        var decodeHdrMetadata = providerType.GetMethod(
+        var protocolType = RequireType("Sussudio.Services.Telemetry.NativeXuAtProtocol");
+        var decodeHdrMetadata = protocolType.GetMethod(
             "DecodeHdrMetadata",
             BindingFlags.NonPublic | BindingFlags.Static)
-            ?? throw new InvalidOperationException("NativeXuAtCommandProvider.DecodeHdrMetadata not found.");
+            ?? throw new InvalidOperationException("NativeXuAtProtocol.DecodeHdrMetadata not found.");
 
         var checksumLooksHdrButDataByteIsSdr = DecodeHdrMetadata(
             decodeHdrMetadata,

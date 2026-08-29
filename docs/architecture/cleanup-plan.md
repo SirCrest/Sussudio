@@ -1249,18 +1249,19 @@ failure paths, source-shape/result DTO/script contracts, ffprobe failure,
 process-priority, codec, Flashback verification format, mismatch, HDR, and
 cadence scenarios that use that seam.
 
-Native XU provider ownership now lives in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`. Keep public
-`ReadAsync`, selected-interface reading, active rolling polling, AT-command
-transport/parsing, selector-4 I2C writes, payload decoding, reference/full and
-rolling snapshot assembly, diagnostic summary formatting, source telemetry
-detail rows, flash-audio input interpretation, analog-gain detail insertion,
-audio-origin policy, generic public AT SET/read wrappers, public
-`SwitchAudioInputAsync` and `SetAnalogGainAsync` entry points, the HDMI/Analog
-codec switch sequence, and analog gain register mapping/writes together there
-while they remain one linked-source provider. `tools/NativeXuAudioProbe` links
-the provider root explicitly, so update its project file whenever this provider
-root or its shared contracts change.
+Native XU runtime ownership now spans
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs` and
+`Sussudio/Services/Telemetry/NativeXuAtProtocol.cs`. Keep public `ReadAsync`,
+selected-interface reading, active rolling polling, XU transport, selector-4
+I2C writes, scalar parsing, reference/full and rolling snapshot assembly,
+diagnostic summary formatting, source telemetry detail rows, flash-audio input
+interpretation, analog-gain detail insertion, audio-origin policy, generic
+public AT SET/read wrappers, public `SwitchAudioInputAsync` and
+`SetAnalogGainAsync` entry points, the HDMI/Analog codec switch sequence, and
+analog gain register mapping/writes in the provider. Keep pure AT frame/LRC and
+envelope handling plus AVI/HDR InfoFrame decoding in the protocol helper.
+`tools/NativeXuAudioProbe` links both files explicitly, so update its project
+file whenever either owner or its shared contracts change.
 Public device command routing now stays with the read/transport owner while
 shared device support continues to enforce identity, selected-interface, and
 transport gates.
@@ -1268,8 +1269,10 @@ Shared device identity, selected-interface projection, and native transport
 gating live in `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs`;
 the root provider dispatches through that support into telemetry polling.
 
-Selector-4 I2C payload writes now live with the root provider's AT transport
-helpers in `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`.
+Selector-4 I2C payload writes stay with the provider's XU transport in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`; raw AT frame
+construction, LRC, and response-envelope stripping live in
+`Sussudio/Services/Telemetry/NativeXuAtProtocol.cs`.
 
 Native XU selected-interface reading and active rolling polling now live in the root provider,
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, with public
@@ -1278,10 +1281,11 @@ Keep interface open failures, topology reads, dev-specific node selection,
 per-node rolling-read iteration, and node-read failure classification there so
 the public read path stays in one cohesive owner. Keep poll cadence gates,
 cached AT-command fields, incomplete-cache handling, group advancement, rolling
-command batch construction/refresh, per-command cancellation checks, raw AT
-read/write frame construction, LRC/envelope handling, selector-4 I2C payload
-writes, payload decoders, scalar helpers, and command failure formatting there
-with the node-read path that calls them.
+command batch construction/refresh, per-command cancellation checks, selector-4
+I2C payload writes, scalar helpers, and command failure formatting there with
+the node-read path that calls them. The provider calls
+`NativeXuAtProtocol.cs` for raw AT frames, LRC/envelope handling, and AVI/HDR
+InfoFrame decoding.
 
 Native XU source snapshot assembly now lives in
 `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, including source
@@ -1292,11 +1296,11 @@ contract, VIC/frame-rate lookup policy, AT-command-result decode into
 diagnostic-summary token contract, extended AT result field formatting,
 full-vs-rolling logging switches, flash-audio analog-gain row insertion, and
 snapshot audio-origin policy there.
-Native XU payload decoding now lives with the root provider's AT transport
-helpers in `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`. Keep AVI
-InfoFrame decoding, HDR metadata decoding, scalar/ascii payload reads,
-frame-rate rational inference, confidence scoring, and boolean token helpers
-there with the frame/LRC/envelope helpers that feed them.
+Native XU AVI and HDR InfoFrame decoding now lives with frame/LRC/envelope
+handling in `Sussudio/Services/Telemetry/NativeXuAtProtocol.cs`. Keep
+scalar/ascii payload reads, frame-rate rational inference, confidence scoring,
+and boolean token helpers in `NativeXuAtCommandProvider.cs` with the snapshot
+policy that consumes them.
 
 Flashback encoder sink startup, producer queueing, encoding-thread work, and
 public runtime state now live in
@@ -1706,12 +1710,13 @@ export, and process/system health fields. Keep these pure automation DTOs in
 `AutomationModels.cs` unless a future model grows behavior or external
 linked-source constraints.
 
-Native XU AT-command transport and payload parsing now live in
-`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`. Keep raw
-AT read/write frames, LRC/envelope handling, selector-4 I2C payload writes,
-device-ID parsing, payload decoders, scalar helpers, and command failure
-formatting there with rolling telemetry polling and the active read path, and
-keep shared source snapshot assembly in the same provider root.
+Native XU AT-command transport and policy live in
+`Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`; pure framing and
+InfoFrame decoding live in `NativeXuAtProtocol.cs`. Keep selector-4 I2C payload
+writes, device-ID and scalar parsing, command failure formatting, rolling
+telemetry polling, the active read path, and shared source snapshot assembly in
+the provider. Keep raw AT read/write frames, LRC/envelope handling, and AVI/HDR
+InfoFrame decoding in the protocol helper.
 
 Runtime capture snapshot projection now lives in
 `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples the
