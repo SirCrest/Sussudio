@@ -6,10 +6,10 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <!--
-      Dual-stack test runner. The legacy custom Program Main in HarnessCore.cs runs the
-      remaining HarnessCheckCatalog checks via reflection ('dotnet run' with the Sussudio.dll path); xUnit
-      cases land via 'dotnet test' once VSTest discovers the Fact/Theory
-      members. Migration is incremental, see tests/Sussudio.Tests/MIGRATION.md.
+      xUnit owns regression execution. Program.Main in HarnessCore.cs remains only as
+      the assembly-load smoke entry point used by offline validation. Migration now
+      removes test implementations from the shared Program helper namespace one area
+      at a time; see tests/Sussudio.Tests/MIGRATION.md.
     -->
     <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>false</GenerateProgramFile>

@@ -1,15 +1,15 @@
 # Sussudio.Tests Migration Plan
 
-The test project runs a large legacy check catalog through a hand-rolled
-`Program` runner in `HarnessCore.cs` that loads `Sussudio.dll` via reflection. Cluster
-`test-framework-migration` opens the dual-stack path: keep the legacy runner,
-add xUnit alongside, and port incrementally.
+The test project runs regression coverage through xUnit. `Program.Main` in
+`HarnessCore.cs` only performs the offline assembly-load smoke check; it no longer
+runs a hand-written check catalog. The remaining migration work is to move test
+implementations and shared fixtures out of the oversized `Program` helper namespace.
 
 ## What's in place
 
 - xUnit 2.9 + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` referenced
-  in `Sussudio.Tests.csproj`. `OutputType=Exe` stays so the legacy runner keeps
-  working via `dotnet run`; `dotnet test` discovers `[Fact]`/`[Theory]` members.
+  in `Sussudio.Tests.csproj`. `OutputType=Exe` stays for the assembly-load smoke
+  command; `dotnet test` owns all regression execution.
 - `[assembly: InternalsVisibleTo("Sussudio.Tests")]` on `Sussudio` and
   `tools/ssctl`. The seam is open even though tests still resolve types via
   reflection — see the targeting note below for why direct references stay
@@ -111,8 +111,8 @@ add xUnit alongside, and port incrementally.
 - `XUnit.ToolContractsTests.cs` owns the former legacy ssctl
   command-handler routing, source ownership, and catalog-backed help contract
   checks.
-- `HarnessCore.cs` owns the legacy runner entry point and the xUnit bootstrap
-  helper that initializes the staged app assembly before wrappers call legacy
+- `HarnessCore.cs` owns the assembly-load smoke entry point and the xUnit bootstrap
+  helper that initializes the staged app assembly before wrappers call shared
   reflection helpers.
 - `tests/Sussudio.Tests/XUnit.FlashbackFatalPathContractsTests.cs` owns the
   2026-07 flashback hardening contracts for the fatal-error path: cleanup
@@ -152,8 +152,8 @@ add xUnit alongside, and port incrementally.
   core sampler/metric/health checks, and runner behavior checks. The public
   wrapper classes remain separate inside this file so existing test identities
   stay stable while the execution surface is easier to scan.
-- `HarnessCore.cs` keeps the legacy runner entry point, but the
-  diagnostic-session catalog has no remaining legacy registrations.
+- `HarnessCore.cs` keeps only the assembly-load smoke entry point; the
+  diagnostic-session regression catalog runs entirely through xUnit.
 - `XUnit.PresentationPreviewContractsTests.cs` owns the former legacy
   presentation-preview harness registration guard.
 - `XUnit.ModelContractsTests.cs` owns the direct xUnit coverage for pure
@@ -240,8 +240,8 @@ in xUnit and must be run with `dotnet test`.
 
 ## Migration order
 
-Port in roughly this order, then retire the legacy `Program` runner once
-every check has a `[Fact]`/`[Theory]` equivalent:
+Migrate implementations in roughly this order, then retire the global `Program`
+helper namespace once each xUnit class owns its own checks and fixtures:
 
 1. **Pure-data Model tests** (`CaptureSettings`, `MediaFormat`,
    `RecordingFormat`, `SplitEncodeSupport`, etc.). Until the app-facing model
@@ -275,9 +275,9 @@ every check has a `[Fact]`/`[Theory]` equivalent:
 - For HDR/P010 paths, prefer behavioural tests that drive the encoder against a
   small fixture buffer. Source-grep contract assertions stay only when the
   public API shape is the contract.
-- Keep the `Program` assembly-load smoke entry point available while the repo
-  still requires the offline `dotnet exec` validation step; add all regression
-  coverage to xUnit.
+- Keep the assembly-load smoke entry point available while the repo still
+  requires the offline `dotnet exec` validation step; add all regression coverage
+  to xUnit and keep moving implementations out of `Program`.
 
 ## Open work tracked separately
 

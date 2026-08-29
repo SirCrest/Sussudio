@@ -121,20 +121,68 @@ public sealed class CoreRuntimeRecordingContractsTests
     }
 
     [Fact]
-    public Task RecordingVerifierFailsWhenOutputFileIsMissing()
-        => global::Program.RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist();
+    public async Task RecordingVerifierFailsWhenOutputFileIsMissing()
+    {
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
+        var verifier = Activator.CreateInstance(verifierType)!;
+
+        var result = await VerifyAsync(verifier, "/nonexistent/file.mp4", BuildRuntimeSnapshotForVerification());
+
+        Assert.False(GetBoolProperty(result, "Succeeded"));
+        Assert.False(GetBoolProperty(result, "FileExists"));
+        Assert.Contains("does not exist", GetStringProperty(result, "Message"), StringComparison.OrdinalIgnoreCase);
+    }
 
     [Fact]
-    public Task RecordingVerifierFailsWhenOutputFileIsEmpty()
-        => global::Program.RecordingVerifier_ReturnsFailure_WhenFileIsEmpty();
+    public async Task RecordingVerifierFailsWhenOutputFileIsEmpty()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_test_{Guid.NewGuid():N}.mp4");
+        File.WriteAllBytes(tempFile, Array.Empty<byte>());
+        try
+        {
+            var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
+            var verifier = Activator.CreateInstance(verifierType)!;
+
+            var result = await VerifyAsync(verifier, tempFile, BuildRuntimeSnapshotForVerification());
+
+            Assert.False(GetBoolProperty(result, "Succeeded"));
+            Assert.Contains("output-empty", GetStringProperty(result, "PrimaryMismatchCode"), StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
+    }
 
     [Fact]
-    public Task RecordingVerifierFailsWhenOutputPathIsNull()
-        => global::Program.RecordingVerifier_ReturnsFailure_WhenOutputPathIsNull();
+    public async Task RecordingVerifierFailsWhenOutputPathIsNull()
+    {
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
+        var verifier = Activator.CreateInstance(verifierType)!;
+
+        var result = await VerifyAsync(verifier, null, BuildRuntimeSnapshotForVerification());
+
+        Assert.False(GetBoolProperty(result, "Succeeded"));
+    }
 
     [Fact]
-    public Task RecordingVerifierImplementsVerificationInterface()
-        => global::Program.RecordingVerifier_ImplementsIRecordingVerifier();
+    public void RecordingVerifierImplementsVerificationInterface()
+    {
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
+        var interfaceType = RequireType("Sussudio.Services.Contracts.IRecordingVerifier");
+
+        Assert.True(interfaceType.IsAssignableFrom(verifierType));
+
+        var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(verifyAsync);
+
+        var parameters = verifyAsync!.GetParameters();
+        Assert.Equal(3, parameters.Length);
+
+        var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");
+        Assert.True(verifyAsync.ReturnType.IsGenericType);
+        Assert.Equal(resultType, verifyAsync.ReturnType.GetGenericArguments()[0]);
+    }
 
     [Fact]
     public Task RecordingVerifierCadenceAnalysisLivesWithVerifier()
@@ -315,6 +363,55 @@ public sealed class CoreRuntimeRecordingContractsTests
     [Fact]
     public Task DedicatedLibAvVerificationScriptUsesFlashbackOffStrictWorkflow()
         => global::Program.DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification();
+
+    private static Type RequireType(string typeName)
+        => SussudioAssembly.Load().GetType(typeName, throwOnError: true)!;
+
+    private static async Task<object> VerifyAsync(object verifier, string? outputPath, object snapshot)
+    {
+        var verifyAsync = verifier.GetType().GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("VerifyAsync not found.");
+        var task = verifyAsync.Invoke(verifier, new object?[] { outputPath, snapshot, CancellationToken.None }) as Task
+            ?? throw new InvalidOperationException("VerifyAsync did not return Task.");
+
+        await task.ConfigureAwait(false);
+        return task.GetType().GetProperty("Result")!.GetValue(task)!;
+    }
+
+    private static object BuildRuntimeSnapshotForVerification()
+    {
+        var snapshot = RuntimeHelpers.GetUninitializedObject(RequireType("Sussudio.Models.CaptureRuntimeSnapshot"));
+        SetPropertyOrBackingField(snapshot, "RequestedFormat", "HevcMp4");
+        SetPropertyOrBackingField(snapshot, "RequestedHdrEnabled", (bool?)false);
+        SetPropertyOrBackingField(snapshot, "NegotiatedWidth", (uint?)1920);
+        SetPropertyOrBackingField(snapshot, "NegotiatedHeight", (uint?)1080);
+        SetPropertyOrBackingField(snapshot, "NegotiatedFrameRateNumerator", (uint?)60);
+        SetPropertyOrBackingField(snapshot, "NegotiatedFrameRateDenominator", (uint?)1);
+        return snapshot;
+    }
+
+    private static void SetPropertyOrBackingField(object instance, string name, object? value)
+    {
+        var property = instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
+        if (property?.SetMethod != null)
+        {
+            property.SetValue(instance, value);
+            return;
+        }
+
+        var field = instance.GetType().GetField($"<{name}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"{instance.GetType().Name}.{name} backing field not found.");
+        field.SetValue(instance, value);
+    }
+
+    private static object? GetPropertyValue(object instance, string name)
+        => instance.GetType().GetProperty(name, BindingFlags.Public | BindingFlags.Instance)!.GetValue(instance);
+
+    private static bool GetBoolProperty(object instance, string name)
+        => (bool)GetPropertyValue(instance, name)!;
+
+    private static string GetStringProperty(object instance, string name)
+        => (string)GetPropertyValue(instance, name)!;
 }
 
 public sealed class RecordingModelContractsTests
@@ -788,19 +885,18 @@ public class RecordingArtifactManagerTests
         => Assert.Equal(expected, actual);
 }
 
-// Representative xUnit slice ported from the legacy Program runner.
+// Representative xUnit slice moved out of the shared Program helper namespace.
 //
 // The test project targets net8.0 while Sussudio targets
 // net8.0-windows10.0.19041.0, so a ProjectReference would force a Windows
 // target onto the test rig and pull WinUI deps into discovery. xUnit tests
-// therefore reach the assembly the same way the legacy runner does:
+// therefore reach the assembly the same way the smoke entry point does:
 // Assembly.LoadFrom against the staged Sussudio.dll. The
 // [assembly: InternalsVisibleTo("Sussudio.Tests")] attributes on Sussudio
 // and ssctl mean reflection no longer needs to crack open private members,
 // just resolve the type via its public/internal name.
 //
-// SussudioAssembly.Path is set by the test entry point (Program.Main today;
-// later: a custom xUnit fixture) before any [Fact] runs.
+// SussudioAssembly resolves the staged assembly independently for xUnit.
 public class RecordingContractsTests
 {
     [Fact]
@@ -961,9 +1057,9 @@ public class RecordingContractsTests
         => (long)instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)!.GetValue(instance)!;
 }
 
-// Resolves the staged Sussudio.dll the same way the legacy runner does.
-// Lives next to the xUnit slice rather than in Program.cs so a future cleanup
-// can lift this into an IClassFixture without touching the legacy runner.
+// Resolves the staged Sussudio.dll the same way the smoke entry point does.
+// Lives next to the xUnit slice so a future cleanup can lift it into an
+// IClassFixture without coupling regression execution to Program.Main.
 internal static class SussudioAssembly
 {
     private static Assembly? _cached;
@@ -2385,111 +2481,6 @@ static partial class Program
             ?? throw new InvalidOperationException("VerifyAsync did not return Task.");
         await task.ConfigureAwait(false);
         return task.GetType().GetProperty("Result")!.GetValue(task)!;
-    }
-
-    // ── Helper: build cadence JSON with uniform frame timestamps ──
-
-    private static object BuildRuntimeSnapshotForVerification(
-        string? requestedFormat = "HevcMp4",
-        bool requestedHdrEnabled = false,
-        uint? negotiatedWidth = 1920,
-        uint? negotiatedHeight = 1080,
-        uint? negotiatedFrameRateNumerator = 60,
-        uint? negotiatedFrameRateDenominator = 1)
-    {
-        var type = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
-        var snapshot = RuntimeHelpers.GetUninitializedObject(type);
-        SetPropertyOrBackingField(snapshot, "RequestedFormat", requestedFormat);
-        SetPropertyOrBackingField(snapshot, "RequestedHdrEnabled", (bool?)requestedHdrEnabled);
-        SetPropertyOrBackingField(snapshot, "NegotiatedWidth", negotiatedWidth);
-        SetPropertyOrBackingField(snapshot, "NegotiatedHeight", negotiatedHeight);
-        SetPropertyOrBackingField(snapshot, "NegotiatedFrameRateNumerator", negotiatedFrameRateNumerator);
-        SetPropertyOrBackingField(snapshot, "NegotiatedFrameRateDenominator", negotiatedFrameRateDenominator);
-        return snapshot;
-    }
-
-    // RecordingVerifier early-exit paths and source-shape contracts.
-
-    internal static async Task RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist()
-    {
-        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
-        var verifier = Activator.CreateInstance(verifierType)!;
-        var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("VerifyAsync not found.");
-
-        var snapshot = BuildRuntimeSnapshotForVerification();
-        var task = verifyAsync.Invoke(verifier, new object?[] { "/nonexistent/file.mp4", snapshot, CancellationToken.None }) as Task
-            ?? throw new InvalidOperationException("VerifyAsync did not return Task.");
-
-        await task.ConfigureAwait(false);
-        var resultProp = task.GetType().GetProperty("Result")!;
-        var result = resultProp.GetValue(task)!;
-
-        AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
-        AssertEqual(false, GetBoolProperty(result, "FileExists"), "FileExists");
-        AssertContains(GetStringProperty(result, "Message"), "does not exist");
-    }
-
-    internal static async Task RecordingVerifier_ReturnsFailure_WhenFileIsEmpty()
-    {
-        var tempFile = Path.Combine(Path.GetTempPath(), $"rv_test_{Guid.NewGuid():N}.mp4");
-        File.WriteAllBytes(tempFile, Array.Empty<byte>());
-        try
-        {
-            var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
-            var verifier = Activator.CreateInstance(verifierType)!;
-            var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)!;
-
-            var snapshot = BuildRuntimeSnapshotForVerification();
-            var task = verifyAsync.Invoke(verifier, new object?[] { tempFile, snapshot, CancellationToken.None }) as Task
-                ?? throw new InvalidOperationException("VerifyAsync did not return Task.");
-
-            await task.ConfigureAwait(false);
-            var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
-
-            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
-            AssertContains(GetStringProperty(result, "PrimaryMismatchCode"), "output-empty");
-        }
-        finally
-        {
-            try { File.Delete(tempFile); } catch { }
-        }
-    }
-
-    internal static async Task RecordingVerifier_ReturnsFailure_WhenOutputPathIsNull()
-    {
-        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
-        var verifier = Activator.CreateInstance(verifierType)!;
-        var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)!;
-
-        var snapshot = BuildRuntimeSnapshotForVerification();
-        var task = verifyAsync.Invoke(verifier, new object?[] { null, snapshot, CancellationToken.None }) as Task
-            ?? throw new InvalidOperationException("VerifyAsync did not return Task.");
-
-        await task.ConfigureAwait(false);
-        var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
-
-        AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
-    }
-
-    internal static Task RecordingVerifier_ImplementsIRecordingVerifier()
-    {
-        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
-        var interfaceType = RequireType("Sussudio.Services.Contracts.IRecordingVerifier");
-
-        AssertEqual(true, interfaceType.IsAssignableFrom(verifierType), "RecordingVerifier implements IRecordingVerifier");
-
-        var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance);
-        AssertNotNull(verifyAsync, "RecordingVerifier.VerifyAsync");
-
-        var parameters = verifyAsync!.GetParameters();
-        AssertEqual(3, parameters.Length, "VerifyAsync parameter count");
-
-        var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");
-        AssertEqual(true, verifyAsync.ReturnType.IsGenericType, "VerifyAsync returns generic Task");
-        AssertEqual(resultType, verifyAsync.ReturnType.GetGenericArguments()[0], "VerifyAsync returns Task<RecordingVerificationResult>");
-
-        return Task.CompletedTask;
     }
 
     internal static Task RecordingVerifier_CadenceAnalysisLivesWithVerifier()
