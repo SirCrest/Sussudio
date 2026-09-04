@@ -1504,16 +1504,7 @@ public partial class CaptureService
             var preservedFlashbackArtifacts = fbResult.PreservedArtifacts
                 .Concat(GetFlashbackSegments().Select(segment => segment.Path))
                 .ToArray();
-            fbResult = FinalizeResult.Failure(
-                fbResult.OutputPath,
-                fbResult.StatusMessage,
-                preservedFlashbackArtifacts,
-                fbResult.FailureCode,
-                fbResult.CleanupPending,
-                fbResult.RecoveryPath,
-                fbResult.VerificationCompleted,
-                fbResult.FinalizationElapsedMs)
-                .WithTrackEvidence(fbResult.RequestedTracks, fbResult.ObservedTracks);
+            fbResult = fbResult.AsFailureWithArtifacts(preservedFlashbackArtifacts, fbResult.RecoveryPath);
         }
         fbResult = EnsureRecordingFailureRecovery(fbResult, fbRecordingContext);
 

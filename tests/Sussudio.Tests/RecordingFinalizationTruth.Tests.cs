@@ -182,7 +182,7 @@ public sealed class RecordingFinalizationTruthTests
                     recordingLifecycle,
                     "private FinalizeResult FoldRecordingAudioFaultIntoFinalizeResult",
                     "private void PublishLibAvRecordingIntegrity"),
-                ".WithTrackEvidence(result.RequestedTracks, result.ObservedTracks)"));
+                "result.AsFailure("));
         Assert.Contains(
             "result = MergeFinalizeTrackEvidence(result, sinkResult);",
             recordingLifecycle,
@@ -205,8 +205,19 @@ public sealed class RecordingFinalizationTruthTests
         Assert.True(
             CountOccurrences(
                 recordingLifecycle,
-                ".WithTrackEvidence(result.RequestedTracks, result.ObservedTracks)") >= 10,
+                ".AsFailure(") >= 7,
             "Every post-verification failure rewrite must preserve requested and observed tracks.");
+
+        var serviceContracts = RuntimeContractSource.ReadRepoFile(
+            "Sussudio/Services/Contracts/ServiceContracts.cs");
+        Assert.Contains(
+            "public FinalizeResult AsFailure(string statusMessage, string failureCode)",
+            serviceContracts,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            ".WithTrackEvidence(RequestedTracks, ObservedTracks)",
+            serviceContracts,
+            StringComparison.Ordinal);
 
         var flashback = RuntimeContractSource.ReadRepoFile(
             "Sussudio/Services/Capture/CaptureService.Flashback.cs");

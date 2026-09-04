@@ -224,17 +224,16 @@ Package layout:
 $firstPartyRelativePaths = @(
     'app\Sussudio.exe',
     'app\Sussudio.dll',
-    'app\Sussudio.Automation.Contracts.dll',
-    'tools\ssctl\ssctl.exe',
-    'tools\ssctl\ssctl.dll',
-    'tools\ssctl\Sussudio.Automation.Contracts.dll',
-    'tools\McpServer\McpServer.exe',
-    'tools\McpServer\McpServer.dll',
-    'tools\McpServer\Sussudio.Automation.Contracts.dll',
-    'tools\AutomationClient\AutomationClient.exe',
-    'tools\AutomationClient\AutomationClient.dll',
-    'tools\AutomationClient\Sussudio.Automation.Contracts.dll'
+    'app\Sussudio.Automation.Contracts.dll'
 )
+foreach ($tool in $toolProjects) {
+    $toolExecutableDll = [IO.Path]::ChangeExtension($tool.Executable, '.dll')
+    $firstPartyRelativePaths += @(
+        "tools\$($tool.Name)\$($tool.Executable)",
+        "tools\$($tool.Name)\$toolExecutableDll",
+        "tools\$($tool.Name)\Sussudio.Automation.Contracts.dll"
+    )
+}
 if ($firstPartyRelativePaths -match '(^|\\)ffmpeg(\\|$)') {
     throw 'Internal release policy error: third-party FFmpeg files must not be signed with the Sussudio publisher identity.'
 }
@@ -252,11 +251,11 @@ $requiredPackageRelativePaths = @(
     'README.txt',
     'RELEASE.txt',
     'app\Sussudio.exe',
-    'app\ffmpeg\manifest.json',
-    'tools\ssctl\ssctl.exe',
-    'tools\McpServer\McpServer.exe',
-    'tools\AutomationClient\AutomationClient.exe'
+    'app\ffmpeg\manifest.json'
 )
+foreach ($tool in $toolProjects) {
+    $requiredPackageRelativePaths += "tools\$($tool.Name)\$($tool.Executable)"
+}
 foreach ($entry in @($packagedFfmpegManifest.files)) {
     $requiredPackageRelativePaths += "app\ffmpeg\$($entry.fileName)"
 }

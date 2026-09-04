@@ -357,6 +357,19 @@ function Assert-AuthenticodeSignatures {
     }
 }
 
+function Get-SafeZipEntryName {
+    param([Parameter(Mandatory = $true)]$Entry)
+
+    $entryName = $Entry.FullName.Replace('\', '/')
+    if ($entryName.StartsWith('/', [StringComparison]::Ordinal) -or
+        $entryName -match '(^|/)\.\.(/|$)' -or
+        $entryName -match '^[A-Za-z]:') {
+        throw "ZIP contains an unsafe entry path: $entryName"
+    }
+
+    return $entryName
+}
+
 function Assert-ZipContainsFiles {
     param(
         [Parameter(Mandatory = $true)][string]$ZipPath,
@@ -368,12 +381,7 @@ function Assert-ZipContainsFiles {
     try {
         $entryNames = @{}
         foreach ($entry in $archive.Entries) {
-            $entryName = $entry.FullName.Replace('\', '/')
-            if ($entryName.StartsWith('/', [StringComparison]::Ordinal) -or
-                $entryName -match '(^|/)\.\.(/|$)' -or
-                $entryName -match '^[A-Za-z]:') {
-                throw "ZIP contains an unsafe entry path: $entryName"
-            }
+            $entryName = Get-SafeZipEntryName -Entry $entry
             $entryNames[$entryName] = $true
         }
 
@@ -407,12 +415,7 @@ function Assert-ZipMatchesDirectory {
         $seenNames = @{}
         $actualNames = @()
         foreach ($entry in $archive.Entries) {
-            $entryName = $entry.FullName.Replace('\', '/')
-            if ($entryName.StartsWith('/', [StringComparison]::Ordinal) -or
-                $entryName -match '(^|/)\.\.(/|$)' -or
-                $entryName -match '^[A-Za-z]:') {
-                throw "ZIP contains an unsafe entry path: $entryName"
-            }
+            $entryName = Get-SafeZipEntryName -Entry $entry
             if ([string]::IsNullOrEmpty($entry.Name)) {
                 continue
             }

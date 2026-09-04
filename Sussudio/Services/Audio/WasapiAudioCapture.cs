@@ -902,10 +902,8 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             _ => 0
         };
 
-        var paddingBits = format.ContainerBitsPerSample - format.ValidBitsPerSample;
-        value >>= paddingBits;
-        var scale = 1L << (format.ValidBitsPerSample - 1);
-        return (float)(value / (double)scale);
+        value >>= format.PcmPaddingBits;
+        return (float)(value * format.PcmInverseScale);
     }
 
     private static unsafe int SignExtendPcm24(byte* samplePtr)

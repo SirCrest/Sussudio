@@ -56,7 +56,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
     {
         ArgumentNullException.ThrowIfNull(context);
         var outputPath = context.FinalOutputPath;
-        var requestedTracks = BuildRequestedTracks(context);
+        var requestedTracks = RecordingTracks.BuildRequestedTracks(context);
         var observedTracks = new List<string>();
 
         RecordingStructureVerificationResult Failure(
@@ -337,20 +337,6 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
            double.IsFinite(duration) &&
            duration > 0 &&
            duration <= MaxPlausibleRecordingDurationSeconds;
-
-    private static IReadOnlyList<string> BuildRequestedTracks(RecordingContext context)
-    {
-        var tracks = new List<string>(3) { "video" };
-        if (context.AudioEnabled)
-        {
-            tracks.Add("device_audio");
-        }
-        if (context.MicrophoneEnabled)
-        {
-            tracks.Add("microphone");
-        }
-        return tracks;
-    }
 
     private static string ResolveObservedAudioTrackName(RecordingContext context, int oneBasedAudioIndex)
     {

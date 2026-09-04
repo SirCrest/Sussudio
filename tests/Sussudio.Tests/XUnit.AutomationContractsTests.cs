@@ -8678,14 +8678,15 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var recordingOutputFlattening = BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput);");
-        AssertContains(snapshotFlatteningText, "RecordingBackend = recordingOutputFlattening.Backend,");
-        AssertContains(snapshotFlatteningText, "AudioPathMode = recordingOutputFlattening.AudioPathMode,");
-        AssertContains(snapshotFlatteningText, "MuxResult = recordingOutputFlattening.MuxResult,");
+        AssertContains(snapshotFlatteningText, "var recordingBackend = projections.RecordingBackend;");
+        AssertContains(snapshotFlatteningText, "var recordingBackend = flattened.RecordingBackend;");
+        AssertContains(snapshotFlatteningText, "RecordingBackend = recordingBackend.Backend,");
+        AssertContains(snapshotFlatteningText, "AudioPathMode = recordingBackend.AudioPathMode,");
+        AssertContains(snapshotFlatteningText, "MuxResult = recordingBackend.MuxResult,");
         AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = captureRuntime.RecordingBackend,");
         AssertDoesNotContain(snapshotFlatteningText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = recordingBackend.Backend,");
-        AssertDoesNotContain(snapshotFlatteningText, "MuxResult = recordingBackend.MuxResult,");
+        AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = recordingOutputFlattening.Backend,");
+        AssertDoesNotContain(snapshotFlatteningText, "MuxResult = recordingOutputFlattening.MuxResult,");
 
         AssertContains(recordingPipelineProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
         AssertContains(recordingPipelineProjectionText, "Backend = captureRuntime.RecordingBackend,");
@@ -8693,11 +8694,8 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
         AssertContains(recordingPipelineProjectionText, "private static string ResolveMuxResult(bool? muxSucceeded)");
         AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingBackendProjection");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
-        AssertContains(recordingPipelineProjectionText, "Backend = recordingBackend.Backend,");
-        AssertContains(recordingPipelineProjectionText, "AudioPathMode = recordingBackend.AudioPathMode,");
-        AssertContains(recordingPipelineProjectionText, "MuxResult = recordingBackend.MuxResult,");
-        AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingOutputFlattenedProjection");
+        AssertDoesNotContain(recordingPipelineProjectionText, "RecordingOutputFlattenedProjection");
+        AssertDoesNotContain(recordingPipelineProjectionText, "BuildRecordingOutputFlattenedProjection");
 
         return Task.CompletedTask;
     }
@@ -8714,6 +8712,7 @@ static partial class Program
             "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs");
 
         AssertContains(snapshotProjectionText, "var recordingOutput = BuildRecordingOutputProjection(");
+        AssertContains(snapshotFlatteningText, "var recordingOutput = projections.RecordingOutput;");
         AssertContains(snapshotFlatteningText, "OutputPath = recordingOutputFlattening.OutputPath,");
         AssertContains(snapshotFlatteningText, "RecordingVideoBytes = recordingOutputFlattening.RecordingVideoBytes,");
         AssertContains(snapshotFlatteningText, "LastOutputPath = recordingOutputFlattening.LastOutputPath,");
@@ -8734,10 +8733,8 @@ static partial class Program
         AssertContains(recordingPipelineProjectionText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
         AssertContains(recordingPipelineProjectionText, "LastVerification = lastVerification");
         AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingOutputProjection");
-        AssertContains(recordingPipelineProjectionText, "OutputPath = recordingOutput.OutputPath,");
-        AssertContains(recordingPipelineProjectionText, "RecordingVideoBytes = recordingOutput.RecordingVideoBytes,");
-        AssertContains(recordingPipelineProjectionText, "LastOutputPath = recordingOutput.LastOutputPath,");
-        AssertContains(recordingPipelineProjectionText, "LastVerification = recordingOutput.LastVerification");
+        AssertDoesNotContain(recordingPipelineProjectionText, "RecordingOutputFlattenedProjection");
+        AssertDoesNotContain(recordingPipelineProjectionText, "BuildRecordingOutputFlattenedProjection");
         if (System.IO.File.Exists(obsoleteRecordingOutputPath))
         {
             throw new System.InvalidOperationException("Recording output projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
@@ -9625,7 +9622,7 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingOutputFlattening = BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput);");
+        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingBackend = projections.RecordingBackend;");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var visualCadenceFlattening = BuildVisualCadenceFlattenedProjection(visualCadence);");
@@ -10286,8 +10283,6 @@ static partial class Program
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildProcessResourceFlattenedProjection(processResourceProjection)");
         AssertContains(diagnostics.SnapshotProjectionProcessResourcesText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
         AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAvSyncFlattenedProjection(avSync)");

@@ -515,17 +515,23 @@ internal sealed class WasapiAudioPlayback : IDisposable
     {
         lock (_chunkLock)
         {
-            ReturnActiveChunk();
-            while (TryDequeueChunk(out var queuedChunk))
-            {
-                ReturnChunk(queuedChunk);
-            }
+            ReturnAllChunksLocked();
             _activeChunkOffset = 0;
             Volatile.Write(ref _activeChunkRemainingFrames, 0);
             Volatile.Write(ref _endpointQueuedFrames, 0);
             ResetRenderConverterState();
         }
         Interlocked.Exchange(ref _renderingPtsTicks, 0);
+    }
+
+    // Caller must hold _chunkLock.
+    private void ReturnAllChunksLocked()
+    {
+        ReturnActiveChunk();
+        while (TryDequeueChunk(out var queuedChunk))
+        {
+            ReturnChunk(queuedChunk);
+        }
     }
 
     public void Stop()
@@ -1407,12 +1413,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     {
         lock (_chunkLock)
         {
-            ReturnActiveChunk();
-            while (TryDequeueChunk(out var queuedChunk))
-            {
-                ReturnChunk(queuedChunk);
-            }
-
+            ReturnAllChunksLocked();
             ResetRenderConverterState();
         }
     }

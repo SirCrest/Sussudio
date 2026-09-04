@@ -195,6 +195,21 @@ namespace Sussudio.Services.Contracts
         public IntPtr CudaHwFramesCtxPtr => GpuHandles.CudaHwFramesCtxPtr;
     }
 
+    // Requested track names follow the recording settings. Shared by the recording
+    // lifecycle, the LibAv sink, and the in-process structure verifier so failure
+    // evidence cannot drift between them.
+    public static class RecordingTracks
+    {
+        public static IReadOnlyList<string> BuildRequestedTracks(RecordingContext? context)
+        {
+            if (context == null) return Array.Empty<string>();
+            var tracks = new List<string>(3) { "video" };
+            if (context.AudioEnabled) tracks.Add("device_audio");
+            if (context.MicrophoneEnabled) tracks.Add("microphone");
+            return tracks;
+        }
+    }
+
     public enum RecordingLifecyclePhase
     {
         Idle = 0,
@@ -249,17 +264,31 @@ namespace Sussudio.Services.Contracts
                 RecoveryPath = RecoveryPath,
                 FailureCode = FailureCode,
                 FinalizationElapsedMs = FinalizationElapsedMs,
-                RequestedTracks = NormalizeTrackEvidence(requestedTracks),
-                ObservedTracks = NormalizeTrackEvidence(observedTracks)
+                RequestedTracks = NormalizeDistinct(requestedTracks),
+                ObservedTracks = NormalizeDistinct(observedTracks)
             };
         }
 
-        private static IReadOnlyList<string> NormalizeTrackEvidence(IEnumerable<string>? tracks)
-            => tracks == null
+        // Re-derives this result as a failure with a new status/failure code while
+        // preserving every other field, including requested/observed track evidence.
+        public FinalizeResult AsFailure(string statusMessage, string failureCode)
+            => Failure(OutputPath, statusMessage, PreservedArtifacts, failureCode, CleanupPending, RecoveryPath, VerificationCompleted, FinalizationElapsedMs)
+                .WithTrackEvidence(RequestedTracks, ObservedTracks);
+
+        // Re-derives this result as a failure with replacement preserved artifacts and
+        // recovery path, preserving every other field including track evidence. Routed
+        // through Failure() so Outcome is normalized to Failed even for results that
+        // were constructed directly (e.g. by FlashbackEncoderSink) without an Outcome.
+        public FinalizeResult AsFailureWithArtifacts(IEnumerable<string>? preservedArtifacts, string? recoveryPath)
+            => Failure(OutputPath, StatusMessage, preservedArtifacts, FailureCode, CleanupPending, recoveryPath, VerificationCompleted, FinalizationElapsedMs)
+                .WithTrackEvidence(RequestedTracks, ObservedTracks);
+
+        private static IReadOnlyList<string> NormalizeDistinct(IEnumerable<string>? values)
+            => values == null
                 ? EmptyArtifacts
                 : new ReadOnlyCollection<string>(
-                    tracks
-                        .Where(track => !string.IsNullOrWhiteSpace(track))
+                    values
+                        .Where(value => !string.IsNullOrWhiteSpace(value))
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .ToArray());
 
@@ -308,13 +337,7 @@ namespace Sussudio.Services.Contracts
             bool verificationCompleted = false,
             long finalizationElapsedMs = 0)
         {
-            var artifacts = preservedArtifacts == null
-                ? EmptyArtifacts
-                : new ReadOnlyCollection<string>(
-                    preservedArtifacts
-                        .Where(path => !string.IsNullOrWhiteSpace(path))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToArray());
+            var artifacts = NormalizeDistinct(preservedArtifacts);
 
             return new FinalizeResult
             {

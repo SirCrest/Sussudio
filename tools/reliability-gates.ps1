@@ -123,26 +123,19 @@ $mcpServerProjectPath = Join-Path $repoRoot "tools\McpServer\McpServer.csproj"
 $automationClientProjectPath = Join-Path $repoRoot "tools\AutomationClient\AutomationClient.csproj"
 $nativeXuProbeProjectPath = Join-Path $repoRoot "tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj"
 $releaseHelperTestsPath = Join-Path $repoRoot "tools\release\test-release-helpers.ps1"
-if (-not (Test-Path $solutionPath)) {
-    throw "Solution file not found: $solutionPath"
-}
-if (-not (Test-Path $testProjectPath)) {
-    throw "Test project file not found: $testProjectPath"
-}
-if (-not (Test-Path $ssctlProjectPath)) {
-    throw "ssctl project file not found: $ssctlProjectPath"
-}
-if (-not (Test-Path $mcpServerProjectPath)) {
-    throw "McpServer project file not found: $mcpServerProjectPath"
-}
-if (-not (Test-Path $automationClientProjectPath)) {
-    throw "AutomationClient project file not found: $automationClientProjectPath"
-}
-if (-not (Test-Path $nativeXuProbeProjectPath)) {
-    throw "NativeXuAudioProbe project file not found: $nativeXuProbeProjectPath"
-}
-if (-not (Test-Path $releaseHelperTestsPath)) {
-    throw "Release helper test script not found: $releaseHelperTestsPath"
+$requiredToolPaths = @(
+    @{ Description = "Solution file"; Path = $solutionPath }
+    @{ Description = "Test project file"; Path = $testProjectPath }
+    @{ Description = "ssctl project file"; Path = $ssctlProjectPath }
+    @{ Description = "McpServer project file"; Path = $mcpServerProjectPath }
+    @{ Description = "AutomationClient project file"; Path = $automationClientProjectPath }
+    @{ Description = "NativeXuAudioProbe project file"; Path = $nativeXuProbeProjectPath }
+    @{ Description = "Release helper test script"; Path = $releaseHelperTestsPath }
+)
+foreach ($requiredToolPath in $requiredToolPaths) {
+    if (-not (Test-Path $requiredToolPath.Path)) {
+        throw "$($requiredToolPath.Description) not found: $($requiredToolPath.Path)"
+    }
 }
 
 $buildOutput = Invoke-ToolWithTimeout `
@@ -161,65 +154,28 @@ $buildOutput = Invoke-ToolWithTimeout `
     -WorkingDirectory $repoRoot
 Assert-BuildWarningsAllowed -Output $buildOutput -Label "Sussudio.slnx"
 
-$ssctlBuildOutput = Invoke-ToolWithTimeout `
-    -Exe "dotnet" `
-    -Arguments @(
-        "build",
-        $ssctlProjectPath,
-        "-c", $Configuration,
-        "-t:Rebuild",
-        "--no-restore",
-        "--nologo",
-        "-v", "minimal"
-    ) `
-    -TimeoutSeconds $BuildTimeoutSeconds `
-    -WorkingDirectory $repoRoot
-Assert-BuildWarningsAllowed -Output $ssctlBuildOutput -Label "ssctl"
-
-$mcpBuildOutput = Invoke-ToolWithTimeout `
-    -Exe "dotnet" `
-    -Arguments @(
-        "build",
-        $mcpServerProjectPath,
-        "-c", $Configuration,
-        "-t:Rebuild",
-        "--no-restore",
-        "--nologo",
-        "-v", "minimal"
-    ) `
-    -TimeoutSeconds $BuildTimeoutSeconds `
-    -WorkingDirectory $repoRoot
-Assert-BuildWarningsAllowed -Output $mcpBuildOutput -Label "McpServer"
-
-$automationClientBuildOutput = Invoke-ToolWithTimeout `
-    -Exe "dotnet" `
-    -Arguments @(
-        "build",
-        $automationClientProjectPath,
-        "-c", $Configuration,
-        "-t:Rebuild",
-        "--no-restore",
-        "--nologo",
-        "-v", "minimal"
-    ) `
-    -TimeoutSeconds $BuildTimeoutSeconds `
-    -WorkingDirectory $repoRoot
-Assert-BuildWarningsAllowed -Output $automationClientBuildOutput -Label "AutomationClient"
-
-$nativeXuBuildOutput = Invoke-ToolWithTimeout `
-    -Exe "dotnet" `
-    -Arguments @(
-        "build",
-        $nativeXuProbeProjectPath,
-        "-c", $Configuration,
-        "-t:Rebuild",
-        "--no-restore",
-        "--nologo",
-        "-v", "minimal"
-    ) `
-    -TimeoutSeconds $BuildTimeoutSeconds `
-    -WorkingDirectory $repoRoot
-Assert-BuildWarningsAllowed -Output $nativeXuBuildOutput -Label "NativeXuAudioProbe"
+$toolRebuilds = @(
+    @{ Label = "ssctl"; Project = $ssctlProjectPath },
+    @{ Label = "McpServer"; Project = $mcpServerProjectPath },
+    @{ Label = "AutomationClient"; Project = $automationClientProjectPath },
+    @{ Label = "NativeXuAudioProbe"; Project = $nativeXuProbeProjectPath }
+)
+foreach ($toolRebuild in $toolRebuilds) {
+    $toolBuildOutput = Invoke-ToolWithTimeout `
+        -Exe "dotnet" `
+        -Arguments @(
+            "build",
+            $toolRebuild.Project,
+            "-c", $Configuration,
+            "-t:Rebuild",
+            "--no-restore",
+            "--nologo",
+            "-v", "minimal"
+        ) `
+        -TimeoutSeconds $BuildTimeoutSeconds `
+        -WorkingDirectory $repoRoot
+    Assert-BuildWarningsAllowed -Output $toolBuildOutput -Label $toolRebuild.Label
+}
 
 # The repository's test/tool reflection harness intentionally resolves the AnyCPU
 # tool outputs under bin\<Configuration>. Build the test host explicitly in the

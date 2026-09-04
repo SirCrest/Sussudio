@@ -39,6 +39,12 @@ internal readonly record struct WasapiAudioFormat(
     public int BitsPerSample => ValidBitsPerSample;
 
     public int BytesPerSample => checked((ContainerBitsPerSample + 7) / 8);
+
+    // Precomputed once per negotiated format so the per-sample PCM decode
+    // (WasapiAudioCapture.ReadPcm) does not re-derive shift and scale per sample.
+    public int PcmPaddingBits { get; } = ContainerBitsPerSample - ValidBitsPerSample;
+    public double PcmInverseScale { get; } =
+        ValidBitsPerSample is > 0 and < 64 ? 1.0 / (1L << (ValidBitsPerSample - 1)) : 0.0;
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

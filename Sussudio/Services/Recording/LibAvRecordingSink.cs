@@ -850,22 +850,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             context,
             outputPath,
             statusMessage);
-        string? recoveryPath = null;
-        foreach (var artifactPath in preservedArtifacts)
-        {
-            if (artifactPath.EndsWith(
-                    ".recording-finalization-unresolved.txt",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                recoveryPath = artifactPath;
-                break;
-            }
-        }
-
-        if (recoveryPath == null && preservedArtifacts.Count > 0)
-        {
-            recoveryPath = preservedArtifacts[0];
-        }
+        var recoveryPath = RecordingFinalizationRecoveryArtifacts.ResolveRecoveryPath(preservedArtifacts);
 
         var elapsedMs = Math.Max(
             0,
@@ -882,27 +867,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             .WithTrackEvidence(
                 _verifiedRequestedTracks.Count > 0
                     ? _verifiedRequestedTracks
-                    : BuildRequestedTracks(context),
+                    : RecordingTracks.BuildRequestedTracks(context),
                 _verifiedObservedTracks);
-    }
-
-    private static IReadOnlyList<string> BuildRequestedTracks(RecordingContext? context)
-    {
-        if (context == null)
-        {
-            return Array.Empty<string>();
-        }
-
-        var tracks = new List<string>(3) { "video" };
-        if (context.AudioEnabled)
-        {
-            tracks.Add("device_audio");
-        }
-        if (context.MicrophoneEnabled)
-        {
-            tracks.Add("microphone");
-        }
-        return tracks;
     }
 
     // REVIEWED 2026-04-07: IDisposable fallback only - all callers use DisposeAsync.

@@ -65,7 +65,7 @@ public partial class CaptureService
             _recordingFinalizationCleanupPending = false;
             _lastFinalizationElapsedMs = 0;
             _lastRecordingRecoveryPath = recovery.PreservedArtifacts.FirstOrDefault(path =>
-                !path.EndsWith(".recording-finalization-unresolved.txt", StringComparison.OrdinalIgnoreCase))
+                !RecordingFinalizationRecoveryArtifacts.IsUnresolvedMarkerPath(path))
                 ?? recovery.MarkerPath;
             _lastRequestedRecordingTracks = Array.Empty<string>();
             _lastObservedRecordingTracks = Array.Empty<string>();
@@ -648,7 +648,7 @@ public partial class CaptureService
             _recordingFinalizationCleanupPending = false;
             _lastFinalizationElapsedMs = 0;
             _lastRecordingRecoveryPath = null;
-            _lastRequestedRecordingTracks = BuildRequestedRecordingTracks(recordingContext);
+            _lastRequestedRecordingTracks = RecordingTracks.BuildRequestedTracks(recordingContext);
             _lastObservedRecordingTracks = Array.Empty<string>();
             _recordingFinalizationProgressStage = "Recording";
             _lastRecordingFinalizationProgressUtc = DateTimeOffset.UtcNow;
@@ -739,9 +739,7 @@ public partial class CaptureService
     }
 
     private static bool IsExistingUnresolvedRecoveryMarker(string? path)
-        => !string.IsNullOrWhiteSpace(path) &&
-           path.EndsWith(".recording-finalization-unresolved.txt", StringComparison.OrdinalIgnoreCase) &&
-           File.Exists(path);
+        => RecordingFinalizationRecoveryArtifacts.IsUnresolvedMarkerPath(path) && File.Exists(path);
 
     private void SetPendingLibAvCleanupTask(Task cleanupTask, string backend)
     {
@@ -1012,35 +1010,17 @@ public partial class CaptureService
         AddUniqueArtifacts(combinedArtifacts, result.PreservedArtifacts);
         AddUniqueArtifacts(combinedArtifacts, recoveryArtifacts);
 
-        var recoveryPath = result.RecoveryPath;
-        foreach (var artifactPath in combinedArtifacts)
-        {
-            if (artifactPath.EndsWith(
-                    ".recording-finalization-unresolved.txt",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                recoveryPath = artifactPath;
-                break;
-            }
-        }
+        var recoveryPath = RecordingFinalizationRecoveryArtifacts.ResolveRecoveryPath(combinedArtifacts, result.RecoveryPath);
+        var recovered = result.AsFailureWithArtifacts(combinedArtifacts, recoveryPath);
 
-        recoveryPath ??= combinedArtifacts.Count > 0 ? combinedArtifacts[0] : null;
-        return FinalizeResult.Failure(
-            result.OutputPath,
-            result.StatusMessage,
-            combinedArtifacts,
-            result.FailureCode,
-            result.CleanupPending,
-            recoveryPath,
-            result.VerificationCompleted,
-            result.FinalizationElapsedMs)
-            .WithTrackEvidence(
-                result.RequestedTracks.Count > 0
-                    ? result.RequestedTracks
-                    : recordingContext == null
-                        ? Array.Empty<string>()
-                        : BuildRequestedRecordingTracks(recordingContext),
-                result.ObservedTracks);
+        // AsFailureWithArtifacts leaves track evidence untouched; preserve the
+        // original fallback that fills in requested tracks from the recording
+        // context when the result hadn't already recorded any.
+        return recovered.RequestedTracks.Count > 0 || recordingContext == null
+            ? recovered
+            : recovered.WithTrackEvidence(
+                RecordingTracks.BuildRequestedTracks(recordingContext),
+                recovered.ObservedTracks);
     }
 
     private static FinalizeResult VerifyFinalizedOutputBeforeSaved(
@@ -1092,42 +1072,14 @@ public partial class CaptureService
             .WithTrackEvidence(verification.RequestedTracks, verification.ObservedTracks);
     }
 
-    private static IReadOnlyList<string> BuildRequestedRecordingTracks(RecordingContext context)
-    {
-        var tracks = new List<string>(3) { "video" };
-        if (context.AudioEnabled)
-        {
-            tracks.Add("device_audio");
-        }
-        if (context.MicrophoneEnabled)
-        {
-            tracks.Add("microphone");
-        }
-        return tracks;
-    }
-
     private static void AddUniqueArtifacts(
         List<string> target,
         IEnumerable<string> candidates)
     {
         foreach (var candidate in candidates)
         {
-            if (string.IsNullOrWhiteSpace(candidate))
-            {
-                continue;
-            }
-
-            var duplicate = false;
-            foreach (var existing in target)
-            {
-                if (string.Equals(existing, candidate, StringComparison.OrdinalIgnoreCase))
-                {
-                    duplicate = true;
-                    break;
-                }
-            }
-
-            if (!duplicate)
+            if (!string.IsNullOrWhiteSpace(candidate) &&
+                !target.Contains(candidate, StringComparer.OrdinalIgnoreCase))
             {
                 target.Add(candidate);
             }
@@ -1168,16 +1120,7 @@ public partial class CaptureService
             ? "Recording failed (WASAPI audio capture faulted)."
             : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
         Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
-        return FinalizeResult.Failure(
-            result.OutputPath,
-            statusMessage,
-            result.PreservedArtifacts,
-            "recording-audio-capture-failed",
-            result.CleanupPending,
-            result.RecoveryPath,
-            result.VerificationCompleted,
-            result.FinalizationElapsedMs)
-            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+        return result.AsFailure(statusMessage, "recording-audio-capture-failed");
     }
 
     private FinalizeResult FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
@@ -1207,16 +1150,7 @@ public partial class CaptureService
         Logger.Log(
             $"RECORDING_MICROPHONE_INTEGRITY_FAIL samples={recordedSamples} " +
             $"drops={droppedPackets} discontinuities={microphoneDiscontinuities}");
-        return FinalizeResult.Failure(
-            result.OutputPath,
-            reason,
-            result.PreservedArtifacts,
-            "recording-microphone-integrity-failed",
-            result.CleanupPending,
-            result.RecoveryPath,
-            result.VerificationCompleted,
-            result.FinalizationElapsedMs)
-            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+        return result.AsFailure(reason, "recording-microphone-integrity-failed");
     }
 
     private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
@@ -1248,16 +1182,7 @@ public partial class CaptureService
             $"discontinuities={audioCounters.AudioDiscontinuities} " +
             $"timestamp_errors={audioCounters.AudioTimestampErrors} " +
             $"callback_gaps={audioCounters.AudioCallbackGaps}");
-        return FinalizeResult.Failure(
-            result.OutputPath,
-            reason,
-            result.PreservedArtifacts,
-            "recording-program-audio-integrity-failed",
-            result.CleanupPending,
-            result.RecoveryPath,
-            result.VerificationCompleted,
-            result.FinalizationElapsedMs)
-            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+        return result.AsFailure(reason, "recording-program-audio-integrity-failed");
     }
 
     private FinalizeResult FoldRecordedRuntimeFailureIntoFinalizeResult(FinalizeResult result)
@@ -1282,16 +1207,7 @@ public partial class CaptureService
         Logger.Log(
             "RECORDING_RUNTIME_FAILURE_FOLDED " +
             $"type='{failureType}' message='{failureMessage}'");
-        return FinalizeResult.Failure(
-            result.OutputPath,
-            $"Recording failed ({failureType}: {failureMessage})",
-            result.PreservedArtifacts,
-            "recording-runtime-failed",
-            result.CleanupPending,
-            result.RecoveryPath,
-            result.VerificationCompleted,
-            result.FinalizationElapsedMs)
-            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+        return result.AsFailure($"Recording failed ({failureType}: {failureMessage})", "recording-runtime-failed");
     }
 
     private void PublishLibAvRecordingIntegrity(
@@ -2143,16 +2059,7 @@ public partial class CaptureService
                 Logger.Log($"Recording sink dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(
-                            result.OutputPath,
-                            $"Recording dispose failed: {ex.Message}",
-                            result.PreservedArtifacts,
-                            "recording-sink-dispose-failed",
-                            result.CleanupPending,
-                            result.RecoveryPath,
-                            result.VerificationCompleted,
-                            result.FinalizationElapsedMs)
-                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+                    result = result.AsFailure($"Recording dispose failed: {ex.Message}", "recording-sink-dispose-failed");
                 }
             }
         }
@@ -2243,16 +2150,7 @@ public partial class CaptureService
                 Logger.Log($"Unified video capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(
-                            result.OutputPath,
-                            $"Unified video capture dispose failed: {ex.Message}",
-                            result.PreservedArtifacts,
-                            "recording-video-capture-dispose-failed",
-                            result.CleanupPending,
-                            result.RecoveryPath,
-                            result.VerificationCompleted,
-                            result.FinalizationElapsedMs)
-                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+                    result = result.AsFailure($"Unified video capture dispose failed: {ex.Message}", "recording-video-capture-dispose-failed");
                 }
             }
         }
@@ -2311,16 +2209,7 @@ public partial class CaptureService
                 Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(
-                            result.OutputPath,
-                            $"Recording WASAPI capture dispose failed: {ex.Message}",
-                            result.PreservedArtifacts,
-                            "recording-program-audio-dispose-failed",
-                            result.CleanupPending,
-                            result.RecoveryPath,
-                            result.VerificationCompleted,
-                            result.FinalizationElapsedMs)
-                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+                    result = result.AsFailure($"Recording WASAPI capture dispose failed: {ex.Message}", "recording-program-audio-dispose-failed");
                 }
             }
         }

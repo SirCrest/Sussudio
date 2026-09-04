@@ -280,9 +280,24 @@ internal sealed record RecordingFailureRecoveryState(
 
 internal static class RecordingFinalizationRecoveryArtifacts
 {
-    private const string UnresolvedMarkerSuffix = ".recording-finalization-unresolved.txt";
+    internal const string UnresolvedMarkerSuffix = ".recording-finalization-unresolved.txt";
     private const string ActiveMarkerSuffix = ".recording-active.txt";
     private const string RecoveryDirectoryName = "RecordingRecovery";
+
+    internal static bool IsUnresolvedMarkerPath(string? path)
+        => !string.IsNullOrWhiteSpace(path) &&
+           path.EndsWith(UnresolvedMarkerSuffix, StringComparison.OrdinalIgnoreCase);
+
+    // The unresolved marker is the preferred recovery handle; otherwise fall back to
+    // the caller's preferred path, then the first preserved artifact.
+    internal static string? ResolveRecoveryPath(IReadOnlyList<string> artifacts, string? preferredRecoveryPath = null)
+    {
+        foreach (var artifact in artifacts)
+        {
+            if (IsUnresolvedMarkerPath(artifact)) return artifact;
+        }
+        return preferredRecoveryPath ?? (artifacts.Count > 0 ? artifacts[0] : null);
+    }
 
     internal static RecordingFailureRecoveryState? TryLoadLatest(string? outputDirectory)
     {

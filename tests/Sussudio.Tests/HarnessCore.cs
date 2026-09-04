@@ -1504,7 +1504,10 @@ static partial class Program
         }
     }
 
-    private static bool UsesCommonToolSources(string projectDirectory)
+    private static bool AnyProjectIncludeMatches(
+        string projectDirectory,
+        string elementLocalName,
+        Func<string, bool> includePredicate)
     {
         foreach (var projectFile in Directory.EnumerateFiles(projectDirectory, "*.csproj"))
         {
@@ -1519,12 +1522,11 @@ static partial class Program
             }
 
             foreach (var include in project.Descendants()
-                         .Where(element => string.Equals(element.Name.LocalName, "Compile", StringComparison.OrdinalIgnoreCase))
+                         .Where(element => string.Equals(element.Name.LocalName, elementLocalName, StringComparison.OrdinalIgnoreCase))
                          .Select(element => element.Attribute("Include")?.Value)
                          .Where(value => !string.IsNullOrWhiteSpace(value)))
             {
-                var normalized = include!.Replace('\\', '/');
-                if (normalized.Contains("../Common/", StringComparison.OrdinalIgnoreCase))
+                if (includePredicate(include!))
                 {
                     return true;
                 }
@@ -1534,31 +1536,17 @@ static partial class Program
         return false;
     }
 
+    private static bool UsesCommonToolSources(string projectDirectory)
+        => AnyProjectIncludeMatches(
+            projectDirectory,
+            "Compile",
+            include => include.Replace('\\', '/').Contains("../Common/", StringComparison.OrdinalIgnoreCase));
+
     private static bool UsesAutomationContracts(string projectDirectory)
-    {
-        foreach (var projectFile in Directory.EnumerateFiles(projectDirectory, "*.csproj"))
-        {
-            XDocument project;
-            try
-            {
-                project = XDocument.Load(projectFile);
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (project.Descendants()
-                .Where(element => string.Equals(element.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
-                .Select(element => element.Attribute("Include")?.Value)
-                .Any(value => value?.Contains("Sussudio.Automation.Contracts", StringComparison.OrdinalIgnoreCase) == true))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+        => AnyProjectIncludeMatches(
+            projectDirectory,
+            "ProjectReference",
+            include => include.Contains("Sussudio.Automation.Contracts", StringComparison.OrdinalIgnoreCase));
 
     private static string GetToolProjectDirectory(string relativeAssemblyPath)
     {

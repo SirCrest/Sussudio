@@ -9472,7 +9472,7 @@ static partial class Program
         AssertContains(scriptText, "$nativeXuProbeProjectPath = Join-Path $repoRoot \"tools\\NativeXuAudioProbe\\NativeXuAudioProbe.csproj\"");
         AssertContains(scriptText, "-t:Rebuild");
         AssertEqual(
-            7,
+            4,
             System.Text.RegularExpressions.Regex.Matches(scriptText, "\"--no-restore\"").Count,
             "offline build/test no-restore argument count");
         AssertContains(scriptText, "\"test\"");

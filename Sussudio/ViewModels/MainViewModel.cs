@@ -15,6 +15,7 @@ using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.ViewModels;
@@ -269,7 +270,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (recoveredRecording != null)
         {
             RecoveredRecordingFailurePath = recoveredRecording.PreservedArtifacts.FirstOrDefault(path =>
-                !path.EndsWith(".recording-finalization-unresolved.txt", StringComparison.OrdinalIgnoreCase))
+                !RecordingFinalizationRecoveryArtifacts.IsUnresolvedMarkerPath(path))
                 ?? recoveredRecording.MarkerPath;
             RecoveredRecordingFailureMessage = recoveredRecording.Reason;
             StatusText = recoveredRecording.Reason.StartsWith("Recording failed", StringComparison.OrdinalIgnoreCase)

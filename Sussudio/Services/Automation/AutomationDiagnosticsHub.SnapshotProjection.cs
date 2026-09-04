@@ -213,7 +213,6 @@ public sealed partial class AutomationDiagnosticsHub
         var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);
         var previewSummary = projections.PreviewSummary;
         var recordingBackend = projections.RecordingBackend;
-        var recordingOutputFlattening = BuildRecordingOutputFlattenedProjection(recordingBackend, recordingOutput);
         var recordingPipeline = projections.RecordingPipeline;
         var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);
         var captureCadence = projections.CaptureCadence;
@@ -253,7 +252,8 @@ public sealed partial class AutomationDiagnosticsHub
             avSyncFlattening,
             captureTransportFlattening,
             captureFormatFlattening,
-            recordingOutputFlattening,
+            recordingOutput,
+            recordingBackend,
             recordingPipelineFlattening,
             captureCadenceFlattening,
             visualCadenceFlattening,
@@ -282,7 +282,8 @@ public sealed partial class AutomationDiagnosticsHub
         AvSyncFlattenedProjection AvSync,
         CaptureTransportFlattenedProjection CaptureTransport,
         CaptureFormatFlattenedProjection CaptureFormat,
-        RecordingOutputFlattenedProjection RecordingOutput,
+        RecordingOutputProjection RecordingOutput,
+        RecordingBackendProjection RecordingBackend,
         RecordingPipelineFlattenedProjection RecordingPipeline,
         CaptureCadenceFlattenedProjection CaptureCadence,
         VisualCadenceFlattenedProjection VisualCadence,
@@ -1270,6 +1271,7 @@ public sealed partial class AutomationDiagnosticsHub
         var captureTransportFlattening = flattened.CaptureTransport;
         var captureFormatFlattening = flattened.CaptureFormat;
         var recordingOutputFlattening = flattened.RecordingOutput;
+        var recordingBackend = flattened.RecordingBackend;
         var recordingPipelineFlattening = flattened.RecordingPipeline;
         var captureCadenceFlattening = flattened.CaptureCadence;
         var visualCadenceFlattening = flattened.VisualCadence;
@@ -1476,9 +1478,9 @@ public sealed partial class AutomationDiagnosticsHub
             EncoderVideoFramesEncoded = recordingPipelineFlattening.Encoder.VideoFramesEncoded,
             EncoderLastEnqueueAgeMs = recordingPipelineFlattening.Encoder.LastEnqueueAgeMs,
             EncoderLastWriteAgeMs = recordingPipelineFlattening.Encoder.LastWriteAgeMs,
-            RecordingBackend = recordingOutputFlattening.Backend,
-            AudioPathMode = recordingOutputFlattening.AudioPathMode,
-            MuxResult = recordingOutputFlattening.MuxResult,
+            RecordingBackend = recordingBackend.Backend,
+            AudioPathMode = recordingBackend.AudioPathMode,
+            MuxResult = recordingBackend.MuxResult,
             RecordingIntegrityStatus = recordingIntegrity.Summary.Status,
             RecordingIntegrityComplete = recordingIntegrity.Summary.Complete,
             RecordingIntegrityBackend = recordingIntegrity.Summary.Backend,
@@ -3849,75 +3851,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string Backend { get; init; }
         public string AudioPathMode { get; init; }
         public string MuxResult { get; init; }
-    }
-
-    private static RecordingOutputFlattenedProjection BuildRecordingOutputFlattenedProjection(
-        RecordingBackendProjection recordingBackend,
-        RecordingOutputProjection recordingOutput)
-        => new()
-        {
-            Backend = recordingBackend.Backend,
-            AudioPathMode = recordingBackend.AudioPathMode,
-            MuxResult = recordingBackend.MuxResult,
-            OutputPath = recordingOutput.OutputPath,
-            RecordingTime = recordingOutput.RecordingTime,
-            RecordingSizeInfo = recordingOutput.RecordingSizeInfo,
-            RecordingBitrateInfo = recordingOutput.RecordingBitrateInfo,
-            RecordingVideoBytes = recordingOutput.RecordingVideoBytes,
-            RecordingAudioBytes = recordingOutput.RecordingAudioBytes,
-            RecordingTotalBytes = recordingOutput.RecordingTotalBytes,
-            RecordingFileGrowing = recordingOutput.RecordingFileGrowing,
-            LastOutputPath = recordingOutput.LastOutputPath,
-            LastFinalizeStatus = recordingOutput.LastFinalizeStatus,
-            LastFinalizeUtc = recordingOutput.LastFinalizeUtc,
-            RecordingLifecyclePhase = recordingOutput.RecordingLifecyclePhase,
-            RecordingFinalizeOutcome = recordingOutput.RecordingFinalizeOutcome,
-            RecordingFinalizeFailureCode = recordingOutput.RecordingFinalizeFailureCode,
-            RecordingFinalizationVerificationCompleted = recordingOutput.RecordingFinalizationVerificationCompleted,
-            RecordingFinalizationCleanupPending = recordingOutput.RecordingFinalizationCleanupPending,
-            RecordingFinalizationElapsedMs = recordingOutput.RecordingFinalizationElapsedMs,
-            RecordingRecoveryPath = recordingOutput.RecordingRecoveryPath,
-            RecordingRequestedTracks = recordingOutput.RecordingRequestedTracks,
-            RecordingObservedTracks = recordingOutput.RecordingObservedTracks,
-            LastPreservedArtifacts = recordingOutput.LastPreservedArtifacts,
-            RecordingFinalizationProgressStage = recordingOutput.RecordingFinalizationProgressStage,
-            LastRecordingFinalizationProgressUtc = recordingOutput.LastRecordingFinalizationProgressUtc,
-            LastOutputExists = recordingOutput.LastOutputExists,
-            LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
-            LastVerification = recordingOutput.LastVerification
-        };
-
-    private readonly record struct RecordingOutputFlattenedProjection
-    {
-        public string Backend { get; init; }
-        public string AudioPathMode { get; init; }
-        public string MuxResult { get; init; }
-        public string OutputPath { get; init; }
-        public string RecordingTime { get; init; }
-        public string RecordingSizeInfo { get; init; }
-        public string RecordingBitrateInfo { get; init; }
-        public long RecordingVideoBytes { get; init; }
-        public long RecordingAudioBytes { get; init; }
-        public long RecordingTotalBytes { get; init; }
-        public bool RecordingFileGrowing { get; init; }
-        public string? LastOutputPath { get; init; }
-        public string LastFinalizeStatus { get; init; }
-        public DateTimeOffset? LastFinalizeUtc { get; init; }
-        public string RecordingLifecyclePhase { get; init; }
-        public string RecordingFinalizeOutcome { get; init; }
-        public string RecordingFinalizeFailureCode { get; init; }
-        public bool RecordingFinalizationVerificationCompleted { get; init; }
-        public bool RecordingFinalizationCleanupPending { get; init; }
-        public long RecordingFinalizationElapsedMs { get; init; }
-        public string? RecordingRecoveryPath { get; init; }
-        public IReadOnlyList<string> RecordingRequestedTracks { get; init; }
-        public IReadOnlyList<string> RecordingObservedTracks { get; init; }
-        public IReadOnlyList<string> LastPreservedArtifacts { get; init; }
-        public string RecordingFinalizationProgressStage { get; init; }
-        public DateTimeOffset? LastRecordingFinalizationProgressUtc { get; init; }
-        public bool LastOutputExists { get; init; }
-        public long? LastOutputSizeBytes { get; init; }
-        public RecordingVerificationResult? LastVerification { get; init; }
     }
 
     private static AudioAndIngestProjection BuildAudioAndIngestProjection(
