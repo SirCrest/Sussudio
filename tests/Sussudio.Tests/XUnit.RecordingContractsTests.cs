@@ -943,6 +943,7 @@ public class RecordingArtifactManagerTests
 // just resolve the type via its public/internal name.
 //
 // SussudioAssembly resolves the staged assembly independently for xUnit.
+[Collection(nameof(RecordingRecoveryEnvironmentCollection))]
 public class RecordingContractsTests
 {
     [Fact]

@@ -248,6 +248,7 @@ namespace Sussudio.ViewModels
         string SummaryRendererFps,
         string SummaryVisualFps,
         string SummaryLatency,
+        string SummaryRecording,
         StatsMetricStatus SummaryCaptureStatus,
         StatsMetricStatus SummaryRendererFpsStatus,
         StatsMetricStatus SummaryVisualFpsStatus,
@@ -332,19 +333,7 @@ namespace Sussudio.ViewModels
         string SourceText,
         string VisualText,
         string PreviewText,
-        string LatencyText,
-        string StatusText,
-        StatsFrameTimeRange Range,
-        IReadOnlyList<double> VisualSamples,
-        IReadOnlyList<double> PreviewSamples);
-
-    internal readonly record struct StatsFrameTimeRange(
-        double MinMs,
-        double MaxMs,
-        double ExpectedMs)
-    {
-        public double SpanMs => Math.Max(0.001, MaxMs - MinMs);
-    }
+        string LatencyText);
 
     internal sealed record StatsDiagnosticSummary(
         string HealthStatus,
@@ -441,6 +430,9 @@ namespace Sussudio.ViewModels
             return expectedFps > 0 ? $"{1000.0 / expectedFps:0.00}ms" : "\u2014";
         }
 
+        private static string FormatPipelineLatency(double value)
+            => Sanitize(value) > 0 ? $"{FormatMs(value)} avg" : "\u2014";
+
         private static string FormatPercent(double value)
         {
             return $"{Sanitize(value):0.0}%";
@@ -495,7 +487,7 @@ namespace Sussudio.ViewModels
             var visualMotion = snapshot.VisualCadenceSamples <= 0
                 ? "NoSamples"
                 : FormatVisualMotionSummary(snapshot);
-            var pipelineLatency = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
+            var pipelineLatency = FormatPipelineLatency(snapshot.PipelineLatencyMs);
             var sourceDelivered = $"{FormatCount(snapshot.SourceFramesDelivered)} delivered";
             var sourceDropped = $"{FormatCount(snapshot.SourceFramesDropped)} dropped";
             var rendererRendered = $"{FormatCount(snapshot.RendererFramesRendered)} rendered";
@@ -508,7 +500,6 @@ namespace Sussudio.ViewModels
             var previewFrameTimeSummary = FormatPreviewCadenceSummary(snapshot);
             var visualFpsSummary = FormatVisualRepeatSummary(snapshot);
             var captureSummary = ResolveCaptureSummaryText(snapshot);
-            var latencySummary = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
             var sourceFrameRate = snapshot.SourceFrameRateExact.HasValue
                 ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
                 : "\u2014";
@@ -543,7 +534,10 @@ namespace Sussudio.ViewModels
                 SummaryPreview: previewResolution,
                 SummaryRendererFps: previewFrameTimeSummary,
                 SummaryVisualFps: visualFpsSummary,
-                SummaryLatency: latencySummary,
+                SummaryLatency: pipelineLatency,
+                SummaryRecording: !snapshot.Recording
+                    ? "Not recording"
+                    : encoder.Active ? $"{encoder.Codec} · {encoder.Bitrate}" : "Recording",
                 SummaryCaptureStatus: ResolveFrameLaneStatus(snapshot.SourceP95IntervalMs, snapshot.SourceExpectedFps, snapshot.SourceEstDropPct),
                 SummaryRendererFpsStatus: ResolvePreviewFrameLaneStatus(snapshot),
                 SummaryVisualFpsStatus: ResolveDecodedVisualStatus(snapshot),
@@ -625,31 +619,19 @@ namespace Sussudio.ViewModels
 
         public static StatsFrameTimePresentation BuildFrameTimePresentation(StatsSnapshot snapshot)
         {
-            var range = ResolveFrameTimeRange(snapshot.SourceExpectedFps);
             return new StatsFrameTimePresentation(
-                SourceText: $"Src {FormatMs(snapshot.SourceP95IntervalMs)} P95 / {FormatMs(snapshot.SourceAvgIntervalMs)} avg",
+                SourceText: snapshot.SourceCadenceSamples <= 0
+                    ? "\u2014"
+                    : $"{FormatFps(snapshot.SourceObservedFps)} fps",
                 VisualText: snapshot.VisualCadenceSamples <= 0
-                    ? "Crop \u2014"
-                    : $"Crop {FormatVisualCadenceSummary(snapshot)}",
-                PreviewText: $"Preview: {FormatPreviewCadenceSummary(snapshot)}",
-                LatencyText: $"Lat {FormatMs(snapshot.PipelineLatencyMs)}",
-                StatusText: $"Target {FormatMs(range.ExpectedMs)} | blue=crop changes; green=preview presents | range {FormatMs(range.MinMs)}-{FormatMs(range.MaxMs)}",
-                Range: range,
-                VisualSamples: snapshot.VisualCadenceRecentChangeIntervalsMs ?? Array.Empty<double>(),
-                PreviewSamples: snapshot.PreviewRecentPresentIntervalsMs ?? Array.Empty<double>());
-        }
-
-        public static StatsFrameTimeRange ResolveFrameTimeRange(double expectedFps)
-        {
-            var fps = expectedFps > 0 ? expectedFps : 60.0;
-            var lowerFps = Math.Max(1.0, fps * 0.75);
-            var upperFps = Math.Max(lowerFps + 1.0, fps * 1.25);
-            var minMs = 1000.0 / upperFps;
-            var maxMs = 1000.0 / lowerFps;
-            return new StatsFrameTimeRange(
-                MinMs: minMs,
-                MaxMs: maxMs,
-                ExpectedMs: 1000.0 / fps);
+                    ? "\u2014"
+                    : $"{FormatFps(snapshot.VisualCadenceChangeFps)} fps",
+                PreviewText: snapshot.PreviewCadenceSamples <= 0
+                    ? "\u2014"
+                    : $"{FormatFps(snapshot.PreviewObservedFps)} fps",
+                LatencyText: snapshot.PreviewCadenceSamples <= 0
+                    ? "P99 present interval — · estimated capture → preview —"
+                    : $"P99 present interval {FormatMs(snapshot.PreviewP99IntervalMs)} · estimated capture → preview {FormatPipelineLatency(snapshot.PipelineLatencyMs)}\nVisual changes measure a sampled crop, not game frame rate.");
         }
 
         private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)
@@ -663,10 +645,10 @@ namespace Sussudio.ViewModels
             var currentFrameTime = currentFrameTimeMs > 0
                 ? FormatMs(currentFrameTimeMs)
                 : "\u2014";
-            var onePercentLow = Sanitize(snapshot.PreviewOnePercentLowFps) > 0
-                ? $"1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps"
-                : "1% low \u2014";
-            return $"{currentFrameTime} | {onePercentLow}";
+            var p99Equivalent = Sanitize(snapshot.PreviewOnePercentLowFps) > 0
+                ? $"P99 equivalent {FormatFps(snapshot.PreviewOnePercentLowFps)} fps"
+                : "P99 equivalent \u2014";
+            return $"{FormatFps(snapshot.PreviewObservedFps)} fps · {currentFrameTime}\n{p99Equivalent}";
         }
 
         private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)
@@ -1121,7 +1103,7 @@ namespace Sussudio.ViewModels
                 PreviewAvg: $"{FormatMs(snapshot.PreviewAvgIntervalMs)} avg",
                 PreviewP95: $"{FormatMs(snapshot.PreviewP95IntervalMs)} P95",
                 PreviewSlow: $"{FormatCount(snapshot.PreviewSlowFrames)} frames ({FormatPercent(snapshot.PreviewSlowPct)})",
-                PipelineLatency: $"{FormatMs(snapshot.PipelineLatencyMs)} avg",
+                PipelineLatency: FormatPipelineLatency(snapshot.PipelineLatencyMs),
                 SourceDelivered: $"{FormatCount(snapshot.SourceFramesDelivered)} delivered",
                 SourceDropped: $"{FormatCount(snapshot.SourceFramesDropped)} dropped",
                 RendererRendered: $"{FormatCount(snapshot.RendererFramesRendered)} rendered",

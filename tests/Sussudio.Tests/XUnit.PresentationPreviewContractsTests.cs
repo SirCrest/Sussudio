@@ -1480,8 +1480,8 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(renderPassesText, "private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)");
-        AssertContains(renderPassesText, "private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex)");
-        AssertContains(renderPassesText, "inputView = CreateInputViewFromTexture(frame.D3DTexture, frame.D3DSubresourceIndex);");
+        AssertContains(renderPassesText, "private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex, int mipLevels)");
+        AssertContains(renderPassesText, "inputView = ResolveExternalInputView(frame.D3DTexture, frame.D3DSubresourceIndex);");
         AssertContains(renderPassesText, "UploadRawFrameToTexture(frame.RawData, frame.RawDataLength");
         AssertContains(renderPassesText, "private bool _loggedDirectUploadFallback;");
         AssertContains(renderPassesText, "private unsafe bool UploadRawFrameToTexture(");
@@ -1518,11 +1518,11 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderThread.cs")),
             "D3D11 render-thread execution and frame-latency pacing are folded into the renderer root");
-        AssertContains(rootText, "private IntPtr _frameLatencyWaitHandle;");
+        AssertContains(rootText, "private SafeWaitHandle? _frameLatencyWaitHandle;");
         AssertContains(rootText, "private void ConfigureFrameLatencyWaitableObject()");
         AssertContains(rootText, "private void WaitForFrameLatencySignal()");
         AssertContains(rootText, "TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);");
-        AssertContains(rootText, "private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);");
+        AssertContains(rootText, "private static extern uint WaitForSingleObject(SafeWaitHandle handle, uint milliseconds);");
         AssertDoesNotContain(resourcesText, "private void WaitForFrameLatencySignal()");
         AssertDoesNotContain(renderPassesText, "private static extern uint WaitForSingleObject");
 
@@ -2609,6 +2609,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var renderer = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(rendererType);
         SetPrivateField(renderer, "_presentCadenceLock", new object());
         SetPrivateField(renderer, "_presentIntervalWindowMs", new double[8]);
+        SetPrivateField(renderer, "_presentFrameTimeHistory", Activator.CreateInstance(
+            RequireType("Sussudio.Services.Preview.PreviewFrameTimeHistory"), new object?[] { 4096, null }));
 
         var getMetrics = rendererType.GetMethod("GetPresentCadenceMetrics", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("GetPresentCadenceMetrics not found.");
@@ -4733,7 +4735,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRendererStartupPlanBuilderText, "var rendererFps = negotiatedFps > 0 ? negotiatedFps : settingsFps;");
         AssertContains(statsSnapshotText, "GetRenderer = () => _previewRendererHostController.Renderer,");
         AssertContains(statsSnapshotText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
-        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs())");
+        AssertContains(statsSnapshotProviderText, "BuildRenderMetrics(renderer, expectedIntervalMs)");
         AssertContains(statsSnapshotProviderText, "GetPresentCadenceMetrics(previewMinPresentationIntervalMs)");
         AssertDoesNotContain(agentMapText, "PreviewRendererHostController.Lifecycle.cs");
         AssertDoesNotContain(agentMapText, "PreviewRendererHostController.D3D.cs");

@@ -7,6 +7,17 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 
 ## What's in place
 
+- `tests/Sussudio.Tests/XUnit.PreviewRendererLifecycleTests.cs` owns stop/reset,
+  generation, native latency-handle, and exceptional cache cleanup regressions.
+- `tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` owns bounded
+  texture/subresource cache reuse, eviction, and allocation checks.
+- `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` owns shared fanout, cadence,
+  visibility demand, epoch changes, and exception recovery checks.
+- `tests/Sussudio.Tests/PreviewFrameTimeHistory.Tests.cs` directly tests the pure
+  linked history/geometry sources, including timestamp gaps and warmed allocations.
+- `tests/Sussudio.Tests/StatsPresentationPolish.Tests.cs` owns motion state and
+  human-readable presentation contracts.
+
 - xUnit 2.9 + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` referenced
   in `Sussudio.Tests.csproj`. `OutputType=Exe` stays for the assembly-load smoke
   command; `dotnet test` owns all regression execution.

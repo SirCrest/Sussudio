@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -11,37 +10,33 @@ using Sussudio.ViewModels;
 
 namespace Sussudio;
 
-// Detached diagnostics window. It polls a StatsSnapshot provider and renders
-// the same live counters as the dock without owning capture or automation state.
+// Detached diagnostics subscribes to the same UI samples as the dock.
+// Its subscription is active only while the window is visible and not minimized.
 public sealed partial class StatsWindow : Window
 {
-    private readonly Func<StatsSnapshot> _dataProvider;
+    private readonly Func<Action<StatsSnapshot>, IDisposable> _subscribe;
     private readonly Action? _closedCallback;
     private readonly StatsWindowPresentationController _presentationController;
-    private readonly DispatcherQueueTimer _pollTimer;
+    private readonly AppWindow _appWindow;
+    private IDisposable? _subscription;
+    private bool _closed;
 
-    public StatsWindow(Func<StatsSnapshot> dataProvider, Action? closedCallback = null)
+    public StatsWindow(Func<Action<StatsSnapshot>, IDisposable> subscribe, Action? closedCallback = null)
     {
-        ArgumentNullException.ThrowIfNull(dataProvider);
+        ArgumentNullException.ThrowIfNull(subscribe);
 
         InitializeComponent();
 
-        _dataProvider = dataProvider;
+        _subscribe = subscribe;
         _closedCallback = closedCallback;
         _presentationController = CreatePresentationController();
 
-        ConfigureWindow();
-
-        var dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-        _pollTimer = dispatcherQueue.CreateTimer();
-        _pollTimer.Interval = TimeSpan.FromMilliseconds(500);
-        _pollTimer.IsRepeating = true;
-        _pollTimer.Tick += PollTimer_Tick;
+        _appWindow = ConfigureWindow();
+        _appWindow.Changed += AppWindow_Changed;
 
         Closed += StatsWindow_Closed;
-
-        UpdateSnapshot(_dataProvider());
-        _pollTimer.Start();
+        Activated += StatsWindow_Activated;
+        RefreshSubscription();
     }
 
     private StatsWindowPresentationController CreatePresentationController()
@@ -89,7 +84,7 @@ public sealed partial class StatsWindow : Window
     private const int MinHeight = 520;
     private MinSizeWindowSubclass.MinSizeHandle? _minSizeHandle;
 
-    private void ConfigureWindow()
+    private AppWindow ConfigureWindow()
     {
         var hwnd = WindowNative.GetWindowHandle(this);
         var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
@@ -108,20 +103,41 @@ public sealed partial class StatsWindow : Window
         }
 
         _minSizeHandle = MinSizeWindowSubclass.Install(hwnd, MinWidth, MinHeight);
+        return appWindow;
     }
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
 
-    private void PollTimer_Tick(DispatcherQueueTimer sender, object args)
+    private void AppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+        => RefreshSubscription();
+
+    private void StatsWindow_Activated(object sender, WindowActivatedEventArgs args)
+        => RefreshSubscription();
+
+    private void RefreshSubscription()
     {
-        UpdateSnapshot(_dataProvider());
+        var minimized = _appWindow.Presenter is OverlappedPresenter presenter &&
+            presenter.State == OverlappedPresenterState.Minimized;
+        if (!_closed && _appWindow.IsVisible && !minimized)
+        {
+            _subscription ??= _subscribe(UpdateSnapshot);
+        }
+        else
+        {
+            var subscription = _subscription;
+            _subscription = null;
+            subscription?.Dispose();
+        }
     }
 
     private void StatsWindow_Closed(object sender, WindowEventArgs args)
     {
-        _pollTimer.Stop();
-        _pollTimer.Tick -= PollTimer_Tick;
+        _closed = true;
+        RefreshSubscription();
+        _appWindow.Changed -= AppWindow_Changed;
+        Activated -= StatsWindow_Activated;
+        Closed -= StatsWindow_Closed;
         _closedCallback?.Invoke();
     }
 
@@ -145,6 +161,10 @@ public sealed partial class StatsWindow : Window
 
     private void UpdateSnapshot(StatsSnapshot snapshot)
     {
+        if (_closed)
+        {
+            return;
+        }
         var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);
         _presentationController.Apply(presentation);
     }

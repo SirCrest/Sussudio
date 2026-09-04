@@ -6,6 +6,14 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
+// These tests temporarily replace a process-wide recovery directory. Isolate
+// their collection so another test cannot observe or overwrite that setting.
+[CollectionDefinition(nameof(RecordingRecoveryEnvironmentCollection), DisableParallelization = true)]
+public sealed class RecordingRecoveryEnvironmentCollection
+{
+}
+
+[Collection(nameof(RecordingRecoveryEnvironmentCollection))]
 public sealed class RecordingFinalizationTruthTests
 {
     public RecordingFinalizationTruthTests()

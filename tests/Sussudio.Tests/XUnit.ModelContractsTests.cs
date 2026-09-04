@@ -3489,76 +3489,25 @@ public sealed class CaptureConfigurationModelsTests
 public class StatsPresentationTests
 {
     [Fact]
-    public void FrameTimeOverlay_UsesDetectedFpsBoundedRange()
+    public void FrameTimeGraph_UsesBudgetRangeThatPreservesVisibleHitches()
     {
-        var presentationType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var resolveRange = presentationType.GetMethod("ResolveFrameTimeRange", ReflectionFlags.Static)
-            ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
-
-        var range120 = resolveRange.Invoke(null, new object[] { 120.0 })
-            ?? throw new InvalidOperationException("ResolveFrameTimeRange returned null for 120fps.");
-        AssertNearlyEqual(1000.0 / 150.0, GetDoubleProperty(range120, "MinMs"), 0.0001);
-        AssertNearlyEqual(1000.0 / 90.0, GetDoubleProperty(range120, "MaxMs"), 0.0001);
-        AssertNearlyEqual(1000.0 / 120.0, GetDoubleProperty(range120, "ExpectedMs"), 0.0001);
-
-        var normalizedExpected = (GetDoubleProperty(range120, "ExpectedMs") - GetDoubleProperty(range120, "MinMs")) /
-                                 GetDoubleProperty(range120, "SpanMs");
-        AssertNearlyEqual(0.375, normalizedExpected, 0.0001);
-
-        var fallbackRange = resolveRange.Invoke(null, new object[] { 0.0 })
-            ?? throw new InvalidOperationException("ResolveFrameTimeRange returned null for fallback fps.");
-        AssertNearlyEqual(1000.0 / 75.0, GetDoubleProperty(fallbackRange, "MinMs"), 0.0001);
-        AssertNearlyEqual(1000.0 / 45.0, GetDoubleProperty(fallbackRange, "MaxMs"), 0.0001);
-        AssertNearlyEqual(1000.0 / 60.0, GetDoubleProperty(fallbackRange, "ExpectedMs"), 0.0001);
+        var scale120 = Sussudio.Controllers.FrameTimeGraphScale.FromExpectedFps(120);
+        Assert.Equal(1000.0 / 120, scale120.FrameBudgetMs, 4);
+        Assert.True(scale120.MaximumFrameTimeMs > 3 * scale120.FrameBudgetMs);
+        var fallback = Sussudio.Controllers.FrameTimeGraphScale.FromExpectedFps(0);
+        Assert.Equal(60, fallback.ExpectedFps);
+        Assert.True(fallback.MaximumFrameTimeMs > 50);
     }
 
     [Fact]
-    public void FrameTimeOverlayGeometry_ProjectsGraphCoordinates()
+    public void FrameTimeGraphGeometry_HasIndependentTimestampOwner()
     {
-        var presentationType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var geometryType = RequireType("Sussudio.Controllers.FrameTimeOverlayGeometry");
-        var resolveRange = presentationType.GetMethod("ResolveFrameTimeRange", ReflectionFlags.Static)
-            ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
-        var resolveCanvasSize = geometryType.GetMethod("ResolveCanvasSize", ReflectionFlags.Static)
-            ?? throw new InvalidOperationException("ResolveCanvasSize was not found.");
-        var projectSample = geometryType.GetMethod("ProjectSample", ReflectionFlags.Static)
-            ?? throw new InvalidOperationException("ProjectSample was not found.");
-        var projectExpectedLine = geometryType.GetMethod("ProjectExpectedLine", ReflectionFlags.Static)
-            ?? throw new InvalidOperationException("ProjectExpectedLine was not found.");
-
-        var range120 = resolveRange.Invoke(null, new object[] { 120.0 })
-            ?? throw new InvalidOperationException("ResolveFrameTimeRange returned null for 120fps.");
-        var fallbackCanvasSize = resolveCanvasSize.Invoke(null, new object[] { 1.0, 0.0 })
-            ?? throw new InvalidOperationException("ResolveCanvasSize returned null for fallback dimensions.");
-        AssertNearlyEqual(500, GetDoubleProperty(fallbackCanvasSize, "Width"), 0.0001);
-        AssertNearlyEqual(92, GetDoubleProperty(fallbackCanvasSize, "Height"), 0.0001);
-
-        var canvasSize = resolveCanvasSize.Invoke(null, new object[] { 300.0, 100.0 })
-            ?? throw new InvalidOperationException("ResolveCanvasSize returned null for explicit dimensions.");
-        var minPoint = projectSample.Invoke(null, new object[] { 0, 3, GetDoubleProperty(range120, "MinMs"), range120, canvasSize })
-            ?? throw new InvalidOperationException("ProjectSample returned null for min sample.");
-        var expectedPoint = projectSample.Invoke(null, new object[] { 1, 3, GetDoubleProperty(range120, "ExpectedMs"), range120, canvasSize })
-            ?? throw new InvalidOperationException("ProjectSample returned null for expected sample.");
-        var maxPoint = projectSample.Invoke(null, new object[] { 2, 3, GetDoubleProperty(range120, "MaxMs"), range120, canvasSize })
-            ?? throw new InvalidOperationException("ProjectSample returned null for max sample.");
-        var clippedLowPoint = projectSample.Invoke(null, new object[] { 1, 3, GetDoubleProperty(range120, "MinMs") - 100, range120, canvasSize })
-            ?? throw new InvalidOperationException("ProjectSample returned null for clipped-low sample.");
-        var clippedHighPoint = projectSample.Invoke(null, new object[] { 1, 3, GetDoubleProperty(range120, "MaxMs") + 100, range120, canvasSize })
-            ?? throw new InvalidOperationException("ProjectSample returned null for clipped-high sample.");
-
-        AssertNearlyEqual(0, GetDoubleProperty(minPoint, "X"), 0.0001);
-        AssertNearlyEqual(100, GetDoubleProperty(minPoint, "Y"), 0.0001);
-        AssertNearlyEqual(150, GetDoubleProperty(expectedPoint, "X"), 0.0001);
-        AssertNearlyEqual(62.5, GetDoubleProperty(expectedPoint, "Y"), 0.0001);
-        AssertNearlyEqual(300, GetDoubleProperty(maxPoint, "X"), 0.0001);
-        AssertNearlyEqual(0, GetDoubleProperty(maxPoint, "Y"), 0.0001);
-        AssertNearlyEqual(100, GetDoubleProperty(clippedLowPoint, "Y"), 0.0001);
-        AssertNearlyEqual(0, GetDoubleProperty(clippedHighPoint, "Y"), 0.0001);
-
-        var expectedLine = projectExpectedLine.Invoke(null, new[] { range120, canvasSize })
-            ?? throw new InvalidOperationException("ProjectExpectedLine returned null.");
-        AssertNearlyEqual(300, GetDoubleProperty(expectedLine, "X2"), 0.0001);
-        AssertNearlyEqual(62.5, GetDoubleProperty(expectedLine, "Y"), 0.0001);
+        var owner = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeGraphGeometry.cs");
+        var composition = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
+        Assert.Contains("internal static class FrameTimeGraphGeometry", owner);
+        Assert.Contains("TimestampQpc", owner);
+        Assert.DoesNotContain("FrameTimeOverlayGeometry", composition);
+        Assert.DoesNotContain("Points.Clear", composition);
     }
 
     [Fact]
@@ -3715,7 +3664,7 @@ public class StatsPresentationTests
         var dockPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs");
         var statsSnapshotProviderText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
-        var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
+        var frameTimeOverlayGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeGraphGeometry.cs");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
         var statsSnapshotText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs");
         var statsSnapshotBuilderText = statsSnapshotText;
@@ -3729,15 +3678,15 @@ public class StatsPresentationTests
             statsOverlayText,
             statsOverlayCompositionText,
             frameTimeOverlayControllerText);
-        Assert.Contains("internal static class FrameTimeOverlayGeometry", frameTimeOverlayGeometryText);
+        Assert.Contains("internal static class FrameTimeGraphGeometry", frameTimeOverlayGeometryText);
         Assert.Contains("SetMetricBrush(_context.SummaryRendererFpsValue, presentation.SummaryRendererFpsStatus);", dockPresentationControllerText);
         Assert.Contains("SetTextIfChanged(_context.PreviewFpsValue, presentation.PreviewFps);", dockPresentationControllerText);
         Assert.DoesNotContain("SetMetricBrush(Stats_SummaryRendererFpsValue", statsOverlayText);
         Assert.Contains("double PreviewOnePercentLowFps", statsSnapshotText);
         Assert.DoesNotContain("double PreviewFivePercentLowFps", statsWindowText);
         Assert.Contains("x:Name=\"Stats_SummaryRendererFpsValue\"", mainWindowXaml);
-        Assert.Contains("TextWrapping=\"NoWrap\"", mainWindowXaml);
-        Assert.Contains("MaxLines=\"1\"", mainWindowXaml);
+        Assert.Contains("TextWrapping=\"Wrap\"", mainWindowXaml);
+        Assert.Contains("RequestedTheme=\"Dark\"", mainWindowXaml);
     }
 
 [Fact]
@@ -3748,7 +3697,7 @@ public class StatsPresentationTests
         var statsDockRefreshControllerText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var frameTimeOverlayText = statsOverlayCompositionText;
         var frameTimeOverlayControllerText = statsOverlayCompositionText;
-        var frameTimeOverlayGeometryText = frameTimeOverlayControllerText;
+        var frameTimeOverlayGeometryText = ReadRepoFile("Sussudio/Controllers/Stats/FrameTimeGraphGeometry.cs");
         var statsPresentationText = ReadRepoFile("Sussudio/ViewModels/StatsPresentationBuilder.cs").Replace("\r\n", "\n");
         var statsPresentationModelsText = statsPresentationText;
         var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
@@ -3811,17 +3760,11 @@ public class StatsPresentationTests
             "frame-time overlay presentation lives with stats overlay composition ownership");
         AssertContains(frameTimeOverlayControllerText, "public void Apply(StatsSnapshot snapshot)");
         AssertContains(frameTimeOverlayControllerText, "var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);");
-        AssertContains(frameTimeOverlayControllerText, "UpdateExpectedLine(presentation.Range);");
-        AssertContains(frameTimeOverlayControllerText, "UpdateLine(_context.VisualLine, presentation.VisualSamples, presentation.Range);");
-        AssertContains(frameTimeOverlayControllerText, "FrameTimeOverlayGeometry.ProjectSample(i, samples.Count, samples[i], range, canvasSize)");
-        AssertContains(frameTimeOverlayControllerText, "FrameTimeOverlayGeometry.ProjectExpectedLine(range, canvasSize)");
         AssertContains(frameTimeOverlayControllerText, "SetTextIfChanged(_context.SourceValue, presentation.SourceText);");
-        AssertContains(frameTimeOverlayGeometryText, "internal static class FrameTimeOverlayGeometry");
-        AssertContains(frameTimeOverlayGeometryText, "public static FrameTimeOverlayCanvasSize ResolveCanvasSize(double actualWidth, double actualHeight)");
-        AssertContains(frameTimeOverlayGeometryText, "public static Point ProjectSample(");
-        AssertContains(frameTimeOverlayGeometryText, "public static FrameTimeOverlayExpectedLineGeometry ProjectExpectedLine(");
-        AssertContains(frameTimeOverlayGeometryText, "var normalized = Math.Clamp((frameTimeMs - range.MinMs) / range.SpanMs, 0.0, 1.0);");
-        AssertDoesNotContain(frameTimeOverlayControllerText, "var normalized = Math.Clamp((samples[i] - range.MinMs) / range.SpanMs, 0.0, 1.0);");
+        AssertContains(frameTimeOverlayGeometryText, "internal static class FrameTimeGraphGeometry");
+        AssertContains(frameTimeOverlayGeometryText, "public static bool TryProjectSegment(");
+        AssertContains(frameTimeOverlayGeometryText, "PreviewFrameTimeSampleFlags.GapBefore");
+        AssertDoesNotContain(frameTimeOverlayControllerText, "UpdateLine(");
         AssertContains(statsDockRefreshControllerText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
         AssertContains(statsWindowText, "var presentation = StatsPresentationBuilder.BuildStatsWindowPresentation(snapshot);");
         AssertContains(statsWindowText, "_presentationController.Apply(presentation);");
@@ -3880,9 +3823,9 @@ public class StatsPresentationTests
         AssertContains(statsPresentationText, "SourceHdr: FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry),");
         AssertContains(statsPresentationText, "SourceFormat: snapshot.SourceVideoFormat ?? \"\\u2014\",");
         AssertContains(mainWindowXaml, "Text=\"Video Format\"");
-        AssertContains(mainWindowXaml, "Text=\"Telemetry Details\"");
-        AssertContains(statsWindowXaml, "Text=\"Video Format\"");
-        AssertContains(statsWindowXaml, "Text=\"Telemetry Details\"");
+        AssertContains(mainWindowXaml, "x:Name=\"Diagnostics_Content\"");
+        AssertContains(statsWindowXaml, "x:Name=\"SourceFormatValue\"");
+        AssertContains(statsWindowXaml, "x:Name=\"TelemetryDetailsContent\"");
         AssertContains(nativeXuText, "VideoFormat = aviInfo.ColorSpace,");
         AssertContains(nativeXuText, "Colorimetry = aviInfo.Colorimetry,");
         AssertContains(nativeXuText, "Quantization = aviInfo.Quantization,");
@@ -3909,7 +3852,7 @@ public class StatsPresentationTests
         AssertContains(statsDockCompositionText, "private static StatsDockPresentationController CreatePresentationController(");
         AssertContains(statsDockCompositionText, "private static StatsDockRefreshController CreateRefreshController(");
         AssertContains(statsDockCompositionText, "internal sealed class StatsDockControllerGraph");
-        AssertContains(statsDockCompositionText, "public void RefreshDock()");
+        AssertContains(statsDockCompositionText, "public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)");
         AssertContains(statsDockCompositionText, "public void RefreshDiagnosticsSection()");
         AssertOccursBefore(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);", "_statsDockControllerGraph = CreateDockControllerGraph(context);");
         AssertOccursBefore(statsOverlayCompositionText, "_statsDockControllerGraph = CreateDockControllerGraph(context);", "_statsOverlayController = CreateOverlayController(context);");
@@ -3922,7 +3865,7 @@ public class StatsPresentationTests
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
         AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
         AssertContains(refreshControllerText, "public required Func<bool> IsDiagnosticsSectionVisible { get; init; }");
-        AssertContains(refreshControllerText, "public void RefreshDock()");
+        AssertContains(refreshControllerText, "public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)");
         AssertContains(refreshControllerText, "public void RefreshDiagnosticsSection()");
         AssertContains(refreshControllerText, "_context.IsWindowClosing() || !_context.IsStatsDockVisible()");
         AssertContains(refreshControllerText, "StatsPresentationBuilder.BuildDockPresentation(snapshot)");
@@ -4132,8 +4075,8 @@ public class StatsPresentationTests
         Assert.Contains("private static string FormatPreviewCadenceSummary(StatsSnapshot snapshot)", statsPresentationText);
         Assert.Contains("private static double ResolveCurrentPreviewFrameTimeMs(StatsSnapshot snapshot)", statsPresentationText);
         Assert.Contains("ResolveCurrentPreviewFrameTimeMs(snapshot)", statsPresentationText);
-        Assert.Contains("1% low {FormatFps(snapshot.PreviewOnePercentLowFps)} fps", statsPresentationText);
-        Assert.Contains("return $\"{currentFrameTime} | {onePercentLow}\";", statsPresentationText);
+        Assert.Contains("P99 equivalent {FormatFps(snapshot.PreviewOnePercentLowFps)} fps", statsPresentationText);
+        Assert.Contains("{currentFrameTime}\\n{p99Equivalent}", statsPresentationText);
         Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", statsOverlayText);
         Assert.DoesNotContain("private static double ResolveCurrentPreviewFrameTimeMs(", statsOverlayText);
         Assert.DoesNotContain("private static string FormatPreviewCadenceSummary(", frameTimeOverlayText);

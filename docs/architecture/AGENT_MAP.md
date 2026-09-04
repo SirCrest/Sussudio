@@ -8,6 +8,25 @@ right file without guessing from old chat transcripts.
 
 ## Architecture Ownership Entry Points
 
+Preview performance regression coverage includes
+`tests/Sussudio.Tests/PreviewFrameTimeHistory.Tests.cs` (history and geometry),
+`tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` (fanout, cadence, and demand),
+`tests/Sussudio.Tests/StatsPresentationPolish.Tests.cs` (dock motion and labels),
+`tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` (bounded cache),
+and `tests/Sussudio.Tests/XUnit.PreviewRendererLifecycleTests.cs` (queue/reset and
+native handle/resource lifetime).
+`scripts/performance/Measure-PreviewScenario.ps1` records comparable observation
+runs through existing ssctl diagnostics; it does not reconfigure capture or
+start recording.
+
+`Sussudio/Services/Preview/PreviewInputViewCache.cs` owns the eight-entry texture
+identity/subresource lookup and disposable-entry eviction policy. The renderer's
+render-pass owner wraps each entry's retained texture and input-view references;
+its resource owner clears the cache before releasing the video-processor
+enumerator on reconfiguration/reset/shutdown. Entries never retain capture
+samples or pending-frame leases. The cache can retain whole texture arrays;
+bounded entry count is not a measured GPU-byte budget.
+
 These rows are the first places to look when changing a subsystem. Some entries
 are still genuinely large; others are small roots for split families. Prefer
 extracting new behavior into a named collaborator or feature folder instead of
@@ -1058,8 +1077,7 @@ Primary current owners:
 - `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats
   dock visibility orchestration, stats/frame-time toggle event hookup and
   checked/unchecked handling, stats toggle-to-view model sync, frame-time
-  overlay visibility, polling lifetime, stats dock show/hide storyboard
-  construction, dock visibility mutations, animation completion state, the
+  overlay visibility, shared sampling demand and timer lifetime, the
   stats overlay runtime facade, construction-order entry point, and graph
   factory wiring: snapshot provider, frame-time presentation, dock graph,
   overlay controller, and section chrome controller.
@@ -1075,7 +1093,7 @@ Primary current owners:
   construction plus the dock graph context contract because the dock is only
   driven by the overlay controller.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns stats dock refresh
-  orchestration: snapshot acquisition, dock presentation build/apply,
+  orchestration: shared snapshot consumption, dock presentation build/apply,
   diagnostics visibility gating, decode/GPU row refresh ordering, stats dock
   metric text, visibility, and status brush application after the presentation
   model is built. `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`
@@ -1083,11 +1101,20 @@ Primary current owners:
   expand/collapse chrome and automation-visible section visibility application;
   `Sussudio/MainWindow.xaml.cs`
   owns the XAML/automation adapter for that stats shell wiring.
-  `Sussudio/StatsWindow.xaml.cs` also owns detached stats-window metric text and
-  dynamic telemetry detail rendering.
+  `Sussudio/StatsWindow.xaml.cs` also owns detached stats-window metric text,
+  dynamic telemetry detail rendering, and visibility-scoped subscriptions to
+  the shared sampler. It has no independent polling timer; there is currently
+  no shell construction site for this window.
   `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns shell stats snapshot
   orchestration from capture-health, renderer metrics, and view state, including
-  renderer cadence/recent-sample acquisition and null fallback policy.
+  renderer cadence acquisition and null fallback policy. Heavy health and
+  percentile snapshots refresh every 500 ms; lightweight labels every 250 ms.
+  `Sussudio/Controllers/Stats/StatsUiSampler.cs` owns sample caching, producer
+  epoch checks, subscriber fanout, and demand transitions. Its cache is UI-only;
+  automation continues to collect independent fresh snapshots.
+  `Sussudio/Controllers/Stats/StatsDockMotionController.cs` owns fixed-slot dock
+  visibility, compositor translation/opacity, reduced motion, clipping, and
+  revision-checked transition completion. Width is not animated.
   `Sussudio/MainWindow.xaml.cs` is the XAML-facing
   surface for stats visibility, polling, snapshot source wiring, frame-time
   targets, and section chrome commands; stats provider/controller context
@@ -1116,9 +1143,18 @@ Primary current owners:
   `StatsDockRowChromePresenter` owns shared row chrome plus decode/GPU row
   pooling inside the refresh owner that decides when decode/GPU rows refresh.
 - `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` owns compact
-  frame-time overlay text application, graph-line mutation, canvas sizing,
-  sample projection, and expected-line geometry alongside the stats overlay
-  composition graph that routes polling snapshots into it.
+  frame-time overlay text application and graph lifecycle wiring.
+  `Sussudio/Controllers/Stats/FrameTimeGraphController.cs` owns the two native
+  Composition graph surfaces, incremental sample drains, reusable line pools,
+  shared scrolling clock, scale labels, gaps, and active/reduced-motion lifecycle.
+  `Sussudio/Controllers/Stats/FrameTimeGraphGeometry.cs` owns pure QPC projection,
+  aligned FPS/frame-time scales, discontinuity rules, and marked overflow.
+  `Sussudio/Services/Preview/PreviewFrameTimeHistory.cs` owns bounded ten-second
+  measurement history and cursor reads. Globally unique history epochs prevent
+  continuity across renderer replacement; capture/automation producer epochs
+  are freshness versions and must not be treated as graph session identifiers.
+  The renderer appends under its cadence lock; graph drains do no percentile
+  sorting and retain no capture-frame or texture references.
   `Sussudio/MainWindow.xaml.cs` owns the XAML-facing
   compact overlay adapter beside the stats overlay visibility route.
   `Sussudio/ViewModels/StatsPresentationBuilder.cs` owns the cohesive pure stats
@@ -1150,7 +1186,7 @@ Primary current owners:
   policy results.
 - `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` owns detached-window, dock
   encoder, display-repeat visual-cadence, compact preview summary, frame-time
-  range, frame-time graph geometry behavior checks, stats dock source-shape
+  range and stats dock source-shape
   assertions, builder/controller/DTO ownership assertions, HDMI source telemetry
   panel projection checks, hardware row presentation and input-provider behavior
   checks, and shared StatsPresentation/StatsHardwareRows xUnit reflection/file

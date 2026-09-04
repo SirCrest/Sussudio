@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -23,6 +24,40 @@ internal sealed partial class D3D11PreviewRenderer
     private int _frameCaptureEncodeInProgress;
     private int _captureStagingWidth;
     private int _captureStagingHeight;
+    private readonly PreviewInputViewCache<ExternalInputView> _externalInputViews = new();
+    private long _externalInputViewCreationCount;
+    private long _externalInputViewCreationTicks;
+    private long _externalInputViewCreationMaxTicks;
+    private long _externalInputViewRequests;
+    private long _externalInputViewLastLogTick;
+
+    private sealed class ExternalInputView : IDisposable
+    {
+        public ExternalInputView(ID3D11Texture2D texture, ID3D11VideoProcessorInputView view, int mipLevels, int arraySize)
+        {
+            Texture = texture;
+            View = view;
+            MipLevels = mipLevels;
+            ArraySize = arraySize;
+        }
+
+        public ID3D11Texture2D Texture { get; }
+        public ID3D11VideoProcessorInputView View { get; }
+        public int MipLevels { get; }
+        public int ArraySize { get; }
+
+        public void Dispose()
+        {
+            try
+            {
+                View.Dispose();
+            }
+            finally
+            {
+                Texture.Dispose();
+            }
+        }
+    }
 
     private void RenderFrame(PendingFrame frame)
     {
@@ -101,8 +136,8 @@ internal sealed partial class D3D11PreviewRenderer
 
         if (frame.D3DTexture != null)
         {
-            inputView = CreateInputViewFromTexture(frame.D3DTexture, frame.D3DSubresourceIndex);
-            disposeInputView = true;
+            inputView = ResolveExternalInputView(frame.D3DTexture, frame.D3DSubresourceIndex);
+            disposeInputView = !_externalInputViewCacheEnabled;
             return true;
         }
 
@@ -146,19 +181,108 @@ internal sealed partial class D3D11PreviewRenderer
         return true;
     }
 
-    private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex)
+    private ID3D11VideoProcessorInputView ResolveExternalInputView(ID3D11Texture2D texture, int subresourceIndex)
+    {
+        _externalInputViewRequests++;
+        var texturePointer = texture.NativePointer;
+        int mipLevels;
+        int arraySize;
+        if (_externalInputViewCacheEnabled && _externalInputViews.TryGetTextureResource(texturePointer, out var retained))
+        {
+            mipLevels = retained!.MipLevels;
+            arraySize = retained.ArraySize;
+        }
+        else
+        {
+            var description = texture.Description;
+            mipLevels = Math.Max(1, (int)description.MipLevels);
+            arraySize = Math.Max(1, (int)description.ArraySize);
+        }
+
+        var subresource = PreviewInputViewCache<ExternalInputView>.NormalizeSubresource(subresourceIndex, mipLevels, arraySize);
+        if (_externalInputViewCacheEnabled && _externalInputViews.TryGet(texturePointer, subresource, out var cached))
+        {
+            LogExternalInputViewCacheIfDue();
+            return cached!.View;
+        }
+
+        var createStart = Stopwatch.GetTimestamp();
+        var view = CreateInputViewFromTexture(texture, subresource, mipLevels);
+        var createTicks = Stopwatch.GetTimestamp() - createStart;
+        _externalInputViewCreationCount++;
+        _externalInputViewCreationTicks += createTicks;
+        _externalInputViewCreationMaxTicks = Math.Max(_externalInputViewCreationMaxTicks, createTicks);
+        if (!_externalInputViewCacheEnabled)
+        {
+            LogExternalInputViewCacheIfDue();
+            return view;
+        }
+
+        ID3D11Texture2D? textureOwner = null;
+        var addedReference = false;
+        try
+        {
+            // Keep native identity alive until eviction; capture's PendingFrame can
+            // release its texture wrapper as soon as this render finishes.
+            Marshal.AddRef(texturePointer);
+            addedReference = true;
+            textureOwner = new ID3D11Texture2D(texturePointer);
+            _externalInputViews.Add(texturePointer, subresource, new ExternalInputView(textureOwner, view, mipLevels, arraySize));
+        }
+        catch
+        {
+            view.Dispose();
+            if (textureOwner != null)
+            {
+                textureOwner.Dispose();
+            }
+            else if (addedReference)
+            {
+                Marshal.Release(texturePointer);
+            }
+
+            throw;
+        }
+
+        LogExternalInputViewCacheIfDue();
+        return view;
+    }
+
+    private void LogExternalInputViewCacheIfDue()
+    {
+        // Inspect the clock every 256 requests, and emit at most once per five seconds.
+        if ((_externalInputViewRequests & 255) != 0)
+        {
+            return;
+        }
+
+        var now = Environment.TickCount64;
+        if (now - _externalInputViewLastLogTick < 5000)
+        {
+            return;
+        }
+
+        _externalInputViewLastLogTick = now;
+        var averageMs = _externalInputViewCreationCount > 0
+            ? TicksToMs(_externalInputViewCreationTicks) / _externalInputViewCreationCount
+            : 0;
+        Logger.Log($"D3D11_PREVIEW_INPUT_VIEW_CACHE enabled={_externalInputViewCacheEnabled} requests={_externalInputViewRequests} hits={_externalInputViews.HitCount} misses={_externalInputViews.MissCount} evictions={_externalInputViews.EvictionCount} entries={_externalInputViews.Count} creations={_externalInputViewCreationCount} createAvgMs={averageMs:0.0000} createMaxMs={TicksToMs(_externalInputViewCreationMaxTicks):0.0000}");
+    }
+
+    private void ClearExternalInputViewCache()
+    {
+        _externalInputViews.Clear();
+    }
+
+    private ID3D11VideoProcessorInputView CreateInputViewFromTexture(ID3D11Texture2D texture, int subresourceIndex, int mipLevels)
     {
         if (_videoDevice == null || _videoProcessorEnumerator == null)
         {
             throw new InvalidOperationException("D3D11 preview pipeline is not ready for external texture input.");
         }
 
-        var textureDescription = texture.Description;
-        var mipLevels = Math.Max(1, (int)textureDescription.MipLevels);
-        var arraySize = Math.Max(1, (int)textureDescription.ArraySize);
-        var safeSubresource = Math.Max(0, subresourceIndex);
-        var arraySlice = Math.Clamp(safeSubresource / mipLevels, 0, arraySize - 1);
-        var mipSlice = Math.Clamp(safeSubresource % mipLevels, 0, mipLevels - 1);
+        var arraySlice = subresourceIndex / mipLevels;
+        var mipSlice = subresourceIndex % mipLevels;
         var inputViewDescription = new VideoProcessorInputViewDescription
         {
             ViewDimension = VideoProcessorInputViewDimension.Texture2D,
