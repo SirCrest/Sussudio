@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -326,79 +326,6 @@ internal static class KsExtensionUnitNative
         }
 
         win32Code = Marshal.GetLastWin32Error();
-        return false;
-    }
-
-    private static bool TryReadNodePropertyBytes(
-        SafeFileHandle handle,
-        int nodeId,
-        Guid propertySet,
-        int propertyId,
-        int maxBufferSize,
-        out byte[] data,
-        out int bytesReturned,
-        out int? win32Code,
-        out string? error)
-    {
-        data = Array.Empty<byte>();
-        bytesReturned = 0;
-        win32Code = null;
-        error = null;
-
-        var request = new KSP_NODE
-        {
-            Property = new KSPROPERTY
-            {
-                Set = propertySet,
-                Id = (uint)propertyId,
-                Flags = KsPropertyTypeGet | KsPropertyTypeTopology
-            },
-            NodeId = (uint)nodeId,
-            Reserved = 0
-        };
-
-        var input = StructureToBytes(request);
-        var bufferSize = Math.Min(256, maxBufferSize);
-
-        while (bufferSize <= maxBufferSize)
-        {
-            var output = new byte[bufferSize];
-            if (DeviceIoControl(
-                    handle,
-                    IoctlKsProperty,
-                    input,
-                    input.Length,
-                    output,
-                    output.Length,
-                    out bytesReturned,
-                    IntPtr.Zero))
-            {
-                var copiedLength = Math.Min(Math.Max(bytesReturned, 0), output.Length);
-                data = copiedLength > 0
-                    ? output.AsSpan(0, copiedLength).ToArray()
-                    : Array.Empty<byte>();
-                return true;
-            }
-
-            var win32 = Marshal.GetLastWin32Error();
-            if (win32 is ErrorInsufficientBuffer or ErrorMoreData)
-            {
-                bufferSize *= 2;
-                continue;
-            }
-
-            win32Code = win32;
-            if (win32 is ErrorNotFound or ErrorSetNotFound or ErrorInvalidParameter or ErrorInvalidFunction)
-            {
-                return false;
-            }
-
-            error = $"get-failed win32={win32} ({new Win32Exception(win32).Message})";
-            return false;
-        }
-
-        win32Code = ErrorMoreData;
-        error = $"get-failed exceeded-max-buffer max={maxBufferSize}";
         return false;
     }
 

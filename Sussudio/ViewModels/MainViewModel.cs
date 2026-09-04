@@ -2313,9 +2313,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool EnqueueUiOperation(Func<Task> operation, string operationName, bool allowDuringDispose = false)
         => _uiDispatchController.Enqueue(operation, operationName, allowDuringDispose);
 
-    private Task ExecuteUiOperationAsync(Func<Task> operation, string operationName)
-        => _uiDispatchController.ExecuteAsync(operation, operationName);
-
     private async Task NotifyPreviewReinitRequestedAsync(string reason)
     {
         var handlers = PreviewReinitRequested;

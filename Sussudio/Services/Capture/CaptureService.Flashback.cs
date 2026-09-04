@@ -1102,20 +1102,6 @@ public partial class CaptureService
         FrameCaptured?.Invoke(this, unchecked((ulong)Math.Max(0L, frameCount)));
     }
 
-    private void ValidateFlashbackRecordingCapabilities(
-        FlashbackEncoderSink flashbackSink,
-        bool requiresHdmiAudio,
-        bool requiresMicrophone)
-    {
-        if (requiresHdmiAudio && !flashbackSink.AudioEnabled)
-            throw new InvalidOperationException(
-                "Flashback recording cannot include HDMI audio because the active flashback session was started without audio.");
-
-        if (requiresMicrophone && !flashbackSink.MicrophoneEnabled)
-            throw new InvalidOperationException(
-                "Flashback recording cannot include microphone audio because the active flashback session was started without microphone support.");
-    }
-
     private static void EnsureFlashbackRecordingTopologyMatches(
         FlashbackEncoderSink flashbackSink,
         bool audioEnabled,

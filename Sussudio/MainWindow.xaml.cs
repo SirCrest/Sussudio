@@ -420,9 +420,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void ApplyFlashbackTimelineLockout()
         => _flashbackTimelineController.ApplyLockout();
 
-    private void CollapseFlashbackTimelineImmediately()
-        => _flashbackTimelineController.CollapseImmediately();
-
     private void InitializeFlashbackMarkerPresentationController()
     {
         _flashbackMarkerPresentationController = new FlashbackMarkerPresentationController(new FlashbackMarkerPresentationControllerContext
@@ -1557,14 +1554,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
         => _settingsShelfController.Toggle();
 
+    // Retained despite having no call site: SettingsShelfLifecycle_LivesInController pins this
+    // exact forwarder body as the evidence that shelf visibility is owned by the controller.
     private void ApplySettingsVisibility(bool visible)
         => _settingsShelfController.ApplyVisibility(visible);
-
-    private void ShowSettingsShelf()
-        => _settingsShelfController.Show();
-
-    private void HideSettingsShelf()
-        => _settingsShelfController.Hide();
 
     private void InitializeShellElevationController()
     {
@@ -1711,9 +1704,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void ApplyStatsVisibility(bool visible, bool immediate = false)
         => _statsOverlayCompositionController.ApplyStatsVisibility(visible, immediate);
-
-    private void StartStatsDockPolling()
-        => _statsOverlayCompositionController.StartPolling();
 
     private void StopStatsDockPolling()
         => _statsOverlayCompositionController.StopPolling();
@@ -2411,9 +2401,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
 
     private void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)
         => _previewStartupSignalCoordinator.MarkGpuStartupSignal(signal, signalName);
-
-    private void MarkGpuStartupSignalMediaOpened()
-        => MarkGpuStartupSignal(PreviewStartupSignalFlags.MediaOpened, "MediaOpened");
 
     private void MarkGpuStartupSignalFirstFrame()
         => _previewStartupSignalCoordinator.MarkGpuStartupSignalFirstFrame();

@@ -1063,25 +1063,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
     }
 
-    private int GetNextSequenceState()
-    {
-        lock (_reorderLock)
-        {
-            if (_reorderFrames.TryGetValue(_nextEmitSeq, out _))
-            {
-                return 1;
-            }
-
-            if (_reorderFrames.Count == 0)
-            {
-                return 0;
-            }
-
-            var seqNo = PeekFirstSequenceUnderLock();
-            return seqNo < _nextEmitSeq ? -1 : 2;
-        }
-    }
-
     // SortedDictionary keys are sorted, but Keys.First() goes through Enumerable.First
     // which boxes the struct enumerator. The struct GetEnumerator on the dictionary
     // itself avoids that, and we only need the smallest key.
