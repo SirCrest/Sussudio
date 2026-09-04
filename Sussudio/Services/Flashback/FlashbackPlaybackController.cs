@@ -462,19 +462,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         => FormatCommandDetail(command.Position, command.Delta);
 
     private static string FormatCommandDetail(TimeSpan? position = null, TimeSpan? delta = null)
-    {
-        if (position.HasValue)
-        {
-            return $" pos_ms={position.Value.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture)}";
-        }
-
-        if (delta.HasValue)
-        {
-            return $" delta_ms={delta.Value.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture)}";
-        }
-
-        return string.Empty;
-    }
+        => FlashbackPlaybackCommandMailbox.FormatCommandDetail(position, delta);
 
     private void SetLastCommandFailure(string failure)
     {

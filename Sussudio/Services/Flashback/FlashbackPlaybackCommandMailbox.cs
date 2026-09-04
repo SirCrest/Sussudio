@@ -529,7 +529,9 @@ internal sealed class FlashbackPlaybackCommandMailbox
     private static string FormatCommandDetail(Command command)
         => FormatCommandDetail(command.Position, command.Delta);
 
-    private static string FormatCommandDetail(TimeSpan? position = null, TimeSpan? delta = null)
+    // Also used by FlashbackPlaybackController, which logs the same command
+    // suffix from the playback thread; the mailbox owns the command shape.
+    internal static string FormatCommandDetail(TimeSpan? position = null, TimeSpan? delta = null)
     {
         if (position.HasValue)
         {
