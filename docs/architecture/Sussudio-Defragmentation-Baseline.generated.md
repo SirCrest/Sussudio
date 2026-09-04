@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-04T17:16:27Z
+Generated UTC: 2026-09-04T17:20:35Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,7 +10,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 131 |
 | Test .cs files | 25 |
 | Core app .cs files (Sussudio/) | 97 |
-| Core app nonblank LoC (Sussudio/) | 96501 |
+| Core app nonblank LoC (Sussudio/) | 96418 |
 | Sussudio.Tests .cs files | 24 |
 | Sussudio.Tests nonblank LoC | 60631 |
 | Production .cs files under 60 lines | 1 (0.8%) |
@@ -58,10 +58,10 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1739 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1728 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1678 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
-| 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1602 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1596 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1561 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |
+| 1551 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1508 | Sussudio/Controllers/Flashback/FlashbackUiControllers.cs |
 | 1463 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 1403 | Sussudio/Services/Recording/LibAvEncoder.cs |
