@@ -31,7 +31,8 @@ sealed class ExperimentResult
         Experiment = experiment;
         WriteOk = writeOk;
         ChangedValues = before.Keys
-            .Where(key => before[key].DisplayValue != after[key].DisplayValue || !AreEqual(before[key].Payload, after[key].Payload))
+            .Where(key => before[key].DisplayValue != after[key].DisplayValue
+                || !NativeXuProbeDefaultExperiment.PayloadEqual(before[key].Payload, after[key].Payload))
             .Select(key => new ChangedValue(before[key].Label, before[key].DisplayValue, after[key].DisplayValue))
             .ToArray();
     }
@@ -40,29 +41,6 @@ sealed class ExperimentResult
     public bool WriteOk { get; }
     public IReadOnlyList<ChangedValue> ChangedValues { get; }
     public bool HasAnyChange => ChangedValues.Count > 0;
-
-    private static bool AreEqual(byte[]? a, byte[]? b)
-    {
-        if (ReferenceEquals(a, b))
-        {
-            return true;
-        }
-
-        if (a == null || b == null || a.Length != b.Length)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < a.Length; i++)
-        {
-            if (a[i] != b[i])
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 }
 
 static class NativeXuProbeDefaultExperiment
@@ -393,7 +371,7 @@ static class NativeXuProbeDefaultExperiment
         {
             var left = before[key];
             var right = after[key];
-            if (left.DisplayValue != right.DisplayValue || !RawEqual(left.Payload, right.Payload))
+            if (left.DisplayValue != right.DisplayValue || !PayloadEqual(left.Payload, right.Payload))
             {
                 Console.WriteLine($"  {left.Label}: {left.DisplayValue} -> {right.DisplayValue} ({FormatRaw(left.Payload)} -> {FormatRaw(right.Payload)})");
             }
@@ -419,7 +397,9 @@ static class NativeXuProbeDefaultExperiment
         }
     }
 
-    private static bool RawEqual(byte[]? a, byte[]? b)
+    // Shared by the setter-experiment diff and the telemetry-snapshot diff: both
+    // compare raw AT-read payloads, where a null and a zero-length reply differ.
+    internal static bool PayloadEqual(byte[]? a, byte[]? b)
     {
         if (ReferenceEquals(a, b))
         {
