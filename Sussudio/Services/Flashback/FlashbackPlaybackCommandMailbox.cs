@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
@@ -478,21 +478,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
     }
 
     private void DecrementPendingCommands()
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref _pendingCommands);
-            if (current <= 0)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
-            {
-                return;
-            }
-        }
-    }
+        => AtomicCounter.TryDecrement(ref _pendingCommands);
 
     private void ClearQueuedSeekSlotUnsafe(SeekIntentSlot slot)
     {

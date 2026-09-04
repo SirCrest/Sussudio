@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Audio;
 
@@ -658,21 +659,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             : frames * 1000.0 / _renderFormat.SampleRate;
 
     private void DecrementPlaybackQueueDepth()
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref _playbackQueueDepth);
-            if (current <= 0)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _playbackQueueDepth, current - 1, current) == current)
-            {
-                return;
-            }
-        }
-    }
+        => AtomicCounter.TryDecrement(ref _playbackQueueDepth);
 
     private void DecrementPlaybackQueueFrames(int frames)
     {
@@ -681,20 +668,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
-        while (true)
-        {
-            var current = Volatile.Read(ref _playbackQueueFrames);
-            if (current <= 0)
-            {
-                return;
-            }
-
-            var next = Math.Max(0, current - frames);
-            if (Interlocked.CompareExchange(ref _playbackQueueFrames, next, current) == current)
-            {
-                return;
-            }
-        }
+        AtomicCounter.TrySubtract(ref _playbackQueueFrames, frames);
     }
 
     private void ReturnActiveChunk()

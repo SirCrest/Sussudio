@@ -162,6 +162,34 @@ internal static class AtomicMax
     }
 }
 
+// The mirror image of AtomicMax: lock-free saturating decrement for queue-depth and
+// pending-work counters. The same clamped CAS loop was open-coded in six places across
+// audio, capture, flashback, gpu and preview, and the underflow arms had already drifted
+// (three returned silently, two logged different tags). Returning false on the clamped
+// path keeps that reporting decision at the call site instead of duplicating the loop.
+internal static class AtomicCounter
+{
+    public static bool TryDecrement(ref int target) => TrySubtract(ref target, 1);
+
+    public static bool TrySubtract(ref int target, int amount)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref target);
+            if (current <= 0)
+            {
+                return false;
+            }
+
+            var next = Math.Max(0, current - amount);
+            if (Interlocked.CompareExchange(ref target, next, current) == current)
+            {
+                return true;
+            }
+        }
+    }
+}
+
 // Typed environment-variable parsing helpers for experimental performance and
 // diagnostics knobs.
 internal static class EnvironmentHelpers

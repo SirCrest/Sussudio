@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -859,15 +859,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
 
         Interlocked.Increment(ref _scheduleLateCount);
-        while (true)
-        {
-            var current = Interlocked.Read(ref _maxScheduleLateTicks);
-            if (scheduleLateTicks <= current ||
-                Interlocked.CompareExchange(ref _maxScheduleLateTicks, scheduleLateTicks, current) == current)
-            {
-                return;
-            }
-        }
+        AtomicMax.Update(ref _maxScheduleLateTicks, scheduleLateTicks);
     }
 
     private void RecordTimingSample(double[] window, ref int count, ref int index, double valueMs)

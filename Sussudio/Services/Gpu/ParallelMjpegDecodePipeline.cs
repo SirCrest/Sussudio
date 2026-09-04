@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -249,19 +249,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void DecrementCompressedQueueDepth(string operation)
     {
-        while (true)
+        if (!AtomicCounter.TryDecrement(ref _compressedQueueDepth))
         {
-            var current = Volatile.Read(ref _compressedQueueDepth);
-            if (current <= 0)
-            {
-                Logger.Log($"MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW op={operation}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _compressedQueueDepth, current - 1, current) == current)
-            {
-                return;
-            }
+            Logger.Log($"MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW op={operation}");
         }
     }
 

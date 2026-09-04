@@ -671,21 +671,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     }
 
     private void DecrementPendingFrameCount()
-    {
-        while (true)
-        {
-            var current = Volatile.Read(ref _pendingFrameCount);
-            if (current <= 0)
-            {
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _pendingFrameCount, current - 1, current) == current)
-            {
-                return;
-            }
-        }
-    }
+        => AtomicCounter.TryDecrement(ref _pendingFrameCount);
 
     public void Start(int width, int height, double fps, bool isHdr)
     {

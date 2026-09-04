@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -945,19 +945,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     private void DecrementPendingCommands(string operation)
     {
-        while (true)
+        if (!AtomicCounter.TryDecrement(ref _pendingCommands))
         {
-            var current = Volatile.Read(ref _pendingCommands);
-            if (current <= 0)
-            {
-                Logger.Log($"CAPTURE_COORD_PENDING_UNDERFLOW op={operation}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
-            {
-                return;
-            }
+            Logger.Log($"CAPTURE_COORD_PENDING_UNDERFLOW op={operation}");
         }
     }
 }
