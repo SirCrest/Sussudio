@@ -399,7 +399,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         return value.Value;
     }
 
-    private static double RequireDouble(JsonElement payload, string propertyName)
+    // internal so the table-driven AutomationCommandHandler<T>.Double factory shares this
+    // exact ladder. Both dispatch routes must reject non-finite values identically; they
+    // diverged once, with the table-driven path accepting a "NaN" string payload.
+    internal static double RequireDouble(JsonElement payload, string propertyName)
     {
         var value = GetDouble(payload, propertyName);
         if (!value.HasValue)
@@ -1717,24 +1720,9 @@ internal sealed record AutomationCommandHandler<TTarget>(
         return value;
     }
 
+    // Delegates rather than re-implementing the coercion: the local copy omitted the
+    // finiteness check, so NumberStyles.Float parsed a "NaN" or "Infinity" string payload
+    // straight through to handlers that then computed positions and volumes from it.
     private static double GetDoubleRequired(JsonElement payload, string propertyName)
-    {
-        if (payload.ValueKind != JsonValueKind.Object || !payload.TryGetProperty(propertyName, out var property))
-        {
-            throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
-        }
-
-        if (property.ValueKind == JsonValueKind.Number && property.TryGetDouble(out var numeric))
-        {
-            return numeric;
-        }
-
-        if (property.ValueKind == JsonValueKind.String &&
-            double.TryParse(property.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-        {
-            return parsed;
-        }
-
-        throw new InvalidOperationException($"Missing required numeric property '{propertyName}'.");
-    }
+        => AutomationCommandDispatcher.RequireDouble(payload, propertyName);
 }

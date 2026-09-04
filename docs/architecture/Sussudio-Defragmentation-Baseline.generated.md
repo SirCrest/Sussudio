@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-04T16:21:29Z
+Generated UTC: 2026-09-04T16:40:12Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,7 +10,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 131 |
 | Test .cs files | 25 |
 | Core app .cs files (Sussudio/) | 97 |
-| Core app nonblank LoC (Sussudio/) | 96613 |
+| Core app nonblank LoC (Sussudio/) | 96604 |
 | Sussudio.Tests .cs files | 24 |
 | Sussudio.Tests nonblank LoC | 60631 |
 | Production .cs files under 60 lines | 1 (0.8%) |
@@ -55,8 +55,8 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1808 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
 | 1798 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
 | 1745 | tools/Common/DiagnosticSessionResultBuilder.cs |
-| 1740 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1739 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
+| 1728 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
 | 1697 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 1632 | Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs |
 | 1602 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
