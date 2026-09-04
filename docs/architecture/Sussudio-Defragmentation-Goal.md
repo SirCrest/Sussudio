@@ -4,21 +4,45 @@ This file is the source of truth for the active Codex goal. The `/goal` objectiv
 
 ## Intent
 
-Re-organize Sussudio into a cleaner, more intentional, better-tested architecture. This is not a decomposition campaign. The current risk is over-fragmentation: one logical behavior can be scattered across too many partial files, tiny implementation files, and incidental helper types. The intended end state is more navigable, not merely smaller or larger.
+Re-organize Sussudio into a cleaner, more intentional, better-tested architecture. This is not a decomposition campaign, and it is not a consolidation campaign either. The risk that originally motivated the goal was over-fragmentation: one logical behavior scattered across too many partial files, tiny implementation files, and incidental helper types. That has since been corrected, and as of 2026-09-04 the measured state has overshot in the other direction (see the current-state section below). The intended end state is more navigable, not merely smaller or larger — so judge a slice by whether it improves behavioral locality, never by whether it moves the file count.
 
 The core design objective is behavioral locality: an engineer or agent should be able to find, understand, change, and test a behavior by opening a small, obvious cluster of files.
 
 ## Known symptom snapshot
 
-Verify these numbers before relying on them as the formal baseline, but treat them as the failure pattern this goal is trying to correct:
+**Historical — this is the state that motivated the goal, not the state today.** These
+numbers describe the fragmentation as originally reported:
 
-- `AutomationDiagnosticsHub` is reported at roughly 217 files.
-- `CaptureService` is reported at roughly 109 files.
-- `MainWindow` is reported at roughly 95 files.
-- `MainViewModel` is reported at roughly 66 files.
-- Roughly 44% of `.cs` files are reported as under 60 lines.
+- `AutomationDiagnosticsHub` was reported at roughly 217 files.
+- `CaptureService` was reported at roughly 109 files.
+- `MainWindow` was reported at roughly 95 files.
+- `MainViewModel` was reported at roughly 66 files.
+- Roughly 44% of `.cs` files were reported as under 60 lines.
 
-These are not targets by themselves. They are evidence that splitting and partial-class sprawl have become counterproductive.
+These were never targets by themselves. They were evidence that splitting and partial-class
+sprawl had become counterproductive.
+
+### Current measured state (2026-09-04)
+
+The consolidation those numbers called for has largely happened, and the live counts now sit
+at the opposite end of the range:
+
+- `AutomationDiagnosticsHub` is 4 files; `CaptureService` is 6.
+- 1 of 97 production `.cs` files is under 60 lines, not 44%.
+- 35 files exceed 1200 lines.
+
+So the remaining risk is the inverse of the original symptom: too few, too large files rather
+than too many tiny ones. Do not read the historical snapshot above as a live mandate to
+consolidate further.
+
+Note also that the current layout is now enforced: `tests/Sussudio.Tests` contains roughly
+708 `AssertEqual(false, File.Exists(...))` guards naming candidate split filenames that must
+not exist, plus `AssertContains` checks that pin specific method bodies to specific files.
+Any further slice has to update those guards in the same change.
+
+**Always take live numbers from `Sussudio-Defragmentation-Baseline.generated.md`**, which is
+produced by `scripts/architecture/Capture-SussudioDefragBaseline.ps1` and is test-asserted
+against the real counts. The prose docs in this directory are unguarded and can drift.
 
 ## Success metrics
 
