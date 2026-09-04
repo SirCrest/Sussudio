@@ -6518,7 +6518,7 @@ static partial class Program
         AssertContains(cleanupText, "cleanup: Flashback remained active after restore");
         AssertContains(cleanupText, "cleanup: playback did not return live state={state}");
         AssertContains(runnerText, "DiagnosticSessionCleanupActions.RunAsync(");
-        AssertContains(runnerText, "runContext.CommandChannel,");
+        AssertContains(runnerText, "runContext.CreateCleanupContext(options, scenarioPhase)");
         AssertContains(runnerText, "stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;");
         AssertDoesNotContain(builderText, "using static Sussudio.Tools.DiagnosticSessionCleanupPolicy;");
         AssertDoesNotContain(runAsyncText, "setStage(\"cleanup-stop-recording\")");
@@ -6766,7 +6766,7 @@ static partial class Program
             "diagnostic-session command channel lives with DiagnosticSessionRunContext.cs");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
         AssertContains(executionText, "context.CommandChannel,");
-        AssertContains(executionText, "runContext.CommandChannel,");
+        AssertContains(executionText, "runContext.CreateCleanupContext(options, scenarioPhase)");
         AssertContains(contextText, "CommandChannel.FailureCount");
         AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
         AssertDoesNotContain(executionText, "var commandFailureCount = 0;");

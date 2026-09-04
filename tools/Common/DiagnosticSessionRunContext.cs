@@ -140,6 +140,21 @@ internal sealed class DiagnosticSessionRunContext : IDisposable
             WriteSamplingLiveStateBestEffortAsync = WriteSamplingLiveStateBestEffortAsync,
         };
 
+    internal DiagnosticSessionCleanupContext CreateCleanupContext(
+        DiagnosticSessionOptions options,
+        DiagnosticSessionScenarioPhaseResult scenarioPhase)
+        => new DiagnosticSessionCleanupContext()
+        {
+            Options = options,
+            InitialSnapshot = InitialSnapshot,
+            ScenarioPhase = scenarioPhase,
+            Actions = Actions,
+            CommandChannel = CommandChannel,
+            TryWaitWithTokenAsync = CommandChannel.TryWaitWithTokenAsync,
+            SetStage = SetStage,
+            RecordTerminalException = RecordTerminalException,
+        };
+
     internal DiagnosticSessionCompletionContext CreateCompletionContext(
         DiagnosticSessionOptions options,
         DiagnosticSessionScenarioPhaseResult scenarioPhase,

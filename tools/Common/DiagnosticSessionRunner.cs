@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using Sussudio.Models;
@@ -38,18 +38,7 @@ public static class DiagnosticSessionRunner
         finally
         {
             var cleanupResult = await DiagnosticSessionCleanupActions.RunAsync(
-                    options,
-                    runContext.InitialSnapshot,
-                    scenarioPhase.StartedRecording,
-                    scenarioPhase.StartedPreview,
-                    scenarioPhase.EnabledFlashback,
-                    scenarioPhase.DisabledFlashback,
-                    scenarioPhase.StartedFlashbackPlayback,
-                    runContext.Actions,
-                    runContext.CommandChannel,
-                    runContext.CommandChannel.TryWaitWithTokenAsync,
-                    runContext.SetStage,
-                    runContext.RecordTerminalException)
+                    runContext.CreateCleanupContext(options, scenarioPhase))
                 .ConfigureAwait(false);
             stoppedRecordingForVerification = cleanupResult.StoppedRecordingForVerification;
 
@@ -68,21 +57,7 @@ public static class DiagnosticSessionRunner
 
     private static async Task<DiagnosticSessionResult> RunCompletionPhaseAsync(DiagnosticSessionCompletionContext context)
     {
-        var recordingCheckResult = await DiagnosticSessionRecordingChecks.RunAsync(
-                context.Options,
-                context.RunBootstrap.ScenarioPlan,
-                context.RunBootstrap.Scenario,
-                context.RunBootstrap.OutputDirectory,
-                context.InitialSnapshot,
-                context.Samples,
-                context.ScenarioPhase.StartedRecording,
-                context.ScenarioPhase.FlashbackRecordingSettingsDeferredPresetState,
-                context.Actions,
-                context.Warnings,
-                context.CommandChannel.SendAsync,
-                context.SetStage,
-                context.RecordTerminalException,
-                context.RunCancellationToken)
+        var recordingCheckResult = await DiagnosticSessionRecordingChecks.RunAsync(context)
             .ConfigureAwait(false);
         var verification = recordingCheckResult.Verification;
 
@@ -232,6 +207,25 @@ public static class DiagnosticSessionRunner
                 ex);
         }
     }
+}
+
+internal sealed class DiagnosticSessionCleanupContext
+{
+    internal required DiagnosticSessionOptions Options { get; init; }
+
+    internal required JsonElement InitialSnapshot { get; init; }
+
+    internal required DiagnosticSessionScenarioPhaseResult ScenarioPhase { get; init; }
+
+    internal required List<string> Actions { get; init; }
+
+    internal required DiagnosticSessionCommandChannel CommandChannel { get; init; }
+
+    internal required Func<string, int, CancellationToken, Task> TryWaitWithTokenAsync { get; init; }
+
+    internal required Action<string> SetStage { get; init; }
+
+    internal required Action<Exception, string> RecordTerminalException { get; init; }
 }
 
 internal sealed class DiagnosticSessionCompletionContext
@@ -657,19 +651,21 @@ internal readonly record struct DiagnosticSessionCleanupResult(bool StoppedRecor
 internal static class DiagnosticSessionCleanupActions
 {
     internal static async Task<DiagnosticSessionCleanupResult> RunAsync(
-        DiagnosticSessionOptions options,
-        JsonElement initialSnapshot,
-        bool startedRecording,
-        bool startedPreview,
-        bool enabledFlashback,
-        bool disabledFlashback,
-        bool startedFlashbackPlayback,
-        List<string> actions,
-        DiagnosticSessionCommandChannel commandChannel,
-        Func<string, int, CancellationToken, Task> tryWaitWithTokenAsync,
-        Action<string> setStage,
-        Action<Exception, string> recordTerminalException)
+        DiagnosticSessionCleanupContext context)
     {
+        var options = context.Options;
+        var initialSnapshot = context.InitialSnapshot;
+        var startedRecording = context.ScenarioPhase.StartedRecording;
+        var startedPreview = context.ScenarioPhase.StartedPreview;
+        var enabledFlashback = context.ScenarioPhase.EnabledFlashback;
+        var disabledFlashback = context.ScenarioPhase.DisabledFlashback;
+        var startedFlashbackPlayback = context.ScenarioPhase.StartedFlashbackPlayback;
+        var actions = context.Actions;
+        var commandChannel = context.CommandChannel;
+        var tryWaitWithTokenAsync = context.TryWaitWithTokenAsync;
+        var setStage = context.SetStage;
+        var recordTerminalException = context.RecordTerminalException;
+
         var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(
                 options,
                 startedRecording,
@@ -882,21 +878,25 @@ internal static class DiagnosticSessionCleanupActions
 internal static class DiagnosticSessionRecordingChecks
 {
     internal static async Task<DiagnosticSessionRecordingCheckResult> RunAsync(
-        DiagnosticSessionOptions options,
-        DiagnosticSessionScenarioPlan scenarioPlan,
-        string scenario,
-        string outputDirectory,
-        JsonElement initialSnapshot,
-        IReadOnlyList<DiagnosticSessionSample> samples,
-        bool startedRecording,
-        FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState,
-        List<string> actions,
-        List<string> warnings,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
-        Action<string> setStage,
-        Action<Exception, string> recordTerminalException,
-        CancellationToken cancellationToken)
+        DiagnosticSessionCompletionContext context)
     {
+        var options = context.Options;
+        var scenarioPlan = context.RunBootstrap.ScenarioPlan;
+        var scenario = context.RunBootstrap.Scenario;
+        var outputDirectory = context.RunBootstrap.OutputDirectory;
+        var initialSnapshot = context.InitialSnapshot;
+        var samples = context.Samples;
+        var startedRecording = context.ScenarioPhase.StartedRecording;
+        var flashbackRecordingSettingsDeferredPresetState =
+            context.ScenarioPhase.FlashbackRecordingSettingsDeferredPresetState;
+        var actions = context.Actions;
+        var warnings = context.Warnings;
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync =
+            context.CommandChannel.SendAsync;
+        var setStage = context.SetStage;
+        var recordTerminalException = context.RecordTerminalException;
+        var cancellationToken = context.RunCancellationToken;
+
         var verification = default(JsonElement?);
 
         if (scenarioPlan.RunFlashbackRecordingSettingsDeferred)
