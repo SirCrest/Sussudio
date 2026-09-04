@@ -1066,6 +1066,9 @@ static partial class Program
         return format;
     }
 
+    internal static Type RequireSnapshotType()
+        => RequireType("Sussudio.Models.AutomationSnapshot");
+
     private static Type RequireType(string typeName)
     {
         EnsureTargetAssemblyLoadedForXUnit();

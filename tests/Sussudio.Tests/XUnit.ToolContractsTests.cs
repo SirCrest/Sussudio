@@ -851,6 +851,30 @@ public sealed class ToolFormatterContractsTests
         Assert.Contains("Decoder[1]: avg=2.2ms", output);
     }
 
+    // The formatters read the snapshot through Get(snapshot, "FieldName") with a silent
+    // string default, so a renamed AutomationSnapshot property degrades to a placeholder
+    // in ssctl and MCP output with no error anywhere. This turns that silent field loss
+    // into a build failure naming the exact field.
+    [Fact]
+    public void SnapshotFormatters_ReferenceOnlyRealAutomationSnapshotFields()
+    {
+        var referenced = ExtractSnapshotFields(RuntimeContractSource.ReadAutomationSnapshotFormatterSource());
+        referenced.UnionWith(ExtractSnapshotFields(RuntimeContractSource.ReadSsctlSnapshotFormatterSource()));
+        Assert.NotEmpty(referenced);
+
+        var snapshotType = global::Program.RequireSnapshotType();
+        var properties = new HashSet<string>(
+            snapshotType.GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(p => p.Name),
+            StringComparer.Ordinal);
+
+        var missing = referenced.Where(field => !properties.Contains(field)).OrderBy(f => f, StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            missing.Count == 0,
+            $"Snapshot formatters reference {missing.Count} field(s) that are not AutomationSnapshot properties, "
+                + $"so they would silently format as defaults: {string.Join(", ", missing)}");
+    }
+
     [Fact]
     public void SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
     {
