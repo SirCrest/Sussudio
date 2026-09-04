@@ -1123,125 +1123,35 @@ static partial class Program
 
     internal static Task FlashbackExportFailureClassifier_MapsCommandFailures()
     {
-        var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
-        var method = captureServiceType.GetMethod(
-            "ClassifyFlashbackExportFailureKind",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
-        var exportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n");
-        var diagnosticsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
-            .Replace("\r\n", "\n");
+        var failureType = RequireType("Sussudio.Services.Flashback.FlashbackExportFailure");
+        var create = failureType.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var getKind = failureType.GetMethod("GetKind", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var expectedKinds = new[]
+        {
+            "Cancelled", "InvalidRequest", "UnavailableDuringRecording", "BufferInactive",
+            "InvalidRange", "InvalidOutputPath", "OutputWriteFailed", "ForceRotateFailed",
+            "IncompleteLiveEdge", "SegmentUnavailable", "InputUnavailable", "InputReadFailed",
+            "InvalidInputStream", "NoMediaWritten", "Disposed", "Timeout", "Failed"
+        };
 
-        AssertContains(exportText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
-        AssertContains(diagnosticsText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
-        AssertContains(diagnosticsText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
-        AssertContains(diagnosticsText, "private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)");
+        foreach (var expectedKind in expectedKinds)
+        {
+            var failureCode = failureType.GetField(expectedKind, BindingFlags.Static | BindingFlags.NonPublic)!
+                .GetRawConstantValue()!.ToString();
+            var result = create.Invoke(null, new object?[]
+            {
+                "cancelled-take.mp4",
+                "The human message can mention cancellation, disposal, or timeout without changing the failure.",
+                failureCode,
+                null
+            });
+            AssertEqual(expectedKind, getKind.Invoke(null, new[] { result })?.ToString(), $"wire kind for {failureCode}");
+        }
 
-        AssertEqual(
-            "BufferInactive",
-            method.Invoke(null, new object?[] { "Flashback buffer not active" })?.ToString(),
-            "inactive buffer export rejection is classified");
-        AssertEqual(
-            "InvalidRequest",
-            method.Invoke(null, new object?[] { "Flashback export duration must be finite, greater than zero, and within TimeSpan range." })?.ToString(),
-            "invalid duration export rejection is classified");
-        AssertEqual(
-            "InvalidRange",
-            method.Invoke(null, new object?[] { "Flashback export range is empty or invalid." })?.ToString(),
-            "invalid export range is classified");
-        AssertEqual(
-            "UnavailableDuringRecording",
-            method.Invoke(null, new object?[] { "Cannot export while Flashback is the active recording backend." })?.ToString(),
-            "recording backend export rejection is classified");
-        AssertEqual(
-            "InvalidOutputPath",
-            method.Invoke(null, new object?[] { "Flashback export failed: output path is a directory." })?.ToString(),
-            "output path export rejection is classified");
-        AssertEqual(
-            "InvalidOutputPath",
-            method.Invoke(null, new object?[] { "Flashback export failed: destination file already exists at 'clip.mp4'. Choose a path that does not exist; Flashback export does not overwrite existing files." })?.ToString(),
-            "destination-exists export rejection is classified");
-        AssertEqual(
-            "InputUnavailable",
-            method.Invoke(null, new object?[] { "Flashback buffer has no active file" })?.ToString(),
-            "missing active file export rejection is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=avio_open2 code=-13 msg='Permission denied'" })?.ToString(),
-            "output open failure is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_interleaved_write_frame code=-5 msg='I/O error'" })?.ToString(),
-            "output packet write failure is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_ERROR operation=avformat_alloc_output_context2 msg='Output context allocation failed.'" })?.ToString(),
-            "output context allocation failure is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_ERROR operation=avformat_new_stream msg='Stream allocation returned null.'" })?.ToString(),
-            "output stream allocation failure is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=avcodec_parameters_copy code=-22 msg='Invalid argument'" })?.ToString(),
-            "output stream parameter copy failure is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_dict_set(movflags) code=-12 msg='Cannot allocate memory'" })?.ToString(),
-            "output muxer option failure is classified");
-        AssertEqual(
-            "InputReadFailed",
-            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_read_frame code=-5 msg='I/O error'" })?.ToString(),
-            "input read failure is classified");
-        AssertEqual(
-            "NoMediaWritten",
-            method.Invoke(null, new object?[] { "Flashback export wrote no packets." })?.ToString(),
-            "empty media export failure is classified");
-        AssertEqual(
-            "NoMediaWritten",
-            method.Invoke(null, new object?[] { "Flashback export failed: output file is empty 'clip.mp4'." })?.ToString(),
-            "empty completed output export failure is classified");
-        AssertEqual(
-            "OutputWriteFailed",
-            method.Invoke(null, new object?[] { "Flashback export failed: output file length unavailable 'clip.mp4'." })?.ToString(),
-            "unreadable completed output export failure is classified");
-        AssertEqual(
-            "IncompleteLiveEdge",
-            method.Invoke(null, new object?[] { "Flashback export skipped a live-edge segment." })?.ToString(),
-            "live-edge segment export failure is classified");
-        AssertEqual(
-            "ForceRotateFailed",
-            method.Invoke(null, new object?[] { "Flashback export failed: live-edge segment rotation failed." })?.ToString(),
-            "live-edge force-rotate failure is classified");
-        AssertEqual(
-            "ForceRotateFailed",
-            method.Invoke(null, new object?[] { "Flashback export failed: rotation failed." })?.ToString(),
-            "generic rotation failure is classified");
-        AssertEqual(
-            "SegmentUnavailable",
-            method.Invoke(null, new object?[] { "Flashback export failed: no segment paths were readable." })?.ToString(),
-            "missing segment export failure is classified");
-        AssertEqual(
-            "InvalidInputStream",
-            method.Invoke(null, new object?[] { "Flashback export failed: input had no streams." })?.ToString(),
-            "invalid input stream export failure is classified");
-        AssertEqual(
-            "Disposed",
-            method.Invoke(null, new object?[] { "Flashback exporter is disposed." })?.ToString(),
-            "disposed exporter failure is classified");
-        AssertEqual(
-            "Cancelled",
-            method.Invoke(null, new object?[] { "Flashback export cancelled." })?.ToString(),
-            "cancelled export failure is classified");
-        AssertEqual(
-            "Timeout",
-            method.Invoke(null, new object?[] { "Flashback export lock timed out after 30s." })?.ToString(),
-            "export timeout failure is classified");
-
+        var unknown = create.Invoke(null, new object?[] { "output.mp4", "cancelled", "unknown-code", null });
+        AssertEqual("Failed", getKind.Invoke(null, new[] { unknown })?.ToString(), "unknown codes do not classify message text");
         return Task.CompletedTask;
     }
-
     internal static Task FlashbackExporter_RejectsInvalidExportRanges()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
@@ -1381,7 +1291,7 @@ static partial class Program
             "    }\n}");
         AssertContains(segmentFlushBlock, "finally\n        {\n            FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);\n        }");
         AssertContains(segmentFlushBlock, "WriteRebasedSegmentPacket(");
-        AssertContains(segmentWriteBlock, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\");");
+        AssertContains(segmentWriteBlock, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailure.OutputWriteFailed);");
         AssertOccursBefore(
             segmentFlushBlock,
             "WriteRebasedSegmentPacket(",
@@ -1398,7 +1308,7 @@ static partial class Program
         AssertContains(sharedFlushBlock, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
         AssertOccursBefore(
             sharedFlushBlock,
-            "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
+            "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\", FlashbackExportFailure.OutputWriteFailed);",
             "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
 
         return Task.CompletedTask;
@@ -1425,9 +1335,9 @@ static partial class Program
         AssertContains(segmentExportLoopBlock, "\"segment_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
-        AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
-        AssertContains(sourceText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
-        AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
+        AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailure.OutputWriteFailed);");
+        AssertContains(sourceText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailure.OutputWriteFailed);");
+        AssertContains(sourceText, "return FlashbackExportFailure.Create(outputPath, outputFailure, outputFailureCode);");
         AssertContains(sourceText, "ReportProgress(\n                    progress,\n                    new ExportProgress(\n                        segIdx + 1,\n                        segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
         AssertContains(sourceText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)\n    {\n        value = NormalizeExportProgress(value, stage);");
@@ -1613,8 +1523,8 @@ static partial class Program
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_layout_mismatch\");");
         AssertDoesNotContain(segmentPacketWritingText, "requestedSegmentSkips.Track(segment, \"video_stream_missing\");");
         AssertDoesNotContain(segmentPacketWritingText, "requestedSegmentSkips.Track(segment, \"video_params_incomplete\");");
-        AssertContains(segmentPacketWritingText, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))");
-        AssertOccursBefore(segmentPacketWritingText, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))", "for (var segIdx = 0; segIdx < segments.Count; segIdx++)");
+        AssertContains(segmentPacketWritingText, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure, out var templateFailureCode))");
+        AssertOccursBefore(segmentPacketWritingText, "if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure, out var templateFailureCode))", "for (var segIdx = 0; segIdx < segments.Count; segIdx++)");
         AssertContains(skipTrackingText, "requested segment(s) were skipped");
         AssertOccursBefore(segmentPacketWritingText, "if (requestedSegmentSkips.TryCreateFailureMessage(out var skippedSegmentFailureMessage))", "if (totalPackets == 0)");
 
@@ -1684,7 +1594,7 @@ static partial class Program
         AssertContains(transactionText, "internal sealed class FlashbackExportOutputTransaction : IDisposable");
         AssertDoesNotContain(transactionText, "partial class FlashbackExportOutputTransaction");
         AssertContains(transactionText, "internal static bool TryReserve(");
-        AssertContains(transactionText, "internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(transactionText, "internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage, out string failureCode)");
         AssertContains(transactionText, "private void Abandon()");
         AssertContains(transactionText, "FileMode.CreateNew");
         AssertContains(transactionText, "private readonly record struct TempFileIdentity");
@@ -1695,8 +1605,8 @@ static partial class Program
         AssertContains(transactionText, "internal static void CleanupOrphanedTempFiles(string directory)");
         AssertDoesNotContain(transactionText, "AVFormatContext");
         AssertDoesNotContain(transactionText, "av_write_trailer");
-        AssertOccursBefore(finalizeBlock, "av_write_trailer", "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
-        AssertOccursBefore(finalizeBlock, "ThrowIfError(CloseOutputIo(), \"avio_closep\");", "outputTransaction.TryPublish(");
+        AssertOccursBefore(finalizeBlock, "av_write_trailer", "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailure.OutputWriteFailed);");
+        AssertOccursBefore(finalizeBlock, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailure.OutputWriteFailed);", "outputTransaction.TryPublish(");
 
         return Task.CompletedTask;
     }
@@ -1763,7 +1673,7 @@ static partial class Program
         AssertContains(singleFilePacketWriteStateText, "private void FlushSingleFileBufferedPacketsAtEof(");
         AssertContains(singleFilePacketRebasingText, "private void WriteSingleFilePacket(");
         AssertContains(singleFilePacketRebasingText, "private static bool PacketPtsExceedsSingleFileOutPoint(");
-        AssertContains(singleFilePacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\");");
+        AssertContains(singleFilePacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailure.OutputWriteFailed);");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackExporter.SingleFilePacketReadLoop.cs")),
@@ -1792,7 +1702,7 @@ static partial class Program
         AssertContains(segmentPacketRebasingText, "private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(");
         AssertContains(segmentPacketRebasingText, "ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(segmentPacketRebasingText, "packet->dts = lastDtsPerOutputStream[outputStreamIndex] + 1;");
-        AssertContains(segmentPacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\");");
+        AssertContains(segmentPacketRebasingText, "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), \"av_interleaved_write_frame\", FlashbackExportFailure.OutputWriteFailed);");
         AssertContains(segmentPacketWriteStateText, "private enum SegmentPacketWriteOutcome");
         AssertContains(segmentPacketWriteStateText, "public List<IntPtr> BufferedPackets { get; }");
         AssertContains(segmentPacketWriteStateText, "public long VideoTimestampRepairUs { get; set; }");
@@ -1806,7 +1716,7 @@ static partial class Program
         AssertContains(segmentSkipTrackingText, "public bool TryCreateFailureMessage(out string message)");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(segmentInputPreflightText, "private bool TryOpenSegmentInputForExport(");
-        AssertContains(segmentInputPreflightText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\");");
+        AssertContains(segmentInputPreflightText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\", FlashbackExportFailure.InputReadFailed);");
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"not_found\");");
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
@@ -1831,14 +1741,14 @@ static partial class Program
         AssertContains(executionPolicyText, "private static FinalizeResult RunWithAdaptiveThrottle(");
         AssertContains(executionPolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertContains(executionPolicyText, "private bool TryFinalizeActiveOutputFile(");
-        AssertContains(executionPolicyText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
-        AssertContains(executionPolicyText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
-        AssertContains(executionPolicyText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage)");
+        AssertContains(executionPolicyText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailure.OutputWriteFailed);");
+        AssertContains(executionPolicyText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailure.OutputWriteFailed);");
+        AssertContains(executionPolicyText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode)");
         AssertContains(executionPolicyText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(singleFileText, "av_write_trailer(_activeOutputContext)");
-        AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");\n\n        if (!outputTransaction.TryPublish");
-        AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure))");
-        AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure))");
+        AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailure.OutputWriteFailed);\n\n        if (!outputTransaction.TryPublish");
+        AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
+        AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
         AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
         AssertContains(lifecycleText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(lifecycleText, "private void DisposeExportLockBestEffort()");
@@ -1855,7 +1765,7 @@ static partial class Program
         AssertContains(lifecycleText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(lifecycleText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
         AssertContains(lifecycleText, "private void EnsureNotDisposed()");
-        AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation)");
+        AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation, string failureCode)");
         AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
         AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
         AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
@@ -2274,7 +2184,7 @@ static partial class Program
     {
         var sourceText = ReadFlashbackExporterSource();
 
-        AssertContains(sourceText, "if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }\n        outputPath = normalizedOutputPath;");
+        AssertContains(sourceText, "if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FlashbackExportFailure.Create(outputPath, outputPathFailure, FlashbackExportFailure.InvalidOutputPath);\n        }\n        outputPath = normalizedOutputPath;");
         AssertContains(sourceText, "if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))");
         AssertContains(sourceText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
         AssertContains(sourceText, "failureMessage = \"Flashback export failed: in point must not be negative.\";");
@@ -2365,7 +2275,7 @@ static partial class Program
 
                 var sourceText = ReadFlashbackExporterSource();
                 AssertDoesNotContain(sourceText, "var tmpPath = outputPath + \".tmp\";");
-                AssertContains(sourceText, "FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure)");
+                AssertContains(sourceText, "FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure, out var tempOutputFailureCode)");
             }
             finally
             {
@@ -2743,7 +2653,7 @@ static partial class Program
             ReleaseOutputTransactionReservation(transaction);
             File.WriteAllBytes(tmpPath, new byte[] { 0x66, 0x69, 0x6e, 0x61, 0x6c });
 
-            var args = new object?[] { outputPath, 0L, string.Empty, validator };
+            var args = new object?[] { outputPath, 0L, string.Empty, string.Empty, validator };
             var finalized = (bool)(finalizeCore.Invoke(transaction, args)
                 ?? throw new InvalidOperationException("TryPublishCore returned null."));
 
@@ -2843,7 +2753,7 @@ static partial class Program
         var transactionType = RequireType("Sussudio.Services.Flashback.FlashbackExportOutputTransaction");
         var reserve = transactionType.GetMethod("TryReserve", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryReserve not found.");
-        var args = new object?[] { outputPath, null, string.Empty };
+        var args = new object?[] { outputPath, null, string.Empty, string.Empty };
         var reserved = (bool)(reserve.Invoke(null, args)
             ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryReserve returned null."));
         AssertEqual(true, reserved, "Temporary output transaction is reserved");
@@ -2887,7 +2797,7 @@ static partial class Program
     {
         var publish = transaction.GetType().GetMethod("TryPublish", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublish not found.");
-        var args = new object?[] { outputPath, 0L, string.Empty };
+        var args = new object?[] { outputPath, 0L, string.Empty, string.Empty };
         var published = (bool)(publish.Invoke(transaction, args)
             ?? throw new InvalidOperationException("FlashbackExportOutputTransaction.TryPublish returned null."));
         outputBytes = (long)args[1]!;

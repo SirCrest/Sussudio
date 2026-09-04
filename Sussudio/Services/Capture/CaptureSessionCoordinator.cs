@@ -216,9 +216,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StopRecording, ct => _captureService.StopRecordingAsync(ct), cancellationToken);
 
-    // Used exclusively by MainViewModel.StopRecordingForEmergencyAsync -> routes through the
-    // same coordinator queue but signals CaptureService to use EmergencyStopTimeoutMs (5s)
-    // instead of StopTimeoutMs (30s) so the emergency stop fits inside App.xaml.cs's 8s wrapper.
+    // Keep emergency stops ordered with other capture commands, but ask the backend
+    // to use its shorter finalization wait. Queueing still counts toward the app's
+    // outer shutdown deadline.
     public Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StopRecording, ct => _captureService.StopRecordingAsync(emergency: true, ct), cancellationToken);
 

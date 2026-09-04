@@ -141,10 +141,9 @@ public partial class CaptureService
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
         => StopRecordingAsync(emergency: false, cancellationToken);
 
-    // Internal overload used by CaptureSessionCoordinator.StopRecordingForEmergencyAsync.
-    // Threads `emergency` through StopAndDisposeRecordingBackendAsync to LibAvRecordingSink
-    // so the sink applies EmergencyStopTimeoutMs (5s) instead of StopTimeoutMs (30s) - fits
-    // inside App.TryEmergencyStopRecording's 8s wrapper (fix #12).
+    // Pass the coordinator's emergency flag through backend cleanup so LibAv uses
+    // its shorter emergency finalization wait. The app separately limits how long
+    // it waits for this entire transition before fatal shutdown.
     internal Task StopRecordingAsync(bool emergency, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
@@ -909,9 +908,8 @@ public partial class CaptureService
         result = videoBoundary.Result;
         cancellationException = videoBoundary.CancellationException;
 
-        // Detaching the microphone writer is synchronous; its five-second worker
-        // join may run alongside emergency encoder finalization so the app-level
-        // eight-second safety budget is not spent twice in series.
+        // Detach the microphone writer synchronously. During emergency shutdown,
+        // await its worker alongside encoder finalization to reduce total wait time.
         var microphoneStopTask = DetachLibAvRecordingAudioBeforeSinkStopAsync();
         if (!emergency)
         {
@@ -1997,10 +1995,8 @@ public partial class CaptureService
 
         try
         {
-            // Use the typed LibAvRecordingSink reference (when available) so the
-            // emergency flag can select EmergencyStopTimeoutMs (5s) vs the public
-            // StopAsync's 30s budget. The plain IRecordingSink overload is the
-            // fallback for non-LibAv sinks (unused in practice but kept for safety).
+            // LibAv accepts the emergency flag to shorten its finalization wait.
+            // Other sink implementations use the standard IRecordingSink stop path.
             var sinkResult = libAvSink != null
                 ? await libAvSink.StopAsync(emergency, cancellationToken).ConfigureAwait(false)
                 : await sink.StopAsync(cancellationToken).ConfigureAwait(false);

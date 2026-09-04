@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 using Sussudio.Tools;
 
@@ -975,9 +976,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
         var force = GetBool(payload, "force") ?? false;
         var exportResult = await _flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
-        var failureKind = exportResult.Succeeded
-            ? string.Empty
-            : CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage);
+        var failureKind = FlashbackExportFailure.GetKind(exportResult);
         return CreateResponse(
             correlationId,
             exportResult.StatusMessage ?? (exportResult.Succeeded ? "Export complete." : "Export failed."),

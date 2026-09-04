@@ -1295,7 +1295,7 @@ public partial class CaptureService
     {
         var outputPath = recordingContext?.FinalOutputPath ?? string.Empty;
 
-        // H3: Pause eviction BEFORE EndRecordingAsync to close the window where
+        // Pause eviction before EndRecordingAsync to close the window where
         // eviction could delete segments between EndRecording (which resumes eviction
         // internally) and ExportFlashbackCoreAsync (which pauses it again).
         // With ref-counted eviction, the nested Pause from ExportFlashbackCoreAsync is safe.
@@ -1326,11 +1326,6 @@ public partial class CaptureService
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
     }
-
-    private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)
-        => !result.Succeeded &&
-           (string.Equals(result.StatusMessage, "Flashback export cancelled.", StringComparison.Ordinal) ||
-            string.Equals(result.StatusMessage, "Flashback recording finalize cancelled.", StringComparison.Ordinal));
 
     // Flashback recording boundary capture: snapshot the final live edge exactly
     // once so export/finalize and fallback paths share the same accounting data.
@@ -1444,7 +1439,7 @@ public partial class CaptureService
         {
             finalizeCts.Dispose();
             flashbackCancellationException = new OperationCanceledException(cancellationToken);
-            fbResult = FinalizeResult.Failure(fbOutputPath, "Flashback recording finalize cancelled.");
+            fbResult = FlashbackExportFailure.Create(fbOutputPath, "Flashback recording finalize cancelled.", FlashbackExportFailure.Cancelled);
         }
         catch (Exception ex)
         {
@@ -1501,7 +1496,7 @@ public partial class CaptureService
             CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
         }
 
-        if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))
+        if (cancellationToken.IsCancellationRequested && FlashbackExportFailure.IsCancelled(fbResult))
         {
             flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
         }
@@ -1763,10 +1758,11 @@ public partial class CaptureService
     private FinalizeResult FailFlashbackExport(
         string outputPath,
         string statusMessage,
+        string failureCode,
         TimeSpan? inPoint = null,
         TimeSpan? outPoint = null)
     {
-        var result = FinalizeResult.Failure(outputPath, statusMessage);
+        var result = FlashbackExportFailure.Create(outputPath, statusMessage, failureCode);
         Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
         RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
         return result;
@@ -1804,13 +1800,13 @@ public partial class CaptureService
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested)
                 {
-                    return FailFlashbackExport(outputPath, "Flashback export cancelled.", inPoint, outPoint);
+                    return FailFlashbackExport(outputPath, "Flashback export cancelled.", FlashbackExportFailure.Cancelled, inPoint, outPoint);
                 }
             }
 
             if (bufferManager == null)
             {
-                return FailFlashbackExport(outputPath, "Flashback buffer not active", inPoint, outPoint);
+                return FailFlashbackExport(outputPath, "Flashback buffer not active", FlashbackExportFailure.BufferInactive, inPoint, outPoint);
             }
 
             var exporter = snapshotExporter;
@@ -1835,6 +1831,7 @@ public partial class CaptureService
                     return FailFlashbackExport(
                         outputPath,
                         resolvedRange.FailureMessage ?? "Flashback export range is empty or invalid.",
+                        FlashbackExportFailure.InvalidRange,
                         inPoint,
                         outPoint);
                 }
@@ -1875,13 +1872,17 @@ public partial class CaptureService
         }
         catch (Exception ex)
         {
-            var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested
+            var cancelled = ex is OperationCanceledException && ct.IsCancellationRequested;
+            var statusMessage = cancelled
                 ? "Flashback export cancelled."
                 : ex.Message;
             Logger.Log(
                 $"FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name} " +
                 $"cancelled={ct.IsCancellationRequested} msg='{statusMessage}'");
-            var failure = FinalizeResult.Failure(outputPath, statusMessage);
+            var failure = FlashbackExportFailure.Create(
+                outputPath,
+                statusMessage,
+                cancelled ? FlashbackExportFailure.Cancelled : FlashbackExportFailure.GetExceptionCode(ex));
             if (exportId != 0)
             {
                 RecordLastFlashbackExportResult(exportId, failure);
@@ -1929,9 +1930,16 @@ public partial class CaptureService
             stableSegmentPaths ?? Array.Empty<string>());
         if (liveEdgePlan.FailureMessage is { } liveEdgeFailureMessage)
         {
-            var result = FinalizeResult.Failure(
+            var result = FlashbackExportFailure.Create(
                 outputPath,
                 liveEdgeFailureMessage,
+                liveEdgePlan.FailureKind switch
+                {
+                    FlashbackExportPlanFailureKind.ForceRotateFailed => FlashbackExportFailure.ForceRotateFailed,
+                    FlashbackExportPlanFailureKind.ForceRotateCommittedPending or
+                        FlashbackExportPlanFailureKind.IncompleteLiveEdge => FlashbackExportFailure.IncompleteLiveEdge,
+                    _ => FlashbackExportFailure.Failed
+                },
                 liveEdgePlan.PreservedArtifacts);
             RecordLastFlashbackExportResult(exportId, result);
             CompleteFlashbackExportDiagnostics(exportId, result);
@@ -1970,7 +1978,7 @@ public partial class CaptureService
             selectedSegmentPaths is { Count: > 0 } ? null : bufferManager.ActiveFilePath);
         if (requestPlan.FailureMessage is { } requestFailureMessage)
         {
-            var result = FinalizeResult.Failure(outputPath, requestFailureMessage);
+            var result = FlashbackExportFailure.Create(outputPath, requestFailureMessage, FlashbackExportFailure.InputUnavailable);
             RecordLastFlashbackExportResult(exportId, result);
             CompleteFlashbackExportDiagnostics(exportId, result);
             return FlashbackExportPreparationResult.Failure(result);
@@ -2209,7 +2217,7 @@ public partial class CaptureService
             var exportId = Interlocked.Increment(ref _flashbackExportId);
             _flashbackExportId = exportId;
             _flashbackExportActive = false;
-            _flashbackExportStatus = IsFlashbackExportCancelled(result.StatusMessage) ? "Cancelled" : "Failed";
+            _flashbackExportStatus = FlashbackExportFailure.IsCancelled(result) ? "Cancelled" : "Failed";
             _flashbackExportOutputPath = outputPath;
             _flashbackExportStartedUtcUnixMs = now;
             _flashbackExportLastProgressUtcUnixMs = now;
@@ -2222,7 +2230,7 @@ public partial class CaptureService
                 ? outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds
                 : 0;
             _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = ClassifyFlashbackExportFailureKind(result.StatusMessage);
+            _flashbackExportFailureKind = FlashbackExportFailure.GetKind(result);
             RecordLastFlashbackExportResult(exportId, result);
         }
     }
@@ -2244,16 +2252,14 @@ public partial class CaptureService
             _flashbackExportActive = false;
             _flashbackExportStatus = result.Succeeded
                 ? "Succeeded"
-                : IsFlashbackExportCancelled(result.StatusMessage)
+                : FlashbackExportFailure.IsCancelled(result)
                     ? "Cancelled"
                     : "Failed";
             var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;
             _flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;
             _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = result.Succeeded
-                ? string.Empty
-                : ClassifyFlashbackExportFailureKind(result.StatusMessage);
+            _flashbackExportFailureKind = FlashbackExportFailure.GetKind(result);
             if (result.Succeeded && _flashbackExportPercent < 100)
             {
                 _flashbackExportPercent = 100;
@@ -2471,132 +2477,6 @@ public partial class CaptureService
         }
     }
 
-    private static bool IsFlashbackExportCancelled(string? statusMessage)
-        => statusMessage?.Contains("cancel", StringComparison.OrdinalIgnoreCase) == true;
-
-    internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)
-    {
-        if (string.IsNullOrWhiteSpace(statusMessage))
-        {
-            return string.Empty;
-        }
-
-        if (IsFlashbackExportCancelled(statusMessage))
-        {
-            return "Cancelled";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "request is required") ||
-            ContainsFlashbackExportFailureText(statusMessage, "duration must be finite"))
-        {
-            return "InvalidRequest";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "active recording backend"))
-        {
-            return "UnavailableDuringRecording";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "buffer not active"))
-        {
-            return "BufferInactive";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "in point") ||
-            ContainsFlashbackExportFailureText(statusMessage, "export range"))
-        {
-            return "InvalidRange";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "output path") ||
-            ContainsFlashbackExportFailureText(statusMessage, "output directory") ||
-            ContainsFlashbackExportFailureText(statusMessage, "destination file already exists") ||
-            ContainsFlashbackExportFailureText(statusMessage, "does not overwrite existing files") ||
-            ContainsFlashbackExportFailureText(statusMessage, "overwrite source"))
-        {
-            return "InvalidOutputPath";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "operation=avio_open2") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_alloc_output_context2") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_new_stream") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=avcodec_parameters_copy") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=av_dict_set") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_write_header") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=av_interleaved_write_frame") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=av_write_trailer") ||
-            ContainsFlashbackExportFailureText(statusMessage, "output file length unavailable") ||
-            ContainsFlashbackExportFailureText(statusMessage, "temporary export file was not created") ||
-            ContainsFlashbackExportFailureText(statusMessage, "access is denied") ||
-            ContainsFlashbackExportFailureText(statusMessage, "permission denied") ||
-            ContainsFlashbackExportFailureText(statusMessage, "sharing violation"))
-        {
-            return "OutputWriteFailed";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "rotation failed"))
-        {
-            return "ForceRotateFailed";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "live-edge segment"))
-        {
-            return "IncompleteLiveEdge";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "no segment paths") ||
-            ContainsFlashbackExportFailureText(statusMessage, "segment path") ||
-            ContainsFlashbackExportFailureText(statusMessage, "segment files") ||
-            ContainsFlashbackExportFailureText(statusMessage, "readable segment"))
-        {
-            return "SegmentUnavailable";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "input file not found") ||
-            ContainsFlashbackExportFailureText(statusMessage, "buffer has no active file"))
-        {
-            return "InputUnavailable";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_open_input") ||
-            ContainsFlashbackExportFailureText(statusMessage, "operation=av_read_frame"))
-        {
-            return "InputReadFailed";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "input context") ||
-            ContainsFlashbackExportFailureText(statusMessage, "input had no streams") ||
-            ContainsFlashbackExportFailureText(statusMessage, "stream count"))
-        {
-            return "InvalidInputStream";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "no usable video stream") ||
-            ContainsFlashbackExportFailureText(statusMessage, "no segment had complete video parameters") ||
-            ContainsFlashbackExportFailureText(statusMessage, "output file is empty") ||
-            ContainsFlashbackExportFailureText(statusMessage, "no video packets") ||
-            ContainsFlashbackExportFailureText(statusMessage, "no packets"))
-        {
-            return "NoMediaWritten";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "disposed"))
-        {
-            return "Disposed";
-        }
-
-        if (ContainsFlashbackExportFailureText(statusMessage, "timeout") ||
-            ContainsFlashbackExportFailureText(statusMessage, "timed out"))
-        {
-            return "Timeout";
-        }
-
-        return "Failed";
-    }
-
-    private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)
-        => statusMessage.Contains(value, StringComparison.OrdinalIgnoreCase);
-
     private sealed class FlashbackExportProgressForwarder : IProgress<ExportProgress>
     {
         private readonly Action<ExportProgress> _onProgress;
@@ -2685,12 +2565,12 @@ public partial class CaptureService
     {
         if (ct.IsCancellationRequested)
         {
-            return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+            return FailFlashbackExport(outputPath, "Flashback export cancelled.", FlashbackExportFailure.Cancelled);
         }
 
         if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
         {
-            return FailFlashbackExport(outputPath, "Flashback export duration must be finite, greater than zero, and within TimeSpan range.");
+            return FailFlashbackExport(outputPath, "Flashback export duration must be finite, greater than zero, and within TimeSpan range.", FlashbackExportFailure.InvalidRequest);
         }
 
         var snapshotResult = await SnapshotFlashbackExportBackendAsync(
@@ -2752,7 +2632,7 @@ public partial class CaptureService
                 Logger.Log("FLASHBACK_EXPORT_REJECTED reason=flashback_recording_active");
                 return new FlashbackExportBackendSnapshotResult(
                     default,
-                    FailFlashbackExport(outputPath, "Flashback export is unavailable while Flashback is the active recording backend."));
+                    FailFlashbackExport(outputPath, "Flashback export is unavailable while Flashback is the active recording backend.", FlashbackExportFailure.UnavailableDuringRecording));
             }
 
             await _flashbackBackendLeaseLock.WaitAsync(ct).ConfigureAwait(false);
@@ -2774,7 +2654,7 @@ public partial class CaptureService
         {
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
-            return new FlashbackExportBackendSnapshotResult(default, FailFlashbackExport(outputPath, "Flashback export cancelled."));
+            return new FlashbackExportBackendSnapshotResult(default, FailFlashbackExport(outputPath, "Flashback export cancelled.", FlashbackExportFailure.Cancelled));
         }
         catch (Exception ex)
         {

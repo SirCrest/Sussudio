@@ -134,8 +134,7 @@ internal sealed class MainViewModelRuntimeLifecycleControllerContext
 }
 
 /// <summary>
-/// Owns runtime bootstrap, periodic refresh, and shutdown coordination for
-/// the compatibility ViewModel facade.
+/// Starts runtime services, refreshes UI state periodically, and coordinates shutdown.
 /// </summary>
 internal sealed class MainViewModelRuntimeLifecycleController
 {
@@ -221,7 +220,7 @@ internal sealed class MainViewModelDisposalControllerContext
 }
 
 /// <summary>
-/// Owns bounded teardown policy for the compatibility ViewModel facade.
+/// Coordinates timed shutdown and disposal of MainViewModel services.
 /// </summary>
 internal sealed class MainViewModelDisposalController
 {
@@ -388,8 +387,7 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
 }
 
 /// <summary>
-/// Owns runtime event subscriptions and external event ingress for the
-/// compatibility ViewModel facade.
+/// Subscribes to runtime and system events and schedules UI updates on the dispatcher.
 /// </summary>
 internal sealed class MainViewModelRuntimeEventIngressController
 {
@@ -467,14 +465,9 @@ internal sealed class MainViewModelRuntimeEventIngressController
             _context.UpdateLiveCaptureInfo(runtimeSnapshot);
             _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
 
-            // AUDCLNT_E_DEVICE_INVALIDATED (0x88890004) arrives when the audio
-            // engine is reset independently of a full system suspend, e.g. monitor
-            // power-off, USB hot-unplug, or wake events that don't trigger
-            // PowerManager.SystemResuming. Trigger a full rebind so the user does
-            // not have to manually re-pick the device. The IsRecording guard inside
-            // ReinitializeDeviceAsync (fix #1) prevents this path from running
-            // mid-recording; EnqueueUiOperation serializes with any in-flight
-            // PowerManager-triggered reinit from OnSystemResuming.
+            // An audio device can be invalidated without a system resume event.
+            // Reopen capture automatically while preview is active and recording
+            // is stopped. The UI operation queue serializes this with resume recovery.
             unchecked
             {
                 const int AudclntDeviceInvalidated = (int)0x88890004;
@@ -498,8 +491,8 @@ internal sealed class MainViewModelRuntimeEventIngressController
     private void OnCapturePreCleanupRequested()
     {
         // Fires on a background thread before CaptureService.CleanupAsync disposes
-        // the shared D3D11 device. Stop the renderer first to prevent the same race
-        // as the reinit crash, where the renderer calls native D3D on a dying device.
+        // the shared D3D11 device. Stop the renderer first so it cannot submit work
+        // against a device being disposed.
         var handlers = _context.GetPreviewRendererStopHandlers();
         foreach (var handler in handlers)
         {
@@ -519,7 +512,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
     // useful to do, and StatusChange fires on AC/battery transitions which don't
     // affect capture). All UI-state reads happen inside the EnqueueUiOperation
     // lambda, which executes on the DispatcherQueue thread. ReinitializeDeviceAsync's
-    // IsRecording guard (fix #1) keeps this safe to call regardless of state.
+    // IsRecording guard skips reinitialization while a recording is active.
     private void OnSystemPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
     {
         if (e.Mode != PowerModes.Resume)
@@ -545,7 +538,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
 }
 
 /// <summary>
-/// Graph-built ports consumed by the preview lifecycle controller.
+/// Capture commands and UI callbacks used to start, stop, and reinitialize preview.
 /// </summary>
 internal sealed class MainViewModelPreviewLifecycleControllerContext
 {
@@ -573,7 +566,7 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
 }
 
 /// <summary>
-/// Owns UI-facing preview lifecycle operations behind the MainViewModel compatibility facade.
+/// Starts and stops preview while keeping UI state and selected capture settings in sync.
 /// </summary>
 internal sealed class MainViewModelPreviewLifecycleController
 {
@@ -805,7 +798,7 @@ internal sealed class MainViewModelPreviewLifecycleController
 }
 
 /// <summary>
-/// Graph-built ports consumed by the preview reinitialize transaction controller.
+/// Capture state, cleanup tasks, and callbacks used when reinitializing preview.
 /// </summary>
 internal sealed class MainViewModelPreviewReinitializeControllerContext
 {
@@ -837,7 +830,7 @@ internal sealed class MainViewModelPreviewReinitializeControllerContext
 }
 
 /// <summary>
-/// Owns the debounced preview reinitialization transaction for the compatibility ViewModel facade.
+/// Debounces preview reinitialization and waits for pending cleanup before reopening capture.
 /// </summary>
 internal sealed class MainViewModelPreviewReinitializeController
 {
@@ -1138,7 +1131,7 @@ internal sealed class MainViewModelPreviewReinitializeController
 }
 
 /// <summary>
-/// Graph-built ports consumed by the recording transition controller.
+/// Recording commands and UI state used to serialize recording start and stop requests.
 /// </summary>
 internal sealed class MainViewModelRecordingTransitionControllerContext
 {
@@ -1163,7 +1156,7 @@ internal sealed class MainViewModelRecordingTransitionControllerContext
 }
 
 /// <summary>
-/// Owns UI-facing recording start/stop transition serialization and state repair.
+/// Serializes recording start and stop requests and updates the UI after each transition.
 /// </summary>
 internal sealed class MainViewModelRecordingTransitionController
 {
@@ -1193,9 +1186,7 @@ internal sealed class MainViewModelRecordingTransitionController
             cancellationToken);
 
     /// <summary>
-    /// Graceful-stop entry point for callers that must NOT short-circuit on the
-    /// toggle CAS gate. If a toggle is in flight, await it; afterwards, if still
-    /// recording, initiate a fresh stop.
+    /// Waits for any active recording toggle, then stops recording if it is still running.
     /// </summary>
     public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)
         => _context.InvokeOnUiThreadAsync(

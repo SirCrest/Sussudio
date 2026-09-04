@@ -119,17 +119,11 @@ namespace Sussudio
             }
         }
 
-        // Best-effort: give the recording backend up to 8 seconds to flush the moov atom
-        // before FailFast kills the process. Budget breakdown after fix #12 split:
-        //   - LibAvRecordingSink.EmergencyStopTimeoutMs = 5s for the encode-drain,
-        //   - DisposeTimeoutMs = 1s grace for the cancel-then-flush window (fix #11),
-        //   - ~1-2s coordinator-queue + StopAndDisposeRecordingBackendAsync overhead.
-        // Leaves headroom over the downstream ~6s worst case. The previous 3s budget
-        // unconditionally cancelled downstream finalizers before they could finish,
-        // truncating the file and surfacing nothing actionable.
-        // A corrupted-state exception may still bypass this path (AVE is uncatchable
-        // in .NET 8+), but ordinary unhandled exceptions on a background thread are
-        // recoverable here.
+        // Wait up to eight seconds for recording finalization before fatal shutdown.
+        // This is best effort: queueing, backend finalization, and cleanup may exceed
+        // this outer limit even though the LibAv sink has a shorter emergency wait.
+        // A timeout records the unresolved output; it does not cancel the stop task
+        // or prove the file is complete. Some fatal errors can bypass this handler.
         private void TryEmergencyStopRecording(string source)
         {
             try

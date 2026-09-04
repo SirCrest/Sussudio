@@ -133,7 +133,7 @@ public interface IAutomationProbePort
 }
 
 /// <summary>
-/// Feature-shaped automation ports composed from the aggregate ViewModel surface.
+/// Groups the automation interfaces so each command handler receives only the features it uses.
 /// </summary>
 internal readonly record struct AutomationViewModelPorts(
     IAutomationReadinessPort Readiness,
@@ -163,9 +163,8 @@ internal readonly record struct AutomationViewModelPorts(
 }
 
 /// <summary>
-/// Aggregate automation ViewModel contract consumed by the current automation host.
-/// Narrower ports above let command owners depend on feature-shaped interfaces as
-/// the dispatcher continues to shed the root compatibility surface.
+/// Complete ViewModel API exposed to the automation host. Command handlers use
+/// the narrower interfaces above to declare which features they need.
 /// </summary>
 public interface IAutomationViewModel :
     IAutomationReadinessPort,

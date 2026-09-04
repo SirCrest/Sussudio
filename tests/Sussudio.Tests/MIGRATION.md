@@ -55,7 +55,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   option-builder behavior, capture
   settings defaults, output path/file naming, bitrate policy, MJPEG HFR policy,
   MediaFormat equality/hash-code behavior, recording selection policy, encoder
-  support, and recording pipeline option xUnit contract checks.
+  support, and capture configuration xUnit contract checks.
 - `XUnit.RecordingContractsTests.cs` owns recording contract DTO checks plus
   the former legacy recording pipeline, recording-model/Flashback buffer, and
   core-runtime recording xUnit execution surfaces. The public wrapper classes
@@ -82,6 +82,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   startup, command-queue, source-shape, cadence, frame-buffer, state/lifetime,
   timestamp, audio, in/out marker, request validation, segment, cancellation,
   output path/finalization, and source-ownership checks.
+- `XUnit.FlashbackFailureTests.cs` owns structured export failure classification,
+  cancellation, metadata preservation, and output publication failure checks.
 - `XUnit.FlashbackExportPlannerTests.cs` owns executable range, live-edge
   outcome, preserved-artifact, and export-request planning behavior checks.
 - `XUnit.FlashbackContractsTests.cs` also owns the backing `Program` methods
@@ -253,7 +255,7 @@ helper namespace once each xUnit class owns its own checks and fixtures:
 2. **Contracts tests** (`RecordingContext`, `FinalizeResult`,
    `GpuPipelineHandles`, `IRecordingSink` shape).
 3. **Behavioral service tests** that exercise pure logic
-   (`FrameLedger`, `RecordingPipelineOptions`, `PresentMonProbe`).
+   (`FrameLedger`, `PresentMonProbe`).
 4. **Source-shape tests** - replace broad implementation-grep tests with
    behavioral tests where behavior is the contract. Keep focused ownership and
    source-shape assertions when the architecture boundary itself is the

@@ -1469,7 +1469,7 @@ static partial class Program
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency, cancellationToken);");
         AssertContains(stopText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
-        AssertContains(stopText, "private const int FinalizationNoProgressNotificationMs = 30_000;");
+        AssertContains(stopText, "private const int FinalizationNoProgressTimeoutMs = 30_000;");
         AssertContains(stopText, "private const int FinalizationAbsoluteTimeoutMs = 120_000;");
         AssertContains(stopText, "WaitForFinalizationOwnerAsync(");
         AssertContains(stopText, "LIBAV_SINK_FINALIZE_TIMEOUT");
@@ -2021,20 +2021,11 @@ static partial class Program
         AssertContains(sharedFormatterSource, "FlashbackForceRotateActive");
         AssertContains(sharedFormatterSource, "FlashbackForceRotateRequested");
         AssertContains(sharedFormatterSource, "FlashbackForceRotateDraining");
-        AssertContains(ssctlFormatterSource, "FlashbackEncodingFailed");
-        AssertContains(ssctlFormatterSource, "FlashbackStartupCacheBytes");
-        AssertContains(ssctlFormatterSource, "FlashbackCleanupInProgress");
-        AssertContains(ssctlFormatterSource, "FlashbackForceRotateActive");
-        AssertContains(ssctlFormatterSource, "FlashbackForceRotateRequested");
-        AssertContains(ssctlFormatterSource, "FlashbackForceRotateDraining");
+        AssertContains(ssctlFormatterSource, "AutomationSnapshotFormatter.FormatCliSnapshot(snapshotResponse)");
         AssertContains(mcpAppStateSource, "FormatSnapshot(response, includeFlashback: true)");
         AssertOccursBefore(
             sharedFormatterSource,
             "var flashbackFailed = Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
-            "builder.AppendLine(\"== Flashback ==\");");
-        AssertOccursBefore(
-            ssctlFormatterSource,
-            "var flashbackFailed = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
             "builder.AppendLine(\"== Flashback ==\");");
     }
 
@@ -2149,8 +2140,8 @@ static partial class Program
         AssertDoesNotContain(stopRecordingBackendRouter, "OperationCanceledException? flashbackCancellationException = null;");
         AssertDoesNotContain(stopRecordingBackendRouter, "var sink = _recordingSink;");
         AssertContains(flashbackStopRecordingBackend, "OperationCanceledException? flashbackCancellationException = null;");
-        AssertContains(flashbackStopRecordingBackend, "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");");
-        AssertContains(flashbackStopRecordingBackend, "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))");
+        AssertContains(flashbackStopRecordingBackend, "fbResult = FlashbackExportFailure.Create(fbOutputPath, \"Flashback recording finalize cancelled.\", FlashbackExportFailure.Cancelled);");
+        AssertContains(flashbackStopRecordingBackend, "if (cancellationToken.IsCancellationRequested && FlashbackExportFailure.IsCancelled(fbResult))");
         AssertContains(flashbackStopRecordingBackend, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
         AssertContains(flashbackStopRecordingBackend, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(flashbackStopRecordingBackend, "ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
@@ -2176,11 +2167,11 @@ static partial class Program
             "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
-            "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))",
+            "if (cancellationToken.IsCancellationRequested && FlashbackExportFailure.IsCancelled(fbResult))",
             "_lastRecordingIntegrity = cleanupPending");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
-            "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");",
+            "fbResult = FlashbackExportFailure.Create(fbOutputPath, \"Flashback recording finalize cancelled.\", FlashbackExportFailure.Cancelled);",
             "_recordingStopwatch.Stop();");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
@@ -2268,9 +2259,7 @@ static partial class Program
 
     private static void AssertFlashbackBackendCleanupPolicies(string captureServiceSource, string flashbackBackendSource)
     {
-        AssertContains(captureServiceSource, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
-        AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback export cancelled.\", StringComparison.Ordinal)");
-        AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback recording finalize cancelled.\", StringComparison.Ordinal)");
+        AssertContains(captureServiceSource, "FlashbackExportFailure.IsCancelled(fbResult)");
         AssertContains(captureServiceSource, "private void PublishRecordingStartedOutcome(RecordingContext recordingContext)");
         AssertContains(captureServiceSource, "private void PrepareActiveRecordingRecoveryJournal(");
         AssertContains(captureServiceSource, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
@@ -3972,7 +3961,7 @@ static partial class Program
         AssertContains(flashbackBackendFinalizationText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(flashbackBackendFinalizationText, "private async Task<OperationCanceledException?> ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
         AssertContains(flashbackBackendFinalizationText, "private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(");
-        AssertContains(flashbackBackendFinalizationText, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
+        AssertContains(flashbackBackendFinalizationText, "FlashbackExportFailure.IsCancelled(fbResult)");
         AssertContains(flashbackBackendFinalizationText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(flashbackBackendFinalizationText, "private void CaptureFlashbackRecordingBoundarySnapshot(");
         AssertContains(flashbackBackendFinalizationText, "if (recordingBoundary.Captured)");

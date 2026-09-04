@@ -3070,9 +3070,8 @@ internal sealed class BitrateSampleWindow
     }
 }
 
-// Construction seam for the root compatibility view model. MainViewModel keeps
-// the XAML/automation-facing property surface, while this type owns the default
-// service graph until a fuller composition root can inject feature view models.
+// Creates the services used by MainViewModel. The coordinator and view model
+// share the same CaptureService, and UI callbacks use the creating thread's dispatcher.
 internal sealed class MainViewModelDependencies
 {
     private MainViewModelDependencies(

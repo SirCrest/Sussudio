@@ -134,17 +134,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     {
         const string message = "Flashback export cancelled.";
         Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-        return FinalizeResult.Failure(outputPath, message);
+        return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.Cancelled);
     }
 
     private static FinalizeResult CreateDisposedExportResult(string outputPath)
     {
         const string message = "Flashback exporter is disposed.";
         Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-        return FinalizeResult.Failure(outputPath, message);
+        return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.Disposed);
     }
 
-    private static void ThrowIfError(int errorCode, string operation)
+    private static void ThrowIfError(int errorCode, string operation, string failureCode)
     {
         if (errorCode >= 0)
         {
@@ -153,7 +153,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         var message = GetErrorString(errorCode);
         Logger.Log($"FLASHBACK_EXPORT_LIBAV_ERROR operation={operation} code={errorCode} msg='{message}'");
-        throw new InvalidOperationException($"FLASHBACK_EXPORT_LIBAV_ERROR operation={operation} code={errorCode} msg='{message}'");
+        throw new FlashbackExportException($"FLASHBACK_EXPORT_LIBAV_ERROR operation={operation} code={errorCode} msg='{message}'", failureCode);
     }
 
     private static string GetErrorString(int errorCode)
@@ -171,7 +171,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 var message = $"Flashback export lock timed out after {ExportLockWaitTimeoutSeconds}s.";
                 Logger.Log($"FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT timeout_s={ExportLockWaitTimeoutSeconds}");
-                cancellationResult = FinalizeResult.Failure(outputPath, message);
+                cancellationResult = FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.Timeout);
                 return false;
             }
 
@@ -182,7 +182,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             const string message = "Flashback export cancelled.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            cancellationResult = FinalizeResult.Failure(outputPath, message);
+            cancellationResult = FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.Cancelled);
             return false;
         }
         catch (ObjectDisposedException)
@@ -320,10 +320,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var outStream = ffmpeg.avformat_new_stream(outputContext, null);
             if (outStream == null)
             {
-                throw new InvalidOperationException("FLASHBACK_EXPORT_ERROR operation=avformat_new_stream msg='Stream allocation returned null.'");
+                throw new FlashbackExportException("FLASHBACK_EXPORT_ERROR operation=avformat_new_stream msg='Stream allocation returned null.'", FlashbackExportFailure.OutputWriteFailed);
             }
 
-            ThrowIfError(ffmpeg.avcodec_parameters_copy(outStream->codecpar, inStream->codecpar), "avcodec_parameters_copy");
+            ThrowIfError(ffmpeg.avcodec_parameters_copy(outStream->codecpar, inStream->codecpar), "avcodec_parameters_copy", FlashbackExportFailure.OutputWriteFailed);
             outStream->codecpar->codec_tag = 0;
             outStream->time_base = inStream->time_base;
             outStream->avg_frame_rate = inStream->avg_frame_rate;
@@ -576,7 +576,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         AVFormatContext* inputContext = null;
         try
         {
-            ThrowIfError(ffmpeg.avformat_open_input(&inputContext, inputPath, null, null), "avformat_open_input");
+            ThrowIfError(ffmpeg.avformat_open_input(&inputContext, inputPath, null, null), "avformat_open_input", FlashbackExportFailure.InputReadFailed);
 
             // Increase probe size for TS segments that may start mid-stream.
             // H.264 TS segments from RotateOutput may not have SPS/PPS at the very start
@@ -609,10 +609,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         AVFormatContext* outputContext = null;
-        ThrowIfError(ffmpeg.avformat_alloc_output_context2(&outputContext, null, "mp4", tmpPath), "avformat_alloc_output_context2");
+        ThrowIfError(ffmpeg.avformat_alloc_output_context2(&outputContext, null, "mp4", tmpPath), "avformat_alloc_output_context2", FlashbackExportFailure.OutputWriteFailed);
         if (outputContext == null)
         {
-            throw new InvalidOperationException("FLASHBACK_EXPORT_ERROR operation=avformat_alloc_output_context2 msg='Output context allocation returned null.'");
+            throw new FlashbackExportException("FLASHBACK_EXPORT_ERROR operation=avformat_alloc_output_context2 msg='Output context allocation returned null.'", FlashbackExportFailure.OutputWriteFailed);
         }
 
         _activeOutputContext = outputContext;
@@ -625,17 +625,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)
     {
-        ThrowIfError(ffmpeg.avio_open2(&outputContext->pb, tmpPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2");
+        ThrowIfError(ffmpeg.avio_open2(&outputContext->pb, tmpPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2", FlashbackExportFailure.OutputWriteFailed);
 
         AVDictionary* muxerOptions = null;
         try
         {
             if (fastStart)
             {
-                ThrowIfError(ffmpeg.av_dict_set(&muxerOptions, "movflags", "+faststart", 0), "av_dict_set(movflags)");
+                ThrowIfError(ffmpeg.av_dict_set(&muxerOptions, "movflags", "+faststart", 0), "av_dict_set(movflags)", FlashbackExportFailure.OutputWriteFailed);
             }
 
-            ThrowIfError(ffmpeg.avformat_write_header(outputContext, &muxerOptions), "avformat_write_header");
+            ThrowIfError(ffmpeg.avformat_write_header(outputContext, &muxerOptions), "avformat_write_header", FlashbackExportFailure.OutputWriteFailed);
         }
         finally
         {
@@ -670,9 +670,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     {
         if (request == null)
         {
-            return Task.FromResult(FinalizeResult.Failure(
+            return Task.FromResult(FlashbackExportFailure.Create(
                 string.Empty,
-                "Flashback export failed: request is required."));
+                "Flashback export failed: request is required.",
+                FlashbackExportFailure.InvalidRequest));
         }
 
         lock (_lifetimeSync)
@@ -766,19 +767,19 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             var message = $"Flashback export failed: input file not found '{inputTsPath}'.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
+            return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.InputUnavailable);
         }
 
         if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{rangeFailure}'");
-            return FinalizeResult.Failure(outputPath, rangeFailure);
+            return FlashbackExportFailure.Create(outputPath, rangeFailure, FlashbackExportFailure.InvalidRange);
         }
 
         if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
-            return FinalizeResult.Failure(outputPath, outputPathFailure);
+            return FlashbackExportFailure.Create(outputPath, outputPathFailure, FlashbackExportFailure.InvalidOutputPath);
         }
         outputPath = normalizedOutputPath;
 
@@ -786,13 +787,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             var message = $"Flashback export failed: output path must not overwrite source segment '{outputPath}'.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
+            return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.InvalidOutputPath);
         }
 
         if (!TryValidateDestinationDoesNotExist(outputPath, out var destinationFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{destinationFailure}'");
-            return FinalizeResult.Failure(outputPath, destinationFailure);
+            return FlashbackExportFailure.Create(outputPath, destinationFailure, FlashbackExportFailure.InvalidOutputPath);
         }
 
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
@@ -806,17 +807,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             try
             {
-                if (!FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure))
+                if (!FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure, out var tempOutputFailureCode))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{tempOutputFailure}'");
-                    return FinalizeResult.Failure(outputPath, tempOutputFailure);
+                    return FlashbackExportFailure.Create(outputPath, tempOutputFailure, tempOutputFailureCode);
                 }
 
                 if (IsSamePath(inputTsPath, outputTransaction.TemporaryPath))
                 {
                     var message = $"Flashback export failed: temporary output path must not overwrite source segment '{outputTransaction.TemporaryPath}'.";
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                    return FinalizeResult.Failure(outputPath, message);
+                    return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.InvalidOutputPath);
                 }
 
                 LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
@@ -825,11 +826,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 ReportProgress(progress, new ExportProgress(0, 1, 0), "single_start");
 
                 OpenInput(inputTsPath);
-                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailure.InputReadFailed);
                 if (!TryGetInputStreamCount(_activeInputContext, "single_export", out var streamCount, out var streamCountFailure))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{streamCountFailure}'");
-                    return FinalizeResult.Failure(outputPath, streamCountFailure);
+                    return FlashbackExportFailure.Create(outputPath, streamCountFailure, FlashbackExportFailure.InvalidInputStream);
                 }
 
                 if (inPoint > TimeSpan.Zero)
@@ -861,9 +862,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 var totalPackets = packetWriteResult.TotalPackets;
-                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure))
+                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))
                 {
-                    return FinalizeResult.Failure(outputPath, outputFailure);
+                    return FlashbackExportFailure.Create(outputPath, outputFailure, outputFailureCode);
                 }
 
                 Logger.Log(
@@ -875,13 +876,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 const string message = "Flashback export cancelled.";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                return FinalizeResult.Failure(outputPath, message);
+                return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.Cancelled);
             }
             catch (Exception ex)
             {
                 var message = $"Flashback export failed: {ex.Message}";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                return FinalizeResult.Failure(outputPath, message);
+                return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.GetExceptionCode(ex));
             }
             finally
             {
@@ -931,7 +932,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             const string message = "Flashback export failed: no video packets were written.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return new SingleFilePacketWriteResult(FinalizeResult.Failure(outputPath, message), packetState.TotalPackets);
+            return new SingleFilePacketWriteResult(FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.NoMediaWritten), packetState.TotalPackets);
         }
 
         for (var i = 0; i < streamCount; i++)
@@ -946,7 +947,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             const string message = "Flashback export failed: no packets were written.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return new SingleFilePacketWriteResult(FinalizeResult.Failure(outputPath, message), packetState.TotalPackets);
+            return new SingleFilePacketWriteResult(FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.NoMediaWritten), packetState.TotalPackets);
         }
 
         return new SingleFilePacketWriteResult(null, packetState.TotalPackets);
@@ -979,7 +980,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     break;
                 }
 
-                ThrowIfError(readResult, "av_read_frame");
+                ThrowIfError(readResult, "av_read_frame", FlashbackExportFailure.InputReadFailed);
                 ReportSingleFileProgressHeartbeat(progress, ref packetState);
 
                 try
@@ -1138,7 +1139,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         packet->pos = -1;
         packet->stream_index = outputStream->index;
 
-        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
+        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame", FlashbackExportFailure.OutputWriteFailed);
         state.PacketCounts[streamIndex]++;
         state.TotalPackets++;
         ThrottleExportWriterIfNeeded(state.TotalPackets);
@@ -1432,12 +1433,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         FlashbackExportOutputTransaction outputTransaction,
         string outputPath,
         out long outputBytes,
-        out string failureMessage)
+        out string failureMessage,
+        out string failureCode)
     {
-        ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
-        ThrowIfError(CloseOutputIo(), "avio_closep");
+        ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer", FlashbackExportFailure.OutputWriteFailed);
+        ThrowIfError(CloseOutputIo(), "avio_closep", FlashbackExportFailure.OutputWriteFailed);
 
-        if (!outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage))
+        if (!outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'");
             return false;
@@ -1461,14 +1463,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             const string message = "Flashback export failed: no segment paths provided.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            failure = FinalizeResult.Failure(outputPath, message);
+            failure = FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.SegmentUnavailable);
             return false;
         }
 
         if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{rangeFailure}'");
-            failure = FinalizeResult.Failure(outputPath, rangeFailure);
+            failure = FlashbackExportFailure.Create(outputPath, rangeFailure, FlashbackExportFailure.InvalidRange);
             return false;
         }
 
@@ -1477,7 +1479,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             var message = $"Flashback export failed: segment path at index {invalidSegmentIndex} is empty.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            failure = FinalizeResult.Failure(outputPath, message);
+            failure = FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.SegmentUnavailable);
             return false;
         }
 
@@ -1486,14 +1488,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             var message = $"Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            failure = FinalizeResult.Failure(outputPath, message);
+            failure = FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.SegmentUnavailable);
             return false;
         }
 
         if (!TryValidateOutputPath(outputPath, out normalizedOutputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
-            failure = FinalizeResult.Failure(outputPath, outputPathFailure);
+            failure = FlashbackExportFailure.Create(outputPath, outputPathFailure, FlashbackExportFailure.InvalidOutputPath);
             return false;
         }
 
@@ -1502,14 +1504,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             var message = $"Flashback export failed: output path must not overwrite source segment '{fullOutputPath}'.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            failure = FinalizeResult.Failure(fullOutputPath, message);
+            failure = FlashbackExportFailure.Create(fullOutputPath, message, FlashbackExportFailure.InvalidOutputPath);
             return false;
         }
 
         if (!TryValidateDestinationDoesNotExist(fullOutputPath, out var destinationFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{destinationFailure}'");
-            failure = FinalizeResult.Failure(fullOutputPath, destinationFailure);
+            failure = FlashbackExportFailure.Create(fullOutputPath, destinationFailure, FlashbackExportFailure.InvalidOutputPath);
             return false;
         }
 
@@ -1562,7 +1564,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         var message = $"Flashback export failed: no readable segment files were available from {segments.Count} planned segments.";
         Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-        failure = FinalizeResult.Failure(outputPath, message);
+        failure = FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.SegmentUnavailable);
         return false;
     }
 
@@ -1742,17 +1744,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             try
             {
-                if (!FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure))
+                if (!FlashbackExportOutputTransaction.TryReserve(outputPath, out outputTransaction, out var tempOutputFailure, out var tempOutputFailureCode))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{tempOutputFailure}'");
-                    return FinalizeResult.Failure(outputPath, tempOutputFailure);
+                    return FlashbackExportFailure.Create(outputPath, tempOutputFailure, tempOutputFailureCode);
                 }
 
                 if (segments.Any(segment => IsSamePath(segment.Path, outputTransaction.TemporaryPath)))
                 {
                     var message = $"Flashback export failed: temporary output path must not overwrite source segment '{outputTransaction.TemporaryPath}'.";
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                    return FinalizeResult.Failure(outputPath, message);
+                    return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.InvalidOutputPath);
                 }
 
                 LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
@@ -1776,9 +1778,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 var totalPackets = packetWriteResult.TotalPackets;
-                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure))
+                if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))
                 {
-                    return FinalizeResult.Failure(outputPath, outputFailure);
+                    return FlashbackExportFailure.Create(outputPath, outputFailure, outputFailureCode);
                 }
 
                 Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
@@ -1789,13 +1791,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 const string message = "Flashback export cancelled.";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                return FinalizeResult.Failure(outputPath, message);
+                return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.Cancelled);
             }
             catch (Exception ex)
             {
                 var message = $"Flashback export failed: {ex.Message}";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                return FinalizeResult.Failure(outputPath, message);
+                return FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.GetExceptionCode(ex));
             }
             finally
             {
@@ -1820,12 +1822,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         out int selectedStreamCount,
         out int selectedVideoStreamIndex,
         out int[] selectedStreamMap,
-        out string failureMessage)
+        out string failureMessage,
+        out string failureCode)
     {
         selectedStreamCount = 0;
         selectedVideoStreamIndex = -1;
         selectedStreamMap = Array.Empty<int>();
         failureMessage = "Flashback export failed: no usable segment template was found.";
+        failureCode = FlashbackExportFailure.NoMediaWritten;
 
         var bestTemplateSegIdx = -1;
         string? bestTemplatePath = null;
@@ -1843,10 +1847,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             OpenInput(templatePath);
             try
             {
-                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailure.InputReadFailed);
                 if (!TryGetInputStreamCount(_activeInputContext, "segment_template", out var candidateStreamCount, out var streamCountFailure))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP path='{Path.GetFileName(templatePath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
+                    failureMessage = streamCountFailure;
+                    failureCode = FlashbackExportFailure.InvalidInputStream;
                     continue;
                 }
 
@@ -1856,6 +1862,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 {
                     Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={templateSegIdx} trying_next_segment={templateSegIdx < segments.Count - 1}");
                     failureMessage = "Flashback export failed: no usable video stream was found in any segment.";
+                    failureCode = FlashbackExportFailure.NoMediaWritten;
                     continue;
                 }
 
@@ -1873,6 +1880,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         $"extradata={videoExtradataSize} " +
                         $"trying_next_segment={templateSegIdx < segments.Count - 1}");
                     failureMessage = "Flashback export failed: no segment had complete video parameters.";
+                    failureCode = FlashbackExportFailure.NoMediaWritten;
                     continue;
                 }
 
@@ -1900,11 +1908,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         OpenInput(bestTemplatePath);
         try
         {
-            ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+            ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailure.InputReadFailed);
             if (!TryGetInputStreamCount(_activeInputContext, "segment_template", out var candidateStreamCount, out var streamCountFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP path='{Path.GetFileName(bestTemplatePath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
                 failureMessage = streamCountFailure;
+                failureCode = FlashbackExportFailure.InvalidInputStream;
                 return false;
             }
 
@@ -1914,6 +1923,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={bestTemplateSegIdx} trying_next_segment=False");
                 failureMessage = "Flashback export failed: no usable video stream was found in any segment.";
+                failureCode = FlashbackExportFailure.NoMediaWritten;
                 return false;
             }
 
@@ -1930,6 +1940,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     $"extradata={videoExtradataSize} " +
                     "trying_next_segment=False");
                 failureMessage = "Flashback export failed: no segment had complete video parameters.";
+                failureCode = FlashbackExportFailure.NoMediaWritten;
                 return false;
             }
 
@@ -1940,6 +1951,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             selectedStreamCount = candidateStreamCount;
             selectedVideoStreamIndex = candidateVideoStreamIndex;
             Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SELECTED seg={bestTemplateSegIdx} path='{Path.GetFileName(bestTemplatePath)}' mapped_streams={bestMappedStreamCount}");
+            failureMessage = string.Empty;
+            failureCode = string.Empty;
             return true;
         }
         finally
@@ -1966,7 +1979,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         OpenInput(segmentPath);
-        ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+        ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailure.InputReadFailed);
 
         if (!TryGetInputStreamCount(_activeInputContext, "segment_export", out currentStreamCount, out var streamCountFailure))
         {
@@ -2102,10 +2115,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         var lastDtsPerStream = new long[64]; // indexed by OUTPUT stream index
         for (int i = 0; i < lastDtsPerStream.Length; i++) lastDtsPerStream[i] = long.MinValue;
 
-        if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))
+        if (!TryInitializeSegmentOutputTemplate(segments, tmpPath, fastStart, ct, out streamCount, out videoStreamIndex, out streamMap, out var templateFailure, out var templateFailureCode))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{templateFailure}'");
-            return new SegmentPacketWriteResult(FinalizeResult.Failure(outputPath, templateFailure), 0);
+            return new SegmentPacketWriteResult(FlashbackExportFailure.Create(outputPath, templateFailure, templateFailureCode), 0);
         }
 
         var packet = ffmpeg.av_packet_alloc();
@@ -2211,14 +2224,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (requestedSegmentSkips.TryCreateFailureMessage(out var skippedSegmentFailureMessage))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{skippedSegmentFailureMessage}'");
-            return new SegmentPacketWriteResult(FinalizeResult.Failure(outputPath, skippedSegmentFailureMessage), 0);
+            return new SegmentPacketWriteResult(FlashbackExportFailure.Create(outputPath, skippedSegmentFailureMessage, FlashbackExportFailure.SegmentUnavailable), 0);
         }
 
         if (totalPackets == 0)
         {
             const string message = "Flashback export failed: no packets were written from any segment.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return new SegmentPacketWriteResult(FinalizeResult.Failure(outputPath, message), 0);
+            return new SegmentPacketWriteResult(FlashbackExportFailure.Create(outputPath, message, FlashbackExportFailure.NoMediaWritten), 0);
         }
 
         return new SegmentPacketWriteResult(null, totalPackets);
@@ -2380,7 +2393,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);
             if (readResult == ffmpeg.AVERROR_EOF)
                 break;
-            ThrowIfError(readResult, "av_read_frame");
+            ThrowIfError(readResult, "av_read_frame", FlashbackExportFailure.InputReadFailed);
             if (ShouldReportProgressHeartbeat(ref lastProgressHeartbeatTick))
             {
                 ReportProgress(
@@ -2614,7 +2627,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         NormalizePacketTimestampsBeforeWrite(packet);
         packet->pos = -1;
         packet->stream_index = outputStreamIndex;
-        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
+        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame", FlashbackExportFailure.OutputWriteFailed);
         return SegmentPacketWriteOutcome.Written;
     }
 
@@ -2845,7 +2858,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 NormalizePacketTimestampsBeforeWrite(buffPkt);
                 buffPkt->pos = -1;
                 buffPkt->stream_index = oi;
-                ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+                ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame", FlashbackExportFailure.OutputWriteFailed);
                 packetCounts[si]++;
                 flushed++;
                 ffmpeg.av_packet_free(&buffPkt);

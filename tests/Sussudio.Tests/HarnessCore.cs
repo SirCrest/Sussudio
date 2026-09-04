@@ -822,19 +822,13 @@ static partial class Program
             .Replace("\r\n", "\n");
     }
 
-    private static string ReadAutomationSnapshotFlatteningFamilyText()
+    private static string ReadAutomationSnapshotInitializerText()
     {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
+        var source = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
             .Replace("\r\n", "\n");
-
-        return string.Join(
-            "\n",
-            ExtractMemberCodeFromDeclaration(
-                snapshotProjectionText,
-                "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet("),
-            ExtractMemberCodeFromDeclaration(
-                snapshotProjectionText,
-                "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections("));
+        return ExtractMemberCodeFromDeclaration(
+            source,
+            "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
     }
 
     private static string ExtractMemberCodeFromDeclaration(string source, string declarationToken)

@@ -104,7 +104,7 @@ public sealed class RecordingFinalizationTruthTests
             "_encoder.FlushAndClose();",
             "_structureVerifier.Verify(",
             "_structureVerificationCompleted = true;");
-        Assert.Contains("FinalizationNoProgressNotificationMs = 30_000", sink, StringComparison.Ordinal);
+        Assert.Contains("FinalizationNoProgressTimeoutMs = 30_000", sink, StringComparison.Ordinal);
         Assert.Contains("FinalizationAbsoluteTimeoutMs = 120_000", sink, StringComparison.Ordinal);
         Assert.Contains("cleanupPending: true", sink, StringComparison.Ordinal);
         Assert.Contains("_finalizationWaitTimedOut", sink, StringComparison.Ordinal);
@@ -277,7 +277,7 @@ public sealed class RecordingFinalizationTruthTests
             projection,
             StringComparison.Ordinal);
         Assert.Contains(
-            "RecordingRecoveryPath = recordingOutputFlattening.RecordingRecoveryPath",
+            "RecordingRecoveryPath = recordingOutput.RecordingRecoveryPath",
             projection,
             StringComparison.Ordinal);
     }

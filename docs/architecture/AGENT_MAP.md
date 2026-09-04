@@ -1,6 +1,6 @@
 ﻿# Sussudio Agent Map
 
-Last reviewed: 2026-09-03.
+Last reviewed: 2026-09-04.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -73,7 +73,7 @@ do not use these rows as permission for cosmetic file-count churn.
 | System | Status | Current evidence | Closure guidance |
 |--------|--------|------------------|------------------|
 | CaptureService | Leave As-Is For Now | `Sussudio/Services/Capture/CaptureService.cs`, `Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs`, `Sussudio/Services/Capture/CaptureService.Flashback.cs`, `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs`, `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs`, and `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` form a six-file family in the generated baseline. The files now map to transition serialization/root state, preview lifecycle, Flashback backend/export/recording, health snapshots, recording lifecycle, and runtime snapshots. | Do not merge this family just to reduce partial count. A future boundary pass should happen only if one named behavior, such as Flashback export or snapshot assembly, can move behind an independently testable collaborator without changing capture/preview/recording hot-path ordering. |
-| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` still owns root projection orchestration and the final `AutomationSnapshot` wire initializer, while `Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs` now owns Flashback export, recording, playback, and flattening projection construction. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. The current `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` and `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` coverage protects wire fields, classifier wiring, and the builder boundary. | Treat the current hub family as closed unless a future change can move another named projection collaborator without changing the final automation wire initializer or CLI/MCP/tool contracts. Keep snapshot mapping changes local to the hub/builder family and update source-shape tests with any moved projection surface. |
+| AutomationDiagnosticsHub | Ready | `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` owns computed projection groups and the final `AutomationSnapshot` wire initializer. `Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs` owns Flashback export, recording, and playback projections. The initializer maps these groups directly without duplicate flattened records. `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`, and `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` remain the polling/timeline, stateful refresh/alerts, and diagnostic verdict owners. `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` and `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` protect wire fields and the builder boundary. | Preserve computation and sampling order, the final JSON fields, and CLI/MCP/tool contracts. Keep mapping changes local to the hub/builder family; verify values rather than requiring copy-only intermediate types. |
 | FlashbackPlaybackController | Ready | `Sussudio/Services/Flashback/FlashbackPlaybackController.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackCommandMailbox.cs`, `Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs`, and `Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs` align to public playback state/command admission/metrics, a per-generation bounded command mailbox, playback-thread command execution, and frame decode/submit pacing. Existing Flashback contract tests and this map document command, frame, audio-master, marker, and lifecycle ownership. | Treat the mailbox and three controller partials as intentional. Keep the mailbox bounded and state-free: it owns queue admission, drop/coalescing, generation completion, yield, and queue telemetry; the controller owns public command/state admission; `ThreadCommands` owns decoder/state execution. Preserve playback command names, capacity, queue telemetry, live-restore behavior, A/V drift policy, and segment-edge recovery. |
 | D3D11PreviewRenderer | Ready | `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`, `Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs`, and `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` now align to renderer facade/thread/submission/metrics, render-pass execution plus screenshot staging, and D3D resource/device/swap-chain/shader ownership. Presentation preview tests guard removed renderer shards, diagnostics contracts, device-lost recovery, present accounting, screenshots, and frame-ready signaling. | Treat the three-file split as intentional. Reopen only if a named resource/pass collaborator gains an independent test seam. Preserve preview pacing, swap-chain binding, device-lost recovery, screenshot capture, HDR pass behavior, and GPU synchronization boundaries. |
 
@@ -150,6 +150,11 @@ Primary owner: `Sussudio.Automation.Contracts/`
 
 Entry points:
 
+- `Sussudio/Services/Flashback/FlashbackExportFailure.cs` owns export failure
+  codes, native export exceptions carrying those codes, and the mapping to
+  existing automation `FailureKind` values. Export validation and native I/O
+  assign the cause at the failure site. CaptureService and the dispatcher read
+  `FinalizeResult.FailureCode`; messages and filenames do not determine causes.
 - `AutomationCommandCatalog.cs` owns numeric command IDs, strict ID ordering
   rules, command lookup, canonical name resolution, default metadata helpers,
   path-policy types/validation, manifest DTO projection, stable manifest JSON
@@ -299,18 +304,12 @@ Automation diagnostics ownership:
   scheduling, and recording-start verification reset.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns the `BuildAutomationSnapshot` shell, projection-set composition from
-  runtime/view-model snapshots and diagnostic classifiers, projection-to-
-  flattened-set dispatch, invocation of every focused final-domain flattener,
-  the private flattened projection-set handoff, the final `AutomationSnapshot`
-  DTO initializer that flattens named projection records into the automation
-  wire snapshot, plus live A/V sync drift and encoder correction projection and
-  final A/V sync projection-to-`AutomationSnapshot` field flattening. It also
-  owns the former capture-format, media, and preview projection shards while
-  they remain private projection records over the same snapshot composition and
-  flattening path. Keep this
-  final `init`-property wire-contract adapter intact unless a deliberate
-  snapshot construction pattern exists; do not add mutable setters or shallow
-  fragment records just to reduce line count.
+  runtime/view-model snapshots and diagnostic classifiers, and the final
+  `AutomationSnapshot` initializer. That initializer reads the computed
+  projection groups directly; there is no second set of records that merely
+  copies the same fields. Preserve normalization, sampling order, and JSON
+  names when changing mappings. Use output/value tests for mapping correctness
+  and ownership tests for the hub/Flashback-builder boundary.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns root snapshot construction, timestamp/status projection, view-model
   lifecycle/audio flags, verification-in-progress, session state, status-text
@@ -362,14 +361,12 @@ Automation diagnostics ownership:
   Flashback export last-result projection, recording failure, cleanup,
   force-rotate, temp-drive/startup-cache, active output/runtime, backend
   settings drift, export-verification, codec downgrade, encoder
-  identity/bitrate/dimensions/frame-rate, focused projection routing, and final
-  projection-to-`AutomationSnapshot` flattening.
-  It also owns Flashback video, GPU, and audio queue/backpressure projection plus
-  flattened queue/backpressure fields consumed by `AutomationSnapshot`, and
+  identity/bitrate/dimensions/frame-rate, and focused projection routing.
+  It also owns Flashback video, GPU, and audio queue/backpressure projections and
   Flashback playback state/frame summary, audio-master delay/fallback
   projection, playback event/cadence/PTS-cadence/A/V drift projection,
-  seek-cap/decode timing projection, playback command queue projection, and
-  final flattened playback fields consumed by `AutomationSnapshot`.
+  seek-cap/decode timing projection, and playback command queue projection.
+  The hub maps these values into the final `AutomationSnapshot` directly.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs`
   owns preview runtime projection routing, preview frame counters, estimated
   pipeline latency, preview surface visibility, renderer attachment, GPU
@@ -1551,6 +1548,12 @@ Primary current owners:
   xUnit execution surface for catalog, manifest, path-policy, and
   reliability-gates checks after their removal from the legacy offline harness
   catalog.
+- `tests/Sussudio.Tests/AutomationSnapshotValues.Tests.cs` checks snapshot
+  field values, default values, JSON property names, similarly named fields
+  across projection groups, and retained conversion/fallback behavior.
+- `tests/Sussudio.Tests/XUnit.FlashbackFailureTests.cs` checks structured
+  export causes through real validation failures, misleading filenames,
+  cancellation, artifact preservation, diagnostics, and output publication.
 - `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns
   shared implementations for consolidated AGENT_MAP reference drift,
   test-owner code-span, README automation consumer, UI/presentation ownership,
@@ -2578,26 +2581,14 @@ Primary owners:
   detection/pretty-printing, primitive parsing, Flashback export numeric
   validation, on/off and show/hide parsing, recording format normalization,
   snap action mapping, and assertion value parsing.
-- `tools/ssctl/Formatters.cs` is the unified console projection facade. It owns
+- `tools/ssctl/Formatters.cs` owns CLI result formatting:
   shared result/JSON helpers, recent diagnostic-event output, standalone
   memory/GC summaries, capture option summaries, device-list output,
   performance timeline response validation, JSON row projection, private row
-  model, table output, first-vs-last trend summary text, app snapshot
-  orchestration, section ordering, and simple row sections for Sussudio state/
-  capture-command summary, audio, capture settings, friendly/exact frame-rate
-  summary formatting, runtime video-pipeline text, thread-health section order
-  plus source-reader and WASAPI row text, recording, diagnostics, legacy
-  performance, process CPU, Memory/GC, thread-pool, capture cadence, low-FPS,
-  jitter/drop, MJPEG packet fingerprint, sampled visual cadence, AV-sync drift,
-  encoder correction, preview renderer-mode routing, GPU playback summary,
-  non-D3D fallback frame/cadence, D3D renderer section text, D3D CPU timing,
-  pipeline-latency, frame-latency wait, frame ownership, DXGI frame-stat text,
-  slow-frame formatter delegation, source dimensions, source frame-rate
-  summary, HDR, source telemetry, Flashback active/failure gating, Flashback
-  section and encoding subsection ordering, Flashback encoder/buffer/cache/
-  cleanup text, Flashback export/playback text, MJPEG timing activation,
-  decode/copy/callback/per-decoder timing, compressed queue/drop/reorder/
-  pipeline timing, and preview-jitter snapshot text.
+  model, table output, and first-vs-last trend summary text. Its snapshot entry
+  point delegates to `tools/Common/AutomationSnapshotFormatter.cs` with the
+  CLI presentation choice and Flashback enabled. It does not duplicate the
+  shared snapshot sections.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,
@@ -2803,7 +2794,10 @@ Primary owners:
   health-observation classifiers, sparse-cadence tolerances, and tolerated
   Flashback warning classification.
 - `tools/Common/AutomationSnapshotFormatter.cs` owns the top-level shared
-  automation snapshot console text flow, state/capture-command queue,
+  automation snapshot console text flow for both CLI and MCP. The explicit
+  CLI presentation choice preserves the existing WASAPI and MJPEG detail
+  differences; default callers retain optional Flashback output. It owns
+  state/capture-command queue,
   selected-device and initialized/preview/recording text, audio enablement,
   capture option, recording format, HDR, pipeline, compact UI setting text,
   preview, signal, clipping, reader and audio-frame text, video reader, encoder
