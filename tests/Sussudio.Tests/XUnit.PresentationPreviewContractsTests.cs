@@ -4321,8 +4321,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             "        catch (Exception ex)");
         AssertDoesNotContain(rendererStopTimeoutCatch, "CleanupFailedPreviewRestartAsync");
         AssertContains(rendererStopTimeoutCatch, "success = false;");
-        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync();");
-        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false);");
+        AssertContains(previewReinitializeControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
+        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);");
+        AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);");
         AssertContains(previewReinitializeControllerText, "_context.ReleaseReinitializeGate();");
         AssertDoesNotContain(previewStateText, "private async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");

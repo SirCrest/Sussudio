@@ -939,25 +939,11 @@ internal sealed class MainViewModelPreviewReinitializeController
             }
 
             _context.SetIsInitialized(false);
-            Logger.LogFatalBreadcrumb($"REINIT phase=init_device reason={reason}");
-            await _previewLifecycleController.InitializeDeviceAsync();
-            Logger.LogFatalBreadcrumb($"REINIT phase=init_device_done reason={reason}");
-
-            if (_context.IsInitialized() && shouldRestartPreview && !_context.CancelPreviewRestartAfterReinitialize())
-            {
-                Logger.LogFatalBreadcrumb($"REINIT phase=start_preview reason={reason}");
-                await _previewLifecycleController.StartPreviewAsync(userInitiated: false);
-                Logger.LogFatalBreadcrumb($"REINIT phase=start_preview_done reason={reason}");
-
-                var selectedFormat = _context.SelectedFormat()!;
-                _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
-            }
-
-            success =
-                _context.IsInitialized() &&
-                (!shouldRestartPreview ||
-                 _context.CancelPreviewRestartAfterReinitialize() ||
-                 _context.IsPreviewing());
+            success = await TryInitializeAndRestartPreviewAsync(
+                reason,
+                shouldRestartPreview,
+                logFatalBreadcrumbs: true,
+                reportSuccessfulPreview: true).ConfigureAwait(true);
         }
         catch (PreviewRendererReinitStopTimeoutException ex)
         {
@@ -984,21 +970,13 @@ internal sealed class MainViewModelPreviewReinitializeController
                     Logger.Log($"REINIT_DEVICE_BUSY_RETRY attempt={attempt} reason='{reason}'");
                     try
                     {
-                        await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);
-                        if (_context.IsInitialized() && !_context.CancelPreviewRestartAfterReinitialize())
-                        {
-                            await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);
-                        }
-
-                        success =
-                            _context.IsInitialized() &&
-                            (!shouldRestartPreview ||
-                             _context.CancelPreviewRestartAfterReinitialize() ||
-                             _context.IsPreviewing());
+                        success = await TryInitializeAndRestartPreviewAsync(
+                            reason,
+                            shouldRestartPreview,
+                            logFatalBreadcrumbs: false,
+                            reportSuccessfulPreview: true).ConfigureAwait(true);
                         if (success)
                         {
-                            var selectedFormat = _context.SelectedFormat()!;
-                            _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
                             retried = true;
                             break;
                         }
@@ -1015,11 +993,11 @@ internal sealed class MainViewModelPreviewReinitializeController
                     var recoveryOutcome = "fail";
                     try
                     {
-                        await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);
-                        if (_context.IsInitialized())
-                        {
-                            await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);
-                        }
+                        await TryInitializeAndRestartPreviewAsync(
+                            reason,
+                            shouldRestartPreview,
+                            logFatalBreadcrumbs: false,
+                            reportSuccessfulPreview: false).ConfigureAwait(true);
 
                         recoveryOutcome = _context.IsPreviewing() ? "ok" : "fail";
                     }
@@ -1060,6 +1038,52 @@ internal sealed class MainViewModelPreviewReinitializeController
             }
 
             _context.ReleaseReinitializeGate();
+        }
+
+        return success;
+    }
+
+    private async Task<bool> TryInitializeAndRestartPreviewAsync(
+        string reason,
+        bool shouldRestartPreview,
+        bool logFatalBreadcrumbs,
+        bool reportSuccessfulPreview)
+    {
+        if (logFatalBreadcrumbs)
+        {
+            Logger.LogFatalBreadcrumb($"REINIT phase=init_device reason={reason}");
+        }
+
+        await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);
+
+        if (logFatalBreadcrumbs)
+        {
+            Logger.LogFatalBreadcrumb($"REINIT phase=init_device_done reason={reason}");
+        }
+
+        var previewRestartCanceled = _context.CancelPreviewRestartAfterReinitialize();
+        if (_context.IsInitialized() && shouldRestartPreview && !previewRestartCanceled)
+        {
+            if (logFatalBreadcrumbs)
+            {
+                Logger.LogFatalBreadcrumb($"REINIT phase=start_preview reason={reason}");
+            }
+
+            await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);
+
+            if (logFatalBreadcrumbs)
+            {
+                Logger.LogFatalBreadcrumb($"REINIT phase=start_preview_done reason={reason}");
+            }
+        }
+
+        var success =
+            _context.IsInitialized() &&
+            (!shouldRestartPreview || previewRestartCanceled || _context.IsPreviewing());
+        if (success && shouldRestartPreview && !previewRestartCanceled && reportSuccessfulPreview)
+        {
+            var selectedFormat = _context.SelectedFormat()!;
+            _context.SetStatusText($"Preview: {selectedFormat.Width}x{selectedFormat.Height}@{selectedFormat.FrameRate}fps");
         }
 
         return success;

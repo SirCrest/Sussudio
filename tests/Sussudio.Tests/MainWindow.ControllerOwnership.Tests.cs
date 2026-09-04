@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -2263,7 +2264,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
         AssertContains(dispatchingSource, "private WindowUiDispatchController? _windowUiDispatchController;");
         AssertContains(dispatchingSource, "private WindowUiDispatchController WindowUiDispatchController =>");
-        AssertContains(dispatchingSource, "CompleteWindowCloseRequest = CompleteWindowCloseRequest");
+        AssertDoesNotContain(dispatchingSource, "CompleteWindowCloseRequest = CompleteWindowCloseRequest");
         AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)");
         AssertContains(dispatchingSource, "=> WindowUiDispatchController.InvokeAsync(action, cancellationToken);");
         AssertContains(dispatchingSource, "private Task InvokeOnUiThreadAsync(Func<Task> action, CancellationToken cancellationToken = default)");
@@ -2280,7 +2281,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(dispatchControllerSource, "completion.TrySetResult(action());");
         AssertContains(dispatchControllerSource, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatchControllerSource, "throw new InvalidOperationException(enqueueFailureMessage);");
-        AssertContains(dispatchControllerSource, "_context.CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));");
+        AssertDoesNotContain(dispatchControllerSource, "CompleteWindowCloseRequest");
         AssertContains(dispatchControllerSource, "await action().ConfigureAwait(true);");
         AssertContains(dispatchControllerSource, "completion.TrySetException(new InvalidOperationException(\"Failed to enqueue window action on the UI thread.\"));");
         AssertContains(dispatchControllerSource, "_context.ViewModel.StatusText = $\"{operationName} failed: {ex.Message}\";");
@@ -2293,6 +2294,33 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertDoesNotContain(dispatchingSource, "ViewModel.StatusText = $\"{operationName} failed: {ex.Message}\";");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task WindowUiDispatchCancellation_DoesNotCompleteWindowCloseRequest()
+    {
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+            .Replace("\r\n", "\n");
+        var windowDispatchControllerSource = ExtractTypeBlock(dispatchControllerSource, "WindowUiDispatchController");
+        var lifecycleController = CreateInstance("Sussudio.Controllers.WindowCloseLifecycleController");
+        var lifecycleType = lifecycleController.GetType();
+        var getCompletionTask = lifecycleType.GetMethod(
+            "GetCompletionTask",
+            BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("WindowCloseLifecycleController.GetCompletionTask was not found.");
+        var completeRequest = lifecycleType.GetMethod(
+            "CompleteRequest",
+            BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("WindowCloseLifecycleController.CompleteRequest was not found.");
+        var closeTask = (Task)(getCompletionTask.Invoke(lifecycleController, new object[] { CancellationToken.None })
+            ?? throw new InvalidOperationException("Window close completion task was not created."));
+
+        completeRequest.Invoke(
+            lifecycleController,
+            new object?[] { new OperationCanceledException("Unrelated UI dispatch canceled.") });
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => closeTask);
+        Assert.True(closeTask.IsFaulted, "Completing a close request with a dispatch cancellation faults the close task.");
+        AssertDoesNotContain(windowDispatchControllerSource, "CompleteWindowCloseRequest");
     }
 
     private static string ExtractTypeBlock(string source, string typeName)

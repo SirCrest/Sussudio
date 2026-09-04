@@ -10,7 +10,6 @@ internal sealed class WindowUiDispatchControllerContext
 {
     public required DispatcherQueue DispatcherQueue { get; init; }
     public required MainViewModel ViewModel { get; init; }
-    public required Action<Exception?> CompleteWindowCloseRequest { get; init; }
 }
 
 internal sealed class WindowUiDispatchController
@@ -53,7 +52,6 @@ internal sealed class WindowUiDispatchController
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    _context.CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));
                     completion.TrySetCanceled(cancellationToken);
                     return;
                 }

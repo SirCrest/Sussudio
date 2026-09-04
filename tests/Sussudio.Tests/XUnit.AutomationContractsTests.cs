@@ -68,6 +68,10 @@ public sealed class AutomationAppSurfaceContractsTests
         => global::Program.MainWindowUiDispatching_LivesInShellChromeAdapter();
 
     [Fact]
+    public Task WindowUiDispatchCancellationDoesNotCompleteWindowCloseRequest()
+        => global::Program.WindowUiDispatchCancellation_DoesNotCompleteWindowCloseRequest();
+
+    [Fact]
     public Task AutomationPipeServerGatesDefaultSecurityFallbackOnAuthToken()
         => global::Program.NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken();
 
@@ -7316,6 +7320,11 @@ static partial class Program
         AssertContains(captureSettingsAutomationControllerText, "a newer capture selection superseded this request");
         AssertContains(captureSettingsAutomationControllerText, "_captureModeGate.Release();");
         AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)");
+        AssertContains(previewLifecycleControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
+        AssertEqual(
+            4,
+            Regex.Matches(previewLifecycleControllerText, @"\bTryInitializeAndRestartPreviewAsync\(").Count,
+            "preview reinitialize helper definition plus three call sites");
         AssertContains(previewLifecycleControllerText, "return treatCoalescedAsSuccess;");
         AssertContains(previewLifecycleControllerText, "if (_context.IsInitialized())\n            {\n                await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);\n            }");
         AssertContains(previewLifecycleControllerText, "catch (PreviewRendererReinitStopTimeoutException ex)");

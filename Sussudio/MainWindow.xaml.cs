@@ -1278,8 +1278,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             new WindowUiDispatchControllerContext
             {
                 DispatcherQueue = _dispatcherQueue,
-                ViewModel = ViewModel,
-                CompleteWindowCloseRequest = CompleteWindowCloseRequest
+                ViewModel = ViewModel
             });
 
     private AppWindow InitializeNativeShellWindow()
