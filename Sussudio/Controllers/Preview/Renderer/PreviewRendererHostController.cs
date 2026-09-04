@@ -126,7 +126,7 @@ internal sealed class PreviewRendererHostController
 {
     private readonly PreviewRendererHostControllerContext _context;
     private SoftwareBitmapSource? _previewSource;
-    private D3D11PreviewRenderer? _d3dRenderer;
+    private D3D11PreviewRenderer? _d3d11Renderer;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -142,9 +142,9 @@ internal sealed class PreviewRendererHostController
             _context.ViewModel.SelectedFormat);
     }
 
-    public D3D11PreviewRenderer? Renderer => _d3dRenderer;
+    public D3D11PreviewRenderer? Renderer => _d3d11Renderer;
 
-    public bool HasD3DRenderer => _d3dRenderer != null;
+    public bool HasD3D11Renderer => _d3d11Renderer != null;
 
     public bool IsCpuPreviewSourceAttached => _previewSource != null;
 
@@ -160,13 +160,13 @@ internal sealed class PreviewRendererHostController
 
     public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
 
-    public int? PendingFrameCount => _d3dRenderer?.PendingFrameCount;
+    public int? PendingFrameCount => _d3d11Renderer?.PendingFrameCount;
 
     public void OnPanelSizeChanged(double width, double height, double scale)
-        => _d3dRenderer?.OnPanelSizeChanged(width, height, scale);
+        => _d3d11Renderer?.OnPanelSizeChanged(width, height, scale);
 
     public void SetHdrPassthroughEnabled(bool enabled)
-        => _d3dRenderer?.SetHdrPassthroughEnabled(enabled);
+        => _d3d11Renderer?.SetHdrPassthroughEnabled(enabled);
 
     public void StopForShutdown()
     {
@@ -180,7 +180,7 @@ internal sealed class PreviewRendererHostController
     {
         // Observability: detect the unsafe window where a new renderer could be allocated
         // while the prior instance still has an active swap chain (see reasoning_d3d11_preview.md).
-        RecordPreviewRendererReinitUnsafeWindow(_d3dRenderer, _context.IsPreviewReinitAnimating());
+        RecordPreviewRendererReinitUnsafeWindow(_d3d11Renderer, _context.IsPreviewReinitAnimating());
 
         Interlocked.Exchange(ref _previewFramesArrived, 0);
         Interlocked.Exchange(ref _previewFramesDisplayed, 0);
@@ -214,20 +214,20 @@ internal sealed class PreviewRendererHostController
 
     public Task StopRendererForReinitTeardownAsync()
     {
-        var renderer = _d3dRenderer;
+        var renderer = _d3d11Renderer;
         if (renderer != null)
         {
             _context.Log("PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
             try
             {
-                DisposeD3DPreviewRendererForReinit();
+                DisposeD3D11PreviewRendererForReinit();
             }
             catch (TimeoutException ex)
             {
                 MarkPreviewRendererStopped();
                 _context.Log($"PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; aborting reinit until renderer ownership is resolved.");
                 throw new PreviewRendererReinitStopTimeoutException(
-                    "D3D preview renderer did not stop before reinitialize teardown.",
+                    "D3D11 preview renderer did not stop before reinitialize teardown.",
                     ex);
             }
         }
@@ -235,9 +235,9 @@ internal sealed class PreviewRendererHostController
         return Task.CompletedTask;
     }
 
-    public void DisposeD3DPreviewRendererForReinit()
+    public void DisposeD3D11PreviewRendererForReinit()
     {
-        var renderer = _d3dRenderer;
+        var renderer = _d3d11Renderer;
         if (renderer == null)
         {
             return;
@@ -252,12 +252,12 @@ internal sealed class PreviewRendererHostController
         renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;
         // Do not call Dispose() on the retired renderer in the reinit path.
         // Stop() has already unbound the panel and released the render-thread
-        // D3D resources. Disposing the remaining shared-device COM wrapper while
+        // D3D11 resources. Disposing the remaining shared-device COM wrapper while
         // WinUI/capture are also crossing native teardown can raise a corrupted
         // AccessViolationException. The old managed wrapper is intentionally
         // abandoned during mode switches; shutdown still disposes the active
         // renderer normally.
-        _d3dRenderer = null;
+        _d3d11Renderer = null;
     }
 
     private PreviewRendererStartupPlan BuildPreviewRendererStartupPlan()
@@ -290,17 +290,17 @@ internal sealed class PreviewRendererHostController
         var rendererFps = startupPlan.RendererFps;
         var isHdr = startupPlan.IsHdr;
 
-        var replacingReinitSurface = _d3dRenderer != null && _context.IsPreviewReinitAnimating();
+        var replacingReinitSurface = _d3d11Renderer != null && _context.IsPreviewReinitAnimating();
         if (replacingReinitSurface)
         {
             // Reinit can switch SDR/HDR format, resolution, or frame cadence.
             // A previously bound WinUI SwapChainPanel can keep native DXGI/COM
             // state tied to the old swap chain, so pair the fresh renderer with
             // a fresh panel surface instead of rebinding to the old one.
-            DisposeD3DPreviewRendererForReinit();
+            DisposeD3D11PreviewRendererForReinit();
         }
 
-        var renderer = CreateFreshD3DPreviewRenderer(replacingReinitSurface);
+        var renderer = CreateFreshD3D11PreviewRenderer(replacingReinitSurface);
 
         renderer.SetExpectedFrameRate(rendererFps);
 
@@ -337,7 +337,7 @@ internal sealed class PreviewRendererHostController
             renderer.SetHdrPassthroughEnabled(true);
         }
 
-        _context.ViewModel.SetPreviewFrameSink(_d3dRenderer);
+        _context.ViewModel.SetPreviewFrameSink(_d3d11Renderer);
         _context.ConfigurePreviewStartupSignals(
             PreviewStartupStrategy.D3D11VideoProcessor,
             PreviewStartupSignalFlags.FirstVisual);
@@ -354,8 +354,8 @@ internal sealed class PreviewRendererHostController
 
         // Clean up D3D11 preview
         _context.PreviewContentGrid.SizeChanged -= _context.PreviewContentGridSizeChangedHandler;
-        var renderer = _d3dRenderer;
-        _d3dRenderer = null;
+        var renderer = _d3d11Renderer;
+        _d3d11Renderer = null;
         if (renderer != null)
         {
             _context.GetPreviewSwapChainPanel().SizeChanged -= _context.PreviewSwapChainPanelSizeChangedHandler;
@@ -396,7 +396,7 @@ internal sealed class PreviewRendererHostController
         _context.SchedulePreviewStartupFailureStop(failureReason);
     }
 
-    private D3D11PreviewRenderer CreateFreshD3DPreviewRenderer(bool replaceSwapChainSurface)
+    private D3D11PreviewRenderer CreateFreshD3D11PreviewRenderer(bool replaceSwapChainSurface)
     {
         if (replaceSwapChainSurface)
         {
@@ -406,7 +406,7 @@ internal sealed class PreviewRendererHostController
         var renderer = new D3D11PreviewRenderer(_context.GetPreviewSwapChainPanel(), _context.DispatcherQueue);
         renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
         renderer.RenderThreadFailed += OnD3DRendererRenderThreadFailed;
-        _d3dRenderer = renderer;
+        _d3d11Renderer = renderer;
         return renderer;
     }
 

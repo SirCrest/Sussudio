@@ -881,7 +881,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel = ViewModel,
             GetPreviewActivitySnapshot = () => new RecordingPreviewActivitySnapshot(
-                _previewRendererHostController.HasD3DRenderer && PreviewSwapChainPanel.Visibility == Visibility.Visible,
+                _previewRendererHostController.HasD3D11Renderer && PreviewSwapChainPanel.Visibility == Visibility.Visible,
                 _previewRendererHostController.IsCpuPreviewSourceAttached && PreviewImage.Visibility == Visibility.Visible,
                 NoDevicePlaceholder.Visibility == Visibility.Visible)
         });
@@ -2086,7 +2086,7 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     {
         _previewResizeTelemetryController.HandleSizeChanged(
             ViewModel.IsPreviewing,
-            _previewRendererHostController.HasD3DRenderer,
+            _previewRendererHostController.HasD3D11Renderer,
             PreviewSwapChainPanel.Visibility);
     }
 
