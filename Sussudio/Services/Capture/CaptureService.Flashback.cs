@@ -819,20 +819,17 @@ public partial class CaptureService
 
         // If flashback settings changed while preview was stopped, rebuild
         // before recording so the retained backend matches the requested file.
-        var flashbackBackendSettingsChanged = _flashbackBackend.SettingsSnapshot == null ||
-            !CanReuseFlashbackBackend(_flashbackBackend.SettingsSnapshot, settings);
         var flashbackAudioTopologyChanged =
             flashbackSink.AudioEnabled != settings.AudioEnabled ||
             flashbackSink.MicrophoneEnabled != settings.MicrophoneEnabled;
+        var flashbackBackendSettingsChanged = _flashbackBackend.SettingsSnapshot == null ||
+            !CanReuseFlashbackBackend(_flashbackBackend.SettingsSnapshot, settings) ||
+            flashbackAudioTopologyChanged;
         if (flashbackAudioTopologyChanged)
         {
-            Logger.Log($"FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT " +
+            Logger.Log($"FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REBUILD " +
                 $"audio={settings.AudioEnabled} (was {flashbackSink.AudioEnabled}) " +
                 $"mic={settings.MicrophoneEnabled} (was {flashbackSink.MicrophoneEnabled})");
-            EnsureFlashbackRecordingTopologyMatches(
-                flashbackSink,
-                settings.AudioEnabled,
-                settings.MicrophoneEnabled);
         }
 
         if (flashbackBackendSettingsChanged)
@@ -853,6 +850,11 @@ public partial class CaptureService
             flashbackSink = _flashbackBackend.Sink
                 ?? throw new InvalidOperationException("Failed to restart flashback backend for updated recording settings.");
         }
+
+        EnsureFlashbackRecordingTopologyMatches(
+            flashbackSink,
+            settings.AudioEnabled,
+            settings.MicrophoneEnabled);
 
         await EnsureFlashbackAudioInputsAsync(settings, transitionToken, "recording_flashback_start").ConfigureAwait(false);
         await _flashbackBackendLeaseLock.WaitAsync(transitionToken).ConfigureAwait(false);
@@ -882,6 +884,17 @@ public partial class CaptureService
                 _previewAudioGraph.ProgramCapture,
                 activeFlashbackSink,
                 settings);
+            _recordingMicrophoneSamplesBaseline = activeFlashbackSink.MicrophoneSamplesReceived;
+            _recordingMicrophoneDropsBaseline =
+                activeFlashbackSink.MicrophoneDropsQueueSaturated +
+                activeFlashbackSink.MicrophoneDropsBacklogEviction;
+            _recordingMicrophoneDiscontinuitiesBaseline =
+                _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
+            _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
+            ValidateRequestedRecordingAudioInputs(settings);
+            PrepareActiveRecordingRecoveryJournal(
+                fbRecordingContext,
+                _flashbackBackend.BufferManager?.SessionDirectory);
             activeFlashbackSink.BeginRecording(fbRecordingContext.FinalOutputPath);
             if (activeFlashbackSink.EncodingFailed)
             {
@@ -890,11 +903,11 @@ public partial class CaptureService
             }
 
             videoCapture?.BeginFlashbackRecordingAccounting();
+            ThrowIfRecordingStartupFailed();
             _recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);
-            ClearLastRecordingFailure();
             _isRecording = true;
             _flashbackRecordingStartBytes = _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
-            PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);
+            PublishRecordingStartedOutcome(fbRecordingContext);
             _recordingStopwatch.Restart();
             StatusChanged?.Invoke(this, "Recording");
             Logger.Log($"FLASHBACK_UNIFIED_RECORDING_START output='{fbRecordingContext.FinalOutputPath}'");
@@ -940,9 +953,28 @@ public partial class CaptureService
         CancellationToken cancellationToken,
         string reason)
     {
+        var strictRecordingStart = string.Equals(
+            reason,
+            "recording_flashback_start",
+            StringComparison.Ordinal);
         var audioDeviceId = settings.AudioEnabled
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
+
+        if (settings.AudioEnabled &&
+            _previewAudioGraph.ProgramCapture is { } staleProgramCapture &&
+            (!staleProgramCapture.IsReadyForRecording ||
+             !string.Equals(staleProgramCapture.AudioDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase)))
+        {
+            _previewAudioGraph.ProgramCapture = null;
+            _previewAudioGraph.DetachCapture(
+                staleProgramCapture,
+                OnWasapiAudioLevelUpdated,
+                OnWasapiCaptureFailed,
+                _flashbackBackend.PlaybackController);
+            await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
+            Logger.Log($"FLASHBACK_AUDIO_CAPTURE_REPLACED reason='{reason}' terminal_worker=true");
+        }
 
         if (settings.AudioEnabled && _previewAudioGraph.ProgramCapture == null)
         {
@@ -954,8 +986,8 @@ public partial class CaptureService
                     await wasapiCapture.InitializeAsync(audioDeviceId, cancellationToken).ConfigureAwait(false);
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
-                    wasapiCapture.Start();
                     _previewAudioGraph.ProgramCapture = wasapiCapture;
+                    await wasapiCapture.StartAndWaitForRecordingReadyAsync(cancellationToken).ConfigureAwait(false);
                     wasapiCapture = null;
                     ResetAvSyncDriftBaseline();
                     _previewAudioGraph.ResetCaptureFault();
@@ -965,6 +997,10 @@ public partial class CaptureService
                 {
                     if (wasapiCapture != null)
                     {
+                        if (ReferenceEquals(_previewAudioGraph.ProgramCapture, wasapiCapture))
+                        {
+                            _previewAudioGraph.ProgramCapture = null;
+                        }
                         wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
                         wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
                         try { await wasapiCapture.DisposeAsync().ConfigureAwait(false); }
@@ -978,7 +1014,22 @@ public partial class CaptureService
             }
         }
 
+        if (strictRecordingStart && settings.AudioEnabled && _previewAudioGraph.ProgramCapture == null)
+        {
+            throw new InvalidOperationException(
+                "Flashback recording requested device audio, but the audio capture device could not be initialized.");
+        }
+
         AttachFlashbackAudioIfSupported(_previewAudioGraph.ProgramCapture, reason);
+
+        if (settings.MicrophoneEnabled &&
+            _previewAudioGraph.MicrophoneCapture is { } existingMicCapture &&
+            (!existingMicCapture.IsReadyForRecording ||
+             !string.Equals(existingMicCapture.AudioDeviceId, settings.MicrophoneDeviceId, StringComparison.OrdinalIgnoreCase)))
+        {
+            await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+            Logger.Log($"FLASHBACK_MIC_CAPTURE_REPLACED reason='{reason}' terminal_or_wrong_device=true");
+        }
 
         if (_micMonitorEnabled && _previewAudioGraph.MicrophoneCapture == null && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
         {
@@ -988,8 +1039,8 @@ public partial class CaptureService
                 await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
                 micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
                 micCapture.CaptureFailed += OnWasapiCaptureFailed;
-                micCapture.Start();
                 _previewAudioGraph.MicrophoneCapture = micCapture;
+                await micCapture.StartAndWaitForRecordingReadyAsync(cancellationToken).ConfigureAwait(false);
                 micCapture = null;
                 Logger.Log("MIC_MONITOR_START device='" + (_micMonitorDeviceName ?? "?") + "'");
             }
@@ -999,12 +1050,23 @@ public partial class CaptureService
             }
             catch (Exception micEx)
             {
+                if (strictRecordingStart && settings.MicrophoneEnabled)
+                {
+                    throw new InvalidOperationException(
+                        "Flashback recording requested a microphone, but it could not be initialized.",
+                        micEx);
+                }
+
                 Logger.Log("Mic monitor start failed (non-fatal): " + micEx.Message);
             }
             finally
             {
                 if (micCapture != null)
                 {
+                    if (ReferenceEquals(_previewAudioGraph.MicrophoneCapture, micCapture))
+                    {
+                        _previewAudioGraph.MicrophoneCapture = null;
+                    }
                     micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
                     micCapture.CaptureFailed -= OnWasapiCaptureFailed;
                     try { await micCapture.DisposeAsync().ConfigureAwait(false); }
@@ -1017,6 +1079,18 @@ public partial class CaptureService
         {
             _previewAudioGraph.MicrophoneCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
             Logger.Log($"FLASHBACK_MIC_ATTACH_OK reason='{reason}'");
+        }
+
+        if (strictRecordingStart &&
+            settings.MicrophoneEnabled &&
+            (_previewAudioGraph.MicrophoneCapture?.IsReadyForRecording != true ||
+             !string.Equals(
+                 _previewAudioGraph.MicrophoneCapture.AudioDeviceId,
+                 settings.MicrophoneDeviceId,
+                 StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException(
+                "Flashback recording requested a microphone, but no microphone capture is active.");
         }
     }
 
@@ -1283,12 +1357,16 @@ public partial class CaptureService
         public long RecordingQueueRejectedFrames { get; set; }
         public RecordingIntegrityCounterSnapshot? Counters { get; set; }
         public RecordingAudioIntegrityCounterSnapshot? AudioCounters { get; set; }
+        public long MicrophoneSamplesReceived { get; set; }
+        public long MicrophoneDrops { get; set; }
+        public long MicrophoneDiscontinuities { get; set; }
     }
 
     private void CaptureFlashbackRecordingBoundarySnapshot(
         FlashbackEncoderSink flashbackSink,
         FlashbackRecordingBoundarySnapshot recordingBoundary)
     {
+        Volatile.Write(ref _recordingFaultAttributionActive, 0);
         if (recordingBoundary.Captured)
         {
             return;
@@ -1317,75 +1395,169 @@ public partial class CaptureService
         recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture);
         recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(
             CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot));
+        recordingBoundary.MicrophoneSamplesReceived = flashbackSink.MicrophoneSamplesReceived;
+        recordingBoundary.MicrophoneDrops =
+            flashbackSink.MicrophoneDropsQueueSaturated +
+            flashbackSink.MicrophoneDropsBacklogEviction;
+        recordingBoundary.MicrophoneDiscontinuities = Math.Max(
+            0,
+            (_previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ??
+             _recordingMicrophoneDiscontinuitiesBaseline) -
+            _recordingMicrophoneDiscontinuitiesBaseline);
         recordingBoundary.Captured = true;
     }
 
-    private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(CancellationToken cancellationToken)
+    private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(
+        bool emergency,
+        CancellationToken cancellationToken)
     {
         var flashbackSink = _flashbackBackend.Sink!;
         var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();
         var fbOutputPath = fbRecordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
+        var expectedRecordingDuration = _recordingStopwatch.Elapsed;
         var recordingBoundary = new FlashbackRecordingBoundarySnapshot();
+        var cleanupPending = false;
 
         Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 1);
-        // Do not clear the backend sink here; it continues serving the buffer.
+        var finalizeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var finalizeTask = FinalizeFlashbackRecordingAsync(
+            fbRecordingContext,
+            recordingBoundary,
+            finalizeCts.Token);
 
         FinalizeResult fbResult;
         OperationCanceledException? flashbackCancellationException = null;
         try
         {
-            try
+            if (!await WaitForFlashbackRecordingFinalizeAsync(finalizeTask, emergency).ConfigureAwait(false))
             {
-                fbResult = await FinalizeFlashbackRecordingAsync(
-                        fbRecordingContext,
-                        recordingBoundary,
-                        cancellationToken)
-                    .ConfigureAwait(false);
+                cleanupPending = true;
+                finalizeCts.Cancel();
+                _pendingFlashbackFinalizeCleanupTask = ObserveTimedOutFlashbackFinalizeAsync(
+                    finalizeTask,
+                    finalizeCts);
+                fbResult = FinalizeResult.Failure(
+                    fbOutputPath,
+                    emergency
+                        ? "Recording failed (emergency Flashback finalization exceeded five seconds; cleanup continues in quarantine)."
+                        : "Recording failed (Flashback finalization made no progress for 30 seconds or exceeded 120 seconds; cleanup continues in quarantine).",
+                    Array.Empty<string>(),
+                    "recording-flashback-finalization-timeout",
+                    cleanupPending: true,
+                    recoveryPath: null,
+                    verificationCompleted: false,
+                    finalizationElapsedMs: emergency ? 5_000 : 120_000);
             }
-            finally
+            else
             {
-                Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 0);
+                fbResult = await finalizeTask.ConfigureAwait(false);
+                finalizeCts.Dispose();
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            finalizeCts.Dispose();
             flashbackCancellationException = new OperationCanceledException(cancellationToken);
             fbResult = FinalizeResult.Failure(fbOutputPath, "Flashback recording finalize cancelled.");
         }
         catch (Exception ex)
         {
+            finalizeCts.Dispose();
             Logger.Log($"FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
             fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
         }
+        finally
+        {
+            if (!cleanupPending)
+            {
+                Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 0);
+            }
+        }
 
-        CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
+        fbResult = FoldRecordingAudioFaultIntoFinalizeResult(
+            fbResult,
+            flashbackCancellationException,
+            fbRecordingContext?.Settings);
+        var flashbackFinalAudioCounters = recordingBoundary.AudioCounters ??
+            GetRecordingAudioCountersSinceBaseline(
+                CaptureRecordingAudioCounters(
+                    _previewAudioGraph.ProgramCapture,
+                    flashbackSink,
+                    _recordingBackend.SettingsSnapshot));
+        fbResult = FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
+            fbResult,
+            flashbackFinalAudioCounters);
+        fbResult = FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
+            fbResult,
+            fbRecordingContext?.MicrophoneEnabled == true,
+            recordingBoundary.MicrophoneSamplesReceived,
+            recordingBoundary.MicrophoneDrops,
+            recordingBoundary.MicrophoneDiscontinuities);
+        fbResult = FoldRecordedRuntimeFailureIntoFinalizeResult(fbResult);
+        fbResult = VerifyFinalizedOutputBeforeSaved(
+            fbResult,
+            fbRecordingContext,
+            expectedRecordingDuration);
+        if (!fbResult.Succeeded)
+        {
+            _flashbackBackend.PreserveRecoverySegments("recording_finalize_failed_before_marker");
+            var preservedFlashbackArtifacts = fbResult.PreservedArtifacts
+                .Concat(GetFlashbackSegments().Select(segment => segment.Path))
+                .ToArray();
+            fbResult = FinalizeResult.Failure(
+                fbResult.OutputPath,
+                fbResult.StatusMessage,
+                preservedFlashbackArtifacts,
+                fbResult.FailureCode,
+                fbResult.CleanupPending,
+                fbResult.RecoveryPath,
+                fbResult.VerificationCompleted,
+                fbResult.FinalizationElapsedMs)
+                .WithTrackEvidence(fbResult.RequestedTracks, fbResult.ObservedTracks);
+        }
+        fbResult = EnsureRecordingFailureRecovery(fbResult, fbRecordingContext);
+
+        // Restart mic monitoring only after the Flashback finalizer has reached
+        // terminal cleanup; quarantined work retains the existing ownership graph.
+        if (!cleanupPending)
+        {
+            CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
+        }
 
         if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))
         {
             flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
         }
 
-        _lastRecordingIntegrity = BuildRecordingIntegritySummary(
-            backend: "Flashback",
-            recordingActive: false,
-            finalizeSucceeded: fbResult.Succeeded,
-            finalizeStatus: fbResult.StatusMessage,
-            completedUtc: DateTimeOffset.UtcNow,
-            sourceFrames: recordingBoundary.RecordingFramesDelivered,
-            acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
-            counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _videoPipeline.Capture),
-            audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline(
-                CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, flashbackSink, _recordingBackend.SettingsSnapshot)),
-            recordingBoundaryRejectedFrames: recordingBoundary.RecordingFramesRejected,
-            recordingQueueRejectedFrames: recordingBoundary.RecordingQueueRejectedFrames);
+        _lastRecordingIntegrity = cleanupPending
+            ? new RecordingIntegritySummary
+            {
+                Status = "Failed",
+                Complete = false,
+                Backend = "Flashback",
+                CompletedUtc = DateTimeOffset.UtcNow,
+                Reason = fbResult.StatusMessage,
+            }
+            : BuildRecordingIntegritySummary(
+                backend: "Flashback",
+                recordingActive: false,
+                finalizeSucceeded: fbResult.Succeeded,
+                finalizeStatus: fbResult.StatusMessage,
+                completedUtc: DateTimeOffset.UtcNow,
+                sourceFrames: recordingBoundary.RecordingFramesDelivered,
+                acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
+                counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _videoPipeline.Capture),
+                audioCounters: flashbackFinalAudioCounters,
+                recordingBoundaryRejectedFrames: recordingBoundary.RecordingFramesRejected,
+                recordingQueueRejectedFrames: recordingBoundary.RecordingQueueRejectedFrames);
         _recordingIntegrityCounterBaseline = null;
         _recordingIntegrityAudioBaseline = null;
         LogRecordingIntegritySummary(_lastRecordingIntegrity);
 
-        flashbackCancellationException = await ReconcileFlashbackBackendAfterRecordingFinalizeAsync(
-            fbResult,
-            flashbackCancellationException,
-            cancellationToken).ConfigureAwait(false);
+        if (cleanupPending)
+        {
+            _flashbackBackend.PreserveRecoverySegments("recording_finalize_timeout");
+        }
 
         _recordingStopwatch.Stop();
         _isRecording = false;
@@ -1393,7 +1565,42 @@ public partial class CaptureService
         _recordingBackend.ClearContextAndSettings();
         PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);
 
-        // Restart mic monitoring if preview is still active
+        if (!cleanupPending)
+        {
+            var postFinalizeCleanupTask = CompleteFlashbackPostFinalizeMaintenanceAsync(fbResult);
+            if (!postFinalizeCleanupTask.IsCompleted)
+            {
+                _pendingFlashbackFinalizeCleanupTask = postFinalizeCleanupTask;
+                lock (_recordingOutcomeLock)
+                {
+                    _recordingFinalizationCleanupPending = true;
+                }
+                _ = ObserveFlashbackPostFinalizeMaintenanceAsync(postFinalizeCleanupTask);
+            }
+            else
+            {
+                await postFinalizeCleanupTask.ConfigureAwait(false);
+            }
+        }
+
+        Logger.Log(fbResult.Succeeded
+            ? $"FLASHBACK_UNIFIED_RECORDING_STOP_OK output='{fbResult.OutputPath}'"
+            : $"FLASHBACK_UNIFIED_RECORDING_STOP_FAIL output='{fbResult.OutputPath}'");
+        if (flashbackCancellationException != null)
+        {
+            throw flashbackCancellationException;
+        }
+
+        return fbResult;
+    }
+
+    private async Task CompleteFlashbackPostFinalizeMaintenanceAsync(FinalizeResult result)
+    {
+        await ReconcileFlashbackBackendAfterRecordingFinalizeAsync(
+            result,
+            cancellationException: null,
+            CancellationToken.None).ConfigureAwait(false);
+
         try
         {
             await RestartMicrophoneMonitorAfterRecordingAsync(
@@ -1402,31 +1609,94 @@ public partial class CaptureService
                     FlashbackAttachReason: null,
                     RestartLogEvent: null,
                     DisposeWarningEvent: "FLASHBACK_MIC_RESTART_DISPOSE_WARN"),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
+                CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
         }
+    }
 
-        if (fbResult.Succeeded)
+    private async Task ObserveFlashbackPostFinalizeMaintenanceAsync(Task maintenanceTask)
+    {
+        try
         {
-            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_STOP_OK output='{fbResult.OutputPath}'");
+            await maintenanceTask.ConfigureAwait(false);
         }
-        else
+        catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_STOP_FAIL output='{fbResult.OutputPath}'");
+            Logger.Log(
+                "FLASHBACK_POST_FINALIZE_MAINTENANCE_FAIL " +
+                $"type={ex.GetType().Name} error='{ex.Message}'");
         }
-        if (flashbackCancellationException != null)
+        finally
         {
-            throw flashbackCancellationException;
+            if (ReferenceEquals(_pendingFlashbackFinalizeCleanupTask, maintenanceTask))
+            {
+                _pendingFlashbackFinalizeCleanupTask = null;
+                MarkRecordingFinalizationCleanupCompleted("FlashbackPostFinalize");
+            }
+        }
+    }
+
+    private async Task<bool> WaitForFlashbackRecordingFinalizeAsync(Task finalizeTask, bool emergency)
+    {
+        const int pollMs = 250;
+        var progressWindowMs = emergency ? 5_000 : 30_000;
+        var absoluteWindowMs = emergency ? 5_000 : 120_000;
+        var started = Environment.TickCount64;
+        var absoluteDeadline = started + absoluteWindowMs;
+        var progressDeadline = started + progressWindowMs;
+        var observedProgressUtc = Interlocked.Read(ref _flashbackExportLastProgressUtcUnixMs);
+
+        while (!finalizeTask.IsCompleted)
+        {
+            var now = Environment.TickCount64;
+            var remaining = Math.Min(absoluteDeadline, progressDeadline) - now;
+            if (remaining <= 0)
+            {
+                Logger.Log(
+                    $"FLASHBACK_RECORDING_FINALIZE_TIMEOUT elapsed_ms={now - started} progress_window_ms={progressWindowMs} absolute_window_ms={absoluteWindowMs}");
+                return false;
+            }
+
+            var completed = await Task.WhenAny(
+                finalizeTask,
+                Task.Delay((int)Math.Min(pollMs, remaining))).ConfigureAwait(false);
+            if (ReferenceEquals(completed, finalizeTask))
+            {
+                return true;
+            }
+
+            var progressUtc = Interlocked.Read(ref _flashbackExportLastProgressUtcUnixMs);
+            if (progressUtc != observedProgressUtc)
+            {
+                observedProgressUtc = progressUtc;
+                progressDeadline = Math.Min(absoluteDeadline, Environment.TickCount64 + progressWindowMs);
+            }
         }
 
-        return fbResult;
+        return true;
+    }
+
+    private async Task ObserveTimedOutFlashbackFinalizeAsync(
+        Task<FinalizeResult> finalizeTask,
+        CancellationTokenSource finalizeCts)
+    {
+        try
+        {
+            await finalizeTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_RECORDING_FINALIZE_QUARANTINE_COMPLETE error='{ex.Message}'");
+        }
+        finally
+        {
+            finalizeCts.Dispose();
+            Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 0);
+            MarkRecordingFinalizationCleanupCompleted("Flashback");
+        }
     }
 
     private async Task<OperationCanceledException?> ReconcileFlashbackBackendAfterRecordingFinalizeAsync(

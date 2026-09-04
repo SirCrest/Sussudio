@@ -1,5 +1,9 @@
 # Stream Deck Plugin Scope
 
+> **Status: future roadmap.** No Stream Deck plugin is included in the current
+> signed portable prerelease ZIP. This document preserves the intended protocol
+> contract for a future implementation.
+
 ## Transport
 
 The Stream Deck plugin controls Sussudio through the existing named pipe

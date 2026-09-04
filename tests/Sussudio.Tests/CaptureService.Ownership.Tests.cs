@@ -989,7 +989,8 @@ static partial class Program
         AssertContains(transitionExecutionText, "private CaptureSnapshotProducerSignature BuildCaptureSnapshotProducerSignature()");
         AssertContains(transitionExecutionText, "_isRecording,");
         AssertContains(transitionExecutionText, "_isVideoPreviewActive,");
-        AssertContains(transitionExecutionText, "_lastOutputPath,");
+        AssertContains(transitionExecutionText, "var recordingOutcome = CaptureRecordingOutcomeSnapshot();");
+        AssertContains(transitionExecutionText, "recordingOutcome.OutputPath,");
         AssertContains(transitionExecutionText, "private CaptureSessionSteadyStateInputs BuildSteadyStateInputs()");
         AssertContains(transitionExecutionText, "private void EnterCleanupState()");
         AssertContains(transitionExecutionText, "=> _sessionStateMachine.EnterCleanup();");
@@ -1531,10 +1532,12 @@ static partial class Program
         AssertContains(resourceText, "public WasapiAudioCapture? MicrophoneCapture;");
         AssertContains(resourceText, "public WasapiAudioPlayback? Playback;");
         AssertContains(resourceText, "public float PreviewVolume = 1.0f;");
-        AssertContains(resourceText, "private bool _captureFaulted;");
-        AssertContains(resourceText, "private string? _captureFaultMessage;");
+        AssertContains(resourceText, "private PreviewAudioCaptureFaultSnapshot? _captureFault;");
         AssertContains(resourceText, "public void RecordCaptureFault(");
         AssertContains(resourceText, "public PreviewAudioCaptureFaultSnapshot ConsumeCaptureFault()");
+        AssertContains(resourceText, "Interlocked.Exchange(ref _captureFault, null)");
+        AssertDoesNotContain(resourceText, "private bool _captureFaulted;");
+        AssertDoesNotContain(resourceText, "private string? _captureFaultMessage;");
         AssertDoesNotContain(rootText, "get => _previewAudioGraph.ProgramCapture;");
         AssertDoesNotContain(rootText, "get => _previewAudioGraph.MicrophoneCapture;");
         AssertDoesNotContain(rootText, "get => _previewAudioGraph.Playback;");

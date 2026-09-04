@@ -422,6 +422,18 @@ public sealed class AutomationSnapshot
     public string? LastOutputPath { get; init; }
     public string LastFinalizeStatus { get; init; } = "None";
     public DateTimeOffset? LastFinalizeUtc { get; init; }
+    public string RecordingLifecyclePhase { get; init; } = "Idle";
+    public string RecordingFinalizeOutcome { get; init; } = "None";
+    public string RecordingFinalizeFailureCode { get; init; } = string.Empty;
+    public bool RecordingFinalizationVerificationCompleted { get; init; }
+    public bool RecordingFinalizationCleanupPending { get; init; }
+    public long RecordingFinalizationElapsedMs { get; init; }
+    public string? RecordingRecoveryPath { get; init; }
+    public IReadOnlyList<string> RecordingRequestedTracks { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> RecordingObservedTracks { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> LastPreservedArtifacts { get; init; } = Array.Empty<string>();
+    public string RecordingFinalizationProgressStage { get; init; } = "Idle";
+    public DateTimeOffset? LastRecordingFinalizationProgressUtc { get; init; }
     public bool LastOutputExists { get; init; }
     public long? LastOutputSizeBytes { get; init; }
 

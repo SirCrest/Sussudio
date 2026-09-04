@@ -1484,7 +1484,7 @@ static partial class Program
         AssertContains(sourceText, "if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
-        AssertContains(sourceText, "CloseOutputIo();");
+        AssertContains(sourceText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
         AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                    progress,\n                    new ExportProgress(\n                        segIdx + 1,\n                        segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
@@ -1891,12 +1891,12 @@ static partial class Program
         AssertContains(outputFilesText, "internal static void CleanupOrphanedTempFiles(string directory)");
         AssertContains(outputFilesText, "private bool TryFinalizeActiveOutputFile(");
         AssertContains(outputFilesText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\");");
-        AssertContains(outputFilesText, "CloseOutputIo();");
+        AssertContains(outputFilesText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
         AssertContains(outputFilesText, "TryFinalizeTempOutputLeaseFile(tempLease, outputPath, allowOverwrite, out outputBytes, out failureMessage)");
         AssertContains(outputFilesText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(outputFilesText, "_activeTempPath = null;");
         AssertContains(singleFileText, "av_write_trailer(_activeOutputContext)");
-        AssertContains(singleFileText, "CloseOutputIo();\n\n        if (!TryFinalizeTempOutputLeaseFile");
+        AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");\n\n        if (!TryFinalizeTempOutputLeaseFile");
         AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(tempLease, outputPath, allowOverwrite, out var outputBytes, out var outputFailure))");
         AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
@@ -1911,7 +1911,7 @@ static partial class Program
         AssertContains(validationText, "private static bool SegmentOverlapsExportRange(");
         AssertContains(validationText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
         AssertContains(lifecycleText, "private void CloseActiveInput()");
-        AssertContains(lifecycleText, "private void CloseOutputIo()");
+        AssertContains(lifecycleText, "private int CloseOutputIo()");
         AssertContains(lifecycleText, "private void CleanupNativeState()");
         AssertContains(lifecycleText, "private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)");
         AssertContains(lifecycleText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
@@ -3364,7 +3364,8 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "return _renderRunningAcknowledged.Wait(boundedTimeoutMs);");
         AssertContains(wasapiPlaybackRenderText, "internal sealed class WasapiAudioPlayback : IDisposable");
         AssertContains(wasapiPlaybackRenderText, "private void RenderThreadMain()");
-        AssertContains(wasapiPlaybackRenderText, "if (!_resumeRequested)\n                {\n                    continue;\n                }");
+        AssertContains(wasapiPlaybackRenderText, "if (!_resumeRequested)");
+        AssertContains(wasapiPlaybackRenderText, "continue;");
         AssertContains(wasapiPlaybackRenderText, "_renderPausedAcknowledged.Set();");
         AssertContains(wasapiPlaybackRenderText, "_renderRunningAcknowledged.Set();");
         AssertContains(wasapiPlaybackRenderText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
@@ -3399,7 +3400,7 @@ static partial class Program
             "WASAPI playback queue state stays folded into the lifecycle root");
         AssertContains(wasapiPlaybackText, "private const int OutputSampleRate = 48000;");
         AssertContains(wasapiPlaybackText, "private const uint MaxRenderWriteFrames = OutputSampleRate / 50; // 20ms");
-        AssertContains(wasapiPlaybackRenderText, "var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, MaxRenderWriteFrames);");
+        AssertContains(wasapiPlaybackRenderText, "var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, _maxRenderWriteFrames);");
         AssertDoesNotContain(wasapiPlaybackRenderText, "var framesToWrite = _bufferFrameCount - paddingFrames;");
         AssertContains(wasapiPlaybackRenderText, "UpdateRenderingPtsForActiveChunk();");
         AssertContains(wasapiPlaybackRenderText, "var frameOffset = Math.Max(0, _activeChunkOffset) / OutputBlockAlign;");
@@ -4728,11 +4729,11 @@ static partial class Program
         AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
-        AssertContains(packetDrainText, "OnVideoFrameEncoded();");
+        AssertContains(packetDrainText, "var pts = OnVideoFrameEncoded();");
         AssertContains(packetDrainText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
 
-        AssertContains(encodingProgressText, "private void OnVideoFrameEncoded()");
+        AssertContains(encodingProgressText, "private TimeSpan OnVideoFrameEncoded()");
         AssertContains(encodingProgressText, "private TimeSpan ResolveEncoderPts()");
         AssertContains(encodingProgressText, "private bool RotateSegment(TimeSpan currentPts)");
         AssertContains(encodingProgressText, "_bufferManager.UpdateLatestPts(pts);");

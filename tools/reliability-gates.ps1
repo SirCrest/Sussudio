@@ -48,12 +48,12 @@ function Invoke-ToolWithTimeout {
     try {
         $completed = Wait-Job -Job $job -Timeout $TimeoutSeconds
         if (-not $completed) {
-            Stop-Job -Job $job -Force -ErrorAction SilentlyContinue | Out-Null
+            Stop-Job -Job $job -ErrorAction SilentlyContinue | Out-Null
             throw "Command timed out after $TimeoutSeconds seconds: $Exe $argumentString"
         }
 
         $result = Receive-Job -Job $job -ErrorAction Stop
-        $output = @($result.Output)
+        $output = @($result.Output | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
         $output | ForEach-Object { Write-Host $_ }
 
         $exitCode = [int]$result.ExitCode
@@ -68,6 +68,46 @@ function Invoke-ToolWithTimeout {
     }
 }
 
+function Assert-BuildWarningsAllowed {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Output,
+        [Parameter(Mandatory = $true)]
+        [string]$Label
+    )
+
+    if ($Output -match "MVVMTK0045") {
+        throw "MVVMTK0045 warning detected while building $Label."
+    }
+
+    if ($FailOnAnyWarning -and ($Output -match ": warning ")) {
+        throw "Warnings detected while building $Label."
+    }
+}
+
+function Read-TrxCounters {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "xUnit TRX result was not created: $Path"
+    }
+
+    [xml]$trx = Get-Content -LiteralPath $Path -Raw
+    $counters = $trx.SelectSingleNode(
+        "/*[local-name()='TestRun']/*[local-name()='ResultSummary']/*[local-name()='Counters']")
+    if ($null -eq $counters) {
+        throw "xUnit TRX result does not contain counters: $Path"
+    }
+
+    return [pscustomobject]@{
+        Total = [int]$counters.GetAttribute("total")
+        Failed = [int]$counters.GetAttribute("failed")
+    }
+}
+
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $dotnetCliHome = Join-Path $repoRoot ".tmp_dotnet_home"
 if (-not (Test-Path $dotnetCliHome)) {
@@ -76,13 +116,15 @@ if (-not (Test-Path $dotnetCliHome)) {
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
 $env:DOTNET_CLI_HOME = $dotnetCliHome
 
-$projectPath = Join-Path $repoRoot "Sussudio\Sussudio.csproj"
+$solutionPath = Join-Path $repoRoot "Sussudio.slnx"
 $testProjectPath = Join-Path $repoRoot "tests\Sussudio.Tests\Sussudio.Tests.csproj"
 $ssctlProjectPath = Join-Path $repoRoot "tools\ssctl\ssctl.csproj"
 $mcpServerProjectPath = Join-Path $repoRoot "tools\McpServer\McpServer.csproj"
+$automationClientProjectPath = Join-Path $repoRoot "tools\AutomationClient\AutomationClient.csproj"
 $nativeXuProbeProjectPath = Join-Path $repoRoot "tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj"
-if (-not (Test-Path $projectPath)) {
-    throw "Project file not found: $projectPath"
+$releaseHelperTestsPath = Join-Path $repoRoot "tools\release\test-release-helpers.ps1"
+if (-not (Test-Path $solutionPath)) {
+    throw "Solution file not found: $solutionPath"
 }
 if (-not (Test-Path $testProjectPath)) {
     throw "Test project file not found: $testProjectPath"
@@ -93,100 +135,173 @@ if (-not (Test-Path $ssctlProjectPath)) {
 if (-not (Test-Path $mcpServerProjectPath)) {
     throw "McpServer project file not found: $mcpServerProjectPath"
 }
+if (-not (Test-Path $automationClientProjectPath)) {
+    throw "AutomationClient project file not found: $automationClientProjectPath"
+}
 if (-not (Test-Path $nativeXuProbeProjectPath)) {
     throw "NativeXuAudioProbe project file not found: $nativeXuProbeProjectPath"
+}
+if (-not (Test-Path $releaseHelperTestsPath)) {
+    throw "Release helper test script not found: $releaseHelperTestsPath"
 }
 
 $buildOutput = Invoke-ToolWithTimeout `
     -Exe "dotnet" `
     -Arguments @(
         "build",
-        $projectPath,
+        $solutionPath,
         "-c", $Configuration,
         "-m:1",
+        "--no-restore",
         "--nologo",
         "-v", "minimal",
         "-p:Platform=$Platform"
     ) `
     -TimeoutSeconds $BuildTimeoutSeconds `
     -WorkingDirectory $repoRoot
+Assert-BuildWarningsAllowed -Output $buildOutput -Label "Sussudio.slnx"
 
-if ($buildOutput -match "MVVMTK0045") {
-    throw "MVVMTK0045 warning detected in build output."
-}
-
-if ($FailOnAnyWarning -and ($buildOutput -match ": warning ")) {
-    throw "Warnings detected in build output."
-}
-
-Invoke-ToolWithTimeout `
+$ssctlBuildOutput = Invoke-ToolWithTimeout `
     -Exe "dotnet" `
     -Arguments @(
         "build",
         $ssctlProjectPath,
         "-c", $Configuration,
         "-t:Rebuild",
+        "--no-restore",
         "--nologo",
         "-v", "minimal"
     ) `
     -TimeoutSeconds $BuildTimeoutSeconds `
     -WorkingDirectory $repoRoot
+Assert-BuildWarningsAllowed -Output $ssctlBuildOutput -Label "ssctl"
 
-Invoke-ToolWithTimeout `
+$mcpBuildOutput = Invoke-ToolWithTimeout `
     -Exe "dotnet" `
     -Arguments @(
         "build",
         $mcpServerProjectPath,
         "-c", $Configuration,
         "-t:Rebuild",
+        "--no-restore",
         "--nologo",
         "-v", "minimal"
     ) `
     -TimeoutSeconds $BuildTimeoutSeconds `
     -WorkingDirectory $repoRoot
+Assert-BuildWarningsAllowed -Output $mcpBuildOutput -Label "McpServer"
 
-Invoke-ToolWithTimeout `
+$automationClientBuildOutput = Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "build",
+        $automationClientProjectPath,
+        "-c", $Configuration,
+        "-t:Rebuild",
+        "--no-restore",
+        "--nologo",
+        "-v", "minimal"
+    ) `
+    -TimeoutSeconds $BuildTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+Assert-BuildWarningsAllowed -Output $automationClientBuildOutput -Label "AutomationClient"
+
+$nativeXuBuildOutput = Invoke-ToolWithTimeout `
     -Exe "dotnet" `
     -Arguments @(
         "build",
         $nativeXuProbeProjectPath,
         "-c", $Configuration,
         "-t:Rebuild",
+        "--no-restore",
         "--nologo",
         "-v", "minimal"
     ) `
     -TimeoutSeconds $BuildTimeoutSeconds `
     -WorkingDirectory $repoRoot
+Assert-BuildWarningsAllowed -Output $nativeXuBuildOutput -Label "NativeXuAudioProbe"
 
-Invoke-ToolWithTimeout `
+# The repository's test/tool reflection harness intentionally resolves the AnyCPU
+# tool outputs under bin\<Configuration>. Build the test host explicitly in the
+# same layout after the full x64 solution build so --no-build cannot select a
+# stale artifact from a previous run.
+$testBuildOutput = Invoke-ToolWithTimeout `
     -Exe "dotnet" `
     -Arguments @(
         "build",
         $testProjectPath,
         "-c", $Configuration,
+        "--no-restore",
         "--nologo",
         "-v", "minimal"
     ) `
     -TimeoutSeconds $BuildTimeoutSeconds `
     -WorkingDirectory $repoRoot
+Assert-BuildWarningsAllowed -Output $testBuildOutput -Label "Sussudio.Tests"
 
 $appAssemblyPath = Join-Path $repoRoot "Sussudio\bin\$Platform\$Configuration\net8.0-windows10.0.19041.0\win-x64\Sussudio.dll"
 if (-not (Test-Path $appAssemblyPath)) {
     throw "Built app assembly not found: $appAssemblyPath"
 }
 
+$testAssemblyPath = Join-Path $repoRoot "tests\Sussudio.Tests\bin\$Configuration\net8.0\Sussudio.Tests.dll"
+if (-not (Test-Path $testAssemblyPath)) {
+    throw "Built offline harness assembly not found: $testAssemblyPath"
+}
+
+$testResultsDirectory = Join-Path $repoRoot "artifacts\test-results\reliability-gate"
+if (Test-Path -LiteralPath $testResultsDirectory) {
+    Remove-Item -LiteralPath $testResultsDirectory -Recurse -Force
+}
+New-Item -Path $testResultsDirectory -ItemType Directory -Force | Out-Null
+$trxPath = Join-Path $testResultsDirectory "reliability-gate.trx"
+
+Write-Host "Running the real xUnit suite..."
 Invoke-ToolWithTimeout `
     -Exe "dotnet" `
     -Arguments @(
-        "run",
-        "--project",
+        "test",
         $testProjectPath,
         "-c", $Configuration,
         "--no-build",
-        "--",
+        "--no-restore",
+        "--nologo",
+        "--logger", "trx;LogFileName=reliability-gate.trx",
+        "--results-directory", $testResultsDirectory,
+        "-v", "minimal"
+    ) `
+    -TimeoutSeconds $TestTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+
+$testCounters = Read-TrxCounters -Path $trxPath
+if ($testCounters.Total -le 0) {
+    throw "Reliability gate discovered zero xUnit tests."
+}
+if ($testCounters.Failed -ne 0) {
+    throw "Reliability gate TRX reports $($testCounters.Failed) failed xUnit tests."
+}
+Write-Host "xUnit result: total=$($testCounters.Total) failed=$($testCounters.Failed)"
+
+Write-Host "Running the separate offline assembly/freshness harness..."
+Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "exec",
+        $testAssemblyPath,
         $appAssemblyPath
     ) `
     -TimeoutSeconds $TestTimeoutSeconds `
+    -WorkingDirectory $repoRoot
+
+Write-Host "Running package-contract helper tests..."
+Invoke-ToolWithTimeout `
+    -Exe "powershell.exe" `
+    -Arguments @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $releaseHelperTestsPath
+    ) `
+    -TimeoutSeconds 120 `
     -WorkingDirectory $repoRoot
 
 if (-not [string]::IsNullOrWhiteSpace($ValidateHdrFile)) {
@@ -220,6 +335,13 @@ if (-not [string]::IsNullOrWhiteSpace($ValidateHdrFile)) {
         -WorkingDirectory $repoRoot
 }
 
+Write-Host "Checking the working diff for whitespace errors..."
+Invoke-ToolWithTimeout `
+    -Exe "git" `
+    -Arguments @("diff", "--check") `
+    -TimeoutSeconds 120 `
+    -WorkingDirectory $repoRoot
+
 Write-Host ""
 Write-Host "Gate result: PASS"
-Write-Host "Build, tool, and offline regression gates passed. Optional HDR validation is controlled by the ValidateHdr parameters."
+Write-Host "Solution/tool builds, nonzero xUnit suite, separate offline harness, package-contract checks, and diff checks passed. Optional HDR validation is controlled by the ValidateHdr parameters."

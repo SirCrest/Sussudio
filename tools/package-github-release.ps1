@@ -1,32 +1,49 @@
-<# Builds a GitHub-ready portable release zip for Sussudio.
+<# Builds, validates, signs, and packages the supported Sussudio portable prerelease ZIP.
 
-The zip root contains a double-click launcher and release notes. The full app
-payload is kept under app\ so users do not have to sort through the publish
-output.
+The script deliberately has no unsigned or stale-publish mode. A package is produced only
+from a clean commit with an exact SemVer prerelease tag after the canonical reliability gate
+passes for that same commit.
 #>
 param(
-    [string]$Version = (Get-Date -Format "yyyy.MM.dd"),
-    [ValidateSet("Release", "Debug")]
-    [string]$Configuration = "Release",
-    [string]$RuntimeIdentifier = "win-x64",
-    [string]$OutputRoot = "artifacts\releases",
-    [switch]$SkipPublish
+    [Parameter(Mandatory = $true)]
+    [string]$Version,
+    [Parameter(Mandatory = $true)]
+    [string]$SignToolPath,
+    [Parameter(Mandatory = $true)]
+    [string]$AzureCodeSigningDlibPath,
+    [Parameter(Mandatory = $true)]
+    [string]$ArtifactSigningMetadataPath,
+    [string]$AzureCliPath = 'az'
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$projectPath = Join-Path $repoRoot "Sussudio\Sussudio.csproj"
-$absoluteOutputRoot = Join-Path $repoRoot $OutputRoot
-$packageWorkRoot = Join-Path $repoRoot "artifacts\release-package"
-$publishDir = Join-Path $packageWorkRoot "publish"
-$releaseName = "Sussudio-$Version-$RuntimeIdentifier"
+$releaseHelperPath = Join-Path $PSScriptRoot 'release\release-helpers.ps1'
+$reliabilityGatePath = Join-Path $PSScriptRoot 'reliability-gates.ps1'
+$solutionPath = Join-Path $repoRoot 'Sussudio.slnx'
+$appProjectPath = Join-Path $repoRoot 'Sussudio\Sussudio.csproj'
+$ffmpegManifestPath = Join-Path $repoRoot 'Sussudio\ffmpeg\manifest.json'
+$sourceFfmpegDirectory = Join-Path $repoRoot 'Sussudio\ffmpeg'
+$releaseOutputRoot = Join-Path $repoRoot 'artifacts\releases'
+$packageWorkRoot = Join-Path $repoRoot 'artifacts\release-package'
+$publishRoot = Join-Path $packageWorkRoot 'publish'
+$releaseName = "Sussudio-$Version-win-x64"
 $stagingDir = Join-Path $packageWorkRoot $releaseName
-$appDir = Join-Path $stagingDir "app"
-$zipPath = Join-Path $absoluteOutputRoot "$releaseName.zip"
-$checksumPath = Join-Path $absoluteOutputRoot "$releaseName.sha256.txt"
-$githubNotesPath = Join-Path $absoluteOutputRoot "$releaseName.github-release.md"
+$appDir = Join-Path $stagingDir 'app'
+$toolsDir = Join-Path $stagingDir 'tools'
+$zipPath = Join-Path $releaseOutputRoot "$releaseName.zip"
+$checksumPath = Join-Path $releaseOutputRoot "$releaseName.sha256.txt"
+$githubNotesPath = Join-Path $releaseOutputRoot "$releaseName.github-release.md"
+
+foreach ($requiredPath in @($releaseHelperPath, $reliabilityGatePath, $solutionPath, $appProjectPath)) {
+    if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
+        throw "Required release input is missing: $requiredPath"
+    }
+}
+
+. $releaseHelperPath
 
 function Invoke-RobocopyMirror {
     param(
@@ -34,140 +51,164 @@ function Invoke-RobocopyMirror {
         [Parameter(Mandatory = $true)][string]$Destination
     )
 
-    if (!(Test-Path $Source)) {
-        throw "Source folder does not exist: $Source"
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
+        throw "Publish directory does not exist: $Source"
     }
 
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
     $null = & robocopy $Source $Destination /MIR /NFL /NDL /NJH /NJS /NP
     $exitCode = $LASTEXITCODE
     if ($exitCode -ge 8) {
-        throw "robocopy failed with exit code $exitCode syncing '$Source' -> '$Destination'"
+        throw "robocopy failed with exit code $exitCode syncing '$Source' to '$Destination'."
     }
 }
 
-function Get-GitValue {
-    param([Parameter(Mandatory = $true)][string[]]$Arguments)
+$sourceCommit = Assert-CleanTaggedPrerelease -RepoRoot $repoRoot -Version $Version
+$signingPrerequisites = Resolve-ArtifactSigningPrerequisites `
+    -RepoRoot $repoRoot `
+    -SignToolPath $SignToolPath `
+    -AzureCodeSigningDlibPath $AzureCodeSigningDlibPath `
+    -ArtifactSigningMetadataPath $ArtifactSigningMetadataPath `
+    -AzureCliPath $AzureCliPath
+$ffmpegManifest = Get-ValidatedFfmpegManifest -ManifestPath $ffmpegManifestPath
+Assert-FfmpegRuntimeMatchesManifest -RuntimeDirectory $sourceFfmpegDirectory -Manifest $ffmpegManifest
 
-    try {
-        $value = & git @Arguments 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            return ($value -join "`n").Trim()
-        }
-    }
-    catch {
-        return ""
-    }
-
-    return ""
+Write-Host 'Running the canonical reliability gate before publish, staging, or signing...'
+& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $reliabilityGatePath `
+    -Configuration Release `
+    -Platform x64 `
+    -FailOnAnyWarning
+if ($LASTEXITCODE -ne 0) {
+    throw "Reliability gate failed with exit code $LASTEXITCODE. No package was staged or signed."
 }
 
-if (!(Test-Path $projectPath)) {
-    throw "Project file not found: $projectPath"
+$validatedCommit = Assert-CleanTaggedPrerelease -RepoRoot $repoRoot -Version $Version -ExpectedCommit $sourceCommit
+if (-not [string]::Equals($validatedCommit, $sourceCommit, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Validated commit changed unexpectedly from $sourceCommit to $validatedCommit."
 }
 
-New-Item -ItemType Directory -Path $absoluteOutputRoot -Force | Out-Null
-if (Test-Path $stagingDir) {
-    Remove-Item -LiteralPath $stagingDir -Recurse -Force
-}
-if (Test-Path $zipPath) {
-    Remove-Item -LiteralPath $zipPath -Force
-}
-if (Test-Path $checksumPath) {
-    Remove-Item -LiteralPath $checksumPath -Force
-}
-if (Test-Path $githubNotesPath) {
-    Remove-Item -LiteralPath $githubNotesPath -Force
-}
-
-if (!$SkipPublish) {
-    if (Test-Path $publishDir) {
-        Remove-Item -LiteralPath $publishDir -Recurse -Force
-    }
-
-    Write-Host "Publishing Sussudio $Configuration $RuntimeIdentifier..."
-    & dotnet publish $projectPath `
-        -c $Configuration `
-        -p:Platform=x64 `
-        -r $RuntimeIdentifier `
-        -p:PublishProfile=win-x64 `
-        -p:PublishDir="$publishDir\" `
-        -p:WindowsPackageType=None `
-        -p:SelfContained=true `
-        -p:WindowsAppSDKSelfContained=true
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet publish failed with exit code $LASTEXITCODE"
+New-Item -ItemType Directory -Path $releaseOutputRoot -Force | Out-Null
+foreach ($path in @($stagingDir, $publishRoot)) {
+    if (Test-Path -LiteralPath $path) {
+        Remove-Item -LiteralPath $path -Recurse -Force
     }
 }
-
-$publishedExe = Join-Path $publishDir "Sussudio.exe"
-if (!(Test-Path $publishedExe)) {
-    throw "Published app launcher not found: $publishedExe"
+foreach ($path in @($zipPath, $checksumPath, $githubNotesPath)) {
+    if (Test-Path -LiteralPath $path) {
+        Remove-Item -LiteralPath $path -Force
+    }
 }
+New-Item -ItemType Directory -Path $publishRoot -Force | Out-Null
 
-Invoke-RobocopyMirror -Source $publishDir -Destination $appDir
+$appPublishDir = Join-Path $publishRoot 'app'
+Write-Host 'Publishing Sussudio Release win-x64...'
+$null = Invoke-ReleaseNativeCommand `
+    -FilePath 'dotnet' `
+    -Arguments @(
+        'publish', $appProjectPath,
+        '-c', 'Release',
+        '-p:Platform=x64',
+        '-r', 'win-x64',
+        '-p:PublishProfile=win-x64',
+        "-p:PublishDir=$appPublishDir\",
+        '-p:WindowsPackageType=None',
+        '-p:SelfContained=true',
+        '-p:WindowsAppSDKSelfContained=true'
+    ) `
+    -Description 'Sussudio publish' `
+    -WorkingDirectory $repoRoot
 
-$requiredFfmpegDlls = @(
-    "avcodec-62.dll",
-    "avformat-62.dll",
-    "avutil-60.dll",
-    "swresample-6.dll"
+$toolProjects = @(
+    [pscustomobject]@{ Name = 'ssctl'; Project = (Join-Path $repoRoot 'tools\ssctl\ssctl.csproj'); Executable = 'ssctl.exe' },
+    [pscustomobject]@{ Name = 'McpServer'; Project = (Join-Path $repoRoot 'tools\McpServer\McpServer.csproj'); Executable = 'McpServer.exe' },
+    [pscustomobject]@{ Name = 'AutomationClient'; Project = (Join-Path $repoRoot 'tools\AutomationClient\AutomationClient.csproj'); Executable = 'AutomationClient.exe' }
 )
-foreach ($dll in $requiredFfmpegDlls) {
-    $path = Join-Path $appDir "ffmpeg\$dll"
-    if (!(Test-Path $path)) {
-        throw "Required FFmpeg runtime DLL missing from package: $path"
+
+foreach ($tool in $toolProjects) {
+    if (-not (Test-Path -LiteralPath $tool.Project -PathType Leaf)) {
+        throw "Tool project is missing: $($tool.Project)"
     }
+
+    $toolPublishDir = Join-Path $publishRoot $tool.Name
+    Write-Host "Publishing $($tool.Name) Release win-x64 self-contained..."
+    $null = Invoke-ReleaseNativeCommand `
+        -FilePath 'dotnet' `
+        -Arguments @(
+            'publish', $tool.Project,
+            '-c', 'Release',
+            '-r', 'win-x64',
+            '--self-contained', 'true',
+            '-p:PublishSingleFile=false',
+            "-p:PublishDir=$toolPublishDir\"
+        ) `
+        -Description "$($tool.Name) publish" `
+        -WorkingDirectory $repoRoot
 }
 
-$launcherPath = Join-Path $stagingDir "Start Sussudio.cmd"
+Invoke-RobocopyMirror -Source $appPublishDir -Destination $appDir
+foreach ($tool in $toolProjects) {
+    Invoke-RobocopyMirror -Source (Join-Path $publishRoot $tool.Name) -Destination (Join-Path $toolsDir $tool.Name)
+}
+
+$packagedFfmpegDirectory = Join-Path $appDir 'ffmpeg'
+$packagedFfmpegManifest = Get-ValidatedFfmpegManifest -ManifestPath (Join-Path $packagedFfmpegDirectory 'manifest.json')
+Assert-FfmpegRuntimeMatchesManifest -RuntimeDirectory $packagedFfmpegDirectory -Manifest $packagedFfmpegManifest
+
+$launcherPath = Join-Path $stagingDir 'Start Sussudio.cmd'
 @"
 @echo off
 setlocal
 set "ROOT=%~dp0"
 start "" "%ROOT%app\Sussudio.exe" %*
-"@ | Set-Content -Path $launcherPath -Encoding ASCII
+"@ | Set-Content -LiteralPath $launcherPath -Encoding ASCII
 
-$readmePath = Join-Path $stagingDir "README.txt"
+$readmePath = Join-Path $stagingDir 'README.txt'
 @"
-Sussudio $Version ($RuntimeIdentifier)
+Sussudio $Version (Windows x64 prerelease)
 
-Run:
+Run the app:
   Double-click Start Sussudio.cmd
 
-Layout:
-  app\ contains the full Sussudio application payload.
-  Start Sussudio.cmd launches app\Sussudio.exe.
+Included automation tools:
+  tools\ssctl\ssctl.exe
+  tools\McpServer\McpServer.exe
+  tools\AutomationClient\AutomationClient.exe
 
 Requirements:
   Windows 10/11 x64.
   HDMI capture hardware. The primary target is Elgato 4K X.
-  NVIDIA hardware encoder support is expected for the current recording path.
+  NVIDIA hardware encoder support is expected for recording.
 
-Notes:
-  If Windows SmartScreen warns on first launch, choose More info, then Run anyway.
-  Logs are written under %LocalAppData%\Sussudio\logs\ for packaged-style runs.
-"@ | Set-Content -Path $readmePath -Encoding ASCII
+Authenticity:
+  First-party Sussudio executables and assemblies are Authenticode-signed and
+  timestamped with Microsoft Artifact Signing. The FFmpeg DLLs are third-party
+  inputs pinned by app\ffmpeg\manifest.json and are intentionally not signed with
+  the Sussudio publisher identity. Verify the ZIP SHA-256 published with the release.
 
-$licenseSource = Join-Path $repoRoot "LICENSE"
-if (Test-Path $licenseSource) {
-    Copy-Item -LiteralPath $licenseSource -Destination (Join-Path $stagingDir "LICENSE.txt") -Force
+This ZIP is the current supported prerelease channel. MSIX distribution and the
+Stream Deck plugin remain future roadmap work and are not included.
+"@ | Set-Content -LiteralPath $readmePath -Encoding ASCII
+
+$licenseSource = Join-Path $repoRoot 'LICENSE'
+if (Test-Path -LiteralPath $licenseSource -PathType Leaf) {
+    Copy-Item -LiteralPath $licenseSource -Destination (Join-Path $stagingDir 'LICENSE.txt') -Force
 }
 
-$commit = Get-GitValue @("rev-parse", "--short", "HEAD")
-$dirty = Get-GitValue @("status", "--porcelain")
-$dirtyText = if ([string]::IsNullOrWhiteSpace($dirty)) { "No" } else { "Yes" }
-$manifestPath = Join-Path $stagingDir "RELEASE.txt"
+$manifestPath = Join-Path $stagingDir 'RELEASE.txt'
 @"
-Sussudio Release Package
+Sussudio Portable Prerelease
 
 Version: $Version
-Configuration: $Configuration
-Runtime: $RuntimeIdentifier
-Source commit: $commit
-Uncommitted changes included: $dirtyText
-Built at: $((Get-Date).ToString("yyyy-MM-dd HH:mm:ss zzz"))
+Git tag: v$Version
+Source commit: $sourceCommit
+Source tree clean: Yes
+Configuration: Release
+Runtime: win-x64
+GitHub release classification: Prerelease
+FFmpeg build: $($ffmpegManifest.buildVersion)
+FFmpeg identity manifest: app\ffmpeg\manifest.json
+First-party signing: Azure Artifact Signing, SHA-256, Microsoft timestamp
+Built at UTC: $([DateTime]::UtcNow.ToString('o'))
 
 Package layout:
   Start Sussudio.cmd
@@ -175,42 +216,90 @@ Package layout:
   LICENSE.txt
   RELEASE.txt
   app\
-"@ | Set-Content -Path $manifestPath -Encoding ASCII
+  tools\ssctl\
+  tools\McpServer\
+  tools\AutomationClient\
+"@ | Set-Content -LiteralPath $manifestPath -Encoding ASCII
+
+$firstPartyRelativePaths = @(
+    'app\Sussudio.exe',
+    'app\Sussudio.dll',
+    'app\Sussudio.Automation.Contracts.dll',
+    'tools\ssctl\ssctl.exe',
+    'tools\ssctl\ssctl.dll',
+    'tools\ssctl\Sussudio.Automation.Contracts.dll',
+    'tools\McpServer\McpServer.exe',
+    'tools\McpServer\McpServer.dll',
+    'tools\McpServer\Sussudio.Automation.Contracts.dll',
+    'tools\AutomationClient\AutomationClient.exe',
+    'tools\AutomationClient\AutomationClient.dll',
+    'tools\AutomationClient\Sussudio.Automation.Contracts.dll'
+)
+if ($firstPartyRelativePaths -match '(^|\\)ffmpeg(\\|$)') {
+    throw 'Internal release policy error: third-party FFmpeg files must not be signed with the Sussudio publisher identity.'
+}
+Assert-RequiredPackageFiles -Root $stagingDir -RelativePaths $firstPartyRelativePaths
+$firstPartyFiles = @($firstPartyRelativePaths | ForEach-Object { Join-Path $stagingDir $_ })
+
+# Re-check immediately before the first externally authenticated mutation so the
+# signed payload is tied to the same clean commit that passed the reliability gate.
+$null = Assert-CleanTaggedPrerelease -RepoRoot $repoRoot -Version $Version -ExpectedCommit $sourceCommit
+Invoke-ArtifactSigning -Prerequisites $signingPrerequisites -Files $firstPartyFiles
+Assert-AuthenticodeSignatures -Prerequisites $signingPrerequisites -Files $firstPartyFiles
+
+$requiredPackageRelativePaths = @(
+    'Start Sussudio.cmd',
+    'README.txt',
+    'RELEASE.txt',
+    'app\Sussudio.exe',
+    'app\ffmpeg\manifest.json',
+    'tools\ssctl\ssctl.exe',
+    'tools\McpServer\McpServer.exe',
+    'tools\AutomationClient\AutomationClient.exe'
+)
+foreach ($entry in @($packagedFfmpegManifest.files)) {
+    $requiredPackageRelativePaths += "app\ffmpeg\$($entry.fileName)"
+}
+if (Test-Path -LiteralPath (Join-Path $stagingDir 'LICENSE.txt')) {
+    $requiredPackageRelativePaths += 'LICENSE.txt'
+}
+Assert-RequiredPackageFiles -Root $stagingDir -RelativePaths $requiredPackageRelativePaths
 
 Write-Host "Creating $zipPath..."
-Compress-Archive -Path (Join-Path $stagingDir "*") -DestinationPath $zipPath -CompressionLevel Optimal -Force
+Compress-Archive -Path (Join-Path $stagingDir '*') -DestinationPath $zipPath -CompressionLevel Optimal -Force
+Assert-ZipContainsFiles -ZipPath $zipPath -RelativePaths $requiredPackageRelativePaths
+Assert-ZipMatchesDirectory -ZipPath $zipPath -StagingDirectory $stagingDir
 
-$hash = Get-FileHash -Path $zipPath -Algorithm SHA256
-"$($hash.Hash)  $releaseName.zip" | Set-Content -Path $checksumPath -Encoding ASCII
+$zipHash = Get-FileHash -LiteralPath $zipPath -Algorithm SHA256
+"$($zipHash.Hash)  $releaseName.zip" | Set-Content -LiteralPath $checksumPath -Encoding ASCII
 
 @"
-## Sussudio $Version
+## Sussudio $Version (prerelease)
 
-Portable Windows x64 release package.
+Portable Windows x64 prerelease package. In GitHub, publish this with **Set as a
+pre-release** enabled; it is not a stable release.
 
 ### Download
 
 - ``$releaseName.zip``
-- SHA256: ``$($hash.Hash)``
+- SHA-256: ``$($zipHash.Hash)``
 
-### Run
+### Authenticity and contents
 
-Extract the zip, then double-click ``Start Sussudio.cmd``.
+- First-party Sussudio executables and assemblies are Authenticode-signed and
+  Microsoft-timestamped through Azure Artifact Signing.
+- Native FFmpeg DLLs are third-party inputs verified against the included
+  ``app\ffmpeg\manifest.json``; they do not carry the Sussudio publisher signature.
+- The ZIP includes the app, ``ssctl``, MCP server, and ``AutomationClient``.
+- MSIX and Stream Deck integration remain future roadmap items.
 
-The zip root contains only the launcher, README, license, release manifest, and
-an ``app\`` folder with the full Sussudio payload.
+Extract the ZIP, verify its SHA-256, then double-click ``Start Sussudio.cmd``.
+"@ | Set-Content -LiteralPath $githubNotesPath -Encoding ASCII
 
-### Notes
-
-- Primary capture target: Elgato 4K X.
-- Native FFmpeg/libav DLLs are included under ``app\ffmpeg\``.
-- The current recording path expects NVIDIA hardware encoder support.
-"@ | Set-Content -Path $githubNotesPath -Encoding ASCII
-
-Write-Host ""
-Write-Host "Release package created:"
+Write-Host ''
+Write-Host 'Signed prerelease package created:'
 Write-Host "  $zipPath"
 Write-Host "  $checksumPath"
 Write-Host "  $githubNotesPath"
-Write-Host "SHA256:"
-Write-Host "  $($hash.Hash)"
+Write-Host 'SHA256:'
+Write-Host "  $($zipHash.Hash)"

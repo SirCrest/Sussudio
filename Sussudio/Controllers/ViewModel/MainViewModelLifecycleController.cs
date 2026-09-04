@@ -1266,7 +1266,7 @@ internal sealed class MainViewModelRecordingTransitionController
         try
         {
             _context.SetIsRecordingTransitioning(true);
-            _context.SetStatusText(enabled ? "Starting recording..." : "Stopping recording...");
+            _context.SetStatusText(enabled ? "Starting recording..." : "Finalizing recording...");
 
             if (enabled)
             {
@@ -1342,6 +1342,7 @@ internal sealed class MainViewModelRecordingTransitionController
         // UX: Freeze the timer immediately when the user requests stop (finalization can take seconds).
         // Keep IsRecording true until the stop transition completes so the button remains in "Stop" state.
         _context.StopRecordingStopwatch();
+        _context.SetStatusText("Finalizing recording...");
 
         try
         {
@@ -1359,7 +1360,7 @@ internal sealed class MainViewModelRecordingTransitionController
         {
             Logger.LogException(ex);
             _context.SetIsRecording(_context.GetSessionIsRecording());
-            _context.SetStatusText($"Stop recording failed: {ex.Message}");
+            _context.SetStatusText($"Recording failed: {ex.Message}");
             throw;
         }
     }

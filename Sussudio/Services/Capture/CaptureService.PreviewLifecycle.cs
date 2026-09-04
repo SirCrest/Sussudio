@@ -348,10 +348,13 @@ public partial class CaptureService
 
             if (_recordingBackend.PendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
             {
-                _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                var captureCleanupTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                     pendingLibAvDrainTask,
                     unifiedVideoCapture,
                     reason: "dispose_preview_pipeline_after_deferred_recording");
+                SetPendingLibAvCleanupTask(
+                    Task.WhenAll(pendingLibAvDrainTask, captureCleanupTask),
+                    "LibAv+PreviewPipeline");
                 videoCaptureCleanupDeferred = true;
             }
             else
@@ -655,12 +658,40 @@ public partial class CaptureService
         {
             if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))
             {
-                wasapiCapture = new WasapiAudioCapture();
-                await wasapiCapture.InitializeAsync(audioDeviceId, transitionToken).ConfigureAwait(false);
-                wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
-                wasapiCapture.Start();
-                _previewAudioGraph.ProgramCapture = wasapiCapture;
+                try
+                {
+                    wasapiCapture = new WasapiAudioCapture();
+                    await wasapiCapture.InitializeAsync(audioDeviceId, transitionToken).ConfigureAwait(false);
+                    wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    wasapiCapture.Start();
+                    _previewAudioGraph.ProgramCapture = wasapiCapture;
+                }
+                catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception audioEx)
+                {
+                    Logger.Log(
+                        $"WASAPI_CAPTURE_START_FAIL_CONTINUE_VIDEO type={audioEx.GetType().Name} msg='{audioEx.Message}'");
+                    StatusChanged?.Invoke(this, "Audio unavailable; video preview is still running");
+                    if (wasapiCapture != null)
+                    {
+                        wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                        wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        try
+                        {
+                            await wasapiCapture.DisposeAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception disposeEx)
+                        {
+                            Logger.Log(
+                                $"WASAPI_CAPTURE_START_FAIL_DISPOSE_WARN type={disposeEx.GetType().Name} msg='{disposeEx.Message}'");
+                        }
+                        wasapiCapture = null;
+                    }
+                }
             }
             else if (settings.AudioEnabled)
             {
@@ -669,9 +700,23 @@ public partial class CaptureService
 
             if (_isAudioPreviewActive && _previewAudioGraph.ProgramCapture != null)
             {
-                await _previewAudioGraph.StartPlaybackAsync(
-                    transitionToken,
-                    _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                try
+                {
+                    await _previewAudioGraph.StartPlaybackAsync(
+                        transitionToken,
+                        _flashbackBackend.PlaybackController).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception playbackEx)
+                {
+                    _isAudioPreviewActive = false;
+                    Logger.Log(
+                        $"WASAPI_PLAYBACK_UNAVAILABLE_CONTINUE_VIDEO type={playbackEx.GetType().Name} msg='{playbackEx.Message}'");
+                    StatusChanged?.Invoke(this, "Audio monitoring unavailable; video preview is still running");
+                }
             }
 
             Logger.Log(
@@ -801,15 +846,22 @@ public partial class CaptureService
                     await nextMicCapture.InitializeAsync(deviceId, transitionToken).ConfigureAwait(false);
                     nextMicCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
                     nextMicCapture.CaptureFailed += OnWasapiCaptureFailed;
-                    nextMicCapture.Start();
+                }
+
+                await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
+                if (nextMicCapture != null)
+                {
                     if (_flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
                     {
                         nextMicCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
                         Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='mic_monitor_update'");
                     }
-                }
 
-                await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+                    // Start only after the previous worker has reached terminal cleanup. Start()
+                    // rechecks quarantine in case that cleanup timed out.
+                    nextMicCapture.Start();
+                }
 
                 _micMonitorEnabled = enabled;
                 _micMonitorDeviceId = deviceId;
@@ -996,7 +1048,6 @@ public partial class CaptureService
                     await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
                     newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     newCapture.CaptureFailed += OnWasapiCaptureFailed;
-                    newCapture.Start();
                 }
                 catch
                 {
@@ -1038,6 +1089,51 @@ public partial class CaptureService
                     OnWasapiAudioLevelUpdated,
                     OnWasapiCaptureFailed,
                     _flashbackBackend.PlaybackController);
+
+                _previewAudioGraph.ProgramCapture = null;
+                try
+                {
+                    await oldCapture.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                    try
+                    {
+                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception disposeEx)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
+                    }
+
+                    throw;
+                }
+
+                try
+                {
+                    // Starting after old-worker cleanup prevents two producers from feeding one sink.
+                    // Start() rejects a quarantined predecessor that missed its stop deadline.
+                    newCapture.Start();
+                }
+                catch
+                {
+                    try
+                    {
+                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception disposeEx)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
+                    }
+
+                    throw;
+                }
+
                 _previewAudioGraph.ProgramCapture = newCapture;
                 _audioDeviceId = audioDeviceId;
                 _audioDeviceName = audioDeviceName;
@@ -1051,37 +1147,23 @@ public partial class CaptureService
                     newCapture.AttachRecordingSink(activeSink);
                 }
 
-                try
-                {
-                    if (_isAudioPreviewActive)
-                    {
-                        try
-                        {
-                            await _previewAudioGraph.StartPlaybackAsync(
-                                transitionToken,
-                                _flashbackBackend.PlaybackController).ConfigureAwait(false);
-                        }
-                        catch (Exception ex) when (ex is not OperationCanceledException)
-                        {
-                            _isAudioPreviewActive = false;
-                            Logger.Log($"AUDIO_INPUT_SWITCH_PLAYBACK_START_FAILED gen={switchGen} device={audioDeviceName ?? resolvedId} type={ex.GetType().Name} hr=0x{ex.HResult:X8}");
-                            throw;
-                        }
-                    }
-
-                    Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
-                }
-                finally
+                if (_isAudioPreviewActive)
                 {
                     try
                     {
-                        await oldCapture.DisposeAsync().ConfigureAwait(false);
+                        await _previewAudioGraph.StartPlaybackAsync(
+                            transitionToken,
+                            _flashbackBackend.PlaybackController).ConfigureAwait(false);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not OperationCanceledException)
                     {
-                        Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                        _isAudioPreviewActive = false;
+                        Logger.Log($"AUDIO_INPUT_SWITCH_PLAYBACK_START_FAILED gen={switchGen} device={audioDeviceName ?? resolvedId} type={ex.GetType().Name} hr=0x{ex.HResult:X8}");
+                        throw;
                     }
                 }
+
+                Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
             }
             else
             {
@@ -1122,8 +1204,27 @@ public partial class CaptureService
     private void OnWasapiCaptureFailed(object? sender, Exception ex)
     {
         var source = _previewAudioGraph.ClassifyCaptureFailureSource(sender);
+        var recordingFaultAttributionActive =
+            Volatile.Read(ref _recordingFaultAttributionActive) != 0;
+        var requestedSettings = _recordingBackend.SettingsSnapshot ?? _currentSettings;
+        var microphoneRequested = requestedSettings?.MicrophoneEnabled == true;
+        var programAudioRequested = requestedSettings?.AudioEnabled == true;
+        var requestedRecordingMicrophoneFailed =
+            recordingFaultAttributionActive &&
+            string.Equals(source, "microphone", StringComparison.Ordinal) &&
+            microphoneRequested;
+        var requestedRecordingProgramAudioFailed =
+            recordingFaultAttributionActive &&
+            string.Equals(source, "program", StringComparison.Ordinal) &&
+            programAudioRequested;
+        var requestedSourceFailed = string.Equals(source, "microphone", StringComparison.Ordinal)
+            ? microphoneRequested
+            : string.Equals(source, "program", StringComparison.Ordinal)
+                ? programAudioRequested
+                : microphoneRequested || programAudioRequested;
 
-        if (_isRecording)
+        if (requestedSourceFailed &&
+            (recordingFaultAttributionActive || Volatile.Read(ref _recordingAudioStartInProgress) != 0))
         {
             _previewAudioGraph.RecordCaptureFault(source, ex);
         }
@@ -1132,5 +1233,15 @@ public partial class CaptureService
         var statusPrefix = source == "microphone" ? "Microphone capture error" : "Audio capture error";
         StatusChanged?.Invoke(this, $"{statusPrefix}: {ex.Message}");
         ErrorOccurred?.Invoke(this, ex);
+
+        if (requestedRecordingMicrophoneFailed || requestedRecordingProgramAudioFailed)
+        {
+            var requestedTrack = requestedRecordingMicrophoneFailed ? "microphone" : "device audio";
+            var fatalError = new InvalidOperationException(
+                $"The requested recording {requestedTrack} became unavailable. Recording has failed and is being finalized.",
+                ex);
+            RecordLastRecordingFailure(fatalError);
+            BeginFatalCaptureCleanup(fatalError);
+        }
     }
 }

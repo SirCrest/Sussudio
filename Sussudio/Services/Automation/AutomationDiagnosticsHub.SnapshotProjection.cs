@@ -1923,6 +1923,18 @@ public sealed partial class AutomationDiagnosticsHub
             LastOutputPath = recordingOutputFlattening.LastOutputPath,
             LastFinalizeStatus = recordingOutputFlattening.LastFinalizeStatus,
             LastFinalizeUtc = recordingOutputFlattening.LastFinalizeUtc,
+            RecordingLifecyclePhase = recordingOutputFlattening.RecordingLifecyclePhase,
+            RecordingFinalizeOutcome = recordingOutputFlattening.RecordingFinalizeOutcome,
+            RecordingFinalizeFailureCode = recordingOutputFlattening.RecordingFinalizeFailureCode,
+            RecordingFinalizationVerificationCompleted = recordingOutputFlattening.RecordingFinalizationVerificationCompleted,
+            RecordingFinalizationCleanupPending = recordingOutputFlattening.RecordingFinalizationCleanupPending,
+            RecordingFinalizationElapsedMs = recordingOutputFlattening.RecordingFinalizationElapsedMs,
+            RecordingRecoveryPath = recordingOutputFlattening.RecordingRecoveryPath,
+            RecordingRequestedTracks = recordingOutputFlattening.RecordingRequestedTracks,
+            RecordingObservedTracks = recordingOutputFlattening.RecordingObservedTracks,
+            LastPreservedArtifacts = recordingOutputFlattening.LastPreservedArtifacts,
+            RecordingFinalizationProgressStage = recordingOutputFlattening.RecordingFinalizationProgressStage,
+            LastRecordingFinalizationProgressUtc = recordingOutputFlattening.LastRecordingFinalizationProgressUtc,
             LastOutputExists = recordingOutputFlattening.LastOutputExists,
             LastOutputSizeBytes = recordingOutputFlattening.LastOutputSizeBytes,
             LastVerification = recordingOutputFlattening.LastVerification,
@@ -3909,6 +3921,18 @@ public sealed partial class AutomationDiagnosticsHub
             LastOutputPath = captureRuntime.LastOutputPath,
             LastFinalizeStatus = captureRuntime.LastFinalizeStatus,
             LastFinalizeUtc = captureRuntime.LastFinalizeUtc,
+            RecordingLifecyclePhase = captureRuntime.RecordingLifecyclePhase,
+            RecordingFinalizeOutcome = captureRuntime.RecordingFinalizeOutcome,
+            RecordingFinalizeFailureCode = captureRuntime.RecordingFinalizeFailureCode,
+            RecordingFinalizationVerificationCompleted = captureRuntime.RecordingFinalizationVerificationCompleted,
+            RecordingFinalizationCleanupPending = captureRuntime.RecordingFinalizationCleanupPending,
+            RecordingFinalizationElapsedMs = captureRuntime.RecordingFinalizationElapsedMs,
+            RecordingRecoveryPath = captureRuntime.RecordingRecoveryPath,
+            RecordingRequestedTracks = captureRuntime.RecordingRequestedTracks,
+            RecordingObservedTracks = captureRuntime.RecordingObservedTracks,
+            LastPreservedArtifacts = captureRuntime.LastPreservedArtifacts,
+            RecordingFinalizationProgressStage = captureRuntime.RecordingFinalizationProgressStage,
+            LastRecordingFinalizationProgressUtc = captureRuntime.LastRecordingFinalizationProgressUtc,
             LastOutputExists = lastOutput.Exists,
             LastOutputSizeBytes = lastOutput.SizeBytes,
             LastVerification = lastVerification
@@ -3927,6 +3951,18 @@ public sealed partial class AutomationDiagnosticsHub
         public string? LastOutputPath { get; init; }
         public string LastFinalizeStatus { get; init; }
         public DateTimeOffset? LastFinalizeUtc { get; init; }
+        public string RecordingLifecyclePhase { get; init; }
+        public string RecordingFinalizeOutcome { get; init; }
+        public string RecordingFinalizeFailureCode { get; init; }
+        public bool RecordingFinalizationVerificationCompleted { get; init; }
+        public bool RecordingFinalizationCleanupPending { get; init; }
+        public long RecordingFinalizationElapsedMs { get; init; }
+        public string? RecordingRecoveryPath { get; init; }
+        public IReadOnlyList<string> RecordingRequestedTracks { get; init; }
+        public IReadOnlyList<string> RecordingObservedTracks { get; init; }
+        public IReadOnlyList<string> LastPreservedArtifacts { get; init; }
+        public string RecordingFinalizationProgressStage { get; init; }
+        public DateTimeOffset? LastRecordingFinalizationProgressUtc { get; init; }
         public bool LastOutputExists { get; init; }
         public long? LastOutputSizeBytes { get; init; }
         public RecordingVerificationResult? LastVerification { get; init; }
@@ -3971,6 +4007,18 @@ public sealed partial class AutomationDiagnosticsHub
             LastOutputPath = recordingOutput.LastOutputPath,
             LastFinalizeStatus = recordingOutput.LastFinalizeStatus,
             LastFinalizeUtc = recordingOutput.LastFinalizeUtc,
+            RecordingLifecyclePhase = recordingOutput.RecordingLifecyclePhase,
+            RecordingFinalizeOutcome = recordingOutput.RecordingFinalizeOutcome,
+            RecordingFinalizeFailureCode = recordingOutput.RecordingFinalizeFailureCode,
+            RecordingFinalizationVerificationCompleted = recordingOutput.RecordingFinalizationVerificationCompleted,
+            RecordingFinalizationCleanupPending = recordingOutput.RecordingFinalizationCleanupPending,
+            RecordingFinalizationElapsedMs = recordingOutput.RecordingFinalizationElapsedMs,
+            RecordingRecoveryPath = recordingOutput.RecordingRecoveryPath,
+            RecordingRequestedTracks = recordingOutput.RecordingRequestedTracks,
+            RecordingObservedTracks = recordingOutput.RecordingObservedTracks,
+            LastPreservedArtifacts = recordingOutput.LastPreservedArtifacts,
+            RecordingFinalizationProgressStage = recordingOutput.RecordingFinalizationProgressStage,
+            LastRecordingFinalizationProgressUtc = recordingOutput.LastRecordingFinalizationProgressUtc,
             LastOutputExists = recordingOutput.LastOutputExists,
             LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
             LastVerification = recordingOutput.LastVerification
@@ -3992,6 +4040,18 @@ public sealed partial class AutomationDiagnosticsHub
         public string? LastOutputPath { get; init; }
         public string LastFinalizeStatus { get; init; }
         public DateTimeOffset? LastFinalizeUtc { get; init; }
+        public string RecordingLifecyclePhase { get; init; }
+        public string RecordingFinalizeOutcome { get; init; }
+        public string RecordingFinalizeFailureCode { get; init; }
+        public bool RecordingFinalizationVerificationCompleted { get; init; }
+        public bool RecordingFinalizationCleanupPending { get; init; }
+        public long RecordingFinalizationElapsedMs { get; init; }
+        public string? RecordingRecoveryPath { get; init; }
+        public IReadOnlyList<string> RecordingRequestedTracks { get; init; }
+        public IReadOnlyList<string> RecordingObservedTracks { get; init; }
+        public IReadOnlyList<string> LastPreservedArtifacts { get; init; }
+        public string RecordingFinalizationProgressStage { get; init; }
+        public DateTimeOffset? LastRecordingFinalizationProgressUtc { get; init; }
         public bool LastOutputExists { get; init; }
         public long? LastOutputSizeBytes { get; init; }
         public RecordingVerificationResult? LastVerification { get; init; }

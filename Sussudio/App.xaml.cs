@@ -149,8 +149,15 @@ namespace Sussudio
                     }
                     catch (Exception inner)
                     {
+                        viewModel.MarkRecordingFinalizationUnresolved(
+                            $"Emergency recording finalization failed after {source}: {inner.Message}");
                         Logger.Log($"EMERGENCY_FINALIZE_INNER_FAIL msg={inner.Message}");
                     }
+                }
+                else
+                {
+                    viewModel.MarkRecordingFinalizationUnresolved(
+                        $"Emergency recording finalization remained unresolved after the eight-second {source} deadline.");
                 }
 
                 Logger.LogFatalBreadcrumb(

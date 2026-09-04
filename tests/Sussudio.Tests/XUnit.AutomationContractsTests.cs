@@ -352,6 +352,10 @@ public sealed class AutomationDispatcherContractsTests
         => global::Program.AutomationCommandDispatcher_AudioControlCommands_LiveWithCustomRouter();
 
     [Fact]
+    public Task AutomationDispatcherInvalidAudioModeDoesNotCallMutationPort()
+        => global::Program.AutomationCommandDispatcher_InvalidAudioMode_DoesNotCallMutationPort();
+
+    [Fact]
     public Task AutomationDispatcherAudioRampTracePayloadFieldMatchesCatalog()
         => global::Program.AutomationCommandDispatcher_GetAudioRampTrace_MetadataMatchesDispatcherPayload();
 
@@ -969,7 +973,7 @@ static partial class Program
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneEnabledAsync");
         AssertDoesNotContain(customCommandsText, "_viewModel.SetMicrophoneVolumeAsync");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetDeviceAudioModeCommandAsync(");
-        AssertContains(audioControlCommandsText, "var mode = RequireString(payload, \"mode\");");
+        AssertContains(audioControlCommandsText, "var mode = DeviceAudioModeParser.NormalizeOrThrow(RequireString(payload, \"mode\"));");
         AssertContains(audioControlCommandsText, "_audioPort.SetDeviceAudioModeAsync(mode, cancellationToken)");
         AssertContains(audioControlCommandsText, "Device audio mode changed: {mode}.");
         AssertContains(audioControlCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetAnalogAudioGainCommandAsync(");
@@ -986,6 +990,65 @@ static partial class Program
         AssertContains(audioControlCommandsText, "Microphone volume set to {Math.Clamp(volume, 0.0, 100.0):0.###}%.");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task AutomationCommandDispatcher_InvalidAudioMode_DoesNotCallMutationPort()
+    {
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var mutationCalls = 0;
+        string? observedMode = null;
+        var viewModel = CreateConfiguredProxy(viewModelType, (method, arguments) =>
+        {
+            if (method?.Name == "get_IsInitialized")
+            {
+                return true;
+            }
+
+            if (method?.Name == "SetDeviceAudioModeAsync")
+            {
+                Interlocked.Increment(ref mutationCalls);
+                observedMode = (string?)arguments?[0];
+                return Task.CompletedTask;
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var dispatcher = CreateAutomationCommandDispatcher(
+            viewModel,
+            CreateConfiguredProxy(diagnosticsType, (method, _) => GetDefaultReturnValue(method)),
+            CreateConfiguredProxy(windowControlType, (method, _) => GetDefaultReturnValue(method)),
+            authToken: null);
+
+        foreach (var payload in new[] { "{\"mode\":\"anlog\"}", "{\"mode\":\"HDMI\\u0000\"}" })
+        {
+            var response = await ExecuteAutomationCommandAsync(
+                    dispatcher,
+                    CreateAutomationCommandRequest("SetDeviceAudioMode", null, payload))
+                .ConfigureAwait(false);
+            AssertAutomationResponse(
+                response,
+                success: false,
+                errorCode: "command-failed",
+                status: "error",
+                "invalid audio mode");
+        }
+
+        AssertEqual(0, Volatile.Read(ref mutationCalls), "invalid audio modes do not call the mutation port");
+
+        var validResponse = await ExecuteAutomationCommandAsync(
+                dispatcher,
+                CreateAutomationCommandRequest("SetDeviceAudioMode", null, "{\"mode\":\"analog\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(
+            validResponse,
+            success: true,
+            errorCode: null,
+            status: "ok",
+            "valid audio mode");
+        AssertEqual(1, Volatile.Read(ref mutationCalls), "valid audio mode calls mutation port once");
+        AssertEqual("Analog", observedMode, "valid audio mode is canonicalized before mutation");
     }
 
     internal static Task AutomationCommandDispatcher_CaptureControlCommands_LiveWithCustomRouter()
@@ -6010,7 +6073,7 @@ static partial class Program
         AssertContains(recordingTransitionControllerText, "_context.SetStatusText(\"Recording start canceled\");");
         AssertContains(recordingTransitionControllerText, "_context.SetStatusText(\"Stop recording canceled\");");
         AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Recording failed: {ex.Message}\");");
-        AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Stop recording failed: {ex.Message}\");");
+        AssertContains(recordingTransitionControllerText, "_context.SetStatusText($\"Recording failed: {ex.Message}\");");
         AssertContains(recordingTransitionControllerText, "throw;");
 
         return Task.CompletedTask;
@@ -6140,7 +6203,8 @@ static partial class Program
         AssertContains(viewModelText, "if (_suppressMicrophoneMonitorUpdate)");
         AssertContains(viewModelText, "return ResolveByName(MicrophoneDevices, deviceName, d => d.Name);");
         AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
-        AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);\n\n                _micMonitorEnabled = enabled;");
+        AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
+        AssertContains(captureServiceText, "_micMonitorEnabled = enabled;");
 
         var microphoneUpdateIndex = automationAudioText.IndexOf(
             "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(",
@@ -9752,7 +9816,7 @@ static partial class Program
         AssertContains(diagnostics.TimelineText, "ProcessCpuPercent: snapshot.ProcessCpuPercent");
         AssertDoesNotContain(diagnostics.HubText, "private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync");
         AssertContains(diagnostics.SnapshotsText, "var shouldAutoVerify = ShouldAutoVerifySnapshot(snapshot);");
-        AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);");
+        AssertContains(diagnostics.SnapshotsText, "var lastVerification = CaptureLastVerificationForSnapshot(\n            recordingStarted,\n            captureRuntime.LastOutputPath);");
         AssertContains(diagnostics.SnapshotsText, "_lastVerification = null;");
         AssertContains(diagnostics.SnapshotsText, "ScheduleAutoVerificationIfNeeded(shouldAutoVerify);");
         AssertContains(diagnostics.SnapshotsText, "Automatic recording verification started.");
@@ -10836,7 +10900,8 @@ static partial class Program
         AssertContains(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);");
         AssertOccursBefore(flashbackBackendText, "captureBoundarySnapshot?.Invoke(flashbackSink);", "var exportResult = await exportRecordingAsync(");
         AssertContains(captureServiceText, "counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
-        AssertContains(captureServiceText, "audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline");
+        AssertContains(captureServiceText, "var flashbackFinalAudioCounters = recordingBoundary.AudioCounters ??");
+        AssertContains(captureServiceText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(\n            fbResult,\n            flashbackFinalAudioCounters);");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");

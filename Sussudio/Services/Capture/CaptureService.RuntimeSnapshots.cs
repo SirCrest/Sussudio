@@ -235,6 +235,7 @@ public partial class CaptureService
             ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackBackend.Sink));
         var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
         var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
+        var recordingOutcome = CaptureRecordingOutcomeSnapshot();
 
         return CaptureRuntimeSnapshotAssembler.Build(new CaptureRuntimeSnapshotAssemblyFields
         {
@@ -266,10 +267,21 @@ public partial class CaptureService
             NegotiatedFrameRateDenominator = _actualFrameRateDenominator,
             NegotiatedPixelFormat = _actualPixelFormat,
             RecordingBackend = ResolveRecordingBackendName(),
-            LastOutputPath = _lastOutputPath,
-            LastFinalizeStatus = _lastFinalizeStatus,
-            LastFinalizeUtc = _lastFinalizeUtc,
-            LastPreservedArtifacts = _lastPreservedArtifacts,
+            LastOutputPath = recordingOutcome.OutputPath,
+            LastFinalizeStatus = recordingOutcome.FinalizeStatus,
+            LastFinalizeUtc = recordingOutcome.FinalizeUtc,
+            LastPreservedArtifacts = recordingOutcome.PreservedArtifacts,
+            RecordingLifecyclePhase = recordingOutcome.LifecyclePhase,
+            RecordingFinalizeOutcome = recordingOutcome.FinalizeOutcome,
+            RecordingFinalizeFailureCode = recordingOutcome.FailureCode,
+            RecordingFinalizationVerificationCompleted = recordingOutcome.VerificationCompleted,
+            RecordingFinalizationCleanupPending = recordingOutcome.CleanupPending,
+            RecordingFinalizationElapsedMs = recordingOutcome.FinalizationElapsedMs,
+            RecordingRecoveryPath = recordingOutcome.RecoveryPath,
+            RecordingRequestedTracks = recordingOutcome.RequestedTracks,
+            RecordingObservedTracks = recordingOutcome.ObservedTracks,
+            RecordingFinalizationProgressStage = recordingOutcome.ProgressStage,
+            LastRecordingFinalizationProgressUtc = recordingOutcome.LastProgressUtc,
             FlashbackExportOutputPath = _flashbackExportOutputPath,
             FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),
             FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),
@@ -729,6 +741,17 @@ public partial class CaptureService
         public string LastFinalizeStatus { get; init; } = "None";
         public DateTimeOffset? LastFinalizeUtc { get; init; }
         public IReadOnlyList<string> LastPreservedArtifacts { get; init; } = Array.Empty<string>();
+        public RecordingLifecyclePhase RecordingLifecyclePhase { get; init; } = RecordingLifecyclePhase.Idle;
+        public RecordingFinalizeOutcome RecordingFinalizeOutcome { get; init; } = RecordingFinalizeOutcome.None;
+        public string RecordingFinalizeFailureCode { get; init; } = string.Empty;
+        public bool RecordingFinalizationVerificationCompleted { get; init; }
+        public bool RecordingFinalizationCleanupPending { get; init; }
+        public long RecordingFinalizationElapsedMs { get; init; }
+        public string? RecordingRecoveryPath { get; init; }
+        public IReadOnlyList<string> RecordingRequestedTracks { get; init; } = Array.Empty<string>();
+        public IReadOnlyList<string> RecordingObservedTracks { get; init; } = Array.Empty<string>();
+        public string RecordingFinalizationProgressStage { get; init; } = "Idle";
+        public DateTimeOffset? LastRecordingFinalizationProgressUtc { get; init; }
         public string? FlashbackExportOutputPath { get; init; }
         public string? FlashbackExportVerificationFormat { get; init; }
         public string? FlashbackCodecDowngradeReason { get; init; }
@@ -1045,6 +1068,17 @@ public partial class CaptureService
                 LastFinalizeStatus = fields.LastFinalizeStatus,
                 LastFinalizeUtc = fields.LastFinalizeUtc,
                 LastPreservedArtifacts = fields.LastPreservedArtifacts,
+                RecordingLifecyclePhase = fields.RecordingLifecyclePhase.ToString(),
+                RecordingFinalizeOutcome = fields.RecordingFinalizeOutcome.ToString(),
+                RecordingFinalizeFailureCode = fields.RecordingFinalizeFailureCode,
+                RecordingFinalizationVerificationCompleted = fields.RecordingFinalizationVerificationCompleted,
+                RecordingFinalizationCleanupPending = fields.RecordingFinalizationCleanupPending,
+                RecordingFinalizationElapsedMs = fields.RecordingFinalizationElapsedMs,
+                RecordingRecoveryPath = fields.RecordingRecoveryPath,
+                RecordingRequestedTracks = fields.RecordingRequestedTracks,
+                RecordingObservedTracks = fields.RecordingObservedTracks,
+                RecordingFinalizationProgressStage = fields.RecordingFinalizationProgressStage,
+                LastRecordingFinalizationProgressUtc = fields.LastRecordingFinalizationProgressUtc,
                 FlashbackExportOutputPath = fields.FlashbackExportOutputPath,
                 FlashbackExportVerificationFormat = fields.FlashbackExportVerificationFormat,
                 FlashbackCodecDowngradeReason = fields.FlashbackCodecDowngradeReason,

@@ -29,18 +29,23 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private const int AudioDrainBatchLimit = 128;
     private const int GpuDrainBatchLimit = 16;
     private const int CudaDrainBatchLimit = 16;
-    private const int StopTimeoutMs = 30_000;
+    private const int FinalizationNoProgressNotificationMs = 30_000;
+    private const int FinalizationAbsoluteTimeoutMs = 120_000;
+    private const int FinalizationPollIntervalMs = 250;
     // Emergency path uses a tighter encode-drain budget so the total emergency
     // stop fits well within App.TryEmergencyStopRecording's 8s wrapper (fix #12).
     // Normal user-stop keeps the 30s budget so saturated 4K queues can drain.
     private const int EmergencyStopTimeoutMs = 5_000;
-    private const int DisposeTimeoutMs = 1_000;
+    private const int DisposeTimeoutMs = 5_000;
     private const int VideoQueueLatencyWindowSize = 256;
 
     private readonly object _sync = new();
     private readonly object _videoQueueSync = new();
     private readonly LibAvEncoder _encoder = new();
+    private readonly InProcessRecordingStructureVerifier _structureVerifier = new();
     private readonly SemaphoreSlim _workAvailable = new(0, 1);
+    private readonly TaskCompletionSource<bool> _cleanupCompletion = new(
+        TaskCreationOptions.RunContinuationsAsynchronously);
     private Channel<VideoFramePacket>? _videoQueue;
     private Channel<AudioSamplePacket>? _audioQueue;
     private Channel<AudioSamplePacket>? _microphoneQueue;
@@ -62,6 +67,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private bool _disposed;
     private int _disposeFinalized;
     private int _deferredDisposeScheduled;
+    private int _finalizationWaitTimedOut;
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
     private long _videoFramesEnqueued;
@@ -89,6 +95,16 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private readonly VideoQueueLatencyTracker _videoLatencyTracker;
     private bool _gpuEncodingEnabled;
     private bool _cudaEncodingEnabled;
+    private long _finalizationStartedTick;
+    private long _lastFinalizationProgressTick;
+    private long _finalizationProgressVersion;
+    private string _finalizationStage = "Idle";
+    private bool _structureVerificationCompleted;
+    private long _verifiedOutputBytes;
+    private IReadOnlyList<string> _verifiedRequestedTracks = Array.Empty<string>();
+    private IReadOnlyList<string> _verifiedObservedTracks = Array.Empty<string>();
+    private long _recordingBoundaryStartedTick;
+    private long _recordingDurationAtStopMs;
 
     public LibAvRecordingSink()
     {
@@ -104,6 +120,13 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     /// instead of silently dropping all subsequent frames until Stop is called.
     /// </summary>
     public Action<Exception>? OnEncodingFailed { get; set; }
+
+    /// <summary>
+    /// Reports finalization stages and a warning when the encoding owner has
+    /// made no observable progress for 30 seconds. The callback is diagnostic;
+    /// throwing from it cannot fail or interrupt finalization.
+    /// </summary>
+    public Action<RecordingFinalizationProgress>? OnFinalizationProgress { get; set; }
 
     public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)
     {
@@ -123,7 +146,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
-            _microphoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName);
+            _microphoneEnabled = context.MicrophoneEnabled;
             var options = CreateOptions(context);
             _encoder.Initialize(options);
             InitializeVideoSessionQueues();
@@ -147,7 +170,17 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             _context = context;
             _encodingFailure = null;
             ResetVideoSessionState(context);
-            _audioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName);
+            _audioEnabled = context.AudioEnabled;
+            _structureVerificationCompleted = false;
+            _verifiedOutputBytes = 0;
+            _verifiedRequestedTracks = Array.Empty<string>();
+            _verifiedObservedTracks = Array.Empty<string>();
+            Interlocked.Exchange(ref _recordingBoundaryStartedTick, 0);
+            Interlocked.Exchange(ref _recordingDurationAtStopMs, 0);
+            Interlocked.Exchange(ref _finalizationStartedTick, 0);
+            Interlocked.Exchange(ref _lastFinalizationProgressTick, 0);
+            Interlocked.Exchange(ref _finalizationProgressVersion, 0);
+            Volatile.Write(ref _finalizationStage, "Idle");
             Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
             Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
@@ -316,11 +349,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             D3D11DeviceContextPtr = context.D3D11DeviceContextPtr,
             CudaHwDeviceCtxPtr = context.CudaHwDeviceCtxPtr,
             CudaHwFramesCtxPtr = context.CudaHwFramesCtxPtr,
-            AudioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName),
+            AudioEnabled = context.AudioEnabled,
             AudioSampleRate = 48_000,
             AudioChannels = 2,
             AudioBitRate = 320_000,
-            MicrophoneEnabled = _microphoneEnabled,
+            MicrophoneEnabled = context.MicrophoneEnabled,
             MicrophoneSampleRate = 48_000,
             MicrophoneChannels = 2,
             MicrophoneBitRate = 320_000
@@ -352,6 +385,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public long VideoDropsBacklogEviction => Interlocked.Read(ref _videoDropsBacklogEviction);
     public long AudioDropsQueueSaturated => Interlocked.Read(ref _audioDropsQueueSaturated);
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
+    public long MicrophoneDropsQueueSaturated => Interlocked.Read(ref _microphoneDropsQueueSaturated);
+    public long MicrophoneDropsBacklogEviction => Interlocked.Read(ref _microphoneDropsBacklogEviction);
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
@@ -382,6 +417,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
     public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
     internal Task EncodingCompletionTask => _encodingTask ?? Task.CompletedTask;
+    internal Task CleanupCompletionTask => _cleanupCompletion.Task;
 
     public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)
         => _encoder.TryGetCurrentAvSyncDrift(out driftMs, out correctionSamples);
@@ -441,13 +477,34 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
                 if (madeProgress)
                 {
+                    MarkFinalizationProgress("Draining");
                     continue;
                 }
 
                 _workAvailable.Wait(cancellationToken);
             }
 
+            MarkFinalizationProgress("Flushing");
             _encoder.FlushAndClose();
+            MarkFinalizationProgress("Reopening");
+
+            var context = _context ??
+                throw new InvalidOperationException("Recording context is unavailable during finalization verification.");
+            var expectedDurationMs = Math.Max(0, Interlocked.Read(ref _recordingDurationAtStopMs));
+            var verification = _structureVerifier.Verify(
+                context,
+                expectedDurationMs > 0 ? TimeSpan.FromMilliseconds(expectedDurationMs) : null);
+            _verifiedRequestedTracks = verification.RequestedTracks;
+            _verifiedObservedTracks = verification.ObservedTracks;
+            if (!verification.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    $"Recording structure verification failed ({verification.FailureCode}): {verification.Detail}");
+            }
+
+            _verifiedOutputBytes = verification.OutputBytes;
+            _structureVerificationCompleted = true;
+            MarkFinalizationProgress("Verified");
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -493,9 +550,120 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         SignalWork("complete_writer");
     }
 
+    private void BeginFinalizationProgress()
+    {
+        var now = Environment.TickCount64;
+        Interlocked.Exchange(ref _finalizationStartedTick, now);
+        Interlocked.Exchange(ref _lastFinalizationProgressTick, now);
+        Interlocked.Exchange(ref _finalizationProgressVersion, 1);
+        Volatile.Write(ref _finalizationStage, "Draining");
+        ReportFinalizationProgress(noProgressWarning: false);
+    }
+
+    private void MarkFinalizationProgress(string stage)
+    {
+        if (Interlocked.Read(ref _finalizationStartedTick) == 0)
+        {
+            return;
+        }
+
+        Volatile.Write(ref _finalizationStage, stage);
+        Interlocked.Exchange(ref _lastFinalizationProgressTick, Environment.TickCount64);
+        Interlocked.Increment(ref _finalizationProgressVersion);
+        ReportFinalizationProgress(noProgressWarning: false);
+    }
+
+    private void ReportFinalizationProgress(bool noProgressWarning)
+    {
+        var callback = OnFinalizationProgress;
+        var started = Interlocked.Read(ref _finalizationStartedTick);
+        if (callback == null || started == 0)
+        {
+            return;
+        }
+
+        var now = Environment.TickCount64;
+        var lastProgress = Interlocked.Read(ref _lastFinalizationProgressTick);
+        var progress = new RecordingFinalizationProgress(
+            Volatile.Read(ref _finalizationStage),
+            Math.Max(0, now - started),
+            Math.Max(0, now - lastProgress),
+            Interlocked.Read(ref _finalizationProgressVersion),
+            noProgressWarning);
+
+        try
+        {
+            callback(progress);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"LIBAV_SINK_FINALIZE_PROGRESS_CALLBACK_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private async Task<bool> WaitForFinalizationOwnerAsync(Task encodingTask, int timeoutMs)
+    {
+        var started = Environment.TickCount64;
+        var absoluteDeadline = started + timeoutMs;
+        var progressDeadline = Math.Min(
+            absoluteDeadline,
+            started + FinalizationNoProgressNotificationMs);
+        var observedVersion = Interlocked.Read(ref _finalizationProgressVersion);
+
+        while (!encodingTask.IsCompleted)
+        {
+            var now = Environment.TickCount64;
+            var remainingMs = Math.Min(absoluteDeadline, progressDeadline) - now;
+            if (remainingMs <= 0)
+            {
+                var noProgressMs = now - Interlocked.Read(ref _lastFinalizationProgressTick);
+                if (progressDeadline <= absoluteDeadline && now >= progressDeadline)
+                {
+                    Logger.Log(
+                        $"LIBAV_SINK_FINALIZE_NO_PROGRESS_TIMEOUT stage={Volatile.Read(ref _finalizationStage)} no_progress_ms={noProgressMs}");
+                    ReportFinalizationProgress(noProgressWarning: true);
+                }
+                return false;
+            }
+
+            var delayMs = (int)Math.Min(FinalizationPollIntervalMs, remainingMs);
+            var completedTask = await Task.WhenAny(
+                encodingTask,
+                Task.Delay(delayMs)).ConfigureAwait(false);
+            if (ReferenceEquals(completedTask, encodingTask))
+            {
+                return true;
+            }
+
+            var currentVersion = Interlocked.Read(ref _finalizationProgressVersion);
+            if (currentVersion != observedVersion)
+            {
+                observedVersion = currentVersion;
+                progressDeadline = Math.Min(
+                    absoluteDeadline,
+                    Environment.TickCount64 + FinalizationNoProgressNotificationMs);
+                continue;
+            }
+        }
+
+        return true;
+    }
+
     // Public path used by normal recording-stop (UI Stop button, automation StopRecording).
-    // Keeps the 30s StopTimeoutMs drain budget so saturated 4K 60fps queues can drain
-    // cleanly without triggering the fix #11 emergency-flush fallback.
+    // Finalization owns a 120-second absolute budget and reports no-progress at
+    // 30 seconds while saturated recording queues drain.
+    public void MarkRecordingBoundaryStarted()
+        => Interlocked.Exchange(ref _recordingBoundaryStartedTick, Environment.TickCount64);
+
+    public void MarkRecordingBoundaryStopped()
+    {
+        var startedTick = Interlocked.Read(ref _recordingBoundaryStartedTick);
+        Interlocked.CompareExchange(
+            ref _recordingDurationAtStopMs,
+            startedTick > 0 ? Math.Max(0, Environment.TickCount64 - startedTick) : 0,
+            comparand: 0);
+    }
+
     public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
         => StopCoreAsync(emergency: false, cancellationToken);
 
@@ -513,8 +681,25 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         if (_disposed)
         {
-            return FinalizeResult.Success(outputPath, "Stopped");
+            return _structureVerificationCompleted
+                ? FinalizeResult.Success(
+                    outputPath,
+                    "Stopped",
+                    verificationCompleted: true)
+                    .WithTrackEvidence(_verifiedRequestedTracks, _verifiedObservedTracks)
+                : CreateFinalizationFailure(
+                    context,
+                    outputPath,
+                    "Stopped (recording sink was disposed before verification completed)",
+                    "recording-sink-disposed-before-verification");
         }
+
+        // Cancellation is honored only before stop commits. Once the writers are
+        // completed, one encoding owner must drain, flush, close, and verify without
+        // a caller abandoning the native state at an unsafe boundary.
+        cancellationToken.ThrowIfCancellationRequested();
+        BeginFinalizationProgress();
+        MarkRecordingBoundaryStopped();
 
         lock (_sync)
         {
@@ -527,58 +712,26 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         CompleteWriter(_gpuQueue);
         CompleteWriter(_cudaQueue);
 
+        var finalizationTimeoutMs = emergency
+            ? EmergencyStopTimeoutMs
+            : FinalizationAbsoluteTimeoutMs;
         if (_encodingTask != null)
         {
-            var drainTimeoutMs = emergency ? EmergencyStopTimeoutMs : StopTimeoutMs;
-            var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(drainTimeoutMs, cancellationToken)).ConfigureAwait(false);
-            if (!ReferenceEquals(completedTask, _encodingTask))
+            if (!await WaitForFinalizationOwnerAsync(
+                    _encodingTask,
+                    finalizationTimeoutMs).ConfigureAwait(false))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Cancel the encoding loop so it stops processing new frames and
-                // exits via OperationCanceledException - this must happen before
-                // FlushAndClose so the two don't race on _encoder state.
-                _cts?.Cancel();
-
-                // Give the encoding task a brief window to unblock from its
-                // cancellation-token wait and exit cleanly. DisposeTimeoutMs (1 s)
-                // is sufficient when the encoding loop is parked at its token-aware
-                // wait site (_workAvailable.Wait), but the loop does NOT poll
-                // cancellation inside the inner drain loops. If it's wedged in a
-                // native libav call (avcodec_send_frame, av_interleaved_write_frame),
-                // the grace expires while the loop is still touching _encoder /
-                // _videoCodecCtx / _formatCtx. Flushing concurrently in that case
-                // races on unsynchronized native state and can corrupt the file or
-                // raise an SEH access violation that managed `catch` cannot intercept.
-                // Gate the flush on _encodingTask having actually completed; if it
-                // hasn't, skip the flush and accept a cleanly-truncated output.
-                var graceResult = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
-                if (ReferenceEquals(graceResult, _encodingTask))
-                {
-                    // Encoder loop has exited - safe to flush. Wrap in try/catch
-                    // since FlushAndClose can itself throw if the encoder is in a
-                    // broken state; in that case the file is still truncated but
-                    // the error has been surfaced to the caller via Failure below.
-                    try
-                    {
-                        _encoder.FlushAndClose();
-                    }
-                    catch (Exception flushEx)
-                    {
-                        Logger.Log($"LIBAV_SINK_STOP_DRAIN_FLUSH_FAIL type={flushEx.GetType().Name} msg={flushEx.Message}");
-                    }
-                }
-                else
-                {
-                    Logger.Log("LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
-                }
-
-                const string timeoutStatus = "Stopped (libav encode drain timed out; recovery artifacts preserved)";
-                var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(
+                Interlocked.Exchange(ref _finalizationWaitTimedOut, 1);
+                var timeoutStatus =
+                    $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s; cleanup continues in quarantine)";
+                Logger.Log(
+                    $"LIBAV_SINK_FINALIZE_TIMEOUT timeout_ms={finalizationTimeoutMs} stage={Volatile.Read(ref _finalizationStage)}");
+                return CreateFinalizationFailure(
                     context,
                     outputPath,
-                    timeoutStatus);
-                return FinalizeResult.Failure(outputPath, timeoutStatus, preservedArtifacts);
+                    timeoutStatus,
+                    "recording-finalization-timeout",
+                    cleanupPending: true);
             }
 
             try
@@ -592,26 +745,67 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
         else
         {
-            _encoder.FlushAndClose();
+            return CreateFinalizationFailure(
+                context,
+                outputPath,
+                "Recording failed (finalization worker was unavailable)",
+                "recording-finalization-worker-missing");
         }
 
         if (_encodingFailure != null)
         {
             Logger.Log($"LIBAV_SINK_STOP_FAIL type={_encodingFailure.GetType().Name} msg={_encodingFailure.Message}");
-            return FinalizeResult.Failure(outputPath, $"Stopped (libav encode failed: {_encodingFailure.Message})");
+            return CreateFinalizationFailure(
+                context,
+                outputPath,
+                $"Recording failed (libav finalization failed: {_encodingFailure.Message})",
+                "recording-libav-finalization-failed",
+                verificationCompleted: _structureVerificationCompleted);
         }
 
-        if (!TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure))
+        if (!_structureVerificationCompleted)
         {
-            Logger.Log($"LIBAV_SINK_STOP_OUTPUT_INVALID output='{outputPath}' reason='{outputFailure}'");
-            return FinalizeResult.Failure(outputPath, $"Stopped (output file invalid: {outputFailure})");
+            return CreateFinalizationFailure(
+                context,
+                outputPath,
+                "Recording failed (structural verification did not complete)",
+                "recording-structure-verification-incomplete");
         }
 
         if (context?.HdrPipelineActive == true)
         {
-            var (validationSucceeded, validationDetail) = await HdrValidationRunner
-                .RunAsync(context, outputPath, cancellationToken)
-                .ConfigureAwait(false);
+            var elapsedBeforeHdrValidationMs = Math.Max(
+                0,
+                Environment.TickCount64 - Interlocked.Read(ref _finalizationStartedTick));
+            var remainingValidationMs = finalizationTimeoutMs - elapsedBeforeHdrValidationMs;
+            if (remainingValidationMs <= 0)
+            {
+                return CreateFinalizationFailure(
+                    context,
+                    outputPath,
+                    $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s)",
+                    "recording-finalization-timeout",
+                    verificationCompleted: true);
+            }
+
+            var hdrValidationTask = HdrValidationRunner.RunAsync(
+                context,
+                outputPath,
+                CancellationToken.None);
+            var hdrValidationCompleted = await Task.WhenAny(
+                hdrValidationTask,
+                Task.Delay((int)Math.Min(int.MaxValue, remainingValidationMs))).ConfigureAwait(false);
+            if (!ReferenceEquals(hdrValidationCompleted, hdrValidationTask))
+            {
+                return CreateFinalizationFailure(
+                    context,
+                    outputPath,
+                    $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s during HDR validation)",
+                    "recording-finalization-timeout",
+                    verificationCompleted: true);
+            }
+
+            var (validationSucceeded, validationDetail) = await hdrValidationTask.ConfigureAwait(false);
 
             if (!validationSucceeded)
             {
@@ -621,52 +815,94 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 }
                 else
                 {
-                    return FinalizeResult.Failure(
+                    return CreateFinalizationFailure(
+                        context,
                         outputPath,
                         $"Stopped (hdr validation failed: {validationDetail})",
-                        new[] { outputPath });
+                        "recording-hdr-validation-failed",
+                        verificationCompleted: true);
                 }
             }
         }
 
+        var elapsedMs = Math.Max(
+            0,
+            Environment.TickCount64 - Interlocked.Read(ref _finalizationStartedTick));
         Logger.Log(
-            $"LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes} frames={EncodedVideoFrames} dropped={DroppedVideoFrames} audio_samples={AudioSamplesReceived} mic_samples={MicrophoneSamplesReceived}");
-        return FinalizeResult.Success(outputPath, "Stopped");
+            $"LIBAV_SINK_STOP output='{outputPath}' bytes={_verifiedOutputBytes} frames={EncodedVideoFrames} dropped={DroppedVideoFrames} audio_samples={AudioSamplesReceived} mic_samples={MicrophoneSamplesReceived} verified=true elapsed_ms={elapsedMs}");
+        return FinalizeResult.Success(
+            outputPath,
+            "Recording saved",
+            verificationCompleted: true,
+            finalizationElapsedMs: elapsedMs)
+            .WithTrackEvidence(_verifiedRequestedTracks, _verifiedObservedTracks);
     }
 
-    private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)
+    private FinalizeResult CreateFinalizationFailure(
+        RecordingContext? context,
+        string outputPath,
+        string statusMessage,
+        string failureCode,
+        bool cleanupPending = false,
+        bool verificationCompleted = false)
     {
-        outputBytes = 0;
-        if (string.IsNullOrWhiteSpace(outputPath))
+        var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(
+            context,
+            outputPath,
+            statusMessage);
+        string? recoveryPath = null;
+        foreach (var artifactPath in preservedArtifacts)
         {
-            failureMessage = "output path is empty";
-            return false;
-        }
-
-        try
-        {
-            if (!File.Exists(outputPath))
+            if (artifactPath.EndsWith(
+                    ".recording-finalization-unresolved.txt",
+                    StringComparison.OrdinalIgnoreCase))
             {
-                failureMessage = "output file is missing";
-                return false;
-            }
-
-            outputBytes = new FileInfo(outputPath).Length;
-            if (outputBytes <= 0)
-            {
-                failureMessage = "output file is empty";
-                return false;
+                recoveryPath = artifactPath;
+                break;
             }
         }
-        catch (Exception ex)
+
+        if (recoveryPath == null && preservedArtifacts.Count > 0)
         {
-            failureMessage = $"output file length unavailable: {ex.Message}";
-            Logger.Log($"LIBAV_SINK_STOP_OUTPUT_VALIDATE_WARN output='{outputPath}' type={ex.GetType().Name} msg={ex.Message}");
-            return false;
+            recoveryPath = preservedArtifacts[0];
         }
 
-        failureMessage = string.Empty;
-        return true;
+        var elapsedMs = Math.Max(
+            0,
+            Environment.TickCount64 - Interlocked.Read(ref _finalizationStartedTick));
+        return FinalizeResult.Failure(
+            outputPath,
+            statusMessage,
+            preservedArtifacts,
+            failureCode,
+            cleanupPending,
+            recoveryPath,
+            verificationCompleted,
+            elapsedMs)
+            .WithTrackEvidence(
+                _verifiedRequestedTracks.Count > 0
+                    ? _verifiedRequestedTracks
+                    : BuildRequestedTracks(context),
+                _verifiedObservedTracks);
+    }
+
+    private static IReadOnlyList<string> BuildRequestedTracks(RecordingContext? context)
+    {
+        if (context == null)
+        {
+            return Array.Empty<string>();
+        }
+
+        var tracks = new List<string>(3) { "video" };
+        if (context.AudioEnabled)
+        {
+            tracks.Add("device_audio");
+        }
+        if (context.MicrophoneEnabled)
+        {
+            tracks.Add("microphone");
+        }
+        return tracks;
     }
 
     // REVIEWED 2026-04-07: IDisposable fallback only - all callers use DisposeAsync.
@@ -699,6 +935,17 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (_encodingTask == null)
         {
             FinalizeDisposeCore();
+            return;
+        }
+
+        // StopCore already spent the applicable absolute grace period waiting for
+        // this owner. Do not consume a second timeout window during DisposeAsync;
+        // leave the still-running task rooted and let its terminal continuation
+        // release native state at the only safe boundary.
+        if (Volatile.Read(ref _finalizationWaitTimedOut) != 0)
+        {
+            Logger.Log("LIBAV_SINK_DISPOSE_DEFERRED reason=stop_timeout_already_exhausted");
+            ScheduleDeferredDisposeCleanup(_encodingTask);
             return;
         }
 
@@ -789,6 +1036,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         catch (Exception ex)
         {
             Logger.Log($"LIBAV_SINK_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+        finally
+        {
+            _cleanupCompletion.TrySetResult(true);
         }
     }
 

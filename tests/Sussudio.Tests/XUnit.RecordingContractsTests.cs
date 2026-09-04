@@ -816,7 +816,12 @@ public class RecordingContractsTests
         var asm = SussudioAssembly.Load();
         var resultType = asm.GetType("Sussudio.Services.Contracts.FinalizeResult", throwOnError: true)!;
 
-        var success = resultType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static)!
+        var success = resultType.GetMethod(
+                "Success",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: new[] { typeof(string), typeof(string) },
+                modifiers: null)!
             .Invoke(null, new object[] { "/tmp/out.mp4", "Stopped" })!;
 
         Assert.True((bool)resultType.GetProperty("Succeeded")!.GetValue(success)!);
@@ -893,7 +898,12 @@ public class RecordingContractsTests
         var resultType = asm.GetType("Sussudio.Services.Contracts.FinalizeResult", throwOnError: true)!;
 
         var artifacts = new List<string> { "/path/a.mp4", "/path/A.mp4", null!, string.Empty, " ", "/path/b.m4a" };
-        var failure = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)!
+        var failure = resultType.GetMethod(
+                "Failure",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: new[] { typeof(string), typeof(string), typeof(IEnumerable<string>) },
+                modifiers: null)!
             .Invoke(null, new object?[] { "/output.mp4", "mux failed", artifacts })!;
 
         Assert.False((bool)resultType.GetProperty("Succeeded")!.GetValue(failure)!);
@@ -912,6 +922,9 @@ public class RecordingContractsTests
         var preserveUnresolved = helperType.GetMethod("PreserveUnresolved", BindingFlags.Public | BindingFlags.Static)!;
 
         var tempDirectory = Path.Combine(Path.GetTempPath(), "sussudio-recording-recovery-" + Guid.NewGuid().ToString("N"));
+        var previousRecoveryDirectory = Environment.GetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY");
+        var stableRecoveryDirectory = Path.Combine(tempDirectory, "stable");
+        Environment.SetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY", stableRecoveryDirectory);
         Directory.CreateDirectory(tempDirectory);
         try
         {
@@ -928,9 +941,16 @@ public class RecordingContractsTests
             Assert.Contains(markerPath, artifacts);
             Assert.True(File.Exists(markerPath));
             Assert.Contains("reason=timeout", File.ReadAllText(markerPath));
+            var stableMarkerPath = Path.Combine(
+                stableRecoveryDirectory,
+                "capture.mp4.recording-finalization-unresolved.txt");
+            Assert.Contains(stableMarkerPath, artifacts);
+            Assert.True(File.Exists(stableMarkerPath));
+            Assert.Contains("reason=timeout", File.ReadAllText(stableMarkerPath));
         }
         finally
         {
+            Environment.SetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY", previousRecoveryDirectory);
             Directory.Delete(tempDirectory, recursive: true);
         }
     }
@@ -1159,13 +1179,20 @@ static partial class Program
     {
         var libAvSource = ReadLibAvRecordingSinkSource();
 
-        AssertContains(libAvSource, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
-        AssertContains(libAvSource, "if (!TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure))\n        {\n            Logger.Log($\"LIBAV_SINK_STOP_OUTPUT_INVALID output='{outputPath}' reason='{outputFailure}'\");\n            return FinalizeResult.Failure(outputPath, $\"Stopped (output file invalid: {outputFailure})\");\n        }");
-        AssertOccursBefore(libAvSource, "TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure)", "if (context?.HdrPipelineActive == true)");
-        AssertContains(libAvSource, "failureMessage = \"output file is missing\";");
-        AssertContains(libAvSource, "failureMessage = \"output file is empty\";");
-        AssertContains(libAvSource, "LIBAV_SINK_STOP_OUTPUT_VALIDATE_WARN");
-        AssertContains(libAvSource, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
+        var verifierSource = ReadRepoFile("Sussudio/Services/Recording/Verification/InProcessRecordingStructureVerifier.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(libAvSource, "private readonly InProcessRecordingStructureVerifier _structureVerifier = new();");
+        AssertContains(libAvSource, "var verification = _structureVerifier.Verify(");
+        AssertContains(libAvSource, "_structureVerificationCompleted = true;");
+        AssertContains(libAvSource, "if (!_structureVerificationCompleted)");
+        AssertContains(libAvSource, "verificationCompleted: true");
+        AssertContains(verifierSource, "ffmpeg.avformat_open_input");
+        AssertContains(verifierSource, "ffmpeg.avformat_find_stream_info");
+        AssertContains(verifierSource, "ResolveStreamDurationSeconds");
+        AssertContains(verifierSource, "recording-audio-duration-mismatch");
+        AssertContains(verifierSource, ".Failure(failureCode, detail, outputBytes)");
+        AssertContains(verifierSource, ".WithTrackEvidence(requestedTracks, observedTracks)");
+        AssertContains(verifierSource, ".Success(outputBytes)");
 
         return Task.CompletedTask;
     }
@@ -1281,16 +1308,15 @@ static partial class Program
         AssertContains(stopText, "internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)");
         AssertContains(stopText, "=> StopCoreAsync(emergency, cancellationToken);");
         AssertContains(stopText, "private async Task<FinalizeResult> StopCoreAsync(bool emergency, CancellationToken cancellationToken)");
-        AssertContains(stopText, "var drainTimeoutMs = emergency ? EmergencyStopTimeoutMs : StopTimeoutMs;");
-        AssertContains(stopText, "_cts?.Cancel();");
-        AssertContains(stopText, "LIBAV_SINK_STOP_DRAIN_FLUSH_SKIPPED reason=encoder_task_still_running");
-        AssertContains(stopText, "const string timeoutStatus = \"Stopped (libav encode drain timed out; recovery artifacts preserved)\";");
+        AssertContains(stopText, "private const int FinalizationNoProgressNotificationMs = 30_000;");
+        AssertContains(stopText, "private const int FinalizationAbsoluteTimeoutMs = 120_000;");
+        AssertContains(stopText, "WaitForFinalizationOwnerAsync(");
+        AssertContains(stopText, "LIBAV_SINK_FINALIZE_TIMEOUT");
         AssertContains(stopText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(");
-        AssertContains(stopText, "return FinalizeResult.Failure(outputPath, timeoutStatus, preservedArtifacts);");
-        AssertContains(stopText, "TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure)");
-        AssertContains(stopText, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(stopText, "cleanupPending: true");
+        AssertContains(stopText, "_structureVerificationCompleted");
         AssertContains(stopText, "if (context?.HdrPipelineActive == true)");
-        AssertContains(stopText, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
+        AssertContains(stopText, "LIBAV_SINK_STOP output='{outputPath}' bytes={_verifiedOutputBytes}");
         AssertContains(rootText, "public async ValueTask DisposeAsync()");
         AssertContains(rootText, "private void ScheduleDeferredDisposeCleanup(Task encodingTask)");
         AssertContains(rootText, "private void CompleteWriter<TPacket>(Channel<TPacket>? channel)");
@@ -1404,14 +1430,14 @@ static partial class Program
         AssertContains(captureServiceSource, "Flashback backend export rotation did not quiesce before recording start.");
         var flashbackRecordingStartMismatch = ExtractSourceBlock(
             captureServiceSource,
-            "var flashbackBackendSettingsChanged = _flashbackBackend.SettingsSnapshot == null",
+            "var flashbackAudioTopologyChanged =",
             "await EnsureFlashbackAudioInputsAsync(settings, transitionToken, \"recording_flashback_start\")");
-        AssertContains(flashbackRecordingStartMismatch, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
+        AssertContains(flashbackRecordingStartMismatch, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REBUILD");
         AssertContains(flashbackRecordingStartMismatch, "EnsureFlashbackRecordingTopologyMatches(");
         AssertOccursBefore(
             flashbackRecordingStartMismatch,
-            "EnsureFlashbackRecordingTopologyMatches(",
-            "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)");
+            "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: false)",
+            "EnsureFlashbackRecordingTopologyMatches(");
         AssertContains(captureServiceSource, "bool requireCompleteLiveEdge = false");
         AssertContains(captureServiceSource, "requireCompleteLiveEdge: true");
         AssertContains(captureServiceSource, "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL");
@@ -1619,7 +1645,7 @@ static partial class Program
         AssertContains(flashbackSource, "_onFatalError?.Invoke");
         AssertDoesNotContain(flashbackSource, "catch { /* Callback must not mask the original error */ }");
         AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}\");");
-        AssertContains(flashbackSource, "private void OnVideoFrameEncoded()\n    {\n        if (_disposed)\n        {\n            return;\n        }");
+        AssertContains(flashbackSource, "private TimeSpan OnVideoFrameEncoded()\n    {\n        if (_disposed)\n        {\n            return TimeSpan.Zero;\n        }");
         AssertContains(flashbackSource, "if (!_disposed && Volatile.Read(ref _recordingActive) == 1)");
         AssertContains(flashbackSource, "public bool EncodingFailed");
         AssertContains(flashbackSource, "public string? EncodingFailureMessage");
@@ -1655,7 +1681,7 @@ static partial class Program
         AssertContains(flashbackSource, "if (_ownsBufferManager)");
         AssertOccursBefore(flashbackSource, "if (_ownsBufferManager)\n        {\n            _bufferManager.PurgeAllSegments();", "_encoder.Dispose();");
         AssertContains(flashbackSource, "CancelRecordingStartRollback");
-        AssertContains(flashbackSource, "var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0");
+        AssertContains(flashbackSource, "var recordingBoundary = CaptureRecordingBoundaryFence(out var wasRecording);");
         AssertContains(flashbackSource, "if (!wasRecording)\n        {\n            const string message = \"Flashback recording was not active.\";");
         AssertContains(flashbackSource, "FLASHBACK_RECORDING_END_REJECTED");
         AssertContains(flashbackSource, "finally");
@@ -1956,7 +1982,7 @@ static partial class Program
             "private readonly record struct LibAvFinalizeStepResult");
 
         AssertContains(stopRecordingBackendRouter, "IsFlashbackRecordingBackendActive()");
-        AssertContains(stopRecordingBackendRouter, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
+        AssertContains(stopRecordingBackendRouter, "StopAndDisposeFlashbackRecordingBackendAsync(emergency, cancellationToken)");
         AssertContains(stopRecordingBackendRouter, "StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken)");
         AssertDoesNotContain(stopRecordingBackendRouter, "OperationCanceledException? flashbackCancellationException = null;");
         AssertDoesNotContain(stopRecordingBackendRouter, "var sink = _recordingSink;");
@@ -1989,7 +2015,7 @@ static partial class Program
         AssertOccursBefore(
             flashbackStopRecordingBackend,
             "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))",
-            "_lastRecordingIntegrity = BuildRecordingIntegritySummary(");
+            "_lastRecordingIntegrity = cleanupPending");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
             "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");",
@@ -2037,15 +2063,13 @@ static partial class Program
     {
         var flashbackMicMonitorRestart = ExtractSourceBlock(
             flashbackStopRecordingBackend,
-            "// Restart mic monitoring if preview is still active",
-            "if (fbResult.Succeeded)");
+            "private async Task CompleteFlashbackPostFinalizeMaintenanceAsync",
+            "private async Task ObserveFlashbackPostFinalizeMaintenanceAsync");
         AssertContains(flashbackMicMonitorRestart, "await RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(flashbackMicMonitorRestart, "OnlyWhenMissing: true,");
         AssertContains(flashbackMicMonitorRestart, "FlashbackAttachReason: null,");
         AssertContains(flashbackMicMonitorRestart, "RestartLogEvent: null,");
         AssertContains(flashbackMicMonitorRestart, "DisposeWarningEvent: \"FLASHBACK_MIC_RESTART_DISPOSE_WARN\"");
-        AssertContains(flashbackMicMonitorRestart, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
-        AssertContains(flashbackMicMonitorRestart, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
         AssertContains(flashbackMicMonitorRestart, "FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
         AssertDoesNotContain(flashbackMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
         AssertDoesNotContain(flashbackMicMonitorRestart, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
@@ -2085,10 +2109,11 @@ static partial class Program
         AssertContains(captureServiceSource, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
         AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback export cancelled.\", StringComparison.Ordinal)");
         AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback recording finalize cancelled.\", StringComparison.Ordinal)");
-        AssertContains(captureServiceSource, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
+        AssertContains(captureServiceSource, "private void PublishRecordingStartedOutcome(RecordingContext recordingContext)");
+        AssertContains(captureServiceSource, "private void PrepareActiveRecordingRecoveryJournal(");
         AssertContains(captureServiceSource, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
-        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
-        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
+        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(fbRecordingContext);");
+        AssertContains(captureServiceSource, "PublishRecordingStartedOutcome(rollback.RecordingContext);");
         AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(captureServiceSource, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
         var disposeFlashbackPreviewBackendCore = ExtractSourceBlock(
@@ -3534,10 +3559,11 @@ static partial class Program
         var wasapiSource = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioCapture.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(wasapiSource, "private static readonly TimeSpan CaptureThreadJoinTimeout = TimeSpan.FromSeconds(3);");
-        AssertContains(wasapiSource, "JoinCaptureThread(_captureThread, \"WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_START_FAILURE\")");
-        AssertContains(wasapiSource, "JoinCaptureThread(thread, \"WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_STOP\")");
-        AssertContains(wasapiSource, "thread.Join(CaptureThreadJoinTimeout)");
+        AssertContains(wasapiSource, "private static readonly TimeSpan WorkerExitTimeout = TimeSpan.FromSeconds(5);");
+        AssertContains(wasapiSource, "WasapiWorkerQuarantine.Register(");
+        AssertContains(wasapiSource, "captureThread.Join(WorkerExitTimeout)");
+        AssertContains(wasapiSource, "completion.WaitAsync(WorkerExitTimeout)");
+        AssertContains(wasapiSource, "ReleaseNativeResources();");
         AssertDoesNotContain(wasapiSource, "_captureThread.Join();");
         AssertDoesNotContain(wasapiSource, "thread.Join();");
         return Task.CompletedTask;
@@ -3880,7 +3906,7 @@ static partial class Program
         var recordingLifecycleText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
 
         AssertContains(stopLifecycleText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
-        AssertContains(stopLifecycleText, "StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken)");
+        AssertContains(stopLifecycleText, "StopAndDisposeFlashbackRecordingBackendAsync(emergency, cancellationToken)");
         AssertContains(stopLifecycleText, "StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken)");
         AssertContains(flashbackBackendFinalizationText, "private async Task<FinalizeResult> StopAndDisposeFlashbackRecordingBackendAsync(");
         AssertContains(flashbackBackendFinalizationText, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
@@ -3903,7 +3929,7 @@ static partial class Program
         AssertContains(flashbackBackendFinalizationText, "FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(flashbackBackendFinalizationText, "BeginFlashbackBackendCleanup(ex);");
         AssertOccursBefore(flashbackBackendFinalizationText, "LogRecordingIntegritySummary(_lastRecordingIntegrity);", "ReconcileFlashbackBackendAfterRecordingFinalizeAsync(");
-        AssertOccursBefore(flashbackBackendFinalizationText, "ReconcileFlashbackBackendAfterRecordingFinalizeAsync(", "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
+        AssertOccursBefore(flashbackBackendFinalizationText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);", "CompleteFlashbackPostFinalizeMaintenanceAsync(fbResult)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashbackBackendReconcile.cs")),
@@ -3913,7 +3939,7 @@ static partial class Program
         AssertContains(libAvBackendFinalizationText, "DetachLibAvRecordingAudioBeforeSinkStopAsync(");
         AssertContains(libAvBackendFinalizationText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(libAvBackendFinalizationText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
-        AssertContains(libAvBackendFinalizationText, "FoldLibAvAudioFaultIntoFinalizeResult(");
+        AssertContains(libAvBackendFinalizationText, "FoldRecordingAudioFaultIntoFinalizeResult(");
         AssertContains(libAvBackendFinalizationText, "PublishLibAvRecordingIntegrity(");
         AssertContains(libAvBackendFinalizationText, "CompleteLibAvRecordingFinalizeStateAsync(");
         AssertContains(libAvBackendFinalizationText, "var sinkResult = libAvSink != null");
@@ -3957,7 +3983,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.RecordingFinalizeFlashback.cs")),
             "Flashback export-finalize helpers folded into CaptureService.Flashback.cs");
-        AssertContains(recordingLifecycleText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
+        AssertContains(recordingLifecycleText, "private void PublishRecordingStartedOutcome(RecordingContext recordingContext)");
         AssertContains(recordingLifecycleText, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");
         AssertEqual(
             false,
@@ -3981,7 +4007,8 @@ static partial class Program
         AssertContains(captureServiceText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(captureServiceText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(captureServiceText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
-        AssertContains(captureServiceText, "FoldLibAvAudioFaultIntoFinalizeResult(result, cancellationException);");
+        AssertContains(captureServiceText, "result = FoldRecordingAudioFaultIntoFinalizeResult(");
+        AssertContains(captureServiceText, "recordingContext?.Settings);");
         AssertContains(captureServiceText, "PublishLibAvRecordingIntegrity(");
         // Fix #12: sink dispatch became a ternary so the emergency flag can route to libAvSink.StopAsync(emergency, ct).
         AssertContains(captureServiceText, "var sinkResult = libAvSink != null");
@@ -4085,7 +4112,7 @@ static partial class Program
         AssertContains(flashbackStartText, "await CreateFlashbackRecordingContextAsync(");
         AssertContains(flashbackStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertContains(flashbackStartText, "_recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);");
-        AssertContains(flashbackStartText, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
+        AssertContains(flashbackStartText, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REBUILD");
         AssertContains(flashbackStartText, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");
         AssertContains(flashbackStartText, "videoCapture?.BeginFlashbackRecordingAccounting();");
         AssertDoesNotContain(flashbackStartText, "StorageFolder.GetFolderFromPathAsync");
@@ -4116,11 +4143,11 @@ static partial class Program
         AssertContains(libAvStartText, "Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr=");
         AssertContains(libAvStartText, "private async Task StartLibAvRecordingAudioInputsAsync(");
         AssertContains(libAvStartText, "rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();");
-        AssertContains(libAvStartText, "_previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);");
+        AssertContains(libAvStartText, "_previewAudioGraph.ProgramCapture!.AttachRecordingSink(recordingSink);");
         AssertContains(libAvStartText, "rollback.SinkAttachedForAudioOnly = true;");
         AssertContains(libAvStartText, "await _previewAudioGraph.StartPlaybackAsync(");
         AssertContains(libAvStartText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);");
-        AssertContains(libAvStartText, "micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));");
+        AssertContains(libAvStartText, "_previewAudioGraph.MicrophoneCapture!.SetAudioWriter(");
         AssertContains(libAvStartText, "MICROPHONE_CAPTURE_START");
         AssertEqual(
             false,
@@ -4137,7 +4164,7 @@ static partial class Program
         AssertDoesNotContain(libAvStartText, "FLASHBACK_UNIFIED_RECORDING_START");
         AssertContains(lifecycleText, "public Task StopRecordingAsync(");
         AssertContains(lifecycleText, "internal Task StopRecordingAsync(bool emergency");
-        AssertContains(lifecycleText, "await StopAndDisposeRecordingBackendAsync(\"Stopped\", emergency, transitionToken)");
+        AssertContains(lifecycleText, "result = await StopAndDisposeRecordingBackendAsync(\n                    \"Recording saved\",");
         AssertContains(lifecycleText, "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(");
         AssertEqual(false, System.IO.File.Exists(System.IO.Path.Combine(
             GetRepoRoot(),
@@ -4155,7 +4182,8 @@ static partial class Program
         AssertContains(libAvFinalizeText, "private readonly record struct LibAvVideoBoundaryStopResult(");
         AssertContains(libAvFinalizeText, "VIDEO_DIAG mf_source_reader ");
         AssertContains(libAvFinalizeText, "VIDEO_DIAG recording_pipeline ");
-        AssertContains(libAvFinalizeText, "var libAvDrainTask = libAvSink.EncodingCompletionTask;");
+        AssertContains(libAvFinalizeText, "var libAvCleanupTask = libAvSink.CleanupCompletionTask;");
+        AssertContains(libAvFinalizeText, "Task.WhenAll(libAvCleanupTask, captureCleanupTask)");
         AssertContains(libAvFinalizeText, "reason: \"recording_stop_deferred_drain\"");
         AssertContains(libAvFinalizeText, "_previewAudioGraph.DetachCapture(");
         AssertEqual(
@@ -4252,12 +4280,13 @@ static partial class Program
         AssertDoesNotContain(rootText, "private string _lastFinalizeStatus = \"None\";");
         AssertDoesNotContain(rootText, "private DateTimeOffset? _lastFinalizeUtc;");
         AssertDoesNotContain(rootText, "private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();");
-        AssertContains(lifecycleText, "private void PublishRecordingStartedOutcome(string finalOutputPath)");
+        AssertContains(lifecycleText, "private void PublishRecordingStartedOutcome(RecordingContext recordingContext)");
+        AssertContains(lifecycleText, "private void PrepareActiveRecordingRecoveryJournal(");
         AssertContains(lifecycleText, "private string? _lastOutputPath;");
         AssertContains(lifecycleText, "private string _lastFinalizeStatus = \"None\";");
         AssertContains(lifecycleText, "private DateTimeOffset? _lastFinalizeUtc;");
         AssertContains(lifecycleText, "private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();");
-        AssertContains(lifecycleText, "_lastOutputPath = finalOutputPath;");
+        AssertContains(lifecycleText, "_lastOutputPath = recordingContext.FinalOutputPath;");
         AssertContains(lifecycleText, "_lastFinalizeStatus = \"Recording\";");
         AssertContains(lifecycleText, "_lastFinalizeUtc = null;");
         AssertContains(lifecycleText, "_lastPreservedArtifacts = Array.Empty<string>();");
@@ -4269,17 +4298,24 @@ static partial class Program
         AssertContains(lifecycleText, "_lastPreservedArtifacts = result.PreservedArtifacts;");
         AssertContains(lifecycleText, "internal void MarkRecordingFinalizationUnresolved(string statusMessage)");
         AssertContains(lifecycleText, "reason=existing_finalization_status");
-        AssertContains(lifecycleText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(");
-        AssertContains(lifecycleText, "FinalizeResult.Failure(fallbackOutputPath, statusMessage, preservedArtifacts)");
+        AssertContains(lifecycleText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolvedWithArtifacts(");
+        AssertContains(lifecycleText, "var unresolvedResult = EnsureRecordingFailureRecovery(");
+        AssertContains(lifecycleText, "private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
+        AssertContains(lifecycleText, "recording-program-audio-integrity-failed");
+        AssertContains(libAvFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
+        AssertContains(flashbackFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
+        AssertContains(lifecycleText, "_recordingLifecyclePhase = RecordingLifecyclePhase.Finalizing;");
+        AssertContains(lifecycleText, "_lastFinalizeOutcome = result.Outcome;");
 
         var flashbackStartText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
             .Replace("\r\n", "\n");
         var libAvStartText = lifecycleText;
 
-        AssertContains(flashbackStartText, "PublishRecordingStartedOutcome(fbRecordingContext.FinalOutputPath);");
-        AssertContains(libAvStartText, "PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);");
+        AssertContains(flashbackStartText, "PublishRecordingStartedOutcome(fbRecordingContext);");
+        AssertContains(libAvStartText, "PublishRecordingStartedOutcome(rollback.RecordingContext);");
+        AssertOccursBefore(flashbackStartText, "PrepareActiveRecordingRecoveryJournal(", "activeFlashbackSink.BeginRecording(");
+        AssertOccursBefore(libAvStartText, "PrepareActiveRecordingRecoveryJournal(rollback.RecordingContext);", "_isRecording = true;");
         AssertDoesNotContain(lifecycleText, "_lastOutputPath = fbRecordingContext.FinalOutputPath;");
-        AssertDoesNotContain(lifecycleText, "_lastOutputPath = recordingContext.FinalOutputPath;");
 
         AssertContains(flashbackFinalizeText, "PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);");
         AssertContains(libAvFinalizeText, "PublishRecordingFinalizedOutcome(result, updateOutputPath: true);");
@@ -4914,9 +4950,9 @@ static partial class Program
         AssertContains(outputLifecycleText, "public void FlushAndClose()");
         AssertContains(outputLifecycleText, "public void Dispose()");
         AssertContains(outputLifecycleText, "private void CleanupResources(bool writeTrailer)");
-        AssertContains(outputLifecycleText, "var finalMicSamplesReceived = ReleaseNativeResources(useCudaHardwareFrames);");
+        AssertContains(outputLifecycleText, "var finalMicSamplesReceived = ReleaseNativeResources(\n                useCudaHardwareFrames,\n                out var outputCloseFailure);");
         AssertContains(outputLifecycleText, "ffmpeg.av_write_trailer(_formatCtx)");
-        AssertContains(outputLifecycleText, "private long ReleaseNativeResources(bool useCudaHardwareFrames)");
+        AssertContains(outputLifecycleText, "private long ReleaseNativeResources(\n        bool useCudaHardwareFrames,\n        out Exception? outputCloseFailure)");
         AssertContains(outputLifecycleText, "ffmpeg.avio_closep(&_formatCtx->pb)");
         AssertContains(outputLifecycleText, "Marshal.Release(_hwPoolTextures[i]);");
         AssertContains(outputLifecycleText, "ffmpeg.avcodec_free_context(&videoCodecCtx)");

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "buildVersion": "N-123250-gb8a4d8a18d-20260307",
+  "files": [
+    {
+      "fileName": "avcodec-62.dll",
+      "productVersion": "N-123250-gb8a4d8a18d-20260307",
+      "fileVersion": "62.24.101",
+      "sha256": "9B3AEF72967F739B328C1A7F7D0EBB53CDE089D2A9A9E312BB1740A828F63653"
+    },
+    {
+      "fileName": "avformat-62.dll",
+      "productVersion": "N-123250-gb8a4d8a18d-20260307",
+      "fileVersion": "62.10.101",
+      "sha256": "E8066258F3E284953D78FC93993EF1D7D38AF460EA2B89FBE35CCD1EFF86D0A1"
+    },
+    {
+      "fileName": "avutil-60.dll",
+      "productVersion": "N-123250-gb8a4d8a18d-20260307",
+      "fileVersion": "60.25.100",
+      "sha256": "7222A979B8085F815B568472B7D0A67A1C809E494D0F2587192E9703A23358A4"
+    },
+    {
+      "fileName": "swresample-6.dll",
+      "productVersion": "N-123250-gb8a4d8a18d-20260307",
+      "fileVersion": "6.2.100",
+      "sha256": "6D1C1964530AF7999D921F4E8FD90EC78C874D57C27B3DB74F6BFCC56006B475"
+    }
+  ]
+}

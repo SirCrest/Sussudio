@@ -265,9 +265,24 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task InitializeAsync()
     {
         LoadSettings();
+        var recoveredRecording = _captureService.RestoreLastRecordingFailure(OutputPath);
+        if (recoveredRecording != null)
+        {
+            RecoveredRecordingFailurePath = recoveredRecording.PreservedArtifacts.FirstOrDefault(path =>
+                !path.EndsWith(".recording-finalization-unresolved.txt", StringComparison.OrdinalIgnoreCase))
+                ?? recoveredRecording.MarkerPath;
+            RecoveredRecordingFailureMessage = recoveredRecording.Reason;
+            StatusText = recoveredRecording.Reason.StartsWith("Recording failed", StringComparison.OrdinalIgnoreCase)
+                ? recoveredRecording.Reason
+                : $"Recording failed: {recoveredRecording.Reason}";
+        }
         StartRecordingCapabilityRefresh();
         return Task.CompletedTask;
     }
+
+    internal string? RecoveredRecordingFailurePath { get; private set; }
+
+    internal string? RecoveredRecordingFailureMessage { get; private set; }
 
     partial void OnOutputPathChanged(string value)
     {
@@ -1663,9 +1678,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)
     {
+        var normalizedMode = DeviceAudioModeParser.NormalizeOrThrow(mode);
         return InvokeOnUiThreadAsync(async () =>
         {
-            var normalizedMode = NormalizeDeviceAudioMode(mode);
             WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);
             var applied = await ApplyDeviceAudioModeAsync(
                 "automation device audio mode",

@@ -614,6 +614,8 @@ internal sealed class WindowAppClosingControllerContext
     public required Func<bool> IsRecordingTransitioning { get; init; }
     public required Func<string> GetStatusText { get; init; }
     public required Func<Task<bool>> StopRecordingBeforeCloseAsync { get; init; }
+    public required Func<ValueTask> PrepareForCloseAsync { get; init; }
+    public required Func<bool> IsEmergencyClosePending { get; init; }
     public required Action RequestWindowClose { get; init; }
 }
 
@@ -637,12 +639,6 @@ internal sealed class WindowAppClosingController
             return;
         }
 
-        if (!_context.IsRecording() && !_context.IsRecordingTransitioning())
-        {
-            _context.LifecycleController.CompleteRequest();
-            return;
-        }
-
         args.Cancel = true;
         _context.LifecycleController.ClearRequested();
 
@@ -654,10 +650,24 @@ internal sealed class WindowAppClosingController
 
         try
         {
-            var stopped = await _context.StopRecordingBeforeCloseAsync();
-            if (!stopped)
+            if (_context.IsRecording() || _context.IsRecordingTransitioning())
             {
-                _context.LifecycleController.CompleteRequest(new InvalidOperationException(_context.GetStatusText()));
+                var stopped = await _context.StopRecordingBeforeCloseAsync();
+                if (!stopped)
+                {
+                    _context.LifecycleController.CompleteRequest(new InvalidOperationException(_context.GetStatusText()));
+                    return;
+                }
+            }
+
+            // Tear down capture/audio while the XamlRoot and quarantine event
+            // subscription still exist, so a stuck WASAPI worker can explain the
+            // mandatory process close and run its acknowledgment/countdown path.
+            await _context.PrepareForCloseAsync();
+            if (_context.IsEmergencyClosePending())
+            {
+                _context.LifecycleController.CompleteRequest(
+                    new InvalidOperationException("WASAPI worker quarantine is handling process closure."));
                 return;
             }
 

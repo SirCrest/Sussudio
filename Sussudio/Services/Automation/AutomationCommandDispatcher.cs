@@ -849,7 +849,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var mode = RequireString(payload, "mode");
+        var mode = DeviceAudioModeParser.NormalizeOrThrow(RequireString(payload, "mode"));
         await _audioPort.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, $"Device audio mode changed: {mode}.");
     }
@@ -1447,7 +1447,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationWaitCondition.RecordingStopped =>
                 !snapshot.IsRecording,
             AutomationWaitCondition.VerificationReady =>
-                snapshot.LastVerification != null,
+                !snapshot.VerificationInProgress &&
+                snapshot.LastVerification is { } readyVerification &&
+                string.Equals(
+                    readyVerification.OutputPath,
+                    snapshot.LastOutputPath,
+                    StringComparison.OrdinalIgnoreCase),
             AutomationWaitCondition.HdrModeApplied =>
                 snapshot.RequestedHdrEnabled.HasValue
                     ? snapshot.IsHdrEnabled == snapshot.RequestedHdrEnabled.Value
@@ -1455,7 +1460,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationWaitCondition.PerformancePerfectionMet =>
                 snapshot.PerformancePerfectionMet,
             AutomationWaitCondition.HdrVerificationReady =>
+                !snapshot.VerificationInProgress &&
                 snapshot.LastVerification is { } verification &&
+                string.Equals(
+                    verification.OutputPath,
+                    snapshot.LastOutputPath,
+                    StringComparison.OrdinalIgnoreCase) &&
                 (!snapshot.HdrOutputActive ||
                  verification.HdrParity is { Requested: true, Verified: true } ||
                  verification.HdrMetadataPresent == true),

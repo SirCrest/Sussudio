@@ -30,11 +30,15 @@ internal enum WasapiSampleType
 internal readonly record struct WasapiAudioFormat(
     int SampleRate,
     int Channels,
-    int BitsPerSample,
+    int ContainerBitsPerSample,
+    int ValidBitsPerSample,
     int BlockAlign,
+    uint ChannelMask,
     WasapiSampleType SampleType)
 {
-    public int BytesPerSample => BlockAlign / Channels;
+    public int BitsPerSample => ValidBitsPerSample;
+
+    public int BytesPerSample => checked((ContainerBitsPerSample + 7) / 8);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -552,48 +556,124 @@ internal static class WasapiComInterop
         var formatTag = wave.wFormatTag;
         var channels = wave.nChannels;
         var sampleRate = wave.nSamplesPerSec;
-        var bitsPerSample = wave.wBitsPerSample;
+        var containerBitsPerSample = wave.wBitsPerSample;
+        var validBitsPerSample = containerBitsPerSample;
         var blockAlign = wave.nBlockAlign;
+        var channelMask = 0u;
         var subFormat = Guid.Empty;
 
         if (formatTag == WAVE_FORMAT_EXTENSIBLE && wave.cbSize >= 22)
         {
             var extensible = Marshal.PtrToStructure<WAVEFORMATEXTENSIBLE>(formatPtr);
             subFormat = extensible.SubFormat;
-            bitsPerSample = extensible.wValidBitsPerSample == 0
+            validBitsPerSample = extensible.wValidBitsPerSample == 0
                 ? extensible.Format.wBitsPerSample
                 : extensible.wValidBitsPerSample;
+            containerBitsPerSample = extensible.Format.wBitsPerSample;
             blockAlign = extensible.Format.nBlockAlign;
+            channelMask = extensible.dwChannelMask;
         }
 
-        var sampleType = ResolveSampleType(formatTag, subFormat, bitsPerSample);
+        var sampleType = ResolveSampleType(formatTag, subFormat, validBitsPerSample);
         if (channels <= 0)
         {
             throw new InvalidOperationException("WASAPI format has invalid channel count.");
         }
 
-        if (sampleRate <= 0)
+        if (channels > 32)
         {
-            throw new InvalidOperationException("WASAPI format has invalid sample rate.");
+            throw new InvalidOperationException($"Unsupported WASAPI channel count: {channels}.");
         }
 
-        if (blockAlign <= 0)
+        if (sampleRate < 8_000 || sampleRate > 384_000)
         {
-            throw new InvalidOperationException("WASAPI format has invalid block alignment.");
+            throw new InvalidOperationException($"Unsupported WASAPI sample rate: {sampleRate}.");
         }
 
-        var bytesPerSample = blockAlign / channels;
-        if (bytesPerSample <= 0)
+        var containerBytesPerSample = (containerBitsPerSample + 7) / 8;
+        if (containerBytesPerSample <= 0 ||
+            validBitsPerSample <= 0 ||
+            validBitsPerSample > containerBitsPerSample)
         {
-            throw new InvalidOperationException("WASAPI format has invalid bytes-per-sample.");
+            throw new InvalidOperationException(
+                $"WASAPI format has invalid sample width: container={containerBitsPerSample}, valid={validBitsPerSample}.");
+        }
+
+        ValidateSampleLayout(sampleType, containerBitsPerSample, validBitsPerSample);
+
+        var expectedBlockAlign = checked(channels * containerBytesPerSample);
+        if (blockAlign != expectedBlockAlign)
+        {
+            throw new InvalidOperationException(
+                $"WASAPI format has invalid block alignment: {blockAlign} (expected {expectedBlockAlign}).");
+        }
+
+        var expectedAverageBytesPerSecond = checked((long)sampleRate * blockAlign);
+        if (wave.nAvgBytesPerSec != expectedAverageBytesPerSecond)
+        {
+            throw new InvalidOperationException(
+                $"WASAPI format has inconsistent average byte rate: {wave.nAvgBytesPerSec} (expected {expectedAverageBytesPerSecond}).");
+        }
+
+        if (channelMask != 0)
+        {
+            if (CountSetBits(channelMask) != channels)
+            {
+                throw new InvalidOperationException(
+                    $"WASAPI channel mask 0x{channelMask:X8} does not describe {channels} channels.");
+            }
+
+            if (channels > 1 && (channelMask & 0x3u) != 0x3u)
+            {
+                throw new InvalidOperationException(
+                    $"WASAPI multichannel mask 0x{channelMask:X8} has no front-left/front-right pair.");
+            }
         }
 
         return new WasapiAudioFormat(
             (int)sampleRate,
             channels,
-            bitsPerSample,
+            containerBitsPerSample,
+            validBitsPerSample,
             blockAlign,
+            channelMask,
             sampleType);
+    }
+
+    private static void ValidateSampleLayout(
+        WasapiSampleType sampleType,
+        int containerBitsPerSample,
+        int validBitsPerSample)
+    {
+        var supported = sampleType switch
+        {
+            WasapiSampleType.Float32 => containerBitsPerSample == 32 && validBitsPerSample == 32,
+            WasapiSampleType.Float64 => containerBitsPerSample == 64 && validBitsPerSample == 64,
+            WasapiSampleType.Pcm16 => containerBitsPerSample == 16 && validBitsPerSample == 16,
+            WasapiSampleType.Pcm24 =>
+                validBitsPerSample == 24 &&
+                (containerBitsPerSample == 24 || containerBitsPerSample == 32),
+            WasapiSampleType.Pcm32 => containerBitsPerSample == 32 && validBitsPerSample == 32,
+            _ => false
+        };
+
+        if (!supported)
+        {
+            throw new InvalidOperationException(
+                $"Unsupported WASAPI sample layout: type={sampleType}, container={containerBitsPerSample}, valid={validBitsPerSample}.");
+        }
+    }
+
+    private static int CountSetBits(uint value)
+    {
+        var count = 0;
+        while (value != 0)
+        {
+            value &= value - 1;
+            count++;
+        }
+
+        return count;
     }
 
     private static WasapiSampleType ResolveSampleType(int formatTag, Guid subFormat, int bitsPerSample)
