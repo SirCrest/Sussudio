@@ -228,11 +228,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         _activeInputContext = null;
     }
 
-    private void CloseOutputIo()
+    private int CloseOutputIo()
     {
         if (_activeOutputContext == null || _activeOutputContext->pb == null)
         {
-            return;
+            return 0;
         }
 
         var closeResult = ffmpeg.avio_closep(&_activeOutputContext->pb);
@@ -241,6 +241,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             Logger.Log(
                 $"FLASHBACK_EXPORT_WARN reason='avio_closep_failed' code={closeResult} msg='{GetErrorString(closeResult)}'");
         }
+
+        return closeResult;
     }
 
     private void CleanupNativeState()
@@ -1433,7 +1435,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         out string failureMessage)
     {
         ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
-        CloseOutputIo();
+        ThrowIfError(CloseOutputIo(), "avio_closep");
 
         if (!outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage))
         {

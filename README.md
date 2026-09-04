@@ -33,7 +33,8 @@ still pre-release and rough in places, but the core pipeline works.
 - **FFmpeg/libav** (via FFmpeg.AutoGen) for encoding and muxing, with **NVENC**
   doing the heavy lifting. Release downloads bundle the native FFmpeg DLLs; if
   you're building from source, drop them in `Sussudio/ffmpeg/` yourself (they
-  aren't checked into the repo).
+  aren't checked into the repo). Their required filenames, build versions, and
+  SHA-256 hashes are pinned in `Sussudio/ffmpeg/manifest.json`.
 
 ## What supports it
 
@@ -58,9 +59,29 @@ Tests:
 dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj
 ```
 
+The canonical pre-release check is `tools\reliability-gates.ps1`. It builds the
+complete x64 solution and shared-contract tools, runs the real xUnit suite with
+a nonzero-result check, runs the offline assembly/freshness harness separately,
+and checks the working diff.
+
 The app lives in `Sussudio/`, the automation tools in `tools/`, and tests in
 `tests/`. Logs land in `temp/logs/Sussudio_Debug.log` when running from the
 repo.
+
+## Releases
+
+The current supported distribution is a signed, self-contained Windows x64
+prerelease ZIP. It contains the app plus `ssctl`, the MCP server, and
+`AutomationClient`. First-party binaries are Authenticode-signed and Microsoft-
+timestamped through Azure Artifact Signing; bundled third-party FFmpeg DLLs are
+verified against the tracked hash manifest and retain their own identity.
+
+Official archives are built only from a clean commit with an exact
+`v<SemVer-prerelease>` tag, and each ZIP has a published SHA-256 checksum. See
+[`docs/release-process.md`](docs/release-process.md) for the operator workflow.
+
+MSIX distribution and the Stream Deck plugin remain future roadmap work; they
+are not shipped in the current ZIP.
 
 ## License
 

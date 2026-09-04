@@ -180,7 +180,9 @@ public sealed partial class AutomationDiagnosticsHub
             recordingStarted,
             nowTick);
 
-        var lastVerification = CaptureLastVerificationForSnapshot(recordingStarted);
+        var lastVerification = CaptureLastVerificationForSnapshot(
+            recordingStarted,
+            captureRuntime.LastOutputPath);
         var visualCadenceHealthy =
             IsVisualCadenceHealthy(
                 health.ExpectedFrameRate,
@@ -1187,13 +1189,25 @@ public sealed partial class AutomationDiagnosticsHub
                verificationIdle;
     }
 
-    private RecordingVerificationResult? CaptureLastVerificationForSnapshot(bool recordingStarted)
+    private RecordingVerificationResult? CaptureLastVerificationForSnapshot(
+        bool recordingStarted,
+        string? currentOutputPath)
     {
         lock (_stateLock)
         {
             if (recordingStarted)
             {
                 _lastVerification = null;
+            }
+
+            if (_lastVerification is { } verification &&
+                (!string.Equals(
+                     verification.OutputPath,
+                     currentOutputPath,
+                     StringComparison.OrdinalIgnoreCase) ||
+                 Volatile.Read(ref _verificationInProgress) != 0))
+            {
+                return null;
             }
 
             return _lastVerification;

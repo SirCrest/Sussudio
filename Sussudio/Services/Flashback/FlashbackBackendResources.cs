@@ -193,8 +193,8 @@ internal sealed class FlashbackBackendResources
             bufferManager?.PauseEviction();
             outerPauseApplied = bufferManager != null;
 
-            var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
             captureBoundarySnapshot?.Invoke(flashbackSink);
+            var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
             if (!endResult.Succeeded)
             {
                 return endResult;

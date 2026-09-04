@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -269,68 +271,395 @@ public sealed class RecordingArtifactManager
     }
 }
 
+internal sealed record RecordingFailureRecoveryState(
+    string MarkerPath,
+    string OutputPath,
+    string Reason,
+    DateTimeOffset RecordedUtc,
+    IReadOnlyList<string> PreservedArtifacts);
+
 internal static class RecordingFinalizationRecoveryArtifacts
 {
     private const string UnresolvedMarkerSuffix = ".recording-finalization-unresolved.txt";
+    private const string ActiveMarkerSuffix = ".recording-active.txt";
+    private const string RecoveryDirectoryName = "RecordingRecovery";
+
+    internal static RecordingFailureRecoveryState? TryLoadLatest(string? outputDirectory)
+    {
+        try
+        {
+            var markers = new List<(string Path, DateTime WriteUtc)>();
+            AddRecoveryMarkers(markers, outputDirectory);
+            AddRecoveryMarkers(markers, GetStableRecoveryDirectory());
+
+            markers.Sort(static (left, right) => right.WriteUtc.CompareTo(left.WriteUtc));
+            RecordingFailureRecoveryState? newestMetadataOnlyRecovery = null;
+            foreach (var marker in markers)
+            {
+                try
+                {
+                    var recovered = TryLoadMarker(marker.Path, marker.WriteUtc);
+                    if (recovered == null)
+                    {
+                        continue;
+                    }
+
+                    var hasRecoverableMedia = recovered.PreservedArtifacts.Any(path =>
+                        !string.Equals(path, recovered.MarkerPath, StringComparison.OrdinalIgnoreCase) &&
+                        File.Exists(path));
+                    if (hasRecoverableMedia)
+                    {
+                        return recovered;
+                    }
+
+                    newestMetadataOnlyRecovery ??= recovered;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Failed to restore recording recovery marker '{marker.Path}': {ex.Message}");
+                }
+            }
+
+            return newestMetadataOnlyRecovery;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to restore recording recovery marker from '{outputDirectory}': {ex.Message}");
+            return null;
+        }
+    }
 
     public static IReadOnlyList<string> PreserveUnresolved(
         RecordingContext? context,
         string outputPath,
         string reason)
+        => PreserveUnresolvedWithArtifacts(context, outputPath, reason, Array.Empty<string>());
+
+    internal static string BeginActive(
+        string outputPath,
+        string? videoOutputPath,
+        string? audioTempPath,
+        IEnumerable<string> artifactDirectories)
+    {
+        var fileName = Path.GetFileName(string.IsNullOrWhiteSpace(outputPath) ? videoOutputPath : outputPath);
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = "recording-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss");
+        }
+
+        var markerLines = new List<string>
+        {
+            "status=active",
+            "utc=" + DateTimeOffset.UtcNow.ToString("O"),
+            "reason=Recording was interrupted before finalization.",
+            "final_output=" + outputPath,
+            "video_output=" + (videoOutputPath ?? string.Empty),
+            "audio_temp=" + (audioTempPath ?? string.Empty),
+        };
+        foreach (var directory in artifactDirectories)
+        {
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                markerLines.Add("artifact_root_b64=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(directory)));
+            }
+        }
+
+        var markerPath = TryWriteMarker(
+            GetStableRecoveryDirectory(),
+            fileName,
+            markerLines,
+            ActiveMarkerSuffix,
+            createDirectory: true);
+        return markerPath ?? throw new InvalidOperationException(
+            "Recording could not start because its crash-recovery journal could not be created.");
+    }
+
+    internal static void RetireActive(string? markerPath)
+    {
+        if (string.IsNullOrWhiteSpace(markerPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var candidate = Path.GetFullPath(markerPath);
+            // The path is produced by BeginActive and retained privately by
+            // CaptureService. Requiring the dedicated suffix keeps retirement
+            // narrowly scoped without re-reading a mutable environment override.
+            if (!candidate.EndsWith(ActiveMarkerSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                Logger.Log($"Skipped unsafe active recording journal retirement path '{markerPath}'.");
+                return;
+            }
+
+            if (File.Exists(candidate))
+            {
+                File.Delete(candidate);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to retire active recording recovery journal '{markerPath}': {ex.Message}");
+        }
+    }
+
+    internal static IReadOnlyList<string> PreserveUnresolvedWithArtifacts(
+        RecordingContext? context,
+        string outputPath,
+        string reason,
+        IEnumerable<string> additionalArtifacts)
     {
         var preserved = new List<string>();
         AddExistingFile(preserved, outputPath);
         AddExistingFile(preserved, context?.VideoOutputPath);
         AddExistingFile(preserved, context?.FinalOutputPath);
         AddExistingFile(preserved, context?.AudioTempPath);
+        foreach (var artifactPath in additionalArtifacts)
+        {
+            AddExistingFile(preserved, artifactPath);
+        }
 
-        var markerPath = TryWriteUnresolvedMarker(context, outputPath, reason);
-        AddExistingFile(preserved, markerPath);
+        var markerPaths = TryWriteUnresolvedMarkers(context, outputPath, reason, preserved);
+        foreach (var markerPath in markerPaths)
+        {
+            AddExistingFile(preserved, markerPath);
+        }
         return preserved;
     }
 
-    private static string? TryWriteUnresolvedMarker(
+    private static IReadOnlyList<string> TryWriteUnresolvedMarkers(
         RecordingContext? context,
         string outputPath,
-        string reason)
+        string reason,
+        IReadOnlyList<string> preservedArtifacts)
     {
         var anchorPath = ResolveMarkerAnchor(context, outputPath);
-        if (string.IsNullOrWhiteSpace(anchorPath))
+        var fileName = string.IsNullOrWhiteSpace(anchorPath)
+            ? "recording-" + DateTimeOffset.UtcNow.ToString("yyyyMMdd-HHmmss")
+            : Path.GetFileName(anchorPath);
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = "recording";
+        }
+
+        var markerLines = BuildMarkerLines(context, outputPath, reason, preservedArtifacts);
+        var primaryDirectory = string.IsNullOrWhiteSpace(anchorPath)
+            ? null
+            : Path.GetDirectoryName(anchorPath);
+        var markers = new List<string>(2);
+        var primaryMarker = TryWriteMarker(primaryDirectory, fileName, markerLines, UnresolvedMarkerSuffix);
+        if (!string.IsNullOrWhiteSpace(primaryMarker))
+        {
+            markers.Add(primaryMarker);
+        }
+
+        var stableMarker = TryWriteMarker(
+            GetStableRecoveryDirectory(),
+            fileName,
+            markerLines,
+            UnresolvedMarkerSuffix,
+            createDirectory: true);
+        if (!string.IsNullOrWhiteSpace(stableMarker) &&
+            !markers.Any(path => string.Equals(path, stableMarker, StringComparison.OrdinalIgnoreCase)))
+        {
+            markers.Add(stableMarker);
+        }
+
+        return markers;
+    }
+
+    private static IReadOnlyList<string> BuildMarkerLines(
+        RecordingContext? context,
+        string outputPath,
+        string reason,
+        IReadOnlyList<string> preservedArtifacts)
+    {
+        var markerLines = new List<string>
+        {
+            "status=unresolved",
+            "utc=" + DateTimeOffset.UtcNow.ToString("O"),
+            "reason=" + reason,
+            "reason_b64=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(reason)),
+            "final_output=" + (context?.FinalOutputPath ?? outputPath),
+            "video_output=" + (context?.VideoOutputPath ?? string.Empty),
+            "audio_temp=" + (context?.AudioTempPath ?? string.Empty),
+        };
+        foreach (var artifactPath in preservedArtifacts)
+        {
+            markerLines.Add("artifact_b64=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(artifactPath)));
+        }
+
+        return markerLines;
+    }
+
+    private static string? TryWriteMarker(
+        string? directory,
+        string fileName,
+        IReadOnlyList<string> markerLines,
+        string markerSuffix,
+        bool createDirectory = false)
+    {
+        if (string.IsNullOrWhiteSpace(directory))
         {
             return null;
         }
 
         try
         {
-            var directory = Path.GetDirectoryName(anchorPath);
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            if (createDirectory)
+            {
+                Directory.CreateDirectory(directory);
+            }
+            else if (!Directory.Exists(directory))
             {
                 return null;
             }
 
-            var fileName = Path.GetFileName(anchorPath);
-            if (string.IsNullOrWhiteSpace(fileName))
+            var markerPath = Path.Combine(directory, fileName + markerSuffix);
+            var temporaryMarkerPath = markerPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
             {
-                fileName = "recording";
+                File.WriteAllLines(temporaryMarkerPath, markerLines);
+                File.Move(temporaryMarkerPath, markerPath, overwrite: true);
+            }
+            finally
+            {
+                if (File.Exists(temporaryMarkerPath))
+                {
+                    File.Delete(temporaryMarkerPath);
+                }
             }
 
-            var markerPath = Path.Combine(directory, fileName + UnresolvedMarkerSuffix);
-            File.WriteAllLines(markerPath, new[]
-            {
-                "status=unresolved",
-                "utc=" + DateTimeOffset.UtcNow.ToString("O"),
-                "reason=" + reason,
-                "final_output=" + (context?.FinalOutputPath ?? outputPath),
-                "video_output=" + (context?.VideoOutputPath ?? string.Empty),
-                "audio_temp=" + (context?.AudioTempPath ?? string.Empty),
-            });
             return markerPath;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Failed to write recording finalization recovery marker for '{anchorPath}': {ex.Message}");
+            Logger.Log($"Failed to write recording finalization recovery marker in '{directory}': {ex.Message}");
             return null;
         }
+    }
+
+    private static void AddRecoveryMarkers(
+        List<(string Path, DateTime WriteUtc)> markers,
+        string? directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        {
+            return;
+        }
+
+        foreach (var markerPath in Directory.EnumerateFiles(directory, "*.recording-*.txt", SearchOption.TopDirectoryOnly))
+        {
+            if (!markerPath.EndsWith(UnresolvedMarkerSuffix, StringComparison.OrdinalIgnoreCase) &&
+                !markerPath.EndsWith(ActiveMarkerSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (markers.Any(marker => string.Equals(marker.Path, markerPath, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            markers.Add((markerPath, File.GetLastWriteTimeUtc(markerPath)));
+        }
+    }
+
+    private static string GetStableRecoveryDirectory()
+    {
+        var overrideDirectory = Environment.GetEnvironmentVariable("SUSSUDIO_RECOVERY_DIRECTORY");
+        return !string.IsNullOrWhiteSpace(overrideDirectory)
+            ? overrideDirectory
+            : Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Sussudio",
+                RecoveryDirectoryName);
+    }
+
+    private static RecordingFailureRecoveryState? TryLoadMarker(string markerPath, DateTime writeUtc)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var encodedArtifacts = new List<string>();
+        var encodedArtifactRoots = new List<string>();
+        foreach (var line in File.ReadAllLines(markerPath))
+        {
+            var separator = line.IndexOf('=');
+            if (separator <= 0)
+            {
+                continue;
+            }
+
+            var key = line[..separator];
+            var value = line[(separator + 1)..];
+            if (string.Equals(key, "artifact_b64", StringComparison.OrdinalIgnoreCase))
+            {
+                encodedArtifacts.Add(value);
+            }
+            else if (string.Equals(key, "artifact_root_b64", StringComparison.OrdinalIgnoreCase))
+            {
+                encodedArtifactRoots.Add(value);
+            }
+            else
+            {
+                values[key] = value;
+            }
+        }
+
+        if (!values.TryGetValue("status", out var status) ||
+            (!string.Equals(status, "unresolved", StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(status, "active", StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        values.TryGetValue("reason", out var reason);
+        if (values.TryGetValue("reason_b64", out var encodedReason))
+        {
+            reason = Encoding.UTF8.GetString(Convert.FromBase64String(encodedReason));
+        }
+
+        values.TryGetValue("final_output", out var finalOutput);
+        values.TryGetValue("video_output", out var videoOutput);
+        values.TryGetValue("audio_temp", out var audioOutput);
+
+        var preserved = new List<string>();
+        foreach (var encodedArtifact in encodedArtifacts)
+        {
+            AddExistingFile(
+                preserved,
+                Encoding.UTF8.GetString(Convert.FromBase64String(encodedArtifact)));
+        }
+
+        foreach (var encodedArtifactRoot in encodedArtifactRoots)
+        {
+            AddRecoverableFilesFromDirectory(
+                preserved,
+                Encoding.UTF8.GetString(Convert.FromBase64String(encodedArtifactRoot)));
+        }
+
+        AddExistingFile(preserved, finalOutput);
+        AddExistingFile(preserved, videoOutput);
+        AddExistingFile(preserved, audioOutput);
+        AddExistingFile(preserved, markerPath);
+
+        var recordedUtc = new DateTimeOffset(writeUtc, TimeSpan.Zero);
+        if (values.TryGetValue("utc", out var utcText) &&
+            DateTimeOffset.TryParse(utcText, out var parsedUtc))
+        {
+            recordedUtc = parsedUtc;
+        }
+
+        return new RecordingFailureRecoveryState(
+            markerPath,
+            string.IsNullOrWhiteSpace(finalOutput) ? markerPath : finalOutput,
+            string.IsNullOrWhiteSpace(reason)
+                ? string.Equals(status, "active", StringComparison.OrdinalIgnoreCase)
+                    ? "Recording was interrupted before finalization."
+                    : "Recording finalization did not complete."
+                : reason,
+            recordedUtc,
+            preserved);
     }
 
     private static string? ResolveMarkerAnchor(RecordingContext? context, string outputPath)
@@ -366,5 +695,27 @@ internal static class RecordingFinalizationRecoveryArtifacts
         }
 
         preserved.Add(path);
+    }
+
+    private static void AddRecoverableFilesFromDirectory(List<string> preserved, string? directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        {
+            return;
+        }
+
+        foreach (var filePath in Directory.EnumerateFiles(directory, "*", SearchOption.TopDirectoryOnly))
+        {
+            var extension = Path.GetExtension(filePath);
+            if (extension.Equals(".mp4", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".mkv", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".mov", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".ts", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".m4a", StringComparison.OrdinalIgnoreCase) ||
+                extension.Equals(".tmp", StringComparison.OrdinalIgnoreCase))
+            {
+                AddExistingFile(preserved, filePath);
+            }
+        }
     }
 }

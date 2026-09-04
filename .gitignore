@@ -10,6 +10,8 @@
 **/obj/
 [Dd]ebug/
 [Rr]elease/
+!tools/release/
+!tools/release/*.ps1
 x64/
 x86/
 ARM64/

@@ -1432,15 +1432,6 @@ static partial class Program
             }
         }
 
-        foreach (var directory in inputDirectories)
-        {
-            var writeTime = Directory.GetLastWriteTimeUtc(directory);
-            if (writeTime > newest)
-            {
-                newest = writeTime;
-            }
-        }
-
         return newest;
     }
 
@@ -1448,14 +1439,15 @@ static partial class Program
     {
         var root = GetRepoRoot();
         var projectDirectory = GetToolProjectDirectory(relativeAssemblyPath);
-        var contractsInputDirectories = EnumerateToolInputDirectories(Path.Combine(root, "Sussudio.Automation.Contracts"));
+        var contractsInputDirectories = UsesAutomationContracts(projectDirectory)
+            ? EnumerateToolInputDirectories(Path.Combine(root, "Sussudio.Automation.Contracts"))
+            : Array.Empty<string>();
         var linkedCompileInputs = EnumerateToolProjectCompileIncludes(projectDirectory).ToArray();
         var inputDirectories = EnumerateToolInputDirectories(projectDirectory)
             .Concat(UsesCommonToolSources(projectDirectory)
                 ? EnumerateToolInputDirectories(Path.Combine(root, "tools", "Common"))
                 : Array.Empty<string>())
             .Concat(contractsInputDirectories)
-            .Concat(EnumerateExistingCompileIncludeDirectories(linkedCompileInputs))
             .Concat(new[] { root })
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -1471,15 +1463,6 @@ static partial class Program
         foreach (var file in inputFiles)
         {
             var writeTime = File.GetLastWriteTimeUtc(file);
-            if (writeTime > newest)
-            {
-                newest = writeTime;
-            }
-        }
-
-        foreach (var directory in inputDirectories)
-        {
-            var writeTime = Directory.GetLastWriteTimeUtc(directory);
             if (writeTime > newest)
             {
                 newest = writeTime;
@@ -1521,24 +1504,6 @@ static partial class Program
         }
     }
 
-    private static IEnumerable<string> EnumerateExistingCompileIncludeDirectories(IEnumerable<string> compileIncludes)
-    {
-        foreach (var include in compileIncludes)
-        {
-            var directory = Path.GetDirectoryName(include);
-            while (!string.IsNullOrWhiteSpace(directory))
-            {
-                if (Directory.Exists(directory))
-                {
-                    yield return directory;
-                    break;
-                }
-
-                directory = Path.GetDirectoryName(directory);
-            }
-        }
-    }
-
     private static bool UsesCommonToolSources(string projectDirectory)
     {
         foreach (var projectFile in Directory.EnumerateFiles(projectDirectory, "*.csproj"))
@@ -1563,6 +1528,32 @@ static partial class Program
                 {
                     return true;
                 }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool UsesAutomationContracts(string projectDirectory)
+    {
+        foreach (var projectFile in Directory.EnumerateFiles(projectDirectory, "*.csproj"))
+        {
+            XDocument project;
+            try
+            {
+                project = XDocument.Load(projectFile);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (project.Descendants()
+                .Where(element => string.Equals(element.Name.LocalName, "ProjectReference", StringComparison.OrdinalIgnoreCase))
+                .Select(element => element.Attribute("Include")?.Value)
+                .Any(value => value?.Contains("Sussudio.Automation.Contracts", StringComparison.OrdinalIgnoreCase) == true))
+            {
+                return true;
             }
         }
 

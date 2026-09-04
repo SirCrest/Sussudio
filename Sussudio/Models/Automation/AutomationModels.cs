@@ -777,6 +777,17 @@ public sealed class CaptureRuntimeSnapshot
     public string LastFinalizeStatus { get; init; } = "None";
     public DateTimeOffset? LastFinalizeUtc { get; init; }
     public IReadOnlyList<string> LastPreservedArtifacts { get; init; } = Array.Empty<string>();
+    public string RecordingLifecyclePhase { get; init; } = "Idle";
+    public string RecordingFinalizeOutcome { get; init; } = "None";
+    public string RecordingFinalizeFailureCode { get; init; } = string.Empty;
+    public bool RecordingFinalizationVerificationCompleted { get; init; }
+    public bool RecordingFinalizationCleanupPending { get; init; }
+    public long RecordingFinalizationElapsedMs { get; init; }
+    public string? RecordingRecoveryPath { get; init; }
+    public IReadOnlyList<string> RecordingRequestedTracks { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> RecordingObservedTracks { get; init; } = Array.Empty<string>();
+    public string RecordingFinalizationProgressStage { get; init; } = "Idle";
+    public DateTimeOffset? LastRecordingFinalizationProgressUtc { get; init; }
     public string? FlashbackExportOutputPath { get; init; }
     public string? FlashbackExportVerificationFormat { get; init; }
     public string? FlashbackCodecDowngradeReason { get; init; }

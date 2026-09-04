@@ -63,7 +63,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private bool _gpuEncodingEnabled;
     private int _disposeFinalized;
     private int _deferredDisposeScheduled;
-
     private long _segmentStartBytes;
     private long _lastDiskBytesUpdateMs;
     private long _segmentRotationFailures;
@@ -72,17 +71,26 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
     private long _videoFramesEnqueued;
+    private long _videoPacketsRetired;
+    private long _lastVideoRetirementPtsTicks;
     private long _videoFramesSubmittedToEncoder;
     private long _videoDropsQueueSaturated;
     private long _videoDropsBacklogEviction;
     private long _videoQueueRejectedFrames;
     private long _audioSamplesReceived;
+    private long _microphoneSamplesReceived;
+    private long _audioPacketsAccepted;
+    private long _audioPacketsRetired;
+    private long _microphonePacketsAccepted;
+    private long _microphonePacketsRetired;
     private long _audioDropsQueueSaturated;
     private long _audioDropsBacklogEviction;
     private long _droppedAudioSamplesCount;
     private long _microphoneDropsQueueSaturated;
     private long _microphoneDropsBacklogEviction;
     private long _gpuFramesEnqueued;
+    private long _gpuPacketsRetired;
+    private long _lastGpuRetirementPtsTicks;
     private long _gpuFramesDropped;
     private long _gpuQueueRejectedFrames;
     private Action<Exception>? _onFatalError;
@@ -104,6 +112,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private TimeSpan _segmentStartPts;
     private TimeSpan _segmentDuration;
     private TimeSpan _ptsBaseOffset;
+    private RecordingBoundaryFence? _activeRecordingBoundaryFence;
 
     public event EventHandler<long>? FrameEncoded;
 
@@ -354,6 +363,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _droppedVideoFrames, 0);
         Interlocked.Exchange(ref _encodedVideoFrames, 0);
         Interlocked.Exchange(ref _videoFramesEnqueued, 0);
+        Interlocked.Exchange(ref _videoPacketsRetired, 0);
+        Interlocked.Exchange(ref _lastVideoRetirementPtsTicks, 0);
         Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
         Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
@@ -371,6 +382,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
         Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
         Interlocked.Exchange(ref _audioSamplesReceived, 0);
+        Interlocked.Exchange(ref _microphoneSamplesReceived, 0);
+        Interlocked.Exchange(ref _audioPacketsAccepted, 0);
+        Interlocked.Exchange(ref _audioPacketsRetired, 0);
+        Interlocked.Exchange(ref _microphonePacketsAccepted, 0);
+        Interlocked.Exchange(ref _microphonePacketsRetired, 0);
+        Interlocked.Exchange(ref _gpuPacketsRetired, 0);
+        Interlocked.Exchange(ref _lastGpuRetirementPtsTicks, 0);
+        Volatile.Write(ref _activeRecordingBoundaryFence, null);
         Interlocked.Exchange(ref _videoQueueDepth, 0);
         Interlocked.Exchange(ref _audioQueueDepth, 0);
         Interlocked.Exchange(ref _microphoneQueueDepth, 0);
@@ -519,6 +538,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long EncodedVideoFrames => Interlocked.Read(ref _encodedVideoFrames);
 
     public long AudioSamplesReceived => Interlocked.Read(ref _audioSamplesReceived);
+    public long MicrophoneSamplesReceived => Interlocked.Read(ref _microphoneSamplesReceived);
 
     public long OutputBytes => _bufferManager.TotalDiskBytes;
     public long TotalBytesWritten => _bufferManager.TotalBytesWritten;
@@ -535,6 +555,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public long AudioDropsQueueSaturated => Interlocked.Read(ref _audioDropsQueueSaturated);
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
+    public long MicrophoneDropsQueueSaturated => Interlocked.Read(ref _microphoneDropsQueueSaturated);
+    public long MicrophoneDropsBacklogEviction => Interlocked.Read(ref _microphoneDropsBacklogEviction);
 
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
@@ -685,7 +707,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)
     {
-        var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0;
+        var recordingBoundary = CaptureRecordingBoundaryFence(out var wasRecording);
         if (!wasRecording)
         {
             const string message = "Flashback recording was not active.";
@@ -703,10 +725,19 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Give encoding loop time to drain remaining queued frames — bounded
-            // wait instead of a fixed delay so a fast-draining queue isn't taxed
-            // and a slow one (deep backlog) isn't cut short of its tail frames.
-            await WaitForEncodeQueueDrainAsync(TimeSpan.FromMilliseconds(750), cancellationToken).ConfigureAwait(false);
+            // Producers stay attached after Flashback recording ends because the
+            // rolling buffer continues. Wait only for packets accepted before the
+            // recording boundary, not for the live queues to become globally empty.
+            if (!await WaitForRecordingBoundaryAsync(recordingBoundary, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false))
+            {
+                const string drainFailure = "Flashback recording failed because accepted frames did not finish encoding within 30 seconds.";
+                Logger.Log("FLASHBACK_RECORDING_END_DRAIN_FAILED");
+                return FinalizeResult.Failure(
+                    _recordingOutputPath ?? string.Empty,
+                    drainFailure,
+                    _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
+                    "recording-flashback-encode-drain-timeout");
+            }
 
             // Check if the encoding loop crashed during the recording
             var failure = _encodingFailure;
@@ -722,12 +753,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 };
             }
 
-            // Capture end PTS BEFORE resuming eviction. When an outer pause is held
-            // (FinalizeFlashbackRecordingAsync), ResumeEviction won't reach count=0 and
-            // therefore won't snapshot the end PTS. Even if count does reach 0, the
-            // stored _recordingEndPts may be stale from a previous recording. Always
-            // use the live LatestPts as the authoritative recording end time.
-            var endPts = _bufferManager.LatestPts;
+            // Use the PTS latched when the exact pre-boundary video packet retired.
+            // Sampling LatestPts here would include post-stop video that encoded while
+            // a slower audio or microphone queue was still reaching its own fence.
+            var endPts = recordingBoundary.EndPts;
             LastRecordingEndPts = endPts;
 
             return new FinalizeResult
@@ -740,6 +769,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         finally
         {
+            Interlocked.CompareExchange(ref _activeRecordingBoundaryFence, null, recordingBoundary);
             if (wasRecording)
             {
                 var (startPts, _) = ResumeEvictionBestEffort(_bufferManager, "recording_end");
@@ -762,28 +792,62 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private async Task WaitForEncodeQueueDrainAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    private RecordingBoundaryFence CaptureRecordingBoundaryFence(out bool wasRecording)
+    {
+        lock (_videoQueueSync)
+        {
+            wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0;
+            var boundary = new RecordingBoundaryFence(
+                Interlocked.Read(ref _videoFramesEnqueued),
+                Interlocked.Read(ref _audioPacketsAccepted),
+                Interlocked.Read(ref _microphonePacketsAccepted),
+                Interlocked.Read(ref _gpuFramesEnqueued));
+            if (wasRecording)
+            {
+                Volatile.Write(ref _activeRecordingBoundaryFence, boundary);
+                boundary.CaptureAlreadyRetiredVideoPts(
+                    Interlocked.Read(ref _videoPacketsRetired),
+                    Interlocked.Read(ref _lastVideoRetirementPtsTicks),
+                    Interlocked.Read(ref _gpuPacketsRetired),
+                    Interlocked.Read(ref _lastGpuRetirementPtsTicks));
+            }
+
+            return boundary;
+        }
+    }
+
+    private async Task<bool> WaitForRecordingBoundaryAsync(
+        RecordingBoundaryFence boundary,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
     {
         var deadline = Environment.TickCount64 + (long)timeout.TotalMilliseconds;
         while (Environment.TickCount64 < deadline)
         {
-            if (Volatile.Read(ref _videoQueueDepth) == 0 &&
-                Volatile.Read(ref _audioQueueDepth) == 0 &&
-                Volatile.Read(ref _microphoneQueueDepth) == 0 &&
-                Volatile.Read(ref _gpuQueueDepth) == 0)
+            if (Interlocked.Read(ref _videoPacketsRetired) >= boundary.VideoPacketsAccepted &&
+                Interlocked.Read(ref _audioPacketsRetired) >= boundary.AudioPacketsAccepted &&
+                Interlocked.Read(ref _microphonePacketsRetired) >= boundary.MicrophonePacketsAccepted &&
+                Interlocked.Read(ref _gpuPacketsRetired) >= boundary.GpuPacketsAccepted &&
+                boundary.HasResolvedVideoEndPts)
             {
-                return;
+                return true;
             }
 
             if (Volatile.Read(ref _encodingFailure) != null || _encodingTask?.IsCompleted == true)
             {
-                return; // loop is dead; waiting longer cannot drain anything
+                return true; // caller inspects the terminal encoding failure next
             }
 
             await Task.Delay(15, cancellationToken).ConfigureAwait(false);
         }
 
-        Logger.Log($"FLASHBACK_RECORDING_END_DRAIN_TIMEOUT vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
+        Logger.Log(
+            "FLASHBACK_RECORDING_END_DRAIN_TIMEOUT " +
+            $"video={Interlocked.Read(ref _videoPacketsRetired)}/{boundary.VideoPacketsAccepted} " +
+            $"audio={Interlocked.Read(ref _audioPacketsRetired)}/{boundary.AudioPacketsAccepted} " +
+            $"microphone={Interlocked.Read(ref _microphonePacketsRetired)}/{boundary.MicrophonePacketsAccepted} " +
+            $"gpu={Interlocked.Read(ref _gpuPacketsRetired)}/{boundary.GpuPacketsAccepted}");
+        return false;
     }
 
     private static long ToNonNegativeLongSaturated(double value)
@@ -1251,7 +1315,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueAudioPacket(queue, packet, ref _audioQueueDepth, ref _audioDropsBacklogEviction))
+        if (TryEnqueueAudioPacket(
+                queue,
+                packet,
+                ref _audioQueueDepth,
+                ref _audioDropsBacklogEviction,
+                ref _audioPacketsAccepted,
+                ref _audioPacketsRetired))
         {
             Interlocked.Add(ref _audioSamplesReceived, GetSampleCount(samples.Length));
             return;
@@ -1282,8 +1352,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueAudioPacket(queue, packet, ref _microphoneQueueDepth, ref _microphoneDropsBacklogEviction))
+        if (TryEnqueueAudioPacket(
+                queue,
+                packet,
+                ref _microphoneQueueDepth,
+                ref _microphoneDropsBacklogEviction,
+                ref _microphonePacketsAccepted,
+                ref _microphonePacketsRetired))
         {
+            Interlocked.Add(ref _microphoneSamplesReceived, GetSampleCount(samples.Length));
             return;
         }
 
@@ -1372,7 +1449,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Channel<AudioSamplePacket> queue,
         AudioSamplePacket packet,
         ref int queueDepth,
-        ref long backlogEvictions)
+        ref long backlogEvictions,
+        ref long acceptedPackets,
+        ref long retiredPackets)
     {
         lock (_videoQueueSync)
         {
@@ -1387,6 +1466,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio"))
             {
+                Interlocked.Increment(ref acceptedPackets);
                 SignalWork("audio_enqueue");
                 return true;
             }
@@ -1395,6 +1475,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 DecrementQueueDepth(ref queueDepth, "audio_evict");
                 Interlocked.Increment(ref backlogEvictions);
+                Interlocked.Increment(ref retiredPackets);
                 // Track dropped audio samples for A/V drift diagnostics (analogous to SkipVideoFrame for video)
                 var evictedSamples = GetSampleCount(evictedPacket.Length);
                 var totalDropped = Interlocked.Add(ref _droppedAudioSamplesCount, evictedSamples);
@@ -1408,6 +1489,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 ReturnBuffer(evictedPacket.Buffer);
                 if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio_after_evict"))
                 {
+                    Interlocked.Increment(ref acceptedPackets);
                     SignalWork("audio_after_evict");
                     return true;
                 }
@@ -1597,6 +1679,78 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
     private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
+    private sealed class RecordingBoundaryFence
+    {
+        private const long UnresolvedPtsTicks = long.MinValue;
+        private long _videoEndPtsTicks = UnresolvedPtsTicks;
+        private long _gpuEndPtsTicks = UnresolvedPtsTicks;
+
+        public RecordingBoundaryFence(
+            long videoPacketsAccepted,
+            long audioPacketsAccepted,
+            long microphonePacketsAccepted,
+            long gpuPacketsAccepted)
+        {
+            VideoPacketsAccepted = videoPacketsAccepted;
+            AudioPacketsAccepted = audioPacketsAccepted;
+            MicrophonePacketsAccepted = microphonePacketsAccepted;
+            GpuPacketsAccepted = gpuPacketsAccepted;
+        }
+
+        public long VideoPacketsAccepted { get; }
+        public long AudioPacketsAccepted { get; }
+        public long MicrophonePacketsAccepted { get; }
+        public long GpuPacketsAccepted { get; }
+
+        public bool HasResolvedVideoEndPts =>
+            Volatile.Read(ref _videoEndPtsTicks) != UnresolvedPtsTicks &&
+            Volatile.Read(ref _gpuEndPtsTicks) != UnresolvedPtsTicks;
+
+        public TimeSpan EndPts
+        {
+            get
+            {
+                var videoPtsTicks = Volatile.Read(ref _videoEndPtsTicks);
+                var gpuPtsTicks = Volatile.Read(ref _gpuEndPtsTicks);
+                return TimeSpan.FromTicks(Math.Max(videoPtsTicks, gpuPtsTicks));
+            }
+        }
+
+        public void CaptureAlreadyRetiredVideoPts(
+            long videoPacketsRetired,
+            long videoPtsTicks,
+            long gpuPacketsRetired,
+            long gpuPtsTicks)
+        {
+            if (videoPacketsRetired >= VideoPacketsAccepted)
+            {
+                Interlocked.CompareExchange(ref _videoEndPtsTicks, videoPtsTicks, UnresolvedPtsTicks);
+            }
+
+            if (gpuPacketsRetired >= GpuPacketsAccepted)
+            {
+                Interlocked.CompareExchange(ref _gpuEndPtsTicks, gpuPtsTicks, UnresolvedPtsTicks);
+            }
+        }
+
+        public void ObserveVideoRetirement(bool gpu, long packetsRetired, long ptsTicks)
+        {
+            if (gpu)
+            {
+                if (packetsRetired == GpuPacketsAccepted)
+                {
+                    Interlocked.CompareExchange(ref _gpuEndPtsTicks, ptsTicks, UnresolvedPtsTicks);
+                }
+
+                return;
+            }
+
+            if (packetsRetired == VideoPacketsAccepted)
+            {
+                Interlocked.CompareExchange(ref _videoEndPtsTicks, ptsTicks, UnresolvedPtsTicks);
+            }
+        }
+    }
 
     private static byte[] GetBuffer(int size)
     {
@@ -2000,6 +2154,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 if (expectedFrameSize > 0 && packet.Length != expectedFrameSize)
                 {
                     Interlocked.Increment(ref _droppedVideoFrames);
+                    RetireVideoPacket(gpu: false, Interlocked.Read(ref _lastVideoRetirementPtsTicks));
                     Logger.Log($"FLASHBACK_SINK_FRAME_SIZE_MISMATCH expected={expectedFrameSize} actual={packet.Length} w={w} h={h} p010={packet.IsP010}");
                     continue;
                 }
@@ -2009,7 +2164,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     : packet.Buffer!.AsSpan(0, packet.Length);
                 _encoder.SendVideoFrame(frameData, w, h);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
-                OnVideoFrameEncoded();
+                var pts = OnVideoFrameEncoded();
+                RetireVideoPacket(gpu: false, pts.Ticks);
             }
             finally
             {
@@ -2034,7 +2190,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
                 Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
-                OnVideoFrameEncoded();
+                var pts = OnVideoFrameEncoded();
+                RetireVideoPacket(gpu: true, pts.Ticks);
             }
             finally
             {
@@ -2058,6 +2215,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             try
             {
                 _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
+                Interlocked.Increment(ref _audioPacketsRetired);
             }
             finally
             {
@@ -2081,6 +2239,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             try
             {
                 _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
+                Interlocked.Increment(ref _microphonePacketsRetired);
             }
             finally
             {
@@ -2094,11 +2253,28 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return drainedAny;
     }
 
-    private void OnVideoFrameEncoded()
+    private void RetireVideoPacket(bool gpu, long ptsTicks)
+    {
+        if (gpu)
+        {
+            Interlocked.Exchange(ref _lastGpuRetirementPtsTicks, ptsTicks);
+            var gpuPacketsRetired = Interlocked.Increment(ref _gpuPacketsRetired);
+            Volatile.Read(ref _activeRecordingBoundaryFence)?
+                .ObserveVideoRetirement(gpu: true, gpuPacketsRetired, ptsTicks);
+            return;
+        }
+
+        Interlocked.Exchange(ref _lastVideoRetirementPtsTicks, ptsTicks);
+        var videoPacketsRetired = Interlocked.Increment(ref _videoPacketsRetired);
+        Volatile.Read(ref _activeRecordingBoundaryFence)?
+            .ObserveVideoRetirement(gpu: false, videoPacketsRetired, ptsTicks);
+    }
+
+    private TimeSpan OnVideoFrameEncoded()
     {
         if (_disposed)
         {
-            return;
+            return TimeSpan.Zero;
         }
 
         Interlocked.Exchange(ref _lastVideoWriteTick, Environment.TickCount64);
@@ -2127,7 +2303,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 FailEncoding(new IOException(
                     "Flashback stopped: drive with the flashback cache is critically low on space."));
-                return;
+                return pts;
             }
         }
 
@@ -2144,6 +2320,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 Logger.Log($"FLASHBACK_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
             }
         }
+
+        return pts;
     }
 
     private TimeSpan ResolveEncoderPts()

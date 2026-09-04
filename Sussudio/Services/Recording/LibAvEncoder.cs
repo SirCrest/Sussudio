@@ -1005,27 +1005,41 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             return;
         }
 
-        try
+        Exception? firstFailure = null;
+
+        void RunFinalizationStep(string stage, Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                firstFailure ??= new InvalidOperationException(
+                    $"Libav recording finalization failed during {stage}: {ex.Message}",
+                    ex);
+                Logger.Log(
+                    $"LIBAV_ENCODER_FINALIZE_FAIL stage={stage} type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+        }
+
+        RunFinalizationStep("video_flush", () =>
         {
             if (_isOpen && !_flushSent)
             {
-                try
+                var flushResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, null);
+                if (flushResult != ffmpeg.AVERROR_EOF)
                 {
-                    var flushResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, null);
-                    if (flushResult != ffmpeg.AVERROR_EOF)
-                    {
-                        ThrowIfError(flushResult, "avcodec_send_frame(flush)");
-                        _flushSent = true;
-                    }
+                    ThrowIfError(flushResult, "avcodec_send_frame(flush)");
+                    _flushSent = true;
+                }
 
-                    DrainEncoderPackets();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"LIBAV_ENCODER_WARNING video_flush_error msg='{ex.Message}'");
-                }
+                DrainEncoderPackets();
             }
+        });
 
+        RunFinalizationStep("audio_flush", () =>
+        {
             if (_audio.CodecCtx != null)
             {
                 FlushPendingStreamSamples(ref _audio, "audio_flush",
@@ -1039,7 +1053,10 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
 
                 DrainStreamEncoderPackets(ref _audio);
             }
+        });
 
+        RunFinalizationStep("microphone_flush", () =>
+        {
             if (_mic.CodecCtx != null)
             {
                 FlushPendingStreamSamples(ref _mic, "mic_flush",
@@ -1053,10 +1070,13 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
 
                 DrainStreamEncoderPackets(ref _mic);
             }
-        }
-        finally
+        });
+
+        RunFinalizationStep("trailer_and_close", () => CleanupResources(writeTrailer: true));
+
+        if (firstFailure != null)
         {
-            CleanupResources(writeTrailer: true);
+            throw firstFailure;
         }
     }
 
@@ -1071,6 +1091,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         var trailerMs = 0.0;
         var outputPath = _options?.OutputPath;
         var normalClose = _isOpen;
+        Exception? nativeCloseFailure = null;
 
         try
         {
@@ -1081,15 +1102,20 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
                 trailerMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
                 if (trailerResult < 0)
                 {
-                    Logger.Log(
-                        $"LIBAV_ENCODER_ERROR operation=av_write_trailer code={trailerResult} msg='{GetErrorString(trailerResult)}'");
+                    var message =
+                        $"LIBAV_ENCODER_ERROR operation=av_write_trailer code={trailerResult} msg='{GetErrorString(trailerResult)}'";
+                    Logger.Log(message);
+                    nativeCloseFailure = new InvalidOperationException(message);
                 }
             }
         }
         finally
         {
             var useCudaHardwareFrames = _useCudaHardwareFrames;
-            var finalMicSamplesReceived = ReleaseNativeResources(useCudaHardwareFrames);
+            var finalMicSamplesReceived = ReleaseNativeResources(
+                useCudaHardwareFrames,
+                out var outputCloseFailure);
+            nativeCloseFailure ??= outputCloseFailure;
 
             var outputBytes = 0L;
             if (!string.IsNullOrWhiteSpace(outputPath) && File.Exists(outputPath))
@@ -1123,6 +1149,11 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
                 0,
                 operationStartedAt);
         }
+
+        if (writeTrailer && nativeCloseFailure != null)
+        {
+            throw nativeCloseFailure;
+        }
     }
 
     private void PublishMuxPhaseTiming(
@@ -1148,15 +1179,20 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             $"close_io_ms={timing.CloseIoMs:F1} open_output_ms={timing.OpenOutputMs:F1} header_ms={timing.HeaderMs:F1} total_ms={timing.TotalMs:F1}");
     }
 
-    private long ReleaseNativeResources(bool useCudaHardwareFrames)
+    private long ReleaseNativeResources(
+        bool useCudaHardwareFrames,
+        out Exception? outputCloseFailure)
     {
+        outputCloseFailure = null;
         if (_formatCtx != null && _formatCtx->pb != null)
         {
             var closeResult = ffmpeg.avio_closep(&_formatCtx->pb);
             if (closeResult < 0)
             {
-                Logger.Log(
-                    $"LIBAV_ENCODER_ERROR operation=avio_closep code={closeResult} msg='{GetErrorString(closeResult)}'");
+                var message =
+                    $"LIBAV_ENCODER_ERROR operation=avio_closep code={closeResult} msg='{GetErrorString(closeResult)}'";
+                Logger.Log(message);
+                outputCloseFailure = new InvalidOperationException(message);
             }
         }
 

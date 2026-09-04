@@ -931,6 +931,11 @@ public partial class MainViewModel
             return false;
         }
 
+        if (explicitMode is not null)
+        {
+            _ = DeviceAudioModeParser.NormalizeOrThrow(explicitMode);
+        }
+
         var mode = NormalizeDeviceAudioMode(explicitMode ?? SelectedDeviceAudioMode);
         Logger.Log($"=== Updating device audio mode ({reason}) ===");
         Logger.Log($"  Mode: {mode}");

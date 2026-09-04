@@ -182,29 +182,105 @@ namespace Sussudio.Services.Contracts
         public string? AudioTempPath { get; init; }
         public bool HdrPipelineActive { get; init; }
 
+        // Expected output topology follows the user's selected recording
+        // settings, not whether a display name happened to resolve. Capture
+        // initialization is responsible for rejecting an enabled source that
+        // cannot be opened before recording becomes active.
+        public bool AudioEnabled => Settings.AudioEnabled;
+        public bool MicrophoneEnabled => Settings.MicrophoneEnabled;
+
         public IntPtr D3D11DevicePtr => GpuHandles.D3D11DevicePtr;
         public IntPtr D3D11DeviceContextPtr => GpuHandles.D3D11DeviceContextPtr;
         public IntPtr CudaHwDeviceCtxPtr => GpuHandles.CudaHwDeviceCtxPtr;
         public IntPtr CudaHwFramesCtxPtr => GpuHandles.CudaHwFramesCtxPtr;
     }
 
+    public enum RecordingLifecyclePhase
+    {
+        Idle = 0,
+        Recording = 1,
+        Finalizing = 2
+    }
+
+    public enum RecordingFinalizeOutcome
+    {
+        None = 0,
+        Saved = 1,
+        Failed = 2
+    }
+
+    public sealed record RecordingFinalizationProgress(
+        string Stage,
+        long ElapsedMs,
+        long NoProgressMs,
+        long ProgressVersion,
+        bool NoProgressWarning);
+
     public sealed class FinalizeResult
     {
         private static readonly IReadOnlyList<string> EmptyArtifacts = Array.Empty<string>();
 
         public bool Succeeded { get; init; }
+        public RecordingFinalizeOutcome Outcome { get; init; }
         public string OutputPath { get; init; } = string.Empty;
         public string StatusMessage { get; init; } = "Stopped";
         public IReadOnlyList<string> PreservedArtifacts { get; init; } = EmptyArtifacts;
+        public bool VerificationCompleted { get; init; }
+        public bool CleanupPending { get; init; }
+        public string? RecoveryPath { get; init; }
+        public string FailureCode { get; init; } = string.Empty;
+        public long FinalizationElapsedMs { get; init; }
+        public IReadOnlyList<string> RequestedTracks { get; init; } = EmptyArtifacts;
+        public IReadOnlyList<string> ObservedTracks { get; init; } = EmptyArtifacts;
+
+        public FinalizeResult WithTrackEvidence(
+            IEnumerable<string>? requestedTracks,
+            IEnumerable<string>? observedTracks)
+        {
+            return new FinalizeResult
+            {
+                Succeeded = Succeeded,
+                Outcome = Outcome,
+                OutputPath = OutputPath,
+                StatusMessage = StatusMessage,
+                PreservedArtifacts = PreservedArtifacts,
+                VerificationCompleted = VerificationCompleted,
+                CleanupPending = CleanupPending,
+                RecoveryPath = RecoveryPath,
+                FailureCode = FailureCode,
+                FinalizationElapsedMs = FinalizationElapsedMs,
+                RequestedTracks = NormalizeTrackEvidence(requestedTracks),
+                ObservedTracks = NormalizeTrackEvidence(observedTracks)
+            };
+        }
+
+        private static IReadOnlyList<string> NormalizeTrackEvidence(IEnumerable<string>? tracks)
+            => tracks == null
+                ? EmptyArtifacts
+                : new ReadOnlyCollection<string>(
+                    tracks
+                        .Where(track => !string.IsNullOrWhiteSpace(track))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray());
 
         public static FinalizeResult Success(string outputPath, string statusMessage = "Stopped")
+            => Success(outputPath, statusMessage, verificationCompleted: false, finalizationElapsedMs: 0);
+
+        public static FinalizeResult Success(
+            string outputPath,
+            string statusMessage,
+            bool verificationCompleted,
+            long finalizationElapsedMs = 0)
         {
             return new FinalizeResult
             {
                 Succeeded = true,
+                Outcome = RecordingFinalizeOutcome.Saved,
                 OutputPath = outputPath,
                 StatusMessage = statusMessage,
-                PreservedArtifacts = EmptyArtifacts
+                PreservedArtifacts = EmptyArtifacts,
+                VerificationCompleted = verificationCompleted,
+                FinalizationElapsedMs = finalizationElapsedMs
             };
         }
 
@@ -212,6 +288,25 @@ namespace Sussudio.Services.Contracts
             string outputPath,
             string statusMessage,
             IEnumerable<string>? preservedArtifacts = null)
+            => Failure(
+                outputPath,
+                statusMessage,
+                preservedArtifacts,
+                failureCode: "recording-finalization-failed",
+                cleanupPending: false,
+                recoveryPath: null,
+                verificationCompleted: false,
+                finalizationElapsedMs: 0);
+
+        public static FinalizeResult Failure(
+            string outputPath,
+            string statusMessage,
+            IEnumerable<string>? preservedArtifacts,
+            string failureCode,
+            bool cleanupPending = false,
+            string? recoveryPath = null,
+            bool verificationCompleted = false,
+            long finalizationElapsedMs = 0)
         {
             var artifacts = preservedArtifacts == null
                 ? EmptyArtifacts
@@ -224,9 +319,15 @@ namespace Sussudio.Services.Contracts
             return new FinalizeResult
             {
                 Succeeded = false,
+                Outcome = RecordingFinalizeOutcome.Failed,
                 OutputPath = outputPath,
                 StatusMessage = statusMessage,
-                PreservedArtifacts = artifacts
+                PreservedArtifacts = artifacts,
+                FailureCode = failureCode,
+                CleanupPending = cleanupPending,
+                RecoveryPath = recoveryPath,
+                VerificationCompleted = verificationCompleted,
+                FinalizationElapsedMs = finalizationElapsedMs
             };
         }
     }

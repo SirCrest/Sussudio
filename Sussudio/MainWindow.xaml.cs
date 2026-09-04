@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Dispatching;
@@ -12,6 +13,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Controllers;
 using Sussudio.Models;
+using Sussudio.Services.Audio;
 using Sussudio.Services.Gpu;
 using Sussudio.ViewModels;
 
@@ -27,6 +29,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private NvmlMonitor? _nvmlMonitor;
     private FullScreenController _fullScreenController = null!;
     private WindowShutdownCleanupController _windowShutdownCleanupController = null!;
+    private int _wasapiEmergencyCloseStarted;
     private MainWindowPropertyChangedRouter _propertyChangedRouter = null!;
     private FlashbackPropertyChangedController _flashbackPropertyChangedController = null!;
     private FlashbackCommandController _flashbackCommandController = null!;
@@ -47,6 +50,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
+        WasapiWorkerQuarantine.EmergencyCloseRequested += WasapiWorkerQuarantine_EmergencyCloseRequested;
         InitializeWindowCloseRequestController();
         ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;
         ViewModel.FrameTimeOverlayVisibilityHandler = SetFrameTimeOverlayVisible;
@@ -561,7 +565,86 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     }
 
     private async void MainWindow_Closed(object sender, WindowEventArgs args)
-        => await _windowShutdownCleanupController.RunAsync();
+    {
+        await _windowShutdownCleanupController.RunAsync();
+        WasapiWorkerQuarantine.EmergencyCloseRequested -= WasapiWorkerQuarantine_EmergencyCloseRequested;
+    }
+
+    private void WasapiWorkerQuarantine_EmergencyCloseRequested(
+        object? sender,
+        WasapiWorkerQuarantinedEventArgs args)
+    {
+        if (Interlocked.CompareExchange(ref _wasapiEmergencyCloseStarted, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() => _ = RunWasapiEmergencyCloseAsync(args));
+    }
+
+    private async Task RunWasapiEmergencyCloseAsync(WasapiWorkerQuarantinedEventArgs args)
+    {
+        var role = args.Role.ToString().ToLowerInvariant();
+        var message =
+            $"The {role} audio worker did not stop safely. Sussudio must close so its native audio resources are not reused. " +
+            "Recording recovery is being attempted; the app will close when you acknowledge this message or after ten seconds.";
+        ViewModel.StatusText = "Audio shutdown timed out. Sussudio must close.";
+
+        Task emergencyCleanup;
+        try
+        {
+            emergencyCleanup = ViewModel.StopRecordingForEmergencyAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI_EMERGENCY_RECORDING_CLEANUP_START_FAILED error='{ex.Message}'");
+            emergencyCleanup = Task.CompletedTask;
+        }
+
+        var countdown = Task.Delay(TimeSpan.FromSeconds(10));
+        ContentDialog? dialog = null;
+        Task? acknowledgment = null;
+        if (Content is FrameworkElement root && root.XamlRoot != null)
+        {
+            dialog = new ContentDialog
+            {
+                XamlRoot = root.XamlRoot,
+                Title = "Sussudio must close",
+                Content = message,
+                CloseButtonText = "Close now",
+            };
+            acknowledgment = dialog.ShowAsync().AsTask();
+        }
+
+        await Task.WhenAny(acknowledgment ?? countdown, countdown);
+        if (dialog != null && acknowledgment != null && !acknowledgment.IsCompleted)
+        {
+            dialog.Hide();
+        }
+
+        if (!emergencyCleanup.IsCompleted)
+        {
+            ViewModel.MarkRecordingFinalizationUnresolved(
+                $"Recording cleanup was interrupted after {args.TimeoutEvent}; Sussudio closed to quarantine an unsafe audio worker.");
+        }
+        else
+        {
+            try
+            {
+                await emergencyCleanup;
+            }
+            catch (Exception ex)
+            {
+                ViewModel.MarkRecordingFinalizationUnresolved(
+                    $"Emergency recording cleanup failed after {args.TimeoutEvent}: {ex.Message}");
+            }
+        }
+
+        Logger.LogFatalBreadcrumb(
+            $"WASAPI_WORKER_QUARANTINE_PROCESS_EXIT role={role} timeout_event={args.TimeoutEvent}");
+        await Logger.ShutdownAsync(TimeSpan.FromSeconds(1));
+        Environment.Exit(1);
+    }
 
     private void DetachMeterActivationHandlers()
     {
@@ -1236,6 +1319,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsRecordingTransitioning = () => ViewModel.IsRecordingTransitioning,
             GetStatusText = () => ViewModel.StatusText,
             StopRecordingBeforeCloseAsync = TryStopRecordingBeforeCloseAsync,
+            PrepareForCloseAsync = ViewModel.DisposeAsync,
+            IsEmergencyClosePending = () => Volatile.Read(ref _wasapiEmergencyCloseStarted) != 0,
             RequestWindowClose = RequestWindowClose
         });
     }
@@ -1418,7 +1503,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             LoadedHandler = MainWindow_Loaded,
             ScheduleNativeShellRevealAfterFirstFrame = ScheduleNativeShellRevealAfterFirstFrame,
             RunUiEventHandlerAsync = RunUiEventHandlerAsync,
-            InitializeViewModelAsync = ViewModel.InitializeAsync,
+            InitializeViewModelAsync = InitializeViewModelForLaunchAsync,
             PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
             RefreshDevicesAsync = () => ViewModel.RefreshDevicesForStartupAsync(),
             IsPreviewing = () => ViewModel.IsPreviewing,
@@ -1432,6 +1517,34 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         => _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));
+
+    private async Task InitializeViewModelForLaunchAsync()
+    {
+        await ViewModel.InitializeAsync();
+        RecordingRecoveryInfoBar.Message = ViewModel.RecoveredRecordingFailureMessage ?? string.Empty;
+        RecordingRecoveryInfoBar.IsOpen = !string.IsNullOrWhiteSpace(ViewModel.RecoveredRecordingFailurePath);
+    }
+
+    private void RecordingRecoveryOpenLocationButton_Click(object sender, RoutedEventArgs e)
+        => _ = RunUiEventHandlerAsync(
+            OpenRecoveredRecordingLocationAsync,
+            nameof(RecordingRecoveryOpenLocationButton_Click));
+
+    private async Task OpenRecoveredRecordingLocationAsync()
+    {
+        var recoveryPath = ViewModel.RecoveredRecordingFailurePath;
+        var directory = Directory.Exists(recoveryPath)
+            ? recoveryPath
+            : Path.GetDirectoryName(recoveryPath);
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+        {
+            await OpenRecordingsFolderFromButtonAsync();
+            return;
+        }
+
+        var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(directory);
+        await Windows.System.Launcher.LaunchFolderAsync(folder);
+    }
 
     private void InitializeSettingsShelfController()
     {

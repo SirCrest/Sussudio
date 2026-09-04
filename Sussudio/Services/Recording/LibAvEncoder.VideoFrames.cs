@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using FFmpeg.AutoGen;
+using Sussudio.Services.Gpu;
 
 namespace Sussudio.Services.Recording;
 
@@ -83,8 +84,10 @@ internal sealed unsafe partial class LibAvEncoder
             stage = "av_hwdevice_ctx_init";
             var hwDeviceCtxData = (AVHWDeviceContext*)hwDeviceCtx->data;
             var d3d11vaDeviceCtx = (AVD3D11VADeviceContext*)hwDeviceCtxData->hwctx;
-            d3d11vaDeviceCtx->device = (FFmpeg.AutoGen.ID3D11Device*)options.D3D11DevicePtr;
-            d3d11vaDeviceCtx->device_context = (FFmpeg.AutoGen.ID3D11DeviceContext*)options.D3D11DeviceContextPtr;
+            FfmpegD3D11Ownership.TransferBorrowedReferences(
+                d3d11vaDeviceCtx,
+                options.D3D11DevicePtr,
+                options.D3D11DeviceContextPtr);
 
             var initResult = ffmpeg.av_hwdevice_ctx_init(hwDeviceCtx);
             if (initResult < 0)

@@ -260,6 +260,22 @@
                 </InfoBar.ActionButton>
             </InfoBar>
 
+            <InfoBar x:Name="RecordingRecoveryInfoBar"
+                     AutomationProperties.AutomationId="RecordingRecoveryInfoBar"
+                     Title="Recording failed"
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="True"
+                     VerticalAlignment="Top"
+                     Margin="16,120,16,0">
+                <InfoBar.ActionButton>
+                    <Button x:Name="RecordingRecoveryOpenLocationButton"
+                            AutomationProperties.AutomationId="RecordingRecoveryOpenLocationButton"
+                            Content="Open location"
+                            Click="RecordingRecoveryOpenLocationButton_Click"/>
+                </InfoBar.ActionButton>
+            </InfoBar>
+
         </Grid>
 
         <!-- Stats Dock Panel — full-height right column, outside preview grid -->

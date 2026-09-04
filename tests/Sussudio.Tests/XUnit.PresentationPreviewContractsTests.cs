@@ -3348,7 +3348,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(mainWindowText, "_previewStartupVisualTimeoutMs");
         AssertDoesNotContain(mainWindowText, "_previewStartupWatchdogTimer");
         AssertDoesNotContain(previewStartupWatchdogText, "DispatcherQueueTimer");
-        AssertDoesNotContain(previewStartupWatchdogText, "Interlocked");
+        AssertContains(mainWindowText, "private int _wasapiEmergencyCloseStarted;");
         AssertDoesNotContain(previewStartupWatchdogText, "EnvironmentHelpers.GetIntFromEnv");
         AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutReason(");
         AssertDoesNotContain(previewStartupWatchdogText, "PreviewStartupFailureTextFormatter.FormatTimeoutStatusText(");
@@ -4935,7 +4935,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetDxgiFrameStatisticsMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetFrameLatencyWaitMetrics()");
         AssertDoesNotContain(previewRuntimeSnapshotText, "GetPipelineLatencyMetrics()");
-        AssertDoesNotContain(previewRuntimeSnapshotText, "_dispatcherQueue.TryEnqueue");
+        AssertContains(previewRuntimeSnapshotText, "_dispatcherQueue.TryEnqueue(() => _ = RunWasapiEmergencyCloseAsync(args));");
         AssertDoesNotContain(previewRuntimeSnapshotText, "const int maxAttempts = 3;");
         AssertDoesNotContain(previewRuntimeSnapshotText, "completion.TrySetResult(GetPreviewRuntimeSnapshot());");
         AssertDoesNotContain(previewRuntimeSnapshotText, "await Task.Delay(50, cancellationToken).ConfigureAwait(false);");
@@ -7324,11 +7324,13 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(appClosingControllerText, "internal sealed class WindowAppClosingController");
         AssertContains(appClosingControllerText, "public async Task HandleClosingAsync(AppWindowClosingEventArgs args)");
         AssertContains(appClosingControllerText, "LogWindowClosingTrigger();");
-        AssertContains(appClosingControllerText, "if (!_context.IsRecording() && !_context.IsRecordingTransitioning())");
+        AssertContains(appClosingControllerText, "if (_context.IsRecording() || _context.IsRecordingTransitioning())");
         AssertContains(appClosingControllerText, "args.Cancel = true;");
         AssertContains(appClosingControllerText, "_context.LifecycleController.ClearRequested();");
         AssertContains(appClosingControllerText, "_context.LifecycleController.TryBeginRecordingStop()");
         AssertContains(appClosingControllerText, "var stopped = await _context.StopRecordingBeforeCloseAsync();");
+        AssertContains(appClosingControllerText, "await _context.PrepareForCloseAsync();");
+        AssertContains(appClosingControllerText, "if (_context.IsEmergencyClosePending())");
         AssertContains(appClosingControllerText, "_context.LifecycleController.CompleteRequest(new InvalidOperationException(_context.GetStatusText()))");
         AssertContains(appClosingControllerText, "_context.LifecycleController.AllowAfterRecordingStop();");
         AssertContains(appClosingControllerText, "_context.LifecycleController.CompleteRequest();");
@@ -7410,7 +7412,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(closeLifecycleText, "_windowAppClosingController.HandleClosingAsync(args)");
         AssertContains(appClosingControllerText, "args.Cancel = true;");
         AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
-        AssertContains(appClosingControllerText, "if (!_context.IsRecording() && !_context.IsRecordingTransitioning())");
+        AssertContains(appClosingControllerText, "if (_context.IsRecording() || _context.IsRecordingTransitioning())");
+        AssertContains(appClosingControllerText, "await _context.PrepareForCloseAsync();");
         AssertContains(closeLifecycleText, "=> _windowCloseRecordingFinalizationController.StopBeforeCloseAsync(");
         AssertContains(appClosingControllerText, "_context.RequestWindowClose();");
         AssertContains(closeLifecycleText, "_windowCloseLifecycleController.CloseAsync(_dispatcherQueue, RequestWindowClose, cancellationToken)");
@@ -7428,7 +7431,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(closeRecordingFinalizationControllerText, "close cancelled to protect recording");
         AssertContains(closeRecordingFinalizationControllerText, "Still saving recording. Close cancelled.");
         AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_FAILED_AFTER_CLOSE ");
-        AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
+        AssertContains(closeLifecycleText, "await Task.WhenAny(acknowledgment ?? countdown, countdown);");
         AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");
         AssertDoesNotContain(closeLifecycleText, "args.Cancel = true;");
         AssertDoesNotContain(closeLifecycleText, "MP4 may be truncated.");
@@ -7500,10 +7503,9 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(closeRecordingFinalizationControllerText, "window already closed; continuing shutdown cleanup.");
         AssertContains(closeRecordingFinalizationControllerText, "RECORDING_FINALIZE_FAILED_AFTER_CLOSE ");
 
-        AssertDoesNotContain(closeLifecycleText, "Task.WhenAny(");
+        AssertContains(closeLifecycleText, "await Task.WhenAny(acknowledgment ?? countdown, countdown);");
         AssertDoesNotContain(closeLifecycleText, "StopBudgetMs");
         AssertDoesNotContain(closeLifecycleText, "StopRecordingAndWaitAsync");
-        AssertDoesNotContain(shutdownCleanupText, "Task.WhenAny(");
         AssertDoesNotContain(shutdownCleanupText, "StopBudgetMs");
         AssertDoesNotContain(shutdownCleanupText, "StopRecordingAndWaitAsync");
 
@@ -7520,7 +7522,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(shutdownCleanupText, "private WindowShutdownCleanupController _windowShutdownCleanupController = null!;");
         AssertContains(shutdownCleanupText, "private void InitializeWindowShutdownCleanupController()");
         AssertContains(shutdownCleanupText, "private async void MainWindow_Closed(object sender, WindowEventArgs args)");
-        AssertContains(shutdownCleanupText, "=> await _windowShutdownCleanupController.RunAsync();");
+        AssertContains(shutdownCleanupText, "await _windowShutdownCleanupController.RunAsync();");
         AssertContains(shutdownCleanupText, "StopRecordingAfterClosedBestEffortAsync = () => _windowCloseRecordingFinalizationController.StopAfterClosedBestEffortAsync(");
         AssertContains(shutdownCleanupText, "DisposeAutomationHostAsync = () => _automationHostLifecycleController.DisposeAsync(),");
         AssertEqual(
@@ -7771,7 +7773,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(startupText, "LoadedHandler = MainWindow_Loaded,");
         AssertContains(startupText, "ScheduleNativeShellRevealAfterFirstFrame = ScheduleNativeShellRevealAfterFirstFrame,");
         AssertContains(startupText, "RunUiEventHandlerAsync = RunUiEventHandlerAsync,");
-        AssertContains(startupText, "InitializeViewModelAsync = ViewModel.InitializeAsync,");
+        AssertContains(startupText, "InitializeViewModelAsync = InitializeViewModelForLaunchAsync,");
+        AssertContains(startupText, "private async Task InitializeViewModelForLaunchAsync()");
         AssertContains(startupText, "PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,");
         AssertContains(startupText, "RefreshDevicesAsync = () => ViewModel.RefreshDevicesForStartupAsync(),");
         AssertContains(startupText, "StartAutomationHost = _automationHostLifecycleController.Start,");
@@ -7849,7 +7852,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "await _context.InitializeViewModelAsync();");
         AssertOccursBefore(launchStartupControllerText, "_context.ScheduleNativeShellRevealAfterFirstFrame();", "_context.PlaySplashAndEntrance();");
         AssertContains(mainWindowText, "mainContent.Loaded += MainWindow_Loaded;");
-        AssertDoesNotContain(startupText, "await ViewModel.InitializeAsync();");
+        AssertContains(startupText, "await ViewModel.InitializeAsync();");
         AssertDoesNotContain(startupText, "await ViewModel.RefreshDevicesAsync();");
         AssertContains(rootText, "internal Task RefreshDevicesForStartupAsync(CancellationToken cancellationToken = default)");
         AssertContains(rootText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true);");

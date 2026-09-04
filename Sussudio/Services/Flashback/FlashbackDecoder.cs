@@ -8,6 +8,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Threading;
 using FFmpeg.AutoGen;
+using Sussudio.Services.Gpu;
 using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Flashback;
@@ -1234,25 +1235,28 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         // Create persistent D3D11VA hw device context (reused across all file opens)
         if (d3dDevicePtr != IntPtr.Zero && d3dContextPtr != IntPtr.Zero)
         {
+            AVBufferRef* hwDeviceCtx = null;
             try
             {
-                var hwDeviceCtx = ffmpeg.av_hwdevice_ctx_alloc(AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA);
+                hwDeviceCtx = ffmpeg.av_hwdevice_ctx_alloc(AVHWDeviceType.AV_HWDEVICE_TYPE_D3D11VA);
                 if (hwDeviceCtx != null)
                 {
                     var hwCtx = (AVHWDeviceContext*)hwDeviceCtx->data;
                     var d3d11vaCtx = (AVD3D11VADeviceContext*)hwCtx->hwctx;
-                    d3d11vaCtx->device = (FFmpeg.AutoGen.ID3D11Device*)d3dDevicePtr;
-                    d3d11vaCtx->device_context = (FFmpeg.AutoGen.ID3D11DeviceContext*)d3dContextPtr;
+                    FfmpegD3D11Ownership.TransferBorrowedReferences(
+                        d3d11vaCtx,
+                        d3dDevicePtr,
+                        d3dContextPtr);
 
                     var initResult = ffmpeg.av_hwdevice_ctx_init(hwDeviceCtx);
                     if (initResult >= 0)
                     {
                         _d3d11HwDeviceCtx = hwDeviceCtx;
+                        hwDeviceCtx = null;
                         Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=true device=0x{d3dDevicePtr:X}");
                     }
                     else
                     {
-                        ffmpeg.av_buffer_unref(&hwDeviceCtx);
                         Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=false reason=init_fail code={initResult}");
                     }
                 }
@@ -1264,6 +1268,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             catch (Exception ex)
             {
                 Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=false reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+            finally
+            {
+                if (hwDeviceCtx != null)
+                {
+                    ffmpeg.av_buffer_unref(&hwDeviceCtx);
+                }
             }
         }
         else

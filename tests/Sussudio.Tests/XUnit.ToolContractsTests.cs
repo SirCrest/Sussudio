@@ -1475,6 +1475,25 @@ public sealed class McpDiagnosticSessionScenarioExecutionContractsTests
         => global::Program.DiagnosticSessionPostRunSnapshots_OwnTimelineAndFinalSnapshot();
 }
 
+public sealed class ReleasePipelineContractsTests
+{
+    [Fact]
+    public Task CanonicalGateProvesFreshNonzeroXunitBeforeOfflineHarness()
+        => global::Program.ReleasePipeline_CanonicalGateProvesFreshNonzeroXunitBeforeOfflineHarness();
+
+    [Fact]
+    public Task PortablePrereleaseRequiresSignedCompleteToolsetAndExactInventory()
+        => global::Program.ReleasePipeline_PortablePrereleaseRequiresSignedCompleteToolsetAndExactInventory();
+
+    [Fact]
+    public Task TrackedFfmpegManifestPinsExactRuntimeIdentity()
+        => global::Program.ReleasePipeline_TrackedFfmpegManifestPinsExactRuntimeIdentity();
+
+    [Fact]
+    public Task ReleaseHelperBehaviorRejectsUnsafeInputsAndInventories()
+        => global::Program.ReleasePipeline_HelperBehaviorRejectsUnsafeInputsAndInventories();
+}
+
 }
 
 // Diagnostic-session result surface contracts live with the tool xUnit wrappers.
@@ -9452,16 +9471,105 @@ static partial class Program
         AssertContains(scriptText, "$mcpServerProjectPath = Join-Path $repoRoot \"tools\\McpServer\\McpServer.csproj\"");
         AssertContains(scriptText, "$nativeXuProbeProjectPath = Join-Path $repoRoot \"tools\\NativeXuAudioProbe\\NativeXuAudioProbe.csproj\"");
         AssertContains(scriptText, "-t:Rebuild");
-        AssertContains(scriptText, "\"run\"");
+        AssertEqual(
+            7,
+            System.Text.RegularExpressions.Regex.Matches(scriptText, "\"--no-restore\"").Count,
+            "offline build/test no-restore argument count");
+        AssertContains(scriptText, "\"test\"");
+        AssertContains(scriptText, "Read-TrxCounters");
+        AssertContains(scriptText, "Reliability gate discovered zero xUnit tests.");
         AssertContains(scriptText, "--no-build");
         AssertContains(scriptText, "$appAssemblyPath");
-        AssertContains(scriptText, "Build, tool, and offline regression gates passed.");
+        AssertContains(scriptText, "Running the separate offline assembly/freshness harness...");
+        AssertContains(scriptText, "Solution/tool builds, nonzero xUnit suite, separate offline harness, package-contract checks, and diff checks passed.");
         AssertDoesNotContain(scriptText, "docs/testing/README.md");
 
         AssertContains(diagnosticSessionCleanupActionsText, "var cleanupTimeoutMs = AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.SetFlashbackEnabled);");
         AssertContains(diagnosticSessionCleanupActionsText, "CreateCleanupCts(TimeSpan.FromMilliseconds(cleanupTimeoutMs))");
         AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [\"enabled\"] = false }");
         AssertContains(diagnosticSessionCleanupActionsText, "new Dictionary<string, object?> { [\"enabled\"] = true }");
+        return Task.CompletedTask;
+    }
+
+    internal static Task ReleasePipeline_CanonicalGateProvesFreshNonzeroXunitBeforeOfflineHarness()
+    {
+        var scriptText = ReadRepoFile("tools/reliability-gates.ps1").Replace("\r\n", "\n");
+
+        AssertContains(scriptText, "dotnet");
+        AssertContains(scriptText, "\"test\"");
+        AssertContains(scriptText, "trx;LogFileName=reliability-gate.trx");
+        AssertContains(scriptText, "if ($testCounters.Total -le 0)");
+        AssertContains(scriptText, "if ($testCounters.Failed -ne 0)");
+        AssertOccursBefore(scriptText, "Running the real xUnit suite...", "Running the separate offline assembly/freshness harness...");
+        AssertContains(scriptText, "Running package-contract helper tests...");
+        AssertContains(scriptText, "$releaseHelperTestsPath");
+        AssertOccursBefore(scriptText, "Running the separate offline assembly/freshness harness...", "Running package-contract helper tests...");
+        AssertOccursBefore(scriptText, "Running package-contract helper tests...", "Checking the working diff for whitespace errors...");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task ReleasePipeline_PortablePrereleaseRequiresSignedCompleteToolsetAndExactInventory()
+    {
+        var scriptText = ReadRepoFile("tools/package-github-release.ps1").Replace("\r\n", "\n");
+
+        AssertContains(scriptText, "Assert-CleanTaggedPrerelease");
+        AssertContains(scriptText, "-Configuration Release");
+        AssertContains(scriptText, "-FailOnAnyWarning");
+        AssertContains(scriptText, "tools\\ssctl\\ssctl.csproj");
+        AssertContains(scriptText, "tools\\McpServer\\McpServer.csproj");
+        AssertContains(scriptText, "tools\\AutomationClient\\AutomationClient.csproj");
+        AssertContains(scriptText, "Invoke-ArtifactSigning");
+        AssertContains(scriptText, "Assert-AuthenticodeSignatures");
+        AssertContains(scriptText, "Assert-ZipMatchesDirectory");
+        AssertContains(scriptText, "Get-FileHash -LiteralPath $zipPath -Algorithm SHA256");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task ReleasePipeline_TrackedFfmpegManifestPinsExactRuntimeIdentity()
+    {
+        using var manifest = JsonDocument.Parse(ReadRepoFile("Sussudio/ffmpeg/manifest.json"));
+        var root = manifest.RootElement;
+        AssertEqual(1, root.GetProperty("schemaVersion").GetInt32(), "FFmpeg manifest schema");
+        var buildVersion = root.GetProperty("buildVersion").GetString();
+        var files = root.GetProperty("files").EnumerateArray().ToArray();
+        AssertEqual(4, files.Length, "FFmpeg manifest file count");
+        AssertEqual(
+            "avcodec-62.dll,avformat-62.dll,avutil-60.dll,swresample-6.dll",
+            string.Join(',', files.Select(file => file.GetProperty("fileName").GetString()).OrderBy(name => name, StringComparer.Ordinal)),
+            "FFmpeg manifest filenames");
+        foreach (var file in files)
+        {
+            AssertEqual(buildVersion, file.GetProperty("productVersion").GetString(), "FFmpeg product/build identity");
+            AssertRegex(file.GetProperty("sha256").GetString()!, "^[0-9A-F]{64}$", "FFmpeg SHA-256");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task ReleasePipeline_HelperBehaviorRejectsUnsafeInputsAndInventories()
+    {
+        var helperText = ReadRepoFile("tools/release/release-helpers.ps1").Replace("\r\n", "\n");
+        var testText = ReadRepoFile("tools/release/test-release-helpers.ps1").Replace("\r\n", "\n");
+        var gitIgnoreText = ReadRepoFile(".gitignore").Replace("\r\n", "\n");
+
+        AssertContains(helperText, "function Test-SemVerPrerelease");
+        AssertContains(helperText, "function Assert-CleanTaggedPrerelease");
+        AssertContains(helperText, "function Assert-FfmpegRuntimeMatchesManifest");
+        AssertContains(helperText, "function Assert-ZipMatchesDirectory");
+        AssertContains(helperText, "http://timestamp.acs.microsoft.com");
+        AssertContains(helperText, "'/dlib'");
+        AssertContains(helperText, "'/dmdf'");
+        AssertContains(testText, "Stable SemVer must not pass the prerelease gate.");
+        AssertContains(testText, "Path-like version must fail.");
+        AssertContains(testText, "clean worktree");
+        AssertContains(testText, "inventory differs");
+        AssertContains(testText, "duplicate");
+        AssertContains(testText, "unsafe");
+        AssertContains(gitIgnoreText, "!tools/release/");
+        AssertContains(gitIgnoreText, "!tools/release/*.ps1");
+
         return Task.CompletedTask;
     }
 
@@ -11058,12 +11166,12 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("Directory.EnumerateFiles(root, \"*.props\")", harnessText);
         Assert.Contains("Directory.EnumerateFiles(root, \"*.targets\")", harnessText);
         Assert.Equal(2, CountOccurrences(harnessText, ".Concat(new[] { root })"));
-        Assert.Contains("var contractsInputDirectories = EnumerateToolInputDirectories(Path.Combine(root, \"Sussudio.Automation.Contracts\"));", harnessText);
+        Assert.Contains("var contractsInputDirectories = UsesAutomationContracts(projectDirectory)", harnessText);
         Assert.Contains("var linkedCompileInputs = EnumerateToolProjectCompileIncludes(projectDirectory).ToArray();", harnessText);
         Assert.Contains(".Concat(contractsInputDirectories)", harnessText);
-        Assert.Contains(".Concat(EnumerateExistingCompileIncludeDirectories(linkedCompileInputs))", harnessText);
         Assert.Contains(".Concat(linkedCompileInputs)", harnessText);
-        Assert.Contains("private static IEnumerable<string> EnumerateExistingCompileIncludeDirectories(IEnumerable<string> compileIncludes)", harnessText);
+        Assert.DoesNotContain("EnumerateExistingCompileIncludeDirectories", harnessText);
+        Assert.Contains("private static bool UsesAutomationContracts(string projectDirectory)", harnessText);
         Assert.Contains("Path.Combine(root, \"Sussudio.Automation.Contracts\")", harnessText);
         Assert.Contains("-c {ActiveTestConfiguration}", harnessText);
 

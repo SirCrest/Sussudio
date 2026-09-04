@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -20,6 +21,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private const int OutputSampleRate = 48000;
     private const uint MaxRenderWriteFrames = OutputSampleRate / 50; // 20ms
     private const uint WaitTimeoutMs = 100;
+    private static readonly TimeSpan WorkerExitTimeout = TimeSpan.FromSeconds(5);
 
     private IMMDeviceEnumerator? _deviceEnumerator;
     private IMMDevice? _device;
@@ -29,6 +31,11 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private AutoResetEvent? _renderEvent;
     private Thread? _renderThread;
     private uint _bufferFrameCount;
+    private WasapiAudioFormat _renderFormat;
+    private bool _renderFastPath = true;
+    private uint _maxRenderWriteFrames = MaxRenderWriteFrames;
+    private int _leftOutputChannel;
+    private int _rightOutputChannel = 1;
     private readonly object _chunkLock = new();
     private readonly Channel<PlaybackChunk> _sampleQueue = Channel.CreateBounded<PlaybackChunk>(
         new BoundedChannelOptions(128)
@@ -44,6 +51,11 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _initialized;
     private int _started;
     private int _disposed;
+    private int _terminal;
+    private int _shutdownInitiated;
+    private int _workerOwnsResources;
+    private int _resourcesReleased;
+    private TaskCompletionSource<bool>? _workerExited;
     private static string? _cachedDeviceId;
     private static string _cachedFormatMode = "native";
     private static readonly object _formatCacheLock = new();
@@ -69,6 +81,18 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private long _lastRenderCallbackTickMs;
     private long _renderingPtsTicks; // PTS of chunk currently being rendered
     private const float VolumeRampPerFrame = 1.0f / (0.3f * OutputSampleRate); // 300ms ramp at 48kHz
+    private float _renderVolumeRampPerFrame = VolumeRampPerFrame;
+    private long _renderResamplePhase;
+    private float _renderCurrentLeft;
+    private float _renderCurrentRight;
+    private float _renderNextLeft;
+    private float _renderNextRight;
+    private long _renderCurrentPtsTicks;
+    private long _renderNextPtsTicks;
+    private int _renderPendingSourceAdvances;
+    private int _renderHeldSourceFrames;
+    private bool _renderHasCurrent;
+    private bool _renderHasNext;
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
     private volatile float _lastOutputPeak;
@@ -81,9 +105,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     public double PlaybackQueueDurationMs => FramesToMilliseconds(Volatile.Read(ref _playbackQueueFrames));
 
-    public double PlaybackActiveChunkDurationMs => FramesToMilliseconds(Volatile.Read(ref _activeChunkRemainingFrames));
+    public double PlaybackActiveChunkDurationMs => FramesToMilliseconds(
+        Volatile.Read(ref _activeChunkRemainingFrames) + Volatile.Read(ref _renderHeldSourceFrames));
 
-    public double PlaybackEndpointQueuedDurationMs => FramesToMilliseconds(Volatile.Read(ref _endpointQueuedFrames));
+    public double PlaybackEndpointQueuedDurationMs => EndpointFramesToMilliseconds(Volatile.Read(ref _endpointQueuedFrames));
 
     public double PlaybackStreamLatencyMs => Interlocked.Read(ref _streamLatencyHundredNs) / 10_000.0;
 
@@ -142,10 +167,17 @@ internal sealed class WasapiAudioPlayback : IDisposable
     {
         ct.ThrowIfCancellationRequested();
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        if (Volatile.Read(ref _terminal) != 0)
+        {
+            throw new InvalidOperationException("A stopped WASAPI playback instance cannot be reinitialized.");
+        }
+
         if (Volatile.Read(ref _initialized) != 0)
         {
             return Task.CompletedTask;
         }
+
+        WasapiWorkerQuarantine.ThrowIfBlocked(WasapiWorkerRole.Playback);
 
         IMMDeviceEnumerator? enumerator = null;
         IMMDevice? device = null;
@@ -166,6 +198,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             device.GetId(out var deviceId);
             audioClient = WasapiComInterop.ActivateAudioClient(device, out audioClient3);
             desiredFormat = WasapiComInterop.AllocFloatStereo48kFormat();
+            var renderFormat = WasapiComInterop.ReadAudioFormat(desiredFormat);
 
             var hr = audioClient.IsFormatSupported(
                 WasapiComInterop.AUDCLNT_SHAREMODE_SHARED,
@@ -228,6 +261,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
                             audioClient.GetMixFormat(out fallbackFormat),
                             "IAudioClient.GetMixFormat(render-fallback)");
 
+                        renderFormat = WasapiComInterop.ReadAudioFormat(fallbackFormat);
+
                         WasapiComInterop.ThrowIfFailed(
                             audioClient.Initialize(
                                 WasapiComInterop.AUDCLNT_SHAREMODE_SHARED,
@@ -280,6 +315,12 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 "IAudioClient.GetService(IAudioRenderClient)");
 
             audioRenderClient = (IAudioRenderClient)renderClientObject;
+            _renderFormat = renderFormat;
+            _renderFastPath = IsCanonicalRenderFormat(renderFormat);
+            _maxRenderWriteFrames = checked((uint)Math.Max(1, renderFormat.SampleRate / 50));
+            _renderVolumeRampPerFrame = 1.0f / (0.3f * renderFormat.SampleRate);
+            (_leftOutputChannel, _rightOutputChannel) = ResolveStereoOutputChannels(renderFormat);
+            ResetRenderConverterState();
             _deviceEnumerator = enumerator;
             _device = device;
             _audioClient = audioClient;
@@ -294,8 +335,14 @@ internal sealed class WasapiAudioPlayback : IDisposable
             Volatile.Write(ref _activeChunkRemainingFrames, 0);
             Volatile.Write(ref _endpointQueuedFrames, 0);
             Interlocked.Exchange(ref _lastRenderCallbackTickMs, 0);
+            Interlocked.Exchange(ref _resourcesReleased, 0);
             Interlocked.Exchange(ref _initialized, 1);
-            Logger.Log($"WASAPI playback initialized (f32le 48kHz stereo, mode={formatMode}).");
+            Logger.Log(
+                "WASAPI playback initialized: " +
+                $"mode={formatMode} sample_rate={renderFormat.SampleRate} channels={renderFormat.Channels} " +
+                $"container_bits={renderFormat.ContainerBitsPerSample} valid_bits={renderFormat.ValidBitsPerSample} " +
+                $"block_align={renderFormat.BlockAlign} channel_mask=0x{renderFormat.ChannelMask:X8} " +
+                $"type={renderFormat.SampleType} fast_path={_renderFastPath}.");
             return Task.CompletedTask;
         }
         catch (Exception ex)
@@ -326,6 +373,11 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public void Start()
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        if (Volatile.Read(ref _terminal) != 0)
+        {
+            throw new InvalidOperationException("A stopped WASAPI playback instance cannot be restarted.");
+        }
+
         if (Volatile.Read(ref _initialized) == 0)
         {
             throw new InvalidOperationException("WASAPI playback must be initialized before start.");
@@ -348,19 +400,38 @@ internal sealed class WasapiAudioPlayback : IDisposable
             _renderRunningAcknowledged.Set();
             WasapiComInterop.ThrowIfFailed(_audioClient!.Start(), "IAudioClient.Start(render)");
 
-            _renderThread = new Thread(RenderThreadMain)
+            var workerExited = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var renderThread = new Thread(RenderThreadMain)
             {
                 IsBackground = true,
                 Name = "WASAPI Render",
                 Priority = ThreadPriority.AboveNormal
             };
-            _renderThread.Start();
+            _workerExited = workerExited;
+            _renderThread = renderThread;
+            Interlocked.Exchange(ref _workerOwnsResources, 1);
+            renderThread.Start();
             Logger.Log("WASAPI playback started.");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioPlayback.Start: {ex.Message}");
             Interlocked.Exchange(ref _started, 0);
+            if (_renderThread?.IsAlive != true)
+            {
+                Interlocked.Exchange(ref _workerOwnsResources, 0);
+                _workerExited?.TrySetResult(true);
+                _renderThread = null;
+                try
+                {
+                    _audioClient?.Stop();
+                }
+                catch (Exception stopEx)
+                {
+                    Logger.Log($"WASAPI playback start rollback warning: {stopEx.Message}");
+                }
+            }
+
             throw;
         }
     }
@@ -452,46 +523,51 @@ internal sealed class WasapiAudioPlayback : IDisposable
             _activeChunkOffset = 0;
             Volatile.Write(ref _activeChunkRemainingFrames, 0);
             Volatile.Write(ref _endpointQueuedFrames, 0);
+            ResetRenderConverterState();
         }
         Interlocked.Exchange(ref _renderingPtsTicks, 0);
     }
 
     public void Stop()
     {
-        if (Interlocked.CompareExchange(ref _started, 0, 1) != 1)
+        if (Interlocked.CompareExchange(ref _shutdownInitiated, 1, 0) != 0)
         {
             return;
         }
 
+        Interlocked.Exchange(ref _terminal, 1);
+        Interlocked.Exchange(ref _initialized, 0);
+        Interlocked.Exchange(ref _started, 0);
         try
         {
             _renderEvent?.Set();
             _renderPausedAcknowledged.Set();
             _renderRunningAcknowledged.Set();
-            _audioClient?.Stop();
         }
-        catch (Exception ex)
+        catch (ObjectDisposedException)
         {
-            Logger.Log($"WASAPI playback stop warning: {ex.Message}");
+            // A spontaneous worker exit may have completed cleanup immediately
+            // before the coordinator observed it.
         }
 
         var thread = _renderThread;
-        _renderThread = null;
         if (thread != null && thread.IsAlive)
         {
-            if (!thread.Join(TimeSpan.FromSeconds(3)))
+            if (!thread.Join(WorkerExitTimeout))
             {
-                Logger.Log("WASAPI_PLAYBACK_THREAD_JOIN_TIMEOUT");
+                var completion = _workerExited?.Task ?? Task.CompletedTask;
+                WasapiWorkerQuarantine.Register(
+                    WasapiWorkerRole.Playback,
+                    this,
+                    completion,
+                    "WASAPI_PLAYBACK_THREAD_JOIN_TIMEOUT");
+                return;
             }
         }
-
-        lock (_chunkLock)
+        else if (Volatile.Read(ref _workerOwnsResources) == 0)
         {
-            ReturnActiveChunk();
-            while (TryDequeueChunk(out var queuedChunk))
-            {
-                ReturnChunk(queuedChunk);
-            }
+            DrainPlaybackChunks();
+            ReleaseNativeResources();
         }
 
         Logger.Log("WASAPI playback stopped.");
@@ -505,15 +581,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
         }
 
         Stop();
-        _renderEvent?.Dispose();
-        _renderEvent = null;
-        _renderPausedAcknowledged.Dispose();
-        _renderRunningAcknowledged.Dispose();
-        WasapiComInterop.ReleaseComObject(ref _audioRenderClient);
-        WasapiComInterop.ReleaseComObject(ref _audioClient3);
-        WasapiComInterop.ReleaseComObject(ref _audioClient);
-        WasapiComInterop.ReleaseComObject(ref _device);
-        WasapiComInterop.ReleaseComObject(ref _deviceEnumerator);
     }
 
     private void EnqueueChunk(PlaybackChunk chunk)
@@ -578,6 +645,11 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     private static double FramesToMilliseconds(int frames) =>
         frames <= 0 ? 0 : frames * 1000.0 / OutputSampleRate;
+
+    private double EndpointFramesToMilliseconds(int frames) =>
+        frames <= 0 || _renderFormat.SampleRate <= 0
+            ? 0
+            : frames * 1000.0 / _renderFormat.SampleRate;
 
     private void DecrementPlaybackQueueDepth()
     {
@@ -644,92 +716,117 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     private void RenderThreadMain()
     {
-        var renderEvent = _renderEvent;
-        if (renderEvent == null)
+        try
         {
-            return;
-        }
-
-        var waitHandle = renderEvent.SafeWaitHandle.DangerousGetHandle();
-        while (Volatile.Read(ref _started) != 0)
-        {
-            var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
-            if (waitResult == WasapiComInterop.WaitTimeout)
-            {
-                continue;
-            }
-
-            if (waitResult != WasapiComInterop.WaitObject0)
-            {
-                continue;
-            }
-
-            if (Volatile.Read(ref _started) == 0)
+            var renderEvent = _renderEvent;
+            if (renderEvent == null)
             {
                 return;
             }
 
-            // Handle pause/resume on the render thread to avoid cross-thread WASAPI calls.
-            if (_pauseRequested)
+            var waitHandle = renderEvent.SafeWaitHandle.DangerousGetHandle();
+            while (Volatile.Read(ref _started) != 0)
             {
-                _pauseRequested = false;
-                try
-                {
-                    _audioClient?.Stop();
-                    _audioClient?.Reset();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"WASAPI_PAUSE_RENDER_WARN: {ex.Message}");
-                }
-
-                Flush();
-                Interlocked.Exchange(ref _renderingPaused, 1);
-                _renderRunningAcknowledged.Reset();
-                _renderPausedAcknowledged.Set();
-                Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
-                if (!_resumeRequested)
+                var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
+                if (waitResult == WasapiComInterop.WaitTimeout)
                 {
                     continue;
                 }
-            }
 
-            if (_resumeRequested)
-            {
-                _resumeRequested = false;
-                if (Volatile.Read(ref _renderingPaused) == 0)
+                if (waitResult != WasapiComInterop.WaitObject0)
                 {
+                    Logger.Log($"WASAPI_PLAYBACK_WAIT_FAILED result=0x{waitResult:X8}");
+                    return;
+                }
+
+                if (Volatile.Read(ref _started) == 0)
+                {
+                    return;
+                }
+
+                // Handle pause/resume on the render thread to avoid cross-thread WASAPI calls.
+                if (_pauseRequested)
+                {
+                    _pauseRequested = false;
+                    try
+                    {
+                        _audioClient?.Stop();
+                        _audioClient?.Reset();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"WASAPI_PAUSE_RENDER_WARN: {ex.Message}");
+                    }
+
+                    Flush();
+                    Interlocked.Exchange(ref _renderingPaused, 1);
+                    _renderRunningAcknowledged.Reset();
+                    _renderPausedAcknowledged.Set();
+                    Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
+                    if (!_resumeRequested)
+                    {
+                        continue;
+                    }
+                }
+
+                if (_resumeRequested)
+                {
+                    _resumeRequested = false;
+                    if (Volatile.Read(ref _renderingPaused) == 0)
+                    {
+                        _renderPausedAcknowledged.Reset();
+                        _renderRunningAcknowledged.Set();
+                        Logger.Log("WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
+                        continue;
+                    }
+
+                    WaitForResumePrebuffer();
+                    try
+                    {
+                        _audioClient?.Start();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}");
+                    }
+
+                    Interlocked.Exchange(ref _renderingPaused, 0);
                     _renderPausedAcknowledged.Reset();
                     _renderRunningAcknowledged.Set();
-                    Logger.Log("WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
+                    Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
                     continue;
                 }
 
-                WaitForResumePrebuffer();
                 try
                 {
-                    _audioClient?.Start();
+                    RenderAvailableFrames();
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}");
+                    Logger.Log($"WASAPI playback render error: {ex.Message}");
                 }
-
-                Interlocked.Exchange(ref _renderingPaused, 0);
-                _renderPausedAcknowledged.Reset();
-                _renderRunningAcknowledged.Set();
-                Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
-                continue;
             }
-
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _started, 0);
+            Interlocked.Exchange(ref _initialized, 0);
+            Interlocked.Exchange(ref _terminal, 1);
             try
             {
-                RenderAvailableFrames();
+                _audioClient?.Stop();
             }
             catch (Exception ex)
             {
-                Logger.Log($"WASAPI playback render error: {ex.Message}");
+                Logger.Log($"WASAPI playback worker stop warning: {ex.Message}");
             }
+
+            DrainPlaybackChunks();
+
+            _renderThread = null;
+            Interlocked.Exchange(ref _workerOwnsResources, 0);
+            ReleaseNativeResources();
+            _workerExited?.TrySetResult(true);
         }
     }
 
@@ -807,7 +904,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
-        var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, MaxRenderWriteFrames);
+        var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, _maxRenderWriteFrames);
         if (framesToWrite == 0)
         {
             return;
@@ -819,15 +916,25 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
         try
         {
-            var bytesToWrite = checked((int)framesToWrite * OutputBlockAlign);
+            var bytesToWrite = checked((int)framesToWrite * _renderFormat.BlockAlign);
             var destinationSpan = new Span<byte>((void*)destination, bytesToWrite);
             lock (_chunkLock)
             {
-                FillRenderBuffer(destinationSpan);
+                if (_renderFastPath)
+                {
+                    FillRenderBuffer(destinationSpan);
+                }
+                else
+                {
+                    FillConvertedRenderBuffer(destinationSpan, checked((int)framesToWrite));
+                }
             }
 
-            ApplyVolume(destinationSpan);
-            UpdateOutputLevel(destinationSpan);
+            if (_renderFastPath)
+            {
+                ApplyVolume(destinationSpan);
+                UpdateOutputLevel(destinationSpan);
+            }
             Volatile.Write(ref _endpointQueuedFrames, checked((int)Math.Min(int.MaxValue, paddingFrames + framesToWrite)));
         }
         finally
@@ -880,6 +987,249 @@ internal sealed class WasapiAudioPlayback : IDisposable
             written += copyLength;
         }
     }
+
+    private void FillConvertedRenderBuffer(Span<byte> destination, int frameCount)
+    {
+        destination.Clear();
+        var peak = 0f;
+        var sumSquares = 0.0;
+        var sampleCount = 0;
+        var wroteSilence = false;
+
+        for (var frameIndex = 0; frameIndex < frameCount; frameIndex++)
+        {
+            float left;
+            float right;
+            if (!TryReadResampledStereoFrame(out left, out right))
+            {
+                left = 0;
+                right = 0;
+                wroteSilence = true;
+            }
+
+            var volume = AdvanceRenderVolume();
+            left = SanitizeSample(left * volume);
+            right = SanitizeSample(right * volume);
+            var outputFrame = destination.Slice(
+                checked(frameIndex * _renderFormat.BlockAlign),
+                _renderFormat.BlockAlign);
+
+            if (_renderFormat.Channels == 1)
+            {
+                var mono = SanitizeSample((left + right) * 0.5f);
+                WriteOutputSample(outputFrame, 0, mono);
+                peak = MathF.Max(peak, MathF.Abs(mono));
+                sumSquares += mono * mono;
+                sampleCount++;
+                continue;
+            }
+
+            WriteOutputSample(outputFrame, _leftOutputChannel, left);
+            WriteOutputSample(outputFrame, _rightOutputChannel, right);
+            peak = MathF.Max(peak, MathF.Max(MathF.Abs(left), MathF.Abs(right)));
+            sumSquares += (left * left) + (right * right);
+            sampleCount += _renderFormat.Channels;
+        }
+
+        if (wroteSilence)
+        {
+            Interlocked.Increment(ref _renderSilenceCount);
+        }
+
+        _lastOutputPeak = peak;
+        _lastOutputRms = sampleCount == 0 ? 0 : (float)Math.Sqrt(sumSquares / sampleCount);
+        Interlocked.Exchange(ref _lastOutputLevelTickMs, Environment.TickCount64);
+    }
+
+    private bool TryReadResampledStereoFrame(out float left, out float right)
+    {
+        left = 0;
+        right = 0;
+
+        while (_renderPendingSourceAdvances > 0)
+        {
+            if (!_renderHasNext &&
+                !TryReadCanonicalStereoFrame(out _renderNextLeft, out _renderNextRight, out _renderNextPtsTicks))
+            {
+                UpdateHeldSourceFrameCount();
+                return false;
+            }
+
+            _renderCurrentLeft = _renderNextLeft;
+            _renderCurrentRight = _renderNextRight;
+            _renderCurrentPtsTicks = _renderNextPtsTicks;
+            _renderHasCurrent = true;
+            _renderHasNext = false;
+            _renderPendingSourceAdvances--;
+        }
+
+        if (!_renderHasCurrent)
+        {
+            if (!TryReadCanonicalStereoFrame(
+                    out _renderCurrentLeft,
+                    out _renderCurrentRight,
+                    out _renderCurrentPtsTicks))
+            {
+                UpdateHeldSourceFrameCount();
+                return false;
+            }
+
+            _renderHasCurrent = true;
+        }
+
+        if (_renderResamplePhase != 0 && !_renderHasNext)
+        {
+            if (!TryReadCanonicalStereoFrame(out _renderNextLeft, out _renderNextRight, out _renderNextPtsTicks))
+            {
+                UpdateHeldSourceFrameCount();
+                return false;
+            }
+
+            _renderHasNext = true;
+        }
+
+        if (_renderResamplePhase == 0)
+        {
+            left = _renderCurrentLeft;
+            right = _renderCurrentRight;
+        }
+        else
+        {
+            var fraction = (float)_renderResamplePhase / _renderFormat.SampleRate;
+            left = _renderCurrentLeft + ((_renderNextLeft - _renderCurrentLeft) * fraction);
+            right = _renderCurrentRight + ((_renderNextRight - _renderCurrentRight) * fraction);
+        }
+
+        if (_renderCurrentPtsTicks != 0)
+        {
+            var fractionalTicks = _renderResamplePhase * TimeSpan.TicksPerSecond /
+                                  ((long)_renderFormat.SampleRate * OutputSampleRate);
+            Interlocked.Exchange(ref _renderingPtsTicks, _renderCurrentPtsTicks + fractionalTicks);
+        }
+
+        _renderResamplePhase += OutputSampleRate;
+        _renderPendingSourceAdvances += checked((int)(_renderResamplePhase / _renderFormat.SampleRate));
+        _renderResamplePhase %= _renderFormat.SampleRate;
+        UpdateHeldSourceFrameCount();
+        return true;
+    }
+
+    private bool TryReadCanonicalStereoFrame(out float left, out float right, out long ptsTicks)
+    {
+        left = 0;
+        right = 0;
+        ptsTicks = 0;
+
+        while (!_hasActiveChunk || _activeChunkOffset + OutputBlockAlign > _activeChunk.Length)
+        {
+            ReturnActiveChunk();
+            if (!TryDequeueChunk(out _activeChunk))
+            {
+                Volatile.Write(ref _activeChunkRemainingFrames, 0);
+                return false;
+            }
+
+            _activeChunkOffset = 0;
+            _hasActiveChunk = true;
+        }
+
+        var activeBuffer = _activeChunk.Buffer;
+        if (activeBuffer == null)
+        {
+            ReturnActiveChunk();
+            Volatile.Write(ref _activeChunkRemainingFrames, 0);
+            return false;
+        }
+
+        var samples = MemoryMarshal.Cast<byte, float>(
+            activeBuffer.AsSpan(_activeChunkOffset, OutputBlockAlign));
+        left = samples[0];
+        right = samples[1];
+        if (_activeChunk.PtsTicks != 0)
+        {
+            var frameOffset = _activeChunkOffset / OutputBlockAlign;
+            ptsTicks = _activeChunk.PtsTicks + (frameOffset * TimeSpan.TicksPerSecond / OutputSampleRate);
+        }
+
+        _activeChunkOffset += OutputBlockAlign;
+        UpdateActiveChunkRemainingFrames();
+        return true;
+    }
+
+    private float AdvanceRenderVolume()
+    {
+        var target = _targetVolume;
+        if (MathF.Abs(_currentVolume - target) < 0.0001f)
+        {
+            _currentVolume = target;
+            return target;
+        }
+
+        _currentVolume = _currentVolume < target
+            ? MathF.Min(_currentVolume + _renderVolumeRampPerFrame, target)
+            : MathF.Max(_currentVolume - _renderVolumeRampPerFrame, target);
+        return _currentVolume;
+    }
+
+    private void WriteOutputSample(Span<byte> outputFrame, int channelIndex, float sample)
+    {
+        var offset = checked(channelIndex * _renderFormat.BytesPerSample);
+        var destination = outputFrame[offset..];
+        sample = SanitizeSample(sample);
+
+        switch (_renderFormat.SampleType)
+        {
+            case WasapiSampleType.Float32:
+                BinaryPrimitives.WriteInt32LittleEndian(destination, BitConverter.SingleToInt32Bits(sample));
+                break;
+            case WasapiSampleType.Float64:
+                BinaryPrimitives.WriteInt64LittleEndian(destination, BitConverter.DoubleToInt64Bits(sample));
+                break;
+            case WasapiSampleType.Pcm16:
+                BinaryPrimitives.WriteInt16LittleEndian(destination, (short)QuantizePcm(sample, 16));
+                break;
+            case WasapiSampleType.Pcm24:
+            {
+                var pcm24 = (int)QuantizePcm(sample, 24);
+                if (_renderFormat.ContainerBitsPerSample == 24)
+                {
+                    destination[0] = (byte)pcm24;
+                    destination[1] = (byte)(pcm24 >> 8);
+                    destination[2] = (byte)(pcm24 >> 16);
+                }
+                else
+                {
+                    BinaryPrimitives.WriteInt32LittleEndian(destination, pcm24 << 8);
+                }
+
+                break;
+            }
+            case WasapiSampleType.Pcm32:
+                BinaryPrimitives.WriteInt32LittleEndian(destination, (int)QuantizePcm(sample, 32));
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported WASAPI render sample type: {_renderFormat.SampleType}.");
+        }
+    }
+
+    private static long QuantizePcm(float sample, int validBits)
+    {
+        var minimum = -(1L << (validBits - 1));
+        var maximum = (1L << (validBits - 1)) - 1;
+        if (sample <= -1f)
+        {
+            return minimum;
+        }
+
+        if (sample >= 1f)
+        {
+            return maximum;
+        }
+
+        return (long)Math.Round(sample * maximum, MidpointRounding.AwayFromZero);
+    }
+
+    private static float SanitizeSample(float sample) => float.IsFinite(sample) ? sample : 0f;
 
     private void UpdateRenderingPtsForActiveChunk()
     {
@@ -984,6 +1334,128 @@ internal sealed class WasapiAudioPlayback : IDisposable
         _lastOutputPeak = peak;
         _lastOutputRms = (float)Math.Sqrt(sumSquares / floats.Length);
         Interlocked.Exchange(ref _lastOutputLevelTickMs, Environment.TickCount64);
+    }
+
+    private static bool IsCanonicalRenderFormat(WasapiAudioFormat format) =>
+        format.SampleRate == OutputSampleRate &&
+        format.Channels == OutputChannels &&
+        format.ContainerBitsPerSample == 32 &&
+        format.ValidBitsPerSample == 32 &&
+        format.BlockAlign == OutputBlockAlign &&
+        format.SampleType == WasapiSampleType.Float32;
+
+    private static (int Left, int Right) ResolveStereoOutputChannels(WasapiAudioFormat format)
+    {
+        if (format.Channels <= 1)
+        {
+            return (0, 0);
+        }
+
+        if (format.ChannelMask == 0)
+        {
+            return (0, 1);
+        }
+
+        var left = GetChannelIndex(format.ChannelMask, 0x1u);
+        var right = GetChannelIndex(format.ChannelMask, 0x2u);
+        if (left < 0 || right < 0 || left >= format.Channels || right >= format.Channels)
+        {
+            throw new InvalidOperationException(
+                $"WASAPI render channel mask 0x{format.ChannelMask:X8} does not expose front-left/front-right channels.");
+        }
+
+        return (left, right);
+    }
+
+    private static int GetChannelIndex(uint channelMask, uint speakerBit)
+    {
+        var index = 0;
+        for (var bit = 1u; bit != 0; bit <<= 1)
+        {
+            if ((channelMask & bit) == 0)
+            {
+                continue;
+            }
+
+            if (bit == speakerBit)
+            {
+                return index;
+            }
+
+            index++;
+        }
+
+        return -1;
+    }
+
+    private void ResetRenderConverterState()
+    {
+        _renderResamplePhase = 0;
+        _renderPendingSourceAdvances = 0;
+        _renderCurrentLeft = 0;
+        _renderCurrentRight = 0;
+        _renderNextLeft = 0;
+        _renderNextRight = 0;
+        _renderCurrentPtsTicks = 0;
+        _renderNextPtsTicks = 0;
+        _renderHasCurrent = false;
+        _renderHasNext = false;
+        Volatile.Write(ref _renderHeldSourceFrames, 0);
+    }
+
+    private void DrainPlaybackChunks()
+    {
+        lock (_chunkLock)
+        {
+            ReturnActiveChunk();
+            while (TryDequeueChunk(out var queuedChunk))
+            {
+                ReturnChunk(queuedChunk);
+            }
+
+            ResetRenderConverterState();
+        }
+    }
+
+    private void UpdateHeldSourceFrameCount()
+    {
+        Volatile.Write(
+            ref _renderHeldSourceFrames,
+            (_renderHasCurrent ? 1 : 0) + (_renderHasNext ? 1 : 0));
+    }
+
+    private void ReleaseNativeResources()
+    {
+        if (Interlocked.Exchange(ref _resourcesReleased, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            _renderEvent?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI playback render-event dispose warning: {ex.Message}");
+        }
+        _renderEvent = null;
+
+        try
+        {
+            _renderPausedAcknowledged.Dispose();
+            _renderRunningAcknowledged.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI playback state-event dispose warning: {ex.Message}");
+        }
+
+        WasapiComInterop.ReleaseComObject(ref _audioRenderClient);
+        WasapiComInterop.ReleaseComObject(ref _audioClient3);
+        WasapiComInterop.ReleaseComObject(ref _audioClient);
+        WasapiComInterop.ReleaseComObject(ref _device);
+        WasapiComInterop.ReleaseComObject(ref _deviceEnumerator);
     }
 
     private readonly record struct PlaybackChunk(byte[]? Buffer, int Length, bool IsPooled, long PtsTicks = 0);

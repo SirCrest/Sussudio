@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Windows.Storage;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
@@ -52,6 +53,15 @@ internal readonly record struct CaptureSnapshotProducerSignature(
     string? LastOutputPath,
     string LastFinalizeStatus,
     DateTimeOffset? LastFinalizeUtc,
+    RecordingLifecyclePhase RecordingLifecyclePhase,
+    RecordingFinalizeOutcome RecordingFinalizeOutcome,
+    string LastFinalizeFailureCode,
+    bool LastFinalizationVerificationCompleted,
+    bool RecordingFinalizationCleanupPending,
+    long LastFinalizationElapsedMs,
+    string? LastRecordingRecoveryPath,
+    string RecordingFinalizationProgressStage,
+    DateTimeOffset? LastRecordingFinalizationProgressUtc,
     string? FlashbackExportOutputPath);
 
 // High-level capture orchestrator. It owns the lifetime of video capture,
@@ -206,6 +216,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private CaptureSnapshotProducerSignature BuildCaptureSnapshotProducerSignature()
     {
         var settings = _recordingBackend.SettingsSnapshot ?? _currentSettings;
+        var recordingOutcome = CaptureRecordingOutcomeSnapshot();
         return new CaptureSnapshotProducerSignature(
             CurrentSessionState,
             _isInitialized,
@@ -240,9 +251,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _actualFrameRateDenominator,
             _actualPixelFormat,
             _lastMfSourceReaderNegotiatedFormat,
-            _lastOutputPath,
-            _lastFinalizeStatus,
-            _lastFinalizeUtc,
+            recordingOutcome.OutputPath,
+            recordingOutcome.FinalizeStatus,
+            recordingOutcome.FinalizeUtc,
+            recordingOutcome.LifecyclePhase,
+            recordingOutcome.FinalizeOutcome,
+            recordingOutcome.FailureCode,
+            recordingOutcome.VerificationCompleted,
+            recordingOutcome.CleanupPending,
+            recordingOutcome.FinalizationElapsedMs,
+            recordingOutcome.RecoveryPath,
+            recordingOutcome.ProgressStage,
+            recordingOutcome.LastProgressUtc,
             _flashbackExportOutputPath);
     }
 
@@ -428,10 +448,13 @@ private readonly object _recordingFailureTelemetryLock = new();
             var stoppingFlashbackRecording = IsFlashbackRecordingBackendActive();
             try
             {
+                transitionToken.ThrowIfCancellationRequested();
+                PublishRecordingFinalizingOutcome();
+                StatusChanged?.Invoke(this, "Finalizing recording...");
                 var result = await StopAndDisposeRecordingBackendAsync(
                     "Stopped during cleanup",
                     emergency: false,
-                    transitionToken).ConfigureAwait(false);
+                    CancellationToken.None).ConfigureAwait(false);
                 if (!result.Succeeded)
                 {
                     Logger.Log($"Cleanup stop reported issues: {result.StatusMessage}");
@@ -485,10 +508,13 @@ private readonly object _recordingFailureTelemetryLock = new();
                 DetachUnifiedVideoCapture(unifiedVideoCapture);
                 if (pendingLibAvDrainTask is { IsCompleted: false })
                 {
-                    _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                    var captureCleanupTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                         pendingLibAvDrainTask,
                         unifiedVideoCapture,
                         reason: "cleanup_after_deferred_recording");
+                    SetPendingLibAvCleanupTask(
+                        Task.WhenAll(pendingLibAvDrainTask, captureCleanupTask),
+                        "LibAv+CaptureServiceCleanup");
                 }
                 else
                 {
@@ -612,7 +638,8 @@ private readonly object _recordingFailureTelemetryLock = new();
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
     {
         Logger.Log($"UNIFIED_VIDEO_CAPTURE_FATAL type={ex.GetType().Name} msg={ex.Message}");
-        if (_isRecording)
+        if (Volatile.Read(ref _recordingFaultAttributionActive) != 0 ||
+            Volatile.Read(ref _recordingAudioStartInProgress) != 0)
         {
             RecordLastRecordingFailure(ex);
         }
@@ -628,7 +655,8 @@ private readonly object _recordingFailureTelemetryLock = new();
     private void OnRecordingBackendFatalError(Exception ex)
     {
         Logger.Log($"RECORDING_BACKEND_FATAL type={ex.GetType().Name} msg={ex.Message}");
-        if (_isRecording)
+        if (Volatile.Read(ref _recordingFaultAttributionActive) != 0 ||
+            Volatile.Read(ref _recordingAudioStartInProgress) != 0)
         {
             RecordLastRecordingFailure(ex);
         }
@@ -880,8 +908,7 @@ private readonly object _recordingFailureTelemetryLock = new();
 // and their cleanup-adjacent state.
 internal sealed class PreviewAudioGraphResources
 {
-    private bool _captureFaulted;
-    private string? _captureFaultMessage;
+    private PreviewAudioCaptureFaultSnapshot? _captureFault;
 
     public WasapiAudioCapture? ProgramCapture;
     public WasapiAudioCapture? MicrophoneCapture;
@@ -915,22 +942,20 @@ internal sealed class PreviewAudioGraphResources
 
     public void RecordCaptureFault(string source, Exception ex)
     {
-        Volatile.Write(ref _captureFaulted, true);
-        Volatile.Write(ref _captureFaultMessage, $"{source}: {ex.Message}");
+        Volatile.Write(
+            ref _captureFault,
+            new PreviewAudioCaptureFaultSnapshot(true, source, $"{source}: {ex.Message}"));
     }
 
     public void ResetCaptureFault()
     {
-        Volatile.Write(ref _captureFaulted, false);
-        Volatile.Write(ref _captureFaultMessage, null);
+        Volatile.Write(ref _captureFault, null);
     }
 
     public PreviewAudioCaptureFaultSnapshot ConsumeCaptureFault()
     {
-        var faulted = Volatile.Read(ref _captureFaulted);
-        var message = Volatile.Read(ref _captureFaultMessage);
-        ResetCaptureFault();
-        return new PreviewAudioCaptureFaultSnapshot(faulted, message);
+        return Interlocked.Exchange(ref _captureFault, null)
+            ?? PreviewAudioCaptureFaultSnapshot.None;
     }
 
     public async Task StartPlaybackAsync(
@@ -1320,6 +1345,10 @@ internal sealed class CaptureVideoPipelineResources
         ParallelMjpegDecodePipeline.PipelineTimingMetrics? Details);
 }
 
-internal readonly record struct PreviewAudioCaptureFaultSnapshot(
+internal sealed record PreviewAudioCaptureFaultSnapshot(
     bool Faulted,
-    string? Message);
+    string? Source,
+    string? Message)
+{
+    public static PreviewAudioCaptureFaultSnapshot None { get; } = new(false, null, null);
+}

@@ -1136,6 +1136,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
 
             IMFSample? sample = null;
+            var readSampleSucceeded = false;
             try
             {
                 var readStartedTickMs = Environment.TickCount64;
@@ -1173,10 +1174,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 }
 
                 MfInteropHelpers.ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
+                readSampleSucceeded = true;
 
                 if ((flags & MfConstants.MF_SOURCE_READERF_ENDOFSTREAM) != 0)
                 {
                     Log("MF_SOURCE_READER_EOS reached end-of-stream.");
+                    SignalFatalError(new InvalidOperationException(
+                        "The video source reached end-of-stream unexpectedly while capture was active."));
                     break;
                 }
 
@@ -1209,7 +1213,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     $"hr=0x{ex.HResult:X8} " +
                     $"msg={ex.Message}");
 
-                if (Volatile.Read(ref _strictD3DOutputRequired))
+                if (!readSampleSucceeded || Volatile.Read(ref _strictD3DOutputRequired))
                 {
                     SignalFatalError(ex);
                     break;

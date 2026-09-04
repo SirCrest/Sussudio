@@ -22,7 +22,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private const int AudioLevelFireIntervalMs = 66;
     private const double SevereCallbackGapMultiplier = 4.0;
     private const uint WaitTimeoutMs = 100;
-    private static readonly TimeSpan CaptureThreadJoinTimeout = TimeSpan.FromSeconds(3);
+    private const int RecordingConsumerTimeoutLimit = 20;
+    private static readonly TimeSpan WorkerExitTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan RecordingStartupTimeout = TimeSpan.FromSeconds(5);
 
     private IMMDeviceEnumerator? _deviceEnumerator;
     private IMMDevice? _device;
@@ -60,21 +62,48 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private int _capturing;
     private int _stopRequested;
     private int _disposed;
+    private int _terminal;
+    private int _shutdownInitiated;
+    private int _workerOwnsResources;
+    private int _resourcesReleased;
+    private TaskCompletionSource<bool>? _workerExited;
+    private TaskCompletionSource<bool>? _recordingStartupReady;
+    private string? _audioDeviceId;
+    private readonly object _shutdownLock = new();
+    private Task? _shutdownTask;
     private bool _fastPathCopy;
 
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
     public event EventHandler<Exception>? CaptureFailed;
 
     public bool IsCapturing => Volatile.Read(ref _capturing) != 0;
+    public string? AudioDeviceId => Volatile.Read(ref _audioDeviceId);
+    public bool IsReadyForRecording
+    {
+        get
+        {
+            var lastCallbackTickMs = Interlocked.Read(ref _lastCaptureCallbackTickMs);
+            return IsCapturing &&
+                   lastCallbackTickMs > 0 &&
+                   Environment.TickCount64 - lastCallbackTickMs <= 1_000;
+        }
+    }
 
     public Task InitializeAsync(string audioDeviceId, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        if (Volatile.Read(ref _terminal) != 0)
+        {
+            throw new InvalidOperationException("A stopped WASAPI capture instance cannot be reinitialized.");
+        }
+
         if (Volatile.Read(ref _initialized) != 0)
         {
             return Task.CompletedTask;
         }
+
+        WasapiWorkerQuarantine.ThrowIfBlocked(WasapiWorkerRole.Capture);
 
         if (string.IsNullOrWhiteSpace(audioDeviceId))
         {
@@ -172,7 +201,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 _captureCallbackIntervalCount = 0;
                 _captureCallbackIntervalIndex = 0;
             }
+            Interlocked.Exchange(ref _resourcesReleased, 0);
             Interlocked.Exchange(ref _initialized, 1);
+            Volatile.Write(ref _audioDeviceId, audioDeviceId);
 
             Logger.Log(
                 "WASAPI capture initialized: " +
@@ -211,8 +242,38 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     }
 
     public void Start()
+        => StartCore(recordingStartupReady: null);
+
+    public async Task StartAndWaitForRecordingReadyAsync(CancellationToken cancellationToken)
+    {
+        var startupReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        StartCore(startupReady);
+        try
+        {
+            await startupReady.Task.WaitAsync(RecordingStartupTimeout, cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new InvalidOperationException(
+                "WASAPI capture did not deliver its first callback within five seconds.",
+                ex);
+        }
+
+        if (!IsCapturing)
+        {
+            throw new InvalidOperationException("WASAPI capture stopped during recording startup.");
+        }
+    }
+
+    private void StartCore(TaskCompletionSource<bool>? recordingStartupReady)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        WasapiWorkerQuarantine.ThrowIfBlocked(WasapiWorkerRole.Capture);
+        if (Volatile.Read(ref _terminal) != 0)
+        {
+            throw new InvalidOperationException("A stopped WASAPI capture instance cannot be restarted.");
+        }
+
         if (Volatile.Read(ref _initialized) == 0)
         {
             throw new InvalidOperationException("WASAPI capture must be initialized before start.");
@@ -224,30 +285,60 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         }
 
         Interlocked.Exchange(ref _stopRequested, 0);
-        _captureThread = new Thread(CaptureThreadMain)
+        var workerExited = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var captureThread = new Thread(CaptureThreadMain)
         {
             IsBackground = true,
             Name = "WASAPI Capture",
             Priority = ThreadPriority.AboveNormal
         };
+        _workerExited = workerExited;
+        _recordingStartupReady = recordingStartupReady;
+        _captureThread = captureThread;
 
         try
         {
-            _captureThread.Start();
             WasapiComInterop.ThrowIfFailed(_audioClient!.Start(), "IAudioClient.Start(capture)");
+            Interlocked.Exchange(ref _workerOwnsResources, 1);
+            captureThread.Start();
             Logger.Log("WASAPI capture started.");
         }
         catch (Exception ex)
         {
+            recordingStartupReady?.TrySetException(ex);
             System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture.StartCapture: {ex.Message}");
+            Interlocked.Exchange(ref _terminal, 1);
+            Interlocked.Exchange(ref _initialized, 0);
+            Interlocked.Exchange(ref _shutdownInitiated, 1);
             Interlocked.Exchange(ref _stopRequested, 1);
             _captureEvent?.Set();
-            if (_captureThread?.IsAlive == true)
+            if (captureThread.IsAlive)
             {
-                JoinCaptureThread(_captureThread, "WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_START_FAILURE");
+                if (!captureThread.Join(WorkerExitTimeout))
+                {
+                    WasapiWorkerQuarantine.Register(
+                        WasapiWorkerRole.Capture,
+                        this,
+                        workerExited.Task,
+                        "WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_START_FAILURE");
+                }
+            }
+            else
+            {
+                try
+                {
+                    _audioClient?.Stop();
+                }
+                catch (Exception stopEx)
+                {
+                    Logger.Log($"WASAPI capture start rollback warning: {stopEx.Message}");
+                }
+
+                Interlocked.Exchange(ref _workerOwnsResources, 0);
+                workerExited.TrySetResult(true);
+                ReleaseNativeResources();
             }
 
-            _captureThread = null;
             Interlocked.Exchange(ref _capturing, 0);
             throw;
         }
@@ -255,42 +346,57 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     public Task StopAsync()
     {
-        if (Interlocked.CompareExchange(ref _capturing, 0, 1) != 1)
+        lock (_shutdownLock)
         {
-            return Task.CompletedTask;
+            return _shutdownTask ??= StopCoreAsync();
+        }
+    }
+
+    private async Task StopCoreAsync()
+    {
+        if (Interlocked.CompareExchange(ref _shutdownInitiated, 1, 0) != 0)
+        {
+            return;
         }
 
+        Interlocked.Exchange(ref _terminal, 1);
+        Interlocked.Exchange(ref _initialized, 0);
+        Interlocked.Exchange(ref _capturing, 0);
         Interlocked.Exchange(ref _stopRequested, 1);
-        _captureEvent?.Set();
         try
         {
-            _audioClient?.Stop();
+            _captureEvent?.Set();
         }
-        catch (Exception ex)
+        catch (ObjectDisposedException)
         {
-            Logger.Log($"WASAPI capture stop warning: {ex.Message}");
+            // A spontaneous worker exit may have completed cleanup first.
         }
 
         var thread = _captureThread;
-        _captureThread = null;
         if (thread != null && thread.IsAlive)
         {
-            JoinCaptureThread(thread, "WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_STOP");
+            var completion = _workerExited?.Task ?? Task.CompletedTask;
+            try
+            {
+                await completion.WaitAsync(WorkerExitTimeout).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                WasapiWorkerQuarantine.Register(
+                    WasapiWorkerRole.Capture,
+                    this,
+                    completion,
+                    "WASAPI_CAPTURE_THREAD_JOIN_TIMEOUT_STOP");
+                return;
+            }
+        }
+        else if (Volatile.Read(ref _workerOwnsResources) == 0)
+        {
+            ClearManagedTargets();
+            ReleaseNativeResources();
         }
 
         Logger.Log("WASAPI capture stopped.");
-        return Task.CompletedTask;
-    }
-
-    private static bool JoinCaptureThread(Thread thread, string timeoutEvent)
-    {
-        if (thread.Join(CaptureThreadJoinTimeout))
-        {
-            return true;
-        }
-
-        Logger.Log(timeoutEvent);
-        return false;
     }
 
     public async ValueTask DisposeAsync()
@@ -301,18 +407,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         }
 
         await StopAsync().ConfigureAwait(false);
-        Volatile.Write(ref _recordingSink, null);
-        Volatile.Write(ref _flashbackSink, null);
-        Volatile.Write(ref _audioWriter, null);
-        Volatile.Write(ref _playback, null);
-
-        _captureEvent?.Dispose();
-        _captureEvent = null;
-        WasapiComInterop.ReleaseComObject(ref _audioCaptureClient);
-        WasapiComInterop.ReleaseComObject(ref _audioClient3);
-        WasapiComInterop.ReleaseComObject(ref _audioClient);
-        WasapiComInterop.ReleaseComObject(ref _device);
-        WasapiComInterop.ReleaseComObject(ref _deviceEnumerator);
     }
 
 
@@ -467,41 +561,92 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     private void CaptureThreadMain()
     {
-        var captureEvent = _captureEvent;
-        if (captureEvent == null)
+        try
         {
-            return;
-        }
-
-        var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
-        while (Volatile.Read(ref _stopRequested) == 0)
-        {
-            var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
-            if (waitResult == WasapiComInterop.WaitTimeout)
-            {
-                continue;
-            }
-
-            if (waitResult != WasapiComInterop.WaitObject0)
-            {
-                continue;
-            }
-
-            if (Volatile.Read(ref _stopRequested) != 0)
+            var captureEvent = _captureEvent;
+            if (captureEvent == null)
             {
                 return;
             }
 
+            var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
+            var consecutiveWaitTimeouts = 0;
+            while (Volatile.Read(ref _stopRequested) == 0)
+            {
+                var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
+                if (waitResult == WasapiComInterop.WaitTimeout)
+                {
+                    consecutiveWaitTimeouts++;
+                    if (consecutiveWaitTimeouts >= RecordingConsumerTimeoutLimit &&
+                        (Volatile.Read(ref _recordingSink) != null ||
+                         Volatile.Read(ref _flashbackSink) != null ||
+                         Volatile.Read(ref _audioWriter) != null))
+                    {
+                        OnCaptureFailed(new TimeoutException(
+                            "WASAPI capture produced no callback for two seconds while a recording consumer was attached."));
+                        return;
+                    }
+                    continue;
+                }
+
+                consecutiveWaitTimeouts = 0;
+
+                if (waitResult != WasapiComInterop.WaitObject0)
+                {
+                    var error = Marshal.GetLastWin32Error();
+                    Logger.Log($"WASAPI_CAPTURE_WAIT_FAILED result=0x{waitResult:X8} error={error}");
+                    if (Volatile.Read(ref _stopRequested) == 0)
+                    {
+                        OnCaptureFailed(new InvalidOperationException(
+                            $"WASAPI capture wait failed (result=0x{waitResult:X8}, Win32={error})."));
+                    }
+                    return;
+                }
+
+                if (Volatile.Read(ref _stopRequested) != 0)
+                {
+                    return;
+                }
+
+                try
+                {
+                    TrackCaptureCallback(Environment.TickCount64);
+                    var framesBeforeDrain = Interlocked.Read(ref _audioFramesArrived);
+                    DrainCapturePackets();
+                    if (Interlocked.Read(ref _audioFramesArrived) > framesBeforeDrain)
+                    {
+                        Volatile.Read(ref _recordingStartupReady)?.TrySetResult(true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"WASAPI capture loop error: {ex.Message}");
+                    OnCaptureFailed(ex);
+                    return;
+                }
+            }
+        }
+        finally
+        {
+            Volatile.Read(ref _recordingStartupReady)?.TrySetException(
+                new InvalidOperationException("WASAPI capture stopped before recording startup completed."));
+            Interlocked.Exchange(ref _capturing, 0);
+            Interlocked.Exchange(ref _initialized, 0);
+            Interlocked.Exchange(ref _terminal, 1);
             try
             {
-                TrackCaptureCallback(Environment.TickCount64);
-                DrainCapturePackets();
+                _audioClient?.Stop();
             }
             catch (Exception ex)
             {
-                Logger.Log($"WASAPI capture loop error: {ex.Message}");
-                OnCaptureFailed(ex);
+                Logger.Log($"WASAPI capture worker stop warning: {ex.Message}");
             }
+
+            ClearManagedTargets();
+            _captureThread = null;
+            Interlocked.Exchange(ref _workerOwnsResources, 0);
+            ReleaseNativeResources();
+            _workerExited?.TrySetResult(true);
         }
     }
 
@@ -740,22 +885,69 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         {
             WasapiSampleType.Float32 => *(float*)samplePtr,
             WasapiSampleType.Float64 => (float)(*(double*)samplePtr),
-            WasapiSampleType.Pcm16 => *(short*)samplePtr / 32768f,
-            WasapiSampleType.Pcm24 => ReadPcm24(samplePtr),
-            WasapiSampleType.Pcm32 => *(int*)samplePtr / 2147483648f,
+            WasapiSampleType.Pcm16 or
+            WasapiSampleType.Pcm24 or
+            WasapiSampleType.Pcm32 => ReadPcm(samplePtr, format),
             _ => 0f
         };
     }
 
-    private static unsafe float ReadPcm24(byte* samplePtr)
+    private static unsafe float ReadPcm(byte* samplePtr, WasapiAudioFormat format)
+    {
+        long value = format.ContainerBitsPerSample switch
+        {
+            16 => *(short*)samplePtr,
+            24 => SignExtendPcm24(samplePtr),
+            32 => *(int*)samplePtr,
+            _ => 0
+        };
+
+        var paddingBits = format.ContainerBitsPerSample - format.ValidBitsPerSample;
+        value >>= paddingBits;
+        var scale = 1L << (format.ValidBitsPerSample - 1);
+        return (float)(value / (double)scale);
+    }
+
+    private static unsafe int SignExtendPcm24(byte* samplePtr)
     {
         var value = samplePtr[0] | (samplePtr[1] << 8) | (samplePtr[2] << 16);
-        if ((value & 0x00800000) != 0)
+        return (value & 0x00800000) != 0
+            ? value | unchecked((int)0xFF000000)
+            : value;
+    }
+
+    private void ClearManagedTargets()
+    {
+        Volatile.Write(ref _recordingSink, null);
+        Volatile.Write(ref _flashbackSink, null);
+        Volatile.Write(ref _audioWriter, null);
+        Volatile.Write(ref _playback, null);
+        AudioLevelUpdated = null;
+        CaptureFailed = null;
+    }
+
+    private void ReleaseNativeResources()
+    {
+        if (Interlocked.Exchange(ref _resourcesReleased, 1) != 0)
         {
-            value |= unchecked((int)0xFF000000);
+            return;
         }
 
-        return (value << 8) / 2147483648f;
+        try
+        {
+            _captureEvent?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI capture event dispose warning: {ex.Message}");
+        }
+        _captureEvent = null;
+
+        WasapiComInterop.ReleaseComObject(ref _audioCaptureClient);
+        WasapiComInterop.ReleaseComObject(ref _audioClient3);
+        WasapiComInterop.ReleaseComObject(ref _audioClient);
+        WasapiComInterop.ReleaseComObject(ref _device);
+        WasapiComInterop.ReleaseComObject(ref _deviceEnumerator);
     }
 
     private static void ReturnPacketBuffer(ConvertedAudioPacket packet)
@@ -770,6 +962,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     private void OnCaptureFailed(Exception ex)
     {
+        Volatile.Read(ref _recordingStartupReady)?.TrySetException(ex);
         var handler = CaptureFailed;
         if (handler == null)
         {

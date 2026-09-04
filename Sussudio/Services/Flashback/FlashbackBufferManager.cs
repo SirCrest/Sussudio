@@ -91,6 +91,17 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public string TempDirectory => _options.TempDirectory;
 
+    internal string? SessionDirectory
+    {
+        get
+        {
+            lock (_indexLock)
+            {
+                return _sessionDirectory;
+            }
+        }
+    }
+
     public bool IsInitialized
     {
         get

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -18,9 +20,71 @@ public partial class CaptureService
     // UI, automation, and verifier can explain what happened to the last file
     // even after capture resources have been torn down.
     private string? _lastOutputPath;
+    private readonly object _recordingOutcomeLock = new();
     private string _lastFinalizeStatus = "None";
     private DateTimeOffset? _lastFinalizeUtc;
     private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
+    private RecordingLifecyclePhase _recordingLifecyclePhase = RecordingLifecyclePhase.Idle;
+    private RecordingFinalizeOutcome _lastFinalizeOutcome = RecordingFinalizeOutcome.None;
+    private string _lastFinalizeFailureCode = string.Empty;
+    private bool _lastFinalizationVerificationCompleted;
+    private bool _recordingFinalizationCleanupPending;
+    private long _lastFinalizationElapsedMs;
+    private string? _lastRecordingRecoveryPath;
+    private IReadOnlyList<string> _lastRequestedRecordingTracks = Array.Empty<string>();
+    private IReadOnlyList<string> _lastObservedRecordingTracks = Array.Empty<string>();
+    private string _recordingFinalizationProgressStage = "Idle";
+    private DateTimeOffset? _lastRecordingFinalizationProgressUtc;
+    private Task? _pendingFlashbackFinalizeCleanupTask;
+    private int _recordingAudioStartInProgress;
+    private int _recordingFaultAttributionActive;
+    private long _recordingMicrophoneSamplesBaseline;
+    private long _recordingMicrophoneDropsBaseline;
+    private long _recordingMicrophoneDiscontinuitiesBaseline;
+    private long _recordingMicrophoneDiscontinuitiesFinal;
+    private string? _activeRecordingRecoveryJournalPath;
+
+    internal RecordingFailureRecoveryState? RestoreLastRecordingFailure(string? outputDirectory)
+    {
+        var recovery = RecordingFinalizationRecoveryArtifacts.TryLoadLatest(outputDirectory);
+        if (recovery == null)
+        {
+            return null;
+        }
+
+        lock (_recordingOutcomeLock)
+        {
+            _lastOutputPath = recovery.OutputPath;
+            _lastFinalizeStatus = recovery.Reason;
+            _lastFinalizeUtc = recovery.RecordedUtc;
+            _lastPreservedArtifacts = recovery.PreservedArtifacts;
+            _recordingLifecyclePhase = RecordingLifecyclePhase.Idle;
+            _lastFinalizeOutcome = RecordingFinalizeOutcome.Failed;
+            _lastFinalizeFailureCode = "recording-recovery-restored";
+            _lastFinalizationVerificationCompleted = false;
+            _recordingFinalizationCleanupPending = false;
+            _lastFinalizationElapsedMs = 0;
+            _lastRecordingRecoveryPath = recovery.PreservedArtifacts.FirstOrDefault(path =>
+                !path.EndsWith(".recording-finalization-unresolved.txt", StringComparison.OrdinalIgnoreCase))
+                ?? recovery.MarkerPath;
+            _lastRequestedRecordingTracks = Array.Empty<string>();
+            _lastObservedRecordingTracks = Array.Empty<string>();
+            _recordingFinalizationProgressStage = "Failed";
+            _lastRecordingFinalizationProgressUtc = recovery.RecordedUtc;
+        }
+
+        lock (_recordingFailureTelemetryLock)
+        {
+            _lastRecordingEncodingFailed = true;
+            _lastRecordingEncodingFailureType = "RecoveredFinalizationFailure";
+            _lastRecordingEncodingFailureMessage = recovery.Reason;
+        }
+
+        Logger.Log(
+            "RECORDING_FAILURE_RECOVERY_RESTORED " +
+            $"marker='{recovery.MarkerPath}' output='{recovery.OutputPath}'");
+        return recovery;
+    }
 
     public Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Recording, async transitionToken =>
@@ -37,14 +101,19 @@ public partial class CaptureService
             }
 
             transitionToken.ThrowIfCancellationRequested();
+            _recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry();
+            ThrowIfPendingFlashbackFinalizeBlocksReentry();
+            ValidateRequestedMicrophone(settings);
+
             _currentSettings = settings;
             _micMonitorEnabled = settings.MicrophoneEnabled;
             _micMonitorDeviceId = settings.MicrophoneDeviceId;
             _micMonitorDeviceName = settings.MicrophoneDeviceName;
 
             var rollback = new RecordingStartRollbackState();
+            ClearLastRecordingFailure();
             _previewAudioGraph.ResetCaptureFault();
-            _recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry();
+            Volatile.Write(ref _recordingAudioStartInProgress, 1);
             try
             {
                 await DisposeUnusableFlashbackRecordingBackendAsync(transitionToken).ConfigureAwait(false);
@@ -61,6 +130,10 @@ public partial class CaptureService
             {
                 await RollbackRecordingStartAsync(rollback, ex).ConfigureAwait(false);
                 throw;
+            }
+            finally
+            {
+                Volatile.Write(ref _recordingAudioStartInProgress, 0);
             }
         }, cancellationToken);
 
@@ -80,14 +153,60 @@ public partial class CaptureService
                 return;
             }
 
-            var result = await StopAndDisposeRecordingBackendAsync("Stopped", emergency, transitionToken).ConfigureAwait(false);
+            transitionToken.ThrowIfCancellationRequested();
+            PublishRecordingFinalizingOutcome();
+            StatusChanged?.Invoke(this, "Finalizing recording...");
+            FinalizeResult result;
+            try
+            {
+                result = await StopAndDisposeRecordingBackendAsync(
+                    "Recording saved",
+                    emergency,
+                    CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                MarkRecordingFinalizationUnresolved(
+                    $"Recording failed during finalization: {ex.Message}");
+                throw;
+            }
             // Preview continues running on the active source-reader/WASAPI sessions - no resume needed.
             StatusChanged?.Invoke(this, result.StatusMessage);
             if (!result.Succeeded)
             {
-                throw new InvalidOperationException(result.StatusMessage);
+                var recoveryDetail = string.IsNullOrWhiteSpace(result.RecoveryPath)
+                    ? string.Empty
+                    : $" Recovery details: {result.RecoveryPath}";
+                throw new InvalidOperationException(result.StatusMessage + recoveryDetail);
             }
         }, cancellationToken);
+
+    private static void ValidateRequestedMicrophone(CaptureSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        if (settings.MicrophoneEnabled && string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId))
+        {
+            throw new InvalidOperationException(
+                "Recording microphone is enabled but no microphone device is selected.");
+        }
+    }
+
+    private void ThrowIfPendingFlashbackFinalizeBlocksReentry()
+    {
+        var pending = _pendingFlashbackFinalizeCleanupTask;
+        if (pending == null)
+        {
+            return;
+        }
+
+        if (!pending.IsCompleted)
+        {
+            throw new InvalidOperationException(
+                "A prior Flashback recording is still completing bounded cleanup. Wait before starting another recording.");
+        }
+
+        _pendingFlashbackFinalizeCleanupTask = null;
+    }
 
     private static async Task<StorageFolder> OpenRecordingOutputFolderAsync(CaptureSettings settings)
     {
@@ -167,6 +286,7 @@ public partial class CaptureService
         var libAvSink = new LibAvRecordingSink();
         rollback.LibAvSink = libAvSink;
         libAvSink.OnEncodingFailed = OnRecordingBackendFatalError;
+        libAvSink.OnFinalizationProgress = OnRecordingFinalizationProgress;
         libAvSink.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, unchecked((ulong)Math.Max(0L, count)));
         rollback.RecordingSink = libAvSink;
 
@@ -262,6 +382,14 @@ public partial class CaptureService
             activeRecordingSink,
             audioDeviceId).ConfigureAwait(false);
 
+        _recordingMicrophoneSamplesBaseline = activeLibAvSink.MicrophoneSamplesReceived;
+        _recordingMicrophoneDropsBaseline =
+            activeLibAvSink.MicrophoneDropsQueueSaturated +
+            activeLibAvSink.MicrophoneDropsBacklogEviction;
+        _recordingMicrophoneDiscontinuitiesBaseline =
+            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
+        _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
+
         IGpuVideoFrameEncoder? gpuEncoder =
             (!isMjpegMode && activeLibAvSink.GpuEncodingEnabled)
                 ? activeLibAvSink
@@ -272,6 +400,7 @@ public partial class CaptureService
             _previewAudioGraph.ProgramCapture,
             activeLibAvSink,
             settings);
+        activeLibAvSink.MarkRecordingBoundaryStarted();
         await unifiedVideoCapture.StartRecordingAsync(rollback.RecordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
         if (gpuEncoder != null)
         {
@@ -283,18 +412,20 @@ public partial class CaptureService
             rollback.OwnedUnifiedVideoCapture.Start();
         }
 
+        ThrowIfRecordingStartupFailed();
+        ValidateRequestedRecordingAudioInputs(settings);
+        PrepareActiveRecordingRecoveryJournal(rollback.RecordingContext);
         _recordingBackend.InstallLibAv(
             rollback.LibAvSink,
             rollback.RecordingSink,
             rollback.RecordingContext,
             settings);
-        ClearLastRecordingFailure();
         _isRecording = true;
         _activeVideoInputPixelFormat = videoInputPixelFormat;
         Interlocked.Exchange(ref _videoFramesDropped, 0);
         ResetObservedPixelTelemetry();
         RecordObservedPixelFormat(rollback.RecordingContext.HdrPipelineActive ? "P010" : "NV12", incrementAsFrame: false);
-        PublishRecordingStartedOutcome(rollback.RecordingContext.FinalOutputPath);
+        PublishRecordingStartedOutcome(rollback.RecordingContext);
         _lastUsePostMuxAudio = rollback.RecordingContext.UsePostMuxAudio;
         _recordingStopwatch.Restart();
         StatusChanged?.Invoke(this, "Recording");
@@ -356,6 +487,21 @@ public partial class CaptureService
         IRecordingSink recordingSink,
         string? audioDeviceId)
     {
+        if (settings.AudioEnabled &&
+            _previewAudioGraph.ProgramCapture is { } staleProgramCapture &&
+            (!staleProgramCapture.IsReadyForRecording ||
+             !string.Equals(staleProgramCapture.AudioDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase)))
+        {
+            _previewAudioGraph.ProgramCapture = null;
+            _previewAudioGraph.DetachCapture(
+                staleProgramCapture,
+                OnWasapiAudioLevelUpdated,
+                OnWasapiCaptureFailed,
+                _flashbackBackend.PlaybackController);
+            await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
+            Logger.Log("RECORDING_AUDIO_CAPTURE_REPLACED reason=terminal_preview_worker");
+        }
+
         if (_previewAudioGraph.ProgramCapture == null && settings.AudioEnabled)
         {
             var resolvedAudioDeviceId = audioDeviceId
@@ -364,13 +510,40 @@ public partial class CaptureService
             await rollback.OwnedWasapiAudioCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
             rollback.OwnedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
             rollback.OwnedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
-            rollback.OwnedWasapiAudioCapture.Start();
             _previewAudioGraph.ProgramCapture = rollback.OwnedWasapiAudioCapture;
+            await rollback.OwnedWasapiAudioCapture.StartAndWaitForRecordingReadyAsync(transitionToken).ConfigureAwait(false);
         }
 
-        if (_previewAudioGraph.ProgramCapture != null && settings.AudioEnabled)
+        if (_previewAudioGraph.ProgramCapture == null && settings.AudioEnabled)
         {
-            _previewAudioGraph.ProgramCapture.AttachRecordingSink(recordingSink);
+            throw new InvalidOperationException(
+                "Recording requested device audio, but no live audio capture is available.");
+        }
+
+        // Dispose preview-time mic monitor; recording creates its own capture wired to the active sink.
+        await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
+        if (settings.MicrophoneEnabled)
+        {
+            var microphoneDeviceId = settings.MicrophoneDeviceId
+                ?? throw new InvalidOperationException(
+                    "Recording microphone is enabled but no microphone device is selected.");
+            var micSink = activeLibAvSink; // capture stable reference - LibAv sink is nulled on success path
+            var micCapture = new WasapiAudioCapture();
+            await micCapture.InitializeAsync(microphoneDeviceId, transitionToken).ConfigureAwait(false);
+            micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.MicrophoneCapture = micCapture;
+            await micCapture.StartAndWaitForRecordingReadyAsync(transitionToken).ConfigureAwait(false);
+            Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
+        }
+
+        // All requested workers are ready before any recording writer is attached.
+        // This gives program audio, microphone, and video one tight recording epoch
+        // instead of allowing audio to accumulate during microphone initialization.
+        if (settings.AudioEnabled)
+        {
+            _previewAudioGraph.ProgramCapture!.AttachRecordingSink(recordingSink);
             rollback.SinkAttachedForAudioOnly = true;
             if (_isAudioPreviewActive)
             {
@@ -380,63 +553,330 @@ public partial class CaptureService
             }
         }
 
-        // Dispose preview-time mic monitor; recording creates its own capture wired to the active sink.
-        await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
-
-        if (settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId))
+        if (settings.MicrophoneEnabled)
         {
-            var micSink = activeLibAvSink; // capture stable reference - LibAv sink is nulled on success path
-            var micCapture = new WasapiAudioCapture();
-            await micCapture.InitializeAsync(settings.MicrophoneDeviceId, transitionToken).ConfigureAwait(false);
-            micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-            micCapture.CaptureFailed += OnWasapiCaptureFailed;
-            micCapture.SetAudioWriter(samples => micSink.WriteMicrophoneAudioAsync(samples));
-            micCapture.Start();
-            _previewAudioGraph.MicrophoneCapture = micCapture;
-            Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
+            var micSink = activeLibAvSink;
+            _previewAudioGraph.MicrophoneCapture!.SetAudioWriter(
+                samples => micSink.WriteMicrophoneAudioAsync(samples));
         }
     }
 
-    private void PublishRecordingStartedOutcome(string finalOutputPath)
+    private void ValidateRequestedRecordingAudioInputs(CaptureSettings settings)
     {
-        _lastOutputPath = finalOutputPath;
-        _lastFinalizeStatus = "Recording";
-        _lastFinalizeUtc = null;
-        _lastPreservedArtifacts = Array.Empty<string>();
+        var expectedProgramAudioDeviceId = settings.UseCustomAudioInput
+            ? settings.AudioDeviceId
+            : (_audioDeviceId ?? _currentDevice?.AudioDeviceId);
+        if (settings.AudioEnabled &&
+            (_previewAudioGraph.ProgramCapture?.IsReadyForRecording != true ||
+             !string.Equals(
+                 _previewAudioGraph.ProgramCapture.AudioDeviceId,
+                 expectedProgramAudioDeviceId,
+                 StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException(
+                "Recording requested device audio, but its capture worker is not running.");
+        }
+
+        if (settings.MicrophoneEnabled &&
+            (_previewAudioGraph.MicrophoneCapture?.IsReadyForRecording != true ||
+             !string.Equals(
+                 _previewAudioGraph.MicrophoneCapture.AudioDeviceId,
+                 settings.MicrophoneDeviceId,
+                 StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException(
+                "Recording requested a microphone, but its capture worker is not running.");
+        }
+
+        var startupFault = _previewAudioGraph.ConsumeCaptureFault();
+        if (startupFault.Faulted && IsRequestedAudioFault(settings, startupFault.Source))
+        {
+            throw new InvalidOperationException(
+                string.IsNullOrWhiteSpace(startupFault.Message)
+                    ? "A requested audio capture failed during recording startup."
+                    : $"A requested audio capture failed during recording startup: {startupFault.Message}");
+        }
+    }
+
+    private static bool IsRequestedAudioFault(CaptureSettings settings, string? source)
+        => string.Equals(source, "microphone", StringComparison.Ordinal)
+            ? settings.MicrophoneEnabled
+            : string.Equals(source, "program", StringComparison.Ordinal)
+                ? settings.AudioEnabled
+                : settings.AudioEnabled || settings.MicrophoneEnabled;
+
+    private void ThrowIfRecordingStartupFailed()
+    {
+        var failure = GetLastFailureTelemetry();
+        if (!failure.RecordingFailed)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            string.IsNullOrWhiteSpace(failure.RecordingFailureMessage)
+                ? "The recording pipeline failed during startup."
+                : $"The recording pipeline failed during startup: {failure.RecordingFailureMessage}");
+    }
+
+    private void PrepareActiveRecordingRecoveryJournal(
+        RecordingContext recordingContext,
+        string? artifactDirectory = null)
+    {
+        _activeRecordingRecoveryJournalPath = RecordingFinalizationRecoveryArtifacts.BeginActive(
+            recordingContext.FinalOutputPath,
+            recordingContext.VideoOutputPath,
+            recordingContext.AudioTempPath,
+            string.IsNullOrWhiteSpace(artifactDirectory)
+                ? Array.Empty<string>()
+                : new[] { artifactDirectory });
+    }
+
+    private void PublishRecordingStartedOutcome(RecordingContext recordingContext)
+    {
+        Volatile.Write(ref _recordingFaultAttributionActive, 1);
+        lock (_recordingOutcomeLock)
+        {
+            _recordingLifecyclePhase = RecordingLifecyclePhase.Recording;
+            _lastFinalizeOutcome = RecordingFinalizeOutcome.None;
+            _lastOutputPath = recordingContext.FinalOutputPath;
+            _lastFinalizeStatus = "Recording";
+            _lastFinalizeUtc = null;
+            _lastPreservedArtifacts = Array.Empty<string>();
+            _lastFinalizeFailureCode = string.Empty;
+            _lastFinalizationVerificationCompleted = false;
+            _recordingFinalizationCleanupPending = false;
+            _lastFinalizationElapsedMs = 0;
+            _lastRecordingRecoveryPath = null;
+            _lastRequestedRecordingTracks = BuildRequestedRecordingTracks(recordingContext);
+            _lastObservedRecordingTracks = Array.Empty<string>();
+            _recordingFinalizationProgressStage = "Recording";
+            _lastRecordingFinalizationProgressUtc = DateTimeOffset.UtcNow;
+        }
+    }
+
+    private void PublishRecordingFinalizingOutcome()
+    {
+        lock (_recordingOutcomeLock)
+        {
+            _recordingLifecyclePhase = RecordingLifecyclePhase.Finalizing;
+            _lastFinalizeOutcome = RecordingFinalizeOutcome.None;
+            _lastFinalizeStatus = "Finalizing recording";
+            _lastFinalizeUtc = null;
+            _lastFinalizeFailureCode = string.Empty;
+            _lastFinalizationVerificationCompleted = false;
+            _recordingFinalizationCleanupPending = false;
+            _lastFinalizationElapsedMs = 0;
+            _recordingFinalizationProgressStage = "Draining";
+            _lastRecordingFinalizationProgressUtc = DateTimeOffset.UtcNow;
+        }
+    }
+
+    private void OnRecordingFinalizationProgress(RecordingFinalizationProgress progress)
+    {
+        lock (_recordingOutcomeLock)
+        {
+            _recordingFinalizationProgressStage = progress.Stage;
+            _lastFinalizationElapsedMs = progress.ElapsedMs;
+            _lastRecordingFinalizationProgressUtc = DateTimeOffset.UtcNow;
+        }
+        if (progress.NoProgressWarning)
+        {
+            StatusChanged?.Invoke(
+                this,
+                $"Still finalizing recording ({progress.Stage.ToLowerInvariant()})...");
+        }
+
     }
 
     private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)
     {
-        if (updateOutputPath)
+        lock (_recordingOutcomeLock)
         {
-            _lastOutputPath = result.OutputPath;
+            if (updateOutputPath)
+            {
+                _lastOutputPath = result.OutputPath;
+            }
+
+            _lastFinalizeStatus = result.StatusMessage;
+            _lastFinalizeUtc = DateTimeOffset.UtcNow;
+            _lastPreservedArtifacts = result.PreservedArtifacts;
+            _lastFinalizeFailureCode = result.FailureCode;
+            _lastFinalizationVerificationCompleted = result.VerificationCompleted;
+            _recordingFinalizationCleanupPending = result.CleanupPending;
+            _lastFinalizationElapsedMs = result.FinalizationElapsedMs;
+            _lastRecordingRecoveryPath = result.RecoveryPath;
+            _lastRequestedRecordingTracks = result.RequestedTracks;
+            _lastObservedRecordingTracks = result.ObservedTracks;
+            _recordingFinalizationProgressStage = result.Succeeded ? "Verified" : "Failed";
+            _lastRecordingFinalizationProgressUtc = DateTimeOffset.UtcNow;
+            _lastFinalizeOutcome = result.Outcome;
+            _recordingLifecyclePhase = RecordingLifecyclePhase.Idle;
         }
 
-        _lastFinalizeStatus = result.StatusMessage;
-        _lastFinalizeUtc = DateTimeOffset.UtcNow;
-        _lastPreservedArtifacts = result.PreservedArtifacts;
+        if (result.CleanupPending &&
+            (_recordingBackend.PendingLibAvDrainTask?.IsCompleted == true ||
+             _pendingFlashbackFinalizeCleanupTask?.IsCompleted == true))
+        {
+            MarkRecordingFinalizationCleanupCompleted("already_complete_at_publish");
+        }
+
+        if (result.Succeeded || HasDurableUnresolvedRecoveryMarker(result))
+        {
+            var activeJournalPath = Interlocked.Exchange(ref _activeRecordingRecoveryJournalPath, null);
+            RecordingFinalizationRecoveryArtifacts.RetireActive(activeJournalPath);
+        }
     }
+
+    private static bool HasDurableUnresolvedRecoveryMarker(FinalizeResult result)
+    {
+        if (IsExistingUnresolvedRecoveryMarker(result.RecoveryPath))
+        {
+            return true;
+        }
+
+        return result.PreservedArtifacts.Any(IsExistingUnresolvedRecoveryMarker);
+    }
+
+    private static bool IsExistingUnresolvedRecoveryMarker(string? path)
+        => !string.IsNullOrWhiteSpace(path) &&
+           path.EndsWith(".recording-finalization-unresolved.txt", StringComparison.OrdinalIgnoreCase) &&
+           File.Exists(path);
+
+    private void SetPendingLibAvCleanupTask(Task cleanupTask, string backend)
+    {
+        _recordingBackend.PendingLibAvDrainTask = cleanupTask;
+        _ = TrackRecordingFinalizationCleanupAsync(cleanupTask, backend);
+    }
+
+    private async Task TrackRecordingFinalizationCleanupAsync(Task cleanupTask, string backend)
+    {
+        try
+        {
+            await cleanupTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(
+                "RECORDING_FINALIZATION_CLEANUP_FAILED " +
+                $"backend='{backend}' type={ex.GetType().Name} error='{ex.Message}'");
+        }
+        finally
+        {
+            // A later ownership step may compose this task with capture cleanup.
+            // Only the currently authoritative task may publish cleanup completion.
+            if (ReferenceEquals(_recordingBackend.PendingLibAvDrainTask, cleanupTask))
+            {
+                MarkRecordingFinalizationCleanupCompleted(backend);
+            }
+        }
+    }
+
+    private void MarkRecordingFinalizationCleanupCompleted(string backend)
+    {
+        lock (_recordingOutcomeLock)
+        {
+            _recordingFinalizationCleanupPending = false;
+            _recordingFinalizationProgressStage = "CleanupComplete";
+            _lastRecordingFinalizationProgressUtc = DateTimeOffset.UtcNow;
+        }
+        Logger.Log($"RECORDING_FINALIZATION_CLEANUP_COMPLETE backend='{backend}'");
+    }
+
+    private RecordingOutcomeSnapshot CaptureRecordingOutcomeSnapshot()
+    {
+        lock (_recordingOutcomeLock)
+        {
+            return new RecordingOutcomeSnapshot(
+                _lastOutputPath,
+                _lastFinalizeStatus,
+                _lastFinalizeUtc,
+                _lastPreservedArtifacts,
+                _recordingLifecyclePhase,
+                _lastFinalizeOutcome,
+                _lastFinalizeFailureCode,
+                _lastFinalizationVerificationCompleted,
+                _recordingFinalizationCleanupPending,
+                _lastFinalizationElapsedMs,
+                _lastRecordingRecoveryPath,
+                _lastRequestedRecordingTracks,
+                _lastObservedRecordingTracks,
+                _recordingFinalizationProgressStage,
+                _lastRecordingFinalizationProgressUtc);
+        }
+    }
+
+    private sealed record RecordingOutcomeSnapshot(
+        string? OutputPath,
+        string FinalizeStatus,
+        DateTimeOffset? FinalizeUtc,
+        IReadOnlyList<string> PreservedArtifacts,
+        RecordingLifecyclePhase LifecyclePhase,
+        RecordingFinalizeOutcome FinalizeOutcome,
+        string FailureCode,
+        bool VerificationCompleted,
+        bool CleanupPending,
+        long FinalizationElapsedMs,
+        string? RecoveryPath,
+        IReadOnlyList<string> RequestedTracks,
+        IReadOnlyList<string> ObservedTracks,
+        string ProgressStage,
+        DateTimeOffset? LastProgressUtc);
 
     internal void MarkRecordingFinalizationUnresolved(string statusMessage)
     {
-        if (_lastFinalizeUtc.HasValue &&
-            !string.Equals(_lastFinalizeStatus, "Recording", StringComparison.Ordinal) &&
-            !string.Equals(_lastFinalizeStatus, "None", StringComparison.Ordinal))
+        var recordingOutcome = CaptureRecordingOutcomeSnapshot();
+        if (recordingOutcome.FinalizeUtc.HasValue &&
+            !string.Equals(recordingOutcome.FinalizeStatus, "Recording", StringComparison.Ordinal) &&
+            !string.Equals(recordingOutcome.FinalizeStatus, "None", StringComparison.Ordinal))
         {
             Logger.Log(
                 "RECORDING_FINALIZE_UNRESOLVED_SKIPPED " +
-                $"reason=existing_finalization_status status='{_lastFinalizeStatus}'");
+                $"reason=existing_finalization_status status='{recordingOutcome.FinalizeStatus}'");
             return;
         }
 
-        var fallbackOutputPath = _recordingBackend.Context?.FinalOutputPath ?? _lastOutputPath ?? string.Empty;
-        var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolved(
+        var fallbackOutputPath = _recordingBackend.Context?.FinalOutputPath ?? recordingOutcome.OutputPath ?? string.Empty;
+        var flashbackArtifacts = PreserveUnresolvedFlashbackRecordingArtifacts();
+        var preservedArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolvedWithArtifacts(
             _recordingBackend.Context,
             fallbackOutputPath,
-            statusMessage);
-        PublishRecordingFinalizedOutcome(
-            FinalizeResult.Failure(fallbackOutputPath, statusMessage, preservedArtifacts),
-            updateOutputPath: false);
+            statusMessage,
+            flashbackArtifacts);
+        var unresolvedResult = EnsureRecordingFailureRecovery(
+            FinalizeResult.Failure(
+                fallbackOutputPath,
+                statusMessage,
+                preservedArtifacts,
+                "recording-finalization-unresolved"),
+            _recordingBackend.Context);
+        PublishRecordingFinalizedOutcome(unresolvedResult, updateOutputPath: false);
+    }
+
+    private IReadOnlyList<string> PreserveUnresolvedFlashbackRecordingArtifacts()
+    {
+        // Forced exit can race the narrow handoff between detaching the recording
+        // backend and publishing finalize-in-progress. Preserve any live Flashback
+        // session conservatively rather than depending on that transient ownership flag.
+        if (_flashbackBackend.BufferManager == null)
+        {
+            return Array.Empty<string>();
+        }
+
+        try
+        {
+            _flashbackBackend.PreserveRecoverySegments("recording_finalization_unresolved");
+            return GetFlashbackSegments()
+                .Select(segment => segment.Path)
+                .ToArray();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(
+                "RECORDING_FINALIZE_UNRESOLVED_FLASHBACK_PRESERVE_WARN " +
+                $"type={ex.GetType().Name} error='{ex.Message}'");
+            return Array.Empty<string>();
+        }
     }
 
     // Recording finalization router: choose the active recording backend and delegate
@@ -445,7 +885,7 @@ public partial class CaptureService
     {
         if (IsFlashbackRecordingBackendActive())
         {
-            return await StopAndDisposeFlashbackRecordingBackendAsync(cancellationToken).ConfigureAwait(false);
+            return await StopAndDisposeFlashbackRecordingBackendAsync(emergency, cancellationToken).ConfigureAwait(false);
         }
 
         return await StopAndDisposeLibAvRecordingBackendAsync(fallbackStatusMessage, emergency, cancellationToken).ConfigureAwait(false);
@@ -462,6 +902,8 @@ public partial class CaptureService
         var result = FinalizeResult.Success(fallbackOutputPath, fallbackStatusMessage);
         OperationCanceledException? cancellationException = null;
 
+        Volatile.Write(ref _recordingFaultAttributionActive, 0);
+        libAvSink?.MarkRecordingBoundaryStopped();
         var videoBoundary = await StopUnifiedVideoRecordingForLibAvFinalizeAsync(
             result,
             fallbackOutputPath,
@@ -469,7 +911,14 @@ public partial class CaptureService
         result = videoBoundary.Result;
         cancellationException = videoBoundary.CancellationException;
 
-        await DetachLibAvRecordingAudioBeforeSinkStopAsync().ConfigureAwait(false);
+        // Detaching the microphone writer is synchronous; its five-second worker
+        // join may run alongside emergency encoder finalization so the app-level
+        // eight-second safety budget is not spent twice in series.
+        var microphoneStopTask = DetachLibAvRecordingAudioBeforeSinkStopAsync();
+        if (!emergency)
+        {
+            await microphoneStopTask.ConfigureAwait(false);
+        }
 
         var sinkStop = await StopAndDisposeLibAvSinkForFinalizeAsync(
             sink,
@@ -482,6 +931,11 @@ public partial class CaptureService
         result = sinkStop.Result;
         cancellationException = sinkStop.CancellationException;
 
+        if (emergency)
+        {
+            await microphoneStopTask.ConfigureAwait(false);
+        }
+
         var libAvFinalAudioCounters = libAvSink != null
             ? GetRecordingAudioCountersSinceBaseline(
                 CaptureRecordingAudioCounters(_previewAudioGraph.ProgramCapture, libAvSink, _recordingBackend.SettingsSnapshot))
@@ -490,11 +944,33 @@ public partial class CaptureService
         var idlePreviewDisposal = await DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(
             result,
             fallbackOutputPath,
-            cancellationException).ConfigureAwait(false);
+            cancellationException,
+            emergency).ConfigureAwait(false);
         result = idlePreviewDisposal.Result;
         cancellationException = idlePreviewDisposal.CancellationException;
 
-        result = FoldLibAvAudioFaultIntoFinalizeResult(result, cancellationException);
+        result = FoldRecordingAudioFaultIntoFinalizeResult(
+            result,
+            cancellationException,
+            recordingContext?.Settings);
+        result = FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
+            result,
+            libAvFinalAudioCounters);
+        if (libAvSink != null)
+        {
+            result = FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
+                result,
+                recordingContext?.MicrophoneEnabled == true,
+                libAvSink.MicrophoneSamplesReceived,
+                libAvSink.MicrophoneDropsQueueSaturated + libAvSink.MicrophoneDropsBacklogEviction,
+                Math.Max(
+                    0,
+                    _recordingMicrophoneDiscontinuitiesFinal -
+                    _recordingMicrophoneDiscontinuitiesBaseline));
+        }
+        result = FoldRecordedRuntimeFailureIntoFinalizeResult(result);
+        result = VerifyFinalizedOutputBeforeSaved(result, recordingContext);
+        result = EnsureRecordingFailureRecovery(result, recordingContext);
 
         PublishLibAvRecordingIntegrity(
             libAvSink,
@@ -518,12 +994,172 @@ public partial class CaptureService
         return result;
     }
 
-    private FinalizeResult FoldLibAvAudioFaultIntoFinalizeResult(
+    private static FinalizeResult EnsureRecordingFailureRecovery(
         FinalizeResult result,
-        OperationCanceledException? cancellationException)
+        RecordingContext? recordingContext)
+    {
+        if (result.Succeeded)
+        {
+            return result;
+        }
+
+        var recoveryArtifacts = RecordingFinalizationRecoveryArtifacts.PreserveUnresolvedWithArtifacts(
+            recordingContext,
+            result.OutputPath,
+            result.StatusMessage,
+            result.PreservedArtifacts);
+        var combinedArtifacts = new List<string>();
+        AddUniqueArtifacts(combinedArtifacts, result.PreservedArtifacts);
+        AddUniqueArtifacts(combinedArtifacts, recoveryArtifacts);
+
+        var recoveryPath = result.RecoveryPath;
+        foreach (var artifactPath in combinedArtifacts)
+        {
+            if (artifactPath.EndsWith(
+                    ".recording-finalization-unresolved.txt",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                recoveryPath = artifactPath;
+                break;
+            }
+        }
+
+        recoveryPath ??= combinedArtifacts.Count > 0 ? combinedArtifacts[0] : null;
+        return FinalizeResult.Failure(
+            result.OutputPath,
+            result.StatusMessage,
+            combinedArtifacts,
+            result.FailureCode,
+            result.CleanupPending,
+            recoveryPath,
+            result.VerificationCompleted,
+            result.FinalizationElapsedMs)
+            .WithTrackEvidence(
+                result.RequestedTracks.Count > 0
+                    ? result.RequestedTracks
+                    : recordingContext == null
+                        ? Array.Empty<string>()
+                        : BuildRequestedRecordingTracks(recordingContext),
+                result.ObservedTracks);
+    }
+
+    private static FinalizeResult VerifyFinalizedOutputBeforeSaved(
+        FinalizeResult result,
+        RecordingContext? recordingContext,
+        TimeSpan? expectedRecordingDuration = null)
+    {
+        if (!result.Succeeded || result.VerificationCompleted)
+        {
+            return result;
+        }
+
+        if (recordingContext == null)
+        {
+            return FinalizeResult.Failure(
+                result.OutputPath,
+                "Recording failed (finalization context was unavailable for verification)",
+                result.PreservedArtifacts,
+                "recording-verification-context-missing",
+                result.CleanupPending,
+                result.RecoveryPath,
+                verificationCompleted: false,
+                finalizationElapsedMs: result.FinalizationElapsedMs)
+                .WithTrackEvidence(Array.Empty<string>(), Array.Empty<string>());
+        }
+
+        var verification = new InProcessRecordingStructureVerifier().Verify(
+            recordingContext,
+            expectedRecordingDuration);
+        if (!verification.Succeeded)
+        {
+            return FinalizeResult.Failure(
+                result.OutputPath,
+                $"Recording failed (structural verification failed: {verification.Detail})",
+                result.PreservedArtifacts,
+                verification.FailureCode,
+                result.CleanupPending,
+                result.RecoveryPath,
+                verificationCompleted: false,
+                finalizationElapsedMs: result.FinalizationElapsedMs)
+                .WithTrackEvidence(verification.RequestedTracks, verification.ObservedTracks);
+        }
+
+        return FinalizeResult.Success(
+            result.OutputPath,
+            result.StatusMessage,
+            verificationCompleted: true,
+            finalizationElapsedMs: result.FinalizationElapsedMs)
+            .WithTrackEvidence(verification.RequestedTracks, verification.ObservedTracks);
+    }
+
+    private static IReadOnlyList<string> BuildRequestedRecordingTracks(RecordingContext context)
+    {
+        var tracks = new List<string>(3) { "video" };
+        if (context.AudioEnabled)
+        {
+            tracks.Add("device_audio");
+        }
+        if (context.MicrophoneEnabled)
+        {
+            tracks.Add("microphone");
+        }
+        return tracks;
+    }
+
+    private static void AddUniqueArtifacts(
+        List<string> target,
+        IEnumerable<string> candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                continue;
+            }
+
+            var duplicate = false;
+            foreach (var existing in target)
+            {
+                if (string.Equals(existing, candidate, StringComparison.OrdinalIgnoreCase))
+                {
+                    duplicate = true;
+                    break;
+                }
+            }
+
+            if (!duplicate)
+            {
+                target.Add(candidate);
+            }
+        }
+    }
+
+    private static FinalizeResult MergeFinalizeTrackEvidence(
+        FinalizeResult result,
+        FinalizeResult supplementary)
+    {
+        var requestedTracks = new List<string>();
+        AddUniqueArtifacts(requestedTracks, result.RequestedTracks);
+        AddUniqueArtifacts(requestedTracks, supplementary.RequestedTracks);
+
+        var observedTracks = new List<string>();
+        AddUniqueArtifacts(observedTracks, result.ObservedTracks);
+        AddUniqueArtifacts(observedTracks, supplementary.ObservedTracks);
+
+        return result.WithTrackEvidence(requestedTracks, observedTracks);
+    }
+
+    private FinalizeResult FoldRecordingAudioFaultIntoFinalizeResult(
+        FinalizeResult result,
+        OperationCanceledException? cancellationException,
+        CaptureSettings? requestedSettings)
     {
         var wasapiAudioCaptureFault = _previewAudioGraph.ConsumeCaptureFault();
-        if (!wasapiAudioCaptureFault.Faulted || cancellationException != null || !result.Succeeded)
+        if (!wasapiAudioCaptureFault.Faulted ||
+            requestedSettings == null ||
+            !IsRequestedAudioFault(requestedSettings, wasapiAudioCaptureFault.Source) ||
+            cancellationException != null ||
+            !result.Succeeded)
         {
             return result;
         }
@@ -532,7 +1168,130 @@ public partial class CaptureService
             ? "Recording failed (WASAPI audio capture faulted)."
             : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
         Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
-        return FinalizeResult.Failure(result.OutputPath, statusMessage);
+        return FinalizeResult.Failure(
+            result.OutputPath,
+            statusMessage,
+            result.PreservedArtifacts,
+            "recording-audio-capture-failed",
+            result.CleanupPending,
+            result.RecoveryPath,
+            result.VerificationCompleted,
+            result.FinalizationElapsedMs)
+            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+    }
+
+    private FinalizeResult FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
+        FinalizeResult result,
+        bool microphoneRequested,
+        long microphoneSamplesReceived,
+        long microphoneDrops,
+        long microphoneDiscontinuities)
+    {
+        if (!result.Succeeded || !microphoneRequested)
+        {
+            return result;
+        }
+
+        var recordedSamples = Math.Max(0, microphoneSamplesReceived - _recordingMicrophoneSamplesBaseline);
+        var droppedPackets = Math.Max(0, microphoneDrops - _recordingMicrophoneDropsBaseline);
+        if (recordedSamples > 0 && droppedPackets == 0 && microphoneDiscontinuities == 0)
+        {
+            return result;
+        }
+
+        var reason = recordedSamples == 0
+            ? "Recording failed because the requested microphone produced no samples during the recording interval."
+            : droppedPackets > 0
+                ? $"Recording failed because the requested microphone dropped {droppedPackets} packet(s)."
+                : $"Recording failed because the requested microphone reported {microphoneDiscontinuities} data discontinuity event(s).";
+        Logger.Log(
+            $"RECORDING_MICROPHONE_INTEGRITY_FAIL samples={recordedSamples} " +
+            $"drops={droppedPackets} discontinuities={microphoneDiscontinuities}");
+        return FinalizeResult.Failure(
+            result.OutputPath,
+            reason,
+            result.PreservedArtifacts,
+            "recording-microphone-integrity-failed",
+            result.CleanupPending,
+            result.RecoveryPath,
+            result.VerificationCompleted,
+            result.FinalizationElapsedMs)
+            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+    }
+
+    private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
+        FinalizeResult result,
+        RecordingAudioIntegrityCounterSnapshot audioCounters)
+    {
+        if (!result.Succeeded || !audioCounters.AudioEnabled)
+        {
+            return result;
+        }
+
+        var noRecordedAudio = audioCounters.AudioSamplesEncoded <= 0 ||
+                              audioCounters.AudioFramesWrittenToSink <= 0;
+        var integrityEvents = SumNonNegative(
+            audioCounters.AudioDropEvents,
+            audioCounters.AudioDiscontinuities);
+        if (!noRecordedAudio && integrityEvents == 0)
+        {
+            return result;
+        }
+
+        var reason = noRecordedAudio
+            ? "Recording failed because the requested device-audio stream produced no samples during the recording interval."
+            : $"Recording failed because the requested device-audio stream reported {integrityEvents} loss or discontinuity event(s).";
+        Logger.Log(
+            "RECORDING_PROGRAM_AUDIO_INTEGRITY_FAIL " +
+            $"samples={audioCounters.AudioSamplesEncoded} " +
+            $"drops={audioCounters.AudioDropEvents} " +
+            $"discontinuities={audioCounters.AudioDiscontinuities} " +
+            $"timestamp_errors={audioCounters.AudioTimestampErrors} " +
+            $"callback_gaps={audioCounters.AudioCallbackGaps}");
+        return FinalizeResult.Failure(
+            result.OutputPath,
+            reason,
+            result.PreservedArtifacts,
+            "recording-program-audio-integrity-failed",
+            result.CleanupPending,
+            result.RecoveryPath,
+            result.VerificationCompleted,
+            result.FinalizationElapsedMs)
+            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+    }
+
+    private FinalizeResult FoldRecordedRuntimeFailureIntoFinalizeResult(FinalizeResult result)
+    {
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        var failure = GetLastFailureTelemetry();
+        if (!failure.RecordingFailed)
+        {
+            return result;
+        }
+
+        var failureType = string.IsNullOrWhiteSpace(failure.RecordingFailureType)
+            ? "runtime"
+            : failure.RecordingFailureType;
+        var failureMessage = string.IsNullOrWhiteSpace(failure.RecordingFailureMessage)
+            ? "The recording pipeline reported a fatal runtime failure."
+            : failure.RecordingFailureMessage;
+        Logger.Log(
+            "RECORDING_RUNTIME_FAILURE_FOLDED " +
+            $"type='{failureType}' message='{failureMessage}'");
+        return FinalizeResult.Failure(
+            result.OutputPath,
+            $"Recording failed ({failureType}: {failureMessage})",
+            result.PreservedArtifacts,
+            "recording-runtime-failed",
+            result.CleanupPending,
+            result.RecoveryPath,
+            result.VerificationCompleted,
+            result.FinalizationElapsedMs)
+            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
     }
 
     private void PublishLibAvRecordingIntegrity(
@@ -1300,6 +2059,9 @@ public partial class CaptureService
             }
         }
 
+        _recordingMicrophoneDiscontinuitiesFinal =
+            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ??
+            _recordingMicrophoneDiscontinuitiesBaseline;
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
     }
 
@@ -1330,6 +2092,25 @@ public partial class CaptureService
             {
                 result = sinkResult;
             }
+            else
+            {
+                var priorResult = result;
+                var mergedArtifacts = new List<string>();
+                AddUniqueArtifacts(mergedArtifacts, priorResult.PreservedArtifacts);
+                AddUniqueArtifacts(mergedArtifacts, sinkResult.PreservedArtifacts);
+                result = FinalizeResult.Failure(
+                    priorResult.OutputPath,
+                    priorResult.StatusMessage,
+                    mergedArtifacts,
+                    priorResult.FailureCode ?? sinkResult.FailureCode,
+                    priorResult.CleanupPending || sinkResult.CleanupPending,
+                    priorResult.RecoveryPath ?? sinkResult.RecoveryPath,
+                    priorResult.VerificationCompleted || sinkResult.VerificationCompleted,
+                    Math.Max(priorResult.FinalizationElapsedMs, sinkResult.FinalizationElapsedMs));
+
+                result = MergeFinalizeTrackEvidence(result, priorResult);
+                result = MergeFinalizeTrackEvidence(result, sinkResult);
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -1350,10 +2131,10 @@ public partial class CaptureService
                 await sink.DisposeAsync().ConfigureAwait(false);
                 if (libAvSink != null)
                 {
-                    var libAvDrainTask = libAvSink.EncodingCompletionTask;
-                    if (!libAvDrainTask.IsCompleted)
+                    var libAvCleanupTask = libAvSink.CleanupCompletionTask;
+                    if (!libAvCleanupTask.IsCompleted)
                     {
-                        _recordingBackend.PendingLibAvDrainTask = libAvDrainTask;
+                        SetPendingLibAvCleanupTask(libAvCleanupTask, "LibAv");
                     }
                 }
             }
@@ -1362,9 +2143,34 @@ public partial class CaptureService
                 Logger.Log($"Recording sink dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording dispose failed: {ex.Message}");
+                    result = FinalizeResult.Failure(
+                            result.OutputPath,
+                            $"Recording dispose failed: {ex.Message}",
+                            result.PreservedArtifacts,
+                            "recording-sink-dispose-failed",
+                            result.CleanupPending,
+                            result.RecoveryPath,
+                            result.VerificationCompleted,
+                            result.FinalizationElapsedMs)
+                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
                 }
             }
+        }
+
+        if (!result.Succeeded &&
+            result.CleanupPending &&
+            (libAvSink?.CleanupCompletionTask.IsCompleted ?? true))
+        {
+            result = FinalizeResult.Failure(
+                result.OutputPath,
+                result.StatusMessage,
+                result.PreservedArtifacts,
+                result.FailureCode,
+                cleanupPending: false,
+                recoveryPath: result.RecoveryPath,
+                verificationCompleted: result.VerificationCompleted,
+                finalizationElapsedMs: result.FinalizationElapsedMs)
+                .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
         }
 
         return new LibAvFinalizeStepResult(result, cancellationException);
@@ -1373,7 +2179,8 @@ public partial class CaptureService
     private async Task<LibAvFinalizeStepResult> DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(
         FinalizeResult result,
         string fallbackOutputPath,
-        OperationCanceledException? cancellationException)
+        OperationCanceledException? cancellationException,
+        bool emergency)
     {
         if (_isVideoPreviewActive)
         {
@@ -1389,15 +2196,46 @@ public partial class CaptureService
                 DetachUnifiedVideoCapture(unifiedVideoCapture);
                 if (_recordingBackend.PendingLibAvDrainTask is { IsCompleted: false } pendingLibAvDrainTask)
                 {
-                    _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                    var captureCleanupTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
                         pendingLibAvDrainTask,
                         unifiedVideoCapture,
                         reason: "recording_stop_deferred_drain");
+                    SetPendingLibAvCleanupTask(
+                        Task.WhenAll(pendingLibAvDrainTask, captureCleanupTask),
+                        "LibAv+UnifiedVideoCapture");
                 }
                 else
                 {
-                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
-                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
+                    var captureCleanupTask = StopAndDisposeUnifiedVideoCaptureAsync(unifiedVideoCapture);
+                    var absoluteBudgetMs = emergency ? 5_000L : 120_000L;
+                    var remainingBudgetMs = Math.Max(
+                        0,
+                        absoluteBudgetMs - Math.Max(0, result.FinalizationElapsedMs));
+                    var cleanupWaitMs = Math.Min(5_000L, remainingBudgetMs);
+                    var cleanupCompleted = cleanupWaitMs > 0 &&
+                        ReferenceEquals(
+                            await Task.WhenAny(
+                                captureCleanupTask,
+                                Task.Delay((int)cleanupWaitMs)).ConfigureAwait(false),
+                            captureCleanupTask);
+                    if (cleanupCompleted)
+                    {
+                        await captureCleanupTask.ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        SetPendingLibAvCleanupTask(captureCleanupTask, "LibAv+UnifiedVideoCapture");
+                        result = FinalizeResult.Failure(
+                            fallbackOutputPath,
+                            "Recording failed because the video capture worker did not stop within the finalization deadline; cleanup continues in quarantine.",
+                            result.PreservedArtifacts,
+                            "recording-video-capture-cleanup-timeout",
+                            cleanupPending: true,
+                            recoveryPath: result.RecoveryPath,
+                            verificationCompleted: result.VerificationCompleted,
+                            finalizationElapsedMs: Math.Max(result.FinalizationElapsedMs, absoluteBudgetMs))
+                            .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1405,7 +2243,16 @@ public partial class CaptureService
                 Logger.Log($"Unified video capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video capture dispose failed: {ex.Message}");
+                    result = FinalizeResult.Failure(
+                            result.OutputPath,
+                            $"Unified video capture dispose failed: {ex.Message}",
+                            result.PreservedArtifacts,
+                            "recording-video-capture-dispose-failed",
+                            result.CleanupPending,
+                            result.RecoveryPath,
+                            result.VerificationCompleted,
+                            result.FinalizationElapsedMs)
+                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
                 }
             }
         }
@@ -1421,19 +2268,70 @@ public partial class CaptureService
         {
             try
             {
-                await capture.DisposeAsync().ConfigureAwait(false);
+                var programAudioCleanupTask = capture.DisposeAsync().AsTask();
+                var audioCleanupCompleted = !emergency;
+                if (emergency)
+                {
+                    var remainingEmergencyMs = Math.Max(
+                        0,
+                        5_000L - Math.Max(0, result.FinalizationElapsedMs));
+                    audioCleanupCompleted = remainingEmergencyMs > 0 &&
+                        ReferenceEquals(
+                            await Task.WhenAny(
+                                programAudioCleanupTask,
+                                Task.Delay((int)remainingEmergencyMs)).ConfigureAwait(false),
+                            programAudioCleanupTask);
+                }
+
+                if (audioCleanupCompleted)
+                {
+                    await programAudioCleanupTask.ConfigureAwait(false);
+                }
+                else
+                {
+                    var priorCleanupTask = _recordingBackend.PendingLibAvDrainTask;
+                    var combinedCleanupTask = priorCleanupTask is { IsCompleted: false }
+                        ? Task.WhenAll(priorCleanupTask, programAudioCleanupTask)
+                        : programAudioCleanupTask;
+                    SetPendingLibAvCleanupTask(combinedCleanupTask, "LibAv+ProgramAudio");
+                    result = FinalizeResult.Failure(
+                        fallbackOutputPath,
+                        "Recording failed because the program-audio worker did not stop within the emergency deadline; cleanup continues in quarantine.",
+                        result.PreservedArtifacts,
+                        "recording-program-audio-cleanup-timeout",
+                        cleanupPending: true,
+                        recoveryPath: result.RecoveryPath,
+                        verificationCompleted: result.VerificationCompleted,
+                        finalizationElapsedMs: Math.Max(result.FinalizationElapsedMs, 5_000))
+                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
+                }
             }
             catch (Exception ex)
             {
                 Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording WASAPI capture dispose failed: {ex.Message}");
+                    result = FinalizeResult.Failure(
+                            result.OutputPath,
+                            $"Recording WASAPI capture dispose failed: {ex.Message}",
+                            result.PreservedArtifacts,
+                            "recording-program-audio-dispose-failed",
+                            result.CleanupPending,
+                            result.RecoveryPath,
+                            result.VerificationCompleted,
+                            result.FinalizationElapsedMs)
+                        .WithTrackEvidence(result.RequestedTracks, result.ObservedTracks);
                 }
             }
         }
 
         return new LibAvFinalizeStepResult(result, cancellationException);
+    }
+
+    private static async Task StopAndDisposeUnifiedVideoCaptureAsync(UnifiedVideoCapture capture)
+    {
+        await capture.StopAsync().ConfigureAwait(false);
+        await capture.DisposeAsync().ConfigureAwait(false);
     }
 
     private async Task<OperationCanceledException?> RestoreLibAvPreviewFeaturesAfterRecordingAsync(
@@ -1616,9 +2514,12 @@ public partial class CaptureService
         }
 
         _recordingBackend.ClearContextAndSettings();
+        RecordingFinalizationRecoveryArtifacts.RetireActive(
+            Interlocked.Exchange(ref _activeRecordingRecoveryJournalPath, null));
         _recordingIntegrityCounterBaseline = null;
         _recordingIntegrityAudioBaseline = null;
         _isRecording = false;
+        Volatile.Write(ref _recordingFaultAttributionActive, 0);
         _recordingStopwatch.Reset();
         _mfConvertersDisabled = false;
     }
@@ -1665,13 +2566,16 @@ public partial class CaptureService
         {
             if (sink is LibAvRecordingSink libAvSink)
             {
-                var libAvDrainTask = libAvSink.EncodingCompletionTask;
-                if (!libAvDrainTask.IsCompleted)
+                var libAvCleanupTask = libAvSink.CleanupCompletionTask;
+                if (!libAvCleanupTask.IsCompleted)
                 {
-                    _recordingBackend.PendingLibAvDrainTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
-                        libAvDrainTask,
+                    var captureCleanupTask = _videoPipeline.ScheduleDeferredUnifiedVideoCaptureCleanup(
+                        libAvCleanupTask,
                         unifiedVideoCapture,
                         reason: "recording_start_rollback");
+                    SetPendingLibAvCleanupTask(
+                        Task.WhenAll(libAvCleanupTask, captureCleanupTask),
+                        "LibAvRollback+UnifiedVideoCapture");
                     unifiedVideoCapture = null;
                 }
             }
