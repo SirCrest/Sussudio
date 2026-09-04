@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-04T04:58:37Z
+Generated UTC: 2026-09-04T16:11:03Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,7 +10,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 131 |
 | Test .cs files | 25 |
 | Core app .cs files (Sussudio/) | 97 |
-| Core app nonblank LoC (Sussudio/) | 96651 |
+| Core app nonblank LoC (Sussudio/) | 96621 |
 | Sussudio.Tests .cs files | 24 |
 | Sussudio.Tests nonblank LoC | 60631 |
 | Production .cs files under 60 lines | 1 (0.8%) |
@@ -24,7 +24,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | AutomationDiagnosticsHub | 4 | 9305 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | D3D11PreviewRenderer | 3 | 5110 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | FlashbackPlaybackController | 3 | 4658 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
-| LibAvEncoder | 3 | 3089 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
+| LibAvEncoder | 3 | 3051 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | MainViewModel | 3 | 5261 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 573 | Sussudio/AppRuntime.cs |
 | SettingsJsonContext | 1 | 737 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
