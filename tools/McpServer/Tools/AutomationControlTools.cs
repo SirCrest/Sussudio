@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -29,15 +29,15 @@ public static class CaptureSettingsTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No capture setting changes requested.",
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetResolution, "SetResolution", "resolution", resolution),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetFrameRate, "SetFrameRate", "frameRate", frameRate),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetVideoFormat, "SetVideoFormat", "videoFormat", videoFormat),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetRecordingFormat, "SetRecordingFormat", "format", format),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetQuality, "SetQuality", "quality", quality),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetCustomBitrate, "SetCustomBitrate", "bitrateMbps", bitrateMbps),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreset, "SetPreset", "preset", preset),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetSplitEncodeMode, "SetSplitEncodeMode", "splitEncodeMode", splitEncodeMode),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetMjpegDecoderCount, "SetMjpegDecoderCount", "decoderCount", mjpegDecoderCount))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetResolution, "resolution", resolution),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFrameRate, "frameRate", frameRate),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetVideoFormat, "videoFormat", videoFormat),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetRecordingFormat, "format", format),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetQuality, "quality", quality),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetCustomBitrate, "bitrateMbps", bitrateMbps),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreset, "preset", preset),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetSplitEncodeMode, "splitEncodeMode", splitEncodeMode),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMjpegDecoderCount, "decoderCount", mjpegDecoderCount))
             .ConfigureAwait(false);
 
 }
@@ -62,11 +62,9 @@ public static class DeviceTools
                 "No device configuration changes requested.",
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.RefreshDevices,
-                    "RefreshDevices",
                     refresh),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SelectDevice,
-                    "SelectDevice",
                     !string.IsNullOrWhiteSpace(deviceId) || !string.IsNullOrWhiteSpace(deviceName),
                     new Dictionary<string, object?>
                     {
@@ -75,7 +73,6 @@ public static class DeviceTools
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SelectAudioInputDevice,
-                    "SelectAudioInputDevice",
                     !string.IsNullOrWhiteSpace(audioDeviceId) || !string.IsNullOrWhiteSpace(audioDeviceName),
                     new Dictionary<string, object?>
                     {
@@ -84,7 +81,6 @@ public static class DeviceTools
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SelectMicrophoneDevice,
-                    "SelectMicrophoneDevice",
                     !string.IsNullOrWhiteSpace(microphoneDeviceId) || !string.IsNullOrWhiteSpace(microphoneDeviceName),
                     new Dictionary<string, object?>
                     {
@@ -93,7 +89,6 @@ public static class DeviceTools
                     }),
                 ToolCommandFormatter.Optional(
                     AutomationCommandKind.SetCustomAudioInput,
-                    "SetCustomAudioInput",
                     customAudioInput.HasValue,
                     customAudioInput.HasValue ? new Dictionary<string, object?> { ["enabled"] = customAudioInput.Value } : null))
             .ConfigureAwait(false);
@@ -153,13 +148,13 @@ public static class PipelineSettingsTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No pipeline setting changes requested.",
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetHdrEnabled, "SetHdrEnabled", "enabled", hdrEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetTrueHdrPreviewEnabled, "SetTrueHdrPreviewEnabled", "enabled", trueHdrPreviewEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioEnabled, "SetAudioEnabled", "enabled", audioEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioPreviewEnabled, "SetAudioPreviewEnabled", "enabled", audioPreviewEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneEnabled, "SetMicrophoneEnabled", "enabled", microphoneEnabled),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneVolume, "SetMicrophoneVolume", "microphoneVolumePercent", microphoneVolumePercent),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetOutputPath, "SetOutputPath", "outputPath", outputPath))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetHdrEnabled, "enabled", hdrEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetTrueHdrPreviewEnabled, "enabled", trueHdrPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioEnabled, "enabled", audioEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetAudioPreviewEnabled, "enabled", audioPreviewEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneEnabled, "enabled", microphoneEnabled),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetMicrophoneVolume, "microphoneVolumePercent", microphoneVolumePercent),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetOutputPath, "outputPath", outputPath))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("Set device audio mode to HDMI or analog")]
@@ -168,7 +163,7 @@ public static class PipelineSettingsTools
         [Description("Audio mode: hdmi or analog")] string mode)
     {
         var payload = new Dictionary<string, object?> { ["mode"] = mode.ToLowerInvariant() };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetDeviceAudioMode, "SetDeviceAudioMode", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetDeviceAudioMode, payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Set analog audio input gain (0-100%)")]
@@ -177,7 +172,7 @@ public static class PipelineSettingsTools
         [Description("Gain value as a percentage (0-100)")] double gainPercent)
     {
         var payload = new Dictionary<string, object?> { ["gain"] = gainPercent };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetAnalogAudioGain, "SetAnalogAudioGain", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetAnalogAudioGain, payload).ConfigureAwait(false);
     }
 
 }
@@ -216,7 +211,7 @@ public static class WindowTools
             };
             actionPayload["actionId"] = actionId;
             var armResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.ArmClose, armPayload).ConfigureAwait(false);
-            results.Add(ToolCommandFormatter.FormatCommandResponse(armResponse, "ArmClose"));
+            results.Add(ToolCommandFormatter.FormatCommandResponse(armResponse, AutomationCommandKind.ArmClose));
             if (!Sussudio.Tools.AutomationSnapshotFormatter.IsSuccess(armResponse))
             {
                 return McpToolResultFactory.FromText(string.Join(Environment.NewLine, results), isError: true);
@@ -229,7 +224,7 @@ public static class WindowTools
         if (height.HasValue) actionPayload["height"] = height.Value;
 
         var actionResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload).ConfigureAwait(false);
-        results.Add(ToolCommandFormatter.FormatCommandResponse(actionResponse, "WindowAction"));
+        results.Add(ToolCommandFormatter.FormatCommandResponse(actionResponse, AutomationCommandKind.WindowAction));
 
         return McpToolResultFactory.FromResponse(actionResponse, string.Join(Environment.NewLine, results));
     }
@@ -242,7 +237,6 @@ public static class WindowTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.SetFullScreenEnabled,
-                "SetFullScreenEnabled",
                 new Dictionary<string, object?> { ["enabled"] = enabled })
             .ConfigureAwait(false);
     }
@@ -252,8 +246,7 @@ public static class WindowTools
     {
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                AutomationCommandKind.OpenRecordingsFolder,
-                "OpenRecordingsFolder")
+                AutomationCommandKind.OpenRecordingsFolder)
             .ConfigureAwait(false);
     }
 
@@ -272,9 +265,9 @@ public static class UiSettingsTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No UI setting changes requested.",
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetShowAllCaptureOptions, "SetShowAllCaptureOptions", "enabled", showAllCaptureOptions),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreviewVolume, "SetPreviewVolume", "previewVolumePercent", previewVolumePercent),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, "SetStatsVisible", "visible", statsVisible))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetShowAllCaptureOptions, "enabled", showAllCaptureOptions),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetPreviewVolume, "previewVolumePercent", previewVolumePercent),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetStatsVisible, "visible", statsVisible))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("Show or hide the settings panel")]
@@ -283,7 +276,7 @@ public static class UiSettingsTools
         [Description("True to show the settings panel, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetSettingsVisible, "SetSettingsVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetSettingsVisible, payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide the frametime graph overlay")]
@@ -292,7 +285,7 @@ public static class UiSettingsTools
         [Description("True to show the frametime graph, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFrameTimeOverlayVisible, "SetFrameTimeOverlayVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFrameTimeOverlayVisible, payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide the Flashback timeline UI")]
@@ -301,7 +294,7 @@ public static class UiSettingsTools
         [Description("True to show the Flashback timeline, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFlashbackTimelineVisible, "SetFlashbackTimelineVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetFlashbackTimelineVisible, payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide a specific stats section by name")]
@@ -315,7 +308,7 @@ public static class UiSettingsTools
             ["section"] = section,
             ["visible"] = visible
         };
-        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetStatsSectionVisible, "SetStatsSectionVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.SetStatsSectionVisible, payload).ConfigureAwait(false);
     }
 }
 
@@ -336,7 +329,6 @@ public static class PreviewTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.SetPreviewEnabled,
-                "SetPreviewEnabled",
                 payload)
             .ConfigureAwait(false);
     }
@@ -359,7 +351,6 @@ public static class RecordingTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.SetRecordingEnabled,
-                "SetRecordingEnabled",
                 payload)
             .ConfigureAwait(false);
     }
@@ -427,7 +418,6 @@ public static class FlashbackTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.SetFlashbackEnabled,
-                label: "SetFlashbackEnabled",
                 payload: new Dictionary<string, object?> { ["enabled"] = enabled })
             .ConfigureAwait(false);
     }
@@ -437,8 +427,7 @@ public static class FlashbackTools
     {
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
-                AutomationCommandKind.RestartFlashback,
-                label: "RestartFlashback")
+                AutomationCommandKind.RestartFlashback)
             .ConfigureAwait(false);
     }
 
@@ -450,8 +439,8 @@ public static class FlashbackTools
         => await ToolCommandFormatter.ExecuteBatchResultAsync(
                 pipeClient,
                 "No Flashback setting changes requested.",
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackBufferMinutes, "SetFlashbackBufferMinutes", "minutes", bufferMinutes),
-                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackGpuDecode, "SetFlashbackGpuDecode", "enabled", gpuDecode))
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackBufferMinutes, "minutes", bufferMinutes),
+                ToolCommandFormatter.Optional(AutomationCommandKind.SetFlashbackGpuDecode, "enabled", gpuDecode))
             .ConfigureAwait(false);
 
     [McpServerTool, Description("List all flashback buffer segments with their file paths, durations, and frame counts")]
@@ -521,8 +510,8 @@ public static class FlashbackTools
         return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
                 pipeClient,
                 AutomationCommandKind.FlashbackAction,
-                label: $"FlashbackAction({normalizedAction})",
-                payload: payload)
+                payload: payload,
+                detail: normalizedAction)
             .ConfigureAwait(false);
     }
 

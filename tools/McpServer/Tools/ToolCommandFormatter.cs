@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Sussudio.Models;
 using Sussudio.Tools;
 using ModelContextProtocol.Protocol;
@@ -9,49 +9,52 @@ namespace McpServer.Tools;
 // commands and present concise text results.
 internal static class ToolCommandFormatter
 {
+    // Detail is for the rare command whose display name carries an argument
+    // (FlashbackAction names the action it ran); everything else takes its label
+    // from the command kind, which is the only spelling the wire format has.
     internal readonly record struct PendingCommand(
         AutomationCommandKind Kind,
-        string Label,
         Dictionary<string, object?>? Payload,
-        bool HasValue);
+        bool HasValue,
+        string? Detail = null);
 
-    internal static PendingCommand Optional(AutomationCommandKind kind, string label, string payloadKey, string? value)
-        => Optional(kind, label, !string.IsNullOrWhiteSpace(value), new Dictionary<string, object?> { [payloadKey] = value });
+    internal static PendingCommand Optional(AutomationCommandKind kind, string payloadKey, string? value)
+        => Optional(kind, !string.IsNullOrWhiteSpace(value), new Dictionary<string, object?> { [payloadKey] = value });
 
-    internal static PendingCommand Optional<T>(AutomationCommandKind kind, string label, string payloadKey, T? value)
+    internal static PendingCommand Optional<T>(AutomationCommandKind kind, string payloadKey, T? value)
         where T : struct
-        => Optional(kind, label, value.HasValue, value.HasValue ? new Dictionary<string, object?> { [payloadKey] = value.Value } : null);
+        => Optional(kind, value.HasValue, value.HasValue ? new Dictionary<string, object?> { [payloadKey] = value.Value } : null);
 
     internal static PendingCommand Optional(
         AutomationCommandKind kind,
-        string label,
         bool hasValue,
-        Dictionary<string, object?>? payload = null)
-        => new(kind, label, payload, hasValue);
+        Dictionary<string, object?>? payload = null,
+        string? detail = null)
+        => new(kind, payload, hasValue, detail);
 
-    internal static PendingCommand Optional(AutomationCommandKind kind, string label, bool hasValue)
-        => Optional(kind, label, hasValue, payload: null);
+    internal static PendingCommand Optional(AutomationCommandKind kind, bool hasValue)
+        => Optional(kind, hasValue, payload: null);
 
     internal static async Task<string> ExecuteAndFormatAsync(
         PipeClient pipeClient,
         AutomationCommandKind kind,
-        string label,
         Dictionary<string, object?>? payload = null,
-        int? responseTimeoutMs = null)
+        int? responseTimeoutMs = null,
+        string? detail = null)
     {
         var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs).ConfigureAwait(false);
-        return FormatCommandResponse(response, label);
+        return FormatCommandResponse(response, kind, detail);
     }
 
     internal static async Task<CallToolResult> ExecuteAndFormatResultAsync(
         PipeClient pipeClient,
         AutomationCommandKind kind,
-        string label,
         Dictionary<string, object?>? payload = null,
-        int? responseTimeoutMs = null)
+        int? responseTimeoutMs = null,
+        string? detail = null)
     {
         var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs).ConfigureAwait(false);
-        return McpToolResultFactory.FromResponse(response, FormatCommandResponse(response, label));
+        return McpToolResultFactory.FromResponse(response, FormatCommandResponse(response, kind, detail));
     }
 
     internal static async Task<string> ExecuteBatchAsync(
@@ -68,7 +71,7 @@ internal static class ToolCommandFormatter
             }
 
             var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload).ConfigureAwait(false);
-            results.Add(FormatCommandResponse(response, command.Label));
+            results.Add(FormatCommandResponse(response, command.Kind, command.Detail));
             if (!AutomationSnapshotFormatter.IsSuccess(response))
             {
                 break;
@@ -95,7 +98,7 @@ internal static class ToolCommandFormatter
             }
 
             var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload).ConfigureAwait(false);
-            results.Add(FormatCommandResponse(response, command.Label));
+            results.Add(FormatCommandResponse(response, command.Kind, command.Detail));
             if (!AutomationSnapshotFormatter.IsSuccess(response))
             {
                 isError = true;
@@ -108,10 +111,11 @@ internal static class ToolCommandFormatter
             isError);
     }
 
-    internal static string FormatCommandResponse(JsonElement response, string label)
+    internal static string FormatCommandResponse(JsonElement response, AutomationCommandKind kind, string? detail = null)
     {
         var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
+        var label = detail is null ? kind.ToString() : $"{kind}({detail})";
         return $"[{status}] {label}: {message}";
     }
 }

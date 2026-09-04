@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -1522,8 +1522,8 @@ static partial class Program
         AssertContains(captureOptionsToolText, "AutomationCommandKind.GetCaptureOptions");
         AssertContains(captureOptionsToolText, "UseStructuredContent = true");
         AssertContains(uiSettingsToolText, "configure_ui");
-        AssertContains(uiSettingsToolText, "\"SetPreviewVolume\"");
-        AssertContains(uiSettingsToolText, "\"SetStatsVisible\"");
+        AssertContains(uiSettingsToolText, "AutomationCommandKind.SetPreviewVolume");
+        AssertContains(uiSettingsToolText, "AutomationCommandKind.SetStatsVisible");
         AssertContains(captureOptionsToolText, "get_capture_options");
         AssertDoesNotContain(automationSnapshotText, " Options { get; init;");
 
@@ -1587,7 +1587,7 @@ static partial class Program
             "SetMjpegDecoderCount"
         })
         {
-            AssertContains(captureSettingsToolsText, $"ToolCommandFormatter.Optional(AutomationCommandKind.{commandName}, \"{commandName}\"");
+            AssertContains(captureSettingsToolsText, $"ToolCommandFormatter.Optional(AutomationCommandKind.{commandName},");
             AssertDoesNotContain(captureSettingsToolsText, $"ToolCommandFormatter.Optional(\"{commandName}\"");
         }
 
@@ -1615,20 +1615,20 @@ static partial class Program
             "SetOutputPath"
         })
         {
-            AssertContains(pipelineSettingsToolsText, $"ToolCommandFormatter.Optional(AutomationCommandKind.{commandName}, \"{commandName}\"");
+            AssertContains(pipelineSettingsToolsText, $"ToolCommandFormatter.Optional(AutomationCommandKind.{commandName},");
             AssertDoesNotContain(pipelineSettingsToolsText, $"ToolCommandFormatter.Optional(\"{commandName}\"");
         }
 
         foreach (var commandName in new[] { "SetDeviceAudioMode", "SetAnalogAudioGain" })
         {
-            AssertContains(pipelineSettingsToolsText, $"ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.{commandName}, \"{commandName}\"");
+            AssertContains(pipelineSettingsToolsText, $"ExecuteAndFormatResultAsync(pipeClient, AutomationCommandKind.{commandName},");
             AssertDoesNotContain(pipelineSettingsToolsText, $"ExecuteAndFormatResultAsync(pipeClient, \"{commandName}\"");
         }
 
-        AssertContains(previewToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                AutomationCommandKind.SetPreviewEnabled,\n                \"SetPreviewEnabled\",");
+        AssertContains(previewToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                AutomationCommandKind.SetPreviewEnabled,");
         AssertDoesNotContain(previewToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"SetPreviewEnabled\",");
 
-        AssertContains(recordingToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                AutomationCommandKind.SetRecordingEnabled,\n                \"SetRecordingEnabled\",");
+        AssertContains(recordingToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                AutomationCommandKind.SetRecordingEnabled,");
         AssertDoesNotContain(recordingToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"SetRecordingEnabled\",");
 
         AssertContains(flashbackToolsText, "AutomationCommandKind.SetFlashbackEnabled");
@@ -1997,9 +1997,9 @@ static partial class Program
                 var parameters = method.GetParameters();
                 return parameters.Length == 4 &&
                        parameters[0].ParameterType.FullName == "Sussudio.Models.AutomationCommandKind" &&
-                       parameters[1].ParameterType == typeof(string) &&
-                       parameters[2].ParameterType == typeof(bool) &&
-                       parameters[3].ParameterType == typeof(Dictionary<string, object?>);
+                       parameters[1].ParameterType == typeof(bool) &&
+                       parameters[2].ParameterType == typeof(Dictionary<string, object?>) &&
+                       parameters[3].ParameterType == typeof(string);
             })
             ?? throw new InvalidOperationException("ToolCommandFormatter.Optional overload was not found.");
         var automationCommandKindType = optional.GetParameters()[0].ParameterType;
@@ -2025,18 +2025,18 @@ static partial class Program
             new object?[]
             {
                 Enum.Parse(automationCommandKindType, "SetStatsVisible"),
-                "SetStatsVisible",
                 true,
-                new Dictionary<string, object?> { ["visible"] = true }
+                new Dictionary<string, object?> { ["visible"] = true },
+                null
             });
         var secondPending = optional.Invoke(
             null,
             new object?[]
             {
                 Enum.Parse(automationCommandKindType, "SetSettingsVisible"),
-                "SetSettingsVisible",
                 true,
-                new Dictionary<string, object?> { ["visible"] = false }
+                new Dictionary<string, object?> { ["visible"] = false },
+                null
             });
         var commands = Array.CreateInstance(pendingType, 2);
         commands.SetValue(firstPending, 0);
