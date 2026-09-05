@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -70,11 +71,11 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
 
     internal static bool TryReserve(
         string outputPath,
-        out FlashbackExportOutputTransaction transaction,
+        [NotNullWhen(true)] out FlashbackExportOutputTransaction? transaction,
         out string failureMessage,
         out string failureCode)
     {
-        transaction = null!;
+        transaction = null;
         failureCode = FlashbackExportFailureCodes.Failed;
         var outputDirectory = Path.GetDirectoryName(outputPath);
         if (string.IsNullOrWhiteSpace(outputDirectory))

@@ -1857,7 +1857,7 @@ static partial class Program
         AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");\n\n        if (!outputTransaction.TryPublish");
         AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
         AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
-        AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)");
+        AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, [NotNullWhen(false)] out FinalizeResult? cancellationResult)");
         AssertContains(lifecycleText, "private void ReleaseExportLockBestEffort(string operation)");
         AssertContains(lifecycleText, "private void DisposeExportLockBestEffort()");
         AssertContains(lifecycleText, "private static FinalizeResult CreateCancelledExportResult(string outputPath)");

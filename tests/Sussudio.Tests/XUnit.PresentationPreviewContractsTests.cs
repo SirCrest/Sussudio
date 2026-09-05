@@ -2603,7 +2603,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(renderSource, "SignalFrameReady(\"render_loop_drain\");");
         AssertEqual(1, allRendererSource.Split("_frameReadyEvent.Set();", StringSplitOptions.None).Length - 1, "All D3D frame-ready signals go through SignalFrameReady");
         AssertEqual(1, allRendererSource.Split("_frameReadyEvent.Reset();", StringSplitOptions.None).Length - 1, "All D3D frame-ready resets go through ResetFrameReady");
-        AssertContains(source, "private bool TryDequeuePendingFrame(out PendingFrame frame)");
+        AssertContains(source, "private bool TryDequeuePendingFrame([NotNullWhen(true)] out PendingFrame? frame)");
         AssertContains(source, "DecrementPendingFrameCount();");
         AssertDoesNotContain(source, "_pendingFrames.Count");
         AssertDoesNotContain(source, "_pendingFrames.Enqueue(frame);\n            var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);");

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -625,7 +626,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
-    private bool TryDequeuePendingFrame(out PendingFrame frame)
+    private bool TryDequeuePendingFrame([NotNullWhen(true)] out PendingFrame? frame)
     {
         if (_pendingFrames.TryDequeue(out var dequeued))
         {
@@ -634,7 +635,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return true;
         }
 
-        frame = null!;
+        frame = null;
         return false;
     }
 

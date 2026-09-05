@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -173,7 +174,7 @@ namespace Sussudio.Tools
             throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown automation command kind.");
         }
 
-        public static bool TryGet(string commandName, out AutomationCommandMetadata metadata)
+        public static bool TryGet(string commandName, [NotNullWhen(true)] out AutomationCommandMetadata? metadata)
         {
             if (TryResolveKind(commandName, out var kind))
             {
@@ -181,7 +182,7 @@ namespace Sussudio.Tools
                 return true;
             }
 
-            metadata = null!;
+            metadata = null;
             return false;
         }
 

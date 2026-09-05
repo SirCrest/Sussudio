@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -163,7 +164,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         return Marshal.PtrToStringAnsi((IntPtr)buffer) ?? $"unknown error {errorCode}";
     }
 
-    private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)
+    private bool TryWaitForExportLock(string outputPath, CancellationToken ct, [NotNullWhen(false)] out FinalizeResult? cancellationResult)
     {
         try
         {
@@ -175,7 +176,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 return false;
             }
 
-            cancellationResult = null!;
+            cancellationResult = null;
             return true;
         }
         catch (OperationCanceledException)
