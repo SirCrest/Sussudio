@@ -7,6 +7,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 
 ## What's in place
 
+- `XUnit.LoggerTests.cs` executes isolated production loggers against temporary
+  files, covering drain, saturation, fatal writes, rotation and I/O failures.
 - `XUnit.AppEmergencyFinalizationTests.cs` executes the actual App emergency-stop
   helper with synthetic tasks, covering recovery marking without WinUI activation.
 - `XUnit.NativeXuAudioControlTests.cs` executes native audio payload comparison
