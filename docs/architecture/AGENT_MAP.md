@@ -659,11 +659,12 @@ Important entry points:
   the `FrameLedger` ring-buffer helper, source-reader cadence forwarding, MJPEG
   pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
   summary projection over the root capture fan-out state.
-- `CaptureCadenceTrackers.cs` owns the two capture cadence tracker types:
-  `FrameFingerprintCadenceTracker` for source-packet hash cadence ingestion,
+- `Services/Gpu/FrameFingerprintCadenceTracker.cs` owns source-packet hash cadence ingestion
+  beside its MJPEG decoder consumer, removing the decoder's dependency on Capture:
   duplicate-run counters, fast packet hashing, duplicate-pattern metrics DTO
   construction, interval statistics, unique-interval projection, and pattern
-  labels; and `VisualCadenceTracker` for visual-cadence state, reset, frame
+  labels.
+- `CaptureCadenceTrackers.cs` owns `VisualCadenceTracker` for visual-cadence state, reset, frame
   validation, output/change ingestion, repeat-run bookkeeping, decoded-frame
   luma sampling, crop selection, sample-buffer promotion, rolling sample writes,
   stopwatch elapsed-time conversion, metrics DTOs, snapshot construction,

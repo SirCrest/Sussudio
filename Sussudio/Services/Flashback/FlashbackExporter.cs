@@ -881,6 +881,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 var message = $"Flashback export failed: {ex.Message}";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                Logger.Log($"FLASHBACK_EXPORT_EXCEPTION mode=single output='{outputPath}' exception={ex}");
                 return FinalizeResult.Failure(outputPath, message);
             }
             finally
@@ -1795,6 +1796,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 var message = $"Flashback export failed: {ex.Message}";
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                Logger.Log($"FLASHBACK_EXPORT_EXCEPTION mode=segments output='{outputPath}' exception={ex}");
                 return FinalizeResult.Failure(outputPath, message);
             }
             finally

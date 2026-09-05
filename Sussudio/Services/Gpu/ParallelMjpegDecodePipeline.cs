@@ -8,7 +8,6 @@ using System.Runtime.Intrinsics;
 using System.Threading;
 using System.Threading.Channels;
 using FFmpeg.AutoGen;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Gpu;

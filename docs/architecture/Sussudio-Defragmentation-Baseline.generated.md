@@ -1,18 +1,18 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-05T09:10:25Z
+Generated UTC: 2026-09-05T09:17:06Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
 
 | Metric | Value |
 | --- | ---: |
-| Production .cs files | 131 |
+| Production .cs files | 132 |
 | Test .cs files | 25 |
-| Core app .cs files (Sussudio/) | 97 |
-| Core app nonblank LoC (Sussudio/) | 96392 |
+| Core app .cs files (Sussudio/) | 98 |
+| Core app nonblank LoC (Sussudio/) | 96397 |
 | Sussudio.Tests .cs files | 24 |
-| Sussudio.Tests nonblank LoC | 60846 |
+| Sussudio.Tests nonblank LoC | 60847 |
 | Production .cs files under 60 lines | 1 (0.8%) |
 | Production .cs files under 80 lines | 3 (2.3%) |
 
@@ -40,7 +40,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 5031 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 3112 | Sussudio/ViewModels/MainViewModel.cs |
 | 2938 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
-| 2889 | Sussudio/Services/Flashback/FlashbackExporter.cs |
+| 2891 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2796 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
 | 2547 | Sussudio/MainWindow.xaml.cs |
 | 2530 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
@@ -57,7 +57,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1745 | tools/Common/DiagnosticSessionResultBuilder.cs |
 | 1739 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1728 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
-| 1668 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
+| 1667 | Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs |
 | 1602 | Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | 1596 | Sussudio/ViewModels/ViewModelSelectionPolicies.cs |
 | 1561 | Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs |

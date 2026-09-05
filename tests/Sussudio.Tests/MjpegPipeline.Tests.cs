@@ -969,6 +969,7 @@ static partial class Program
         AssertContains(rootText, "private const int WorkQueueItemCapacityPerDecoder = 8;");
         AssertContains(rootText, "private readonly Channel<MjpegWorkItem> _workQueue;");
         AssertContains(rootText, "private readonly FrameFingerprintCadenceTracker _packetHashTracker = new();");
+        AssertDoesNotContain(rootText, "using Sussudio.Services.Capture;");
         AssertContains(rootText, "private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;");
         AssertContains(rootText, "private readonly record struct MjpegWorkItem(");
         AssertContains(rootText, "public bool EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)");
@@ -993,8 +994,8 @@ static partial class Program
 
     internal static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
     {
-        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/CaptureCadenceTrackers.cs").Replace("\r\n", "\n");
-        var tracker = CreateInstance("Sussudio.Services.Capture.FrameFingerprintCadenceTracker");
+        var trackerSource = ReadRepoFile("Sussudio/Services/Gpu/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
+        var tracker = CreateInstance("Sussudio.Services.Gpu.FrameFingerprintCadenceTracker");
         var trackerType = tracker.GetType();
         var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.RecordFrame not found.");
@@ -1047,7 +1048,7 @@ static partial class Program
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "FrameFingerprintCadenceTracker.cs")),
-            "packet hash cadence tracker folded into CaptureCadenceTrackers.cs");
+            "packet hash cadence tracker belongs to the GPU decode pipeline");
 
         return Task.CompletedTask;
     }
