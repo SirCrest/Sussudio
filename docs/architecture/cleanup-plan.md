@@ -1,6 +1,6 @@
-﻿# Architecture Cleanup Plan
+# Architecture Cleanup Plan
 
-Last reviewed: 2026-08-29.
+Navigation reviewed: 2026-09-05. Pending proposals retain their original scope and require live-source verification.
 
 ## Objective
 
@@ -18,7 +18,597 @@ that future agents can find faster by name. Sub-100-line files are acceptable
 only when they carry one of those deliberate boundaries; otherwise keep the
 code grouped and document the owner in place.
 
+## How to use this plan
+
+Start with [Next Slices](#next-slices) and the [guardrails](#guardrails).
+Proposals are candidates, not instructions to split a currently cohesive owner.
+Check the [current ownership map](AGENT_MAP.md), including its closure decisions,
+before selecting a slice. Record current ownership only there.
+
+[Completed Slices](#completed-slices) below preserves the previous cleanup history.
+Its ownership descriptions describe those checkpoints and may have been superseded.
+For dated validation evidence, use the
+[slice evidence log](Sussudio-Defragmentation-Baseline.md); for measured counts,
+use the [generated baseline](Sussudio-Defragmentation-Baseline.generated.md).
+
+## Next Slices
+
+Small-file hygiene applies to every slice below: prefer a named owner when the
+runtime responsibility is real, but do not create or keep sub-100-line files
+just to make a partial family look tidy. A small file should pay for itself by
+owning a stable contract, hot-path lifetime, XAML adapter surface, shared tool
+surface, or test boundary that would be harder to audit if merged. If a tiny
+file only holds private DTOs, constants, or pass-through helpers for one nearby
+owner, fold it back into that owner and update the source-shape tests and
+`docs/architecture/AGENT_MAP.md` in the same slice.
+
+1. Keep diagnostic-session runner internals aligned by owner.
+
+   `tools/Common/DiagnosticSessionRunner.cs` owns the public compatibility
+   surface plus the visible run phase sequence, while
+   `tools/Common/DiagnosticSessionRunContext.cs` owns the
+   cohesive mutable per-run context: snapshot, live-state, disposal, and
+   explicit scenario/completion context construction.
+   `DiagnosticSessionRunner.cs` owns the
+   post-cleanup evidence/result sequence, completion context handoff, and
+   result-build request mapping, plus the main scenario execution phase
+   including scenario sampling. `DiagnosticSessionResult.cs`
+   owns the explicit scenario context/result/state handoffs and final summary
+   DTO surface, with
+   `DiagnosticSessionRunner.cs` owning post-sampling completion ordering,
+   fault-drain delegation, and background task completion. Scenario catalog,
+   initial scenario setup, optional scenario
+   startup, cleanup mutation ownership, post-cleanup recording checks,
+   post-run snapshot fetches, command send/failure plumbing, and result
+   construction are extracted; avoid further runner splits unless a new
+   responsibility boundary is clearly larger than the existing focused owners,
+   and otherwise pivot to the next large owner. The
+   reflective runner behavior tests are already split by scenario, so keep new
+   runner coverage in the focused owner file that matches the behavior. Keep
+   JSON summary shape unchanged.
+
+2. Reduce custom regression harness size.
+
+   `tests/Sussudio.Tests/HarnessCore.cs` keeps the assembly-load smoke entry
+   point. Keep that explicit `dotnet exec` validation step until the repo
+   deliberately retires the workflow; regression checks should live in focused
+   xUnit files or focused partial contract files. MCP tool
+   surface tests are now split into command-routing, diagnostic-session tool,
+   diagnostic-session ownership, diagnostic-session result ownership,
+   diagnostic-session builder result bands, diagnostic-session Flashback,
+   diagnostic-session runner, diagnostic-session infrastructure xUnit execution,
+   diagnostic-session result-surface xUnit execution, diagnostic-session
+   command/run-context xUnit execution, diagnostic-session scenario execution
+   xUnit execution, diagnostic-session Flashback xUnit execution,
+   diagnostic-session core xUnit execution, diagnostic-session runner-behavior
+   xUnit execution, performance,
+   window/preview, window/preview
+   probes, and helper partial files. Flashback
+   tests are also split by buffer, encoder, exporter, exporter cleanup,
+   playback, decoder, and support owners. Capture
+   session coordinator tests
+   are split into API/contracts, queue behavior, Flashback behavior,
+   transition policy, ownership, and harness-helper owners. MainViewModel
+   automation tests execute through `XUnit.AutomationContractsTests.cs` across
+   surface, diagnostics refresh, diagnostics projection, runtime-safety, and
+   Flashback cleanup wrapper groups. The diagnostics-refresh snapshot-projection
+   test is now a compact integration wiring smoke; detailed projection
+   source-shape contracts live in the same automation xUnit owner across
+   command/settings, format/transport/HDR, source/cadence, MJPEG, recording,
+   system, preview, and Flashback wrappers. MainViewModel capture tests are split into preview startup,
+   Flashback export, Flashback routing,
+   Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
+   low-risk contract groups first. Snapshot-model contract tests are split by
+   CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
+   Recording queue tests are split into overload policy, LibAv sink, WASAPI,
+   and capture fan-out/backend owners. These recording pipeline ownership
+   checks now execute through
+   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their removal
+   from the legacy harness catalog. Recording model execution checks also run
+   through `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their
+   removal from the legacy harness catalog. D3D preview renderer tests are split
+   into geometry, cadence, diagnostics-contract, source-ownership marker plus
+   RenderPipeline/RuntimeCapture owners, device-lost, and frame-flow owners.
+   Automation tool contract tests are split into
+   protocol, catalog/manifest, reliability-gates, and snapshot formatter
+   owners. Capture configuration model tests have consolidated xUnit coverage
+   for options/settings/encoder support, recording pipeline contracts, and
+   Flashback DTO contracts. Pooled-frame
+   tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
+   queue behavior, and queued lease release owners. MainWindow shell ownership
+   tests are split into chrome, startup, preview runtime, and window lifecycle
+   owners. MainViewModel service-namespace source ownership is split into
+   device-audio, runtime, and device/capture owners behind the original
+   orchestrator. MainViewModel dependency-composition ownership now keeps
+   capture/device controller dependency-context assertions in a focused
+   capture-device owner, and source-telemetry, runtime lifecycle/event-ingress,
+   and disposal controller dependency-context assertions in a focused runtime
+   owner instead of the root composition catch-all. Flashback buffer manager
+   segment, accounting, disposal/recovery, retention, and lookup/list projection
+   coverage now executes through
+   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`. Preview startup session/reinit
+   harness coverage is split between source ownership, session controller,
+   reinit transition controller, and pending Flashback-cycle wait owners.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
+   owns xUnit execution for the preview-startup source-shape ownership,
+   controller behavior, signal/failure-text, and ordering checks after their
+   removal from the legacy presentation-preview capture catalog.
+   It also owns xUnit execution for the capture preview-lifecycle/audio-fallback
+   checks after their removal from the legacy presentation-preview capture
+   catalog.
+   Preview startup ordering coverage is split between lifecycle-event
+   ownership, device-discovery ordering, reveal priming, and stop audio-ramp
+   owners. Startup ordering xUnit execution also lives in
+   `XUnit.PresentationPreviewContractsTests.cs`, and the legacy catalog
+   hook is removed.
+   MainViewModel automation recording-transition coverage is split
+   between shared transition-gate routing, failure propagation, emergency stop,
+   bitrate sampling, and recording-settings/Flashback-cycle owners.
+   Diagnostics refresh core ownership is split behind a small orchestrator into
+   evaluation, runtime/HDR, and snapshot-projection owners.
+   MainWindow window-lifecycle coverage separates close-protection behavior
+   from close lifecycle and shutdown cleanup ownership.
+
+3. Continue converting MainWindow partial concerns into controllers.
+
+   `FullScreen`, automation `Screenshot`, MainWindow UI dispatching, preview
+   runtime snapshot dispatch/sampling, audio meter rendering, preview startup,
+   Flashback playback/export presentation, and stats overlay/row/snapshot
+   projection are extracted behind named controllers or builders. The
+   Flashback XAML-facing adapter family is now folded into
+   `MainWindow.xaml.cs` so command, polling, playhead, scrub, settings,
+   timeline, and presentation wrappers stay with MainWindow construction and
+   controller initialization order while behavior remains in named controllers.
+   The preview-startup XAML-facing adapter family is now consolidated in
+   `MainWindow.xaml.cs` with the preview transition
+   adapter so session, signal, watchdog, fade, button, and transition callback
+   surfaces can be audited together.
+   The preview-transition XAML-facing adapter family is now consolidated in
+   `MainWindow.xaml.cs` so audio fade, button action,
+   delayed fade-in, startup overlay, animation, and reinit callback surfaces can
+   be audited from one adapter file.
+   `MainWindow.xaml.cs` now owns construction, startup event wiring, and the controller initialization
+   list grouped into shell, Flashback, presentation, preview, recording,
+   launch/status, preview action, audio, capture, and output phases so the
+   composition root stays navigable as new controllers appear.
+   Start the next UI cleanup from remaining broad adapters not already covered
+   by controller ownership tests. Keep XAML bindings stable.
+
+4. Move MainViewModel feature state behind a facade.
+
+   Preserve the root `MainViewModel` public surface while introducing feature
+   view models or adapters for capture selection, recording, audio, Flashback,
+   diagnostics, and automation. `MainViewModel.cs` owns the default
+   service graph for the root compatibility view model, which gives the next
+   facade slices a small construction seam without changing XAML bindings or
+   automation contracts. The live audio/microphone meter callback state now
+   lives with audio state in `MainViewModel.AudioState.cs`; keep future meter
+   behavior there instead of growing the root facade file. Audio ramp trace
+   state, bounded ring-buffer storage, snapshot projection, trace session
+   start/complete, trace-point capture, sampler loop, delayed sampler
+   shutdown, and preview-volume transition mechanics live in
+   `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, with
+   `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
+   trace/preview-volume controller wiring owner;
+   preview-volume save/override, ramp adapter methods, preview monitoring
+   coordinator sequencing, audio-preview property handlers, audio capture
+   property handlers, custom audio-input property handlers, retargeting, and
+   preview-monitoring ramp handoff now live in `MainViewModel.AudioState.cs`.
+   Microphone observable state, endpoint volume synchronization, persistence,
+   and property-change routing now live in `MainViewModel.AudioState.cs`;
+   device-native audio request lifetime,
+   selected-device refresh, mode request scheduling, shared debounce CTS fields,
+   cancellation cleanup, graph-built context ports, analog-gain request
+   scheduling, UI/XU debounce, and flash-persist debounce now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
+   device-native
+   audio-control support probing, readback, pending saved-state reconciliation,
+   mode switching, failure readback, shared audio-control guards, and analog
+   gain writes now live with audio/microphone UI state in
+   `MainViewModel.AudioState.cs`. UI-facing state is
+   split by owner: `MainViewModel.cs` owns shared shell/status/live-info flags,
+   native window handle state, UI collection replacement, and non-preview
+   coordination gates, `MainViewModel.cs`
+   owns preview lifecycle compatibility entry points, preview-sink handoff,
+   preview lifecycle flags, preview reinitialize coordination, and preview
+   request events, `MainViewModel.cs` owns capture-selection
+   state, option collections, HDR capture/runtime presentation state, and
+   source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone,
+   device-native audio/XU UI state, and audio-preview property-change routing,
+   while `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
+   state plus buffer, bitrate, playback-state, in/out marker, and gap-from-live
+   UI projection. Keep `MainViewModel.cs` focused on the public compatibility-facade
+   shell, construction seam, dependency assignment, collaborator fields,
+   controller graph handoff, startup lifecycle kick-off, and small bridge methods.
+   `Sussudio/ViewModels/MainViewModel.cs`
+   owns controller graph construction order plus UI-dispatch, device-audio,
+   device-refresh, capture-settings automation, source telemetry, runtime
+   event-ingress, recording, preview lifecycle/reinitialize, capture option
+   rebuild, device-format probe, runtime lifecycle, and disposal graph ports.
+   `MainViewModel.cs` continues to own service construction. Audio
+   capture property handlers now live in
+   `MainViewModel.AudioState.cs`, audio-preview property
+   handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
+   selection handlers also live in `MainViewModel.AudioState.cs`,
+   capture-mode property handlers live in `MainViewModel.cs`. Shared
+   view-model UI dispatcher enqueue/invoke policy now lives in
+   `Sussudio/Controllers/UiDispatchControllers.cs`.
+   The UI dispatch graph-port contract for dispatcher access, disposal state,
+   logging, exception logging, and status text projection lives with
+   `Sussudio/Controllers/UiDispatchControllers.cs`, while
+   `MainViewModel.cs` keeps the stable private adapter names and
+   preview event fan-out beside the controller graph handoff;
+   periodic timer refresh orchestration and initial
+   source-telemetry/HDR/live-info/timer/disk-space bootstrap through
+   graph-built context ports now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
+   The runtime lifecycle graph-port contract for timer creation, runtime
+   snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
+   stats refresh, Flashback bitrate refresh, disk-space refresh, watcher
+   disposal, runtime event handling through graph-built context ports, and the
+   runtime lifecycle graph-port contract live in
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
+   including system-resume preview rebind handling, audio-device-invalidated rebind
+   scheduling through the preview lifecycle owner, capture status/error fan-out,
+   capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
+   graph-port contract, and event subscription/unsubscription ordering,
+   output drive free-space assignment now lives in
+   `MainViewModel.cs`, while output drive probing,
+   fallback, formatting, and suppressed-warning logging now live in
+   `ViewModelBuilders.cs`. Recording size/bitrate label
+   assignment, recording-state reset reactions, and bounded byte-sample
+   smoothing shared by recording and Flashback bitrate presentation also live in
+   `MainViewModel.cs`, and
+   capture presentation adapters now live in
+   `MainViewModel.cs`: live-capture info projection from
+   runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
+   assignment, preview-stop live-info reset, HDR runtime state/readiness
+   projection, target-summary property application, and auto-resolution display
+   text; live-signal label formatting now lives in
+   `Sussudio/ViewModels/ViewModelBuilders.cs`. Capture
+   settings projection from UI/runtime state is sampled by the capture-state
+   owner in `MainViewModel.cs` and projected by
+   `Sussudio/ViewModels/ViewModelBuilders.cs`, which owns final
+   `CaptureSettings` assembly, audio/microphone device application, pure
+   projection policy, and input DTOs:
+   selected-option seeding, auto-resolved effective FPS, runtime/source rational
+   overrides, rational/decimal fallbacks, requested pixel format, and MJPEG
+   decode forcing.
+   `MainViewModel.cs` keeps the stable compatibility facade entry
+   points for device initialization, preview start/stop, selected-device apply,
+   and preview reinitialization. Preview lifecycle
+   implementation now lives in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`:
+   device initialization, preview start/stop, selected-device apply, and the
+   reinitialize facade. The preview lifecycle graph-port contract now lives
+   with that controller for preview state/events, capture/session operations,
+   source telemetry refresh, UI dispatch, audio-preview activity, and
+   preview-volume ramp-down.
+   Sibling ViewModel controllers receive that preview
+   lifecycle owner directly from `MainViewModelControllerGraph` instead of
+   routing controller-to-controller calls back through the root facade.
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
+   is a top-level `Sussudio.Controllers` owner for debounced reinitialization, restart-cancellation state,
+   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
+   and gate release.
+   It also owns the graph-built reinitialization port contract for selected
+   device/format state, generation coalescing, pending Flashback-cycle waits,
+   debounce/timeout policy, renderer notifications, restart cancellation, and
+   reinit gate access.
+   Output folder display plus browse/open-recordings button workflows now live in
+   `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`.
+   Recording facade entry points, including the direct emergency-stop
+   coordinator bridge, now live in `MainViewModel.cs`, while
+   recording toggle serialization,
+   desired-state routing, graceful stop, transition gating, and in-flight
+   transition wait/error propagation now live in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
+   along with the graph-port contract for UI dispatch, recording/session state,
+   capture settings construction, coordinator start/stop calls, recording timer
+   state, status/count presentation updates, concrete start/stop execution,
+   failure/cancellation state repair, and direct use of the preview lifecycle
+   owner for recording startup initialization.
+   Recording option selections, output path, counters, and transition flags also
+   live in `MainViewModel.cs`. Bounded teardown, dispose timeout policy,
+   watcher disposal, coordinator cleanup/dispose, and capture-service
+   async-dispose fallback through graph-built context ports now live in
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`.
+   The disposal graph-port contract for one-shot disposal entry, teardown
+   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
+   async/sync disposal fallback lives with that controller.
+   `MainViewModel.cs` remains the public refresh/dispose adapter and active
+   Flashback export cancellation owner. Automation-facing command entry points,
+   capture runtime, health, recording snapshot projection, source/preview
+   probes, and preview frame capture now live in
+   `MainViewModel.cs`; automation-facing view-model runtime snapshot UI-thread capture now lives in
+   `MainViewModel.cs`; pure view-model runtime snapshot DTO
+   construction lives in `ViewModelBuilders.cs`, with executable builder,
+   source telemetry, and live-signal text coverage in
+   `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs`;
+   automation options UI-thread snapshot capture now lives in
+   `MainViewModel.cs`; pure selected-control-state DTO
+   construction lives in `ViewModelBuilders.cs`.
+   `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
+   owns xUnit execution for the diagnostics-loop polling check after its removal
+   from the legacy presentation-preview capture catalog.
+   Buffer, bitrate, playback-state, in/out marker, gap-from-live UI projection,
+   read-only Flashback playback snapshot access, read-only segment projection
+   for UI, CLI, and MCP callers, rejection status projection, playback, scrub,
+   nudge, in/out marker command routing, and automation-facing Flashback
+   playback action dispatch now live in `MainViewModel.FlashbackState.cs`.
+   Flashback UI export commands, save-picker flow, active-export guard,
+   user-facing export result/status handling, shared export operation
+   lifecycle, progress handoff, stale-result classification,
+   current-operation checks, CTS cancellation/disposal cleanup, and
+   automation-facing export execution with linked cancellation and dispatcher
+   cleanup now live in `MainViewModel.FlashbackState.cs`.
+   Capture-device selection,
+   effective resolution helpers, frame-rate selection reactions, and
+   auto-selection entry points now live in `MainViewModel.cs`.
+   `MainViewModel.cs` keeps the resolution, frame-rate,
+   selected-format, and video-format rebuild compatibility adapters, while
+   frame-rate option rebuilding and observable collection mutation through graph-built context ports live in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`. Pure
+   frame-rate option choice, including pending SDR bucket preference,
+   Source-rate nearest match with timing-family tie-break, generic auto fallback,
+   and previous/manual selection fallback, now lives in
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. The ownership checks for
+   frame-rate source filtering, automatic selection, always-on capture options,
+   timing-policy placement, automatic-selection behavior, and pure timing-policy
+   behavior checks live together in
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
+   owns xUnit execution for those frame-rate selection/timing checks after
+   their removal from the legacy presentation-preview capture catalog.
+   Shared frame-rate selection reset,
+   resolved automatic frame-rate application, disabled frame-rate reason
+   projection, and capture-mode reset flags live in
+   `MainViewModel.cs`. Source-rate filtering now assumes
+   capture options are always visible in
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`, while deferred rebuild
+   behavior, duplicate-reinit suppression, and the active capture-mode automation
+   gate live in
+   `MainViewModel.cs`. Pure frame-rate timing family,
+   timing-variant projection, rational parsing, friendly/exact frame-rate
+   matching, and preferred-format ranking now live in
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`, while
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
+   owns the stateful resolver over resolution capabilities, runtime snapshots,
+   source telemetry, selected formats, UI selection state, and its graph-built
+   context ports;
+   the root `MainViewModel.cs` keeps the public capture-device refresh
+   compatibility facade, while the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
+   owns startup refresh orchestration: requesting the combined discovery result,
+   applying audio-device startup selection, replacing the capture-device collection,
+   starting background format probes, restoring saved capture-device selection,
+   and directly auto-starting preview through the preview lifecycle owner.
+   It also owns the device-refresh graph-port contract for discovery, startup
+   audio selection, device collection mutation, background format probes,
+   selection restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
+   partial was retired rather than preserving a sub-100-line facade. Selected
+   capture-device reactions, capability projection, source telemetry reset, and
+   device-native audio-control refresh handoff live in `MainViewModel.cs`. Capture-mode property-change
+   hooks live in `MainViewModel.cs`; startup audio-list
+   and watcher-driven audio endpoint refresh adaptation are folded into
+   `MainViewModel.AudioState.cs` beside the audio collections and saved-device
+   restore state. Pure audio-device filtering and
+   previous/saved/default audio and microphone selection fallback policy now
+   lives in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. Pure
+   recording codec filtering, selected-codec fallback policy, string-to-model
+   format/quality parsing, and custom bitrate clamp policy now live in
+   `Sussudio/ViewModels/ViewModelBuilders.cs`, while startup
+   FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
+   with source telemetry readiness in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`. `MainViewModel.cs`
+   keeps selected-format and video-format rebuild compatibility adapters, while
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
+   is now a top-level `Sussudio.Controllers` owner for selected-format
+   assignment, pixel-format option collection mutation, capture-format
+   request shaping, and the capture-mode option rebuild graph-port contract for
+   option collections, stable Source/Auto sentinel values, source telemetry,
+   selection state, automatic retarget flags, format-change suppression, and
+   projected status text.
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns the pure
+   selected-format and mode-tuple video-format filtering policy.
+   `MainViewModel.cs` owns HDR toggle side effects:
+   recording-time revert/status, mode option rebuilds, immediate reinitialize
+   scheduling, and settings persistence.
+    Late-arriving device format probe reconciliation, collection mutation,
+    selected-device capability refresh, enqueue/failure logging, and retarget
+    handoff live in the top-level
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
+    its graph-port contract now lives with that controller. UI-side late-probe
+    retarget application, session mismatch checks, active-capture restore, and
+    the retarget applier graph-port contract also live there, while
+    pure late-probe retarget decisions live in
+    `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
+    owns xUnit execution for the late device-format probe retarget ownership,
+    behavior, and application checks after their removal from the legacy
+    presentation-preview capture catalog.
+    The presentation-preview ownership tests for this capture selection policy
+    area now live in
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, keeping
+    frame-rate, resolution, mode-selection, late-probe, recording-format,
+    capture-settings projection, and runtime-flag assertions with their xUnit
+    execution owner.
+    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
+    owns xUnit execution for the mode-selection, capture-format,
+    recording-settings selection, and capture-settings projection checks after
+    their removal from the legacy presentation-preview capture catalog.
+    Resolution option rebuild callers stay stable through the
+    `MainViewModel.cs` adapter. Resolution option
+    rebuild ownership now lives in
+    `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`:
+    automatic resolution dropdown option construction inside the promoted
+    top-level capture option rebuild controller family, automatic
+    resolution-selection adaptation, auto-resolution state refresh, and
+    resolution dropdown mutation through graph-built context ports. Effective Source resolution state and
+    state-backed delegates to the pure selection policy live in
+    `MainViewModel.cs`.
+   Automatic resolution ranking and source-aware frame-rate selection now
+    live in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`; auto-resolution
+    display text used by status and telemetry presentation lives in
+    `MainViewModel.cs`.
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
+   owns xUnit execution for the resolution-selection ownership and behavior
+   checks after their removal from the legacy presentation-preview capture catalog.
+   Pure resolution selection policy now lives in
+   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`: source-aware matching,
+   HDR retarget/support-hint selection, SDR auto/fallback selection, parsing,
+   frame-rate support checks, nearest-resolution ranking, and the request/result
+   records stay together with the broader pure ViewModel selection-policy owner.
+   Resolution and frame-rate selection harness coverage lives in
+   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, which
+   owns source-shape placement assertions plus HDR, SDR, auto-capture,
+   source-filter, automatic frame-rate, and timing-policy behavior contracts.
+   State-backed delegates for callers that still live across the partial family
+   stay in `MainViewModel.cs`, while dropdown rebuild,
+   collection mutation, and property notifications route through the top-level
+    `MainViewModelDeviceControllers.cs`.
+   Source telemetry summary, telemetry age, and target-summary display text
+   formatting now live in `Sussudio/ViewModels/ViewModelBuilders.cs`;
+   HDR runtime state/readiness projection and target-summary property
+   application live in `MainViewModel.cs`; keep snapshot
+   application, source telemetry ingress behavior, telemetry age refresh,
+   enum-string caching, source-aware auto-retargeting, and source telemetry
+   graph-port contract in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`.
+   Settings initialization, simple persistence reactions, the impure settings
+   load/save adapter, persisted-settings validation, clamping, deferred-selection
+   projection, save DTO projection, load/save projection contracts, validated
+   load-plan application order, feature-specific state assignment, and deferred
+   device/audio/microphone selection staging stay in
+   `MainViewModel.cs`;
+   active Flashback reactions to recording format,
+   encoder quality/preset/split/bitrate, buffer duration, and GPU decode now
+   live in `MainViewModel.FlashbackState.cs`.
+   Pure analog audio gain percent/XU-byte curve mapping now lives in
+   `MainViewModel.AudioState.cs` with the shared audio-control guards;
+   device-native audio request lifetime, including mode property-change adapters, UI enqueue lifetime,
+   shared debounce CTS fields, graph-port context contract, cancellation
+   cleanup, gain property-change adapters, XU debounce, and flash-persist
+   debounce, stays in
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
+   async native-XU
+   device audio-control refresh/readback, mode switching, failure readback,
+   shared audio-control guards, analog gain XU writes, and settings
+   persistence stay with `MainViewModel.AudioState.cs`. Use
+   the supported native-XU switch/gain command surface rather than the legacy
+   AT input-source fallback path.
+   UI-only automation mutators for settings visibility, Flashback timeline
+   visibility, stats dock/section visibility, and frame-time overlay display now
+   live in `MainViewModel.cs`; the public show-all capture options
+   command remains accepted as a dispatcher-level compatibility no-op.
+   Automation command entry points for app audio enablement, audio-preview
+   enablement, preview-volume clamp/persist, device-native mode/gain
+   application, and microphone enablement with recording-time
+   refusal/idempotent handling now live in `MainViewModel.cs`.
+   Automation preview enable/disable idempotence, pending-reinit cancellation,
+   and preview start/stop routing now live in
+   top-level `MainViewModelLifecycleController.cs` plus graph-built
+   `MainViewModelLifecycleController.cs` reinitialize context ports, with the stable
+   `MainViewModel.cs` compatibility facade preserving the automation surface.
+   Automation HDR and true-HDR preview recording-time guard enforcement and HDR
+   availability checks now live in `MainViewModel.cs`
+   beside HDR mode change side effects.
+   Automation Flashback enable/restart routing through the capture session
+   coordinator now lives in `MainViewModel.FlashbackState.cs` alongside
+   buffer/GPU setting reactions.
+   Automation device refresh, capture-device selection, audio-input selection,
+   and custom audio-input enablement now live in
+   `MainViewModel.cs`.
+   Recording format, encoder, and output-path automation entry points now stay
+   in the `MainViewModel.cs` compatibility facade,
+   while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
+   suppression, coordinator side effects, custom bitrate clamping, encoder
+   preset, and output-path directory creation live in
+   the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.
+   It also owns the recording-settings automation graph-port contract for UI
+   dispatch, option collections, suppression flags, selected encoder/output
+   state, recording-format coordinator updates, and Flashback encoder setting
+   cycles.
+   The automation recording desired-state bridge enters through
+   `MainViewModel.cs` and is serialized by
+   the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
+   with graph-built context ports and start/stop execution in the same owner.
+   The emergency recording-stop bridge also enters through
+   `MainViewModel.cs` but routes directly to
+   `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
+   so it keeps bypassing UI-thread dispatch and normal transition gates.
+   Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
+   automation entry points now stay in the
+   `MainViewModel.cs` compatibility facade, while
+   UI-thread mutations, validation, MJPEG decoder clamping, and active
+   capture-mode reinitialization routing live in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.
+   It also owns the capture-settings automation graph-port contract for option
+   collections, selected capture-mode state, preview reinitialization checks,
+   UI-thread dispatch, and format-change suppression.
+   Startup FFmpeg capability probes for recording formats and split-encode modes
+   plus observable recording-format option rebuilds now live with source telemetry readiness in the top-level
+   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`.
+   `Sussudio/ViewModels/MainViewModel.cs` keeps recording-runtime
+   counters, disk-space assignment, and the stable recording-capability facade
+   methods used by settings initialization and HDR mode-change rebuild callers.
+   It also owns the recording-capability graph-port contract for default encoder
+   names, observable recording/split-encode option collections, selected
+   recording format state, HDR/status state, FFmpeg-missing state, and UI
+   dispatch.
+   The old `MainViewModel.Automation.cs` catch-all has been retired.
+
+5. Extract capture resource owners behind the transition policy.
+
+   The policy is now the legality/steady-state owner. Recent capture slices
+   kept it authoritative while introducing smaller owners for the audio graph,
+   Flashback backend resources, active recording backend resources, and active
+   video pipeline resources.
+   `FlashbackBackendResources.cs` now owns the preview backend resource set,
+   install/take/clear state, recovery-preserve flag storage and policy,
+   recording-finalize handoff, producer attach/detach request shapes, and video,
+   audio, and microphone feed wiring. It also owns startup construction,
+   install/playback initialization, startup failure rollback cleanup,
+   sink-only buffer-cycle orchestration, purge/finalize decisions,
+   full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
+   replacement sink startup/playback restore, failed replacement cleanup,
+   backend teardown, and artifact cleanup mechanics. CaptureService callers now use that aggregate directly
+   instead of private root resource shim properties. Keep later Flashback backend
+   mechanics in the matching focused owner before inventing another small owner;
+   `CaptureService.Flashback.cs` stays the transition coordinator for
+   AV1 probing, readiness waiting, cleanup handoff, and preview backend disposal
+   request construction.
+   `CaptureService.cs` now owns active capture resource holders:
+   preview audio graph resources, recording backend resources, and video
+   pipeline resources. Recording start, finalization, rollback, snapshot,
+   cleanup, preview lifecycle, and audio preview paths use those aggregates
+   directly instead of routing through private root shim properties. Keep later
+   capture resource mechanics there unless the behavior needs a larger, proven
+   boundary.
+
+## Guardrails
+
+- Preserve public automation command names and numeric IDs.
+- Use `AutomationCommandKind` overloads for fixed CLI/MCP automation routes;
+  keep string command names only for labels, catalog-backed dynamic batches,
+  and diagnostic-session runner command-channel delegates.
+- Preserve manifest revision rules in `AutomationCommandKind`.
+- Preserve XAML binding names until a focused binding migration changes them.
+- Preserve Flashback disable lockout behavior.
+- Preserve preview/recording no-restart semantics unless a test proves the
+  transition intentionally restarts.
+- Run `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` after each
+  structural slice.
+- Run the console harness when source ownership, automation, capture, recording,
+  or Flashback contracts move.
+
 ## Completed Slices
+
+Historical checkpoint descriptions, retained for context. Consult
+[AGENT_MAP.md](AGENT_MAP.md) for current owners.
+
 
 App shell startup and exception policy now live in the XAML partial root without
 changing runtime behavior. `Sussudio/App.xaml.cs` owns XAML initialization,
@@ -2809,576 +3399,3 @@ Remaining `tools/Common` ownership:
 - `DiagnosticSessionScenarioCatalog.cs`
 - `DiagnosticSessionRunner.cs`
 - `tools/Common/PresentMon/PresentMonProbe.cs`
-
-## Next Slices
-
-Small-file hygiene applies to every slice below: prefer a named owner when the
-runtime responsibility is real, but do not create or keep sub-100-line files
-just to make a partial family look tidy. A small file should pay for itself by
-owning a stable contract, hot-path lifetime, XAML adapter surface, shared tool
-surface, or test boundary that would be harder to audit if merged. If a tiny
-file only holds private DTOs, constants, or pass-through helpers for one nearby
-owner, fold it back into that owner and update the source-shape tests and
-`docs/architecture/AGENT_MAP.md` in the same slice.
-
-1. Keep diagnostic-session runner internals aligned by owner.
-
-   `tools/Common/DiagnosticSessionRunner.cs` owns the public compatibility
-   surface plus the visible run phase sequence, while
-   `tools/Common/DiagnosticSessionRunContext.cs` owns the
-   cohesive mutable per-run context: snapshot, live-state, disposal, and
-   explicit scenario/completion context construction.
-   `DiagnosticSessionRunner.cs` owns the
-   post-cleanup evidence/result sequence, completion context handoff, and
-   result-build request mapping, plus the main scenario execution phase
-   including scenario sampling. `DiagnosticSessionResult.cs`
-   owns the explicit scenario context/result/state handoffs and final summary
-   DTO surface, with
-   `DiagnosticSessionRunner.cs` owning post-sampling completion ordering,
-   fault-drain delegation, and background task completion. Scenario catalog,
-   initial scenario setup, optional scenario
-   startup, cleanup mutation ownership, post-cleanup recording checks,
-   post-run snapshot fetches, command send/failure plumbing, and result
-   construction are extracted; avoid further runner splits unless a new
-   responsibility boundary is clearly larger than the existing focused owners,
-   and otherwise pivot to the next large owner. The
-   reflective runner behavior tests are already split by scenario, so keep new
-   runner coverage in the focused owner file that matches the behavior. Keep
-   JSON summary shape unchanged.
-
-2. Reduce custom regression harness size.
-
-   `tests/Sussudio.Tests/HarnessCore.cs` keeps the assembly-load smoke entry
-   point. Keep that explicit `dotnet exec` validation step until the repo
-   deliberately retires the workflow; regression checks should live in focused
-   xUnit files or focused partial contract files. MCP tool
-   surface tests are now split into command-routing, diagnostic-session tool,
-   diagnostic-session ownership, diagnostic-session result ownership,
-   diagnostic-session builder result bands, diagnostic-session Flashback,
-   diagnostic-session runner, diagnostic-session infrastructure xUnit execution,
-   diagnostic-session result-surface xUnit execution, diagnostic-session
-   command/run-context xUnit execution, diagnostic-session scenario execution
-   xUnit execution, diagnostic-session Flashback xUnit execution,
-   diagnostic-session core xUnit execution, diagnostic-session runner-behavior
-   xUnit execution, performance,
-   window/preview, window/preview
-   probes, and helper partial files. Flashback
-   tests are also split by buffer, encoder, exporter, exporter cleanup,
-   playback, decoder, and support owners. Capture
-   session coordinator tests
-   are split into API/contracts, queue behavior, Flashback behavior,
-   transition policy, ownership, and harness-helper owners. MainViewModel
-   automation tests execute through `XUnit.AutomationContractsTests.cs` across
-   surface, diagnostics refresh, diagnostics projection, runtime-safety, and
-   Flashback cleanup wrapper groups. The diagnostics-refresh snapshot-projection
-   test is now a compact integration wiring smoke; detailed projection
-   source-shape contracts live in the same automation xUnit owner across
-   command/settings, format/transport/HDR, source/cadence, MJPEG, recording,
-   system, preview, and Flashback wrappers. MainViewModel capture tests are split into preview startup,
-   Flashback export, Flashback routing,
-   Flashback backend, and Flashback frame-rate/lifecycle owners. Continue with
-   low-risk contract groups first. Snapshot-model contract tests are split by
-   CaptureDiagnostics, CaptureHealth, and source-signal telemetry model owner.
-   Recording queue tests are split into overload policy, LibAv sink, WASAPI,
-   and capture fan-out/backend owners. These recording pipeline ownership
-   checks now execute through
-   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their removal
-   from the legacy harness catalog. Recording model execution checks also run
-   through `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs` after their
-   removal from the legacy harness catalog. D3D preview renderer tests are split
-   into geometry, cadence, diagnostics-contract, source-ownership marker plus
-   RenderPipeline/RuntimeCapture owners, device-lost, and frame-flow owners.
-   Automation tool contract tests are split into
-   protocol, catalog/manifest, reliability-gates, and snapshot formatter
-   owners. Capture configuration model tests have consolidated xUnit coverage
-   for options/settings/encoder support, recording pipeline contracts, and
-   Flashback DTO contracts. Pooled-frame
-   tests are split into lease lifecycle, MJPEG jitter policy, MJPEG jitter
-   queue behavior, and queued lease release owners. MainWindow shell ownership
-   tests are split into chrome, startup, preview runtime, and window lifecycle
-   owners. MainViewModel service-namespace source ownership is split into
-   device-audio, runtime, and device/capture owners behind the original
-   orchestrator. MainViewModel dependency-composition ownership now keeps
-   capture/device controller dependency-context assertions in a focused
-   capture-device owner, and source-telemetry, runtime lifecycle/event-ingress,
-   and disposal controller dependency-context assertions in a focused runtime
-   owner instead of the root composition catch-all. Flashback buffer manager
-   segment, accounting, disposal/recovery, retention, and lookup/list projection
-   coverage now executes through
-   `tests/Sussudio.Tests/XUnit.RecordingContractsTests.cs`. Preview startup session/reinit
-   harness coverage is split between source ownership, session controller,
-   reinit transition controller, and pending Flashback-cycle wait owners.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
-   owns xUnit execution for the preview-startup source-shape ownership,
-   controller behavior, signal/failure-text, and ordering checks after their
-   removal from the legacy presentation-preview capture catalog.
-   It also owns xUnit execution for the capture preview-lifecycle/audio-fallback
-   checks after their removal from the legacy presentation-preview capture
-   catalog.
-   Preview startup ordering coverage is split between lifecycle-event
-   ownership, device-discovery ordering, reveal priming, and stop audio-ramp
-   owners. Startup ordering xUnit execution also lives in
-   `XUnit.PresentationPreviewContractsTests.cs`, and the legacy catalog
-   hook is removed.
-   MainViewModel automation recording-transition coverage is split
-   between shared transition-gate routing, failure propagation, emergency stop,
-   bitrate sampling, and recording-settings/Flashback-cycle owners.
-   Diagnostics refresh core ownership is split behind a small orchestrator into
-   evaluation, runtime/HDR, and snapshot-projection owners.
-   MainWindow window-lifecycle coverage separates close-protection behavior
-   from close lifecycle and shutdown cleanup ownership.
-
-3. Continue converting MainWindow partial concerns into controllers.
-
-   `FullScreen`, automation `Screenshot`, MainWindow UI dispatching, preview
-   runtime snapshot dispatch/sampling, audio meter rendering, preview startup,
-   Flashback playback/export presentation, and stats overlay/row/snapshot
-   projection are extracted behind named controllers or builders. The
-   Flashback XAML-facing adapter family is now folded into
-   `MainWindow.xaml.cs` so command, polling, playhead, scrub, settings,
-   timeline, and presentation wrappers stay with MainWindow construction and
-   controller initialization order while behavior remains in named controllers.
-   The preview-startup XAML-facing adapter family is now consolidated in
-   `MainWindow.xaml.cs` with the preview transition
-   adapter so session, signal, watchdog, fade, button, and transition callback
-   surfaces can be audited together.
-   The preview-transition XAML-facing adapter family is now consolidated in
-   `MainWindow.xaml.cs` so audio fade, button action,
-   delayed fade-in, startup overlay, animation, and reinit callback surfaces can
-   be audited from one adapter file.
-   `MainWindow.xaml.cs` now owns construction, startup event wiring, and the controller initialization
-   list grouped into shell, Flashback, presentation, preview, recording,
-   launch/status, preview action, audio, capture, and output phases so the
-   composition root stays navigable as new controllers appear.
-   Start the next UI cleanup from remaining broad adapters not already covered
-   by controller ownership tests. Keep XAML bindings stable.
-
-4. Move MainViewModel feature state behind a facade.
-
-   Preserve the root `MainViewModel` public surface while introducing feature
-   view models or adapters for capture selection, recording, audio, Flashback,
-   diagnostics, and automation. `MainViewModel.cs` owns the default
-   service graph for the root compatibility view model, which gives the next
-   facade slices a small construction seam without changing XAML bindings or
-   automation contracts. The live audio/microphone meter callback state now
-   lives with audio state in `MainViewModel.AudioState.cs`; keep future meter
-   behavior there instead of growing the root facade file. Audio ramp trace
-   state, bounded ring-buffer storage, snapshot projection, trace session
-   start/complete, trace-point capture, sampler loop, delayed sampler
-   shutdown, and preview-volume transition mechanics live in
-   `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, with
-   `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
-   trace/preview-volume controller wiring owner;
-   preview-volume save/override, ramp adapter methods, preview monitoring
-   coordinator sequencing, audio-preview property handlers, audio capture
-   property handlers, custom audio-input property handlers, retargeting, and
-   preview-monitoring ramp handoff now live in `MainViewModel.AudioState.cs`.
-   Microphone observable state, endpoint volume synchronization, persistence,
-   and property-change routing now live in `MainViewModel.AudioState.cs`;
-   device-native audio request lifetime,
-   selected-device refresh, mode request scheduling, shared debounce CTS fields,
-   cancellation cleanup, graph-built context ports, analog-gain request
-   scheduling, UI/XU debounce, and flash-persist debounce now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
-   device-native
-   audio-control support probing, readback, pending saved-state reconciliation,
-   mode switching, failure readback, shared audio-control guards, and analog
-   gain writes now live with audio/microphone UI state in
-   `MainViewModel.AudioState.cs`. UI-facing state is
-   split by owner: `MainViewModel.cs` owns shared shell/status/live-info flags,
-   native window handle state, UI collection replacement, and non-preview
-   coordination gates, `MainViewModel.cs`
-   owns preview lifecycle compatibility entry points, preview-sink handoff,
-   preview lifecycle flags, preview reinitialize coordination, and preview
-   request events, `MainViewModel.cs` owns capture-selection
-   state, option collections, HDR capture/runtime presentation state, and
-   source signal/source-telemetry presentation state, and `MainViewModel.AudioState.cs` owns audio/microphone,
-   device-native audio/XU UI state, and audio-preview property-change routing,
-   while `MainViewModel.FlashbackState.cs` owns Flashback timeline/export
-   state plus buffer, bitrate, playback-state, in/out marker, and gap-from-live
-   UI projection. Keep `MainViewModel.cs` focused on the public compatibility-facade
-   shell, construction seam, dependency assignment, collaborator fields,
-   controller graph handoff, startup lifecycle kick-off, and small bridge methods.
-   `Sussudio/ViewModels/MainViewModel.cs`
-   owns controller graph construction order plus UI-dispatch, device-audio,
-   device-refresh, capture-settings automation, source telemetry, runtime
-   event-ingress, recording, preview lifecycle/reinitialize, capture option
-   rebuild, device-format probe, runtime lifecycle, and disposal graph ports.
-   `MainViewModel.cs` continues to own service construction. Audio
-   capture property handlers now live in
-   `MainViewModel.AudioState.cs`, audio-preview property
-   handlers live in `MainViewModel.AudioState.cs`, microphone monitor/device
-   selection handlers also live in `MainViewModel.AudioState.cs`,
-   capture-mode property handlers live in `MainViewModel.cs`. Shared
-   view-model UI dispatcher enqueue/invoke policy now lives in
-   `Sussudio/Controllers/UiDispatchControllers.cs`.
-   The UI dispatch graph-port contract for dispatcher access, disposal state,
-   logging, exception logging, and status text projection lives with
-   `Sussudio/Controllers/UiDispatchControllers.cs`, while
-   `MainViewModel.cs` keeps the stable private adapter names and
-   preview event fan-out beside the controller graph handoff;
-   periodic timer refresh orchestration and initial
-   source-telemetry/HDR/live-info/timer/disk-space bootstrap through
-   graph-built context ports now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
-   The runtime lifecycle graph-port contract for timer creation, runtime
-   snapshot sampling, telemetry bootstrap, live-info/HDR projection, recording
-   stats refresh, Flashback bitrate refresh, disk-space refresh, watcher
-   disposal, runtime event handling through graph-built context ports, and the
-   runtime lifecycle graph-port contract live in
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
-   including system-resume preview rebind handling, audio-device-invalidated rebind
-   scheduling through the preview lifecycle owner, capture status/error fan-out,
-   capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
-   graph-port contract, and event subscription/unsubscription ordering,
-   output drive free-space assignment now lives in
-   `MainViewModel.cs`, while output drive probing,
-   fallback, formatting, and suppressed-warning logging now live in
-   `ViewModelBuilders.cs`. Recording size/bitrate label
-   assignment, recording-state reset reactions, and bounded byte-sample
-   smoothing shared by recording and Flashback bitrate presentation also live in
-   `MainViewModel.cs`, and
-   capture presentation adapters now live in
-   `MainViewModel.cs`: live-capture info projection from
-   runtime snapshots, audio-preview activity, live resolution/frame-rate/pixel-format
-   assignment, preview-stop live-info reset, HDR runtime state/readiness
-   projection, target-summary property application, and auto-resolution display
-   text; live-signal label formatting now lives in
-   `Sussudio/ViewModels/ViewModelBuilders.cs`. Capture
-   settings projection from UI/runtime state is sampled by the capture-state
-   owner in `MainViewModel.cs` and projected by
-   `Sussudio/ViewModels/ViewModelBuilders.cs`, which owns final
-   `CaptureSettings` assembly, audio/microphone device application, pure
-   projection policy, and input DTOs:
-   selected-option seeding, auto-resolved effective FPS, runtime/source rational
-   overrides, rational/decimal fallbacks, requested pixel format, and MJPEG
-   decode forcing.
-   `MainViewModel.cs` keeps the stable compatibility facade entry
-   points for device initialization, preview start/stop, selected-device apply,
-   and preview reinitialization. Preview lifecycle
-   implementation now lives in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`:
-   device initialization, preview start/stop, selected-device apply, and the
-   reinitialize facade. The preview lifecycle graph-port contract now lives
-   with that controller for preview state/events, capture/session operations,
-   source telemetry refresh, UI dispatch, audio-preview activity, and
-   preview-volume ramp-down.
-   Sibling ViewModel controllers receive that preview
-   lifecycle owner directly from `MainViewModelControllerGraph` instead of
-   routing controller-to-controller calls back through the root facade.
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
-   is a top-level `Sussudio.Controllers` owner for debounced reinitialization, restart-cancellation state,
-   Flashback-cycle wait-before-reinit, renderer-stop handoff, teardown restart,
-   and gate release.
-   It also owns the graph-built reinitialization port contract for selected
-   device/format state, generation coalescing, pending Flashback-cycle waits,
-   debounce/timeout policy, renderer notifications, restart cancellation, and
-   reinit gate access.
-   Output folder display plus browse/open-recordings button workflows now live in
-   `Sussudio/Controllers/Recording/RecordingControlsControllers.cs`.
-   Recording facade entry points, including the direct emergency-stop
-   coordinator bridge, now live in `MainViewModel.cs`, while
-   recording toggle serialization,
-   desired-state routing, graceful stop, transition gating, and in-flight
-   transition wait/error propagation now live in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
-   along with the graph-port contract for UI dispatch, recording/session state,
-   capture settings construction, coordinator start/stop calls, recording timer
-   state, status/count presentation updates, concrete start/stop execution,
-   failure/cancellation state repair, and direct use of the preview lifecycle
-   owner for recording startup initialization.
-   Recording option selections, output path, counters, and transition flags also
-   live in `MainViewModel.cs`. Bounded teardown, dispose timeout policy,
-   watcher disposal, coordinator cleanup/dispose, and capture-service
-   async-dispose fallback through graph-built context ports now live in
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`.
-   The disposal graph-port contract for one-shot disposal entry, teardown
-   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
-   async/sync disposal fallback lives with that controller.
-   `MainViewModel.cs` remains the public refresh/dispose adapter and active
-   Flashback export cancellation owner. Automation-facing command entry points,
-   capture runtime, health, recording snapshot projection, source/preview
-   probes, and preview frame capture now live in
-   `MainViewModel.cs`; automation-facing view-model runtime snapshot UI-thread capture now lives in
-   `MainViewModel.cs`; pure view-model runtime snapshot DTO
-   construction lives in `ViewModelBuilders.cs`, with executable builder,
-   source telemetry, and live-signal text coverage in
-   `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs`;
-   automation options UI-thread snapshot capture now lives in
-   `MainViewModel.cs`; pure selected-control-state DTO
-   construction lives in `ViewModelBuilders.cs`.
-   `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs`
-   owns xUnit execution for the diagnostics-loop polling check after its removal
-   from the legacy presentation-preview capture catalog.
-   Buffer, bitrate, playback-state, in/out marker, gap-from-live UI projection,
-   read-only Flashback playback snapshot access, read-only segment projection
-   for UI, CLI, and MCP callers, rejection status projection, playback, scrub,
-   nudge, in/out marker command routing, and automation-facing Flashback
-   playback action dispatch now live in `MainViewModel.FlashbackState.cs`.
-   Flashback UI export commands, save-picker flow, active-export guard,
-   user-facing export result/status handling, shared export operation
-   lifecycle, progress handoff, stale-result classification,
-   current-operation checks, CTS cancellation/disposal cleanup, and
-   automation-facing export execution with linked cancellation and dispatcher
-   cleanup now live in `MainViewModel.FlashbackState.cs`.
-   Capture-device selection,
-   effective resolution helpers, frame-rate selection reactions, and
-   auto-selection entry points now live in `MainViewModel.cs`.
-   `MainViewModel.cs` keeps the resolution, frame-rate,
-   selected-format, and video-format rebuild compatibility adapters, while
-   frame-rate option rebuilding and observable collection mutation through graph-built context ports live in
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`. Pure
-   frame-rate option choice, including pending SDR bucket preference,
-   Source-rate nearest match with timing-family tie-break, generic auto fallback,
-   and previous/manual selection fallback, now lives in
-   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. The ownership checks for
-   frame-rate source filtering, automatic selection, always-on capture options,
-   timing-policy placement, automatic-selection behavior, and pure timing-policy
-   behavior checks live together in
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
-   owns xUnit execution for those frame-rate selection/timing checks after
-   their removal from the legacy presentation-preview capture catalog.
-   Shared frame-rate selection reset,
-   resolved automatic frame-rate application, disabled frame-rate reason
-   projection, and capture-mode reset flags live in
-   `MainViewModel.cs`. Source-rate filtering now assumes
-   capture options are always visible in
-   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`, while deferred rebuild
-   behavior, duplicate-reinit suppression, and the active capture-mode automation
-   gate live in
-   `MainViewModel.cs`. Pure frame-rate timing family,
-   timing-variant projection, rational parsing, friendly/exact frame-rate
-   matching, and preferred-format ranking now live in
-   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`, while
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
-   owns the stateful resolver over resolution capabilities, runtime snapshots,
-   source telemetry, selected formats, UI selection state, and its graph-built
-   context ports;
-   the root `MainViewModel.cs` keeps the public capture-device refresh
-   compatibility facade, while the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
-   owns startup refresh orchestration: requesting the combined discovery result,
-   applying audio-device startup selection, replacing the capture-device collection,
-   starting background format probes, restoring saved capture-device selection,
-   and directly auto-starting preview through the preview lifecycle owner.
-   It also owns the device-refresh graph-port contract for discovery, startup
-   audio selection, device collection mutation, background format probes,
-   selection restore, and scan status projection. The shallow `MainViewModel.DeviceManagement.cs`
-   partial was retired rather than preserving a sub-100-line facade. Selected
-   capture-device reactions, capability projection, source telemetry reset, and
-   device-native audio-control refresh handoff live in `MainViewModel.cs`. Capture-mode property-change
-   hooks live in `MainViewModel.cs`; startup audio-list
-   and watcher-driven audio endpoint refresh adaptation are folded into
-   `MainViewModel.AudioState.cs` beside the audio collections and saved-device
-   restore state. Pure audio-device filtering and
-   previous/saved/default audio and microphone selection fallback policy now
-   lives in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`. Pure
-   recording codec filtering, selected-codec fallback policy, string-to-model
-   format/quality parsing, and custom bitrate clamp policy now live in
-   `Sussudio/ViewModels/ViewModelBuilders.cs`, while startup
-   FFmpeg capability probes and observable recording-format option mutation through graph-built context ports live
-   with source telemetry readiness in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`. `MainViewModel.cs`
-   keeps selected-format and video-format rebuild compatibility adapters, while
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
-   is now a top-level `Sussudio.Controllers` owner for selected-format
-   assignment, pixel-format option collection mutation, capture-format
-   request shaping, and the capture-mode option rebuild graph-port contract for
-   option collections, stable Source/Auto sentinel values, source telemetry,
-   selection state, automatic retarget flags, format-change suppression, and
-   projected status text.
-   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` owns the pure
-   selected-format and mode-tuple video-format filtering policy.
-   `MainViewModel.cs` owns HDR toggle side effects:
-   recording-time revert/status, mode option rebuilds, immediate reinitialize
-   scheduling, and settings persistence.
-    Late-arriving device format probe reconciliation, collection mutation,
-    selected-device capability refresh, enqueue/failure logging, and retarget
-    handoff live in the top-level
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
-    its graph-port contract now lives with that controller. UI-side late-probe
-    retarget application, session mismatch checks, active-capture restore, and
-    the retarget applier graph-port contract also live there, while
-    pure late-probe retarget decisions live in
-    `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`.
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
-    owns xUnit execution for the late device-format probe retarget ownership,
-    behavior, and application checks after their removal from the legacy
-    presentation-preview capture catalog.
-    The presentation-preview ownership tests for this capture selection policy
-    area now live in
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, keeping
-    frame-rate, resolution, mode-selection, late-probe, recording-format,
-    capture-settings projection, and runtime-flag assertions with their xUnit
-    execution owner.
-    `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
-    owns xUnit execution for the mode-selection, capture-format,
-    recording-settings selection, and capture-settings projection checks after
-    their removal from the legacy presentation-preview capture catalog.
-    Resolution option rebuild callers stay stable through the
-    `MainViewModel.cs` adapter. Resolution option
-    rebuild ownership now lives in
-    `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`:
-    automatic resolution dropdown option construction inside the promoted
-    top-level capture option rebuild controller family, automatic
-    resolution-selection adaptation, auto-resolution state refresh, and
-    resolution dropdown mutation through graph-built context ports. Effective Source resolution state and
-    state-backed delegates to the pure selection policy live in
-    `MainViewModel.cs`.
-   Automatic resolution ranking and source-aware frame-rate selection now
-    live in `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`; auto-resolution
-    display text used by status and telemetry presentation lives in
-    `MainViewModel.cs`.
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
-   owns xUnit execution for the resolution-selection ownership and behavior
-   checks after their removal from the legacy presentation-preview capture catalog.
-   Pure resolution selection policy now lives in
-   `Sussudio/ViewModels/ViewModelSelectionPolicies.cs`: source-aware matching,
-   HDR retarget/support-hint selection, SDR auto/fallback selection, parsing,
-   frame-rate support checks, nearest-resolution ranking, and the request/result
-   records stay together with the broader pure ViewModel selection-policy owner.
-   Resolution and frame-rate selection harness coverage lives in
-   `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`, which
-   owns source-shape placement assertions plus HDR, SDR, auto-capture,
-   source-filter, automatic frame-rate, and timing-policy behavior contracts.
-   State-backed delegates for callers that still live across the partial family
-   stay in `MainViewModel.cs`, while dropdown rebuild,
-   collection mutation, and property notifications route through the top-level
-    `MainViewModelDeviceControllers.cs`.
-   Source telemetry summary, telemetry age, and target-summary display text
-   formatting now live in `Sussudio/ViewModels/ViewModelBuilders.cs`;
-   HDR runtime state/readiness projection and target-summary property
-   application live in `MainViewModel.cs`; keep snapshot
-   application, source telemetry ingress behavior, telemetry age refresh,
-   enum-string caching, source-aware auto-retargeting, and source telemetry
-   graph-port contract in
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`.
-   Settings initialization, simple persistence reactions, the impure settings
-   load/save adapter, persisted-settings validation, clamping, deferred-selection
-   projection, save DTO projection, load/save projection contracts, validated
-   load-plan application order, feature-specific state assignment, and deferred
-   device/audio/microphone selection staging stay in
-   `MainViewModel.cs`;
-   active Flashback reactions to recording format,
-   encoder quality/preset/split/bitrate, buffer duration, and GPU decode now
-   live in `MainViewModel.FlashbackState.cs`.
-   Pure analog audio gain percent/XU-byte curve mapping now lives in
-   `MainViewModel.AudioState.cs` with the shared audio-control guards;
-   device-native audio request lifetime, including mode property-change adapters, UI enqueue lifetime,
-   shared debounce CTS fields, graph-port context contract, cancellation
-   cleanup, gain property-change adapters, XU debounce, and flash-persist
-   debounce, stays in
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`;
-   async native-XU
-   device audio-control refresh/readback, mode switching, failure readback,
-   shared audio-control guards, analog gain XU writes, and settings
-   persistence stay with `MainViewModel.AudioState.cs`. Use
-   the supported native-XU switch/gain command surface rather than the legacy
-   AT input-source fallback path.
-   UI-only automation mutators for settings visibility, Flashback timeline
-   visibility, stats dock/section visibility, and frame-time overlay display now
-   live in `MainViewModel.cs`; the public show-all capture options
-   command remains accepted as a dispatcher-level compatibility no-op.
-   Automation command entry points for app audio enablement, audio-preview
-   enablement, preview-volume clamp/persist, device-native mode/gain
-   application, and microphone enablement with recording-time
-   refusal/idempotent handling now live in `MainViewModel.cs`.
-   Automation preview enable/disable idempotence, pending-reinit cancellation,
-   and preview start/stop routing now live in
-   top-level `MainViewModelLifecycleController.cs` plus graph-built
-   `MainViewModelLifecycleController.cs` reinitialize context ports, with the stable
-   `MainViewModel.cs` compatibility facade preserving the automation surface.
-   Automation HDR and true-HDR preview recording-time guard enforcement and HDR
-   availability checks now live in `MainViewModel.cs`
-   beside HDR mode change side effects.
-   Automation Flashback enable/restart routing through the capture session
-   coordinator now lives in `MainViewModel.FlashbackState.cs` alongside
-   buffer/GPU setting reactions.
-   Automation device refresh, capture-device selection, audio-input selection,
-   and custom audio-input enablement now live in
-   `MainViewModel.cs`.
-   Recording format, encoder, and output-path automation entry points now stay
-   in the `MainViewModel.cs` compatibility facade,
-   while UI-thread mutations, HDR compatibility enforcement, Flashback cycle
-   suppression, coordinator side effects, custom bitrate clamping, encoder
-   preset, and output-path directory creation live in
-   the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.
-   It also owns the recording-settings automation graph-port contract for UI
-   dispatch, option collections, suppression flags, selected encoder/output
-   state, recording-format coordinator updates, and Flashback encoder setting
-   cycles.
-   The automation recording desired-state bridge enters through
-   `MainViewModel.cs` and is serialized by
-   the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`,
-   with graph-built context ports and start/stop execution in the same owner.
-   The emergency recording-stop bridge also enters through
-   `MainViewModel.cs` but routes directly to
-   `CaptureSessionCoordinator.StopRecordingForEmergencyAsync`
-   so it keeps bypassing UI-thread dispatch and normal transition gates.
-   Capture resolution, frame-rate, video-format, and MJPEG decoder worker-count
-   automation entry points now stay in the
-   `MainViewModel.cs` compatibility facade, while
-   UI-thread mutations, validation, MJPEG decoder clamping, and active
-   capture-mode reinitialization routing live in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`.
-   It also owns the capture-settings automation graph-port contract for option
-   collections, selected capture-mode state, preview reinitialization checks,
-   UI-thread dispatch, and format-change suppression.
-   Startup FFmpeg capability probes for recording formats and split-encode modes
-   plus observable recording-format option rebuilds now live with source telemetry readiness in the top-level
-   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`.
-   `Sussudio/ViewModels/MainViewModel.cs` keeps recording-runtime
-   counters, disk-space assignment, and the stable recording-capability facade
-   methods used by settings initialization and HDR mode-change rebuild callers.
-   It also owns the recording-capability graph-port contract for default encoder
-   names, observable recording/split-encode option collections, selected
-   recording format state, HDR/status state, FFmpeg-missing state, and UI
-   dispatch.
-   The old `MainViewModel.Automation.cs` catch-all has been retired.
-
-5. Extract capture resource owners behind the transition policy.
-
-   The policy is now the legality/steady-state owner. Recent capture slices
-   kept it authoritative while introducing smaller owners for the audio graph,
-   Flashback backend resources, active recording backend resources, and active
-   video pipeline resources.
-   `FlashbackBackendResources.cs` now owns the preview backend resource set,
-   install/take/clear state, recovery-preserve flag storage and policy,
-   recording-finalize handoff, producer attach/detach request shapes, and video,
-   audio, and microphone feed wiring. It also owns startup construction,
-   install/playback initialization, startup failure rollback cleanup,
-   sink-only buffer-cycle orchestration, purge/finalize decisions,
-   full-rebuild fallback outcomes, playback disposal, old-sink stop/dispose,
-   replacement sink startup/playback restore, failed replacement cleanup,
-   backend teardown, and artifact cleanup mechanics. CaptureService callers now use that aggregate directly
-   instead of private root resource shim properties. Keep later Flashback backend
-   mechanics in the matching focused owner before inventing another small owner;
-   `CaptureService.Flashback.cs` stays the transition coordinator for
-   AV1 probing, readiness waiting, cleanup handoff, and preview backend disposal
-   request construction.
-   `CaptureService.cs` now owns active capture resource holders:
-   preview audio graph resources, recording backend resources, and video
-   pipeline resources. Recording start, finalization, rollback, snapshot,
-   cleanup, preview lifecycle, and audio preview paths use those aggregates
-   directly instead of routing through private root shim properties. Keep later
-   capture resource mechanics there unless the behavior needs a larger, proven
-   boundary.
-
-## Guardrails
-
-- Preserve public automation command names and numeric IDs.
-- Use `AutomationCommandKind` overloads for fixed CLI/MCP automation routes;
-  keep string command names only for labels, catalog-backed dynamic batches,
-  and diagnostic-session runner command-channel delegates.
-- Preserve manifest revision rules in `AutomationCommandKind`.
-- Preserve XAML binding names until a focused binding migration changes them.
-- Preserve Flashback disable lockout behavior.
-- Preserve preview/recording no-restart semantics unless a test proves the
-  transition intentionally restarts.
-- Run `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` after each
-  structural slice.
-- Run the console harness when source ownership, automation, capture, recording,
-  or Flashback contracts move.

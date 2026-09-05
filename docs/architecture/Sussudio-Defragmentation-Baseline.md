@@ -1,6 +1,11 @@
 # Sussudio Defragmentation Baseline
 
-This file should be filled or regenerated before the next architecture slice. It exists so the active goal can measure defragmentation against concrete data instead of vibes.
+This is the historical slice evidence log. Preserve dated results here; they
+establish what was checked at each checkpoint, not the current repository shape.
+The [generated baseline](Sussudio-Defragmentation-Baseline.generated.md) records
+measured counts at its stated checkpoint. Regenerate it before comparing a new
+slice. [AGENT_MAP.md](AGENT_MAP.md) is the current ownership map and
+[the cleanup plan](cleanup-plan.md#next-slices) holds pending proposals.
 
 Run from the repository root:
 
@@ -20,7 +25,10 @@ That script writes `docs/architecture/Sussudio-Defragmentation-Baseline.generate
 - Largest implementation files by line count.
 - Areas where a normal feature/bug review requires more than about five primary production files.
 
-## Known reported symptoms to verify
+## Original reported symptoms
+
+These estimates motivated the original cleanup. They are historical reports,
+not current counts; compare against the generated baseline above.
 
 - `AutomationDiagnosticsHub`: approximately 217 files.
 - `CaptureService`: approximately 109 files.
