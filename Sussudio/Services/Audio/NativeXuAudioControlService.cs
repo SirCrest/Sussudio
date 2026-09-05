@@ -278,23 +278,9 @@ internal sealed class NativeXuAudioControlService
                 // The selector 3 payload contains dynamic bytes (counters, status) that
                 // change between reads. Only verify the specific bytes we mutated
                 // (InputByteIndexes or GainByteIndexes) - ignore the rest.
-                var controlBytesMatch = true;
-                var checkedCount = 0;
-                var mismatchCount = 0;
-                foreach (var index in InputByteIndexes.Concat(GainByteIndexes))
-                {
-                    if (index >= mutatedPayload.Length || index >= verifyNormalizedPayload.Length)
-                    {
-                        continue;
-                    }
-
-                    checkedCount++;
-                    if (mutatedPayload[index] != verifyNormalizedPayload[index])
-                    {
-                        mismatchCount++;
-                        controlBytesMatch = false;
-                    }
-                }
+                var controlBytesMatch = ControlBytesMatch(
+                    mutatedPayload, verifyNormalizedPayload,
+                    out var checkedCount, out var mismatchCount, out var missingCount);
 
                 if (controlBytesMatch)
                 {
@@ -302,7 +288,7 @@ internal sealed class NativeXuAudioControlService
                     return true;
                 }
 
-                Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verify-mismatch control={mismatchCount}/{checkedCount}");
+                Logger.Log($"NATIVEXU_AUDIO_PAYLOAD candidate={candidateCount} verify-mismatch control={mismatchCount}/{checkedCount} missing={missingCount}");
             }
 
             Logger.Log($"NATIVEXU_AUDIO_PAYLOAD no-candidate-succeeded count={candidateCount}");
@@ -319,6 +305,35 @@ internal sealed class NativeXuAudioControlService
                 NativeXuDeviceSupport.ReleaseTransportGate();
             }
         }
+    }
+
+    private static bool ControlBytesMatch(
+        byte[] expected,
+        byte[] actual,
+        out int checkedCount,
+        out int mismatchCount,
+        out int missingCount)
+    {
+        checkedCount = 0;
+        mismatchCount = 0;
+        missingCount = 0;
+        foreach (var index in InputByteIndexes.Concat(GainByteIndexes))
+        {
+            if (index >= expected.Length || index >= actual.Length)
+            {
+                missingCount++;
+                continue;
+            }
+
+            checkedCount++;
+            if (expected[index] != actual[index])
+            {
+                mismatchCount++;
+            }
+        }
+
+        // A matching prefix is not proof that every requested control was applied.
+        return checkedCount > 0 && missingCount == 0 && mismatchCount == 0;
     }
 
     private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(

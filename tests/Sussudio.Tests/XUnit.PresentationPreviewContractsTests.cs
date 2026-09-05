@@ -6215,6 +6215,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "private static AnalogGainDecision DecodeGain(byte[] payload)");
         AssertContains(rootText, "private static byte[] ParseHex(string hex)");
         AssertContains(rootText, "private async Task<bool> UpdatePayloadAsync(");
+        AssertMemberContains(rootText, "UpdatePayloadAsync", "ControlBytesMatch(");
         AssertContains(rootText, "private async Task<RawPayloadSnapshot?> ReadPreferredPayloadAsync(");
         AssertContains(rootText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
         AssertContains(rootText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");

@@ -7,6 +7,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 
 ## What's in place
 
+- `XUnit.NativeXuAudioControlTests.cs` executes native audio payload comparison
+  and decoding without opening a device, including incomplete readback rejection.
 - `XUnit.UiDispatchTests.cs` executes the complete linked production dispatch
   source with minimal queue/view-model/logger substitutes in
   `UiDispatchTestBoundaries.cs`. It proves managed cancellation and completion
