@@ -34,14 +34,22 @@ internal static class PreviewOutputSizePolicy
         // Bucket the longer display axis and derive the other axis from the
         // panel aspect ratio.  This preserves the visual aspect ratio while
         // keeping resize targets stable across fractional-DPI layout churn.
+        // Both axes are capped against the source: rounding the derived axis up to
+        // the next even value can otherwise push it past the natural frame even
+        // though the bucketed axis fits (e.g. a 1921x1081 panel on a 1920x1080
+        // source), reintroducing the compositor upscale this policy exists to avoid.
         if (width >= height)
         {
             var bucketedWidth = Math.Min(RoundToBucket(width), RoundDownToEven(maxWidth));
-            return new PreviewOutputSize(bucketedWidth, RoundToEven((double)bucketedWidth * height / width));
+            return new PreviewOutputSize(
+                bucketedWidth,
+                Math.Min(RoundToEven((double)bucketedWidth * height / width), RoundDownToEven(maxHeight)));
         }
 
         var bucketedHeight = Math.Min(RoundToBucket(height), RoundDownToEven(maxHeight));
-        return new PreviewOutputSize(RoundToEven((double)bucketedHeight * width / height), bucketedHeight);
+        return new PreviewOutputSize(
+            Math.Min(RoundToEven((double)bucketedHeight * width / height), RoundDownToEven(maxWidth)),
+            bucketedHeight);
     }
 
     internal static bool ShouldResize(PreviewOutputSize current, PreviewOutputSize target)
