@@ -444,40 +444,17 @@ static partial class Program
     private static object CreateInitializedBufferManager(string tempDir)
     {
         var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
-        var options = RuntimeHelpers.GetUninitializedObject(optionsType);
-        SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
-        SetPropertyBackingField(options, "TempDirectory", tempDir);
-        SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
+        var options = Activator.CreateInstance(optionsType)!;
+        optionsType.GetProperty("BufferDuration")!.SetValue(options, TimeSpan.FromMinutes(5));
+        optionsType.GetProperty("TempDirectory")!.SetValue(options, tempDir);
+        optionsType.GetProperty("SegmentDuration")!.SetValue(options, TimeSpan.FromMinutes(10));
 
         var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
-        var manager = RuntimeHelpers.GetUninitializedObject(managerType);
-        SetPrivateField(manager, "_options", options);
-        SetPrivateField(manager, "_indexLock", new object());
+        var manager = Activator.CreateInstance(managerType, new[] { options })!;
         SetPrivateField(manager, "_sessionId", "test-session");
         SetPrivateField(manager, "_sessionDirectory", tempDir);
         SetPrivateField(manager, "_activeSegmentPath", Path.Combine(tempDir, "fb_test_0003.ts"));
-        SetPrivateField(manager, "_activeSegmentStartPtsTicks", -1L);
         SetPrivateField(manager, "_nextSegmentIndex", 4);
-
-        var listField = managerType.GetField("_completedSegments", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var list = listField.GetValue(manager);
-        if (list == null)
-        {
-            var completedSegmentType = managerType.GetNestedType("CompletedSegment", BindingFlags.NonPublic)!;
-            var listGenericType = typeof(List<>).MakeGenericType(completedSegmentType);
-            list = Activator.CreateInstance(listGenericType)!;
-            listField.SetValue(manager, list);
-        }
-
-        // GetUninitializedObject skips field initializers; the parked-eviction
-        // map must exist for Dispose/eviction paths to run.
-        var parkedField = managerType.GetField("_parkedEvictionDeletes", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        if (parkedField.GetValue(manager) == null)
-        {
-            parkedField.SetValue(
-                manager,
-                Activator.CreateInstance(parkedField.FieldType, StringComparer.OrdinalIgnoreCase)!);
-        }
 
         return manager;
     }
