@@ -39,6 +39,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private readonly object _sync = new();
     private readonly object _videoQueueSync = new();
     private readonly LibAvEncoder _encoder = new();
+    private readonly Func<string, RotateOutputResult>? _rotateOutputOverride;
     private readonly FlashbackBufferManager _bufferManager;
     private readonly ManualResetEventSlim _workAvailable = new(false, 100);
     private readonly bool _ownsBufferManager;
@@ -132,6 +133,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _ownsBufferManager = false;
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "FLASHBACK_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
+    }
+
+    internal FlashbackEncoderSink(
+        FlashbackBufferManager bufferManager,
+        Func<string, RotateOutputResult> rotateOutputOverride)
+        : this(bufferManager)
+    {
+        ArgumentNullException.ThrowIfNull(rotateOutputOverride);
+        _rotateOutputOverride = rotateOutputOverride;
     }
 
     private static FlashbackSessionContext CreateSessionContext(RecordingContext context)
@@ -2358,7 +2368,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // RotateOutput flushes encoder queues, writes trailer, then resets
             // TotalBytesWritten to 0 for the new segment. PreviousTotalBytes
             // in the result includes all drain/trailer bytes.
-            var result = _encoder.RotateOutput(newPath);
+            var result = _rotateOutputOverride is null
+                ? _encoder.RotateOutput(newPath)
+                : _rotateOutputOverride(newPath);
             var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));
             encoderRotated = true;
 

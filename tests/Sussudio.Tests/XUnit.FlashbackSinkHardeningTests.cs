@@ -9,14 +9,12 @@ public sealed class FlashbackSinkHardeningTests
         => RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
 
     [Fact]
-    public void RotateSegment_EscalatesAfterConsecutiveFailures()
-    {
-        var source = Source();
-        Assert.Contains("MaxConsecutiveRotationFailures = 3", source);
-        var method = global::Program.ExtractDeclaredMemberCode(source, "private bool RotateSegment");
-        Assert.Contains("_consecutiveRotationFailures", method);
-        Assert.Contains("FailEncoding", method);
-    }
+    public void RotateSegment_UnopenedEncoderEscalatesOnceAfterThreeFailures()
+        => global::Program.FlashbackEncoderSink_ExerciseRotationFailures(scriptedSuccess: false);
+
+    [Fact]
+    public void RotateSegment_SuccessResetsConsecutiveFailuresAndCommitsSegment()
+        => global::Program.FlashbackEncoderSink_ExerciseRotationFailures(scriptedSuccess: true);
 
     [Fact]
     public void ForceRotate_PreparesPathBeforeEncoderLaneFence()

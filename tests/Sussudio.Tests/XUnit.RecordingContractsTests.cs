@@ -1830,7 +1830,6 @@ static partial class Program
         AssertContains(flashbackSource, "if (supersededRequest.TryCancel())");
         AssertContains(flashbackSource, "_bufferManager.AbandonReservedSegmentPath(supersededRequest.PreparedPath);");
         AssertContains(flashbackSource, "if (!RotateSegment(currentPts, localRequest.PreparedPath))\n                {\n                    localRequest.CompleteEmpty();\n                    return true;\n                }");
-        AssertContains(flashbackSource, "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)");
         AssertContains(flashbackSource, "return true;\n        }\n        catch (Exception ex)");
         AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            return false;");
         AssertContains(flashbackSource, "TryCancelForceRotate(request)");

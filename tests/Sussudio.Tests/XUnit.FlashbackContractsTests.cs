@@ -842,6 +842,121 @@ public sealed class FlashbackPlaybackContractsTests
 
 static partial class Program
 {
+    internal static void FlashbackEncoderSink_ExerciseRotationFailures(bool scriptedSuccess)
+    {
+        EnsureTargetAssemblyLoadedForXUnit();
+        var directory = Path.Combine(Path.GetTempPath(), $"fb_rotation_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        object? sink = null;
+        IDisposable? managerLifetime = null;
+        try
+        {
+            managerLifetime = (IDisposable)CreateInitializedBufferManager(directory);
+            var manager = (object)managerLifetime;
+            var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
+            var activePath = (string)GetPrivateField(manager, "_activeSegmentPath")!;
+            var originalPath = activePath;
+            File.WriteAllBytes(activePath, new byte[64]);
+            var attempt = 0;
+            string? attemptedPath = null;
+            if (scriptedSuccess)
+            {
+                var resultType = RequireType("Sussudio.Services.Recording.RotateOutputResult");
+                Func<string, object> rotate = path =>
+                {
+                    attemptedPath = path;
+                    File.WriteAllBytes(path, new byte[16]);
+                    if (attempt != 3) throw new IOException("Scripted rotation failure");
+                    return Activator.CreateInstance(resultType, activePath, 2L, 64L)!;
+                };
+                var pathParameter = Expression.Parameter(typeof(string), "path");
+                var delegateType = typeof(Func<,>).MakeGenericType(typeof(string), resultType);
+                var operation = Expression.Lambda(delegateType,
+                    Expression.Convert(Expression.Invoke(Expression.Constant(rotate), pathParameter), resultType),
+                    pathParameter).Compile();
+                sink = sinkType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null,
+                    new[] { manager.GetType(), delegateType }, null)!.Invoke(new object[] { manager, operation });
+            }
+            else
+            {
+                sink = Activator.CreateInstance(sinkType, new[] { manager })!;
+            }
+
+            SetPrivateField(sink, "_tsFilePath", activePath);
+            SetPrivateField(sink, "_started", true);
+            var completions = new List<Task>();
+            foreach (var field in new[] { "_videoQueue", "_audioQueue", "_microphoneQueue", "_gpuQueue" })
+            {
+                var channel = CreateUnboundedChannelFieldValue(sinkType, field);
+                SetPrivateField(sink, field, channel);
+                var reader = channel.GetType().GetProperty("Reader")!.GetValue(channel)!;
+                completions.Add((Task)reader.GetType().GetProperty("Completion")!.GetValue(reader)!);
+            }
+            var notifications = new List<Exception>();
+            sinkType.GetMethod("SetFatalErrorCallback")!.Invoke(sink, new object[] { (Action<Exception>)notifications.Add });
+            var consecutive = 0;
+            var totalFailures = 0L;
+            var nextIndex = (int)GetPrivateField(manager, "_nextSegmentIndex")!;
+            var rotateMethod = sinkType.GetMethod("RotateSegment", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            for (attempt = 1; attempt <= (scriptedSuccess ? 7 : 4); attempt++)
+            {
+                var succeeds = scriptedSuccess && attempt == 3;
+                var pts = TimeSpan.FromSeconds(attempt);
+                Assert.Equal(succeeds, (bool)rotateMethod.Invoke(sink, new object?[] { pts, null })!);
+                if (succeeds)
+                {
+                    activePath = attemptedPath!;
+                    nextIndex++;
+                    consecutive = 0;
+                    Assert.Equal(pts.Ticks, GetPrivateField(manager, "_activeSegmentStartPtsTicks"));
+                    var completed = Assert.Single(((IEnumerable)GetPrivateField(manager, "_completedSegments")!).Cast<object>());
+                    Assert.Equal(originalPath, completed.GetType().GetProperty("Path")!.GetValue(completed));
+                    Assert.Equal(TimeSpan.FromSeconds(2), completed.GetType().GetProperty("StartPts")!.GetValue(completed));
+                    Assert.Equal(pts, completed.GetType().GetProperty("EndPts")!.GetValue(completed));
+                    Assert.Equal(64L, completed.GetType().GetProperty("SizeBytes")!.GetValue(completed));
+                    Assert.Equal(64L, GetPrivateField(manager, "_completedSegmentBytes"));
+                    Assert.Equal(0L, GetPrivateField(sink, "_segmentStartBytes"));
+                }
+                else
+                {
+                    consecutive++;
+                    totalFailures++;
+                    if (attemptedPath != null) Assert.False(File.Exists(attemptedPath));
+                }
+                Assert.Equal(activePath, GetPrivateField(sink, "_tsFilePath"));
+                Assert.Equal(activePath, GetPrivateField(manager, "_activeSegmentPath"));
+                Assert.True(File.Exists(activePath));
+                Assert.Equal(scriptedSuccess && attempt >= 3 ? 1 : 0,
+                    ((ICollection)GetPrivateField(manager, "_completedSegments")!).Count);
+                Assert.Equal(nextIndex, GetPrivateField(manager, "_nextSegmentIndex"));
+                Assert.Equal(pts, GetPrivateField(sink, "_segmentStartPts"));
+                Assert.Equal(totalFailures, GetPrivateField(sink, "_segmentRotationFailures"));
+                Assert.Equal(consecutive, GetPrivateField(sink, "_consecutiveRotationFailures"));
+                var fatal = consecutive >= 3;
+                Assert.Equal(fatal ? 1 : 0, notifications.Count);
+                Assert.Equal(!fatal, GetPrivateField(sink, "_started"));
+                Assert.All(completions, completion => Assert.Equal(fatal, completion.IsCompletedSuccessfully));
+                if (fatal)
+                {
+                    Assert.IsType<IOException>(notifications[0]);
+                    Assert.Same(notifications[0], GetPrivateField(sink, "_encodingFailure"));
+                    Assert.NotNull(notifications[0].InnerException);
+                }
+                else Assert.Null(GetPrivateField(sink, "_encodingFailure"));
+            }
+        }
+        finally
+        {
+            if (sink != null)
+            {
+                SetPrivateField(sink, "_started", false);
+                ((IDisposable)sink).Dispose();
+            }
+            managerLifetime?.Dispose();
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     internal static Task CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
@@ -4767,7 +4882,6 @@ static partial class Program
 
         AssertContains(encodingProgressText, "private TimeSpan OnVideoFrameEncoded()");
         AssertContains(encodingProgressText, "private TimeSpan ResolveEncoderPts()");
-        AssertContains(encodingProgressText, "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)");
         AssertContains(encodingProgressText, "_bufferManager.UpdateLatestPts(pts);");
         AssertContains(encodingProgressText, "FrameEncoded?.Invoke(this, encoded);");
         AssertContains(encodingProgressText, "FLASHBACK_SINK_ROTATE");
