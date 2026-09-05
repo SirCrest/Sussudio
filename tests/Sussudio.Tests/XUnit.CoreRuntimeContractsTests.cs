@@ -375,7 +375,9 @@ public sealed class RuntimeContractsTests
         try
         {
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "avcodec-62.dll"), Array.Empty<byte>());
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "avformat-62.dll"), Array.Empty<byte>());
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "avutil-60.dll"), Array.Empty<byte>());
+            File.WriteAllBytes(Path.Combine(localFfmpegDir, "swresample-6.dll"), Array.Empty<byte>());
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffmpeg.exe"), Array.Empty<byte>());
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffprobe.exe"), Array.Empty<byte>());
 
@@ -433,6 +435,51 @@ public sealed class RuntimeContractsTests
             {
                 Directory.Delete(tempRoot, recursive: true);
             }
+        }
+    }
+
+    [Theory]
+    [InlineData("avcodec-62.dll", null)]
+    [InlineData("avformat-62.dll", null)]
+    [InlineData("avutil-60.dll", null)]
+    [InlineData("swresample-6.dll", null)]
+    [InlineData("avcodec-62.dll", "avcodec-61.dll")]
+    [InlineData("avformat-62.dll", "avformat-61.dll")]
+    [InlineData("avutil-60.dll", "avutil-59.dll")]
+    [InlineData("swresample-6.dll", "swresample-5.dll")]
+    public void FfmpegRuntimeLocator_SkipsIncompleteOrWrongMajorPreferredFolder(string missingLibrary, string? replacementLibrary)
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), $"sussudio-ffmpeg-selection-{Guid.NewGuid():N}");
+        var preferredDirectory = Path.Combine(tempRoot, "ffmpeg");
+        Directory.CreateDirectory(preferredDirectory);
+        try
+        {
+            foreach (var library in new[] { "avcodec-62.dll", "avformat-62.dll", "avutil-60.dll", "swresample-6.dll" })
+            {
+                File.WriteAllBytes(Path.Combine(tempRoot, library), Array.Empty<byte>());
+                if (library != missingLibrary)
+                {
+                    File.WriteAllBytes(Path.Combine(preferredDirectory, library), Array.Empty<byte>());
+                }
+            }
+
+            if (replacementLibrary != null)
+            {
+                File.WriteAllBytes(Path.Combine(preferredDirectory, replacementLibrary), Array.Empty<byte>());
+            }
+
+            var locatorType = SussudioAssembly.Load().GetType("Sussudio.Services.Runtime.FfmpegRuntimeLocator", throwOnError: true)!;
+            var resolveRuntime = locatorType.GetMethod(
+                "TryResolveNativeRuntimeRoot", ReflectionFlags.Static, binder: null,
+                types: new[] { typeof(string), typeof(string).MakeByRefType() }, modifiers: null)!;
+            var arguments = new object?[] { tempRoot, null };
+
+            Assert.True(Assert.IsType<bool>(resolveRuntime.Invoke(null, arguments)));
+            Assert.Equal(tempRoot, arguments[1]);
+        }
+        finally
+        {
+            Directory.Delete(tempRoot, recursive: true);
         }
     }
 }

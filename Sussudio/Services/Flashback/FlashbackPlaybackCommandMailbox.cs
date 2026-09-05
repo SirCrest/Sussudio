@@ -369,22 +369,20 @@ internal sealed class FlashbackPlaybackCommandMailbox
         var queuedCommand = command with { QueuedTimestamp = Stopwatch.GetTimestamp() };
         var pending = Interlocked.Increment(ref _pendingCommands);
         var generation = CurrentGeneration;
-        var droppedOldest = false;
-        var droppedCommand = default(Command);
-        if (!generation.Channel.Writer.TryWrite(queuedCommand) &&
-            (!IsOpenForDropRetry(generation) ||
-             !TryDropOldest(generation, out droppedCommand) ||
-             !(droppedOldest = generation.Channel.Writer.TryWrite(queuedCommand))))
+        var written = generation.Channel.Writer.TryWrite(queuedCommand);
+        if (!written && IsOpenForDropRetry(generation) && TryDropOldest(generation, out var droppedCommand))
+        {
+            // Removal is final even if the writer completes before replacement.
+            TrackDroppedQueuedCommand(droppedCommand, queuedCommand.Kind);
+            written = generation.Channel.Writer.TryWrite(queuedCommand);
+        }
+
+        if (!written)
         {
             DecrementPendingCommands();
             Interlocked.Increment(ref _commandsDropped);
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}{FormatCommandDetail(command)}");
             return false;
-        }
-
-        if (droppedOldest)
-        {
-            TrackDroppedQueuedCommand(droppedCommand, queuedCommand.Kind);
         }
 
         Interlocked.Increment(ref _commandsEnqueued);
@@ -512,8 +510,14 @@ internal sealed class FlashbackPlaybackCommandMailbox
         }
     }
 
-    private static string FormatCommandDetail(Command command)
-        => FormatCommandDetail(command.Position, command.Delta);
+    internal static string FormatCommandDetail(Command command)
+        => command.Kind switch
+        {
+            CommandKind.Nudge => FormatCommandDetail(delta: command.Delta),
+            CommandKind.Seek or CommandKind.BeginScrub or CommandKind.UpdateScrub or CommandKind.EndScrub
+                => FormatCommandDetail(position: command.Position),
+            _ => string.Empty
+        };
 
     // Also used by FlashbackPlaybackController, which logs the same command
     // suffix from the playback thread; the mailbox owns the command shape.

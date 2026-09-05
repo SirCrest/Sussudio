@@ -459,7 +459,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     }
 
     private static string FormatCommandDetail(PlaybackCommand command)
-        => FormatCommandDetail(command.Position, command.Delta);
+        => FlashbackPlaybackCommandMailbox.FormatCommandDetail(command);
 
     private static string FormatCommandDetail(TimeSpan? position = null, TimeSpan? delta = null)
         => FlashbackPlaybackCommandMailbox.FormatCommandDetail(position, delta);

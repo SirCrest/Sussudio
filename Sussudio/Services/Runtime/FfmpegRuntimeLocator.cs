@@ -14,10 +14,14 @@ namespace Sussudio.Services.Runtime;
 // "unsupported" snapshots rather than throwing during normal startup.
 internal static class FfmpegRuntimeLocator
 {
-    private static readonly string[] RequiredNativeLibraryPatterns =
+    // Match the binding ABI for every library used by capture, recording and
+    // playback before selecting a root. Executable discovery is independent.
+    private static readonly string[] RequiredNativeLibraryFileNames =
     {
-        "avcodec-*.dll",
-        "avutil-*.dll"
+        $"avcodec-{ffmpeg.LIBAVCODEC_VERSION_MAJOR}.dll",
+        $"avformat-{ffmpeg.LIBAVFORMAT_VERSION_MAJOR}.dll",
+        $"avutil-{ffmpeg.LIBAVUTIL_VERSION_MAJOR}.dll",
+        $"swresample-{ffmpeg.LIBSWRESAMPLE_VERSION_MAJOR}.dll"
     };
     private static Task<EncoderSupport>? _encoderProbeTask;
     private static readonly object EncoderProbeLock = new();
@@ -141,9 +145,9 @@ internal static class FfmpegRuntimeLocator
             return false;
         }
 
-        foreach (var pattern in RequiredNativeLibraryPatterns)
+        foreach (var fileName in RequiredNativeLibraryFileNames)
         {
-            if (!Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly).Any())
+            if (!File.Exists(Path.Combine(directory, fileName)))
             {
                 return false;
             }

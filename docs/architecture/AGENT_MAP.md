@@ -824,7 +824,8 @@ Entry points:
   state, and no-op logging. `FlashbackPlaybackCommandMailbox.cs` owns each
   playback generation's bounded channel, command admission/drop policy,
   seek/scrub coalescing and queued-position resolution, control-yield peek
-  policy, pending-command accounting, queue telemetry, completion, and
+  policy, pending-command accounting, shared command-kind payload formatting,
+  queue telemetry, completion, and
   abandoned-command draining; it deliberately owns no decoder or playback
   state.
 - `FlashbackPlaybackController.ThreadCommands.cs` owns playback-thread
@@ -1492,7 +1493,8 @@ Primary current owners:
   bounded external process supervision, MMCSS registration, ProcessSpec, and
   ProcessRunResult contract checks alongside the broader no-hardware core
   runtime xUnit surface.
-  `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution plus
+  `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution,
+  required native-library filename checks against the binding ABI, and
   cached FFmpeg encoder/split-encode capability probes through bounded
   `ProcessSupervisor` calls, one-time native initialization, FFmpeg log callback
   routing, and recoverable seek-log suppression.

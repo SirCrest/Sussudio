@@ -1,10 +1,76 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Threading.Channels;
 using Xunit;
 
 namespace Sussudio.Tests;
 
 public sealed class FlashbackPlaybackMailboxTests
 {
+    [Theory]
+    [InlineData("Seek")]
+    [InlineData("UpdateScrub")]
+    public void RemovedIntentIsAccountedForWhenTheWriterCompletesBeforeReplacement(string kind)
+    {
+        var mailbox = new MailboxHarness();
+        mailbox.UseSingleSlotChannel(completeAfterRead: true);
+        Assert.Equal("Enqueued", mailbox.EnqueueIntent(kind, TimeSpan.FromSeconds(1)));
+
+        Assert.False(mailbox.EnqueueControl("Play"));
+
+        Assert.Equal(1L, mailbox.CommandsEnqueued);
+        Assert.Equal(2L, mailbox.CommandsDropped);
+        Assert.Equal(0, mailbox.PendingCommands);
+        Assert.Equal("Rejected", mailbox.EnqueueIntent(kind, TimeSpan.FromSeconds(2)));
+        Assert.Equal(3L, mailbox.CommandsDropped);
+        Assert.Equal(0, mailbox.PendingCommands);
+    }
+
+    [Fact]
+    public void SuccessfulReplacementAccountsForOnlyTheRemovedCommand()
+    {
+        var mailbox = new MailboxHarness();
+        mailbox.UseSingleSlotChannel(completeAfterRead: false);
+        Assert.Equal("Enqueued", mailbox.EnqueueSeek(TimeSpan.FromSeconds(1)));
+
+        Assert.True(mailbox.EnqueueControl("Play"));
+
+        Assert.Equal(2L, mailbox.CommandsEnqueued);
+        Assert.Equal(1L, mailbox.CommandsDropped);
+        Assert.Equal(1, mailbox.PendingCommands);
+        Assert.Equal("Play", mailbox.Kind(mailbox.ReadCurrent()));
+        Assert.False(mailbox.TryReadCurrent(out _));
+    }
+
+    [Theory]
+    [InlineData("Seek", " pos_ms=1250")]
+    [InlineData("BeginScrub", " pos_ms=1250")]
+    [InlineData("UpdateScrub", " pos_ms=1250")]
+    [InlineData("EndScrub", " pos_ms=1250")]
+    [InlineData("Nudge", " delta_ms=-250")]
+    [InlineData("Play", "")]
+    [InlineData("Pause", "")]
+    [InlineData("GoLive", "")]
+    [InlineData("Stop", "")]
+    [InlineData("Warm", "")]
+    public void CommandDetailsDescribeOnlyTheRelevantPayload(string kind, string expected)
+    {
+        var mailbox = new MailboxHarness();
+        var details = mailbox.FormatDetails(kind, TimeSpan.FromMilliseconds(1250), TimeSpan.FromMilliseconds(-250));
+        Assert.Equal(expected, details.Mailbox);
+        Assert.Equal(expected, details.Controller);
+    }
+
+    [Theory]
+    [InlineData(0, " delta_ms=0")]
+    [InlineData(0.125, " delta_ms=0.125")]
+    public void NudgeDetailsPreserveZeroAndFractionalMilliseconds(double deltaMs, string expected)
+    {
+        var details = new MailboxHarness().FormatDetails("Nudge", TimeSpan.Zero, TimeSpan.FromMilliseconds(deltaMs));
+        Assert.Equal(expected, details.Mailbox);
+        Assert.Equal(expected, details.Controller);
+    }
+
     [Fact]
     public void ScrubUpdatesCoalesceWithoutCrossingTheFollowingControlCommand()
     {
@@ -92,6 +158,38 @@ public sealed class FlashbackPlaybackMailboxTests
         }
 
         internal object CurrentGeneration => GetProperty(_mailbox, "CurrentGeneration");
+        internal long CommandsEnqueued => (long)GetProperty(_mailbox, "CommandsEnqueued");
+        internal long CommandsDropped => (long)GetProperty(_mailbox, "CommandsDropped");
+        internal int PendingCommands => (int)GetProperty(_mailbox, "PendingCommands");
+
+        internal void UseSingleSlotChannel(bool completeAfterRead)
+        {
+            var channel = Activator.CreateInstance(
+                typeof(CompletingReadChannel<>).MakeGenericType(_commandType),
+                new object[] { completeAfterRead })!;
+            var generationType = _mailboxType.GetNestedType("Generation", BindingFlags.NonPublic)!;
+            var generation = Activator.CreateInstance(
+                generationType, InstanceNonPublic, binder: null, args: new[] { channel }, culture: null)!;
+            _mailboxType.GetField("_currentGeneration", InstanceNonPublic)!.SetValue(_mailbox, generation);
+        }
+
+        internal string EnqueueIntent(string kind, TimeSpan position)
+            => kind == "Seek" ? EnqueueSeek(position) : EnqueueScrub(position);
+
+        internal (string Mailbox, string Controller) FormatDetails(string kind, TimeSpan position, TimeSpan delta)
+        {
+            var command = Activator.CreateInstance(_commandType)!;
+            SetPropertyOrBackingField(command, "Kind", Enum.Parse(_commandKindType, kind));
+            SetPropertyOrBackingField(command, "Position", position);
+            SetPropertyOrBackingField(command, "Delta", delta);
+            var mailboxDetail = (string)_mailboxType.GetMethod(
+                "FormatCommandDetail", BindingFlags.Static | BindingFlags.NonPublic,
+                binder: null, types: new[] { _commandType }, modifiers: null)!.Invoke(null, new[] { command })!;
+            var controllerDetail = (string)RequireRuntimeType("Sussudio.Services.Flashback.FlashbackPlaybackController").GetMethod(
+                "FormatCommandDetail", BindingFlags.Static | BindingFlags.NonPublic,
+                binder: null, types: new[] { _commandType }, modifiers: null)!.Invoke(null, new[] { command })!;
+            return (mailboxDetail, controllerDetail);
+        }
 
         internal string EnqueueSeek(TimeSpan position)
             => Invoke("TryEnqueueSeek", position).ToString()!;
@@ -166,5 +264,40 @@ public sealed class FlashbackPlaybackMailboxTests
             => (Type)(typeof(global::Program).GetMethod("RequireType", BindingFlags.Static | BindingFlags.NonPublic)
                     ?? throw new InvalidOperationException("Program.RequireType not found."))
                 .Invoke(null, new object[] { typeName })!;
+    }
+
+    // Force the completion race at the read/write boundary without sleeps or
+    // a production hook. Capacity one exercises the same full-channel branch.
+    private sealed class CompletingReadChannel<T> : Channel<T>
+    {
+        public CompletingReadChannel(bool completeAfterRead)
+        {
+            var channel = Channel.CreateBounded<T>(1);
+            Reader = new CompletingReader(channel, completeAfterRead);
+            Writer = channel.Writer;
+        }
+
+        private sealed class CompletingReader(Channel<T> channel, bool completeAfterRead) : ChannelReader<T>
+        {
+            public override Task Completion => channel.Reader.Completion;
+
+            public override bool TryRead([MaybeNullWhen(false)] out T item)
+            {
+                if (!channel.Reader.TryRead(out item))
+                {
+                    return false;
+                }
+
+                if (completeAfterRead)
+                {
+                    channel.Writer.TryComplete();
+                }
+
+                return true;
+            }
+
+            public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken = default)
+                => channel.Reader.WaitToReadAsync(cancellationToken);
+        }
     }
 }
