@@ -435,6 +435,9 @@ namespace Sussudio.Services.Contracts
     // every preview/recording consumer releases its lease.
     internal sealed class PooledVideoFrame : IDisposable
     {
+        public static int GetFrameSizeBytes(int width, int height, bool isP010)
+            => isP010 ? width * height * 3 : (width * height * 3) / 2;
+
         private readonly object _leaseSync = new();
         private readonly ArrayPool<byte> _pool;
         private readonly byte[] _buffer;

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using FFmpeg.AutoGen;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Gpu;
 
 namespace Sussudio.Services.Recording;
@@ -497,7 +498,7 @@ internal sealed unsafe partial class LibAvEncoder
                 $"LIBAV_ENCODER_ERROR operation=SendVideoFrame msg=Frame dimensions do not match encoder state width={width} height={height} expected_width={options.Width} expected_height={options.Height}");
         }
 
-        var expectedSize = GetExpectedFrameSizeBytes(options.Width, options.Height, options.IsP010);
+        var expectedSize = PooledVideoFrame.GetFrameSizeBytes(options.Width, options.Height, options.IsP010);
         if (frameData.Length < expectedSize)
         {
             _droppedFrameCount++;

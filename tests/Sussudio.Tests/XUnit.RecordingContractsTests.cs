@@ -257,8 +257,8 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters();
 
     [Fact]
-    public Task LibAvEncoderExpectedFrameSizesMatchPixelFormats()
-        => global::Program.LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly();
+    public Task PooledVideoFrameSizesMatchPixelFormats()
+        => global::Program.PooledVideoFrame_GetFrameSizeBytes_CalculatesCorrectly();
 
     [Fact]
     public Task LibAvEncoderNvencPresetsMapCorrectly()
@@ -1797,9 +1797,9 @@ static partial class Program
         AssertDoesNotContain(flashbackSource, "WaitForBackpressureRetryCancellation");
         AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_VIDEO_BACKPRESSURE_DROP");
         AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_GPU_BACKPRESSURE_DROP");
-        AssertContains(flashbackSource, "var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true)");
+        AssertContains(flashbackSource, "var p010FrameSize = PooledVideoFrame.GetFrameSizeBytes(_width, _height, isP010: true)");
         AssertContains(flashbackSource, "VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010)");
-        AssertContains(flashbackSource, "MfSourceReaderVideoCapture.GetFrameSizeBytes(w, h, packet.IsP010)");
+        AssertContains(flashbackSource, "PooledVideoFrame.GetFrameSizeBytes(w, h, packet.IsP010)");
         AssertContains(flashbackSource, "lease.PixelFormat == PooledVideoPixelFormat.P010");
         AssertContains(flashbackSource, "FLASHBACK_SINK_VIDEO_OVERLOAD");
         AssertContains(flashbackSource, "FLASHBACK_SINK_GPU_OVERLOAD");
@@ -4528,12 +4528,12 @@ static partial class Program
     }
 
 
-    internal static Task LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly()
+    internal static Task PooledVideoFrame_GetFrameSizeBytes_CalculatesCorrectly()
     {
-        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
-        var method = encoderType.GetMethod("GetExpectedFrameSizeBytes",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("GetExpectedFrameSizeBytes not found.");
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var method = frameType.GetMethod("GetFrameSizeBytes",
+            BindingFlags.Static | BindingFlags.Public)
+            ?? throw new InvalidOperationException("GetFrameSizeBytes not found.");
 
         // NV12: width * height * 3 / 2
         var nv12_1080 = (int)method.Invoke(null, new object[] { 1920, 1080, false })!;
@@ -4550,6 +4550,8 @@ static partial class Program
         var nv12_4k = (int)method.Invoke(null, new object[] { 3840, 2160, false })!;
         AssertEqual(3840 * 2160 * 3 / 2, nv12_4k, "NV12 4K");
 
+        AssertEqual(13, (int)method.Invoke(null, new object[] { 3, 3, false })!, "Odd NV12 dimensions retain multiply-before-divide order");
+        AssertEqual(27, (int)method.Invoke(null, new object[] { 3, 3, true })!, "Odd P010 dimensions");
         return Task.CompletedTask;
     }
 

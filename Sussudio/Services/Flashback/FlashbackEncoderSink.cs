@@ -6,8 +6,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Sussudio.Services.Contracts;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
 using Sussudio.Services.Runtime;
@@ -1169,8 +1169,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return false;
         }
 
-        var nv12FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: false);
-        var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true);
+        var nv12FrameSize = PooledVideoFrame.GetFrameSizeBytes(_width, _height, isP010: false);
+        var p010FrameSize = PooledVideoFrame.GetFrameSizeBytes(_width, _height, isP010: true);
         var maxFrameSize = Math.Max(nv12FrameSize, p010FrameSize);
         var matchesConfiguredFrameSize =
             expectedSize == nv12FrameSize ||
@@ -1220,7 +1220,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return false;
         }
 
-        var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
+        var expectedSize = PooledVideoFrame.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
         if (expectedSize <= 0)
         {
             Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} actual={frame.Width}x{frame.Height}");
@@ -2147,7 +2147,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber);
             try
             {
-                var expectedFrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(w, h, packet.IsP010);
+                var expectedFrameSize = PooledVideoFrame.GetFrameSizeBytes(w, h, packet.IsP010);
                 // Defense-in-depth: if a stale frame from a previous resolution
                 // leaks through during a reinit cycle, drop it rather than sending
                 // mismatched dimensions to the encoder, which could crash in native code.

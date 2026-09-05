@@ -9502,7 +9502,9 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "MfSourceReaderVideoCapture.DxgiBuffers.cs")),
             "MfSourceReaderVideoCapture DXGI texture extraction folded into root source-reader owner");
-        AssertContains(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
+        AssertContains(ReadRepoFile("Sussudio/Services/Contracts/ServiceContracts.cs"), "public static int GetFrameSizeBytes(int width, int height, bool isP010)");
+        AssertDoesNotContain(sourceReaderFrameLayoutText, "public static int GetFrameSizeBytes");
+        AssertContains(sourceReaderFrameLayoutText, "PooledVideoFrame.GetFrameSizeBytes");
         AssertContains(sourceReaderFrameLayoutText, "private unsafe static void CopyYuvWithStride(");
         AssertContains(sourceReaderFrameLayoutText, "private static string SubtypeGuidToName(Guid subtype)");
         AssertEqual(

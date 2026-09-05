@@ -114,9 +114,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     }
     public long LastFrameDeliveredTickMs => Interlocked.Read(ref _lastFrameDeliveredTickMs);
 
-    public static int GetFrameSizeBytes(int width, int height, bool isP010)
-        => isP010 ? width * height * 3 : (width * height * 3) / 2;
-
     public Task InitializeAsync(string deviceSymbolicLink, VideoCaptureNegotiationOptions options)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))
@@ -1687,7 +1684,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     return;
                 }
 
-                var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
+                var packedFrameBytes = PooledVideoFrame.GetFrameSizeBytes(_width, _height, _isP010);
                 if (packedFrameBytes <= 0)
                 {
                     throw new InvalidOperationException("Invalid frame dimensions.");
@@ -1785,7 +1782,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return;
             }
 
-            var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
+            var packedFrameBytes = PooledVideoFrame.GetFrameSizeBytes(_width, _height, _isP010);
             if (packedFrameBytes <= 0)
             {
                 throw new InvalidOperationException("Invalid frame dimensions.");
@@ -1843,7 +1840,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return true;
             }
 
-            var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
+            var packedFrameBytes = PooledVideoFrame.GetFrameSizeBytes(_width, _height, _isP010);
             if (packedFrameBytes <= 0)
             {
                 throw new InvalidOperationException("Invalid frame dimensions.");
@@ -1900,7 +1897,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return true;
             }
 
-            var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
+            var packedFrameBytes = PooledVideoFrame.GetFrameSizeBytes(_width, _height, _isP010);
             if (packedFrameBytes <= 0)
             {
                 throw new InvalidOperationException("Invalid frame dimensions.");

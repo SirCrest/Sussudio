@@ -1284,7 +1284,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
+            var expectedSize = PooledVideoFrame.GetFrameSizeBytes(width, height, isP010);
             if (frameData.Length < expectedSize)
             {
                 Interlocked.Increment(ref _videoFramesDropped);
@@ -1330,7 +1330,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         try
         {
             var isP010 = frame.PixelFormat == PooledVideoPixelFormat.P010;
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010);
+            var expectedSize = PooledVideoFrame.GetFrameSizeBytes(frame.Width, frame.Height, isP010);
             if (frame.Length < expectedSize)
             {
                 Interlocked.Increment(ref _videoFramesDropped);
@@ -1441,7 +1441,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
+            var expectedSize = PooledVideoFrame.GetFrameSizeBytes(width, height, isP010);
             if (frameData.Length < expectedSize)
             {
                 RecordFlashbackRecordingAccounting(sink, accepted: false, sourceSequence, "frame_size_mismatch");
@@ -1491,7 +1491,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(
+            var expectedSize = PooledVideoFrame.GetFrameSizeBytes(
                 frame.Width,
                 frame.Height,
                 frame.PixelFormat == PooledVideoPixelFormat.P010);

@@ -9,7 +9,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
@@ -1532,7 +1531,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return false;
         }
 
-        var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
+        var expectedSize = PooledVideoFrame.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
         if (frame.Length < expectedSize)
         {
             Logger.Log($"LIBAV_SINK_VIDEO_FRAME_SHORT actual={frame.Length} expected={expectedSize}");

@@ -4760,7 +4760,7 @@ static partial class Program
 
         AssertContains(packetDrainText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(packetDrainText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
+        AssertContains(packetDrainText, "PooledVideoFrame.GetFrameSizeBytes");
         AssertContains(packetDrainText, "var pts = OnVideoFrameEncoded();");
         AssertContains(packetDrainText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(packetDrainText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader, int maxPackets = int.MaxValue)");
@@ -4999,7 +4999,7 @@ static partial class Program
         AssertContains(inputsText, "public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)");
         AssertContains(inputsText, "bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)");
         AssertContains(inputsText, "public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)");
-        AssertContains(inputsText, "MfSourceReaderVideoCapture.GetFrameSizeBytes");
+        AssertContains(inputsText, "PooledVideoFrame.GetFrameSizeBytes");
         AssertContains(inputsText, "Marshal.AddRef(d3d11Texture2D);");
         AssertContains(inputsText, "TrackVideoQueueRejected(rejectReason);");
         AssertContains(inputsText, "TrackGpuQueueRejected(rejectReason);");

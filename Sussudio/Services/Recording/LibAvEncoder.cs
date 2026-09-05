@@ -321,9 +321,6 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
            (options.CodecName.Contains("h264", StringComparison.OrdinalIgnoreCase) ||
             options.CodecName.Contains("hevc", StringComparison.OrdinalIgnoreCase));
 
-    private static int GetExpectedFrameSizeBytes(int width, int height, bool isP010)
-        => isP010 ? width * height * 3 : (width * height * 3) / 2;
-
     private static string MapNvencPreset(string? preset)
     {
         if (string.IsNullOrWhiteSpace(preset) || preset.Equals("Auto", StringComparison.OrdinalIgnoreCase))

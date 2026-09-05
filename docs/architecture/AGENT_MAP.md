@@ -702,6 +702,10 @@ Invariants:
 - Snapshot display state should be derived from service/runtime snapshots, not
   hand-updated independently in multiple event handlers.
 
+`PooledVideoFrame` in `Services/Contracts/ServiceContracts.cs` owns shared NV12/P010
+frame-size arithmetic for capture, recording, Flashback, and encoder validation.
+Consumers retain their existing packing, stride, acceptance, and lease policies.
+
 ## Recording
 
 Primary current owner: `Sussudio/Services/Recording/`
