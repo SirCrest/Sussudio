@@ -510,7 +510,7 @@ static partial class Program
         AssertContains(adapterText, "=> _previewTransitionAnimationController.ResetPreviewContentTransform();");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AnimatePreviewOutAsync();");
         AssertContains(adapterText, "=> _previewTransitionAnimationController.AnimatePreviewInAsync();");
-        AssertContains(adapterText, "=> _previewTransitionAnimationController.PrepareStartupPresentation();");
+        AssertContains(adapterText, "PreparePreviewStartupPresentation = () => _previewTransitionAnimationController.PrepareStartupPresentation()");
         AssertContains(mainWindowText, "InitializePreviewTransitionAnimationController();");
         AssertContains(launchEntranceShellText, "_context.AddPreviewShellEntranceAnimations(storyboard, easing, 900, 400);");
         AssertContains(controllerText, "internal sealed class PreviewTransitionAnimationController");
@@ -1871,8 +1871,8 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(propertyChangedPreviewText, "private void InitializePreviewButtonPresentationController()");
         AssertContains(propertyChangedPreviewText, "PreviewButton = PreviewButton,");
         AssertContains(propertyChangedPreviewText, "PreviewButtonIcon = PreviewButtonIcon,");
-        AssertContains(propertyChangedPreviewText, "private void ShowStopPreviewButtonPresentation()");
-        AssertContains(propertyChangedPreviewText, "=> _previewButtonPresentationController.ShowStopPreview();");
+        AssertDoesNotContain(propertyChangedPreviewText, "private void ShowStopPreviewButtonPresentation()");
+        AssertContains(propertyChangedPreviewText, "ShowStopPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStopPreview()");
         AssertContains(propertyChangedPreviewText, "private void ShowStartPreviewButtonPresentation()");
         AssertContains(propertyChangedPreviewText, "=> _previewButtonPresentationController.ShowStartPreview();");
         AssertContains(mainWindowText, "InitializePreviewButtonPresentationController();");

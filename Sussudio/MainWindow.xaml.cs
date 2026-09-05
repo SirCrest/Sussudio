@@ -1944,9 +1944,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
         });
     }
 
-    private void ShowStopPreviewButtonPresentation()
-        => _previewButtonPresentationController.ShowStopPreview();
-
     private void ShowStartPreviewButtonPresentation()
         => _previewButtonPresentationController.ShowStartPreview();
 
@@ -1976,25 +1973,26 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
         _previewLifecycleEventController = new PreviewLifecycleEventController(new PreviewLifecycleEventControllerContext
         {
             ViewModel = ViewModel,
-            ShouldBeginPreviewStartupAttempt = () => ShouldBeginPreviewStartupAttempt,
-            BeginPreviewStartupAttempt = BeginPreviewStartupAttempt,
-            PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
+            ShouldBeginPreviewStartupAttempt = () => _previewStartupSessionController.ShouldBeginAttempt,
+            BeginPreviewStartupAttempt = _previewStartupSessionController.BeginStartupAttempt,
+            PrimePreviewAudioFadeIn = () => _previewAudioFadeController.PrimeFadeIn(),
             IsPreviewReinitAnimating = () => IsPreviewReinitAnimating,
-            PreparePreviewStartupPresentation = PreparePreviewStartupPresentation,
-            StopPreviewStartupWatchdog = StopPreviewStartupWatchdog,
-            StartPreviewStartupWatchdog = StartPreviewStartupWatchdog,
-            StopPreviewStartupOverlay = StopPreviewStartupOverlay,
-            SetPreviewStartupState = SetPreviewStartupState,
-            GetPreviewStartupAttemptLabel = () => PreviewStartupAttemptLabel,
-            StartPreviewRendererAsync = StartPreviewRendererAsync,
-            IsPreviewFirstVisualConfirmed = () => IsPreviewFirstVisualConfirmed,
-            RevealPreviewUnavailablePlaceholder = RevealPreviewUnavailablePlaceholder,
-            SchedulePreviewStartupFailureStop = SchedulePreviewStartupFailureStop,
-            ShowStopPreviewButtonPresentation = ShowStopPreviewButtonPresentation,
-            ShowStartPreviewButtonPresentation = ShowStartPreviewButtonPresentation,
+            PreparePreviewStartupPresentation = () => _previewTransitionAnimationController.PrepareStartupPresentation(),
+            StopPreviewStartupWatchdog = () => _previewStartupWatchdogController.Stop(),
+            StartPreviewStartupWatchdog = () => _previewStartupWatchdogController.Start(),
+            StopPreviewStartupOverlay = () => _previewStartupOverlayController.Stop(IsPreviewReinitAnimating),
+            SetPreviewStartupState = _previewStartupSessionController.SetStartupState,
+            GetPreviewStartupAttemptLabel = () => _previewStartupSessionController.AttemptLabel,
+            StartPreviewRendererAsync = _previewRendererHostController.StartAsync,
+            IsPreviewFirstVisualConfirmed = () => _previewStartupSessionController.FirstVisualConfirmed,
+            RevealPreviewUnavailablePlaceholder = () => _previewTransitionAnimationController.RevealUnavailablePlaceholder(),
+            SchedulePreviewStartupFailureStop = reason => _previewStartupWatchdogController.ScheduleFailureStop(reason),
+            ShowStopPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStopPreview(),
+            ShowStartPreviewButtonPresentation = () => _previewButtonPresentationController.ShowStartPreview(),
             ApplyHdrToggleEnabledState = ApplyHdrToggleEnabledState,
-            StopPreviewRendererAsync = StopPreviewRendererAsync,
-            ResetPreviewStartupTracking = preserveReinitAnimation => ResetPreviewStartupTracking(
+            StopPreviewRendererAsync = _previewRendererHostController.StopAsync,
+            ResetPreviewStartupTracking = preserveReinitAnimation => _previewStartupSessionController.ResetStartupTracking(
+                keepRecoveryCount: false,
                 preserveReinitAnimation: preserveReinitAnimation),
             HandlePreviewReinitializingChanged = HandlePreviewReinitializingChanged,
         });
@@ -2058,12 +2056,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
             GetStartupVisualTimeoutMs = () => PreviewStartupVisualTimeoutMs
         });
     }
-
-    private Task StartPreviewRendererAsync()
-        => _previewRendererHostController.StartAsync();
-
-    private Task StopPreviewRendererAsync()
-        => _previewRendererHostController.StopAsync();
 
     private void StopPreviewForShutdown()
         => _previewRendererHostController.StopForShutdown();
@@ -2248,9 +2240,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private Task AnimatePreviewInAsync()
         => _previewTransitionAnimationController.AnimatePreviewInAsync();
 
-    private void PreparePreviewStartupPresentation()
-        => _previewTransitionAnimationController.PrepareStartupPresentation();
-
     private void RevealPreviewUnavailablePlaceholder()
         => _previewTransitionAnimationController.RevealUnavailablePlaceholder();
 
@@ -2342,17 +2331,11 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     private bool IsPreviewFirstVisualConfirmed
         => _previewStartupSessionController.FirstVisualConfirmed;
 
-    private bool ShouldBeginPreviewStartupAttempt
-        => _previewStartupSessionController.ShouldBeginAttempt;
-
     private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)
         => _previewStartupSessionController.SetStartupState(state, reason);
 
     private void MarkPreviewRendererAttached()
         => _previewStartupSessionController.MarkRendererAttached(DateTimeOffset.UtcNow);
-
-    private void BeginPreviewStartupAttempt()
-        => _previewStartupSessionController.BeginStartupAttempt();
 
     private void ConfirmPreviewFirstVisual(string source)
         => _previewStartupSessionController.ConfirmFirstVisual(source);
@@ -2446,9 +2429,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
 
     private void StopPreviewStartupWatchdog()
         => _previewStartupWatchdogController.Stop();
-
-    private void StartPreviewStartupWatchdog()
-        => _previewStartupWatchdogController.Start();
 
     private void SchedulePreviewStartupFailureStop(string reason)
         => _previewStartupWatchdogController.ScheduleFailureStop(reason);

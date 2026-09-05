@@ -910,6 +910,13 @@ Invariants:
 
 ## UI Shell And Presentation
 
+`MainWindow.xaml.cs` binds preview lifecycle callbacks to the existing session
+and renderer owners. Callbacks for later-constructed watchdog, overlay, animation,
+button, and audio-fade owners use invocation-time lambdas; initialization order
+must not turn those into early method-group captures. Policy adapters remain in
+the window where they translate arguments or compose UI behavior.
+
+
 Primary current owners:
 
 - `Sussudio/MainWindow.*.cs` for shell, renderer, fullscreen, screenshots,

@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-05T10:27:44Z
+Generated UTC: 2026-09-05T10:30:41Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 133 |
 | Test .cs files | 27 |
 | Core app .cs files (Sussudio/) | 99 |
-| Core app nonblank LoC (Sussudio/) | 96394 |
+| Core app nonblank LoC (Sussudio/) | 96381 |
 | Sussudio.Tests .cs files | 26 |
-| Sussudio.Tests nonblank LoC | 60903 |
+| Sussudio.Tests nonblank LoC | 60917 |
 | Production .cs files under 60 lines | 1 (0.8%) |
 | Production .cs files under 80 lines | 4 (3.0%) |
 
@@ -29,7 +29,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | App | 1 | 270 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 716 | Sussudio/Services/Capture/DeviceService.cs |
 | LoggingJsonContext | 1 | 573 | Sussudio/AppRuntime.cs |
-| MainWindow | 1 | 2547 | Sussudio/MainWindow.xaml.cs |
+| MainWindow | 1 | 2527 | Sussudio/MainWindow.xaml.cs |
 | SettingsJsonContext | 1 | 765 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | StatsWindow | 1 | 308 | Sussudio/StatsWindow.xaml.cs |
 
@@ -42,8 +42,8 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2938 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2899 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2685 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
-| 2547 | Sussudio/MainWindow.xaml.cs |
 | 2530 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
+| 2527 | Sussudio/MainWindow.xaml.cs |
 | 2518 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 2467 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs |
 | 2380 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
