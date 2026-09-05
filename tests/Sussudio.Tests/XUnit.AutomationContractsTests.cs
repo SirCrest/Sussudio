@@ -2570,7 +2570,9 @@ static partial class Program
         AssertContains(appRootSource, "private void App_UnhandledException(");
         AssertContains(appRootSource, "private void CurrentDomain_UnhandledException(");
         AssertContains(appRootSource, "private void TryEmergencyStopRecording(string source)");
-        AssertContains(appRootSource, "var task = viewModel.StopRecordingForEmergencyAsync();");
+        AssertContains(appRootSource, "() => viewModel.StopRecordingForEmergencyAsync(),");
+        AssertContains(appRootSource, "viewModel.MarkRecordingFinalizationUnresolved,");
+        AssertContains(appRootSource, "TimeSpan.FromSeconds(8));");
         AssertContains(appRootSource, "private const string SingleInstanceMutexName");
         AssertContains(appRootSource, "protected override void OnLaunched(");
         AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD second instance detected");
@@ -6132,7 +6134,8 @@ static partial class Program
         AssertContains(recordingStateText, "=> _sessionCoordinator.StopRecordingForEmergencyAsync(cancellationToken);");
         AssertContains(rootViewModelText, "internal Task StopRecordingForEmergencyAsync");
         AssertDoesNotContain(ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs"), "StopRecordingForEmergencyAsync");
-        AssertContains(appText, "var task = viewModel.StopRecordingForEmergencyAsync();");
+        AssertContains(appText, "() => viewModel.StopRecordingForEmergencyAsync(),");
+        AssertContains(appText, "var task = stopRecording();");
         AssertContains(appText, "if (e.IsTerminating || !recoverable)");
         AssertDoesNotContain(appText, "Task.Run(async () =>");
         AssertDoesNotContain(appText, "StopRecordingAndWaitAsync().ConfigureAwait(false)");

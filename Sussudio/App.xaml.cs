@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Sussudio.Services.Recording;
 
@@ -138,35 +139,53 @@ namespace Sussudio
                 var viewModel = mainWindow.ViewModel;
                 if (viewModel == null) return;
 
-                Logger.LogFatalBreadcrumb($"EMERGENCY_FINALIZE_ATTEMPT source={source}");
-                var task = viewModel.StopRecordingForEmergencyAsync();
-                var finished = task.Wait(TimeSpan.FromSeconds(8));
-                if (finished)
-                {
-                    try
-                    {
-                        task.GetAwaiter().GetResult();
-                    }
-                    catch (Exception inner)
-                    {
-                        viewModel.MarkRecordingFinalizationUnresolved(
-                            $"Emergency recording finalization failed after {source}: {inner.Message}");
-                        Logger.Log($"EMERGENCY_FINALIZE_INNER_FAIL msg={inner.Message}");
-                    }
-                }
-                else
-                {
-                    viewModel.MarkRecordingFinalizationUnresolved(
-                        $"Emergency recording finalization remained unresolved after the eight-second {source} deadline.");
-                }
-
-                Logger.LogFatalBreadcrumb(
-                    finished ? "EMERGENCY_FINALIZE_DONE" : "EMERGENCY_FINALIZE_TIMEOUT");
+                FinalizeRecordingForEmergency(
+                    () => viewModel.StopRecordingForEmergencyAsync(),
+                    viewModel.MarkRecordingFinalizationUnresolved,
+                    source,
+                    TimeSpan.FromSeconds(8));
             }
             catch (Exception ex)
             {
                 Logger.Log($"EMERGENCY_FINALIZE_OUTER_FAIL msg={ex.Message}");
             }
+        }
+
+        private static void FinalizeRecordingForEmergency(
+            Func<Task> stopRecording,
+            Action<string> markUnresolved,
+            string source,
+            TimeSpan timeout)
+        {
+            Logger.LogFatalBreadcrumb($"EMERGENCY_FINALIZE_ATTEMPT source={source}");
+            bool finished;
+            try
+            {
+                // Starting can fail synchronously, and Wait throws for a faulted or
+                // canceled task. Both must reach recovery marking before termination.
+                var task = stopRecording();
+                finished = task.Wait(timeout);
+            }
+            catch (Exception ex)
+            {
+                var failure = ex is AggregateException aggregate && aggregate.InnerExceptions.Count == 1
+                    ? aggregate.InnerExceptions[0]
+                    : ex;
+                markUnresolved(
+                    $"Emergency recording finalization failed after {source}: {failure.Message}");
+                Logger.Log($"EMERGENCY_FINALIZE_INNER_FAIL msg={failure.Message}");
+                Logger.LogFatalBreadcrumb("EMERGENCY_FINALIZE_FAILED", ex);
+                return;
+            }
+
+            if (!finished)
+            {
+                markUnresolved(
+                    $"Emergency recording finalization remained unresolved after the eight-second {source} deadline.");
+            }
+
+            Logger.LogFatalBreadcrumb(
+                finished ? "EMERGENCY_FINALIZE_DONE" : "EMERGENCY_FINALIZE_TIMEOUT");
         }
 
         // Held for the process lifetime so the OS releases ownership on exit/crash.
