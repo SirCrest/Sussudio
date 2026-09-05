@@ -389,7 +389,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
-    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.GetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
+    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.ReconcileDepthAndGetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
     public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
     public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
     public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
@@ -1861,7 +1861,7 @@ internal sealed class VideoQueueLatencyTracker
         }
     }
 
-    public long GetOldestFrameAgeMs(int currentDepth)
+    public long ReconcileDepthAndGetOldestFrameAgeMs(int currentDepth)
     {
         lock (_enqueueTickLock)
         {

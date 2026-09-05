@@ -7,6 +7,12 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 
 ## What's in place
 
+- `XUnit.UiDispatchTests.cs` executes the complete linked production dispatch
+  source with minimal queue/view-model/logger substitutes in
+  `UiDispatchTestBoundaries.cs`. It proves managed cancellation and completion
+  behavior without claiming native WinUI dispatch coverage.
+- `XUnit.FlashbackRecordingBoundaryTests.cs` executes the app's actual recording
+  fence capture, retirement and wait methods through normal-constructor fixtures.
 - xUnit 2.9 + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` referenced
   in `Sussudio.Tests.csproj`. `OutputType=Exe` stays for the assembly-load smoke
   command; `dotnet test` owns all regression execution.

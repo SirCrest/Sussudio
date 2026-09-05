@@ -22,5 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
+    <!-- Execute the complete managed controller logic with test-only UI boundaries. -->
+    <Compile Include="..\..\Sussudio\Controllers\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
   </ItemGroup>
 </Project>

@@ -542,6 +542,7 @@ static partial class Program
         AssertContains(baselineText, $"| Sussudio.Tests .cs files | {sussudioTestFiles.Length} |");
         AssertContains(baselineText, $"| Sussudio.Tests nonblank LoC | {sussudioTestNonBlankLines} |");
         AssertDoesNotContain(baselineText, ".claude/worktrees");
+        AssertDoesNotContain(baselineText, ".desloppify/");
 
         return Task.CompletedTask;
     }

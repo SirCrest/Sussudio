@@ -12,6 +12,9 @@ internal sealed class WindowUiDispatchControllerContext
     public required MainViewModel ViewModel { get; init; }
 }
 
+// Queued window invocations let callers cancel their wait even after an action
+// starts: automation timeouts must not wait for a stalled compositor transition.
+// Cancellation does not stop the action itself.
 internal sealed class WindowUiDispatchController
 {
     private readonly WindowUiDispatchControllerContext _context;
@@ -233,6 +236,8 @@ internal sealed class MainViewModelUiDispatchControllerContext
     public required Action<string> SetStatusText { get; init; }
 }
 
+// View-model invocations cancel only before execution. Once admitted, their
+// completion tracks the operation, which owns any in-flight cancellation.
 internal sealed class MainViewModelUiDispatchController
 {
     private readonly MainViewModelUiDispatchControllerContext _context;

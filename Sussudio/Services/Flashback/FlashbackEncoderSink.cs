@@ -584,7 +584,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public string? LastVideoQueueRejectReason => Volatile.Read(ref _lastVideoQueueRejectReason);
 
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
-    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.GetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
+    public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.ReconcileDepthAndGetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
     public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
     public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
     public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;

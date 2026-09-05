@@ -44,30 +44,16 @@ public sealed class FlashbackSinkHardeningTests
         Assert.Contains("_microphonePacketsAccepted", capture);
         Assert.Contains("_gpuFramesEnqueued", capture);
 
-        var wait = global::Program.ExtractDeclaredMemberCode(source, "private async Task<bool> WaitForRecordingBoundaryAsync");
-        Assert.Contains("_videoPacketsRetired) >= boundary.VideoPacketsAccepted", wait);
-        Assert.Contains("_audioPacketsRetired) >= boundary.AudioPacketsAccepted", wait);
-        Assert.Contains("_microphonePacketsRetired) >= boundary.MicrophonePacketsAccepted", wait);
-        Assert.Contains("_gpuPacketsRetired) >= boundary.GpuPacketsAccepted", wait);
-        Assert.Contains("boundary.HasResolvedVideoEndPts", wait);
-        Assert.DoesNotContain("_videoQueueDepth) == 0", wait);
-        Assert.DoesNotContain("_audioQueueDepth) == 0", wait);
-        Assert.DoesNotContain("_microphoneQueueDepth) == 0", wait);
-        Assert.DoesNotContain("_gpuQueueDepth) == 0", wait);
-
         var audioEnqueue = global::Program.ExtractDeclaredMemberCode(source, "private bool TryEnqueueAudioPacket");
+        Assert.Contains("lock (_videoQueueSync)", audioEnqueue);
+        Assert.Contains("lock (_videoQueueSync)", global::Program.ExtractDeclaredMemberCode(source, "private VideoEnqueueResult TryEnqueueVideoPacket"));
+        Assert.Contains("lock (_videoQueueSync)", global::Program.ExtractDeclaredMemberCode(source, "private VideoEnqueueResult TryEnqueueGpuPacket"));
         Assert.Contains("Interlocked.Increment(ref acceptedPackets)", audioEnqueue);
         Assert.Contains("Interlocked.Increment(ref retiredPackets)", audioEnqueue);
         Assert.Contains("Interlocked.Increment(ref _videoPacketsRetired)", source);
         Assert.Contains("Interlocked.Increment(ref _gpuPacketsRetired)", source);
         Assert.Contains("Interlocked.Increment(ref _audioPacketsRetired)", source);
         Assert.Contains("Interlocked.Increment(ref _microphonePacketsRetired)", source);
-
-        var fence = global::Program.ExtractDeclaredMemberCode(source, "private sealed class RecordingBoundaryFence");
-        Assert.Contains("CaptureAlreadyRetiredVideoPts", fence);
-        Assert.Contains("ObserveVideoRetirement", fence);
-        Assert.Contains("Interlocked.CompareExchange", fence);
-        Assert.Contains("Math.Max(videoPtsTicks, gpuPtsTicks)", fence);
 
         var videoDrain = global::Program.ExtractDeclaredMemberCode(source, "private bool DrainVideoPackets");
         Assert.Contains("var pts = OnVideoFrameEncoded()", videoDrain);
