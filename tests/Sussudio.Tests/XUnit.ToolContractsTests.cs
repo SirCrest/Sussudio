@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -7030,7 +7030,9 @@ static partial class Program
         AssertDoesNotContain(executionText, "new DiagnosticSessionLiveStateWriter(");
 
         AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure");
-        AssertContains(agentMapText, "initial snapshot state, live-state handoff, run context disposal, scenario/completion context construction");
+        AssertContains(agentMapText, "initial snapshot state, baseline snapshot capture");
+        AssertContains(agentMapText, "live-state handoff, run-context disposal");
+        AssertContains(agentMapText, "scenario/completion context construction");
         AssertContains(cleanupPlanText, "`DiagnosticSessionRunContext.cs`");
         AssertContains(cleanupPlanText, "owns the cohesive mutable per-run context");
         AssertContains(cleanupPlanText, "initial\nsnapshot state and capture, live-state writer handoff, disposal");

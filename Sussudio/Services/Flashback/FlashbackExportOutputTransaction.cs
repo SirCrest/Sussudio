@@ -71,13 +71,16 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
     internal static bool TryReserve(
         string outputPath,
         out FlashbackExportOutputTransaction transaction,
-        out string failureMessage)
+        out string failureMessage,
+        out string failureCode)
     {
         transaction = null!;
+        failureCode = FlashbackExportFailureCodes.Failed;
         var outputDirectory = Path.GetDirectoryName(outputPath);
         if (string.IsNullOrWhiteSpace(outputDirectory))
         {
             failureMessage = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
+            failureCode = FlashbackExportFailureCodes.InvalidOutputPath;
             return false;
         }
 
@@ -138,17 +141,20 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
         return false;
     }
 
-    internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage)
-        => TryPublishCore(outputPath, out outputBytes, out failureMessage, TryValidateCompletedOutputFile);
+    internal bool TryPublish(string outputPath, out long outputBytes, out string failureMessage, out string failureCode)
+        => TryPublishCore(outputPath, out outputBytes, out failureMessage, out failureCode, TryValidateCompletedOutputFile);
 
     private bool TryPublishCore(
         string outputPath,
         out long outputBytes,
         out string failureMessage,
+        out string failureCode,
         CompletedOutputValidator validateOutput)
     {
+        failureCode = FlashbackExportFailureCodes.Failed;
         if (!validateOutput(TemporaryPath, out outputBytes, out _))
         {
+            failureCode = outputBytes == 0 ? FlashbackExportFailureCodes.NoMediaWritten : FlashbackExportFailureCodes.OutputWriteFailed;
             failureMessage = outputBytes == 0
                 ? $"Flashback export failed: temporary output file is empty before replacing '{outputPath}'."
                 : $"Flashback export failed: temporary output file length unavailable before replacing '{outputPath}'.";
@@ -158,7 +164,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
 
         try
         {
-            MoveTempFileToOutputPath(outputPath);
+            MoveTempFileToOutputPath(outputPath, out failureCode);
         }
         catch (IOException ex)
         {
@@ -168,6 +174,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
 
         if (!validateOutput(outputPath, out outputBytes, out failureMessage))
         {
+            failureCode = outputBytes == 0 ? FlashbackExportFailureCodes.NoMediaWritten : FlashbackExportFailureCodes.OutputWriteFailed;
             Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN path='{outputPath}' reason='{failureMessage}'");
             return false;
         }
@@ -336,25 +343,30 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
         }
     }
 
-    private void MoveTempFileToOutputPath(string outputPath)
+    private void MoveTempFileToOutputPath(string outputPath, out string failureCode)
     {
-        if (!TryMoveTempFileToOutputPath(outputPath, out var failureMessage))
+        if (!TryMoveTempFileToOutputPath(outputPath, out var failureMessage, out failureCode))
         {
             Abandon();
             throw new IOException(failureMessage);
         }
     }
 
-    private bool TryMoveTempFileToOutputPath(string outputPath, out string failureMessage)
+    private bool TryMoveTempFileToOutputPath(string outputPath, out string failureMessage, out string failureCode)
     {
+        failureCode = FlashbackExportFailureCodes.Failed;
         if (!File.Exists(TemporaryPath))
         {
+            failureCode = FlashbackExportFailureCodes.OutputWriteFailed;
             failureMessage = $"Temporary export file was not created: '{TemporaryPath}'.";
             return false;
         }
 
         if (!TryOpenVerifiedHandle(out var handle, out var ownershipFailure, out var lastError))
         {
+            failureCode = string.IsNullOrWhiteSpace(ownershipFailure)
+                ? FlashbackExportFailureCodes.OutputWriteFailed
+                : FlashbackExportFailureCodes.Failed;
             failureMessage = string.IsNullOrWhiteSpace(ownershipFailure)
                 ? $"Temporary export file was not created: '{TemporaryPath}'."
                 : ownershipFailure;
@@ -365,6 +377,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
         {
             if (File.Exists(outputPath) || Directory.Exists(outputPath))
             {
+                failureCode = FlashbackExportFailureCodes.InvalidOutputPath;
                 failureMessage = CreateDestinationExistsMessage(outputPath);
                 return false;
             }
@@ -375,8 +388,10 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
                 return true;
             }
 
+            var destinationExists = IsDestinationExistsError(lastError) || File.Exists(outputPath) || Directory.Exists(outputPath);
+            failureCode = destinationExists ? FlashbackExportFailureCodes.InvalidOutputPath : FlashbackExportFailureCodes.Failed;
             failureMessage =
-                IsDestinationExistsError(lastError) || File.Exists(outputPath) || Directory.Exists(outputPath)
+                destinationExists
                     ? CreateDestinationExistsMessage(outputPath)
                     : $"Flashback export failed: could not move temporary output file to '{outputPath}' safely ({renameFailure}).";
             return false;

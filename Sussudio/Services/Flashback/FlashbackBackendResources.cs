@@ -235,10 +235,9 @@ internal sealed class FlashbackBackendResources
             return exportResult;
         }
 
-        return FinalizeResult.Failure(
-            exportResult.OutputPath,
-            exportResult.StatusMessage,
-            exportResult.PreservedArtifacts.Concat(endResult.PreservedArtifacts));
+        return exportResult.AsFailureWithArtifacts(
+            exportResult.PreservedArtifacts.Concat(endResult.PreservedArtifacts),
+            exportResult.RecoveryPath);
     }
 
     public void AttachProducers(FlashbackProducerAttachRequest request)

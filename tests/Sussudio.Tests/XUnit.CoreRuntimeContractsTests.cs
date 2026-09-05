@@ -2559,7 +2559,7 @@ static partial class Program
         AssertContains(agentMapText, "owns video ingest/source-reader/WASAPI playback");
         AssertContains(agentMapText, "and reader/transport projections, recording-integrity summary projection,");
         AssertContains(agentMapText, "HDR pipeline/warmup projection, source-telemetry detail/frame-rate-origin/age/");
-        AssertContains(agentMapText, "private assembly handoff models,");
+        AssertContains(agentMapText, "their private handoff models,");
         AssertContains(agentMapText, "final DTO construction.");
         AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` now samples");
         AssertContains(cleanupPlanText, "final `CaptureRuntimeSnapshot` DTO construction");

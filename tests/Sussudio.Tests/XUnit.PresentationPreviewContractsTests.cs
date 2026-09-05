@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -2219,7 +2219,7 @@ static partial class Program
         AssertDoesNotContain(agentMapText, "D3D11PreviewRenderer.Metrics.cs");
         AssertContains(agentMapText, "D3D11PreviewRenderer.cs");
         AssertContains(agentMapText, "shared-device reset consumption/rebind");
-        AssertContains(agentMapText, "queued-frame render dispatch");
+        AssertContains(agentMapText, "pending-frame consumption/render");
         AssertDoesNotContain(cleanupPlanText, "D3D11PreviewRenderer.RenderThread.cs");
         AssertDoesNotContain(cleanupPlanText, "D3D11PreviewRenderer.Metrics.cs");
         AssertContains(cleanupPlanText, "D3D11PreviewRenderer.cs");

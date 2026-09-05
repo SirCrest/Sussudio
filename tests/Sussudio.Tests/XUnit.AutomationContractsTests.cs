@@ -5792,7 +5792,7 @@ static partial class Program
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
         AssertContains(dispatcherText, "var force = GetBool(payload, \"force\") ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
-        AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage)");
+        AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
         AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
@@ -10921,7 +10921,7 @@ static partial class Program
         AssertContains(backendSnapshotMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
         AssertOccursBefore(backendSnapshotMethod, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(flashbackBackendText, "outerPauseApplied = bufferManager != null;");
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", inPoint, outPoint);");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", FlashbackExportFailureCodes.Cancelled, inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
         AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
@@ -10943,7 +10943,7 @@ static partial class Program
         AssertContains(captureServiceText, "RecordLastFlashbackExportResult(exportId, failure);");
         AssertContains(captureServiceText, "private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
         AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
-        AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
+        AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        string failureCode,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
         AssertContains(captureServiceText, "_lastExportResult = result;");
         AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
@@ -10955,21 +10955,26 @@ static partial class Program
         AssertContains(captureServiceText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
         AssertContains(captureServiceText, "var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested\n                ? \"Flashback export cancelled.\"\n                : ex.Message;");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name}");
-        AssertContains(captureServiceText, "var failure = FinalizeResult.Failure(outputPath, statusMessage);");
+        AssertContains(captureServiceText, "var failure = FlashbackExportFailureCodes.Create(outputPath, statusMessage,");
+        AssertContains(captureServiceText, "ex is OperationCanceledException && ct.IsCancellationRequested");
+        AssertContains(captureServiceText, "FlashbackExportFailureCodes.FromException(ex)");
         AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
         AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
         AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
-        AssertContains(captureServiceText, "ClassifyFlashbackExportFailureKind(result.StatusMessage)");
-        AssertContains(captureServiceText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
-        AssertContains(captureServiceText, "return \"UnavailableDuringRecording\";");
-        AssertContains(captureServiceText, "return \"BufferInactive\";");
-        AssertContains(captureServiceText, "ContainsFlashbackExportFailureText(statusMessage, \"buffer has no active file\")");
-        AssertContains(captureServiceText, "return \"InvalidOutputPath\";");
-        AssertContains(captureServiceText, "return \"NoMediaWritten\";");
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
+        AssertContains(captureServiceText, "ClassifyFlashbackExportFailureKind(result)");
+        AssertContains(captureServiceText, "internal static string ClassifyFlashbackExportFailureKind(FinalizeResult result)");
+        var failureCodesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportFailureCodes.cs");
+        AssertContains(captureServiceText, "FlashbackExportFailureCodes.Classify(result)");
+        AssertContains(failureCodesText, "UnavailableDuringRecording => \"UnavailableDuringRecording\"");
+        AssertContains(failureCodesText, "BufferInactive => \"BufferInactive\"");
+        AssertContains(failureCodesText, "InputUnavailable => \"InputUnavailable\"");
+        AssertContains(failureCodesText, "InvalidOutputPath => \"InvalidOutputPath\"");
+        AssertContains(failureCodesText, "NoMediaWritten => \"NoMediaWritten\"");
+        AssertDoesNotContain(captureServiceText, "ContainsFlashbackExportFailureText");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", FlashbackExportFailureCodes.BufferInactive, inPoint, outPoint);");
         AssertContains(plannerText, "internal static FlashbackExportRangeResolution ResolveRange(");
         AssertContains(plannerText, "internal static FlashbackExportLiveEdgePlan PlanLiveEdge(");
         AssertContains(plannerText, "internal static FlashbackExportRequestPlan CreateRequest(");
@@ -10978,14 +10983,14 @@ static partial class Program
         AssertContains(captureServiceText, "private static string? TryGetFullPath(string? path)");
         AssertContains(captureServiceText, "FLASHBACK_PATH_NORMALIZE_WARN");
         AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
-        AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\");\n        }");
+        AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", FlashbackExportFailureCodes.Cancelled);\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\", FlashbackExportFailureCodes.InvalidRequest);\n        }");
         AssertRegex(
             dispatcherText,
             "if \\(!double\\.IsFinite\\(seconds\\) \\|\\|\\n\\s*seconds <= 0 \\|\\|\\n\\s*seconds > TimeSpan\\.MaxValue\\.TotalSeconds\\)",
             "Flashback export duration guard");
         AssertContains(dispatcherText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(captureServiceText, "? \"Cancelled\"");
-        AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
+        AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(FinalizeResult result)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
         AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
         AssertContains(captureServiceText, "DisposeCoordinationLocksBestEffort();");

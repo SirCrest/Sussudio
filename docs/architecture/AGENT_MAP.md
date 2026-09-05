@@ -52,7 +52,7 @@ mentions the moved files.
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, health, cadence, and runtime DTOs. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Recording options, outcomes, statistics, and integrity DTOs. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. |
-| App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces. |
+| App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces, separate from `Sussudio.Automation.Contracts` wire/protocol contracts. |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.Audio.cs`, `LibAvEncoder.VideoFrames.cs`, `LibAvRecordingSink.cs`, `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`, `InProcessRecordingStructureVerifier.cs` | Encoder lifecycle, audio/video input, sink queues, and verification. See [recording](#recording). |
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
@@ -892,6 +892,10 @@ Entry points:
   export locking, FFmpeg input/output context setup, stream-template/layout
   validation, public request routing, packet pumping/rebasing, progress/pacing,
   result shaping, and FFmpeg error formatting.
+- `FlashbackExportFailureCodes.cs` owns export failure codes and their existing
+  automation categories. Producers attach codes to `FinalizeResult`; diagnostics
+  and automation classify those codes without interpreting display messages or
+  user paths. Native export exceptions retain the code through catch boundaries.
 - `FlashbackExportOutputTransaction.cs` owns one export's filesystem lifetime:
   unique temporary-file reservation, identity checks, abandoned-output cleanup,
   stale-temp cleanup, validation, and no-replace publication. The exporter

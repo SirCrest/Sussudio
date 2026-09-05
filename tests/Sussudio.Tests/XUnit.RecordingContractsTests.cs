@@ -943,6 +943,7 @@ public class RecordingArtifactManagerTests
 // just resolve the type via its public/internal name.
 //
 // SussudioAssembly resolves the staged assembly independently for xUnit.
+[Collection(RecoveryEnvironmentCollection.Name)]
 public class RecordingContractsTests
 {
     [Fact]
@@ -2149,7 +2150,7 @@ static partial class Program
         AssertDoesNotContain(stopRecordingBackendRouter, "OperationCanceledException? flashbackCancellationException = null;");
         AssertDoesNotContain(stopRecordingBackendRouter, "var sink = _recordingSink;");
         AssertContains(flashbackStopRecordingBackend, "OperationCanceledException? flashbackCancellationException = null;");
-        AssertContains(flashbackStopRecordingBackend, "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");");
+        AssertContains(flashbackStopRecordingBackend, "fbResult = FlashbackExportFailureCodes.Create(fbOutputPath, \"Flashback recording finalize cancelled.\", FlashbackExportFailureCodes.Cancelled);");
         AssertContains(flashbackStopRecordingBackend, "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))");
         AssertContains(flashbackStopRecordingBackend, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
         AssertContains(flashbackStopRecordingBackend, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
@@ -2180,7 +2181,7 @@ static partial class Program
             "_lastRecordingIntegrity = cleanupPending");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
-            "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");",
+            "fbResult = FlashbackExportFailureCodes.Create(fbOutputPath, \"Flashback recording finalize cancelled.\", FlashbackExportFailureCodes.Cancelled);",
             "_recordingStopwatch.Stop();");
         AssertOccursBefore(
             flashbackStopRecordingBackend,
@@ -2269,8 +2270,8 @@ static partial class Program
     private static void AssertFlashbackBackendCleanupPolicies(string captureServiceSource, string flashbackBackendSource)
     {
         AssertContains(captureServiceSource, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
-        AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback export cancelled.\", StringComparison.Ordinal)");
-        AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback recording finalize cancelled.\", StringComparison.Ordinal)");
+        AssertContains(captureServiceSource, "result.FailureCode == FlashbackExportFailureCodes.Cancelled");
+        AssertDoesNotContain(captureServiceSource, "string.Equals(result.StatusMessage,");
         AssertContains(captureServiceSource, "private void PublishRecordingStartedOutcome(RecordingContext recordingContext)");
         AssertContains(captureServiceSource, "private void PrepareActiveRecordingRecoveryJournal(");
         AssertContains(captureServiceSource, "private void PublishRecordingFinalizedOutcome(FinalizeResult result, bool updateOutputPath)");

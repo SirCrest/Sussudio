@@ -977,7 +977,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var exportResult = await _flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
         var failureKind = exportResult.Succeeded
             ? string.Empty
-            : CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage);
+            : CaptureService.ClassifyFlashbackExportFailureKind(exportResult);
         return CreateResponse(
             correlationId,
             exportResult.StatusMessage ?? (exportResult.Succeeded ? "Export complete." : "Export failed."),

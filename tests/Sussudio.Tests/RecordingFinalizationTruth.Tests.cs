@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Sussudio.Tests;
 
+[Collection(RecoveryEnvironmentCollection.Name)]
 public sealed class RecordingFinalizationTruthTests
 {
     public RecordingFinalizationTruthTests()
