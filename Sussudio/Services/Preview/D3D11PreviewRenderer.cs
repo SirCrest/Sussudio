@@ -376,7 +376,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             frame.SequenceNumber,
             tracking.PreviewPresentId,
             tracking.SchedulerSubmitTick,
-            sourcePtsTicks: 0,
+            sourcePtsTicks: tracking.SourcePtsTicks,
             frameLease: frame,
             countForPresentCadence: tracking.CountForPresentCadence));
     }

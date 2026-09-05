@@ -162,6 +162,10 @@ public sealed class PresentationPreviewD3DPacingContractsTests
         => global::Program.D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration();
 
     [Fact]
+    public Task LeasedSubmissionPreservesTracking()
+        => global::Program.D3D11PreviewRenderer_LeasedSubmissionPreservesTracking();
+
+    [Fact]
     public Task FrameCaptureCancellationClearsPendingRequest()
         => global::Program.D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest();
 
@@ -2316,6 +2320,55 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+
+    internal static Task D3D11PreviewRenderer_LeasedSubmissionPreservesTracking()
+    {
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var pendingFrameType = RequireNestedType(rendererType, "PendingFrame");
+        var queueType = typeof(System.Collections.Concurrent.ConcurrentQueue<>).MakeGenericType(pendingFrameType);
+        var queue = Activator.CreateInstance(queueType)!;
+        var renderer = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(rendererType);
+        using var frameReady = new System.Threading.ManualResetEventSlim(false);
+        SetPrivateField(renderer, "_lifecycleLock", new object());
+        SetPrivateField(renderer, "_pendingFrames", queue);
+        SetPrivateField(renderer, "_frameReadyEvent", frameReady);
+        SetPrivateField(renderer, "_renderThread", System.Threading.Thread.CurrentThread);
+        SetPrivateField(renderer, "_maxPendingFrames", 4);
+
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
+        var pool = new TrackingArrayPool();
+        using var owner = (IDisposable)CreatePooledVideoFrame(
+            frameType, Enum.Parse(formatType, "Nv12"), 77L, 100L, 110L, 16, 16, 384, pool);
+        using var lease = (IDisposable)frameType.GetMethod("AddLease")!.Invoke(owner, null)!;
+        var trackingType = RequireType("Sussudio.Services.Contracts.PreviewFrameTracking");
+        var tracking = Activator.CreateInstance(trackingType, 999L, 888L, 55L, 200L, 123456L, false)!;
+        var drop = rendererType.GetMethod("DropPendingFrames")!;
+        try
+        {
+            rendererType.GetMethod("SubmitRawFrameLease")!.Invoke(renderer, new[] { (object)lease, false, tracking });
+            var pending = ((IEnumerable)queue).Cast<object>().Single();
+            AssertEqual(123456L, GetLongProperty(pending, "SourcePtsTicks"), "leased source PTS");
+            AssertEqual(100L, GetLongProperty(pending, "ArrivalTick"), "lease arrival is authoritative");
+            AssertEqual(77L, GetLongProperty(pending, "SourceSequenceNumber"), "lease sequence is authoritative");
+            AssertEqual(55L, GetLongProperty(pending, "PreviewPresentId"), "tracking present identity");
+            AssertEqual(200L, GetLongProperty(pending, "SchedulerSubmitTick"), "tracking scheduler tick");
+            AssertEqual(false, GetBoolProperty(pending, "CountForPresentCadence"), "tracking cadence policy");
+            Assert.Same(lease, GetPropertyValue(pending, "FrameLease"));
+            AssertEqual(123456L, GetLongPrivateField(renderer, "_lastSubmittedSourcePtsTicks"), "submitted PTS diagnostic");
+            owner.Dispose();
+            AssertEqual(0, pool.ReturnCount, "queue retains leased buffer");
+            AssertEqual(1, (int)drop.Invoke(renderer, new object[] { "test-drain" })!, "queued lease drained");
+            AssertEqual(123456L, GetLongPrivateField(renderer, "_lastDroppedSourcePtsTicks"), "dropped PTS diagnostic");
+            AssertEqual(1, pool.ReturnCount, "drain returns buffer once");
+        }
+        finally
+        {
+            // The thread is a queue-fixture sentinel; never stop this renderer.
+            drop.Invoke(renderer, new object[] { "test-cleanup" });
+        }
+        return Task.CompletedTask;
+    }
 
     internal static Task D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration()
     {
