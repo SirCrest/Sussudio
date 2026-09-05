@@ -39,6 +39,36 @@ public sealed class AutomationAppSurfaceContractsTests
     public Task DisplayFormattersMapSourceHdrStates()
         => global::Program.DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates();
 
+    [Theory]
+    [InlineData(-1L, "0.##", "0 B")]
+    [InlineData(0L, "0.##", "0 B")]
+    [InlineData(1023L, "0.##", "1023 B")]
+    [InlineData(1024L, "0.##", "1 KB")]
+    [InlineData(1572864L, "0.##", "1.5 MB")]
+    [InlineData(1610612736L, "0", "2 GB")]
+    [InlineData(1099511627776L, "0.##", "1 TB")]
+    public void RecordingSizeUsesBinaryUnitsAndRequestedPrecision(long bytes, string format, string expected)
+    {
+        var formatter = SussudioAssembly.Load().GetType("Sussudio.DisplayFormatters", throwOnError: true)!;
+        var method = formatter.GetMethod("FormatBytes", BindingFlags.Public | BindingFlags.Static)!;
+        Assert.Equal(expected, method.Invoke(null, new object[] { bytes, format }));
+    }
+
+    [Theory]
+    [InlineData(-1.0, "0 bps")]
+    [InlineData(0.0, "0 bps")]
+    [InlineData(999.0, "999 bps")]
+    [InlineData(1000.0, "1 Kbps")]
+    [InlineData(1000000.0, "1 Mbps")]
+    [InlineData(12500000.0, "12 Mbps")]
+    [InlineData(1000000000.0, "1 Gbps")]
+    public void RecordingBitrateUsesDecimalUnitsAndWholeNumbers(double bitsPerSecond, string expected)
+    {
+        var formatter = SussudioAssembly.Load().GetType("Sussudio.DisplayFormatters", throwOnError: true)!;
+        var method = formatter.GetMethod("FormatBitrate", BindingFlags.Public | BindingFlags.Static)!;
+        Assert.Equal(expected, method.Invoke(null, new object[] { bitsPerSecond }));
+    }
+
     [Fact]
     public Task ProjectFilePreservesEnglishOnlyPublishLocalePolicy()
         => global::Program.ProjectFile_PreservesEnglishOnlyPublishLocalePolicy();
