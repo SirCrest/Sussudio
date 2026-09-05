@@ -7,6 +7,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 
 ## What's in place
 
+- `XUnit.CaptureBindingTests.cs` executes linked capture-controller orchestration
+  with passive UI/model boundaries, including selection queues and device actions.
 - `XUnit.AudioControlBindingTests.cs` executes the complete linked audio controller
   source with passive event/property boundaries in `AudioControlTestBoundaries.cs`.
   It covers managed binding and presentation logic, not native WinUI rendering.

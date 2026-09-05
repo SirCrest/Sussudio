@@ -25,5 +25,6 @@
     <!-- Execute the complete managed controller logic with test-only UI boundaries. -->
     <Compile Include="..\..\Sussudio\Controllers\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Audio\AudioControlBindingController.cs" Link="Production\AudioControlBindingController.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\Capture\CaptureBindingControllers.cs" Link="Production\CaptureBindingControllers.cs" />
   </ItemGroup>
 </Project>

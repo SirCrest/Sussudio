@@ -43,5 +43,6 @@ namespace Sussudio
     internal static class Logger
     {
         public static void LogException(Exception exception) { }
+        public static void Log(string message) { }
     }
 }

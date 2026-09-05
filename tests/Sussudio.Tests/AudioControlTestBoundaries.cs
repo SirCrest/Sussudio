@@ -26,11 +26,13 @@ namespace Microsoft.UI.Xaml
     public class UIElement
     {
         public double Opacity { get; set; } = 1;
+        public Visibility Visibility { get; set; } = Visibility.Visible;
     }
 
     public class FrameworkElement : UIElement
     {
         public double Width { get; set; }
+        public double Height { get; set; }
         public double ActualWidth { get; set; }
         public double ActualHeight { get; set; }
         public event EventHandler<SizeChangedEventArgs>? SizeChanged;
@@ -73,6 +75,8 @@ namespace Microsoft.UI.Xaml.Controls.Primitives
 
         public event EventHandler? Checked;
         public event EventHandler? Unchecked;
+        public event EventHandler? Click;
+        public void RaiseClick() => Click?.Invoke(this, EventArgs.Empty);
     }
 }
 
@@ -83,11 +87,7 @@ namespace Microsoft.UI.Xaml.Controls
         public bool IsEnabled { get; set; } = true;
     }
 
-    public sealed class CheckBox : Primitives.ToggleButton
-    {
-        public event EventHandler? Click;
-        public void RaiseClick() => Click?.Invoke(this, EventArgs.Empty);
-    }
+    public sealed class CheckBox : Primitives.ToggleButton { }
 
     public sealed class Slider : Control
     {
@@ -117,6 +117,9 @@ namespace Microsoft.UI.Xaml.Controls
 
     public sealed class ComboBox : Control
     {
+        // Collection identity only: no native ItemsSource selection side effects.
+        public object? ItemsSource { get; set; }
+        public List<object> Items { get; } = new();
         private object? _selectedItem;
         public object? SelectedItem
         {
