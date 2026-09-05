@@ -7,6 +7,9 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 
 ## What's in place
 
+- `XUnit.AudioControlBindingTests.cs` executes the complete linked audio controller
+  source with passive event/property boundaries in `AudioControlTestBoundaries.cs`.
+  It covers managed binding and presentation logic, not native WinUI rendering.
 - `XUnit.LoggerTests.cs` executes isolated production loggers against temporary
   files, covering drain, saturation, fatal writes, rotation and I/O failures.
 - `XUnit.AppEmergencyFinalizationTests.cs` executes the actual App emergency-stop

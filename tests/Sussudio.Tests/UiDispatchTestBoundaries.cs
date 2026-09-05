@@ -7,7 +7,7 @@ namespace Microsoft.UI.Dispatching
 {
     public delegate void DispatcherQueueHandler();
 
-    public sealed class DispatcherQueue
+    public sealed partial class DispatcherQueue
     {
         private readonly Queue<DispatcherQueueHandler> _callbacks = new();
 
@@ -32,7 +32,7 @@ namespace Microsoft.UI.Dispatching
 
 namespace Sussudio.ViewModels
 {
-    public sealed class MainViewModel
+    public sealed partial class MainViewModel
     {
         public string StatusText { get; set; } = string.Empty;
     }
