@@ -456,8 +456,8 @@ internal sealed record FlashbackExportRequest
     /// <summary>Segment file paths for multi-segment export, or null for single-file export.</summary>
     public IReadOnlyList<string>? SegmentPaths { get; init; }
 
-    /// <summary>Single .ts input path for single-file export. Ignored when SegmentPaths is set.</summary>
-    public string? InputTsPath { get; init; }
+    /// <summary>Single input file. Ignored when Segments or SegmentPaths contains entries.</summary>
+    public string? InputPath { get; init; }
 
     public required TimeSpan InPoint { get; init; }
     public required TimeSpan OutPoint { get; init; }

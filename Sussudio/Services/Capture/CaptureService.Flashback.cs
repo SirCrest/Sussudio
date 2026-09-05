@@ -1989,7 +1989,7 @@ public partial class CaptureService
         {
             Logger.Log(
                 "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK " +
-                $"path='{requestPlan.Request!.InputTsPath}' in_ms={(long)inPoint.TotalMilliseconds} " +
+                $"path='{requestPlan.Request!.InputPath}' in_ms={(long)inPoint.TotalMilliseconds} " +
                 $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
         }
 

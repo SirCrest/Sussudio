@@ -278,7 +278,7 @@ public sealed class FlashbackModelsTests
                     SetterExpectation.InitOnly,
                     NullabilityExpectation.Nullable,
                     NullabilityExpectation.NotNull),
-                String("InputTsPath", SetterExpectation.InitOnly, NullabilityExpectation.Nullable),
+                String("InputPath", SetterExpectation.InitOnly, NullabilityExpectation.Nullable),
                 RequiredProperty("InPoint", typeof(TimeSpan), SetterExpectation.InitOnly),
                 RequiredProperty("OutPoint", typeof(TimeSpan), SetterExpectation.InitOnly),
                 RequiredString("OutputPath", SetterExpectation.InitOnly),
@@ -339,14 +339,14 @@ public sealed class FlashbackModelsTests
         exportSegments.SetValue(exportSegment, 0);
         Set(exportRequest, "Segments", exportSegments);
         Set(exportRequest, "SegmentPaths", new[] { "a.ts", "b.ts" });
-        Set(exportRequest, "InputTsPath", "single.ts");
+        Set(exportRequest, "InputPath", "single.ts");
         Set(exportRequest, "InPoint", TimeSpan.FromSeconds(2));
         Set(exportRequest, "OutPoint", TimeSpan.FromSeconds(12));
         Set(exportRequest, "OutputPath", "clip.mp4");
         Set(exportRequest, "FastStart", false);
         Assert.Equal(1, Count(Get(exportRequest, "Segments")!));
         Assert.Equal(2, Count(Get(exportRequest, "SegmentPaths")!));
-        Assert.Equal("single.ts", Get<string>(exportRequest, "InputTsPath"));
+        Assert.Equal("single.ts", Get<string>(exportRequest, "InputPath"));
         Assert.Equal(TimeSpan.FromSeconds(12), Get<TimeSpan>(exportRequest, "OutPoint"));
         Assert.False(Get<bool>(exportRequest, "FastStart"));
         Assert.Null(Get(exportRequest, "AdaptiveThrottleDelayMsProvider"));
@@ -985,7 +985,7 @@ static partial class Program
         var nonexistentInput = Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid():N}.ts");
         var outputPath = Path.Combine(Path.GetTempPath(), $"output_{Guid.NewGuid():N}.mp4");
         var request = Activator.CreateInstance(requestType)!;
-        SetPropertyBackingField(request, "InputTsPath", nonexistentInput);
+        SetPropertyBackingField(request, "InputPath", nonexistentInput);
         SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
         SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(10));
         SetPropertyBackingField(request, "OutputPath", outputPath);
@@ -1017,7 +1017,7 @@ static partial class Program
         try
         {
             var request = Activator.CreateInstance(requestType)!;
-            SetPropertyBackingField(request, "InputTsPath", tempInput);
+            SetPropertyBackingField(request, "InputPath", tempInput);
             SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
             SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(10));
             SetPropertyBackingField(request, "OutputPath", "");
@@ -1054,7 +1054,7 @@ static partial class Program
         try
         {
             var request = Activator.CreateInstance(requestType)!;
-            SetPropertyBackingField(request, "InputTsPath", tempInput);
+            SetPropertyBackingField(request, "InputPath", tempInput);
             SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
             SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(10));
             SetPropertyBackingField(request, "OutputPath", outputDirectory);
@@ -1988,7 +1988,7 @@ static partial class Program
         AssertContains(executionText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
         AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
         AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
         AssertContains(sourceText, "thread.Priority = previousPriority;");
@@ -2582,7 +2582,7 @@ static partial class Program
 
             exporter = Activator.CreateInstance(exporterType)!;
             var request = Activator.CreateInstance(requestType)!;
-            SetPropertyBackingField(request, "InputTsPath", inputPath);
+            SetPropertyBackingField(request, "InputPath", inputPath);
             SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
             SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(1));
             SetPropertyBackingField(request, "OutputPath", outputPath);

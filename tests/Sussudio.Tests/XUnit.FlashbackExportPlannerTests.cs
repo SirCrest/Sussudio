@@ -195,13 +195,25 @@ public sealed class FlashbackExportPlannerTests
         Assert.Equal("output.mp4", Get<string>(request, "OutputPath"));
     }
 
-    [Fact]
-    public void RequestUsesActiveFileOnlyWhenNoSegmentsExist()
+    [Theory]
+    [InlineData("active.ts")]
+    [InlineData("active.mp4")]
+    public void RequestUsesActiveFileOnlyWhenNoSegmentsExist(string activePath)
     {
-        var requestPlan = CreateRequest(null, Array.Empty<object>(), "active.ts");
+        var requestPlan = CreateRequest(null, Array.Empty<object>(), activePath);
 
         Assert.True(Get<bool>(requestPlan, "UsesActiveFileFallback"));
-        Assert.Equal("active.ts", Get<object>(Get<object>(requestPlan, "Request"), "InputTsPath"));
+        var request = Get<object>(requestPlan, "Request");
+        Assert.Equal(activePath, Get<string>(request, "InputPath"));
+        Assert.Null(GetNullable(request, "Segments"));
+        Assert.Null(GetNullable(request, "SegmentPaths"));
+
+        var segment = New(PathSnapshotType, "one.ts", "C:\\segments\\one.ts");
+        var segmentedPlan = CreateRequest(new[] { segment }, Array.Empty<object>(), activePath);
+        Assert.False(Get<bool>(segmentedPlan, "UsesActiveFileFallback"));
+        var segmentedRequest = Get<object>(segmentedPlan, "Request");
+        Assert.Null(GetNullable(segmentedRequest, "InputPath"));
+        Assert.Single(Get<System.Collections.IEnumerable>(segmentedRequest, "Segments").Cast<object>());
     }
 
     [Fact]

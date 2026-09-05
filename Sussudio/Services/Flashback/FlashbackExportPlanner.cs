@@ -141,7 +141,7 @@ internal static class FlashbackExportPlanner
             return FlashbackExportRequestPlan.Ready(
                 new FlashbackExportRequest
                 {
-                    InputTsPath = activeFilePath,
+                    InputPath = activeFilePath,
                     InPoint = inPoint,
                     OutPoint = outPoint,
                     OutputPath = outputPath,

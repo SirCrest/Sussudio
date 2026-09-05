@@ -662,7 +662,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     /// Exports a flashback range to .mp4 based on the request parameters.
     /// Uses multi-segment export when <see cref="FlashbackExportRequest.Segments"/> or
     /// <see cref="FlashbackExportRequest.SegmentPaths"/> is set,
-    /// otherwise falls back to single-file export from <see cref="FlashbackExportRequest.InputTsPath"/>.
+    /// otherwise falls back to single-file export from <see cref="FlashbackExportRequest.InputPath"/>.
     /// </summary>
     public Task<FinalizeResult> ExportAsync(
         FlashbackExportRequest request,
@@ -706,17 +706,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
-        return ExportSingleAsync(request.InputTsPath!, request.InPoint, request.OutPoint,
+        return ExportSingleAsync(request.InputPath!, request.InPoint, request.OutPoint,
             request.OutputPath, request.FastStart, request.Force, progress, ct);
     }
 
     /// <summary>
-    /// Exports a time range from the flashback .ts file to an .mp4 file.
+    /// Exports a time range from a single Flashback input file to an .mp4 file.
     /// Seeks to the nearest keyframe before <paramref name="inPoint"/> and copies packets
     /// until <paramref name="outPoint"/> is reached.
     /// </summary>
     private Task<FinalizeResult> ExportSingleAsync(
-        string inputTsPath,
+        string inputPath,
         TimeSpan inPoint,
         TimeSpan outPoint,
         string outputPath,
@@ -741,13 +741,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return RunWithBackgroundPriority(
                 () => RunWithAdaptiveThrottle(
                     adaptiveThrottleDelayMsProvider,
-                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),
+                    () => ExportCore(inputPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "single_export"));
         });
     }
 
     private FinalizeResult ExportCore(
-        string inputTsPath,
+        string inputPath,
         TimeSpan inPoint,
         TimeSpan outPoint,
         string outputPath,
@@ -763,9 +763,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return CreateCancelledExportResult(outputPath);
         }
 
-        if (string.IsNullOrWhiteSpace(inputTsPath) || !File.Exists(inputTsPath))
+        if (string.IsNullOrWhiteSpace(inputPath) || !File.Exists(inputPath))
         {
-            var message = $"Flashback export failed: input file not found '{inputTsPath}'.";
+            var message = $"Flashback export failed: input file not found '{inputPath}'.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
             return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.InputUnavailable);
         }
@@ -783,7 +783,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         outputPath = normalizedOutputPath;
 
-        if (IsSamePath(inputTsPath, outputPath))
+        if (IsSamePath(inputPath, outputPath))
         {
             var message = $"Flashback export failed: output path must not overwrite source segment '{outputPath}'.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
@@ -813,7 +813,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     return FlashbackExportFailureCodes.Create(outputPath, tempOutputFailure, tempOutputFailureCode);
                 }
 
-                if (IsSamePath(inputTsPath, outputTransaction.TemporaryPath))
+                if (IsSamePath(inputPath, outputTransaction.TemporaryPath))
                 {
                     var message = $"Flashback export failed: temporary output path must not overwrite source segment '{outputTransaction.TemporaryPath}'.";
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
@@ -822,10 +822,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                 LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
-                Logger.Log($"FLASHBACK_EXPORT_START input='{inputTsPath}' in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
+                Logger.Log($"FLASHBACK_EXPORT_START input='{inputPath}' in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
                 ReportProgress(progress, new ExportProgress(0, 1, 0), "single_start");
 
-                OpenInput(inputTsPath);
+                OpenInput(inputPath);
                 ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
                 if (!TryGetInputStreamCount(_activeInputContext, "single_export", out var streamCount, out var streamCountFailure))
                 {
@@ -870,7 +870,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 Logger.Log(
                     $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
                 ReportProgress(progress, new ExportProgress(1, 1, 100.0), "single_complete");
-                return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from .ts");
+                return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from input file");
             }
             catch (OperationCanceledException)
             {
@@ -1230,7 +1230,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     }
 
     /// <summary>
-    /// Exports a time range spanning multiple .ts segment files to a single .mp4 file.
+    /// Exports a time range spanning multiple segment files to a single .mp4 file.
     /// Opens segments sequentially, remapping PTS for continuous output.
     /// </summary>
     private Task<FinalizeResult> ExportSegmentsAsync(
