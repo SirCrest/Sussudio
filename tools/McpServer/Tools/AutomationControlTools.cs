@@ -99,35 +99,10 @@ public static class DeviceTools
 public static class CaptureOptionsTools
 {
     [McpServerTool(UseStructuredContent = true), Description("Get structured capture options and current selections, including devices, audio inputs, formats, resolutions, frame rates, presets, split encode modes, video formats, and UI-facing automation state.")]
-    public static async Task<object> get_capture_options(PipeClient pipeClient)
+    public static async Task<CallToolResult> get_capture_options(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetCaptureOptions).ConfigureAwait(false);
-        if (!AutomationSnapshotFormatter.IsSuccess(response))
-        {
-            return CreateError(response);
-        }
-
-        if (response.TryGetProperty("Data", out var data))
-        {
-            return data.Clone();
-        }
-
-        return new
-        {
-            success = false,
-            message = "Capture options data was not available."
-        };
-    }
-
-    private static object CreateError(JsonElement response)
-    {
-        return new
-        {
-            success = false,
-            message = AutomationSnapshotFormatter.Get(response, "Message", "Command failed."),
-            errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty),
-            status = AutomationSnapshotFormatter.Get(response, "Status", "error")
-        };
+        return McpToolResultFactory.FromStructuredResponse(response, "Data", "Capture options data was not available.");
     }
 }
 

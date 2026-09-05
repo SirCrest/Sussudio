@@ -2625,6 +2625,9 @@ Primary owners:
   cleanup text, Flashback export/playback text, MJPEG timing activation,
   decode/copy/callback/per-decoder timing, compressed queue/drop/reorder/
   pipeline timing, and preview-jitter snapshot text.
+- `tools/McpServer/Tools/ToolCommandFormatter.cs` owns shared command text and
+  MCP result construction, including required-object validation and structured
+  payload/error outcomes for raw app state and capture options.
 - `tools/McpServer/Tools/AppStateTools.cs` owns the public app-state,
   diagnostic-event, memory/GC/thread-pool, and diagnostic-session MCP entry
   points while preserving the `AppStateTools`, `DiagnosticsTools`,

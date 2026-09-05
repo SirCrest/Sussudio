@@ -1139,6 +1139,18 @@ internal static class ToolFormatterTestAssembly
 
 public sealed class McpToolSurfaceContractsTests
 {
+    [Theory]
+    [InlineData("AppStateTools", "get_app_state_raw", "GetSnapshot", "Snapshot", "Snapshot data was not available.")]
+    [InlineData("CaptureOptionsTools", "get_capture_options", "GetCaptureOptions", "Data", "Capture options data was not available.")]
+    public Task StructuredQueries_PreservePayloadAndReportErrors(string type, string method, string command, string key, string missingMessage)
+        => global::Program.McpStructuredQueries_PreservePayloadAndReportErrors(type, method, command, key, missingMessage);
+
+    [Theory]
+    [InlineData("get_app_state_raw", "GetSnapshot", "Snapshot")]
+    [InlineData("get_capture_options", "GetCaptureOptions", "Data")]
+    public Task StructuredQueries_HostPreservesWireShape(string method, string command, string key)
+        => global::Program.McpStructuredQueries_HostPreservesWireShape(method, command, key);
+
     [Fact]
     public Task RawAppStateKeepsCaptureOptionsSeparate()
         => global::Program.McpToolSurface_KeepsCaptureOptionsSeparateFromRawState();
@@ -2102,6 +2114,153 @@ static partial class Program
             "[ERROR] SetStatsVisible: stats blocked",
             failFastResult,
             "ToolCommandFormatter stops batch after first failed mutation");
+    }
+
+    private const string StructuredQueryTestPayload = """
+        {"SessionState":"Ready","Nested":{"MixedCase":17,"Nullable":null,"Items":[true,"value",{"Name":"Camera"}]}}
+        """;
+
+    internal static async Task McpStructuredQueries_PreservePayloadAndReportErrors(
+        string type, string method, string command, string key, string missingMessage)
+    {
+        var pipeName = NewMcpToolPipeName(method);
+        var pipeClient = CreateMcpPipeClient(pipeName);
+        var toolType = RequireMcpType("McpServer.Tools." + type);
+        // Missing and every non-object JSON kind must fail even on a successful envelope.
+        string?[] payloads = { StructuredQueryTestPayload, StructuredQueryTestPayload, null, "null", "[]", "\"text\"", "42", "true", "false" };
+        var results = new List<object>();
+        var requests = await CapturePipeRequestsAsync(pipeName, payloads.Length, async () =>
+        {
+            foreach (var unused in payloads)
+                results.Add(await InvokeMcpToolResultAsync(toolType, method, pipeClient).ConfigureAwait(false));
+        }, index => "{\"Success\":" + (index == 1 ? "false" : "true") +
+            ",\"Message\":\"query evidence\",\"ErrorCode\":\"query-code\"" +
+            (payloads[index] is null ? "" : ",\"" + key + "\":" + payloads[index]) + "}").ConfigureAwait(false);
+
+        for (var index = 0; index < results.Count; index++)
+        {
+            AssertCommandRequest(requests[index], command);
+            var result = results[index];
+            AssertEqual(index != 0, GetMcpToolResultIsError(result), $"{method} case {index} isError");
+            var structured = GetPropertyValue(result, "StructuredContent");
+            if (index == 0)
+            {
+                AssertEqual(true, structured is not null, "structured success payload exists");
+                AssertStructuredQueryPayload(structured!.ToString()!, key);
+                AssertStructuredQueryPayload(GetMcpToolResultText(result), key);
+                var content = (System.Collections.IEnumerable)GetPropertyValue(result, "Content")!;
+                AssertEqual(1, content.Cast<object>().Count(), "one text content block");
+            }
+            else
+            {
+                AssertEqual(true, structured is null, "error does not expose successful payload");
+                var text = GetMcpToolResultText(result);
+                AssertContains(text, "query evidence");
+                AssertContains(text, "query-code");
+                if (index > 1)
+                    AssertContains(text, missingMessage);
+            }
+        }
+
+        var factory = RequireMcpType("McpServer.Tools.McpToolResultFactory")
+            .GetMethod("FromStructuredResponse", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var documentType = factory.GetParameters()[0].ParameterType.Assembly.GetType("System.Text.Json.JsonDocument")!;
+        var parse = documentType.GetMethods().Single(candidate => candidate.Name == "Parse" &&
+            candidate.GetParameters().Length == 2 && candidate.GetParameters()[0].ParameterType == typeof(string));
+        object ownedResult;
+        using (var source = (IDisposable)parse.Invoke(null, new[]
+        {
+            (object)("{\"Success\":true,\"" + key + "\":" + StructuredQueryTestPayload + "}"),
+            Activator.CreateInstance(parse.GetParameters()[1].ParameterType)!
+        })!)
+            ownedResult = factory.Invoke(null, new[] { documentType.GetProperty("RootElement")!.GetValue(source)!, key, missingMessage })!;
+        // Structured content and its text fallback must survive disposal of the source document.
+        AssertStructuredQueryPayload(GetPropertyValue(ownedResult, "StructuredContent")!.ToString()!, key);
+        AssertStructuredQueryPayload(GetMcpToolResultText(ownedResult), key);
+    }
+
+    private static void AssertStructuredQueryPayload(string json, string key)
+    {
+        using var document = JsonDocument.Parse(json);
+        AssertEqual(JsonValueKind.Object, document.RootElement.ValueKind, "structured root is object");
+        AssertEqual(false, document.RootElement.TryGetProperty(key, out _), "no automation envelope wrapper");
+        AssertEqual(false, document.RootElement.TryGetProperty("result", out _), "no SDK result wrapper");
+        AssertEqual(true, System.Text.Json.Nodes.JsonNode.DeepEquals(
+            System.Text.Json.Nodes.JsonNode.Parse(StructuredQueryTestPayload),
+            System.Text.Json.Nodes.JsonNode.Parse(json)), "structured payload preserves names, nesting, values and nulls");
+    }
+
+    internal static async Task McpStructuredQueries_HostPreservesWireShape(string method, string command, string key)
+    {
+        var assemblyPath = global::Program.McpServerAssemblyRelativePath;
+        LoadToolAssemblyIsolated(assemblyPath);
+        var pipeName = NewMcpToolPipeName("host-" + method);
+        using var process = StartMcpServerProcess(assemblyPath, pipeName);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            await WriteJsonRpcLineAsync(process,
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"Sussudio.Tests","version":"1.0"}}}""", cts.Token).ConfigureAwait(false);
+            using var initialized = await ReadJsonRpcResponseAsync(process, 1, cts.Token).ConfigureAwait(false);
+            await WriteJsonRpcLineAsync(process,
+                """{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}""", cts.Token).ConfigureAwait(false);
+            await WriteJsonRpcLineAsync(process,
+                """{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}""", cts.Token).ConfigureAwait(false);
+            using var listed = await ReadJsonRpcResponseAsync(process, 2, cts.Token).ConfigureAwait(false);
+            var tools = listed.RootElement.GetProperty("result").GetProperty("tools");
+            AssertNoToolSchemaExposesPipeClient(tools);
+            var schema = tools.EnumerateArray().Single(tool => tool.GetProperty("name").GetString() == method);
+            AssertEqual("object", schema.GetProperty("inputSchema").GetProperty("type").GetString(), "query input schema");
+            if (schema.TryGetProperty("outputSchema", out var outputSchema))
+            {
+                AssertEqual("object", outputSchema.GetProperty("type").GetString(), "query output schema");
+                if (outputSchema.TryGetProperty("properties", out var properties))
+                    AssertEqual(false, properties.TryGetProperty("result", out _), "schema does not advertise nested result");
+            }
+
+            var requests = await CapturePipeRequestsAsync(pipeName, 3, async () =>
+            {
+                for (var index = 0; index < 3; index++)
+                {
+                    var id = index + 3;
+                    await WriteJsonRpcLineAsync(process, JsonSerializer.Serialize(new
+                    {
+                        jsonrpc = "2.0", id, method = "tools/call",
+                        @params = new { name = method, arguments = new { } }
+                    }), cts.Token).ConfigureAwait(false);
+                    using var response = await ReadJsonRpcResponseAsync(process, id, cts.Token).ConfigureAwait(false);
+                    var result = response.RootElement.GetProperty("result");
+                    AssertEqual(index != 0, result.TryGetProperty("isError", out var error) && error.GetBoolean(), "host top-level isError");
+                    AssertEqual(false, result.TryGetProperty("result", out _), "host has no nested result");
+                    var content = result.GetProperty("content");
+                    AssertEqual(1, content.GetArrayLength(), "host one content block");
+                    AssertEqual("text", content[0].GetProperty("type").GetString(), "host text content type");
+                    var text = content[0].GetProperty("text").GetString()!;
+                    if (index == 0)
+                    {
+                        AssertStructuredQueryPayload(result.GetProperty("structuredContent").GetRawText(), key);
+                        AssertStructuredQueryPayload(text, key);
+                    }
+                    else
+                    {
+                        AssertContains(text, "host evidence");
+                        AssertContains(text, "host-code");
+                        AssertEqual(false, result.TryGetProperty("structuredContent", out var structured) && structured.ValueKind != JsonValueKind.Null,
+                            "host error does not expose payload");
+                    }
+                }
+            }, index => "{\"Success\":" + (index == 1 ? "false" : "true") +
+                ",\"Message\":\"host evidence\",\"ErrorCode\":\"host-code\",\"" + key + "\":" +
+                (index == 2 ? "null" : StructuredQueryTestPayload) + "}").ConfigureAwait(false);
+            foreach (var request in requests)
+                AssertCommandRequest(request, command);
+        }
+        finally
+        {
+            await StopMcpServerProcessAsync(process).ConfigureAwait(false);
+            await stderr.ConfigureAwait(false);
+        }
     }
 
     internal static async Task McpHostToolSchema_UsesPipeClientAsService()

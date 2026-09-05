@@ -123,6 +123,29 @@ internal static class ToolCommandFormatter
 // Creates MCP CallToolResult objects from automation responses.
 internal static class McpToolResultFactory
 {
+    internal static CallToolResult FromStructuredResponse(JsonElement response, string propertyName, string missingMessage)
+    {
+        if (!AutomationSnapshotFormatter.IsSuccess(response))
+        {
+            return FromResponse(response, GetMessage(response));
+        }
+
+        if (!response.TryGetProperty(propertyName, out var payload) || payload.ValueKind != JsonValueKind.Object)
+        {
+            var message = GetMessage(response, string.Empty);
+            var errorCode = AutomationSnapshotFormatter.Get(response, "ErrorCode", string.Empty);
+            var text = missingMessage;
+            if (!string.IsNullOrWhiteSpace(message)) text += $"{Environment.NewLine}{message}";
+            if (!string.IsNullOrWhiteSpace(errorCode)) text += $"{Environment.NewLine}ErrorCode: {errorCode}";
+            return FromText(text, isError: true);
+        }
+
+        var json = payload.GetRawText();
+        var result = FromText(json);
+        result.StructuredContent = payload.Clone();
+        return result;
+    }
+
     internal static CallToolResult FromResponse(JsonElement response, string text)
     {
         var isError = !AutomationSnapshotFormatter.IsSuccess(response);
