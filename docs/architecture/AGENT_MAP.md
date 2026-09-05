@@ -660,8 +660,9 @@ Important entry points:
   preview sink assignment, live-preview suppression drains, MJPEG decoded
   preview-frame routing, raw preview submission, visual-cadence reset/recording
   helpers, fatal-error dedupe/signaling, recording and Flashback sink enqueue
-  helpers, recording and Flashback queue rejection accounting, legacy recording
-  encoder fallback adapters, Flashback recording sequence-gap accounting,
+  helpers, recording and Flashback queue rejection accounting, required raw/GPU
+  Try admission with optional lease transfer and raw-copy fallback, Flashback
+  recording sequence-gap accounting,
   the `FrameLedger` ring-buffer helper, source-reader cadence forwarding, MJPEG
   pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
   summary projection over the root capture fan-out state.

@@ -390,7 +390,7 @@ public partial class CaptureService
             _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
         _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
 
-        IGpuVideoFrameEncoder? gpuEncoder =
+        IGpuVideoFrameTryEncoder? gpuEncoder =
             (!isMjpegMode && activeLibAvSink.GpuEncodingEnabled)
                 ? activeLibAvSink
                 : null;

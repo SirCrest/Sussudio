@@ -800,7 +800,11 @@ static partial class Program
     {
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var leaseType = RequireType("Sussudio.Services.Contracts.PooledVideoFrameLease");
-        var leaseEncoderType = RequireType("Sussudio.Services.Contracts.IRawVideoFrameLeaseEncoder");
+        var leaseEncoderType = RequireType("Sussudio.Services.Contracts.IRawVideoFrameLeaseTryEncoder");
+        var leaseAdmission = leaseEncoderType.GetMethod("TryEnqueueRawVideoFrame", new[] { leaseType });
+        AssertNotNull(leaseAdmission, "lease Try admission contract");
+        AssertEqual(typeof(bool), leaseAdmission!.ReturnType, "lease admission returns acceptance");
+        AssertEqual(null, leaseEncoderType.Assembly.GetType("Sussudio.Services.Contracts.IRawVideoFrameLeaseEncoder"), "obsolete void lease contract removed");
         var pipelineEmitCallbackType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+EmitFrameCallback");
         var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
         var jitterBufferType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");

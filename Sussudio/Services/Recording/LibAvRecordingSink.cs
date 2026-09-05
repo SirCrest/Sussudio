@@ -18,7 +18,7 @@ namespace Sussudio.Services.Recording;
 // Bounded-queue recording sink that isolates capture callbacks from libav.
 // Capture threads enqueue raw/GPU/CUDA video and audio quickly; one encoding
 // task drains the queues and serializes every LibAvEncoder call.
-public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder, ICudaVideoFrameEncoder
+public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder, ICudaVideoFrameEncoder
 {
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
@@ -1516,9 +1516,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         return false;
     }
-
-    void IRawVideoFrameLeaseEncoder.EnqueueRawVideoFrame(PooledVideoFrameLease frame)
-        => ((IRawVideoFrameLeaseTryEncoder)this).TryEnqueueRawVideoFrame(frame);
 
     bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)
     {

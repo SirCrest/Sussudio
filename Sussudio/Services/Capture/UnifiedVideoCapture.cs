@@ -26,8 +26,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private CancellationTokenSource? _readCts;
     private IPreviewFrameSink? _previewSink;
     private IRecordingSink? _recordingSink;
-    private IRawVideoFrameEncoder? _recordingEncoder;
-    private IGpuVideoFrameEncoder? _gpuRecordingEncoder;
+    private IRawVideoFrameTryEncoder? _recordingEncoder;
+    private IGpuVideoFrameTryEncoder? _gpuRecordingEncoder;
     private FlashbackEncoderSink? _flashbackSink;
     private ParallelMjpegDecodePipeline? _mjpegPipeline;
     private MjpegPreviewJitterBuffer? _mjpegPreviewJitterBuffer;
@@ -134,8 +134,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
     public Task StartRecordingAsync(
         IRecordingSink sink,
-        IRawVideoFrameEncoder encoder,
-        IGpuVideoFrameEncoder? gpuEncoder = null)
+        IRawVideoFrameTryEncoder encoder,
+        IGpuVideoFrameTryEncoder? gpuEncoder = null)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(sink);
@@ -1295,9 +1295,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            var accepted = encoder is IRawVideoFrameTryEncoder tryEncoder
-                ? tryEncoder.TryEnqueueRawVideoFrame(frameData, expectedSize)
-                : TryLegacyRawVideoEnqueue(encoder, frameData, expectedSize);
+            var accepted = encoder.TryEnqueueRawVideoFrame(frameData, expectedSize);
             if (accepted)
             {
                 Interlocked.Increment(ref _videoFramesWrittenToSink);
@@ -1341,14 +1339,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            if (encoder is IRawVideoFrameLeaseEncoder leaseEncoder &&
+            if (encoder is IRawVideoFrameLeaseTryEncoder leaseEncoder &&
                 frame.TryAddLease(out var lease))
             {
                 try
                 {
-                    var accepted = leaseEncoder is IRawVideoFrameLeaseTryEncoder leaseTryEncoder
-                        ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
-                        : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
+                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease!);
                     lease = null;
                     if (accepted)
                     {
@@ -1363,9 +1359,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             }
             else
             {
-                var accepted = encoder is IRawVideoFrameTryEncoder tryEncoder
-                    ? tryEncoder.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize)
-                    : TryLegacyRawVideoEnqueue(encoder, frame.Memory.Span, expectedSize);
+                var accepted = encoder.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize);
                 if (accepted)
                 {
                     Interlocked.Increment(ref _videoFramesWrittenToSink);
@@ -1381,14 +1375,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    private void EnqueueGpuRecordingFrame(IGpuVideoFrameEncoder encoder, IntPtr texture, int subresource, long sourceSequence)
+    private void EnqueueGpuRecordingFrame(IGpuVideoFrameTryEncoder encoder, IntPtr texture, int subresource, long sourceSequence)
     {
         Interlocked.Increment(ref _recordingFramesDelivered);
         try
         {
-            var accepted = encoder is IGpuVideoFrameTryEncoder tryEncoder
-                ? tryEncoder.TryEnqueueGpuVideoFrame(texture, subresource)
-                : TryLegacyGpuVideoEnqueue(encoder, texture, subresource);
+            var accepted = encoder.TryEnqueueGpuVideoFrame(texture, subresource);
             if (accepted)
             {
                 Interlocked.Increment(ref _videoFramesWrittenToSink);
@@ -1401,24 +1393,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             RecordRecordingEnqueue(sourceSequence, accepted: false, reason: "exception");
             Logger.Log($"UNIFIED_VIDEO_GPU_RECORDING_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
-    }
-
-    private static bool TryLegacyRawVideoEnqueue(IRawVideoFrameEncoder encoder, ReadOnlySpan<byte> frameData, int expectedSize)
-    {
-        encoder.EnqueueRawVideoFrame(frameData, expectedSize);
-        return true;
-    }
-
-    private static bool TryLegacyLeaseVideoEnqueue(IRawVideoFrameLeaseEncoder encoder, PooledVideoFrameLease frame)
-    {
-        encoder.EnqueueRawVideoFrame(frame);
-        return true;
-    }
-
-    private static bool TryLegacyGpuVideoEnqueue(IGpuVideoFrameEncoder encoder, IntPtr texture, int subresource)
-    {
-        encoder.EnqueueGpuVideoFrame(texture, subresource);
-        return true;
     }
 
     private void RecordFlashbackEnqueue(long sourceSequence, bool accepted, string? reason)
@@ -1471,14 +1445,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            if (sink is IRawVideoFrameLeaseEncoder leaseEncoder &&
+            if (sink is IRawVideoFrameLeaseTryEncoder leaseEncoder &&
                 frame.TryAddLease(out var lease))
             {
                 try
                 {
-                    var accepted = leaseEncoder is IRawVideoFrameLeaseTryEncoder leaseTryEncoder
-                        ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
-                        : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
+                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease!);
                     lease = null;
                     RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber, accepted ? null : "queue_rejected");
                     RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");

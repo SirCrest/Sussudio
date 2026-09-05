@@ -1962,9 +1962,11 @@ static partial class Program
         string captureSnapshotsSource,
         string unifiedVideoCaptureSource)
     {
-        AssertContains(unifiedVideoCaptureSource, "encoder is IRawVideoFrameTryEncoder");
-        AssertContains(unifiedVideoCaptureSource, "leaseEncoder is IRawVideoFrameLeaseTryEncoder");
-        AssertContains(unifiedVideoCaptureSource, "encoder is IGpuVideoFrameTryEncoder");
+        AssertContains(unifiedVideoCaptureSource, "private IRawVideoFrameTryEncoder? _recordingEncoder;");
+        AssertContains(unifiedVideoCaptureSource, "encoder is IRawVideoFrameLeaseTryEncoder leaseEncoder");
+        AssertContains(unifiedVideoCaptureSource, "sink is IRawVideoFrameLeaseTryEncoder leaseEncoder");
+        AssertContains(unifiedVideoCaptureSource, "private IGpuVideoFrameTryEncoder? _gpuRecordingEncoder;");
+        AssertDoesNotContain(unifiedVideoCaptureSource, "TryLegacy");
         AssertContains(unifiedVideoCaptureSource, "BeginFlashbackRecordingAccounting");
         AssertContains(unifiedVideoCaptureSource, "RecordFlashbackRecordingAccounting");
         AssertContains(unifiedVideoCaptureSource, "sink.IsRecordingActive");
@@ -3232,7 +3234,7 @@ static partial class Program
 
         AssertContains(fanoutSource, "private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertContains(fanoutSource, "private void EnqueueRecordingFrame(PooledVideoFrame frame)");
-        AssertContains(fanoutSource, "private void EnqueueGpuRecordingFrame(IGpuVideoFrameEncoder encoder, IntPtr texture, int subresource, long sourceSequence)");
+        AssertContains(fanoutSource, "private void EnqueueGpuRecordingFrame(IGpuVideoFrameTryEncoder encoder, IntPtr texture, int subresource, long sourceSequence)");
         AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010, long sourceSequence)");
         AssertContains(fanoutSource, "private void EnqueueFlashbackFrame(PooledVideoFrame frame)");
         AssertContains(fanoutSource, "private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource, long sourceSequence)");

@@ -379,11 +379,10 @@ namespace Sussudio.Services.Contracts
         bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
     }
 
-    internal interface IRawVideoFrameLeaseEncoder
-    {
-        void EnqueueRawVideoFrame(PooledVideoFrameLease frame);
-    }
-
+    /// <summary>
+    /// On either normal return, the callee owns the lease, including disposal
+    /// when admission is rejected. The caller disposes its lease if the call throws.
+    /// </summary>
     internal interface IRawVideoFrameLeaseTryEncoder
     {
         bool TryEnqueueRawVideoFrame(PooledVideoFrameLease frame);

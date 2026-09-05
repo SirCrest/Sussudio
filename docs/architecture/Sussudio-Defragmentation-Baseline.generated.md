@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-05T15:01:42Z
+Generated UTC: 2026-09-05T15:11:50Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -8,11 +8,11 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Metric | Value |
 | --- | ---: |
 | Production .cs files | 133 |
-| Test .cs files | 27 |
+| Test .cs files | 28 |
 | Core app .cs files (Sussudio/) | 99 |
-| Core app nonblank LoC (Sussudio/) | 96390 |
-| Sussudio.Tests .cs files | 26 |
-| Sussudio.Tests nonblank LoC | 61208 |
+| Core app nonblank LoC (Sussudio/) | 96361 |
+| Sussudio.Tests .cs files | 27 |
+| Sussudio.Tests nonblank LoC | 61402 |
 | Production .cs files under 60 lines | 1 (0.8%) |
 | Production .cs files under 80 lines | 4 (3.0%) |
 
@@ -39,7 +39,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | ---: | --- |
 | 5031 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 3112 | Sussudio/ViewModels/MainViewModel.cs |
-| 2950 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
+| 2947 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2899 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2685 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
 | 2530 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
@@ -48,12 +48,12 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2467 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs |
 | 2380 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2103 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
-| 2097 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
+| 2094 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1948 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 1932 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1882 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 1808 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
-| 1798 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
+| 1770 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
 | 1745 | tools/Common/DiagnosticSessionResultBuilder.cs |
 | 1739 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1728 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |
