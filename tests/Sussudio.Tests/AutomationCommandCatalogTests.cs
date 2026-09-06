@@ -349,23 +349,27 @@ public sealed class AutomationCommandCatalogTests
     public void ValidatePathReturnsTheCallerSpellingRatherThanTheResolvedFullPath()
     {
         var root = CreateScratchDirectory();
-        var previous = Directory.GetCurrentDirectory();
         try
         {
-            Directory.SetCurrentDirectory(root);
-            const string relative = "relative-output";
+            // A denormalised but absolute spelling: GetFullPath collapses the "."
+            // segment, so the created directory and the returned string differ.
+            // Deliberately NOT done by changing the process working directory —
+            // that is process-wide state and races with tests in other collections
+            // that resolve repo-relative paths.
+            var denormalised = Path.Combine(root, ".", "relative-output");
+            var normalised = Path.GetFullPath(denormalised);
 
             var returned = AutomationCommandCatalog.ValidatePath(
-                AutomationCommandKind.SetOutputPath, "outputPath", relative);
+                AutomationCommandKind.SetOutputPath, "outputPath", denormalised);
 
             // Callers persist and echo back exactly what they passed in; silently
-            // rewriting it to an absolute path would change stored user settings.
-            Assert.Equal(relative, returned);
-            Assert.True(Directory.Exists(Path.Combine(root, relative)));
+            // rewriting it to a normalised path would change stored user settings.
+            Assert.Equal(denormalised, returned);
+            Assert.NotEqual(normalised, returned);
+            Assert.True(Directory.Exists(normalised));
         }
         finally
         {
-            Directory.SetCurrentDirectory(previous);
             TryDelete(root);
         }
     }
