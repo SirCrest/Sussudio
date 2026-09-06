@@ -26,6 +26,7 @@
     <Compile Include="..\..\Sussudio\Controllers\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
     <!-- Dependency-free production policies executed directly by their unit tests. -->
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewOutputSizePolicy.cs" Link="Production\PreviewOutputSizePolicy.cs" />
+    <Compile Include="..\..\Sussudio\Services\Automation\PreviewPacingSlowStageClassifier.cs" Link="Production\PreviewPacingSlowStageClassifier.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Audio\AudioControlBindingController.cs" Link="Production\AudioControlBindingController.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Capture\CaptureBindingControllers.cs" Link="Production\CaptureBindingControllers.cs" />
   </ItemGroup>
