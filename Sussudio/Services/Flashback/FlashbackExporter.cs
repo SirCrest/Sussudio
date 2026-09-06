@@ -145,7 +145,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         return FlashbackExportFailureCodes.Create(outputPath, message, FlashbackExportFailureCodes.Disposed);
     }
 
-    private static void ThrowIfError(int errorCode, string operation, string failureCode = FlashbackExportFailureCodes.Failed)
+    private static void ThrowIfError(int errorCode, string operation, string failureCode)
     {
         if (errorCode >= 0)
         {
@@ -673,7 +673,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             return Task.FromResult(FlashbackExportFailureCodes.Create(
                 string.Empty,
-                "Flashback export failed: request is required.", FlashbackExportFailureCodes.InvalidRequest));
+                "Flashback export failed: request is required.",
+                FlashbackExportFailureCodes.InvalidRequest));
         }
 
         lock (_lifetimeSync)
@@ -826,7 +827,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 ReportProgress(progress, new ExportProgress(0, 1, 0), "single_start");
 
                 OpenInput(inputPath);
-                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailureCodes.InputReadFailed);
                 if (!TryGetInputStreamCount(_activeInputContext, "single_export", out var streamCount, out var streamCountFailure))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{streamCountFailure}'");
@@ -1438,7 +1439,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         out string failureCode)
     {
         ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer", FlashbackExportFailureCodes.OutputWriteFailed);
-        ThrowIfError(CloseOutputIo(), "avio_closep");
+        ThrowIfError(CloseOutputIo(), "avio_closep", FlashbackExportFailureCodes.OutputWriteFailed);
 
         if (!outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode))
         {
@@ -1831,7 +1832,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         selectedVideoStreamIndex = -1;
         selectedStreamMap = Array.Empty<int>();
         failureMessage = "Flashback export failed: no usable segment template was found.";
-        failureCode = FlashbackExportFailureCodes.Failed;
+        failureCode = FlashbackExportFailureCodes.NoMediaWritten;
 
         var bestTemplateSegIdx = -1;
         string? bestTemplatePath = null;
@@ -1849,10 +1850,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             OpenInput(templatePath);
             try
             {
-                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+                ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailureCodes.InputReadFailed);
                 if (!TryGetInputStreamCount(_activeInputContext, "segment_template", out var candidateStreamCount, out var streamCountFailure))
                 {
                     Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP path='{Path.GetFileName(templatePath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
+                    failureMessage = streamCountFailure;
+                    failureCode = FlashbackExportFailureCodes.InvalidInputStream;
                     continue;
                 }
 
@@ -1908,7 +1911,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         OpenInput(bestTemplatePath);
         try
         {
-            ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+            ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailureCodes.InputReadFailed);
             if (!TryGetInputStreamCount(_activeInputContext, "segment_template", out var candidateStreamCount, out var streamCountFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP path='{Path.GetFileName(bestTemplatePath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
@@ -1951,6 +1954,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             selectedStreamCount = candidateStreamCount;
             selectedVideoStreamIndex = candidateVideoStreamIndex;
             Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SELECTED seg={bestTemplateSegIdx} path='{Path.GetFileName(bestTemplatePath)}' mapped_streams={bestMappedStreamCount}");
+            failureMessage = string.Empty;
+            failureCode = string.Empty;
             return true;
         }
         finally
@@ -1977,7 +1982,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         OpenInput(segmentPath);
-        ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+        ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info", FlashbackExportFailureCodes.InputReadFailed);
 
         if (!TryGetInputStreamCount(_activeInputContext, "segment_export", out currentStreamCount, out var streamCountFailure))
         {
@@ -2222,7 +2227,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (requestedSegmentSkips.TryCreateFailureMessage(out var skippedSegmentFailureMessage))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{skippedSegmentFailureMessage}'");
-            return new SegmentPacketWriteResult(FlashbackExportFailureCodes.Create(outputPath, skippedSegmentFailureMessage, FlashbackExportFailureCodes.Failed), 0);
+            return new SegmentPacketWriteResult(FlashbackExportFailureCodes.Create(outputPath, skippedSegmentFailureMessage, FlashbackExportFailureCodes.SegmentUnavailable), 0);
         }
 
         if (totalPackets == 0)

@@ -10,7 +10,7 @@ using Sussudio.ViewModels;
 namespace Sussudio.Controllers;
 
 /// <summary>
-/// Graph-built ports consumed by the capture settings automation controller.
+/// Capture selections and UI callbacks used to apply automation settings.
 /// </summary>
 internal sealed class MainViewModelCaptureSettingsAutomationControllerContext
 {
@@ -36,7 +36,7 @@ internal sealed class MainViewModelCaptureSettingsAutomationControllerContext
 }
 
 /// <summary>
-/// Owns automation-driven capture setting mutations and active-preview reinitialization.
+/// Applies capture settings from automation and reinitializes active preview when needed.
 /// </summary>
 internal sealed class MainViewModelCaptureSettingsAutomationController
 {
@@ -230,7 +230,7 @@ internal sealed class MainViewModelCaptureSettingsAutomationController
 }
 
 /// <summary>
-/// Graph-built ports consumed by the recording settings automation controller.
+/// Recording selections and backend callbacks used to apply automation settings.
 /// </summary>
 internal sealed class MainViewModelRecordingSettingsAutomationControllerContext
 {
@@ -259,7 +259,7 @@ internal sealed class MainViewModelRecordingSettingsAutomationControllerContext
 }
 
 /// <summary>
-/// Owns automation-driven recording setting mutations and their coordinator side effects.
+/// Applies recording settings from automation and updates the Flashback encoder when needed.
 /// </summary>
 internal sealed class MainViewModelRecordingSettingsAutomationController
 {

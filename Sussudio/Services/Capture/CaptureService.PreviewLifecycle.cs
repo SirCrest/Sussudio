@@ -548,7 +548,6 @@ public partial class CaptureService
             MicrophoneDeviceId = source.MicrophoneDeviceId,
             MicrophoneDeviceName = source.MicrophoneDeviceName,
             AudioPathMode = source.AudioPathMode,
-            PipelineOptions = source.PipelineOptions,
             ForceMjpegDecode = source.ForceMjpegDecode,
             FlashbackGpuDecode = source.FlashbackGpuDecode,
             FlashbackBufferMinutes = source.FlashbackBufferMinutes,

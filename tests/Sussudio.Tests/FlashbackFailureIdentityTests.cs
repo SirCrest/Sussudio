@@ -110,8 +110,8 @@ public sealed class FlashbackFailureIdentityTests
     }
 
     private static string Classify(object result)
-        => (string)RequireType("Sussudio.Services.Capture.CaptureService")
-            .GetMethod("ClassifyFlashbackExportFailureKind", BindingFlags.NonPublic | BindingFlags.Static)!
+        => (string)RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes")
+            .GetMethod("Classify", BindingFlags.NonPublic | BindingFlags.Static)!
             .Invoke(null, new object[] { result })!;
 
     private static Type RequireType(string name)

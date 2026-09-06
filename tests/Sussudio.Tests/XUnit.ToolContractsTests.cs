@@ -34,8 +34,8 @@ public sealed class AutomationSnapshotFormatterContractsTests
         => global::Program.AutomationSnapshotFormatter_RendersPreviewD3DSections();
 
     [Fact]
-    public Task SourceOwnershipIsSplit()
-        => global::Program.AutomationSnapshotFormatter_SourceOwnership_IsSplit();
+    public Task SourceOwnershipIsShared()
+        => global::Program.AutomationSnapshotFormatter_SourceOwnership_IsShared();
 }
 public sealed class SsctlFormatterContractsTests
 {
@@ -527,195 +527,17 @@ public sealed class SsctlFormatterContractsTests
     [Fact]
     public Task SourceOwnershipIsUnified()
     {
-        var ssctlFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
-        var ssctlSnapshotRootSource = ssctlFormatterSource;
-        var ssctlSnapshotFlashbackSource = ssctlSnapshotRootSource;
-        var ssctlSnapshotMjpegSource = ssctlSnapshotRootSource;
-        AssertContains(ssctlFormatterSource, "internal static class Formatters");
-        AssertDoesNotContain(ssctlFormatterSource, "partial class Formatters");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Common.cs")),
-            "ssctl shared result helpers live with the unified formatter owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.cs")),
-            "ssctl snapshot text lives with the unified formatter owner");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotStateSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotCaptureSettingsSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotAudioSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotVideoPipelineSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotFlashbackSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotDiagnosticLanesSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPerformanceSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotMemorySection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotCaptureCadenceSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotMjpegTimingSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotAvSyncSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotThreadHealthSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotSourceSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotStateSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Sussudio State ==\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotAudioSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Audio ==\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotCaptureSettingsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "private static string FormatSnapshotFrameRateSummary(JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "var selectedFriendlyFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"SelectedFriendlyFrameRate\", string.Empty);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotVideoPipelineSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Video Pipeline ==\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotRecordingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Recording ==\");");
-        AssertContains(ssctlSnapshotRootSource, "RecordingIntegrityStatus");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotDiagnosticLanesSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Diagnostics ==\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPerformanceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Performance ==\");");
-        AssertContains(ssctlSnapshotRootSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotMemorySection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Memory & GC ==\");");
-        AssertContains(ssctlSnapshotRootSource, "ProcessCpuPercent");
-        AssertContains(ssctlSnapshotRootSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotCaptureCadenceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Capture Cadence ==\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== AV Sync ==\");");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "var rendererMode = AutomationSnapshotFormatter.Get(snapshot, \"PreviewRendererMode\");");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewD3DSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "private static bool IsSnapshotPreviewD3DRendererMode(string rendererMode)");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DCpuTiming(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DPipelineLatency(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DFrameLatencyWait(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DFrameStats(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DFrameOwnership(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertOccursBefore(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DCpuTiming(builder, snapshot);", "AppendSnapshotPreviewD3DPipelineLatency(builder, snapshot);");
-        AssertOccursBefore(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DPipelineLatency(builder, snapshot);", "AppendSnapshotPreviewD3DFrameLatencyWait(builder, snapshot);");
-        AssertOccursBefore(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DFrameLatencyWait(builder, snapshot);", "AppendSnapshotPreviewD3DFrameStats(builder, snapshot);");
-        AssertOccursBefore(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DFrameStats(builder, snapshot);", "AppendSnapshotPreviewD3DFrameOwnership(builder, snapshot);");
-        AssertOccursBefore(ssctlSnapshotRootSource, "AppendSnapshotPreviewD3DFrameOwnership(builder, snapshot);", "AppendSnapshotPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewD3DCpuTiming(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "D3D CPU timing:");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewD3DPipelineLatency(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "D3D pipeline latency:");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewD3DFrameLatencyWait(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "D3D frame-latency wait:");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewD3DFrameOwnership(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "D3D Ownership:");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewD3DFrameStats(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "D3D DXGI stats:");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "AutomationSnapshotFormatter.AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotSourceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Source ==\");");
-        AssertContains(ssctlSnapshotRootSource, "var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotSourceReaderThreadHealthLine(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotWasapiCaptureThreadHealthLine(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "AppendSnapshotWasapiPlaybackThreadHealthLine(builder, snapshot);");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotSourceReaderThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "SourceReaderFrameChannelDepth");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotWasapiCaptureThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "WasapiCaptureCallbackSevereGapCount");
-        AssertContains(ssctlSnapshotRootSource, "private static void AppendSnapshotWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotRootSource, "WasapiPlaybackQueueDropCount");
-        AssertContains(ssctlSnapshotRootSource, "AudioBufferHealthStatus");
-        AssertContains(ssctlSnapshotRootSource, "AudioBufferUnderrunEvents");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackActive\", \"false\");");
-        AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackEncodingSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackPlaybackStatusSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackExportSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackPlaybackMetricsSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackEncodingStatusSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "AppendSnapshotFlashbackEncodingHealthSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackEncodingStatusSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Encoder: {encCodec}");
-        AssertContains(ssctlSnapshotFlashbackSource, "Temp Cache:");
-        AssertContains(ssctlSnapshotFlashbackSource, "Cleanup:");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackEncodingHealthSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Flashback Queue Latency:");
-        AssertContains(ssctlSnapshotFlashbackSource, "Flashback Backpressure:");
-        AssertContains(ssctlSnapshotFlashbackSource, "Flashback Failure:");
-        AssertContains(ssctlSnapshotFlashbackSource, "Flashback GPU Queue:");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Export: active=");
-        AssertContains(ssctlSnapshotFlashbackSource, "FlashbackExportThroughputBytesPerSec");
-        AssertContains(ssctlSnapshotFlashbackSource, "forceRotateFallbacks=");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Playback Commands:");
-        AssertContains(ssctlSnapshotFlashbackSource, "private static void AppendSnapshotFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotFlashbackSource, "Playback Decode:");
-        AssertContains(ssctlSnapshotFlashbackSource, "A/V Drift:");
-        AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegTimingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotMjpegSource, "var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
-        AssertContains(ssctlSnapshotMjpegSource, "AppendSnapshotMjpegDecodeTimingLines(builder, snapshot, mjpegDecodeSamples);");
-        AssertContains(ssctlSnapshotMjpegSource, "AppendSnapshotMjpegPipelineTimingLines(builder, snapshot, mjpegDecoderCount);");
-        AssertContains(ssctlSnapshotMjpegSource, "AppendSnapshotMjpegPreviewJitterSection(builder, snapshot);");
-        AssertContains(ssctlSnapshotMjpegSource, "AppendSnapshotMjpegPerDecoderTimingLines(builder, snapshot);");
-        AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegDecodeTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecodeSamples)");
-        AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegPipelineTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecoderCount)");
-        AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegPreviewJitterSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotMjpegSource, "private static void AppendSnapshotMjpegPerDecoderTimingLines(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(ssctlSnapshotMjpegSource, "Decode: avg=");
-        AssertContains(ssctlSnapshotMjpegSource, "Compressed Queue:");
-        AssertContains(ssctlSnapshotMjpegSource, "MJPEG Drop Reasons:");
-        AssertContains(ssctlSnapshotMjpegSource, "Pipeline: avg=");
-        AssertContains(ssctlSnapshotMjpegSource, "Decoder[{AutomationSnapshotFormatter.Get(worker, \"WorkerIndex\", \"?\")}]");
-        AssertContains(ssctlSnapshotMjpegSource, "Preview Jitter Latency:");
-        AssertContains(ssctlSnapshotMjpegSource, "Preview Jitter Underflow:");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.PreviewD3D.cs")),
-            "ssctl D3D preview snapshot text lives with the preview routing owner");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Snapshot.ThreadHealth.cs")),
-            "ssctl thread-health snapshot text lives with the root formatter flow");
-        AssertContains(ssctlFormatterSource, "public static string FormatDiagnostics");
-        AssertContains(ssctlFormatterSource, "public static string FormatOptions");
-        AssertContains(ssctlFormatterSource, "public static string FormatDeviceList");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Options.cs")),
-            "ssctl capture option and device-list output lives with the root formatter helpers");
-        AssertContains(ssctlFormatterSource, "public static string FormatTimeline");
-        AssertContains(ssctlFormatterSource, "var entries = ReadTimelineRows(data);");
-        AssertContains(ssctlFormatterSource, "return RenderTimeline(entries);");
-        AssertContains(ssctlFormatterSource, "private sealed class TimelineRow");
-        AssertContains(ssctlFormatterSource, "AutomationSnapshotFormatter.GetDouble(item, \"CaptureFps\")");
-        AssertContains(ssctlFormatterSource, "private static string RenderTimeline(IReadOnlyList<TimelineRow> entries)");
-        AssertContains(ssctlFormatterSource, "Performance Timeline ({entries.Count} samples)");
-        AssertContains(ssctlFormatterSource, "AppendTimelineTrendSummary(builder, entries);");
-        AssertContains(ssctlFormatterSource, "private static void AppendTimelineTrendSummary(StringBuilder builder, IReadOnlyList<TimelineRow> entries)");
-        AssertContains(ssctlFormatterSource, "== Trend Summary (first vs last sample) ==");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Timeline.cs")),
-            "ssctl timeline table and trend output lives with the root formatter helpers");
-        AssertContains(ssctlFormatterSource, "public static string FormatMemory");
-        AssertContains(ssctlFormatterSource, "public static string FormatResult");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Diagnostics.cs")),
-            "ssctl diagnostic-event output lives with the root formatter helpers");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "ssctl", "Formatters.Memory.cs")),
-            "ssctl standalone memory output lives with the root formatter helpers");
-        AssertContains(ssctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
-        AssertContains(ssctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
-        AssertContains(ssctlFormatterSource, "CaptureCommandCommandsCoalesced");
-        AssertContains(ssctlFormatterSource, "CaptureCommandLastOutcome");
-        AssertContains(ssctlFormatterSource, "CaptureCommandLastCorrelationId");
-        AssertContains(ssctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
-        AssertContains(ssctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
-        AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
+        var source = RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
+        AssertContains(source, "AutomationSnapshotFormatter.FormatCliSnapshot(snapshotResponse)");
+        AssertDoesNotContain(source, "AppendSnapshot");
+        AssertDoesNotContain(source, "== Sussudio State ==");
+        foreach (var entryPoint in new[]
+        {
+            "FormatDiagnostics", "FormatOptions", "FormatDeviceList", "FormatTimeline", "FormatMemory", "FormatResult"
+        })
+        {
+            AssertContains(source, $"public static string {entryPoint}");
+        }
 
         return Task.CompletedTask;
     }
@@ -876,26 +698,28 @@ public sealed class ToolFormatterContractsTests
     }
 
     [Fact]
-    public void SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
+    public void SnapshotFormatters_PreserveCliAndSharedDiagnosticFields()
     {
-        var mcpFields = ExtractSnapshotFields(RuntimeContractSource.ReadAutomationSnapshotFormatterSource());
-        var ssctlFields = ExtractSnapshotFields(RuntimeContractSource.ReadSsctlSnapshotFormatterSource());
+        var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
+        using var document = JsonDocument.Parse("""
+            {"Snapshot":{"FlashbackActive":true,"MjpegDecoderCount":2,
+            "MjpegPeakReorderDepth":3,"MjpegPeakCompressedQueueBytes":4096,"MjpegReorderRingForceDrops":7,
+            "WasapiPlaybackQueueDurationMs":1,"WasapiPlaybackActiveChunkDurationMs":2,
+            "WasapiPlaybackEndpointQueuedDurationMs":3,"WasapiPlaybackBufferedDurationMs":4,
+            "WasapiPlaybackStreamLatencyMs":5}}
+            """);
+        var shared = (string)RequireStaticMethod(formatterType, "FormatSnapshot")
+            .Invoke(null, new object[] { document.RootElement, false })!;
+        var cli = (string)RequireStaticMethod(formatterType, "FormatCliSnapshot")
+            .Invoke(null, new object[] { document.RootElement })!;
 
-        Assert.NotEmpty(mcpFields);
-        Assert.NotEmpty(ssctlFields);
-
-        var missingInSsctl = new List<string>();
-        foreach (var field in mcpFields)
-        {
-            if (!ssctlFields.Contains(field))
-            {
-                missingInSsctl.Add(field);
-            }
-        }
-
-        Assert.True(
-            missingInSsctl.Count == 0,
-            $"AutomationSnapshotFormatter references {missingInSsctl.Count} snapshot field(s) missing from ssctl Formatters: {string.Join(", ", missingInSsctl)}");
+        Assert.Contains("queueMs=1 activeMs=2 endpointMs=3 bufferedMs=4 streamLatencyMs=5", shared);
+        Assert.DoesNotContain("PeakBuffer=", shared);
+        Assert.DoesNotContain("== Flashback ==", shared);
+        Assert.Contains("PeakBuffer=3 PeakCompressedBytes=4096 ForceDrops=7", cli);
+        Assert.Contains("== Flashback ==", cli);
+        var cliWasapiLine = cli.Split('\n').Single(line => line.StartsWith("WASAPI Playback:", StringComparison.Ordinal));
+        Assert.DoesNotContain("queueMs=", cliWasapiLine);
     }
 
     private static Type RequireSharedToolType(string typeName)
@@ -10286,232 +10110,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task AutomationSnapshotFormatter_SourceOwnership_IsSplit()
+    internal static Task AutomationSnapshotFormatter_SourceOwnership_IsShared()
     {
-        var sharedFormatterSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
-        var sharedFormatterRootSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
-        var sharedFormatterCoreSectionsSource = sharedFormatterRootSource;
-        var sharedFormatterAudioSource = sharedFormatterRootSource;
-        var sharedFormatterRecordingSource = sharedFormatterRootSource;
-        var sharedFormatterProcessResourcesSource = sharedFormatterRootSource;
-        var sharedFormatterCaptureSettingsSource = sharedFormatterRootSource;
-        var sharedFormatterVideoPipelineSource = sharedFormatterRootSource;
-        var sharedFormatterDiagnosticsSource = sharedFormatterRootSource;
-        var sharedFormatterCaptureCadenceSource = sharedFormatterRootSource;
-        var sharedFormatterAvSyncSource = sharedFormatterCaptureCadenceSource;
-        var sharedFormatterSourceSource = sharedFormatterCaptureCadenceSource;
-        var sharedFormatterValuesSource = sharedFormatterRootSource;
-        var sharedFormatterDisplayValuesSource = sharedFormatterValuesSource;
-        var sharedFormatterFlashbackSource = sharedFormatterRootSource;
-        var sharedFormatterMjpegTimingSource = sharedFormatterRootSource;
-        var sharedFormatterPreviewSource = sharedFormatterCaptureCadenceSource;
-        var sharedFormatterPreviewD3DSource = sharedFormatterRootSource;
-        var sharedFormatterThreadHealthSource = sharedFormatterVideoPipelineSource;
-        AssertContains(sharedFormatterRootSource, "AppendStateSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendCaptureSettingsSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendAudioSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendVideoPipelineSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendRecordingSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendFlashbackSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendDiagnosticsSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendPerformanceSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendMemorySection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "AppendCaptureCadenceSection(builder, snapshot);");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Sussudio State ==\");");
-        AssertContains(sharedFormatterRootSource, "var selectedFriendlyFrameRate = Get(snapshot, \"SelectedFriendlyFrameRate\", string.Empty);");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Audio ==\");");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Video Pipeline ==\");");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Recording ==\");");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Diagnostics ==\");");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Performance ==\");");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Memory & GC ==\");");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Capture Cadence ==\");");
-        AssertContains(sharedFormatterRootSource, "RecordingIntegrityStatus");
-        AssertContains(sharedFormatterRootSource, "ProcessCpuPercent");
-        AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendStateSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCoreSectionsSource, "builder.AppendLine(\"== Sussudio State ==\");");
-        AssertContains(sharedFormatterCoreSectionsSource, "CaptureCommandLastCorrelationId");
-        AssertContains(sharedFormatterCaptureSettingsSource, "private static void AppendCaptureSettingsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCaptureSettingsSource, "private static string FormatFrameRateSummary(JsonElement snapshot)");
-        AssertContains(sharedFormatterCaptureSettingsSource, "SelectedFriendlyFrameRate");
-        AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendAudioSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCoreSectionsSource, "AudioFramesWrittenToSink");
-        AssertContains(sharedFormatterAudioSource, "private static void AppendAudioSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterAudioSource, "builder.AppendLine(\"== Audio ==\");");
-        AssertContains(sharedFormatterAudioSource, "AudioFramesWrittenToSink");
-        AssertContains(sharedFormatterVideoPipelineSource, "private static void AppendVideoPipelineSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterVideoPipelineSource, "builder.AppendLine(\"== Video Pipeline ==\");");
-        AssertContains(sharedFormatterVideoPipelineSource, "RecordingVideoQueueLatencyP99Ms");
-        AssertContains(sharedFormatterVideoPipelineSource, "AppendThreadHealthSection(builder, snapshot);");
-        AssertContains(sharedFormatterVideoPipelineSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterVideoPipelineSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCoreSectionsSource, "RecordingIntegrityStatus");
-        AssertContains(sharedFormatterRecordingSource, "private static void AppendRecordingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterRecordingSource, "builder.AppendLine(\"== Recording ==\");");
-        AssertContains(sharedFormatterRecordingSource, "RecordingIntegrityStatus");
-        AssertContains(sharedFormatterDiagnosticsSource, "private static void AppendDiagnosticsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterDiagnosticsSource, "builder.AppendLine(\"== Diagnostics ==\");");
-        AssertContains(sharedFormatterDiagnosticsSource, "DiagnosticEvidence");
-        AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendPerformanceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCoreSectionsSource, "private static void AppendMemorySection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCoreSectionsSource, "ProcessCpuPercent");
-        AssertContains(sharedFormatterProcessResourcesSource, "private static void AppendPerformanceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterProcessResourcesSource, "Pipeline Latency: {Get(snapshot, \"EstimatedPipelineLatencyMs\")}ms (app receive -> estimated visible)");
-        AssertContains(sharedFormatterProcessResourcesSource, "private static void AppendMemorySection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterProcessResourcesSource, "ProcessCpuPercent");
-        AssertContains(sharedFormatterProcessResourcesSource, "ThreadPoolWorkerAvailable");
-        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendCaptureCadenceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCaptureCadenceSource, "FormatFrameBudgetMs(snapshot, \"ExpectedCaptureFrameRate\")");
-        AssertContains(sharedFormatterCaptureCadenceSource, "MjpegPacketHashInputObservedFps");
-        AssertContains(sharedFormatterCaptureCadenceSource, "AppendMjpegTimingSection(builder, snapshot);");
-        AssertContains(sharedFormatterCaptureCadenceSource, "AppendAvSyncSection(builder, snapshot);");
-        AssertContains(sharedFormatterCaptureCadenceSource, "AppendPreviewSection(builder, snapshot);");
-        AssertContains(sharedFormatterCaptureCadenceSource, "AppendSourceSection(builder, snapshot);");
-        AssertContains(sharedFormatterValuesSource, "internal static bool IsSuccess(JsonElement response)");
-        AssertContains(sharedFormatterValuesSource, "response.TryGetProperty(\"Success\", out var success)");
-        AssertContains(sharedFormatterValuesSource, "internal static string Get(JsonElement element, string propertyName, string fallback = \"N/A\")");
-        AssertContains(sharedFormatterValuesSource, "internal static bool GetBool(JsonElement element, string propertyName)");
-        AssertContains(sharedFormatterValuesSource, "internal static string? GetString(JsonElement element, string propertyName)");
-        AssertContains(sharedFormatterValuesSource, "internal static int GetInt(JsonElement element, string propertyName, int fallback = 0)");
-        AssertContains(sharedFormatterValuesSource, "internal static double GetDouble(JsonElement element, string propertyName, double fallback = 0.0)");
-        AssertContains(sharedFormatterValuesSource, "internal static long GetLong(JsonElement element, string propertyName, long fallback = 0)");
-        AssertContains(sharedFormatterValuesSource, "internal static long? GetNullableLong(JsonElement element, string propertyName)");
-        AssertContains(sharedFormatterValuesSource, "CultureInfo.InvariantCulture");
-        AssertContains(sharedFormatterValuesSource, "internal static string FormatBytes(long bytes)");
-        AssertContains(sharedFormatterValuesSource, "internal static long ComputeTickAgeMs(long tickMs)");
-        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatBytes(long bytes)");
-        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatIntervalMs(JsonElement element, string propertyName, string fallback = \"N/A\")");
-        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatFrameBudgetMs(JsonElement element, string fpsPropertyName, string fallback = \"N/A\")");
-        AssertContains(sharedFormatterDisplayValuesSource, "internal static string FormatNumber(double value, string format)");
-        AssertContains(sharedFormatterDisplayValuesSource, "internal static long ComputeTickAgeMs(long tickMs)");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "var flashbackActive = Get(snapshot, \"FlashbackActive\", \"false\");");
-        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackEncodingSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackPlaybackStatusSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackExportSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackPlaybackMetricsSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackEncodingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackEncodingStatusSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackSource, "AppendFlashbackEncodingHealthSection(builder, snapshot);");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackEncodingStatusSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Encoder: {codec}");
-        AssertContains(sharedFormatterFlashbackSource, "Temp Cache:");
-        AssertContains(sharedFormatterFlashbackSource, "Cleanup:");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackEncodingHealthSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Flashback Queue Latency:");
-        AssertContains(sharedFormatterFlashbackSource, "Flashback Backpressure:");
-        AssertContains(sharedFormatterFlashbackSource, "Flashback Failure:");
-        AssertContains(sharedFormatterFlashbackSource, "Flashback GPU Queue:");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackExportSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Export: active=");
-        AssertContains(sharedFormatterFlashbackSource, "FlashbackExportThroughputBytesPerSec");
-        AssertContains(sharedFormatterFlashbackSource, "forceRotateFallbacks=");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackPlaybackStatusSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Playback Commands:");
-        AssertContains(sharedFormatterFlashbackSource, "private static void AppendFlashbackPlaybackMetricsSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterFlashbackSource, "Playback Decode:");
-        AssertContains(sharedFormatterFlashbackSource, "A/V Drift:");
-        AssertContains(sharedFormatterRootSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertContains(sharedFormatterRootSource, "WasapiPlaybackQueueDurationMs");
-        AssertContains(sharedFormatterRootSource, "AudioBufferHealthStatus");
-        AssertContains(sharedFormatterRootSource, "AudioBufferOverrunEvents");
-        AssertContains(sharedFormatterThreadHealthSource, "private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterThreadHealthSource, "builder.AppendLine(\"== Thread Health ==\");");
-        AssertContains(sharedFormatterThreadHealthSource, "AppendSourceReaderThreadHealthLine(builder, snapshot);");
-        AssertContains(sharedFormatterThreadHealthSource, "AppendWasapiCaptureThreadHealthLine(builder, snapshot);");
-        AssertContains(sharedFormatterThreadHealthSource, "AppendWasapiPlaybackThreadHealthLine(builder, snapshot);");
-        AssertContains(sharedFormatterThreadHealthSource, "private static void AppendSourceReaderThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterThreadHealthSource, "SourceReaderFrameChannelDepth");
-        AssertContains(sharedFormatterThreadHealthSource, "private static void AppendWasapiCaptureThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterThreadHealthSource, "WasapiCaptureCallbackSevereGapCount");
-        AssertContains(sharedFormatterThreadHealthSource, "private static void AppendWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterThreadHealthSource, "WasapiPlaybackQueueDurationMs");
-        AssertContains(sharedFormatterThreadHealthSource, "Audio Buffer: status=");
-        AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterMjpegTimingSource, "var mjpegDecodeSamples = Get(snapshot, \"MjpegDecodeSampleCount\", \"0\");");
-        AssertContains(sharedFormatterMjpegTimingSource, "AppendMjpegDecodeTimingLines(builder, snapshot, mjpegDecodeSamples);");
-        AssertContains(sharedFormatterMjpegTimingSource, "AppendMjpegPipelineTimingLines(builder, snapshot, mjpegDecoderCount);");
-        AssertContains(sharedFormatterMjpegTimingSource, "AppendMjpegPreviewJitterSection(builder, snapshot);");
-        AssertContains(sharedFormatterMjpegTimingSource, "AppendMjpegPerDecoderTimingLines(builder, snapshot);");
-        AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegDecodeTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecodeSamples)");
-        AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegPerDecoderTimingLines(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterMjpegTimingSource, "Decode: avg=");
-        AssertContains(sharedFormatterMjpegTimingSource, "Decoder[{Get(worker, \"WorkerIndex\", \"?\")}]");
-        AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegPipelineTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecoderCount)");
-        AssertContains(sharedFormatterMjpegTimingSource, "Compressed Queue:");
-        AssertContains(sharedFormatterMjpegTimingSource, "MJPEG Drop Reasons:");
-        AssertContains(sharedFormatterMjpegTimingSource, "Pipeline: avg=");
-        AssertContains(sharedFormatterMjpegTimingSource, "private static void AppendMjpegPreviewJitterSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterMjpegTimingSource, "Preview Jitter Latency:");
-        AssertContains(sharedFormatterMjpegTimingSource, "Preview Jitter Underflow:");
-        AssertContains(sharedFormatterCaptureCadenceSource, "AppendAvSyncSection(builder, snapshot);");
-        AssertContains(sharedFormatterCaptureCadenceSource, "AppendSourceSection(builder, snapshot);");
-        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterCaptureCadenceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterAvSyncSource, "private static void AppendAvSyncSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterAvSyncSource, "var avSyncDrift = Get(snapshot, \"AvSyncCaptureDriftMs\", string.Empty);");
-        AssertContains(sharedFormatterPreviewSource, "private static void AppendPreviewSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewSource, "AppendPreviewD3DSection(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewSource, "D3D CPU timing:");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static bool IsPreviewD3DRendererMode(string rendererMode)");
-        AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewD3DCpuTiming(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewD3DPipelineLatency(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewD3DFrameLatencyWait(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewD3DFrameStats(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewD3DFrameOwnership(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewD3DSource, "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertOccursBefore(sharedFormatterPreviewD3DSource, "AppendPreviewD3DCpuTiming(builder, snapshot);", "AppendPreviewD3DPipelineLatency(builder, snapshot);");
-        AssertOccursBefore(sharedFormatterPreviewD3DSource, "AppendPreviewD3DPipelineLatency(builder, snapshot);", "AppendPreviewD3DFrameLatencyWait(builder, snapshot);");
-        AssertOccursBefore(sharedFormatterPreviewD3DSource, "AppendPreviewD3DFrameLatencyWait(builder, snapshot);", "AppendPreviewD3DFrameStats(builder, snapshot);");
-        AssertOccursBefore(sharedFormatterPreviewD3DSource, "AppendPreviewD3DFrameStats(builder, snapshot);", "AppendPreviewD3DFrameOwnership(builder, snapshot);");
-        AssertOccursBefore(sharedFormatterPreviewD3DSource, "AppendPreviewD3DFrameOwnership(builder, snapshot);", "AppendPreviewSlowFrameDiagnostics(builder, snapshot);");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DCpuTiming(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "D3D CPU timing:");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DPipelineLatency(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "D3D pipeline latency:");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DFrameLatencyWait(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "D3D frame-latency wait:");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DFrameStats(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "D3D DXGI stats:");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static void AppendPreviewD3DFrameOwnership(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "D3D Ownership:");
-        AssertContains(sharedFormatterPreviewD3DSource, "internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterPreviewD3DSource, "private static string FormatDiagnosticMs(JsonElement element, string propertyName)");
-        AssertContains(sharedFormatterPreviewD3DSource, "D3D Slow Frames:");
-        AssertContains(sharedFormatterSourceSource, "private static void AppendSourceSection(StringBuilder builder, JsonElement snapshot)");
-        AssertContains(sharedFormatterSourceSource, "var sourceFrameRate = Get(snapshot, \"DetectedSourceFrameRate\", string.Empty);");
-        AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
-        AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
-        AssertContains(sharedFormatterSource, "CaptureCommandCommandsCoalesced");
-        AssertContains(sharedFormatterSource, "CaptureCommandLastOutcome");
-        AssertContains(sharedFormatterSource, "CaptureCommandLastCorrelationId");
-        AssertContains(sharedFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
-        AssertContains(sharedFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
-        AssertContains(sharedFormatterSource, "ProcessCpuPercent");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "AutomationSnapshotFormatter.VideoPipeline.cs")),
-            "shared snapshot video-pipeline and thread-health text lives with the root snapshot formatter flow");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "AutomationSnapshotFormatter.Values.cs")),
-            "shared snapshot value accessors live with the root snapshot formatter flow");
-        foreach (var removedFile in new[]
-        {
-            "AutomationSnapshotFormatter.Flashback.cs",
-            "AutomationSnapshotFormatter.MjpegTiming.cs",
-            "AutomationSnapshotFormatter.PreviewD3D.cs"
-        })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", removedFile)),
-                $"{removedFile} folded into root snapshot formatter");
-        }
-
+        var sharedSource = global::Sussudio.Tests.RuntimeContractSource.ReadAutomationSnapshotFormatterSource();
+        var cliSource = global::Sussudio.Tests.RuntimeContractSource.ReadSsctlSnapshotFormatterSource();
+        var mcpSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
+        AssertContains(sharedSource, "internal static class AutomationSnapshotFormatter");
+        AssertContains(sharedSource, "internal static string FormatSnapshot(");
+        AssertContains(sharedSource, "internal static string FormatCliSnapshot(");
+        AssertContains(cliSource, "AutomationSnapshotFormatter.FormatCliSnapshot(snapshotResponse)");
+        AssertContains(mcpSource, "AutomationSnapshotFormatter.FormatSnapshot(response, includeFlashback: true)");
+        AssertDoesNotContain(cliSource, "== Sussudio State ==");
+        AssertDoesNotContain(mcpSource, "== Sussudio State ==");
         return Task.CompletedTask;
     }
 

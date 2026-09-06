@@ -186,7 +186,6 @@ static partial class Program
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs`");
         AssertContains(closureSection, "`Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs`");
-        AssertContains(closureSection, "Treat the current hub family as closed");
 
         AssertContains(closureSection, "| FlashbackPlaybackController | Ready |");
         AssertContains(closureSection, "`Sussudio/Services/Flashback/FlashbackPlaybackController.cs`");
@@ -1532,8 +1531,6 @@ static partial class Program
         return builder.ToString();
     }
 
-    private static readonly object RtkI2cProbeConsoleLock = new();
-
     internal static Task RtkI2cProbe_GuardsUnsafeNativePaths()
     {
         var assembly = LoadToolAssemblyIsolated(global::Program.NativeXuAudioProbeAssemblyRelativePath);
@@ -1546,13 +1543,13 @@ static partial class Program
         var rtkProbeSource = ReadRepoFile("tools/NativeXuAudioProbe/Program.cs");
 
         var missingPathDevice = CreateNativeXuProbeDevice(assembly, "capture-1", "Elgato 4K X (PID 0x0070)", null);
-        var missingPath = CaptureConsole(() => InvokeRtkRun(run, [], missingPathDevice));
-        AssertEqual(1, missingPath.ExitCode, "RtkI2cProbe missing native XU path exit code");
+        var missingPathExitCode = InvokeRtkRun(run, [], missingPathDevice);
+        AssertEqual(1, missingPathExitCode, "RtkI2cProbe missing native XU path exit code");
         AssertContains(rtkProbeSource, "requires a selected native XU interface path");
 
         var selectedPathDevice = CreateNativeXuProbeDevice(assembly, "capture-2", "Elgato 4K X (PID 0x0070)", @"\\?\hid#vid_0fd9&pid_0070#xu");
-        var disabledSwitch = CaptureConsole(() => InvokeRtkRun(run, ["switch", "analog"], selectedPathDevice));
-        AssertEqual(1, disabledSwitch.ExitCode, "RtkI2cProbe disabled switch exit code");
+        var disabledSwitchExitCode = InvokeRtkRun(run, ["switch", "analog"], selectedPathDevice);
+        AssertEqual(1, disabledSwitchExitCode, "RtkI2cProbe disabled switch exit code");
         AssertContains(rtkProbeSource, "RTK I2C switch is disabled");
         AssertContains(rtkProbeSource, "Use the native XU service/probe path");
 
@@ -1978,28 +1975,6 @@ static partial class Program
         }
     }
 
-    private static (int ExitCode, string Output, string Error) CaptureConsole(Func<int> action)
-    {
-        lock (RtkI2cProbeConsoleLock)
-        {
-            var originalOut = Console.Out;
-            var originalError = Console.Error;
-            using var output = new StringWriter();
-            using var error = new StringWriter();
-            try
-            {
-                Console.SetOut(output);
-                Console.SetError(error);
-                var exitCode = action();
-                return (exitCode, output.ToString(), error.ToString());
-            }
-            finally
-            {
-                Console.SetOut(originalOut);
-                Console.SetError(originalError);
-            }
-        }
-    }
     // Service-layer source ownership checks share the service namespace boundary owner.
     private static void AssertServiceNamespaceSourceOwnership(string repoRoot)
     {

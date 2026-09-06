@@ -28,12 +28,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private const int AudioDrainBatchLimit = 128;
     private const int GpuDrainBatchLimit = 16;
     private const int CudaDrainBatchLimit = 16;
-    private const int FinalizationNoProgressNotificationMs = 30_000;
+    private const int FinalizationNoProgressTimeoutMs = 30_000;
     private const int FinalizationAbsoluteTimeoutMs = 120_000;
     private const int FinalizationPollIntervalMs = 250;
-    // Emergency path uses a tighter encode-drain budget so the total emergency
-    // stop fits well within App.TryEmergencyStopRecording's 8s wrapper (fix #12).
-    // Normal user-stop keeps the 30s budget so saturated 4K queues can drain.
+    // Limit the emergency wait for the encoding task. The app's outer shutdown
+    // deadline also includes coordinator queueing and other backend cleanup.
     private const int EmergencyStopTimeoutMs = 5_000;
     private const int DisposeTimeoutMs = 5_000;
     private const int VideoQueueLatencyWindowSize = 256;
@@ -121,9 +120,9 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public Action<Exception>? OnEncodingFailed { get; set; }
 
     /// <summary>
-    /// Reports finalization stages and a warning when the encoding owner has
-    /// made no observable progress for 30 seconds. The callback is diagnostic;
-    /// throwing from it cannot fail or interrupt finalization.
+    /// Reports finalization stages and a warning when the encoding task reaches
+    /// FinalizationNoProgressTimeoutMs without progress. Exceptions from this
+    /// diagnostic callback cannot fail or interrupt finalization.
     /// </summary>
     public Action<RecordingFinalizationProgress>? OnFinalizationProgress { get; set; }
 
@@ -606,7 +605,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var absoluteDeadline = started + timeoutMs;
         var progressDeadline = Math.Min(
             absoluteDeadline,
-            started + FinalizationNoProgressNotificationMs);
+            started + FinalizationNoProgressTimeoutMs);
         var observedVersion = Interlocked.Read(ref _finalizationProgressVersion);
 
         while (!encodingTask.IsCompleted)
@@ -640,7 +639,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 observedVersion = currentVersion;
                 progressDeadline = Math.Min(
                     absoluteDeadline,
-                    Environment.TickCount64 + FinalizationNoProgressNotificationMs);
+                    Environment.TickCount64 + FinalizationNoProgressTimeoutMs);
                 continue;
             }
         }
@@ -648,9 +647,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return true;
     }
 
-    // Public path used by normal recording-stop (UI Stop button, automation StopRecording).
-    // Finalization owns a 120-second absolute budget and reports no-progress at
-    // 30 seconds while saturated recording queues drain.
     public void MarkRecordingBoundaryStarted()
         => Interlocked.Exchange(ref _recordingBoundaryStartedTick, Environment.TickCount64);
 
@@ -663,13 +659,13 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             comparand: 0);
     }
 
+    // Normal UI and automation stop. Waits up to FinalizationAbsoluteTimeoutMs,
+    // ending sooner if no progress occurs for FinalizationNoProgressTimeoutMs.
     public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
         => StopCoreAsync(emergency: false, cancellationToken);
 
-    // Internal overload used by the emergency-stop path (CaptureService.StopRecordingAsync
-    // when called from CaptureSessionCoordinator.StopRecordingForEmergencyAsync).
-    // Uses EmergencyStopTimeoutMs (5s) so the encode-drain fits inside App.xaml.cs's 8s
-    // emergency-stop wrapper (fix #12).
+    // CaptureService passes emergency requests here to select EmergencyStopTimeoutMs.
+    // This bounds the wait for the encoding task, not the whole app shutdown.
     internal Task<FinalizeResult> StopAsync(bool emergency, CancellationToken cancellationToken = default)
         => StopCoreAsync(emergency, cancellationToken);
 
@@ -870,8 +866,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 _verifiedObservedTracks);
     }
 
-    // REVIEWED 2026-04-07: IDisposable fallback only - all callers use DisposeAsync.
-    // CaptureService cleanup awaits StopAsync/DisposeAsync on background thread.
+    // Synchronous disposal blocks until DisposeAsync returns. CaptureService uses
+    // DisposeAsync so its cleanup path can await the encoding task's shutdown.
     public void Dispose()
     {
         DisposeAsync().AsTask().GetAwaiter().GetResult();
@@ -903,8 +899,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return;
         }
 
-        // StopCore already spent the applicable absolute grace period waiting for
-        // this owner. Do not consume a second timeout window during DisposeAsync;
+        // StopCore already reached a finalization deadline while waiting for the
+        // encoding task. Do not consume a second timeout window during DisposeAsync;
         // leave the still-running task rooted and let its terminal continuation
         // release native state at the only safe boundary.
         if (Volatile.Read(ref _finalizationWaitTimedOut) != 0)

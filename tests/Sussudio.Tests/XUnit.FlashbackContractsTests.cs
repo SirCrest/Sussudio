@@ -1241,7 +1241,7 @@ static partial class Program
 
     internal static Task FlashbackExportFailureClassifier_MapsCommandFailures()
     {
-        var method = RequireType("Sussudio.Services.Capture.CaptureService").GetMethod("ClassifyFlashbackExportFailureKind", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var method = RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes").GetMethod("Classify", BindingFlags.Static | BindingFlags.NonPublic)!;
         var codes = RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes");
         var create = codes.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
         var categories = new[] { "BufferInactive", "InvalidRequest", "InvalidRange", "UnavailableDuringRecording", "InvalidOutputPath", "InputUnavailable", "OutputWriteFailed", "InputReadFailed", "NoMediaWritten", "IncompleteLiveEdge", "ForceRotateFailed", "SegmentUnavailable", "InvalidInputStream", "Disposed", "Cancelled", "Timeout", "Failed" };
@@ -1259,7 +1259,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
     internal static Task FlashbackExporter_RejectsInvalidExportRanges()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
@@ -1444,7 +1443,7 @@ static partial class Program
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(sourceText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(sourceText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
+        AssertContains(sourceText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
         AssertContains(sourceText, "return FlashbackExportFailureCodes.Create(outputPath, outputFailure, outputFailureCode);");
         AssertContains(sourceText, "ReportProgress(\n                    progress,\n                    new ExportProgress(\n                        segIdx + 1,\n                        segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
@@ -1713,8 +1712,8 @@ static partial class Program
         AssertContains(transactionText, "internal static void CleanupOrphanedTempFiles(string directory)");
         AssertDoesNotContain(transactionText, "AVFormatContext");
         AssertDoesNotContain(transactionText, "av_write_trailer");
-        AssertOccursBefore(finalizeBlock, "av_write_trailer", "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
-        AssertOccursBefore(finalizeBlock, "ThrowIfError(CloseOutputIo(), \"avio_closep\");", "outputTransaction.TryPublish(");
+        AssertOccursBefore(finalizeBlock, "av_write_trailer", "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
+        AssertOccursBefore(finalizeBlock, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);", "outputTransaction.TryPublish(");
 
         return Task.CompletedTask;
     }
@@ -1824,7 +1823,7 @@ static partial class Program
         AssertContains(segmentSkipTrackingText, "public bool TryCreateFailureMessage(out string message)");
         AssertContains(segmentsText, "ReleaseExportLockBestEffort(\"segment_export\");");
         AssertContains(segmentInputPreflightText, "private bool TryOpenSegmentInputForExport(");
-        AssertContains(segmentInputPreflightText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\");");
+        AssertContains(segmentInputPreflightText, "ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), \"avformat_find_stream_info\", FlashbackExportFailureCodes.InputReadFailed);");
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"not_found\");");
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"invalid_stream_count\");");
         AssertContains(segmentInputPreflightText, "requestedSegmentSkips.Track(segment, \"stream_count_mismatch\");");
@@ -1850,11 +1849,11 @@ static partial class Program
         AssertContains(executionPolicyText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
         AssertContains(executionPolicyText, "private bool TryFinalizeActiveOutputFile(");
         AssertContains(executionPolicyText, "ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), \"av_write_trailer\", FlashbackExportFailureCodes.OutputWriteFailed);");
-        AssertContains(executionPolicyText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");");
+        AssertContains(executionPolicyText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);");
         AssertContains(executionPolicyText, "outputTransaction.TryPublish(outputPath, out outputBytes, out failureMessage, out failureCode)");
         AssertContains(executionPolicyText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{failureMessage}'\");");
         AssertContains(singleFileText, "av_write_trailer(_activeOutputContext)");
-        AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\");\n\n        if (!outputTransaction.TryPublish");
+        AssertContains(singleFileText, "ThrowIfError(CloseOutputIo(), \"avio_closep\", FlashbackExportFailureCodes.OutputWriteFailed);\n\n        if (!outputTransaction.TryPublish");
         AssertContains(singleFileText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
         AssertContains(segmentsText, "if (!TryFinalizeActiveOutputFile(outputTransaction, outputPath, out var outputBytes, out var outputFailure, out var outputFailureCode))");
         AssertContains(lifecycleText, "private bool TryWaitForExportLock(string outputPath, CancellationToken ct, [NotNullWhen(false)] out FinalizeResult? cancellationResult)");
@@ -1873,7 +1872,7 @@ static partial class Program
         AssertContains(lifecycleText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(lifecycleText, "private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)");
         AssertContains(lifecycleText, "private void EnsureNotDisposed()");
-        AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation, string failureCode = FlashbackExportFailureCodes.Failed)");
+        AssertContains(libAvErrorsText, "private static void ThrowIfError(int errorCode, string operation, string failureCode)");
         AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
         AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
         AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");

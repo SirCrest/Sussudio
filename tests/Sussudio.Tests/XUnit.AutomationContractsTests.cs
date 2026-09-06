@@ -607,10 +607,6 @@ public sealed class AutomationSnapshotProjectionContractsTests
     }
 
     [Fact]
-    public Task AutomationDiagnosticsSnapshotStatusProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsSnapshotStatusProjection_LivesInFocusedPartial();
-
-    [Fact]
     public Task AutomationDiagnosticsSnapshotCollectionEpochsMarkMixedSnapshots()
         => global::Program.AutomationDiagnosticsSnapshotCollectionEpochs_MarkMixedSnapshots();
 
@@ -618,97 +614,6 @@ public sealed class AutomationSnapshotProjectionContractsTests
     public Task AutomationDiagnosticsSnapshotCollectionEpochsMarkProducerChangesAsDiagnosticWarning()
         => global::Program.AutomationDiagnosticsSnapshotCollectionEpochs_MarkProducerChangesAsDiagnosticWarning();
 
-    [Fact]
-    public Task AutomationDiagnosticsSnapshotEvaluationProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsSnapshotEvaluationProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsAudioProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsSnapshotAudioProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsCaptureCommandProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsCaptureCommandProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsUserSettingsProjectionLivesWithSnapshotProjection()
-        => global::Program.AutomationDiagnosticsUserSettingsProjection_LivesWithSnapshotProjection();
-
-    [Fact]
-    public Task AutomationDiagnosticsCaptureFormatProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsCaptureFormatProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsCaptureTransportProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsCaptureTransportProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsHdrPipelineProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsHdrPipelineProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsCaptureCadenceProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsCaptureCadenceProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsVisualCadenceProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsVisualCadenceProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsMjpegProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsMjpegProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsSourceSignalProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsSourceSignalProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsSourceTelemetryProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsSourceTelemetryProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsRecordingPipelineProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsRecordingPipelineProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsRecordingBackendProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsRecordingBackendProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsRecordingOutputProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsRecordingOutputProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsRecordingIntegrityProjectionUsesOneMapping()
-        => global::Program.AutomationDiagnosticsRecordingIntegrityProjection_UsesOneMapping();
-
-    [Fact]
-    public Task AutomationDiagnosticsProcessResourceProjectionLivesInFocusedPartial()
-        => global::Program.AutomationDiagnosticsProcessResourceProjection_LivesInFocusedPartial();
-
-    [Fact]
-    public Task AutomationDiagnosticsAvSyncProjectionLivesWithProjectionRoot()
-        => global::Program.AutomationDiagnosticsAvSyncProjection_LivesWithProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsPreviewRuntimeProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsPreviewRuntimeProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsPreviewD3DProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsPreviewD3DProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsFlashbackExportProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsFlashbackExportProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsFlashbackRecordingProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsFlashbackRecordingProjection_LivesWithSnapshotProjectionRoot();
-
-    [Fact]
-    public Task AutomationDiagnosticsFlashbackPlaybackProjectionLivesWithSnapshotProjectionRoot()
-        => global::Program.AutomationDiagnosticsFlashbackPlaybackProjection_LivesWithSnapshotProjectionRoot();
 }
 
 public sealed class AutomationCaptureFlashbackRoutingContractsTests
@@ -3261,7 +3166,6 @@ static partial class Program
         }
     }
 
-
 // Tests for diagnostic snapshot JSON source-generation compatibility.
     internal static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
@@ -3563,7 +3467,6 @@ static partial class Program
         }
     }
 
-
 // Flashback backend preview pipeline contracts live with the automation xUnit wrappers.
     internal static Task CaptureService_DeviceSwitchTeardown_StopsVideoBeforeFlashbackDisposal()
     {
@@ -3818,7 +3721,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-
     internal static Task CaptureService_FlashbackLifecycleLogs_UseOutcomeNames()
     {
         var flashbackTexts = Directory
@@ -3996,14 +3898,10 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadAutomationSnapshotFlatteningFamilyText()
+            + "\n" + ReadAutomationSnapshotInitializerText()
             + "\n" + ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
                 .Replace("\r\n", "\n");
-        AssertContains(automationDiagnosticsHubText, "FlashbackExportVerificationFormat = flashbackRecordingFlattening.Backend.ExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = backend.ExportVerificationFormat,");
         AssertContains(automationDiagnosticsHubText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(automationDiagnosticsHubText, "FlashbackCodecDowngradeReason = flashbackRecordingFlattening.Backend.CodecDowngradeReason,");
-        AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = backend.CodecDowngradeReason,");
         AssertContains(automationDiagnosticsHubText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
         AssertDoesNotContain(captureServiceText, "var fbFileNameFormatOverride =");
         AssertDoesNotContain(captureServiceText, "FileNameFormatOverride = fbFileNameFormatOverride");
@@ -4176,7 +4074,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
 
     internal static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
     {
@@ -4663,7 +4560,6 @@ static partial class Program
         throw new InvalidOperationException("Expected task to be canceled.");
     }
 
-
     internal static Task CaptureSessionCoordinator_CommandFacadeLivesInFocusedPartial()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
@@ -4927,7 +4823,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
 
 // MainWindow Flashback automation and presentation contracts live with their xUnit wrappers.
     internal static Task FlashbackPollingTimers_LiveInController()
@@ -5824,7 +5719,7 @@ static partial class Program
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
         AssertContains(dispatcherText, "var force = GetBool(payload, \"force\") ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
-        AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult)");
+        AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
         AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
@@ -6429,7 +6324,6 @@ static partial class Program
             $"{type.FullName}.{methodName} task result");
     }
 
-
     internal static Task MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
@@ -6961,7 +6855,6 @@ static partial class Program
 
         return Task.CompletedTask;
     }
-
 
     internal static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
     {
@@ -7625,46 +7518,6 @@ static partial class Program
         return constructor.Invoke(arguments);
     }
 
-    internal static Task AutomationDiagnosticsSnapshotStatusProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var snapshotStatusProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);");
-        AssertContains(snapshotFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
-        AssertContains(snapshotFlatteningText, "TimestampUtc = snapshotStatusFlattening.TimestampUtc,");
-        AssertContains(snapshotFlatteningText, "VerificationInProgress = snapshotStatusFlattening.VerificationInProgress,");
-        AssertContains(snapshotFlatteningText, "SessionState = snapshotStatusFlattening.SessionState,");
-        AssertContains(snapshotFlatteningText, "StatusText = snapshotStatusFlattening.StatusText,");
-        AssertDoesNotContain(snapshotFlatteningText, "TimestampUtc = DateTimeOffset.UtcNow,");
-        AssertDoesNotContain(snapshotFlatteningText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
-        AssertDoesNotContain(snapshotFlatteningText, "SessionState = captureRuntime.SessionState,");
-        AssertDoesNotContain(snapshotFlatteningText, "StatusText = viewModelSnapshot.StatusText,");
-        AssertDoesNotContain(snapshotFlatteningText, "TimestampUtc = snapshotStatus.TimestampUtc,");
-        AssertDoesNotContain(snapshotFlatteningText, "StatusText = snapshotStatus.StatusText,");
-
-        AssertContains(snapshotStatusProjectionText, "private SnapshotStatusProjection BuildSnapshotStatusProjection(");
-        AssertContains(snapshotStatusProjectionText, "TimestampUtc = snapshotCollection.CompletedUtc,");
-        AssertContains(snapshotStatusProjectionText, "SnapshotCollectionEpoch = snapshotCollection.Epoch,");
-        AssertContains(snapshotStatusProjectionText, "SnapshotMixedEpochs = snapshotCollection.Mixed,");
-        AssertContains(snapshotStatusProjectionText, "IsInitialized = viewModelSnapshot.IsInitialized,");
-        AssertContains(snapshotStatusProjectionText, "VerificationInProgress = Volatile.Read(ref _verificationInProgress) != 0,");
-        AssertContains(snapshotStatusProjectionText, "SessionState = captureRuntime.SessionState,");
-        AssertContains(snapshotStatusProjectionText, "StatusText = viewModelSnapshot.StatusText");
-        AssertContains(snapshotStatusProjectionText, "private readonly record struct SnapshotStatusProjection");
-        AssertContains(snapshotStatusProjectionText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
-        AssertContains(snapshotStatusProjectionText, "TimestampUtc = snapshotStatus.TimestampUtc,");
-        AssertContains(snapshotStatusProjectionText, "VerificationInProgress = snapshotStatus.VerificationInProgress,");
-        AssertContains(snapshotStatusProjectionText, "SessionState = snapshotStatus.SessionState,");
-        AssertContains(snapshotStatusProjectionText, "StatusText = snapshotStatus.StatusText");
-        AssertContains(snapshotStatusProjectionText, "private readonly record struct SnapshotStatusFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
     internal static Task AutomationDiagnosticsSnapshotCollectionEpochs_MarkMixedSnapshots()
     {
         var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
@@ -7717,7 +7570,6 @@ static partial class Program
         AssertContains(snapshotsText, "view_model_preview_runtime");
         AssertContains(projectionText, "TimestampUtc = snapshotCollection.CompletedUtc,");
         AssertContains(projectionText, "SnapshotMixedEpochs = snapshotCollection.Mixed,");
-        AssertContains(projectionText, "SnapshotSourceTelemetryEpoch = snapshotStatusFlattening.SnapshotSourceTelemetryEpoch,");
 
         return Task.CompletedTask;
     }
@@ -7862,1415 +7714,6 @@ static partial class Program
             binder: null,
             args: new object[] { value, 7L, producerEpoch, producerEpochBefore, producerEpochAfter, producerChanged, DateTimeOffset.UtcNow },
             culture: null)!;
-    }
-
-    internal static Task AutomationDiagnosticsSnapshotEvaluationProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var snapshotEvaluationProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
-        AssertContains(snapshotFlatteningText, "var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);");
-        AssertContains(snapshotFlatteningText, "PerformanceScore = snapshotEvaluationFlattening.PerformanceScore,");
-        AssertContains(snapshotFlatteningText, "DiagnosticHealthStatus = snapshotEvaluationFlattening.DiagnosticHealthStatus,");
-        AssertContains(snapshotFlatteningText, "PreviewPacingLikelySlowStage = snapshotEvaluationFlattening.PreviewPacingLikelySlowStage,");
-        AssertContains(snapshotFlatteningText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluationFlattening.PerformanceThresholdCaptureDropPercent,");
-        AssertDoesNotContain(snapshotFlatteningText, "PerformanceScore = performance.Score,");
-        AssertDoesNotContain(snapshotFlatteningText, "DiagnosticHealthStatus = diagnostic.HealthStatus,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage");
-        AssertDoesNotContain(snapshotFlatteningText, "PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,");
-        AssertDoesNotContain(snapshotFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
-        AssertDoesNotContain(snapshotFlatteningText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
-
-        AssertContains(snapshotEvaluationProjectionText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
-        AssertContains(snapshotEvaluationProjectionText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
-        AssertContains(snapshotEvaluationProjectionText, "DiagnosticHealthStatus = snapshotEvaluation.DiagnosticHealthStatus,");
-        AssertContains(snapshotEvaluationProjectionText, "PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage,");
-        AssertContains(snapshotEvaluationProjectionText, "PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,");
-        AssertContains(snapshotEvaluationProjectionText, "private readonly record struct SnapshotEvaluationFlattenedProjection");
-
-        AssertContains(snapshotEvaluationProjectionText, "private SnapshotEvaluationProjection BuildSnapshotEvaluationProjection(");
-        AssertContains(snapshotEvaluationProjectionText, "PerformanceScore = performance.Score,");
-        AssertContains(snapshotEvaluationProjectionText, "DiagnosticHealthStatus = diagnostic.HealthStatus,");
-        AssertContains(snapshotEvaluationProjectionText, "DiagnosticAudioLane = diagnostic.AudioLane,");
-        AssertContains(snapshotEvaluationProjectionText, "PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage,");
-        AssertContains(snapshotEvaluationProjectionText, "PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,");
-        AssertContains(snapshotEvaluationProjectionText, "private readonly record struct SnapshotEvaluationProjection");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsProcessResourceProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var processResourceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var processResourceProjection = BuildProcessResourceProjection(processResources);");
-        AssertContains(snapshotFlatteningText, "var processResourceFlattening = BuildProcessResourceFlattenedProjection(processResourceProjection);");
-        AssertContains(snapshotFlatteningText, "MemoryWorkingSetMb = processResourceFlattening.MemoryWorkingSetMb,");
-        AssertContains(snapshotFlatteningText, "MemoryGcFragmentationPercent = processResourceFlattening.MemoryGcFragmentationPercent,");
-        AssertContains(snapshotFlatteningText, "ThreadPoolIoMax = processResourceFlattening.ThreadPoolIoMax,");
-        AssertDoesNotContain(snapshotFlatteningText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
-        AssertDoesNotContain(snapshotFlatteningText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
-        AssertDoesNotContain(snapshotFlatteningText, "MemoryGcFragmentationPercent = processResources.MemoryGcFragmentationPercent,");
-        AssertDoesNotContain(snapshotFlatteningText, "MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,");
-        AssertDoesNotContain(snapshotFlatteningText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax,");
-        AssertDoesNotContain(snapshotFlatteningText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,");
-
-        AssertContains(processResourceProjectionText, "private static ProcessResourceProjection BuildProcessResourceProjection(ProcessResourceSnapshot processResources)");
-        AssertContains(processResourceProjectionText, "MemoryWorkingSetMb = processResources.MemoryWorkingSetMb,");
-        AssertContains(processResourceProjectionText, "MemoryGcFragmentationPercent = processResources.MemoryGcFragmentationPercent,");
-        AssertContains(processResourceProjectionText, "ThreadPoolIoMax = processResources.ThreadPoolIoMax");
-        AssertContains(processResourceProjectionText, "private readonly record struct ProcessResourceProjection");
-        AssertContains(processResourceProjectionText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
-        AssertContains(processResourceProjectionText, "MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,");
-        AssertContains(processResourceProjectionText, "MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,");
-        AssertContains(processResourceProjectionText, "ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax");
-        AssertContains(processResourceProjectionText, "private readonly record struct ProcessResourceFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsAvSyncProjection_LivesWithProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var avSyncProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var avSync = BuildAvSyncProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);");
-        AssertContains(snapshotFlatteningText, "AvSyncCaptureDriftMs = avSyncFlattening.CaptureDriftMs,");
-        AssertContains(snapshotFlatteningText, "AvSyncCaptureDriftRateMsPerSec = avSyncFlattening.CaptureDriftRateMsPerSec,");
-        AssertContains(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = avSyncFlattening.EncoderCorrectionSamples,");
-        AssertDoesNotContain(snapshotFlatteningText, "AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "AvSyncCaptureDriftMs = avSync.CaptureDriftMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,");
-        AssertDoesNotContain(snapshotFlatteningText, "AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,");
-
-        AssertContains(avSyncProjectionText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(AvSyncProjection avSync)");
-        AssertContains(avSyncProjectionText, "CaptureDriftMs = avSync.CaptureDriftMs,");
-        AssertContains(avSyncProjectionText, "CaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,");
-        AssertContains(avSyncProjectionText, "EncoderCorrectionSamples = avSync.EncoderCorrectionSamples");
-        AssertContains(avSyncProjectionText, "private readonly record struct AvSyncFlattenedProjection");
-
-        AssertContains(avSyncProjectionText, "private static AvSyncProjection BuildAvSyncProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(avSyncProjectionText, "CaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,");
-        AssertContains(avSyncProjectionText, "CaptureDriftRateMsPerSec = captureRuntime.AvSyncCaptureDriftRateMsPerSec,");
-        AssertContains(avSyncProjectionText, "EncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples");
-        AssertContains(avSyncProjectionText, "private readonly record struct AvSyncProjection");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsSnapshotAudioProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var audioProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var captureIngestProjectionText = audioProjectionText;
-        var wasapiAudioProjectionText = audioProjectionText;
-        var obsoleteAudioProjectionPath = System.IO.Path.Combine(
-            GetRepoRoot(),
-            "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Audio.cs");
-
-        AssertContains(snapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
-        AssertContains(snapshotFlatteningText, "var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);");
-        AssertContains(snapshotFlatteningText, "AudioPeak = audioAndIngestFlattening.Signal.Peak,");
-        AssertContains(snapshotFlatteningText, "AudioSignalPresent = audioAndIngestFlattening.Signal.SignalPresent,");
-        AssertContains(snapshotFlatteningText, "AudioFramesWrittenToSink = audioAndIngestFlattening.Ingest.AudioFramesWrittenToSink,");
-        AssertContains(snapshotFlatteningText, "SourceReaderReadOutstanding = audioAndIngestFlattening.SourceReader.ReadOutstanding,");
-        AssertContains(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = audioAndIngestFlattening.WasapiCapture.AudioLevelEventsFired,");
-        AssertContains(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlayback.BufferedDurationMs,");
-        AssertContains(snapshotFlatteningText, "AudioBufferHealthStatus = audioAndIngestFlattening.BufferHealth.Status,");
-        AssertContains(snapshotFlatteningText, "AudioBufferUnderrunEvents = audioAndIngestFlattening.BufferHealth.UnderrunEvents,");
-        AssertDoesNotContain(snapshotFlatteningText, "AudioPeak = viewModelSnapshot.AudioPeak,");
-        AssertDoesNotContain(snapshotFlatteningText, "AudioPeak = audioAndIngest.AudioPeak,");
-        AssertDoesNotContain(snapshotFlatteningText, "AudioSignalPresent = audioSignal.SignalPresent,");
-        AssertDoesNotContain(snapshotFlatteningText, "AudioSignalPresent = audioAndIngest.AudioSignalPresent,");
-        AssertDoesNotContain(snapshotFlatteningText, "AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,");
-        AssertDoesNotContain(snapshotFlatteningText, "AudioFramesWrittenToSink = audioAndIngest.AudioFramesWrittenToSink,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceReaderReadOutstanding = audioAndIngest.SourceReaderReadOutstanding,");
-        AssertDoesNotContain(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
-        AssertDoesNotContain(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = audioAndIngest.WasapiCaptureAudioLevelEventsFired,");
-        AssertDoesNotContain(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "WasapiPlaybackBufferedDurationMs = audioAndIngest.WasapiPlaybackBufferedDurationMs,");
-
-        AssertContains(audioProjectionText, "private static AudioAndIngestProjection BuildAudioAndIngestProjection(");
-        AssertContains(audioProjectionText, "Signal = BuildAudioSignalProjection(viewModelSnapshot, audioSignal),");
-        AssertContains(audioProjectionText, "Ingest = BuildCaptureIngestProjection(captureRuntime),");
-        AssertContains(audioProjectionText, "Wasapi = BuildWasapiAudioProjection(captureRuntime)");
-        AssertContains(audioProjectionText, "private readonly record struct AudioAndIngestProjection");
-        AssertContains(audioProjectionText, "public AudioSignalProjection Signal { get; init; }");
-        AssertContains(audioProjectionText, "public CaptureIngestProjection Ingest { get; init; }");
-        AssertContains(audioProjectionText, "public WasapiAudioProjection Wasapi { get; init; }");
-        AssertContains(audioProjectionText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
-        AssertContains(audioProjectionText, "Signal = BuildAudioSignalFlattenedProjection(audioAndIngest.Signal),");
-        AssertContains(audioProjectionText, "Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),");
-        AssertContains(audioProjectionText, "SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),");
-        AssertContains(audioProjectionText, "WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),");
-        AssertContains(audioProjectionText, "WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi)");
-        AssertContains(audioProjectionText, "BufferHealth = BuildAudioBufferHealthFlattenedProjection(audioAndIngest.Wasapi)");
-        AssertContains(audioProjectionText, "private readonly record struct AudioAndIngestFlattenedProjection");
-        AssertContains(audioProjectionText, "public AudioBufferHealthFlattenedProjection BufferHealth { get; init; }");
-        AssertDoesNotContain(audioProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
-        AssertDoesNotContain(snapshotFlatteningText, "WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
-
-        AssertContains(audioProjectionText, "private static AudioSignalProjection BuildAudioSignalProjection(");
-        AssertContains(audioProjectionText, "Peak = viewModelSnapshot.AudioPeak,");
-        AssertContains(audioProjectionText, "SignalPresent = audioSignal.SignalPresent,");
-        AssertContains(audioProjectionText, "private readonly record struct AudioSignalProjection");
-        AssertContains(audioProjectionText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
-        AssertContains(audioProjectionText, "Peak = signal.Peak,");
-
-        AssertContains(audioProjectionText, "private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)");
-        AssertContains(audioProjectionText, "QueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,");
-        AssertContains(audioProjectionText, "QueueDropsFileWriter = health.AudioChunksDropped");
-        AssertContains(audioProjectionText, "private readonly record struct AudioDropsProjection");
-
-        AssertContains(captureIngestProjectionText, "private static CaptureIngestProjection BuildCaptureIngestProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(captureIngestProjectionText, "AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,");
-        AssertContains(captureIngestProjectionText, "SourceReaderReadOutstanding = captureRuntime.SourceReaderReadOutstanding,");
-        AssertContains(captureIngestProjectionText, "private readonly record struct CaptureIngestProjection");
-        AssertContains(captureIngestProjectionText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
-        AssertContains(captureIngestProjectionText, "AudioFramesWrittenToSink = ingest.AudioFramesWrittenToSink,");
-        AssertContains(captureIngestProjectionText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
-        AssertContains(captureIngestProjectionText, "ReadOutstanding = ingest.SourceReaderReadOutstanding,");
-
-        AssertContains(wasapiAudioProjectionText, "private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(wasapiAudioProjectionText, "CaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,");
-        AssertContains(wasapiAudioProjectionText, "PlaybackBufferedDurationMs = captureRuntime.WasapiPlaybackBufferedDurationMs,");
-        AssertContains(wasapiAudioProjectionText, "BufferHealthStatus = captureRuntime.AudioBufferHealthStatus,");
-        AssertContains(wasapiAudioProjectionText, "private readonly record struct WasapiAudioProjection");
-        AssertContains(wasapiAudioProjectionText, "private static AudioBufferHealthFlattenedProjection BuildAudioBufferHealthFlattenedProjection(");
-        AssertContains(wasapiAudioProjectionText, "UnderrunEvents = wasapi.BufferUnderrunEvents");
-        AssertContains(wasapiAudioProjectionText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
-        AssertContains(wasapiAudioProjectionText, "AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,");
-        AssertContains(wasapiAudioProjectionText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
-        AssertContains(wasapiAudioProjectionText, "BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,");
-        if (System.IO.File.Exists(obsoleteAudioProjectionPath))
-        {
-            throw new System.InvalidOperationException("Audio projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
-        }
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsCaptureCommandProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureCommandProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);");
-        AssertContains(snapshotFlatteningText, "var captureCommandFlattening = BuildCaptureCommandFlattenedProjection(captureCommands);");
-        AssertContains(snapshotFlatteningText, "CaptureCommandCommandsEnqueued = captureCommandFlattening.CommandsEnqueued,");
-        AssertContains(snapshotFlatteningText, "CaptureCommandMaxQueueLatencyMs = captureCommandFlattening.MaxQueueLatencyMs,");
-        AssertContains(snapshotFlatteningText, "CaptureCommandLastError = captureCommandFlattening.LastError,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandCommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandCommandsEnqueued = captureCommands.CommandsEnqueued,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandMaxQueueLatencyMs = viewModelSnapshot.CaptureCommandMaxQueueLatencyMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandMaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandLastError = viewModelSnapshot.CaptureCommandLastError,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCommandLastError = captureCommands.LastError,");
-
-        AssertContains(captureCommandProjectionText, "private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
-        AssertContains(captureCommandProjectionText, "CommandsEnqueued = viewModelSnapshot.CaptureCommandCommandsEnqueued,");
-        AssertContains(captureCommandProjectionText, "MaxQueueLatencyMs = viewModelSnapshot.CaptureCommandMaxQueueLatencyMs,");
-        AssertContains(captureCommandProjectionText, "LastError = viewModelSnapshot.CaptureCommandLastError");
-        AssertContains(captureCommandProjectionText, "private readonly record struct CaptureCommandProjection");
-        AssertContains(captureCommandProjectionText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
-        AssertContains(captureCommandProjectionText, "CommandsEnqueued = captureCommands.CommandsEnqueued,");
-        AssertContains(captureCommandProjectionText, "MaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,");
-        AssertContains(captureCommandProjectionText, "LastError = captureCommands.LastError");
-        AssertContains(captureCommandProjectionText, "private readonly record struct CaptureCommandFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsUserSettingsProjection_LivesWithSnapshotProjection()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var userSettingsProjectionText = snapshotProjectionText;
-
-        AssertContains(snapshotProjectionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
-        AssertContains(snapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
-        AssertContains(snapshotFlatteningText, "var settingsFlattening = BuildSettingsFlattenedProjection(userSettings, recordingSettings);");
-        AssertContains(snapshotFlatteningText, "SelectedDeviceId = settingsFlattening.SelectedDeviceId,");
-        AssertContains(snapshotFlatteningText, "SelectedFriendlyFrameRate = settingsFlattening.SelectedFriendlyFrameRate,");
-        AssertContains(snapshotFlatteningText, "SelectedRecordingFormat = settingsFlattening.SelectedRecordingFormat,");
-        AssertContains(snapshotFlatteningText, "CustomBitrateMbps = settingsFlattening.CustomBitrateMbps,");
-        AssertContains(snapshotFlatteningText, "IsStatsVisible = settingsFlattening.IsStatsVisible,");
-        AssertContains(userSettingsProjectionText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");
-        AssertContains(userSettingsProjectionText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
-        AssertContains(userSettingsProjectionText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
-        AssertContains(userSettingsProjectionText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
-        AssertContains(userSettingsProjectionText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
-        AssertContains(userSettingsProjectionText, "IsStatsVisible = userSettings.IsStatsVisible");
-        AssertContains(userSettingsProjectionText, "private readonly record struct SettingsFlattenedProjection");
-        AssertDoesNotContain(snapshotFlatteningText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
-        AssertDoesNotContain(snapshotFlatteningText, "SelectedDeviceId = userSettings.SelectedDeviceId,");
-        AssertDoesNotContain(snapshotFlatteningText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
-        AssertDoesNotContain(snapshotFlatteningText, "SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,");
-        AssertDoesNotContain(snapshotFlatteningText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
-        AssertDoesNotContain(snapshotFlatteningText, "SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,");
-        AssertDoesNotContain(snapshotFlatteningText, "CustomBitrateMbps = userSettings.CustomBitrateMbps,");
-        AssertDoesNotContain(snapshotFlatteningText, "CustomBitrateMbps = recordingSettings.CustomBitrateMbps,");
-        AssertDoesNotContain(snapshotFlatteningText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible,");
-        AssertDoesNotContain(snapshotFlatteningText, "IsStatsVisible = userSettings.IsStatsVisible,");
-
-        AssertContains(userSettingsProjectionText, "private static UserSettingsProjection BuildUserSettingsProjection(ViewModelRuntimeSnapshot viewModelSnapshot)");
-        AssertContains(userSettingsProjectionText, "SelectedDeviceId = viewModelSnapshot.SelectedDeviceId,");
-        AssertContains(userSettingsProjectionText, "SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),");
-        AssertContains(userSettingsProjectionText, "SelectedRecordingFormat = viewModelSnapshot.SelectedRecordingFormat,");
-        AssertContains(userSettingsProjectionText, "IsStatsVisible = viewModelSnapshot.IsStatsVisible");
-        AssertContains(userSettingsProjectionText, "private readonly record struct UserSettingsProjection");
-        AssertContains(userSettingsProjectionText, "private static RecordingSettingsProjection BuildRecordingSettingsProjection(UserSettingsProjection userSettings)");
-        AssertContains(userSettingsProjectionText, "SelectedRecordingFormat = userSettings.SelectedRecordingFormat,");
-        AssertContains(userSettingsProjectionText, "SelectedVideoFormat = userSettings.SelectedVideoFormat,");
-        AssertContains(userSettingsProjectionText, "CustomBitrateMbps = userSettings.CustomBitrateMbps");
-        AssertContains(userSettingsProjectionText, "private readonly record struct RecordingSettingsProjection");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.UserSettings.cs")),
-            "user settings projection lives with AutomationDiagnosticsHub.SnapshotProjection.cs");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsCaptureFormatProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureFormatProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);");
-        AssertContains(snapshotFlatteningText, "RequestedWidth = captureFormatFlattening.Requested.Width,");
-        AssertContains(snapshotFlatteningText, "HdrActivationReason = captureFormatFlattening.HdrRequest.ActivationReason,");
-        AssertContains(snapshotFlatteningText, "NegotiatedWidth = captureFormatFlattening.Negotiated.Width,");
-        AssertContains(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureFormatFlattening.ReaderObservation.LatestObservedFramePixelFormat,");
-        AssertContains(snapshotFlatteningText, "EncoderVideoCodec = captureFormatFlattening.Encoder.VideoCodec,");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "Requested = BuildCaptureFormatRequestedFlattenedProjection(captureFormat),");
-        AssertContains(captureFormatProjectionText, "HdrRequest = BuildCaptureFormatHdrRequestFlattenedProjection(captureFormat),");
-        AssertContains(captureFormatProjectionText, "Negotiated = BuildCaptureFormatNegotiatedFlattenedProjection(captureFormat),");
-        AssertContains(captureFormatProjectionText, "ReaderObservation = BuildCaptureFormatReaderObservationFlattenedProjection(captureFormat),");
-        AssertContains(captureFormatProjectionText, "Encoder = BuildCaptureFormatEncoderFlattenedProjection(captureFormat)");
-        AssertContains(captureFormatProjectionText, "private readonly record struct CaptureFormatFlattenedProjection");
-
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(");
-        AssertContains(captureFormatProjectionText, "Width = captureRuntime.RequestedWidth,");
-        AssertContains(captureFormatProjectionText, "AudioEnabled = captureRuntime.RequestedAudioEnabled");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatHdrRequestProjection BuildCaptureFormatHdrRequestProjection(");
-        AssertContains(captureFormatProjectionText, "ActivationReason = captureRuntime.HdrActivationReason,");
-        AssertContains(captureFormatProjectionText, "RequestedButSourceNot10Bit = captureRuntime.HdrRequestedButSourceNot10Bit");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatActualProjection BuildCaptureFormatActualProjection(");
-        AssertContains(captureFormatProjectionText, "Width = captureRuntime.ActualWidth,");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatNegotiatedProjection BuildCaptureFormatNegotiatedProjection(");
-        AssertContains(captureFormatProjectionText, "Width = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
-        AssertContains(captureFormatProjectionText, "MediaSubtypeToken = captureRuntime.NegotiatedMediaSubtypeToken");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(");
-        AssertContains(captureFormatProjectionText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
-        AssertContains(captureFormatProjectionText, "MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
-        AssertContains(captureFormatProjectionText, "VideoCodec = captureRuntime.EncoderVideoCodec,");
-        AssertContains(captureFormatProjectionText, "TenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed");
-
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "Width = captureFormat.Requested.Width,");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "ActivationReason = captureFormat.HdrRequest.ActivationReason,");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "Width = captureFormat.Actual.Width,");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "Width = captureFormat.Negotiated.Width,");
-        AssertContains(captureFormatProjectionText, "MediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,");
-        AssertContains(captureFormatProjectionText, "MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters");
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
-        AssertContains(captureFormatProjectionText, "VideoCodec = captureFormat.Encoder.VideoCodec,");
-        AssertContains(captureFormatProjectionText, "TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed");
-        AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureRuntime.RequestedWidth,");
-        AssertDoesNotContain(snapshotFlatteningText, "RequestedWidth = captureFormat.RequestedWidth,");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrActivationReason = captureRuntime.HdrActivationReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrActivationReason = captureFormat.HdrActivationReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "NegotiatedWidth = captureRuntime.NegotiatedWidth ?? captureRuntime.ActualWidth,");
-        AssertDoesNotContain(snapshotFlatteningText, "NegotiatedWidth = captureFormat.NegotiatedWidth,");
-        AssertDoesNotContain(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureRuntime.LatestObservedFramePixelFormat,");
-        AssertDoesNotContain(snapshotFlatteningText, "LatestObservedFramePixelFormat = captureFormat.LatestObservedFramePixelFormat,");
-        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoCodec = captureRuntime.EncoderVideoCodec,");
-        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoCodec = captureFormat.EncoderVideoCodec,");
-
-        AssertContains(captureFormatProjectionText, "private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(captureFormatProjectionText, "private readonly record struct CaptureFormatProjection");
-        AssertContains(captureFormatProjectionText, "Requested = BuildCaptureFormatRequestedProjection(captureRuntime),");
-        AssertContains(captureFormatProjectionText, "HdrRequest = BuildCaptureFormatHdrRequestProjection(captureRuntime),");
-        AssertContains(captureFormatProjectionText, "Actual = BuildCaptureFormatActualProjection(captureRuntime),");
-        AssertContains(captureFormatProjectionText, "Negotiated = BuildCaptureFormatNegotiatedProjection(captureRuntime),");
-        AssertContains(captureFormatProjectionText, "ReaderObservation = BuildCaptureFormatReaderObservationProjection(captureRuntime),");
-        AssertContains(captureFormatProjectionText, "Encoder = BuildCaptureFormatEncoderProjection(captureRuntime)");
-        AssertContains(captureFormatProjectionText, "public CaptureFormatRequestedProjection Requested { get; init; }");
-        AssertContains(captureFormatProjectionText, "public CaptureFormatEncoderProjection Encoder { get; init; }");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsCaptureTransportProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureTransportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);");
-        AssertContains(snapshotFlatteningText, "MemoryPreference = captureTransportFlattening.MemoryPreference,");
-        AssertContains(snapshotFlatteningText, "VideoNegotiatedSubtype = captureTransportFlattening.VideoNegotiatedSubtype,");
-        AssertContains(snapshotFlatteningText, "FrameLedgerRecentEvents = captureTransportFlattening.FrameLedgerRecentEvents,");
-        AssertDoesNotContain(snapshotFlatteningText, "MemoryPreference = captureRuntime.MemoryPreference,");
-        AssertDoesNotContain(snapshotFlatteningText, "MemoryPreference = captureTransport.MemoryPreference,");
-        AssertDoesNotContain(snapshotFlatteningText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,");
-        AssertDoesNotContain(snapshotFlatteningText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,");
-
-        AssertContains(captureTransportProjectionText, "private static CaptureTransportProjection BuildCaptureTransportProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(captureTransportProjectionText, "MemoryPreference = captureRuntime.MemoryPreference,");
-        AssertContains(captureTransportProjectionText, "VideoNegotiatedSubtype = captureRuntime.VideoNegotiatedSubtype,");
-        AssertContains(captureTransportProjectionText, "FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents");
-        AssertContains(captureTransportProjectionText, "private readonly record struct CaptureTransportProjection");
-        AssertContains(captureTransportProjectionText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
-        AssertContains(captureTransportProjectionText, "MemoryPreference = captureTransport.MemoryPreference,");
-        AssertContains(captureTransportProjectionText, "VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,");
-        AssertContains(captureTransportProjectionText, "FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents");
-        AssertContains(captureTransportProjectionText, "private readonly record struct CaptureTransportFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsHdrPipelineProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var hdrPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
-        AssertContains(snapshotFlatteningText, "var hdrPipelineFlattening = BuildHdrPipelineFlattenedProjection(hdrPipeline);");
-        AssertContains(snapshotFlatteningText, "IsHdrAvailable = hdrPipelineFlattening.IsHdrAvailable,");
-        AssertContains(snapshotFlatteningText, "HdrRuntimeState = hdrPipelineFlattening.HdrRuntimeState,");
-        AssertContains(snapshotFlatteningText, "HdrWarmupObservedNonP010Frames = hdrPipelineFlattening.HdrWarmupObservedNonP010Frames,");
-        AssertContains(snapshotFlatteningText, "PipelineModeStatus = hdrPipelineFlattening.PipelineModeStatus,");
-        AssertContains(snapshotFlatteningText, "TelemetryAlignmentReason = hdrPipelineFlattening.TelemetryAlignmentReason,");
-        AssertContains(snapshotFlatteningText, "HdrTruthVerdict = hdrPipelineFlattening.TruthVerdict,");
-        AssertContains(hdrPipelineProjectionText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
-        AssertContains(hdrPipelineProjectionText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
-        AssertContains(hdrPipelineProjectionText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
-        AssertContains(hdrPipelineProjectionText, "HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,");
-        AssertContains(hdrPipelineProjectionText, "PipelineModeStatus = hdrPipeline.PipelineModeStatus,");
-        AssertContains(hdrPipelineProjectionText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
-        AssertContains(hdrPipelineProjectionText, "TruthVerdict = hdrPipeline.TruthVerdict");
-        AssertContains(hdrPipelineProjectionText, "private readonly record struct HdrPipelineFlattenedProjection");
-        AssertDoesNotContain(snapshotFlatteningText, "IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,");
-        AssertDoesNotContain(snapshotFlatteningText, "IsHdrAvailable = hdrPipeline.IsHdrAvailable,");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrRuntimeState = !string.IsNullOrWhiteSpace(viewModelSnapshot.HdrRuntimeState)");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrRuntimeState = hdrPipeline.HdrRuntimeState,");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrWarmupObservedNonP010Frames = captureRuntime.HdrWarmupObservedNonP010Frames,");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,");
-        AssertDoesNotContain(snapshotFlatteningText, "PipelineModeStatus = captureRuntime.PipelineModeStatus,");
-        AssertDoesNotContain(snapshotFlatteningText, "PipelineModeStatus = hdrPipeline.PipelineModeStatus,");
-        AssertDoesNotContain(snapshotFlatteningText, "TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "HdrTruthVerdict = hdrPipeline.TruthVerdict,");
-
-        AssertContains(hdrPipelineProjectionText, "private static HdrPipelineProjection BuildHdrPipelineProjection(");
-        AssertContains(hdrPipelineProjectionText, "IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,");
-        AssertContains(hdrPipelineProjectionText, "HdrRuntimeState = PreferViewModelHdrText(viewModelSnapshot.HdrRuntimeState, captureRuntime.HdrRuntimeState),");
-        AssertContains(hdrPipelineProjectionText, "HdrWarmupObservedNonP010Frames = captureRuntime.HdrWarmupObservedNonP010Frames,");
-        AssertContains(hdrPipelineProjectionText, "PipelineModeStatus = captureRuntime.PipelineModeStatus,");
-        AssertContains(hdrPipelineProjectionText, "TelemetryAlignmentReason = captureRuntime.TelemetryAlignmentReason,");
-        AssertContains(hdrPipelineProjectionText, "TruthVerdict = truthVerdict");
-        AssertContains(hdrPipelineProjectionText, "private static string PreferViewModelHdrText(string viewModelValue, string runtimeValue)");
-        AssertContains(hdrPipelineProjectionText, "private readonly record struct HdrPipelineProjection");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.HdrPipeline.cs")),
-            "HDR pipeline projection partial folded into capture-format projection owner");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.Hdr.cs")),
-            "HDR diagnostics partial folded into capture-format projection owner");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsSourceTelemetryProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var sourceTelemetryProjectionText = sourceSignalProjectionText;
-
-        AssertContains(snapshotProjectionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
-        AssertContains(snapshotFlatteningText, "SourceTelemetryAvailability = sourceFlattening.Telemetry.SourceTelemetryAvailability,");
-        AssertContains(snapshotFlatteningText, "SourceTelemetryDetails = sourceFlattening.Telemetry.SourceTelemetryDetails,");
-        AssertContains(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceFlattening.Telemetry.SourceTelemetryAgeSeconds,");
-        AssertContains(snapshotFlatteningText, "SourceTargetSummaryText = sourceFlattening.Telemetry.SourceTargetSummaryText,");
-        AssertContains(sourceSignalProjectionText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
-        AssertContains(sourceSignalProjectionText, "Telemetry = BuildSourceTelemetryFlattenedProjection(sourceTelemetry)");
-        AssertContains(sourceSignalProjectionText, "private readonly record struct SourceFlattenedProjection");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability)");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,");
-
-        AssertContains(sourceTelemetryProjectionText, "private static SourceTelemetryProjection BuildSourceTelemetryProjection(");
-        AssertContains(sourceTelemetryProjectionText, "private static string PreferKnownTelemetryValue(string viewModelValue, string runtimeValue)");
-        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAvailability = PreferKnownTelemetryValue(");
-        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,");
-        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAgeSeconds = TelemetryAgeHelper.ComputeAgeSeconds(");
-        AssertContains(sourceTelemetryProjectionText, "private readonly record struct SourceTelemetryProjection");
-        AssertContains(sourceTelemetryProjectionText, "private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(");
-        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,");
-        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,");
-        AssertContains(sourceTelemetryProjectionText, "SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,");
-        AssertContains(sourceTelemetryProjectionText, "SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText");
-        AssertContains(sourceTelemetryProjectionText, "private readonly record struct SourceTelemetryFlattenedProjection");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")),
-            "source signal and telemetry projection folded into root snapshot projection owner");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsSourceSignalProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var sourceSignalProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
-        AssertContains(snapshotFlatteningText, "DetectedSourceFrameRate = sourceFlattening.Signal.DetectedSourceFrameRate,");
-        AssertContains(snapshotFlatteningText, "SourceFrameRateOrigin = sourceFlattening.Signal.SourceFrameRateOrigin,");
-        AssertContains(snapshotFlatteningText, "SourceRawTimingHex = sourceFlattening.Signal.SourceRawTimingHex,");
-        AssertContains(sourceSignalProjectionText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
-        AssertContains(sourceSignalProjectionText, "Signal = BuildSourceSignalFlattenedProjection(sourceSignal),");
-        AssertContains(sourceSignalProjectionText, "private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(");
-        AssertContains(sourceSignalProjectionText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
-        AssertContains(sourceSignalProjectionText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
-        AssertContains(sourceSignalProjectionText, "SourceRawTimingHex = sourceSignal.RawTimingHex");
-        AssertContains(sourceSignalProjectionText, "private readonly record struct SourceSignalFlattenedProjection");
-        AssertDoesNotContain(snapshotFlatteningText, "DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceRawTimingHex = sourceSignal.RawTimingHex,");
-        AssertDoesNotContain(snapshotFlatteningText, "DetectedSourceFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,");
-        AssertDoesNotContain(snapshotFlatteningText, "SourceRawTimingHex = captureRuntime.SourceRawTimingHex,");
-
-        AssertContains(sourceSignalProjectionText, "private static SourceSignalProjection BuildSourceSignalProjection(");
-        AssertContains(sourceSignalProjectionText, "DetectedFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,");
-        AssertContains(sourceSignalProjectionText, "FrameRateOrigin = ResolveSourceFrameRateOrigin(viewModelSnapshot.SourceFrameRateOrigin, captureRuntime.SourceFrameRateOrigin),");
-        AssertContains(sourceSignalProjectionText, "RawTimingHex = captureRuntime.SourceRawTimingHex");
-        AssertContains(sourceSignalProjectionText, "private static string ResolveSourceFrameRateOrigin(string viewModelOrigin, string runtimeOrigin)");
-        AssertContains(sourceSignalProjectionText, "private readonly record struct SourceSignalProjection");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.SourceSignal.cs")),
-            "source signal projection folded into root snapshot projection owner");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsCaptureCadenceProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var captureCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var captureCadenceOnlyText = captureCadenceProjectionText[..captureCadenceProjectionText.IndexOf("private static VisualCadenceProjection", System.StringComparison.Ordinal)];
-
-        AssertContains(snapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
-        AssertContains(snapshotFlatteningText, "var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);");
-        AssertContains(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadenceFlattening.ExpectedFrameRate,");
-        AssertContains(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames,");
-        AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = health.ExpectedFrameRate,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
-        AssertDoesNotContain(snapshotFlatteningText, "ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,");
-        AssertDoesNotContain(snapshotFlatteningText, "CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,");
-
-        AssertContains(captureCadenceProjectionText, "private static CaptureCadenceProjection BuildCaptureCadenceProjection(CaptureHealthSnapshot health)");
-        AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = health.ExpectedFrameRate,");
-        AssertContains(captureCadenceProjectionText, "EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,");
-        AssertContains(captureCadenceProjectionText, "private readonly record struct CaptureCadenceProjection");
-        AssertContains(captureCadenceProjectionText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
-        AssertContains(captureCadenceProjectionText, "ExpectedFrameRate = captureCadence.ExpectedFrameRate,");
-        AssertContains(captureCadenceProjectionText, "EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames");
-        AssertContains(captureCadenceProjectionText, "private readonly record struct CaptureCadenceFlattenedProjection");
-        AssertDoesNotContain(captureCadenceOnlyText, "VisualMotionConfidence");
-        AssertDoesNotContain(captureCadenceOnlyText, "VisualCenterRecentChangeIntervalsMs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")),
-            "capture and visual cadence projections folded into root snapshot projection owner");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsVisualCadenceProjection_LivesInFocusedPartial()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var visualCadenceProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var captureCadenceOnlyText = visualCadenceProjectionText[..visualCadenceProjectionText.IndexOf("private static VisualCadenceProjection", System.StringComparison.Ordinal)];
-
-        AssertContains(snapshotProjectionText, "var visualCadence = BuildVisualCadenceProjection(health);");
-        AssertContains(snapshotFlatteningText, "var visualCadenceFlattening = BuildVisualCadenceFlattenedProjection(visualCadence);");
-        AssertContains(snapshotFlatteningText, "VisualCadenceMotionConfidence = visualCadenceFlattening.MotionConfidence,");
-        AssertContains(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = visualCadenceFlattening.CenterRecentChangeIntervalsMs,");
-        AssertContains(visualCadenceProjectionText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
-        AssertContains(visualCadenceProjectionText, "MotionConfidence = visualCadence.MotionConfidence,");
-        AssertContains(visualCadenceProjectionText, "CenterRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs");
-        AssertContains(visualCadenceProjectionText, "private readonly record struct VisualCadenceFlattenedProjection");
-        AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = captureCadence.VisualMotionConfidence,");
-        AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = captureCadence.VisualCenterRecentChangeIntervalsMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = health.VisualCadenceMotionConfidence,");
-        AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "VisualCadenceMotionConfidence = visualCadence.MotionConfidence,");
-        AssertDoesNotContain(snapshotFlatteningText, "VisualCenterCadenceRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs,");
-
-        AssertContains(visualCadenceProjectionText, "private static VisualCadenceProjection BuildVisualCadenceProjection(CaptureHealthSnapshot health)");
-        AssertContains(visualCadenceProjectionText, "MotionConfidence = health.VisualCadenceMotionConfidence,");
-        AssertContains(visualCadenceProjectionText, "CenterRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs");
-        AssertContains(visualCadenceProjectionText, "private readonly record struct VisualCadenceProjection");
-        AssertDoesNotContain(captureCadenceOnlyText, "VisualCadenceMotionConfidence");
-        AssertDoesNotContain(captureCadenceOnlyText, "VisualCenterCadenceRecentChangeIntervalsMs");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.VisualCadence.cs")),
-            "visual cadence projection folded into root snapshot projection owner");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsMjpegProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var mjpegProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var mjpegPreviewJitterProjectionText = mjpegProjectionText;
-
-        AssertContains(snapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
-        AssertContains(snapshotFlatteningText, "var mjpegFlattening = BuildMjpegFlattenedProjection(mjpeg);");
-        AssertContains(snapshotFlatteningText, "MjpegTotalDecoded = mjpegFlattening.TotalDecoded,");
-        AssertContains(snapshotFlatteningText, "var mjpegTimingFlattening = BuildMjpegTimingFlattenedProjection(mjpeg.Timing);");
-        AssertContains(snapshotFlatteningText, "MjpegDecodeSampleCount = mjpegTimingFlattening.DecodeSampleCount,");
-        AssertContains(snapshotFlatteningText, "var mjpegPreviewJitterFlattening = BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter);");
-        AssertContains(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = mjpegPreviewJitterFlattening.Events.LastDropReason,");
-        AssertContains(snapshotFlatteningText, "var mjpegPacketHashFlattening = BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash);");
-        AssertContains(snapshotFlatteningText, "MjpegPacketHashPattern = mjpegPacketHashFlattening.Pattern,");
-        AssertContains(snapshotFlatteningText, "MjpegPerDecoder = mjpegTimingFlattening.PerDecoder,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegTotalDecoded = mjpeg.TotalDecoded,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegCompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = mjpeg.DecodeSampleCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegDecodeSampleCount = mjpeg.Timing.DecodeSampleCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitterLastDropReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitter.LastDropReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPacketHashPattern = mjpeg.PacketHashPattern,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPacketHashPattern = mjpeg.PacketHash.Pattern,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPacketHashPattern = health.MjpegPacketHashPattern,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPerDecoder = mjpeg.PerDecoder,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPerDecoder = mjpeg.Timing.PerDecoder,");
-        AssertDoesNotContain(snapshotFlatteningText, "MjpegPerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
-
-        AssertContains(mjpegProjectionText, "private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)");
-        AssertContains(mjpegProjectionText, "var timing = BuildMjpegTimingProjection(health);");
-        AssertContains(mjpegProjectionText, "Timing = timing,");
-        AssertContains(mjpegProjectionText, "var previewJitter = BuildMjpegPreviewJitterProjection(health);");
-        AssertContains(mjpegProjectionText, "var packetHash = BuildMjpegPacketHashProjection(health);");
-        AssertContains(mjpegProjectionText, "PreviewJitter = previewJitter,");
-        AssertDoesNotContain(mjpegProjectionText, "PreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,");
-        AssertContains(mjpegProjectionText, "PacketHash = packetHash,");
-        AssertDoesNotContain(mjpegProjectionText, "PacketHashPattern = health.MjpegPacketHashPattern,");
-        AssertContains(mjpegProjectionText, "private readonly record struct MjpegProjection");
-        AssertContains(mjpegProjectionText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
-        AssertContains(mjpegProjectionText, "TotalDecoded = mjpeg.TotalDecoded,");
-        AssertContains(mjpegProjectionText, "CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,");
-        AssertContains(mjpegProjectionText, "private readonly record struct MjpegFlattenedProjection");
-        AssertContains(mjpegProjectionText, "private static MjpegTimingProjection BuildMjpegTimingProjection(CaptureHealthSnapshot health)");
-        AssertContains(mjpegProjectionText, "DecodeSampleCount = health.MjpegDecodeSampleCount,");
-        AssertContains(mjpegProjectionText, "PipelineMaxMs = health.MjpegPipelineMaxMs,");
-        AssertContains(mjpegProjectionText, "PerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder");
-        AssertContains(mjpegProjectionText, "private readonly record struct MjpegTimingProjection");
-        AssertContains(mjpegProjectionText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
-        AssertContains(mjpegProjectionText, "DecodeSampleCount = timing.DecodeSampleCount,");
-        AssertContains(mjpegProjectionText, "PipelineMaxMs = timing.PipelineMaxMs,");
-        AssertContains(mjpegProjectionText, "PerDecoder = timing.PerDecoder");
-        AssertContains(mjpegProjectionText, "private readonly record struct MjpegTimingFlattenedProjection");
-
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterProjection BuildMjpegPreviewJitterProjection(CaptureHealthSnapshot health)");
-        AssertContains(mjpegPreviewJitterProjectionText, "Queue = BuildMjpegPreviewJitterQueueProjection(health),");
-        AssertContains(mjpegPreviewJitterProjectionText, "Timing = BuildMjpegPreviewJitterTimingProjection(health),");
-        AssertContains(mjpegPreviewJitterProjectionText, "Adaptive = BuildMjpegPreviewJitterAdaptiveProjection(health),");
-        AssertContains(mjpegPreviewJitterProjectionText, "Events = BuildMjpegPreviewJitterEventProjection(health)");
-        AssertContains(mjpegPreviewJitterProjectionText, "private readonly record struct MjpegPreviewJitterProjection");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "Queue = BuildMjpegPreviewJitterQueueFlattenedProjection(previewJitter.Queue),");
-        AssertContains(mjpegPreviewJitterProjectionText, "Timing = BuildMjpegPreviewJitterTimingFlattenedProjection(previewJitter.Timing),");
-        AssertContains(mjpegPreviewJitterProjectionText, "Adaptive = BuildMjpegPreviewJitterAdaptiveFlattenedProjection(previewJitter.Adaptive),");
-        AssertContains(mjpegPreviewJitterProjectionText, "Events = BuildMjpegPreviewJitterEventFlattenedProjection(previewJitter.Events)");
-        AssertContains(mjpegPreviewJitterProjectionText, "private readonly record struct MjpegPreviewJitterFlattenedProjection");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterQueueProjection BuildMjpegPreviewJitterQueueProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "Enabled = health.MjpegPreviewJitterEnabled,");
-        AssertContains(mjpegPreviewJitterProjectionText, "ResumeReprimeCount = health.MjpegPreviewJitterResumeReprimeCount");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "Enabled = queue.Enabled,");
-        AssertContains(mjpegPreviewJitterProjectionText, "ResumeReprimeCount = queue.ResumeReprimeCount");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterTimingProjection BuildMjpegPreviewJitterTimingProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "InputSampleCount = health.MjpegPreviewJitterInputSampleCount,");
-        AssertContains(mjpegPreviewJitterProjectionText, "LatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "InputSampleCount = timing.InputSampleCount,");
-        AssertContains(mjpegPreviewJitterProjectionText, "LatencyMaxMs = timing.LatencyMaxMs");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterAdaptiveProjection BuildMjpegPreviewJitterAdaptiveProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "DeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,");
-        AssertContains(mjpegPreviewJitterProjectionText, "TargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "DeadlineDropCount = adaptive.DeadlineDropCount,");
-        AssertContains(mjpegPreviewJitterProjectionText, "TargetDecreaseCount = adaptive.TargetDecreaseCount");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterEventProjection BuildMjpegPreviewJitterEventProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "LastDropReason = health.MjpegPreviewJitterLastDropReason,");
-        AssertContains(mjpegPreviewJitterProjectionText, "ScheduleLateCount = health.MjpegPreviewJitterScheduleLateCount");
-        AssertContains(mjpegPreviewJitterProjectionText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
-        AssertContains(mjpegPreviewJitterProjectionText, "LastDropReason = events.LastDropReason,");
-        AssertContains(mjpegPreviewJitterProjectionText, "ScheduleLateCount = events.ScheduleLateCount");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Mjpeg.cs")),
-            "MJPEG projection folded into capture-format projection owner");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.MjpegPreviewJitter.cs")),
-            "MJPEG preview jitter projection folded into MJPEG projection owner");
-
-        AssertContains(mjpegProjectionText, "private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)");
-        AssertContains(mjpegProjectionText, "SampleCount = health.MjpegPacketHashSampleCount,");
-        AssertContains(mjpegProjectionText, "Pattern = health.MjpegPacketHashPattern,");
-        AssertContains(mjpegProjectionText, "RecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags");
-        AssertContains(mjpegProjectionText, "private readonly record struct MjpegPacketHashProjection");
-        AssertContains(mjpegProjectionText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
-        AssertContains(mjpegProjectionText, "SampleCount = packetHash.SampleCount,");
-        AssertContains(mjpegProjectionText, "Pattern = packetHash.Pattern,");
-        AssertContains(mjpegProjectionText, "RecentDuplicateFlags = packetHash.RecentDuplicateFlags");
-        AssertContains(mjpegProjectionText, "private readonly record struct MjpegPacketHashFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsRecordingPipelineProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var obsoleteRecordingProjectionPath = System.IO.Path.Combine(
-            GetRepoRoot(),
-            "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.Recording.cs");
-
-        AssertContains(snapshotProjectionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
-        AssertContains(snapshotFlatteningText, "var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);");
-        AssertContains(snapshotFlatteningText, "EncoderVideoFramesEnqueued = recordingPipelineFlattening.Encoder.VideoFramesEnqueued,");
-        AssertContains(snapshotFlatteningText, "ConversionQueueDepth = recordingPipelineFlattening.Ingest.ConversionQueueDepth,");
-        AssertContains(snapshotFlatteningText, "RecordingVideoQueueCapacity = recordingPipelineFlattening.VideoQueue.Capacity,");
-        AssertContains(snapshotFlatteningText, "RecordingGpuFramesEnqueued = recordingPipelineFlattening.HardwareQueues.GpuFramesEnqueued,");
-        AssertContains(snapshotFlatteningText, "RecordingCudaFramesDropped = recordingPipelineFlattening.HardwareQueues.CudaFramesDropped,");
-        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoFramesEnqueued = health.VideoFramesEnqueued,");
-        AssertDoesNotContain(snapshotFlatteningText, "ConversionQueueDepth = health.ConversionQueueDepth,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingCudaFramesDropped = health.RecordingCudaFramesDropped,");
-        AssertDoesNotContain(snapshotFlatteningText, "EncoderVideoFramesEnqueued = recordingPipeline.EncoderVideoFramesEnqueued,");
-        AssertDoesNotContain(snapshotFlatteningText, "ConversionQueueDepth = recordingPipeline.ConversionQueueDepth,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingVideoQueueCapacity = recordingPipeline.RecordingVideoQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingCudaFramesDropped = recordingPipeline.RecordingCudaFramesDropped,");
-
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
-        AssertContains(recordingPipelineProjectionText, "Encoder = BuildRecordingPipelineEncoderFlattenedProjection(recordingPipeline),");
-        AssertContains(recordingPipelineProjectionText, "Ingest = BuildRecordingPipelineIngestFlattenedProjection(recordingPipeline),");
-        AssertContains(recordingPipelineProjectionText, "VideoQueue = BuildRecordingPipelineVideoQueueFlattenedProjection(recordingPipeline),");
-        AssertContains(recordingPipelineProjectionText, "HardwareQueues = BuildRecordingPipelineHardwareQueuesFlattenedProjection(recordingPipeline)");
-        AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingPipelineFlattenedProjection");
-
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineEncoderProjection BuildRecordingPipelineEncoderProjection(");
-        AssertContains(recordingPipelineProjectionText, "VideoFramesEnqueued = health.VideoFramesEnqueued,");
-        AssertContains(recordingPipelineProjectionText, "EncodingFailed = health.RecordingEncodingFailed,");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(");
-        AssertContains(recordingPipelineProjectionText, "ConversionQueueDepth = health.ConversionQueueDepth,");
-        AssertContains(recordingPipelineProjectionText, "VideoDropsBacklogEviction = health.VideoDropsBacklogEviction");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(");
-        AssertContains(recordingPipelineProjectionText, "Capacity = health.RecordingVideoQueueCapacity,");
-        AssertContains(recordingPipelineProjectionText, "BackpressureMaxWaitMs = health.RecordingVideoBackpressureMaxWaitMs");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(");
-        AssertContains(recordingPipelineProjectionText, "GpuFramesEnqueued = health.RecordingGpuFramesEnqueued,");
-        AssertContains(recordingPipelineProjectionText, "CudaFramesDropped = health.RecordingCudaFramesDropped");
-
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
-        AssertContains(recordingPipelineProjectionText, "VideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,");
-        AssertContains(recordingPipelineProjectionText, "EncodingFailed = recordingPipeline.Encoder.EncodingFailed,");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
-        AssertContains(recordingPipelineProjectionText, "ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,");
-        AssertContains(recordingPipelineProjectionText, "VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
-        AssertContains(recordingPipelineProjectionText, "Capacity = recordingPipeline.VideoQueue.Capacity,");
-        AssertContains(recordingPipelineProjectionText, "BackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs");
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
-        AssertContains(recordingPipelineProjectionText, "GpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,");
-        AssertContains(recordingPipelineProjectionText, "CudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped");
-
-        AssertContains(recordingPipelineProjectionText, "private static RecordingPipelineProjection BuildRecordingPipelineProjection(CaptureHealthSnapshot health)");
-        AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingPipelineProjection");
-        AssertContains(recordingPipelineProjectionText, "Encoder = BuildRecordingPipelineEncoderProjection(health),");
-        AssertContains(recordingPipelineProjectionText, "Ingest = BuildRecordingPipelineIngestProjection(health),");
-        AssertContains(recordingPipelineProjectionText, "VideoQueue = BuildRecordingPipelineVideoQueueProjection(health),");
-        AssertContains(recordingPipelineProjectionText, "HardwareQueues = BuildRecordingPipelineHardwareQueuesProjection(health)");
-        AssertContains(recordingPipelineProjectionText, "public RecordingPipelineEncoderProjection Encoder { get; init; }");
-        AssertContains(recordingPipelineProjectionText, "public RecordingPipelineHardwareQueuesProjection HardwareQueues { get; init; }");
-        if (System.IO.File.Exists(obsoleteRecordingProjectionPath))
-        {
-            throw new System.InvalidOperationException("Recording projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
-        }
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsRecordingIntegrityProjection_UsesOneMapping()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-
-        AssertContains(snapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var recordingIntegrity = projections.RecordingIntegrity;");
-        AssertContains(snapshotProjectionText, "RecordingIntegrityProjection RecordingIntegrity,");
-        AssertContains(snapshotFlatteningText, "var recordingIntegrity = flattened.RecordingIntegrity;");
-        AssertContains(snapshotFlatteningText, "RecordingIntegrityStatus = recordingIntegrity.Summary.Status,");
-        AssertContains(snapshotFlatteningText, "RecordingIntegrityReason = recordingIntegrity.Summary.Reason,");
-        AssertContains(snapshotProjectionText, "private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(");
-        AssertContains(snapshotProjectionText, "private readonly record struct RecordingIntegrityProjection");
-        AssertDoesNotContain(snapshotProjectionText, "RecordingIntegrityFlattenedProjection");
-        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegritySummaryFlattenedProjection");
-        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityVideoFlattenedProjection");
-        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityBackpressureFlattenedProjection");
-        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityAudioFlattenedProjection");
-        AssertDoesNotContain(snapshotProjectionText, "BuildRecordingIntegrityAvSyncFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsRecordingBackendProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var recordingBackend = projections.RecordingBackend;");
-        AssertContains(snapshotFlatteningText, "var recordingBackend = flattened.RecordingBackend;");
-        AssertContains(snapshotFlatteningText, "RecordingBackend = recordingBackend.Backend,");
-        AssertContains(snapshotFlatteningText, "AudioPathMode = recordingBackend.AudioPathMode,");
-        AssertContains(snapshotFlatteningText, "MuxResult = recordingBackend.MuxResult,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = captureRuntime.RecordingBackend,");
-        AssertDoesNotContain(snapshotFlatteningText, "MuxResult = captureRuntime.MuxSucceeded.HasValue");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingBackend = recordingOutputFlattening.Backend,");
-        AssertDoesNotContain(snapshotFlatteningText, "MuxResult = recordingOutputFlattening.MuxResult,");
-
-        AssertContains(recordingPipelineProjectionText, "private static RecordingBackendProjection BuildRecordingBackendProjection(CaptureRuntimeSnapshot captureRuntime)");
-        AssertContains(recordingPipelineProjectionText, "Backend = captureRuntime.RecordingBackend,");
-        AssertContains(recordingPipelineProjectionText, "AudioPathMode = captureRuntime.AudioPathMode,");
-        AssertContains(recordingPipelineProjectionText, "MuxResult = ResolveMuxResult(captureRuntime.MuxSucceeded)");
-        AssertContains(recordingPipelineProjectionText, "private static string ResolveMuxResult(bool? muxSucceeded)");
-        AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingBackendProjection");
-        AssertDoesNotContain(recordingPipelineProjectionText, "RecordingOutputFlattenedProjection");
-        AssertDoesNotContain(recordingPipelineProjectionText, "BuildRecordingOutputFlattenedProjection");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsRecordingOutputProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var recordingPipelineProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var obsoleteRecordingOutputPath = System.IO.Path.Combine(
-            GetRepoRoot(),
-            "Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.RecordingOutput.cs");
-
-        AssertContains(snapshotProjectionText, "var recordingOutput = BuildRecordingOutputProjection(");
-        AssertContains(snapshotFlatteningText, "var recordingOutput = projections.RecordingOutput;");
-        AssertContains(snapshotFlatteningText, "OutputPath = recordingOutputFlattening.OutputPath,");
-        AssertContains(snapshotFlatteningText, "RecordingVideoBytes = recordingOutputFlattening.RecordingVideoBytes,");
-        AssertContains(snapshotFlatteningText, "LastOutputPath = recordingOutputFlattening.LastOutputPath,");
-        AssertContains(snapshotFlatteningText, "LastVerification = recordingOutputFlattening.LastVerification,");
-        AssertDoesNotContain(snapshotFlatteningText, "OutputPath = viewModelSnapshot.OutputPath,");
-        AssertDoesNotContain(snapshotFlatteningText, "OutputPath = recordingOutput.OutputPath,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingVideoBytes = recordingStats.VideoBytes,");
-        AssertDoesNotContain(snapshotFlatteningText, "RecordingVideoBytes = recordingOutput.RecordingVideoBytes,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastOutputPath = captureRuntime.LastOutputPath,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastOutputPath = recordingOutput.LastOutputPath,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastVerification = recordingOutput.LastVerification,");
-
-        AssertContains(recordingPipelineProjectionText, "private static RecordingOutputProjection BuildRecordingOutputProjection(");
-        AssertContains(recordingPipelineProjectionText, "OutputPath = viewModelSnapshot.OutputPath,");
-        AssertContains(recordingPipelineProjectionText, "RecordingVideoBytes = recordingStats.VideoBytes,");
-        AssertContains(recordingPipelineProjectionText, "LastOutputPath = captureRuntime.LastOutputPath,");
-        AssertContains(recordingPipelineProjectionText, "LastOutputSizeBytes = lastOutput.SizeBytes,");
-        AssertContains(recordingPipelineProjectionText, "LastVerification = lastVerification");
-        AssertContains(recordingPipelineProjectionText, "private readonly record struct RecordingOutputProjection");
-        AssertDoesNotContain(recordingPipelineProjectionText, "RecordingOutputFlattenedProjection");
-        AssertDoesNotContain(recordingPipelineProjectionText, "BuildRecordingOutputFlattenedProjection");
-        if (System.IO.File.Exists(obsoleteRecordingOutputPath))
-        {
-            throw new System.InvalidOperationException("Recording output projection should stay consolidated into AutomationDiagnosticsHub.SnapshotProjection.cs.");
-        }
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsPreviewRuntimeProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var previewRuntimeProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(snapshotFlatteningText, "var previewRuntimeFlattening = BuildPreviewRuntimeFlattenedProjection(previewSummary);");
-        AssertContains(snapshotFlatteningText, "PreviewFramesArrived = previewRuntimeFlattening.Frame.FramesArrived,");
-        AssertContains(snapshotFlatteningText, "EstimatedPipelineLatencyMs = previewRuntimeFlattening.Frame.EstimatedPipelineLatencyMs,");
-        AssertContains(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewRuntimeFlattening.Cadence.OnePercentLowFps,");
-        AssertContains(snapshotFlatteningText, "PreviewStartupStrategy = previewRuntimeFlattening.Startup.Strategy,");
-        AssertContains(snapshotFlatteningText, "PreviewRendererMode = previewRuntimeFlattening.Startup.RendererMode,");
-        AssertContains(snapshotFlatteningText, "PreviewGpuPlaybackState = previewRuntimeFlattening.GpuPlayback.PlaybackState,");
-        AssertContains(snapshotFlatteningText, "PreviewColorContext = previewRuntimeFlattening.Color.ColorContext,");
-        AssertContains(snapshotFlatteningText, "PreviewAdapterColorMetadata = previewRuntimeFlattening.Color.AdapterColorMetadata,");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),");
-        AssertContains(previewRuntimeProjectionText, "Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),");
-        AssertContains(previewRuntimeProjectionText, "Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),");
-        AssertContains(previewRuntimeProjectionText, "Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),");
-        AssertContains(previewRuntimeProjectionText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),");
-        AssertContains(previewRuntimeProjectionText, "Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)");
-        AssertContains(previewRuntimeProjectionText, "private readonly record struct PreviewRuntimeFlattenedProjection");
-
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
-        AssertContains(previewRuntimeProjectionText, "FramesArrived = previewRuntime.FramesArrived,");
-        AssertContains(previewRuntimeProjectionText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
-        AssertContains(previewRuntimeProjectionText, "OnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
-        AssertContains(previewRuntimeProjectionText, "RecentIntervalsMs = previewRuntime.DisplayCadenceRecentIntervalsMs,");
-        AssertContains(previewRuntimeProjectionText, "SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(");
-        AssertContains(previewRuntimeProjectionText, "RendererAttached = previewRuntime.RendererAttached");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
-        AssertContains(previewRuntimeProjectionText, "Strategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertContains(previewRuntimeProjectionText, "RendererMode = previewRuntime.RendererMode");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
-        AssertContains(previewRuntimeProjectionText, "PlaybackState = previewRuntime.GpuPlaybackState,");
-        AssertContains(previewRuntimeProjectionText, "PositionEventCount = previewRuntime.GpuPositionEventCount");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
-        AssertContains(previewRuntimeProjectionText, "HdrInputDetected = previewHdrState.InputDetected,");
-        AssertContains(previewRuntimeProjectionText, "AdapterColorMetadata = captureRuntime.PreviewColorMetadata");
-
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "FramesArrived = frame.FramesArrived,");
-        AssertContains(previewRuntimeProjectionText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "OnePercentLowFps = cadence.OnePercentLowFps,");
-        AssertContains(previewRuntimeProjectionText, "SlowFramePercent = cadence.SlowFramePercent");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "RendererAttached = surface.RendererAttached");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "Strategy = startup.Strategy,");
-        AssertContains(previewRuntimeProjectionText, "RendererMode = startup.RendererMode");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "PlaybackState = gpuPlayback.PlaybackState,");
-        AssertContains(previewRuntimeProjectionText, "PositionEventCount = gpuPlayback.PositionEventCount");
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
-        AssertContains(previewRuntimeProjectionText, "ColorContext = color.ColorContext,");
-        AssertContains(previewRuntimeProjectionText, "AdapterColorMetadata = color.AdapterColorMetadata");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewFramesArrived = previewRuntime.FramesArrived,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewFramesArrived = previewSummary.FramesArrived,");
-        AssertDoesNotContain(snapshotFlatteningText, "EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewSummary.CadenceOnePercentLowFps,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewStartupStrategy = previewSummary.StartupStrategy,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewStartupStrategy = previewSummary.Startup.Strategy,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewRendererMode = previewSummary.RendererMode,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewRendererMode = previewSummary.Startup.RendererMode,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewGpuPlaybackState = previewSummary.GpuPlaybackState,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewColorContext = captureRuntime.NegotiatedPixelFormat,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewColorContext = previewSummary.ColorContext,");
-
-        AssertContains(previewRuntimeProjectionText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
-        AssertContains(previewRuntimeProjectionText, "Frame = BuildPreviewRuntimeFrameProjection(previewRuntime),");
-        AssertContains(previewRuntimeProjectionText, "Cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime),");
-        AssertContains(previewRuntimeProjectionText, "Surface = BuildPreviewRuntimeSurfaceProjection(previewRuntime),");
-        AssertContains(previewRuntimeProjectionText, "Startup = BuildPreviewRuntimeStartupProjection(previewRuntime),");
-        AssertContains(previewRuntimeProjectionText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime),");
-        AssertContains(previewRuntimeProjectionText, "Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)");
-        AssertDoesNotContain(previewRuntimeProjectionText, "CadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,");
-        AssertDoesNotContain(previewRuntimeProjectionText, "CadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,");
-        AssertDoesNotContain(previewRuntimeProjectionText, "StartupStrategy = previewRuntime.StartupStrategy.ToString(),");
-        AssertDoesNotContain(previewRuntimeProjectionText, "RendererMode = previewRuntime.RendererMode,");
-        AssertDoesNotContain(previewRuntimeProjectionText, "GpuPlaybackState = previewRuntime.GpuPlaybackState,");
-        AssertContains(previewRuntimeProjectionText, "private readonly record struct PreviewRuntimeProjection");
-        AssertContains(previewRuntimeProjectionText, "public PreviewRuntimeFrameProjection Frame { get; init; }");
-        AssertContains(previewRuntimeProjectionText, "public PreviewRuntimeColorProjection Color { get; init; }");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsPreviewD3DProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var previewD3DProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var previewD3DFrameFlowProjectionText = previewD3DProjectionText;
-        var previewD3DCpuTimingProjectionText = previewD3DProjectionText;
-
-        AssertContains(snapshotProjectionText, "var previewD3D = BuildPreviewD3DProjection(\n            previewRuntime,\n            recentD3DMissedRefreshes,\n            recentD3DStatsFailures);");
-        AssertContains(snapshotFlatteningText, "var previewD3DFlattening = BuildPreviewD3DFlattenedProjection(previewD3D);");
-        AssertContains(snapshotFlatteningText, "PreviewD3DPresentSyncInterval = previewD3DFlattening.PresentSyncInterval,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3DFlattening.CpuTiming.InputUploadCpuP99Ms,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DPipelineLatencyMaxMs = previewD3DFlattening.LatencyAndStats.PipelineLatencyMaxMs,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitTimeoutCount,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3DFlattening.LatencyAndStats.FrameStatsRecentMissedRefreshCount,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DRecentSlowFrames = previewD3DFlattening.FrameFlow.RecentSlowFrames,");
-        AssertContains(snapshotFlatteningText, "PreviewD3DLastRenderedPipelineLatencyMs = previewD3DFlattening.FrameFlow.LastRenderedPipelineLatencyMs,");
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(");
-        AssertContains(previewD3DProjectionText, "CpuTiming = BuildPreviewD3DCpuTimingFlattenedProjection(previewD3D.CpuTiming),");
-        AssertContains(previewD3DProjectionText, "LatencyAndStats = BuildPreviewD3DLatencyAndStatsFlattenedProjection(");
-        AssertContains(previewD3DProjectionText, "FrameFlow = BuildPreviewD3DFrameFlowFlattenedProjection(previewD3D.FrameFlow)");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DFlattenedProjection");
-        AssertContains(previewD3DProjectionText, "public PreviewD3DCpuTimingFlattenedProjection CpuTiming { get; init; }");
-        AssertContains(previewD3DProjectionText, "public PreviewD3DLatencyAndStatsFlattenedProjection LatencyAndStats { get; init; }");
-        AssertContains(previewD3DProjectionText, "public PreviewD3DFrameFlowFlattenedProjection FrameFlow { get; init; }");
-        AssertContains(previewD3DCpuTimingProjectionText, "private static PreviewD3DCpuTimingFlattenedProjection BuildPreviewD3DCpuTimingFlattenedProjection(");
-        AssertContains(previewD3DCpuTimingProjectionText, "InputUploadCpuP99Ms = cpuTiming.InputUploadP99Ms,");
-        AssertContains(previewD3DCpuTimingProjectionText, "private readonly record struct PreviewD3DCpuTimingFlattenedProjection");
-        AssertContains(previewD3DCpuTimingProjectionText, "public double InputUploadCpuP99Ms { get; init; }");
-        AssertContains(previewD3DCpuTimingProjectionText, "public double RenderSubmitCpuP99Ms { get; init; }");
-        AssertContains(previewD3DCpuTimingProjectionText, "public double PresentCallP99Ms { get; init; }");
-        AssertContains(previewD3DCpuTimingProjectionText, "public double TotalFrameCpuP99Ms { get; init; }");
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DLatencyAndStatsFlattenedProjection BuildPreviewD3DLatencyAndStatsFlattenedProjection(");
-        AssertContains(previewD3DProjectionText, "PipelineLatencyMaxMs = pipelineLatency.MaxMs,");
-        AssertContains(previewD3DProjectionText, "FrameLatencyWaitTimeoutCount = frameLatencyWait.TimeoutCount,");
-        AssertContains(previewD3DProjectionText, "FrameStatsRecentMissedRefreshCount = frameStats.RecentMissedRefreshCount,");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DLatencyAndStatsFlattenedProjection");
-        AssertContains(previewD3DProjectionText, "public double PipelineLatencyP99Ms { get; init; }");
-        AssertContains(previewD3DProjectionText, "public long FrameLatencyWaitTimeoutCount { get; init; }");
-        AssertContains(previewD3DProjectionText, "public long FrameStatsRecentMissedRefreshCount { get; init; }");
-        AssertContains(previewD3DFrameFlowProjectionText, "private static PreviewD3DFrameFlowFlattenedProjection BuildPreviewD3DFrameFlowFlattenedProjection(");
-        AssertContains(previewD3DFrameFlowProjectionText, "LastRenderedPipelineLatencyMs = frameFlow.LastRenderedPipelineLatencyMs,");
-        AssertContains(previewD3DFrameFlowProjectionText, "RecentSlowFrames = frameFlow.RecentSlowFrames");
-        AssertContains(previewD3DFrameFlowProjectionText, "private readonly record struct PreviewD3DFrameFlowFlattenedProjection");
-        AssertContains(previewD3DFrameFlowProjectionText, "public long LastSubmittedPreviewPresentId { get; init; }");
-        AssertContains(previewD3DFrameFlowProjectionText, "public double LastRenderedPipelineLatencyMs { get; init; }");
-        AssertContains(previewD3DFrameFlowProjectionText, "public string LastDropReason { get; init; }");
-        AssertContains(previewD3DFrameFlowProjectionText, "public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }");
-        AssertContains(previewD3DProjectionText, "public double InputUploadCpuP99Ms { get; init; }");
-        AssertContains(previewD3DProjectionText, "public long LastSubmittedPreviewPresentId { get; init; }");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DPresentSyncInterval = previewRuntime.D3DPresentSyncInterval,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DInputUploadCpuP99Ms = previewD3D.InputUploadCpuP99Ms,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DPipelineLatencyMaxMs = previewD3D.PipelineLatencyMaxMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DPipelineLatencyMaxMs = previewD3D.PipelineLatency.MaxMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DPipelineLatencyMaxMs = previewD3D.CpuTiming.PipelineLatencyMaxMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3D.FrameLatencyWaitTimeoutCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DFrameLatencyWaitTimeoutCount = previewD3D.FrameLatencyWait.TimeoutCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3D.FrameStatsRecentMissedRefreshCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3D.FrameStats.RecentMissedRefreshCount,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DRecentSlowFrames = previewD3D.RecentSlowFrames,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DRecentSlowFrames = previewD3D.FrameFlow.RecentSlowFrames,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DLastRenderedPipelineLatencyMs = previewD3D.LastRenderedPipelineLatencyMs,");
-        AssertDoesNotContain(snapshotFlatteningText, "PreviewD3DLastRenderedPipelineLatencyMs = previewD3D.FrameFlow.LastRenderedPipelineLatencyMs,");
-
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DProjection BuildPreviewD3DProjection(");
-        AssertContains(previewD3DProjectionText, "var cpuTiming = BuildPreviewD3DCpuTimingProjection(previewRuntime);");
-        AssertContains(previewD3DProjectionText, "CpuTiming = cpuTiming,");
-        AssertContains(previewD3DProjectionText, "var pipelineLatency = BuildPreviewD3DPipelineLatencyProjection(previewRuntime);");
-        AssertContains(previewD3DProjectionText, "PipelineLatency = pipelineLatency,");
-        AssertContains(previewD3DProjectionText, "var frameFlow = BuildPreviewD3DFrameFlowProjection(previewRuntime);");
-        AssertContains(previewD3DProjectionText, "FrameFlow = frameFlow");
-        AssertContains(previewD3DProjectionText, "var frameLatencyWait = BuildPreviewD3DFrameLatencyWaitProjection(previewRuntime);");
-        AssertContains(previewD3DProjectionText, "var frameStats = BuildPreviewD3DFrameStatsProjection(");
-        AssertContains(previewD3DProjectionText, "FrameLatencyWait = frameLatencyWait,");
-        AssertContains(previewD3DProjectionText, "FrameStats = frameStats,");
-        AssertDoesNotContain(previewD3DProjectionText, "InputUploadCpuP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
-        AssertDoesNotContain(previewD3DProjectionText, "PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs,");
-        AssertDoesNotContain(previewD3DProjectionText, "LastRenderedPipelineLatencyMs = previewD3D.D3DLastRenderedPipelineLatencyMs,");
-        AssertDoesNotContain(previewD3DProjectionText, "RecentSlowFrames = previewD3D.D3DRecentSlowFrames");
-        AssertDoesNotContain(previewD3DProjectionText, "FrameLatencyWaitTimeoutCount = previewD3D.D3DFrameLatencyWaitTimeoutCount,");
-        AssertDoesNotContain(previewD3DProjectionText, "FrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,");
-        AssertContains(previewD3DCpuTimingProjectionText, "private static PreviewD3DCpuTimingProjection BuildPreviewD3DCpuTimingProjection(");
-        AssertContains(previewD3DCpuTimingProjectionText, "SampleCount = previewRuntime.D3DCpuTimingSampleCount,");
-        AssertContains(previewD3DCpuTimingProjectionText, "InputUploadP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,");
-        AssertContains(previewD3DCpuTimingProjectionText, "private readonly record struct PreviewD3DCpuTimingProjection");
-        AssertDoesNotContain(previewD3DCpuTimingProjectionText, "PipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DPipelineLatencyProjection BuildPreviewD3DPipelineLatencyProjection(");
-        AssertContains(previewD3DProjectionText, "SampleCount = previewRuntime.D3DPipelineLatencySampleCount,");
-        AssertContains(previewD3DProjectionText, "MaxMs = previewRuntime.D3DPipelineLatencyMaxMs");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DPipelineLatencyProjection");
-        AssertContains(previewD3DFrameFlowProjectionText, "private static PreviewD3DFrameFlowProjection BuildPreviewD3DFrameFlowProjection(");
-        AssertContains(previewD3DFrameFlowProjectionText, "LastRenderedPipelineLatencyMs = previewRuntime.D3DLastRenderedPipelineLatencyMs,");
-        AssertContains(previewD3DFrameFlowProjectionText, "RecentSlowFrames = previewRuntime.D3DRecentSlowFrames");
-        AssertContains(previewD3DFrameFlowProjectionText, "private readonly record struct PreviewD3DFrameFlowProjection");
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DFrameFlowProjection BuildPreviewD3DFrameFlowProjection(");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DFrameFlowProjection");
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DFrameLatencyWaitProjection BuildPreviewD3DFrameLatencyWaitProjection(");
-        AssertContains(previewD3DProjectionText, "Enabled = previewRuntime.D3DFrameLatencyWaitEnabled,");
-        AssertContains(previewD3DProjectionText, "TimeoutCount = previewRuntime.D3DFrameLatencyWaitTimeoutCount,");
-        AssertContains(previewD3DProjectionText, "MaxMs = previewRuntime.D3DFrameLatencyWaitMaxMs");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DFrameLatencyWaitProjection");
-
-        AssertContains(previewD3DProjectionText, "private static PreviewD3DFrameStatsProjection BuildPreviewD3DFrameStatsProjection(");
-        AssertContains(previewD3DProjectionText, "SampleCount = previewRuntime.D3DFrameStatsSampleCount,");
-        AssertContains(previewD3DProjectionText, "RecentMissedRefreshCount = recentD3DMissedRefreshes,");
-        AssertContains(previewD3DProjectionText, "RecentFailureCount = recentD3DStatsFailures");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DFrameStatsProjection");
-        AssertContains(previewD3DProjectionText, "private readonly record struct PreviewD3DProjection");
-
-        return Task.CompletedTask;
-    }
-
-
-    internal static Task AutomationDiagnosticsFlashbackExportProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackExportProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
-        AssertContains(snapshotProjectionText, "var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);");
-        AssertContains(snapshotFlatteningText, "var flashbackExportFlattening = BuildFlashbackExportFlattenedProjection(");
-        AssertContains(snapshotFlatteningText, "FlashbackExportActive = flashbackExportFlattening.Active,");
-        AssertContains(snapshotFlatteningText, "FlashbackExportPercent = flashbackExportFlattening.Percent,");
-        AssertContains(snapshotFlatteningText, "FlashbackExportLastForceRotateFallbackSegments = flashbackExportFlattening.LastForceRotateFallbackSegments,");
-        AssertContains(snapshotFlatteningText, "LastExportId = flashbackExportFlattening.LastExportId,");
-        AssertContains(snapshotFlatteningText, "LastExportMessage = flashbackExportFlattening.LastExportMessage");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportActive = health.FlashbackExportActive,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportActive = flashbackExport.Active,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportPercent = health.FlashbackExportPercent,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastExportId = health.LastExportId,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastExportId = flashbackExportLastResult.LastExportId,");
-        AssertDoesNotContain(snapshotFlatteningText, "LastExportId = flashbackExport.LastExportId,");
-
-        AssertContains(flashbackExportProjectionText, "internal static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
-        AssertContains(flashbackExportProjectionText, "Active = flashbackExport.Active,");
-        AssertContains(flashbackExportProjectionText, "Percent = flashbackExport.Percent,");
-        AssertContains(flashbackExportProjectionText, "LastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,");
-        AssertContains(flashbackExportProjectionText, "LastExportId = lastResult.LastExportId,");
-        AssertContains(flashbackExportProjectionText, "LastExportMessage = lastResult.LastExportMessage");
-        AssertContains(flashbackExportProjectionText, "internal readonly record struct FlashbackExportFlattenedProjection");
-
-        AssertContains(flashbackExportProjectionText, "internal static FlashbackExportProjection BuildFlashbackExportProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackExportProjectionText, "Active = health.FlashbackExportActive,");
-        AssertContains(flashbackExportProjectionText, "Percent = health.FlashbackExportPercent,");
-        AssertContains(flashbackExportProjectionText, "LastForceRotateFallbackSegments = health.FlashbackExportLastForceRotateFallbackSegments,");
-        AssertContains(flashbackExportProjectionText, "internal readonly record struct FlashbackExportProjection");
-        AssertDoesNotContain(flashbackExportProjectionText, "LastExportId = flashbackExport.LastExportId,");
-        AssertContains(flashbackExportProjectionText, "internal static FlashbackExportLastResultProjection BuildFlashbackExportLastResultProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackExportProjectionText, "LastExportId = health.LastExportId,");
-        AssertContains(flashbackExportProjectionText, "LastExportMessage = health.LastExportMessage");
-        AssertContains(flashbackExportProjectionText, "internal readonly record struct FlashbackExportLastResultProjection");
-        AssertEqual(
-            true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationSnapshotFlashbackProjectionBuilder.cs")),
-            "Flashback projection owner is a named builder");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.FlashbackExport.cs")),
-            "Flashback export projection folded into Flashback projection owner");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsFlashbackRecordingProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackRecordingProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-            .Replace("\r\n", "\n");
-        var flashbackRecordingQueuesProjectionText = flashbackRecordingProjectionText;
-
-        AssertContains(snapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
-        AssertContains(snapshotFlatteningText, "var flashbackRecordingFlattening = BuildFlashbackRecordingFlattenedProjection(flashbackRecording);");
-        AssertContains(snapshotFlatteningText, "FlashbackEncodingFailed = flashbackRecordingFlattening.EncodingFailed,");
-        AssertContains(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = flashbackRecordingFlattening.StartupCache.OverBudget,");
-        AssertContains(snapshotFlatteningText, "FlashbackVideoQueueCapacity = flashbackRecordingFlattening.Queues.VideoQueueCapacity,");
-        AssertContains(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = flashbackRecordingFlattening.Queues.GpuQueueLastRejectReason,");
-        AssertContains(snapshotFlatteningText, "FlashbackActive = flashbackRecordingFlattening.Runtime.Active,");
-        AssertContains(snapshotFlatteningText, "FlashbackBackendSettingsStale = flashbackRecordingFlattening.Backend.SettingsStale,");
-        AssertContains(snapshotFlatteningText, "FlashbackExportVerificationFormat = flashbackRecordingFlattening.Backend.ExportVerificationFormat,");
-        AssertContains(snapshotFlatteningText, "EncoderCodecName = flashbackRecordingFlattening.Encoder.CodecName,");
-        AssertContains(snapshotFlatteningText, "FlashbackAudioQueueCapacity = flashbackRecordingFlattening.Queues.AudioQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackEncodingFailed = health.FlashbackEncodingFailed,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackActive = health.FlashbackActive,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertDoesNotContain(snapshotFlatteningText, "EncoderCodecName = health.EncoderCodecName,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackEncodingFailed = flashbackRecording.EncodingFailed,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = flashbackRecording.StartupCache.OverBudget,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackVideoQueueCapacity = flashbackRecording.Queues.VideoQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.Queues.GpuQueueLastRejectReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackActive = flashbackRecording.Active,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackAudioQueueCapacity = flashbackRecording.Queues.AudioQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = flashbackRecording.StartupCacheOverBudget,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackStartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackVideoQueueCapacity = flashbackRecording.VideoQueueCapacity,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackGpuQueueLastRejectReason = flashbackRecording.GpuQueueLastRejectReason,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackAudioQueueCapacity = flashbackRecording.AudioQueueCapacity,");
-
-        AssertContains(flashbackRecordingProjectionText, "internal static FlashbackRecordingProjection BuildFlashbackRecordingProjection(");
-        AssertContains(flashbackRecordingProjectionText, "CaptureRuntimeSnapshot captureRuntime,");
-        AssertContains(flashbackRecordingProjectionText, "var startupCache = BuildFlashbackRecordingStartupCacheProjection(health);");
-        AssertContains(flashbackRecordingProjectionText, "var queues = BuildFlashbackRecordingQueuesProjection(health);");
-        AssertContains(flashbackRecordingProjectionText, "var runtime = BuildFlashbackRecordingRuntimeProjection(health);");
-        AssertContains(flashbackRecordingProjectionText, "var backend = BuildFlashbackRecordingBackendProjection(captureRuntime, health);");
-        AssertContains(flashbackRecordingProjectionText, "var encoder = BuildFlashbackRecordingEncoderProjection(health);");
-        AssertContains(flashbackRecordingProjectionText, "StartupCache = startupCache,");
-        AssertContains(flashbackRecordingProjectionText, "Queues = queues,");
-        AssertContains(flashbackRecordingProjectionText, "Runtime = runtime,");
-        AssertContains(flashbackRecordingProjectionText, "Backend = backend,");
-        AssertContains(flashbackRecordingProjectionText, "Encoder = encoder");
-        AssertContains(flashbackRecordingProjectionText, "EncodingFailed = health.FlashbackEncodingFailed,");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingProjection");
-        AssertContains(flashbackRecordingProjectionText, "internal static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
-        AssertContains(flashbackRecordingProjectionText, "FlashbackRecordingProjection flashbackRecording");
-        AssertContains(flashbackRecordingProjectionText, "EncodingFailed = flashbackRecording.EncodingFailed,");
-        AssertContains(flashbackRecordingProjectionText, "StartupCache = BuildFlashbackRecordingStartupCacheFlattenedProjection(flashbackRecording.StartupCache),");
-        AssertContains(flashbackRecordingProjectionText, "Queues = BuildFlashbackRecordingQueuesFlattenedProjection(flashbackRecording.Queues),");
-        AssertContains(flashbackRecordingProjectionText, "Runtime = BuildFlashbackRecordingRuntimeFlattenedProjection(flashbackRecording.Runtime),");
-        AssertContains(flashbackRecordingProjectionText, "Backend = BuildFlashbackRecordingBackendFlattenedProjection(flashbackRecording.Backend),");
-        AssertContains(flashbackRecordingProjectionText, "Encoder = BuildFlashbackRecordingEncoderFlattenedProjection(flashbackRecording.Encoder)");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingFlattenedProjection");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingStartupCacheFlattenedProjection StartupCache { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingQueuesFlattenedProjection Queues { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingRuntimeFlattenedProjection Runtime { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingBackendFlattenedProjection Backend { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingEncoderFlattenedProjection Encoder { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingRuntimeProjection Runtime { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingBackendProjection Backend { get; init; }");
-        AssertContains(flashbackRecordingProjectionText, "public FlashbackRecordingEncoderProjection Encoder { get; init; }");
-        AssertDoesNotContain(flashbackRecordingProjectionText, "StartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
-        AssertContains(flashbackRecordingProjectionText, "TempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,");
-        AssertContains(flashbackRecordingProjectionText, "OverBudget = health.FlashbackStartupCacheOverBudget");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingStartupCacheProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingStartupCacheFlattenedProjection BuildFlashbackRecordingStartupCacheFlattenedProjection(");
-        AssertContains(flashbackRecordingProjectionText, "OverBudget = startupCache.OverBudget");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingStartupCacheFlattenedProjection");
-        AssertContains(flashbackRecordingQueuesProjectionText, "private static FlashbackRecordingQueuesProjection BuildFlashbackRecordingQueuesProjection(");
-        AssertContains(flashbackRecordingQueuesProjectionText, "VideoQueueCapacity = health.FlashbackVideoQueueCapacity,");
-        AssertContains(flashbackRecordingQueuesProjectionText, "GpuQueueLastRejectReason = health.FlashbackGpuQueueLastRejectReason,");
-        AssertContains(flashbackRecordingQueuesProjectionText, "AudioQueueCapacity = health.FlashbackAudioQueueCapacity");
-        AssertContains(flashbackRecordingQueuesProjectionText, "internal readonly record struct FlashbackRecordingQueuesProjection");
-        AssertContains(flashbackRecordingQueuesProjectionText, "private static FlashbackRecordingQueuesFlattenedProjection BuildFlashbackRecordingQueuesFlattenedProjection(");
-        AssertContains(flashbackRecordingQueuesProjectionText, "VideoQueueCapacity = queues.VideoQueueCapacity,");
-        AssertContains(flashbackRecordingQueuesProjectionText, "GpuQueueLastRejectReason = queues.GpuQueueLastRejectReason,");
-        AssertContains(flashbackRecordingQueuesProjectionText, "AudioQueueCapacity = queues.AudioQueueCapacity");
-        AssertContains(flashbackRecordingQueuesProjectionText, "internal readonly record struct FlashbackRecordingQueuesFlattenedProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingRuntimeProjection BuildFlashbackRecordingRuntimeProjection(");
-        AssertContains(flashbackRecordingProjectionText, "Active = health.FlashbackActive,");
-        AssertContains(flashbackRecordingProjectionText, "GpuEncoding = health.FlashbackGpuEncoding");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingRuntimeProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingRuntimeFlattenedProjection BuildFlashbackRecordingRuntimeFlattenedProjection(");
-        AssertContains(flashbackRecordingProjectionText, "FlashbackRecordingRuntimeProjection runtime");
-        AssertContains(flashbackRecordingProjectionText, "Active = runtime.Active,");
-        AssertContains(flashbackRecordingProjectionText, "GpuEncoding = runtime.GpuEncoding");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingRuntimeFlattenedProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingBackendProjection BuildFlashbackRecordingBackendProjection(");
-        AssertContains(flashbackRecordingProjectionText, "ExportVerificationFormat = captureRuntime.FlashbackExportVerificationFormat ?? health.FlashbackExportVerificationFormat,");
-        AssertContains(flashbackRecordingProjectionText, "CodecDowngradeReason = captureRuntime.FlashbackCodecDowngradeReason ?? health.FlashbackCodecDowngradeReason");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingBackendProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingBackendFlattenedProjection BuildFlashbackRecordingBackendFlattenedProjection(");
-        AssertContains(flashbackRecordingProjectionText, "FlashbackRecordingBackendProjection backend");
-        AssertContains(flashbackRecordingProjectionText, "SettingsStale = backend.SettingsStale,");
-        AssertContains(flashbackRecordingProjectionText, "ExportVerificationFormat = backend.ExportVerificationFormat,");
-        AssertContains(flashbackRecordingProjectionText, "CodecDowngradeReason = backend.CodecDowngradeReason");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingBackendFlattenedProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(");
-        AssertContains(flashbackRecordingProjectionText, "CodecName = health.EncoderCodecName,");
-        AssertContains(flashbackRecordingProjectionText, "FrameRateDenominator = health.EncoderFrameRateDenominator");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingEncoderProjection");
-        AssertContains(flashbackRecordingProjectionText, "private static FlashbackRecordingEncoderFlattenedProjection BuildFlashbackRecordingEncoderFlattenedProjection(");
-        AssertContains(flashbackRecordingProjectionText, "FlashbackRecordingEncoderProjection encoder");
-        AssertContains(flashbackRecordingProjectionText, "CodecName = encoder.CodecName,");
-        AssertContains(flashbackRecordingProjectionText, "FrameRateDenominator = encoder.FrameRateDenominator");
-        AssertContains(flashbackRecordingProjectionText, "internal readonly record struct FlashbackRecordingEncoderFlattenedProjection");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.FlashbackRecording.cs")),
-            "Flashback recording projection folded into Flashback projection owner");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task AutomationDiagnosticsFlashbackPlaybackProjection_LivesWithSnapshotProjectionRoot()
-    {
-        var snapshotProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs")
-            .Replace("\r\n", "\n");
-        var snapshotFlatteningText = ReadAutomationSnapshotFlatteningFamilyText();
-        var flashbackPlaybackProjectionText = ReadRepoFile("Sussudio/Services/Automation/AutomationSnapshotFlashbackProjectionBuilder.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(snapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
-        AssertContains(snapshotFlatteningText, "var flashbackPlaybackFlattening = BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback);");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlaybackFlattening.State,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackAudioMasterFallbacks = flashbackPlaybackFlattening.AudioMaster.Fallbacks,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlaybackFlattening.Decode.MaxPhase,");
-        AssertContains(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlaybackFlattening.Commands.LastFailure,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackState = health.FlashbackPlaybackState,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackState = flashbackPlayback.State,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
-        AssertDoesNotContain(snapshotFlatteningText, "FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,");
-
-        AssertContains(flashbackPlaybackProjectionText, "internal static FlashbackPlaybackProjection BuildFlashbackPlaybackProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "var audioMaster = BuildFlashbackPlaybackAudioMasterProjection(health);");
-        AssertContains(flashbackPlaybackProjectionText, "var timing = BuildFlashbackPlaybackTimingProjection(health);");
-        AssertContains(flashbackPlaybackProjectionText, "var decode = BuildFlashbackPlaybackDecodeProjection(health);");
-        AssertContains(flashbackPlaybackProjectionText, "var commands = BuildFlashbackPlaybackCommandProjection(health);");
-        AssertContains(flashbackPlaybackProjectionText, "State = health.FlashbackPlaybackState,");
-        AssertContains(flashbackPlaybackProjectionText, "AudioMaster = audioMaster,");
-        AssertContains(flashbackPlaybackProjectionText, "Timing = timing,");
-        AssertContains(flashbackPlaybackProjectionText, "Decode = decode,");
-        AssertContains(flashbackPlaybackProjectionText, "Commands = commands");
-        AssertContains(flashbackPlaybackProjectionText, "internal static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
-        AssertContains(flashbackPlaybackProjectionText, "FlashbackPlaybackProjection flashbackPlayback");
-        AssertContains(flashbackPlaybackProjectionText, "State = flashbackPlayback.State,");
-        AssertContains(flashbackPlaybackProjectionText, "AudioMaster = BuildFlashbackPlaybackAudioMasterFlattenedProjection(flashbackPlayback.AudioMaster),");
-        AssertContains(flashbackPlaybackProjectionText, "Timing = BuildFlashbackPlaybackTimingFlattenedProjection(flashbackPlayback.Timing),");
-        AssertContains(flashbackPlaybackProjectionText, "Decode = BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode),");
-        AssertContains(flashbackPlaybackProjectionText, "Commands = BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackFlattenedProjection");
-        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackAudioMasterFlattenedProjection AudioMaster { get; init; }");
-        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackTimingFlattenedProjection Timing { get; init; }");
-        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackDecodeFlattenedProjection Decode { get; init; }");
-        AssertContains(flashbackPlaybackProjectionText, "public FlashbackPlaybackCommandFlattenedProjection Commands { get; init; }");
-        AssertDoesNotContain(flashbackPlaybackProjectionText, "AudioMasterFallbacks = flashbackPlayback.AudioMaster.Fallbacks,");
-        AssertDoesNotContain(flashbackPlaybackProjectionText, "MaxDecodePhase = flashbackPlayback.Decode.MaxPhase,");
-        AssertDoesNotContain(flashbackPlaybackProjectionText, "LastCommandFailure = flashbackPlayback.Commands.LastFailure");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackProjection");
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackAudioMasterProjection BuildFlashbackPlaybackAudioMasterProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "Fallbacks = health.FlashbackPlaybackAudioMasterFallbacks,");
-        AssertContains(flashbackPlaybackProjectionText, "LastFallbackReason = health.FlashbackPlaybackAudioMasterLastFallbackReason,");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackAudioMasterProjection");
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackAudioMasterFlattenedProjection BuildFlashbackPlaybackAudioMasterFlattenedProjection(");
-        AssertContains(flashbackPlaybackProjectionText, "Fallbacks = audioMaster.Fallbacks,");
-        AssertContains(flashbackPlaybackProjectionText, "LastFallbackReason = audioMaster.LastFallbackReason,");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackAudioMasterFlattenedProjection");
-
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackTimingProjection BuildFlashbackPlaybackTimingProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "TargetFps = health.FlashbackPlaybackTargetFps,");
-        AssertContains(flashbackPlaybackProjectionText, "PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount,");
-        AssertContains(flashbackPlaybackProjectionText, "AvDriftMs = health.FlashbackAvDriftMs");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackTimingProjection");
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackTimingFlattenedProjection BuildFlashbackPlaybackTimingFlattenedProjection(");
-        AssertContains(flashbackPlaybackProjectionText, "FlashbackPlaybackTimingProjection timing");
-        AssertContains(flashbackPlaybackProjectionText, "TargetFps = timing.TargetFps,");
-        AssertContains(flashbackPlaybackProjectionText, "PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount,");
-        AssertContains(flashbackPlaybackProjectionText, "AvDriftMs = timing.AvDriftMs");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackTimingFlattenedProjection");
-
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackDecodeProjection BuildFlashbackPlaybackDecodeProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "SeekForwardDecodeCapHits = health.FlashbackPlaybackSeekForwardDecodeCapHits,");
-        AssertContains(flashbackPlaybackProjectionText, "MaxPhase = health.FlashbackPlaybackMaxDecodePhase,");
-        AssertContains(flashbackPlaybackProjectionText, "MaxPositionMs = health.FlashbackPlaybackMaxDecodePositionMs");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackDecodeProjection");
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackDecodeFlattenedProjection BuildFlashbackPlaybackDecodeFlattenedProjection(");
-        AssertContains(flashbackPlaybackProjectionText, "MaxPhase = decode.MaxPhase,");
-        AssertContains(flashbackPlaybackProjectionText, "MaxPositionMs = decode.MaxPositionMs");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackDecodeFlattenedProjection");
-
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackCommandProjection BuildFlashbackPlaybackCommandProjection(CaptureHealthSnapshot health)");
-        AssertContains(flashbackPlaybackProjectionText, "ThreadAlive = health.FlashbackPlaybackThreadAlive,");
-        AssertContains(flashbackPlaybackProjectionText, "LastFailure = health.FlashbackPlaybackLastCommandFailure");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackCommandProjection");
-        AssertContains(flashbackPlaybackProjectionText, "private static FlashbackPlaybackCommandFlattenedProjection BuildFlashbackPlaybackCommandFlattenedProjection(");
-        AssertContains(flashbackPlaybackProjectionText, "LastFailure = commands.LastFailure");
-        AssertContains(flashbackPlaybackProjectionText, "internal readonly record struct FlashbackPlaybackCommandFlattenedProjection");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.FlashbackPlayback.cs")),
-            "Flashback playback projection folded into Flashback projection owner");
-
-        return Task.CompletedTask;
     }
 
     internal static Task DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses()
@@ -9603,93 +8046,14 @@ static partial class Program
     {
         AssertContains(diagnostics.SnapshotProjectionText, "var snapshotStatus = BuildSnapshotStatusProjection(viewModelSnapshot, captureRuntime, snapshotCollection);");
         AssertContains(diagnostics.SnapshotProjectionText, "var snapshotEvaluation = BuildSnapshotEvaluationProjection(performance, diagnostic, previewPacingClassification);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "TimestampUtc = snapshotStatusFlattening.TimestampUtc,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluationFlattening.PerformanceScore,");
         AssertContains(diagnostics.SnapshotProjectionText, "TimestampUtc = snapshotCollection.CompletedUtc,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PerformanceScore = snapshotEvaluation.PerformanceScore,");
     }
 
     private static void AssertDiagnosticsRefreshSnapshotProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
-        AssertDiagnosticsRefreshSnapshotCompositionRoutesThroughProjectionSet(diagnostics);
-        AssertDiagnosticsRefreshSnapshotFlatteningRoutesThroughFlattenedProjections(diagnostics);
-    }
-
-    private static void AssertDiagnosticsRefreshSnapshotCompositionRoutesThroughProjectionSet(AutomationDiagnosticsHubSourceFamily diagnostics)
-    {
         AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromProjections(projections);");
         AssertContains(diagnostics.SnapshotProjectionText, "return new AutomationSnapshotProjectionSet(");
-
-        AssertContains(diagnostics.SnapshotProjectionText, "var audioAndIngest = BuildAudioAndIngestProjection(viewModelSnapshot, captureRuntime, audioSignal);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var audioDrops = BuildAudioDropsProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var userSettings = BuildUserSettingsProjection(viewModelSnapshot);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var recordingSettings = BuildRecordingSettingsProjection(userSettings);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var captureFormat = BuildCaptureFormatProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var sourceTelemetry = BuildSourceTelemetryProjection(viewModelSnapshot, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var recordingOutput = BuildRecordingOutputProjection(");
-        AssertContains(diagnostics.SnapshotProjectionText, "var processResourceProjection = BuildProcessResourceProjection(processResources);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var avSync = BuildAvSyncProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var captureTransport = BuildCaptureTransportProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var recordingBackend = BuildRecordingBackendProjection(captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var recordingPipeline = BuildRecordingPipelineProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var captureCadence = BuildCaptureCadenceProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var visualCadence = BuildVisualCadenceProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var mjpeg = BuildMjpegProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var previewD3D = BuildPreviewD3DProjection(");
-        AssertContains(diagnostics.SnapshotProjectionText, "var hdrPipeline = BuildHdrPipelineProjection(viewModelSnapshot, captureRuntime, hdrTruthVerdict);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackExport = BuildFlashbackExportProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackExportLastResult = BuildFlashbackExportLastResultProjection(health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackRecording = BuildFlashbackRecordingProjection(captureRuntime, health);");
-        AssertContains(diagnostics.SnapshotProjectionText, "var flashbackPlayback = BuildFlashbackPlaybackProjection(health);");
-
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "AudioPeak = viewModelSnapshot.AudioPeak,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionText, "RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,");
-    }
-
-    private static void AssertDiagnosticsRefreshSnapshotFlatteningRoutesThroughFlattenedProjections(AutomationDiagnosticsHubSourceFamily diagnostics)
-    {
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var audioDropsFlattening = BuildAudioDropsFlattenedProjection(audioDrops);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureCommandFlattening = BuildCaptureCommandFlattenedProjection(captureCommands);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var settingsFlattening = BuildSettingsFlattenedProjection(userSettings, recordingSettings);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingIntegrity = projections.RecordingIntegrity;");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var processResourceFlattening = BuildProcessResourceFlattenedProjection(processResourceProjection);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingBackend = projections.RecordingBackend;");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var visualCadenceFlattening = BuildVisualCadenceFlattenedProjection(visualCadence);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegFlattening = BuildMjpegFlattenedProjection(mjpeg);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegTimingFlattening = BuildMjpegTimingFlattenedProjection(mjpeg.Timing);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegPreviewJitterFlattening = BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var mjpegPacketHashFlattening = BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var previewRuntimeFlattening = BuildPreviewRuntimeFlattenedProjection(previewSummary);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var previewD3DFlattening = BuildPreviewD3DFlattenedProjection(previewD3D);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var hdrPipelineFlattening = BuildHdrPipelineFlattenedProjection(hdrPipeline);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var flashbackExportFlattening = BuildFlashbackExportFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var flashbackRecordingFlattening = BuildFlashbackRecordingFlattenedProjection(flashbackRecording);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var flashbackPlaybackFlattening = BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback);");
-
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "AudioPeak = audioAndIngestFlattening.Signal.Peak,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "RecordingVideoQueueCapacity = recordingPipelineFlattening.VideoQueue.Capacity,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "FlashbackExportActive = flashbackExportFlattening.Active,");
-
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "AudioPeak = audioAndIngest.AudioPeak,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "RecordingVideoQueueCapacity = recordingPipeline.RecordingVideoQueueCapacity,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "FlashbackExportActive = flashbackExport.Active,");
     }
 
     private static void AssertDiagnosticSessionPreviewMetricsOwnership(string diagnosticSessionText, AutomationDiagnosticsHubSourceFamily diagnostics)
@@ -9942,30 +8306,6 @@ static partial class Program
     private static void AssertDiagnosticsPreviewRuntimeProjectionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotProjectionText, "var previewSummary = BuildPreviewRuntimeProjection(previewRuntime, previewHdrState, captureRuntime);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "var previewRuntimeFlattening = BuildPreviewRuntimeFlattenedProjection(previewSummary);");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "EstimatedPipelineLatencyMs = previewRuntimeFlattening.Frame.EstimatedPipelineLatencyMs,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewFramesArrived = previewRuntimeFlattening.Frame.FramesArrived,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewCadenceOnePercentLowFps = previewRuntimeFlattening.Cadence.OnePercentLowFps,");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "PreviewAdapterColorMetadata = previewRuntimeFlattening.Color.AdapterColorMetadata,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "OnePercentLowFps = cadence.OnePercentLowFps,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "RendererAttached = surface.RendererAttached");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Strategy = startup.Strategy,");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "PositionEventCount = gpuPlayback.PositionEventCount");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "AdapterColorMetadata = color.AdapterColorMetadata");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Frame = BuildPreviewRuntimeFrameProjection(previewRuntime),");
         AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "Cadence = BuildPreviewRuntimeCadenceProjection(previewRuntime),");
@@ -9993,11 +8333,6 @@ static partial class Program
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewHdrInputDetected = previewHdrState.InputDetected,");
         AssertDoesNotContain(diagnostics.SnapshotProjectionText, "PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewFramesArrived = previewSummary.FramesArrived,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "EstimatedPipelineLatencyMs = previewSummary.EstimatedPipelineLatencyMs,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewStartupStrategy = previewSummary.Startup.Strategy,");
-        AssertDoesNotContain(diagnostics.SnapshotProjectionFlatteningText, "PreviewAdapterColorMetadata = previewSummary.AdapterColorMetadata,");
     }
 
     private static void AssertDiagnosticSessionToolSurfaceOwnership()
@@ -10178,176 +8513,19 @@ static partial class Program
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyCommandObserved = GetString(snapshot, \"FlashbackPlaybackMaxCommandQueueLatencyCommand\") ?? string.Empty;");
     }
 
-
     private static void AssertDiagnosticsRefreshSnapshotConstructionOwnership(AutomationDiagnosticsHubSourceFamily diagnostics)
     {
         AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshot BuildAutomationSnapshot(");
-        AssertContains(diagnostics.SnapshotProjectionText, "var projections = BuildAutomationSnapshotProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionText, "return BuildAutomationSnapshotFromProjections(projections);");
-        AssertContains(diagnostics.SnapshotProjectionText, "private AutomationSnapshotProjectionSet BuildAutomationSnapshotProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionText, "private readonly record struct AutomationSnapshotProjectionSet(");
         AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshot BuildAutomationSnapshotFromProjections(");
-        AssertContains(diagnostics.SnapshotProjectionText, "AutomationSnapshotProjectionSet projections");
-        AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFlattenedProjectionSet(projections)");
-        AssertContains(diagnostics.SnapshotProjectionText, "BuildAutomationSnapshotFromFlattenedProjections(flattened)");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionText, "private readonly record struct AutomationSnapshotFlattenedProjectionSet(");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections(");
-        AssertContains(diagnostics.SnapshotProjectionText, "return new AutomationSnapshot");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.SnapshotProjection.Flattening.AutomationSnapshot.cs")),
-            "final automation snapshot DTO initialization folded into AutomationDiagnosticsHub.SnapshotProjection.cs");
-        AssertEqual(
-            true,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationSnapshotFlashbackProjectionBuilder.cs")),
-            "Flashback snapshot projection construction lives in its named builder");
-        foreach (var deletedProjectionShard in new[]
-                 {
-                     "AutomationDiagnosticsHub.SnapshotProjection.CaptureFormat.cs",
-                     "AutomationDiagnosticsHub.SnapshotProjection.Media.cs",
-                     "AutomationDiagnosticsHub.SnapshotProjection.Preview.cs",
-                     "AutomationDiagnosticsHub.SnapshotProjection.Flashback.cs",
-                 })
-        {
-            AssertEqual(
-                false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", deletedProjectionShard)),
-                deletedProjectionShard + " folded into AutomationDiagnosticsHub.SnapshotProjection.cs");
-        }
+        AssertContains(diagnostics.SnapshotInitializerText, "return new AutomationSnapshot");
+        AssertDoesNotContain(diagnostics.HubText, "new AutomationSnapshot");
 
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotStatusFlattenedProjection(snapshotStatus)");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation)");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureFormatFlattenedProjection(captureFormat)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatRequestedProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatHdrRequestProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatActualProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatNegotiatedProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatReaderObservationProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "BuildCaptureFormatEncoderProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatRequestedProjection BuildCaptureFormatRequestedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatHdrRequestProjection BuildCaptureFormatHdrRequestProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatActualProjection BuildCaptureFormatActualProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatNegotiatedProjection BuildCaptureFormatNegotiatedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatReaderObservationProjection BuildCaptureFormatReaderObservationProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatEncoderProjection BuildCaptureFormatEncoderProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureTransportFlattenedProjection(captureTransport)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureFormatText, "private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCadenceFlattenedProjection(captureCadence)");
-        AssertContains(diagnostics.SnapshotProjectionCaptureCadenceText, "private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildVisualCadenceFlattenedProjection(visualCadence)");
-        AssertContains(diagnostics.SnapshotProjectionVisualCadenceText, "private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegFlattenedProjection(mjpeg)");
-        AssertContains(diagnostics.SnapshotProjectionMjpegText, "private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegTimingFlattenedProjection(mjpeg.Timing)");
-        AssertContains(diagnostics.SnapshotProjectionMjpegText, "private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter)");
-        AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionMjpegPreviewJitterText, "private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash)");
-        AssertContains(diagnostics.SnapshotProjectionMjpegText, "private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry)");
-        AssertContains(diagnostics.SnapshotProjectionSourceSignalText, "private static SourceFlattenedProjection BuildSourceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionSourceSignalText, "private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionSourceTelemetryText, "private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildSettingsFlattenedProjection(userSettings, recordingSettings)");
-        AssertContains(diagnostics.SnapshotProjectionUserSettingsText, "private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildHdrPipelineFlattenedProjection(hdrPipeline)");
-        AssertContains(diagnostics.HdrText, "private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewRuntimeFlattenedProjection(previewSummary)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeFrameProjection(previewRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeCadenceProjection(previewRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeSurfaceProjection(previewRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeStartupProjection(previewRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameProjection BuildPreviewRuntimeFrameProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeCadenceProjection BuildPreviewRuntimeCadenceProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeSurfaceProjection BuildPreviewRuntimeSurfaceProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeStartupProjection BuildPreviewRuntimeStartupProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeGpuPlaybackProjection BuildPreviewRuntimeGpuPlaybackProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorProjection BuildPreviewRuntimeColorProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionPreviewRuntimeText, "private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildPreviewD3DFlattenedProjection(previewD3D)");
-        AssertContains(diagnostics.SnapshotProjectionPreviewD3DText, "private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackExportFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackExportText, "internal static FlashbackExportFlattenedProjection BuildFlashbackExportFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackRecordingFlattenedProjection(flashbackRecording)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingStartupCacheProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingRuntimeProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingBackendProjection(captureRuntime, health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "BuildFlashbackRecordingEncoderProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingStartupCacheProjection BuildFlashbackRecordingStartupCacheProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingRuntimeProjection BuildFlashbackRecordingRuntimeProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingBackendProjection BuildFlashbackRecordingBackendProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingEncoderProjection BuildFlashbackRecordingEncoderProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "internal static FlashbackRecordingFlattenedProjection BuildFlashbackRecordingFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingStartupCacheFlattenedProjection BuildFlashbackRecordingStartupCacheFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingQueuesText, "private static FlashbackRecordingQueuesFlattenedProjection BuildFlashbackRecordingQueuesFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingRuntimeFlattenedProjection BuildFlashbackRecordingRuntimeFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingBackendFlattenedProjection BuildFlashbackRecordingBackendFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackRecordingText, "private static FlashbackRecordingEncoderFlattenedProjection BuildFlashbackRecordingEncoderFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackTimingProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackTimingProjection BuildFlashbackPlaybackTimingProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "internal static FlashbackPlaybackFlattenedProjection BuildFlashbackPlaybackFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackAudioMasterFlattenedProjection(flashbackPlayback.AudioMaster)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "private static FlashbackPlaybackTimingFlattenedProjection BuildFlashbackPlaybackTimingFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackDecodeFlattenedProjection(flashbackPlayback.Decode)");
-        AssertContains(diagnostics.SnapshotProjectionFlashbackPlaybackText, "BuildFlashbackPlaybackCommandFlattenedProjection(flashbackPlayback.Commands)");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildRecordingPipelineFlattenedProjection(recordingPipeline)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineEncoderProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineIngestProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineVideoQueueProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "BuildRecordingPipelineHardwareQueuesProjection(health)");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineEncoderProjection BuildRecordingPipelineEncoderProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineIngestProjection BuildRecordingPipelineIngestProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineVideoQueueProjection BuildRecordingPipelineVideoQueueProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineHardwareQueuesProjection BuildRecordingPipelineHardwareQueuesProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionRecordingPipelineText, "private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildProcessResourceFlattenedProjection(processResourceProjection)");
-        AssertContains(diagnostics.SnapshotProjectionProcessResourcesText, "private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAvSyncFlattenedProjection(avSync)");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioAndIngestFlattenedProjection(audioAndIngest)");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildAudioSignalProjection(viewModelSnapshot, audioSignal)");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildCaptureIngestProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "BuildWasapiAudioProjection(captureRuntime)");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioSignalProjection BuildAudioSignalProjection(");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioDropsProjection BuildAudioDropsProjection(");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionCaptureIngestText, "private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionWasapiAudioText, "private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionWasapiAudioText, "private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildAudioDropsFlattenedProjection(audioDrops)");
-        AssertContains(diagnostics.SnapshotProjectionAudioText, "private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "BuildCaptureCommandFlattenedProjection(captureCommands)");
-        AssertContains(diagnostics.SnapshotProjectionText, "private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(");
-        AssertContains(diagnostics.SnapshotProjectionFlatteningText, "new AutomationSnapshot");
+        var flashbackBuilder = ReadAutomationDiagnosticsHubSourceFile("AutomationSnapshotFlashbackProjectionBuilder.cs");
+        foreach (var method in new[] { "BuildFlashbackExportProjection(", "BuildFlashbackRecordingProjection(", "BuildFlashbackPlaybackProjection(" })
+        {
+            AssertContains(flashbackBuilder, method);
+            AssertDoesNotContain(diagnostics.SnapshotProjectionText, method["Build".Length..^1] + " " + method);
+        }
     }
 
     private static AutomationDiagnosticsHubSourceFamily ReadAutomationDiagnosticsHubSourceFamily()
@@ -10365,7 +8543,7 @@ static partial class Program
             SnapshotsText = ReadAutomationDiagnosticsHubSnapshotsSource(),
             SnapshotsCoreText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
             SnapshotProjectionText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
-            SnapshotProjectionFlatteningText = ReadAutomationSnapshotFlatteningFamilyText(),
+            SnapshotInitializerText = ReadAutomationSnapshotInitializerText(),
             SnapshotProjectionAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionCaptureIngestText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
             SnapshotProjectionWasapiAudioText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.SnapshotProjection.cs"),
@@ -10426,7 +8604,7 @@ static partial class Program
         public string SnapshotsText { get; init; } = string.Empty;
         public string SnapshotsCoreText { get; init; } = string.Empty;
         public string SnapshotProjectionText { get; init; } = string.Empty;
-        public string SnapshotProjectionFlatteningText { get; init; } = string.Empty;
+        public string SnapshotInitializerText { get; init; } = string.Empty;
         public string SnapshotProjectionAudioText { get; init; } = string.Empty;
         public string SnapshotProjectionCaptureIngestText { get; init; } = string.Empty;
         public string SnapshotProjectionWasapiAudioText { get; init; } = string.Empty;
@@ -10468,7 +8646,7 @@ static partial class Program
                 HdrText,
                 SnapshotsText,
                 SnapshotProjectionText,
-                SnapshotProjectionFlatteningText,
+                SnapshotInitializerText,
                 SnapshotProjectionAudioText,
                 SnapshotProjectionCaptureIngestText,
                 SnapshotProjectionWasapiAudioText,
@@ -10645,8 +8823,6 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "status.Equals(\"Succeeded\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "status.Equals(\"Cancelled\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackExportFailureKind");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackBackendSettingsStale = flashbackRecordingFlattening.Backend.SettingsStale,");
-        AssertContains(diagnostics.SourceFamilyText, "SettingsStale = backend.SettingsStale,");
         AssertContains(diagnostics.SourceFamilyText, "SettingsStale = health.FlashbackBackendSettingsStale,");
         AssertContains(diagnostics.SourceFamilyText, "backendStale={health.FlashbackBackendSettingsStale}");
         AssertContains(diagnostics.SourceFamilyText, "kind={failureKind}");
@@ -10692,10 +8868,8 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "Flashback export rotation skipped live-edge frames:");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={snapshot.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining}");
-        AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecordingFlattening.FatalCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "FatalCleanupInProgress = health.FatalCleanupInProgress");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackCleanupInProgress = flashbackRecordingFlattening.CleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = flashbackRecording.CleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "CleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnostics.SourceFamilyText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
@@ -10762,13 +8936,9 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "Flashback playback frame submission failed");
         AssertContains(diagnostics.SourceFamilyText, "snapshot.FlashbackPlaybackPendingCommands > 0");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackCommandQueueCapacity");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps");
-        AssertContains(diagnostics.SourceFamilyText, "TargetFps = timing.TargetFps");
         AssertContains(diagnostics.SourceFamilyText, "TargetFps = health.FlashbackPlaybackTargetFps");
         AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackTargetFps = flashbackPlayback.TargetFps");
         AssertContains(diagnostics.SourceFamilyText, "TargetFps: snapshot.FlashbackPlaybackTargetFps");
-        AssertContains(diagnostics.SourceFamilyText, "FlashbackPlaybackPtsCadenceMismatchCount = flashbackPlaybackFlattening.Timing.PtsCadenceMismatchCount");
-        AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = timing.PtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "PtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount");
         AssertContains(diagnostics.SourceFamilyText, "ptsMismatch={snapshot.FlashbackPlaybackPtsCadenceMismatchCount}");
         AssertContains(diagnostics.SourceFamilyText, "private static double ResolveFlashbackPlaybackTargetFps(double flashbackPlaybackTargetFps, double fallbackFrameRate)");
@@ -10988,9 +9158,9 @@ static partial class Program
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
         AssertContains(captureServiceText, "active_id={_flashbackExportId}");
         AssertContains(captureServiceText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
-        AssertContains(captureServiceText, "var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested\n                ? \"Flashback export cancelled.\"\n                : ex.Message;");
+        AssertContains(captureServiceText, "var cancelled = ex is OperationCanceledException && ct.IsCancellationRequested;");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name}");
-        AssertContains(captureServiceText, "var failure = FlashbackExportFailureCodes.Create(outputPath, statusMessage,");
+        AssertContains(captureServiceText, "var failure = FlashbackExportFailureCodes.Create(");
         AssertContains(captureServiceText, "ex is OperationCanceledException && ct.IsCancellationRequested");
         AssertContains(captureServiceText, "FlashbackExportFailureCodes.FromException(ex)");
         AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
@@ -10999,17 +9169,16 @@ static partial class Program
         AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
-        AssertContains(captureServiceText, "ClassifyFlashbackExportFailureKind(result)");
-        AssertContains(captureServiceText, "internal static string ClassifyFlashbackExportFailureKind(FinalizeResult result)");
-        var failureCodesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportFailureCodes.cs");
         AssertContains(captureServiceText, "FlashbackExportFailureCodes.Classify(result)");
+        AssertDoesNotContain(captureServiceText, "ClassifyFlashbackExportFailureKind");
+        AssertDoesNotContain(captureServiceText, "ContainsFlashbackExportFailureText");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", FlashbackExportFailureCodes.BufferInactive, inPoint, outPoint);");
+        var failureCodesText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportFailureCodes.cs");
         AssertContains(failureCodesText, "UnavailableDuringRecording => \"UnavailableDuringRecording\"");
         AssertContains(failureCodesText, "BufferInactive => \"BufferInactive\"");
         AssertContains(failureCodesText, "InputUnavailable => \"InputUnavailable\"");
         AssertContains(failureCodesText, "InvalidOutputPath => \"InvalidOutputPath\"");
         AssertContains(failureCodesText, "NoMediaWritten => \"NoMediaWritten\"");
-        AssertDoesNotContain(captureServiceText, "ContainsFlashbackExportFailureText");
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", FlashbackExportFailureCodes.BufferInactive, inPoint, outPoint);");
         AssertContains(plannerText, "internal static FlashbackExportRangeResolution ResolveRange(");
         AssertContains(plannerText, "internal static FlashbackExportLiveEdgePlan PlanLiveEdge(");
         AssertContains(plannerText, "internal static FlashbackExportRequestPlan CreateRequest(");
@@ -11025,7 +9194,7 @@ static partial class Program
             "Flashback export duration guard");
         AssertContains(dispatcherText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         AssertContains(captureServiceText, "? \"Cancelled\"");
-        AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(FinalizeResult result)");
+        AssertContains(captureServiceText, "FlashbackExportFailureCodes.IsCancelled(result)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
         AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
         AssertContains(captureServiceText, "DisposeCoordinationLocksBestEffort();");
@@ -11476,13 +9645,13 @@ public sealed class PreviewPacingClassifierTests
 
         Assert.Contains("var previewPacingClassification = ClassifyPreviewPacing(", diagnosticsSnapshotsText);
         Assert.Contains("new PreviewPacingClassificationInput", diagnosticsSnapshotsText);
-        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluationFlattening.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
+        Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
         Assert.Contains("PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage", diagnosticsSnapshotProjectionText);
         Assert.Contains("PreviewPacingLikelySlowStage = previewPacingClassification.LikelySlowStage", diagnosticsSnapshotProjectionText);
         Assert.Contains("private static PreviewPacingClassification ClassifyPreviewPacing(", diagnosticsSnapshotsText);
         Assert.Contains("PreviewPacingSlowStageClassifier.Classify", diagnosticsSnapshotsText);
         Assert.Contains("PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps", diagnosticsHubText);
-        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames", diagnosticsHubText);
+        Assert.Contains("CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("EstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames", diagnosticsHubText);
         Assert.Contains("RecentD3DMissedRefreshes = recentD3DMissedRefreshes", diagnosticsHubText);

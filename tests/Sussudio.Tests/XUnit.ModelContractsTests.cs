@@ -2952,7 +2952,6 @@ public sealed class CaptureConfigurationModelsTests
         var hdrOutputModeType = RequireType(asm, "Sussudio.Models.HdrOutputMode");
         var previewModeType = RequireType(asm, "Sussudio.Models.PreviewMode");
         var audioPathModeType = RequireType(asm, "Sussudio.Models.AudioPathMode");
-        var pipelineOptionsType = RequireType(asm, "Sussudio.Models.RecordingPipelineOptions");
         var splitEncodeSupportType = RequireType(asm, "Sussudio.Models.SplitEncodeSupport");
         var nvencPresetType = RequireType(asm, "Sussudio.Models.NvencPreset");
         var splitEncodeModeType = RequireType(asm, "Sussudio.Models.SplitEncodeMode");
@@ -2996,7 +2995,6 @@ public sealed class CaptureConfigurationModelsTests
                 String("MicrophoneDeviceId", SetterExpectation.Set, NullabilityExpectation.Nullable),
                 String("MicrophoneDeviceName", SetterExpectation.Set, NullabilityExpectation.Nullable),
                 Property("AudioPathMode", audioPathModeType, SetterExpectation.Set),
-                Property("PipelineOptions", pipelineOptionsType, SetterExpectation.Set),
                 Property("ForceMjpegDecode", typeof(bool), SetterExpectation.Set),
                 Property("FlashbackGpuDecode", typeof(bool), SetterExpectation.Set),
                 Property("FlashbackBufferMinutes", typeof(int), SetterExpectation.Set),
@@ -3030,15 +3028,11 @@ public sealed class CaptureConfigurationModelsTests
         Assert.False(Get<bool>(settings, "UseCustomAudioInput"));
         Assert.False(Get<bool>(settings, "MicrophoneEnabled"));
         Assert.Equal(ParseEnum(asm, "Sussudio.Models.AudioPathMode", "PostMuxDefault"), Get(settings, "AudioPathMode"));
-        Assert.NotNull(Get(settings, "PipelineOptions"));
         Assert.False(Get<bool>(settings, "ForceMjpegDecode"));
         Assert.True(Get<bool>(settings, "FlashbackGpuDecode"));
         Assert.Equal(5, Get<int>(settings, "FlashbackBufferMinutes"));
         Assert.Equal(6, Get<int>(settings, "MjpegDecoderCount"));
         Assert.False(Get<bool>(settings, "UseMjpegHighFrameRateMode"));
-
-        var otherSettings = CreateInstance(settingsType);
-        Assert.NotSame(Get(settings, "PipelineOptions"), Get(otherSettings, "PipelineOptions"));
 
         var outputDir = Path.Combine(Path.GetTempPath(), $"capture_settings_{Guid.NewGuid():N}");
         Set(settings, "OutputPath", outputDir);
@@ -3323,60 +3317,6 @@ public sealed class CaptureConfigurationModelsTests
         Assert.True(Get<bool>(softwareFallbacks, "HasH264"));
         Assert.True(Get<bool>(softwareFallbacks, "HasHevc"));
         Assert.Equal("libaom-av1", Get<string>(softwareFallbacks, "PreferredAv1Encoder"));
-    }
-
-    [Fact]
-    public void RecordingPipelineOptions_DefaultsAndCapacityBounds()
-    {
-        var asm = SussudioAssembly.Load();
-        var optionsType = RequireType(asm, "Sussudio.Models.RecordingPipelineOptions");
-        var dropPolicyType = RequireType(asm, "Sussudio.Models.VideoFrameDropPolicy");
-        AssertEnumValues(dropPolicyType, ("DropOldest", 0), ("DropNewest", 1));
-        AssertDeclaredProperties(
-            optionsType,
-            new[]
-            {
-                Property("TargetVideoLatencyMs", typeof(int), SetterExpectation.Set),
-                Property("MinBufferedVideoFrames", typeof(int), SetterExpectation.Set),
-                Property("MaxBufferedVideoFrames", typeof(int), SetterExpectation.Set),
-                Property("VideoDropPolicy", dropPolicyType, SetterExpectation.Set)
-            });
-
-        var options = CreateInstance(optionsType);
-        var resolve = RequireMethod(optionsType, "ResolveVideoQueueCapacity", ReflectionFlags.Instance);
-        Assert.Equal(250, Get<int>(options, "TargetVideoLatencyMs"));
-        Assert.Equal(4, Get<int>(options, "MinBufferedVideoFrames"));
-        Assert.Equal(30, Get<int>(options, "MaxBufferedVideoFrames"));
-        Assert.Equal(ParseEnum(asm, "Sussudio.Models.VideoFrameDropPolicy", "DropOldest"), Get(options, "VideoDropPolicy"));
-        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 60d })!);
-        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { -1d })!);
-
-        Set(options, "TargetVideoLatencyMs", 1);
-        Assert.Equal(4, (int)resolve.Invoke(options, new object[] { 60d })!);
-
-        Set(options, "MinBufferedVideoFrames", 0);
-        Set(options, "MaxBufferedVideoFrames", 2);
-        Assert.Equal(1, (int)resolve.Invoke(options, new object[] { 10d })!);
-
-        Set(options, "TargetVideoLatencyMs", 250);
-        Set(options, "MinBufferedVideoFrames", 8);
-        Set(options, "MaxBufferedVideoFrames", 4);
-        Assert.Equal(8, (int)resolve.Invoke(options, new object[] { 120d })!);
-
-        Set(options, "VideoDropPolicy", ParseEnum(asm, "Sussudio.Models.VideoFrameDropPolicy", "DropNewest"));
-        Assert.Equal(ParseEnum(asm, "Sussudio.Models.VideoFrameDropPolicy", "DropNewest"), Get(options, "VideoDropPolicy"));
-    }
-
-    [Fact]
-    public void RecordingPipelineOptions_ResolvesVideoQueueCapacity()
-    {
-        var options = CreateInstance(RequireType(SussudioAssembly.Load(), "Sussudio.Models.RecordingPipelineOptions"));
-        var resolve = RequireMethod(options.GetType(), "ResolveVideoQueueCapacity", ReflectionFlags.Instance);
-
-        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 60.0 })!);
-        Assert.Equal(30, (int)resolve.Invoke(options, new object[] { 120.0 })!);
-        Assert.Equal(8, (int)resolve.Invoke(options, new object[] { 30.0 })!);
-        Assert.Equal(15, (int)resolve.Invoke(options, new object[] { 0.0 })!);
     }
 
     [Fact]

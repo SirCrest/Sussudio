@@ -1295,7 +1295,7 @@ public partial class CaptureService
     {
         var outputPath = recordingContext?.FinalOutputPath ?? string.Empty;
 
-        // H3: Pause eviction BEFORE EndRecordingAsync to close the window where
+        // Pause eviction before EndRecordingAsync to close the window where
         // eviction could delete segments between EndRecording (which resumes eviction
         // internally) and ExportFlashbackCoreAsync (which pauses it again).
         // With ref-counted eviction, the nested Pause from ExportFlashbackCoreAsync is safe.
@@ -1326,9 +1326,6 @@ public partial class CaptureService
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
     }
-
-    private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)
-        => IsFlashbackExportCancelled(result);
 
     // Flashback recording boundary capture: snapshot the final live edge exactly
     // once so export/finalize and fallback paths share the same accounting data.
@@ -1499,7 +1496,7 @@ public partial class CaptureService
             CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
         }
 
-        if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))
+        if (cancellationToken.IsCancellationRequested && FlashbackExportFailureCodes.IsCancelled(fbResult))
         {
             flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
         }
@@ -1875,16 +1872,17 @@ public partial class CaptureService
         }
         catch (Exception ex)
         {
-            var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested
+            var cancelled = ex is OperationCanceledException && ct.IsCancellationRequested;
+            var statusMessage = cancelled
                 ? "Flashback export cancelled."
                 : ex.Message;
             Logger.Log(
                 $"FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name} " +
                 $"cancelled={ct.IsCancellationRequested} msg='{statusMessage}'");
-            var failure = FlashbackExportFailureCodes.Create(outputPath, statusMessage,
-                ex is OperationCanceledException && ct.IsCancellationRequested
-                    ? FlashbackExportFailureCodes.Cancelled
-                    : FlashbackExportFailureCodes.FromException(ex));
+            var failure = FlashbackExportFailureCodes.Create(
+                outputPath,
+                statusMessage,
+                cancelled ? FlashbackExportFailureCodes.Cancelled : FlashbackExportFailureCodes.FromException(ex));
             if (exportId != 0)
             {
                 RecordLastFlashbackExportResult(exportId, failure);
@@ -1938,7 +1936,8 @@ public partial class CaptureService
                 liveEdgePlan.FailureKind switch
                 {
                     FlashbackExportPlanFailureKind.ForceRotateFailed => FlashbackExportFailureCodes.ForceRotateFailed,
-                    FlashbackExportPlanFailureKind.ForceRotateCommittedPending or FlashbackExportPlanFailureKind.IncompleteLiveEdge => FlashbackExportFailureCodes.IncompleteLiveEdge,
+                    FlashbackExportPlanFailureKind.ForceRotateCommittedPending or
+                        FlashbackExportPlanFailureKind.IncompleteLiveEdge => FlashbackExportFailureCodes.IncompleteLiveEdge,
                     _ => FlashbackExportFailureCodes.Failed
                 },
                 liveEdgePlan.PreservedArtifacts);
@@ -2218,7 +2217,7 @@ public partial class CaptureService
             var exportId = Interlocked.Increment(ref _flashbackExportId);
             _flashbackExportId = exportId;
             _flashbackExportActive = false;
-            _flashbackExportStatus = IsFlashbackExportCancelled(result) ? "Cancelled" : "Failed";
+            _flashbackExportStatus = FlashbackExportFailureCodes.IsCancelled(result) ? "Cancelled" : "Failed";
             _flashbackExportOutputPath = outputPath;
             _flashbackExportStartedUtcUnixMs = now;
             _flashbackExportLastProgressUtcUnixMs = now;
@@ -2231,7 +2230,7 @@ public partial class CaptureService
                 ? outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds
                 : 0;
             _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = ClassifyFlashbackExportFailureKind(result);
+            _flashbackExportFailureKind = FlashbackExportFailureCodes.Classify(result);
             RecordLastFlashbackExportResult(exportId, result);
         }
     }
@@ -2253,16 +2252,14 @@ public partial class CaptureService
             _flashbackExportActive = false;
             _flashbackExportStatus = result.Succeeded
                 ? "Succeeded"
-                : IsFlashbackExportCancelled(result)
+                : FlashbackExportFailureCodes.IsCancelled(result)
                     ? "Cancelled"
                     : "Failed";
             var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             _flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;
             _flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;
             _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = result.Succeeded
-                ? string.Empty
-                : ClassifyFlashbackExportFailureKind(result);
+            _flashbackExportFailureKind = FlashbackExportFailureCodes.Classify(result);
             if (result.Succeeded && _flashbackExportPercent < 100)
             {
                 _flashbackExportPercent = 100;
@@ -2479,12 +2476,6 @@ public partial class CaptureService
             return 0;
         }
     }
-
-    private static bool IsFlashbackExportCancelled(FinalizeResult result)
-        => !result.Succeeded && result.FailureCode == FlashbackExportFailureCodes.Cancelled;
-
-    internal static string ClassifyFlashbackExportFailureKind(FinalizeResult result)
-        => FlashbackExportFailureCodes.Classify(result);
 
     private sealed class FlashbackExportProgressForwarder : IProgress<ExportProgress>
     {

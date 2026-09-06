@@ -12,6 +12,13 @@ namespace Sussudio.Tools;
 internal static class AutomationSnapshotFormatter
 {
     internal static string FormatSnapshot(JsonElement snapshotResponse, bool includeFlashback = false)
+        => FormatSnapshotCore(snapshotResponse, includeFlashback, cliPresentation: false);
+
+    internal static string FormatCliSnapshot(JsonElement snapshotResponse)
+        => FormatSnapshotCore(snapshotResponse, includeFlashback: true, cliPresentation: true);
+
+    // Preserve the existing CLI layout: show MJPEG queue peaks and omit WASAPI timing fields.
+    private static string FormatSnapshotCore(JsonElement snapshotResponse, bool includeFlashback, bool cliPresentation)
     {
         if (snapshotResponse.ValueKind != JsonValueKind.Object)
         {
@@ -28,7 +35,7 @@ internal static class AutomationSnapshotFormatter
         AppendStateSection(builder, snapshot);
         AppendCaptureSettingsSection(builder, snapshot);
         AppendAudioSection(builder, snapshot);
-        AppendVideoPipelineSection(builder, snapshot);
+        AppendVideoPipelineSection(builder, snapshot, cliPresentation);
         AppendRecordingSection(builder, snapshot);
         if (includeFlashback)
         {
@@ -38,7 +45,7 @@ internal static class AutomationSnapshotFormatter
         AppendDiagnosticsSection(builder, snapshot);
         AppendPerformanceSection(builder, snapshot);
         AppendMemorySection(builder, snapshot);
-        AppendCaptureCadenceSection(builder, snapshot);
+        AppendCaptureCadenceSection(builder, snapshot, cliPresentation);
         return builder.ToString().TrimEnd();
     }
 
@@ -94,7 +101,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine();
     }
 
-    private static void AppendVideoPipelineSection(StringBuilder builder, JsonElement snapshot)
+    private static void AppendVideoPipelineSection(StringBuilder builder, JsonElement snapshot, bool cliPresentation)
     {
         builder.AppendLine("== Video Pipeline ==");
         builder.AppendLine($"Reader: {Get(snapshot, "VideoReaderActive")} | Ingest: {Get(snapshot, "IngestVideoFramesArrived")} arrived, {Get(snapshot, "IngestVideoFramesWrittenToSink")} to sink");
@@ -106,17 +113,17 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"GPU Queue: {Get(snapshot, "RecordingGpuQueueDepth")}/{Get(snapshot, "RecordingGpuQueueCapacity")} max={Get(snapshot, "RecordingGpuQueueMaxDepth")} enq={Get(snapshot, "RecordingGpuFramesEnqueued")} overloads={Get(snapshot, "RecordingGpuFramesDropped")} | CUDA: {Get(snapshot, "RecordingCudaQueueDepth")}/{Get(snapshot, "RecordingCudaQueueCapacity")} max={Get(snapshot, "RecordingCudaQueueMaxDepth")} enq={Get(snapshot, "RecordingCudaFramesEnqueued")} overloads={Get(snapshot, "RecordingCudaFramesDropped")}");
         builder.AppendLine($"Freshness: reader {Get(snapshot, "IngestLastVideoFrameAgeMs")}ms | enqueue {Get(snapshot, "EncoderLastEnqueueAgeMs")}ms | write {Get(snapshot, "EncoderLastWriteAgeMs")}ms");
         builder.AppendLine($"Diagnostics: MemPref={Get(snapshot, "MemoryPreference")} ReqSubtype={Get(snapshot, "VideoRequestedSubtype")} NegSubtype={Get(snapshot, "VideoNegotiatedSubtype")} Errors={Get(snapshot, "VideoIngestErrorCount")}");
-        AppendThreadHealthSection(builder, snapshot);
+        AppendThreadHealthSection(builder, snapshot, cliPresentation);
         builder.AppendLine();
     }
 
-    private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot)
+    private static void AppendThreadHealthSection(StringBuilder builder, JsonElement snapshot, bool cliPresentation)
     {
         builder.AppendLine();
         builder.AppendLine("== Thread Health ==");
         AppendSourceReaderThreadHealthLine(builder, snapshot);
         AppendWasapiCaptureThreadHealthLine(builder, snapshot);
-        AppendWasapiPlaybackThreadHealthLine(builder, snapshot);
+        AppendWasapiPlaybackThreadHealthLine(builder, snapshot, includeTiming: !cliPresentation);
     }
 
     private static void AppendSourceReaderThreadHealthLine(StringBuilder builder, JsonElement snapshot)
@@ -146,18 +153,24 @@ internal static class AutomationSnapshotFormatter
             $"severeGaps={Get(snapshot, "WasapiCaptureCallbackSevereGapCount")}");
     }
 
-    private static void AppendWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot)
+    private static void AppendWasapiPlaybackThreadHealthLine(StringBuilder builder, JsonElement snapshot, bool includeTiming)
     {
         var wasapiPlaybackLastRenderAgeMs = ComputeTickAgeMs(GetLong(snapshot, "WasapiPlaybackLastRenderTickMs"));
-        builder.AppendLine(
+        builder.Append(
             $"WASAPI Playback: callbacks={Get(snapshot, "WasapiPlaybackRenderCallbackCount")} " +
             $"silence={Get(snapshot, "WasapiPlaybackRenderSilenceCount")} " +
-            $"queueDepth={Get(snapshot, "WasapiPlaybackQueueDepth")} " +
-            $"queueMs={Get(snapshot, "WasapiPlaybackQueueDurationMs")} " +
-            $"activeMs={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")} " +
-            $"endpointMs={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")} " +
-            $"bufferedMs={Get(snapshot, "WasapiPlaybackBufferedDurationMs")} " +
-            $"streamLatencyMs={Get(snapshot, "WasapiPlaybackStreamLatencyMs")} " +
+            $"queueDepth={Get(snapshot, "WasapiPlaybackQueueDepth")} ");
+        if (includeTiming)
+        {
+            builder.Append(
+                $"queueMs={Get(snapshot, "WasapiPlaybackQueueDurationMs")} " +
+                $"activeMs={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")} " +
+                $"endpointMs={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")} " +
+                $"bufferedMs={Get(snapshot, "WasapiPlaybackBufferedDurationMs")} " +
+                $"streamLatencyMs={Get(snapshot, "WasapiPlaybackStreamLatencyMs")} ");
+        }
+
+        builder.AppendLine(
             $"drops={Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
             $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
         builder.AppendLine(
@@ -217,7 +230,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine();
     }
 
-    private static void AppendCaptureCadenceSection(StringBuilder builder, JsonElement snapshot)
+    private static void AppendCaptureCadenceSection(StringBuilder builder, JsonElement snapshot, bool cliPresentation)
     {
         builder.AppendLine("== Capture Cadence ==");
         builder.AppendLine($"Frame Time: target={FormatFrameBudgetMs(snapshot, "ExpectedCaptureFrameRate")} avg={Get(snapshot, "CaptureCadenceAverageIntervalMs")}ms P95={Get(snapshot, "CaptureCadenceP95IntervalMs")}ms P99={Get(snapshot, "CaptureCadenceP99IntervalMs")}ms max={Get(snapshot, "CaptureCadenceMaxIntervalMs")}ms | Samples: {Get(snapshot, "CaptureCadenceSampleCount")} over {Get(snapshot, "CaptureCadenceSampleDurationMs")}ms");
@@ -227,7 +240,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"MJPEG Packet Fingerprint: input={Get(snapshot, "MjpegPacketHashInputObservedFps")} fps unique={Get(snapshot, "MjpegPacketHashUniqueObservedFps")} fps dup={Get(snapshot, "MjpegPacketHashDuplicateFramePercent")}% pattern={Get(snapshot, "MjpegPacketHashPattern")} longestDup={Get(snapshot, "MjpegPacketHashLongestDuplicateRun")}");
         builder.AppendLine($"Sampled Decoded Crop: changes={Get(snapshot, "VisualCadenceChangeObservedFps")} fps output={Get(snapshot, "VisualCadenceOutputObservedFps")} fps repeat={Get(snapshot, "VisualCadenceRepeatFramePercent")}% avgChangedPx={Get(snapshot, "VisualCadenceAverageDelta")} changedPxPct={Get(snapshot, "VisualCadenceMotionScore")} confidence={Get(snapshot, "VisualCadenceMotionConfidence")}");
         builder.AppendLine($"Sampled Tight Crop: changes={Get(snapshot, "VisualCenterCadenceChangeObservedFps")} fps output={Get(snapshot, "VisualCenterCadenceOutputObservedFps")} fps repeat={Get(snapshot, "VisualCenterCadenceRepeatFramePercent")}% avgChangedPx={Get(snapshot, "VisualCenterCadenceAverageDelta")} changedPxPct={Get(snapshot, "VisualCenterCadenceMotionScore")} confidence={Get(snapshot, "VisualCenterCadenceMotionConfidence")}");
-        AppendMjpegTimingSection(builder, snapshot);
+        AppendMjpegTimingSection(builder, snapshot, includeQueuePeaks: cliPresentation);
         AppendAvSyncSection(builder, snapshot);
         AppendPreviewSection(builder, snapshot);
         AppendSourceSection(builder, snapshot);
@@ -387,7 +400,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"A/V Drift: {FormatNumber(avDrift, "+0.0;-0.0;0.0")}ms (+ = audio ahead) | Audio buffered={Get(snapshot, "WasapiPlaybackBufferedDurationMs")}ms queue={Get(snapshot, "WasapiPlaybackQueueDurationMs")}ms active={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")}ms endpoint={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")}ms streamLatency={Get(snapshot, "WasapiPlaybackStreamLatencyMs")}ms | File: {Get(snapshot, "FlashbackFilePath")}");
     }
 
-    private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot)
+    private static void AppendMjpegTimingSection(StringBuilder builder, JsonElement snapshot, bool includeQueuePeaks)
     {
         var mjpegDecodeSamples = Get(snapshot, "MjpegDecodeSampleCount", "0");
         var mjpegDecoderCount = Get(snapshot, "MjpegDecoderCount", "0");
@@ -407,7 +420,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine();
         builder.AppendLine("== MJPEG Pipeline Timing ==");
         AppendMjpegDecodeTimingLines(builder, snapshot, mjpegDecodeSamples);
-        AppendMjpegPipelineTimingLines(builder, snapshot, mjpegDecoderCount);
+        AppendMjpegPipelineTimingLines(builder, snapshot, mjpegDecoderCount, includeQueuePeaks);
         AppendMjpegPreviewJitterSection(builder, snapshot);
         AppendMjpegPerDecoderTimingLines(builder, snapshot);
     }
@@ -424,7 +437,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"Total Callback: avg={Get(snapshot, "MjpegCallbackAvgMs")}ms P95={Get(snapshot, "MjpegCallbackP95Ms")}ms max={Get(snapshot, "MjpegCallbackMaxMs")}ms ({Get(snapshot, "MjpegCallbackSampleCount")} samples)");
     }
 
-    private static void AppendMjpegPipelineTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecoderCount)
+    private static void AppendMjpegPipelineTimingLines(StringBuilder builder, JsonElement snapshot, string mjpegDecoderCount, bool includeQueuePeaks)
     {
         builder.AppendLine($"Decoders: {mjpegDecoderCount} | Decoded={Get(snapshot, "MjpegTotalDecoded")} Emitted={Get(snapshot, "MjpegTotalEmitted")} Dropped={Get(snapshot, "MjpegTotalDropped")}");
         builder.AppendLine(
@@ -433,7 +446,13 @@ internal static class AutomationSnapshotFormatter
             $"drops(full={Get(snapshot, "MjpegCompressedDropsQueueFull")}, budget={Get(snapshot, "MjpegCompressedDropsByteBudget")}, disposed={Get(snapshot, "MjpegCompressedDropsDisposed")})");
         builder.AppendLine(
             $"MJPEG Drop Reasons: decode={Get(snapshot, "MjpegDecodeFailures")} reorderCollision={Get(snapshot, "MjpegReorderCollisions")} emit={Get(snapshot, "MjpegEmitFailures")}");
-        builder.AppendLine($"Reorder: avg={Get(snapshot, "MjpegReorderAvgMs")}ms P95={Get(snapshot, "MjpegReorderP95Ms")}ms max={Get(snapshot, "MjpegReorderMaxMs")}ms ({Get(snapshot, "MjpegReorderSampleCount")} samples) | Skips={Get(snapshot, "MjpegReorderSkips")} Buffer={Get(snapshot, "MjpegReorderBufferDepth")}");
+        builder.Append($"Reorder: avg={Get(snapshot, "MjpegReorderAvgMs")}ms P95={Get(snapshot, "MjpegReorderP95Ms")}ms max={Get(snapshot, "MjpegReorderMaxMs")}ms ({Get(snapshot, "MjpegReorderSampleCount")} samples) | Skips={Get(snapshot, "MjpegReorderSkips")} Buffer={Get(snapshot, "MjpegReorderBufferDepth")}");
+        if (includeQueuePeaks)
+        {
+            builder.Append($" PeakBuffer={Get(snapshot, "MjpegPeakReorderDepth")} PeakCompressedBytes={Get(snapshot, "MjpegPeakCompressedQueueBytes")} ForceDrops={Get(snapshot, "MjpegReorderRingForceDrops")}");
+        }
+
+        builder.AppendLine();
         builder.AppendLine($"Pipeline: avg={Get(snapshot, "MjpegPipelineAvgMs")}ms P95={Get(snapshot, "MjpegPipelineP95Ms")}ms max={Get(snapshot, "MjpegPipelineMaxMs")}ms ({Get(snapshot, "MjpegPipelineSampleCount")} samples)");
     }
 

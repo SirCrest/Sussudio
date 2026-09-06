@@ -31,8 +31,7 @@ internal sealed class MainViewModelDeviceAudioRequestControllerContext
 }
 
 /// <summary>
-/// Owns device-native audio request scheduling, debounce lifetimes, and
-/// cancellation cleanup for the compatibility ViewModel facade.
+/// Debounces device audio changes and cancels pending requests when the device changes.
 /// </summary>
 internal sealed class MainViewModelDeviceAudioRequestController
 {
@@ -279,7 +278,7 @@ internal sealed class MainViewModelDeviceAudioRequestController
 }
 
 /// <summary>
-/// Graph-built ports consumed by the device refresh controller.
+/// Device discovery, selection, and UI updates used when refreshing the device list.
 /// </summary>
 internal sealed class MainViewModelDeviceRefreshControllerContext
 {
@@ -301,7 +300,7 @@ internal sealed class MainViewModelDeviceRefreshControllerContext
 }
 
 /// <summary>
-/// Owns capture-device refresh orchestration behind the MainViewModel compatibility facade.
+/// Refreshes capture devices and restores the current or saved selection when available.
 /// </summary>
 internal sealed class MainViewModelDeviceRefreshController
 {
@@ -423,7 +422,7 @@ internal sealed class MainViewModelDeviceRefreshController
 }
 
 /// <summary>
-/// Graph-built ports consumed by the late device-format probe controller.
+/// Device state and UI callbacks used to apply format probes that finish after discovery.
 /// </summary>
 internal sealed class MainViewModelDeviceFormatProbeControllerContext
 {
@@ -445,7 +444,7 @@ internal sealed class MainViewModelDeviceFormatProbeControllerContext
 }
 
 /// <summary>
-/// Owns late device-format probe reconciliation for the compatibility ViewModel facade.
+/// Applies completed format probes to the selected device and refreshes its capture choices.
 /// </summary>
 internal sealed class MainViewModelDeviceFormatProbeController
 {
@@ -554,7 +553,7 @@ internal sealed class MainViewModelDeviceFormatProbeController
 }
 
 /// <summary>
-/// Graph-built ports consumed by late device-format probe retarget application.
+/// Capture selections and callbacks used to apply updated device formats.
 /// </summary>
 internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
 {
@@ -577,7 +576,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
 }
 
 /// <summary>
-/// Applies late device-format probe retarget decisions to the compatibility ViewModel facade.
+/// Updates capture selections after a format probe and reinitializes preview when needed.
 /// </summary>
 internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
 {
@@ -741,11 +740,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
 }
 
 /// <summary>
-/// Graph-built ports consumed by the recording capability refresh controller.
-/// </summary>
-
-/// <summary>
-/// Graph-built ports consumed by the capture-mode option rebuild controller.
+/// Dependencies used to rebuild resolution, frame-rate, and pixel-format choices.
 /// </summary>
 internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
 {
@@ -808,7 +803,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
 }
 
 /// <summary>
-/// Owns capture-mode option rebuild transactions for the MainViewModel compatibility facade.
+/// Rebuilds capture choices while preserving valid selections and resolving automatic modes.
 /// </summary>
 internal sealed class MainViewModelCaptureModeOptionRebuildController
 {
@@ -1247,7 +1242,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
     }
 }
 /// <summary>
-/// Graph-built ports consumed by the frame-rate timing resolver.
+/// Available modes and current selections used to resolve exact frame-rate timing.
 /// </summary>
 internal sealed class MainViewModelFrameRateTimingResolverContext
 {
@@ -1259,8 +1254,7 @@ internal sealed class MainViewModelFrameRateTimingResolverContext
 }
 
 /// <summary>
-/// Resolves stateful frame-rate timing preferences and detected source rates
-/// for the MainViewModel compatibility facade.
+/// Resolves exact frame-rate timing from source detection, negotiated modes, and previous selections.
 /// </summary>
 internal sealed class MainViewModelFrameRateTimingResolver
 {
@@ -1392,6 +1386,9 @@ internal sealed class MainViewModelFrameRateTimingResolver
     }
 }
 
+/// <summary>
+/// Dependencies used to refresh supported recording formats and split-encode modes.
+/// </summary>
 internal sealed class MainViewModelRecordingCapabilityControllerContext
 {
     public required string DefaultRecordingFormat { get; init; }
@@ -1416,8 +1413,7 @@ internal sealed class MainViewModelRecordingCapabilityControllerContext
 }
 
 /// <summary>
-/// Owns startup encoder/split-encode probing and observable option repair for
-/// the MainViewModel compatibility facade.
+/// Probes encoder support at startup and keeps recording format and split-encode choices valid.
 /// </summary>
 internal sealed class MainViewModelRecordingCapabilityController
 {
@@ -1600,8 +1596,7 @@ internal sealed class MainViewModelSourceTelemetryControllerContext
 }
 
 /// <summary>
-/// Owns source telemetry ingress, UI projection, and source-aware retargeting
-/// for the compatibility ViewModel facade.
+/// Updates source telemetry in the UI and adjusts automatic capture selections as the source changes.
 /// </summary>
 internal sealed class MainViewModelSourceTelemetryController
 {

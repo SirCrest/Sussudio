@@ -4,12 +4,9 @@ using System.Threading;
 using Sussudio.Models;
 using Sussudio.Services.Runtime;
 using static Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder;
-using FlashbackExportFlattenedProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackExportFlattenedProjection;
 using FlashbackExportLastResultProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackExportLastResultProjection;
 using FlashbackExportProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackExportProjection;
-using FlashbackPlaybackFlattenedProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackPlaybackFlattenedProjection;
 using FlashbackPlaybackProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackPlaybackProjection;
-using FlashbackRecordingFlattenedProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackRecordingFlattenedProjection;
 using FlashbackRecordingProjection = Sussudio.Services.Automation.AutomationSnapshotFlashbackProjectionBuilder.FlashbackRecordingProjection;
 
 namespace Sussudio.Services.Automation;
@@ -85,7 +82,6 @@ public sealed partial class AutomationDiagnosticsHub
         var audioDrops = BuildAudioDropsProjection(health);
         var captureCommands = BuildCaptureCommandProjection(viewModelSnapshot);
         var userSettings = BuildUserSettingsProjection(viewModelSnapshot);
-        var recordingSettings = BuildRecordingSettingsProjection(userSettings);
         var recordingIntegrity = BuildRecordingIntegrityProjection(captureRuntime);
         var captureFormat = BuildCaptureFormatProjection(captureRuntime);
         var sourceSignal = BuildSourceSignalProjection(viewModelSnapshot, captureRuntime);
@@ -123,7 +119,6 @@ public sealed partial class AutomationDiagnosticsHub
             audioDrops,
             captureCommands,
             userSettings,
-            recordingSettings,
             recordingIntegrity,
             captureFormat,
             sourceSignal,
@@ -153,7 +148,6 @@ public sealed partial class AutomationDiagnosticsHub
         AudioDropsProjection AudioDrops,
         CaptureCommandProjection CaptureCommands,
         UserSettingsProjection UserSettings,
-        RecordingSettingsProjection RecordingSettings,
         RecordingIntegrityProjection RecordingIntegrity,
         CaptureFormatProjection CaptureFormat,
         SourceSignalProjection SourceSignal,
@@ -178,125 +172,844 @@ public sealed partial class AutomationDiagnosticsHub
     private static AutomationSnapshot BuildAutomationSnapshotFromProjections(
         AutomationSnapshotProjectionSet projections)
     {
-        var flattened = BuildAutomationSnapshotFlattenedProjectionSet(projections);
-        return BuildAutomationSnapshotFromFlattenedProjections(flattened);
-    }
-
-    private static AutomationSnapshotFlattenedProjectionSet BuildAutomationSnapshotFlattenedProjectionSet(
-        AutomationSnapshotProjectionSet projections)
-    {
         var snapshotStatus = projections.SnapshotStatus;
-        var snapshotStatusFlattening = BuildSnapshotStatusFlattenedProjection(snapshotStatus);
         var snapshotEvaluation = projections.SnapshotEvaluation;
-        var snapshotEvaluationFlattening = BuildSnapshotEvaluationFlattenedProjection(snapshotEvaluation);
-        var audioAndIngest = projections.AudioAndIngest;
-        var audioAndIngestFlattening = BuildAudioAndIngestFlattenedProjection(audioAndIngest);
-        var audioDrops = projections.AudioDrops;
-        var audioDropsFlattening = BuildAudioDropsFlattenedProjection(audioDrops);
         var captureCommands = projections.CaptureCommands;
-        var captureCommandFlattening = BuildCaptureCommandFlattenedProjection(captureCommands);
         var userSettings = projections.UserSettings;
-        var recordingSettings = projections.RecordingSettings;
-        var settingsFlattening = BuildSettingsFlattenedProjection(userSettings, recordingSettings);
-        var recordingIntegrity = projections.RecordingIntegrity;
-        var captureFormat = projections.CaptureFormat;
         var sourceSignal = projections.SourceSignal;
         var sourceTelemetry = projections.SourceTelemetry;
-        var sourceFlattening = BuildSourceFlattenedProjection(sourceSignal, sourceTelemetry);
-        var recordingOutput = projections.RecordingOutput;
-        var processResourceProjection = projections.ProcessResourceProjection;
-        var processResourceFlattening = BuildProcessResourceFlattenedProjection(processResourceProjection);
-        var avSync = projections.AvSync;
-        var avSyncFlattening = BuildAvSyncFlattenedProjection(avSync);
-        var captureTransport = projections.CaptureTransport;
-        var captureTransportFlattening = BuildCaptureTransportFlattenedProjection(captureTransport);
-        var captureFormatFlattening = BuildCaptureFormatFlattenedProjection(captureFormat);
-        var previewSummary = projections.PreviewSummary;
-        var recordingBackend = projections.RecordingBackend;
-        var recordingPipeline = projections.RecordingPipeline;
-        var recordingPipelineFlattening = BuildRecordingPipelineFlattenedProjection(recordingPipeline);
-        var captureCadence = projections.CaptureCadence;
-        var captureCadenceFlattening = BuildCaptureCadenceFlattenedProjection(captureCadence);
-        var visualCadence = projections.VisualCadence;
-        var visualCadenceFlattening = BuildVisualCadenceFlattenedProjection(visualCadence);
-        var mjpeg = projections.Mjpeg;
-        var mjpegFlattening = BuildMjpegFlattenedProjection(mjpeg);
-        var mjpegTimingFlattening = BuildMjpegTimingFlattenedProjection(mjpeg.Timing);
-        var mjpegPreviewJitterFlattening = BuildMjpegPreviewJitterFlattenedProjection(mjpeg.PreviewJitter);
-        var mjpegPacketHashFlattening = BuildMjpegPacketHashFlattenedProjection(mjpeg.PacketHash);
-        var previewRuntimeFlattening = BuildPreviewRuntimeFlattenedProjection(previewSummary);
-        var previewD3D = projections.PreviewD3D;
-        var previewD3DFlattening = BuildPreviewD3DFlattenedProjection(previewD3D);
         var hdrPipeline = projections.HdrPipeline;
-        var hdrPipelineFlattening = BuildHdrPipelineFlattenedProjection(hdrPipeline);
+        var recordingOutput = projections.RecordingOutput;
+        var audioAndIngest = projections.AudioAndIngest;
+        var captureTransport = projections.CaptureTransport;
+        var previewSummary = projections.PreviewSummary;
+        var recordingPipeline = projections.RecordingPipeline;
+        var recordingBackend = projections.RecordingBackend;
+        var recordingIntegrity = projections.RecordingIntegrity;
+        var captureFormat = projections.CaptureFormat;
+        var previewD3D = projections.PreviewD3D;
+        var flashbackRecording = projections.FlashbackRecording;
+        var audioDrops = projections.AudioDrops;
+        var captureCadence = projections.CaptureCadence;
+        var mjpeg = projections.Mjpeg;
+        var visualCadence = projections.VisualCadence;
+        var processResourceProjection = projections.ProcessResourceProjection;
+        var avSync = projections.AvSync;
+        var flashbackPlayback = projections.FlashbackPlayback;
         var flashbackExport = projections.FlashbackExport;
         var flashbackExportLastResult = projections.FlashbackExportLastResult;
-        var flashbackExportFlattening = BuildFlashbackExportFlattenedProjection(
-            flashbackExport,
-            flashbackExportLastResult);
-        var flashbackRecording = projections.FlashbackRecording;
-        var flashbackRecordingFlattening = BuildFlashbackRecordingFlattenedProjection(flashbackRecording);
-        var flashbackPlayback = projections.FlashbackPlayback;
-        var flashbackPlaybackFlattening = BuildFlashbackPlaybackFlattenedProjection(flashbackPlayback);
 
-        return new AutomationSnapshotFlattenedProjectionSet(
-            snapshotStatusFlattening,
-            snapshotEvaluationFlattening,
-            audioAndIngestFlattening,
-            audioDropsFlattening,
-            captureCommandFlattening,
-            settingsFlattening,
-            recordingIntegrity,
-            sourceFlattening,
-            processResourceFlattening,
-            avSyncFlattening,
-            captureTransportFlattening,
-            captureFormatFlattening,
-            recordingOutput,
-            recordingBackend,
-            recordingPipelineFlattening,
-            captureCadenceFlattening,
-            visualCadenceFlattening,
-            mjpegFlattening,
-            mjpegTimingFlattening,
-            mjpegPreviewJitterFlattening,
-            mjpegPacketHashFlattening,
-            previewRuntimeFlattening,
-            previewD3DFlattening,
-            hdrPipelineFlattening,
-            flashbackExportFlattening,
-            flashbackRecordingFlattening,
-            flashbackPlaybackFlattening);
+        return new AutomationSnapshot
+        {
+            TimestampUtc = snapshotStatus.TimestampUtc,
+            SnapshotCollectionEpoch = snapshotStatus.SnapshotCollectionEpoch,
+            SnapshotCollectionStartedUtc = snapshotStatus.SnapshotCollectionStartedUtc,
+            SnapshotCollectionCompletedUtc = snapshotStatus.SnapshotCollectionCompletedUtc,
+            SnapshotCollectionDurationMs = snapshotStatus.SnapshotCollectionDurationMs,
+            SnapshotMixedEpochs = snapshotStatus.SnapshotMixedEpochs,
+            SnapshotMixedEpochReason = snapshotStatus.SnapshotMixedEpochReason,
+            SnapshotViewModelEpoch = snapshotStatus.SnapshotViewModelEpoch,
+            SnapshotCaptureRuntimeEpoch = snapshotStatus.SnapshotCaptureRuntimeEpoch,
+            SnapshotCaptureHealthEpoch = snapshotStatus.SnapshotCaptureHealthEpoch,
+            SnapshotRecordingStatsEpoch = snapshotStatus.SnapshotRecordingStatsEpoch,
+            SnapshotPreviewRuntimeEpoch = snapshotStatus.SnapshotPreviewRuntimeEpoch,
+            SnapshotOutputEpoch = snapshotStatus.SnapshotOutputEpoch,
+            SnapshotSourceTelemetryEpoch = snapshotStatus.SnapshotSourceTelemetryEpoch,
+            IsInitialized = snapshotStatus.IsInitialized,
+            IsPreviewing = snapshotStatus.IsPreviewing,
+            IsRecording = snapshotStatus.IsRecording,
+            VerificationInProgress = snapshotStatus.VerificationInProgress,
+            IsAudioEnabled = snapshotStatus.IsAudioEnabled,
+            IsAudioPreviewEnabled = snapshotStatus.IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled = snapshotStatus.IsCustomAudioInputEnabled,
+            SessionState = snapshotStatus.SessionState,
+            StatusText = snapshotStatus.StatusText,
+            PerformanceScore = snapshotEvaluation.PerformanceScore,
+            PerformancePerfectionMet = snapshotEvaluation.PerformancePerfectionMet,
+            PerformanceSummary = snapshotEvaluation.PerformanceSummary,
+            DiagnosticHealthStatus = snapshotEvaluation.DiagnosticHealthStatus,
+            DiagnosticLikelyStage = snapshotEvaluation.DiagnosticLikelyStage,
+            DiagnosticSummary = snapshotEvaluation.DiagnosticSummary,
+            DiagnosticEvidence = snapshotEvaluation.DiagnosticEvidence,
+            DiagnosticSourceLane = snapshotEvaluation.DiagnosticSourceLane,
+            DiagnosticDecodeLane = snapshotEvaluation.DiagnosticDecodeLane,
+            DiagnosticPreviewLane = snapshotEvaluation.DiagnosticPreviewLane,
+            DiagnosticRenderLane = snapshotEvaluation.DiagnosticRenderLane,
+            DiagnosticPresentLane = snapshotEvaluation.DiagnosticPresentLane,
+            DiagnosticRecordingLane = snapshotEvaluation.DiagnosticRecordingLane,
+            DiagnosticAudioLane = snapshotEvaluation.DiagnosticAudioLane,
+            PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage,
+            PreviewPacingSlowStageConfidence = snapshotEvaluation.PreviewPacingSlowStageConfidence,
+            PreviewPacingSlowStageEvidence = snapshotEvaluation.PreviewPacingSlowStageEvidence,
+            CaptureCommandCommandsEnqueued = captureCommands.CommandsEnqueued,
+            CaptureCommandCommandsCompleted = captureCommands.CommandsCompleted,
+            CaptureCommandCommandsFailed = captureCommands.CommandsFailed,
+            CaptureCommandCommandsCanceled = captureCommands.CommandsCanceled,
+            CaptureCommandCommandsCoalesced = captureCommands.CommandsCoalesced,
+            CaptureCommandPendingCommands = captureCommands.PendingCommands,
+            CaptureCommandMaxPendingCommands = captureCommands.MaxPendingCommands,
+            CaptureCommandOldestPendingCommandAgeMs = captureCommands.OldestPendingCommandAgeMs,
+            CaptureCommandLastQueueLatencyMs = captureCommands.LastQueueLatencyMs,
+            CaptureCommandMaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,
+            CaptureCommandLastCommand = captureCommands.LastCommand,
+            CaptureCommandLastOutcome = captureCommands.LastOutcome,
+            CaptureCommandLastCorrelationId = captureCommands.LastCorrelationId,
+            CaptureCommandLastError = captureCommands.LastError,
+            PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,
+            PerformanceThresholdCaptureP95Multiplier = snapshotEvaluation.PerformanceThresholdCaptureP95Multiplier,
+            PerformanceThresholdPreviewSlowPercent = snapshotEvaluation.PerformanceThresholdPreviewSlowPercent,
+            PerformanceThresholdVerificationDropPercent = snapshotEvaluation.PerformanceThresholdVerificationDropPercent,
+            SelectedDeviceId = userSettings.SelectedDeviceId,
+            SelectedDeviceName = userSettings.SelectedDeviceName,
+            SelectedAudioInputDeviceId = userSettings.SelectedAudioInputDeviceId,
+            SelectedAudioInputDeviceName = userSettings.SelectedAudioInputDeviceName,
+            SelectedResolution = userSettings.SelectedResolution,
+            SelectedFrameRate = userSettings.SelectedFrameRate,
+            SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,
+            SelectedExactFrameRate = userSettings.SelectedExactFrameRate,
+            SelectedExactFrameRateArg = userSettings.SelectedExactFrameRateArg,
+            DisabledResolutionReason = userSettings.DisabledResolutionReason,
+            DisabledFrameRateReason = userSettings.DisabledFrameRateReason,
+            DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,
+            DetectedSourceFrameRateArg = sourceSignal.DetectedFrameRateArg,
+            SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,
+            SourceWidth = sourceSignal.Width,
+            SourceHeight = sourceSignal.Height,
+            SourceIsHdr = sourceSignal.IsHdr,
+            SourceVideoFormat = sourceSignal.VideoFormat,
+            SourceColorimetry = sourceSignal.Colorimetry,
+            SourceQuantization = sourceSignal.Quantization,
+            SourceHdrTransferFunction = sourceSignal.HdrTransferFunction,
+            SourceHdrTransferCode = sourceSignal.HdrTransferCode,
+            SourceFirmware = sourceSignal.Firmware,
+            SourceAudioFormat = sourceSignal.AudioFormat,
+            SourceAudioSampleRate = sourceSignal.AudioSampleRate,
+            SourceInputSource = sourceSignal.InputSource,
+            SourceUsbHostProtocol = sourceSignal.UsbHostProtocol,
+            SourceHdcpMode = sourceSignal.HdcpMode,
+            SourceHdcpVersion = sourceSignal.HdcpVersion,
+            SourceRxTxHdcpVersion = sourceSignal.RxTxHdcpVersion,
+            SourceRawTimingHex = sourceSignal.RawTimingHex,
+            SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,
+            SourceTelemetryOriginDetail = sourceTelemetry.SourceTelemetryOriginDetail,
+            SourceTelemetryConfidence = sourceTelemetry.SourceTelemetryConfidence,
+            SourceTelemetryDiagnosticSummary = sourceTelemetry.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,
+            SourceTelemetryTimestampUtc = sourceTelemetry.SourceTelemetryTimestampUtc,
+            SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,
+            SourceTelemetryBackend = sourceTelemetry.SourceTelemetryBackend,
+            SourceTelemetrySuppressed = sourceTelemetry.SourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = sourceTelemetry.SourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = sourceTelemetry.SourceTelemetryCircuitState,
+            SourceTelemetrySummaryText = sourceTelemetry.SourceTelemetrySummaryText,
+            SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText,
+            SelectedRecordingFormat = userSettings.SelectedRecordingFormat,
+            SelectedQuality = userSettings.SelectedQuality,
+            SelectedPreset = userSettings.SelectedPreset,
+            SelectedSplitEncodeMode = userSettings.SelectedSplitEncodeMode,
+            SelectedVideoFormat = userSettings.SelectedVideoFormat,
+            CustomBitrateMbps = userSettings.CustomBitrateMbps,
+            PreviewVolumePercent = userSettings.PreviewVolumePercent,
+            IsStatsVisible = userSettings.IsStatsVisible,
+            IsHdrAvailable = hdrPipeline.IsHdrAvailable,
+            IsHdrEnabled = hdrPipeline.IsHdrEnabled,
+            HdrOutputActive = hdrPipeline.HdrOutputActive,
+            HdrRuntimeState = hdrPipeline.HdrRuntimeState,
+            HdrReadinessReason = hdrPipeline.HdrReadinessReason,
+            HdrWarmupState = hdrPipeline.HdrWarmupState,
+            HdrWarmupRequiredP010Frames = hdrPipeline.HdrWarmupRequiredP010Frames,
+            HdrWarmupAllowedNonP010Frames = hdrPipeline.HdrWarmupAllowedNonP010Frames,
+            HdrWarmupObservedP010Frames = hdrPipeline.HdrWarmupObservedP010Frames,
+            HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,
+            HdrDowngradeCode = hdrPipeline.HdrDowngradeCode,
+            RequestedPipelineMode = hdrPipeline.RequestedPipelineMode,
+            ActivePipelineMode = hdrPipeline.ActivePipelineMode,
+            PipelineModeMatched = hdrPipeline.PipelineModeMatched,
+            PipelineModeStatus = hdrPipeline.PipelineModeStatus,
+            PipelineModeReason = hdrPipeline.PipelineModeReason,
+            TelemetryAlignmentStatus = hdrPipeline.TelemetryAlignmentStatus,
+            TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,
+            OutputPath = recordingOutput.OutputPath,
+            RecordingTime = recordingOutput.RecordingTime,
+            RecordingSizeInfo = recordingOutput.RecordingSizeInfo,
+            RecordingBitrateInfo = recordingOutput.RecordingBitrateInfo,
+            AudioPeak = audioAndIngest.Signal.Peak,
+            AudioClipping = audioAndIngest.Signal.Clipping,
+            AudioSignalPresent = audioAndIngest.Signal.SignalPresent,
+            AudioMutedSuspected = audioAndIngest.Signal.MutedSuspected,
+            AudioReaderActive = audioAndIngest.Ingest.AudioReaderActive,
+            AudioFramesArrived = audioAndIngest.Ingest.AudioFramesArrived,
+            AudioFramesWrittenToSink = audioAndIngest.Ingest.AudioFramesWrittenToSink,
+            VideoReaderActive = audioAndIngest.Ingest.VideoReaderActive,
+            IngestVideoFramesArrived = audioAndIngest.Ingest.VideoFramesArrived,
+            IngestVideoFramesWrittenToSink = audioAndIngest.Ingest.VideoFramesWrittenToSink,
+            IngestLastVideoFrameAgeMs = audioAndIngest.Ingest.LastVideoFrameAgeMs,
+            VideoIngestErrorCount = audioAndIngest.Ingest.VideoIngestErrorCount,
+            MfSourceReaderFramesDelivered = audioAndIngest.Ingest.MfSourceReaderFramesDelivered,
+            MfSourceReaderFramesDropped = audioAndIngest.Ingest.MfSourceReaderFramesDropped,
+            MfSourceReaderNegotiatedFormat = audioAndIngest.Ingest.MfSourceReaderNegotiatedFormat,
+            SourceReaderReadOutstanding = audioAndIngest.Ingest.SourceReaderReadOutstanding,
+            SourceReaderReadOutstandingMs = audioAndIngest.Ingest.SourceReaderReadOutstandingMs,
+            SourceReaderLastFrameTickMs = audioAndIngest.Ingest.SourceReaderLastFrameTickMs,
+            SourceReaderFrameChannelDepth = audioAndIngest.Ingest.SourceReaderFrameChannelDepth,
+            WasapiCaptureCallbackCount = audioAndIngest.Wasapi.CaptureCallbackCount,
+            WasapiCaptureCallbackAvgIntervalMs = audioAndIngest.Wasapi.CaptureCallbackAvgIntervalMs,
+            WasapiCaptureCallbackMaxIntervalMs = audioAndIngest.Wasapi.CaptureCallbackMaxIntervalMs,
+            WasapiCaptureCallbackSevereGapCount = audioAndIngest.Wasapi.CaptureCallbackSevereGapCount,
+            WasapiCaptureAudioDiscontinuityCount = audioAndIngest.Wasapi.CaptureAudioDiscontinuityCount,
+            WasapiCaptureAudioTimestampErrorCount = audioAndIngest.Wasapi.CaptureAudioTimestampErrorCount,
+            WasapiCaptureAudioGlitchCount = audioAndIngest.Wasapi.CaptureAudioGlitchCount,
+            WasapiCaptureCallbackSilenceCount = audioAndIngest.Wasapi.CaptureCallbackSilenceCount,
+            WasapiCaptureLastCallbackTickMs = audioAndIngest.Wasapi.CaptureLastCallbackTickMs,
+            WasapiCaptureAudioLevelEventsFired = audioAndIngest.Wasapi.CaptureAudioLevelEventsFired,
+            WasapiCaptureAudioLevelLastFireTickMs = audioAndIngest.Wasapi.CaptureAudioLevelLastFireTickMs,
+            WasapiPlaybackRenderCallbackCount = audioAndIngest.Wasapi.PlaybackRenderCallbackCount,
+            WasapiPlaybackRenderSilenceCount = audioAndIngest.Wasapi.PlaybackRenderSilenceCount,
+            WasapiPlaybackQueueDepth = audioAndIngest.Wasapi.PlaybackQueueDepth,
+            WasapiPlaybackQueueDropCount = audioAndIngest.Wasapi.PlaybackQueueDropCount,
+            WasapiPlaybackQueueDurationMs = audioAndIngest.Wasapi.PlaybackQueueDurationMs,
+            WasapiPlaybackActiveChunkDurationMs = audioAndIngest.Wasapi.PlaybackActiveChunkDurationMs,
+            WasapiPlaybackEndpointQueuedDurationMs = audioAndIngest.Wasapi.PlaybackEndpointQueuedDurationMs,
+            WasapiPlaybackBufferedDurationMs = audioAndIngest.Wasapi.PlaybackBufferedDurationMs,
+            WasapiPlaybackStreamLatencyMs = audioAndIngest.Wasapi.PlaybackStreamLatencyMs,
+            WasapiPlaybackLastRenderTickMs = audioAndIngest.Wasapi.PlaybackLastRenderTickMs,
+            AudioBufferHealthStatus = audioAndIngest.Wasapi.BufferHealthStatus,
+            AudioBufferHealthReason = audioAndIngest.Wasapi.BufferHealthReason,
+            AudioBufferUnderrunDetected = audioAndIngest.Wasapi.BufferUnderrunDetected,
+            AudioBufferOverrunDetected = audioAndIngest.Wasapi.BufferOverrunDetected,
+            AudioBufferUnderrunEvents = audioAndIngest.Wasapi.BufferUnderrunEvents,
+            AudioBufferOverrunEvents = audioAndIngest.Wasapi.BufferOverrunEvents,
+            MemoryPreference = captureTransport.MemoryPreference,
+            VideoRequestedSubtype = captureTransport.VideoRequestedSubtype,
+            VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureTransport.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureTransport.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureTransport.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents,
+            PreviewAdapterColorMetadata = previewSummary.Color.AdapterColorMetadata,
+            EncoderVideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,
+            EncoderVideoFramesEncoded = recordingPipeline.Encoder.VideoFramesEncoded,
+            EncoderLastEnqueueAgeMs = recordingPipeline.Encoder.LastEnqueueAgeMs,
+            EncoderLastWriteAgeMs = recordingPipeline.Encoder.LastWriteAgeMs,
+            RecordingBackend = recordingBackend.Backend,
+            AudioPathMode = recordingBackend.AudioPathMode,
+            MuxResult = recordingBackend.MuxResult,
+            RecordingIntegrityStatus = recordingIntegrity.Summary.Status,
+            RecordingIntegrityComplete = recordingIntegrity.Summary.Complete,
+            RecordingIntegrityBackend = recordingIntegrity.Summary.Backend,
+            RecordingIntegrityCompletedUtc = recordingIntegrity.Summary.CompletedUtc,
+            RecordingIntegritySourceFrames = recordingIntegrity.Video.SourceFrames,
+            RecordingIntegrityAcceptedFrames = recordingIntegrity.Video.AcceptedFrames,
+            RecordingIntegrityPipelineDroppedFrames = recordingIntegrity.Video.PipelineDroppedFrames,
+            RecordingIntegrityQueueDroppedFrames = recordingIntegrity.Video.QueueDroppedFrames,
+            RecordingIntegritySubmittedFrames = recordingIntegrity.Video.SubmittedFrames,
+            RecordingIntegrityEncodedFrames = recordingIntegrity.Video.EncodedFrames,
+            RecordingIntegrityPacketsWritten = recordingIntegrity.Video.PacketsWritten,
+            RecordingIntegrityEncoderDroppedFrames = recordingIntegrity.Video.EncoderDroppedFrames,
+            RecordingIntegritySequenceGaps = recordingIntegrity.Video.SequenceGaps,
+            RecordingIntegrityQueueMaxDepth = recordingIntegrity.Backpressure.QueueMaxDepth,
+            RecordingIntegrityQueueOldestFrameAgeMs = recordingIntegrity.Backpressure.QueueOldestFrameAgeMs,
+            RecordingIntegrityBackpressureWaitMs = recordingIntegrity.Backpressure.BackpressureWaitMs,
+            RecordingIntegrityBackpressureEvents = recordingIntegrity.Backpressure.BackpressureEvents,
+            RecordingIntegrityBackpressureMaxWaitMs = recordingIntegrity.Backpressure.BackpressureMaxWaitMs,
+            RecordingIntegrityAudioStatus = recordingIntegrity.Audio.AudioStatus,
+            RecordingIntegrityAudioEnabled = recordingIntegrity.Audio.AudioEnabled,
+            RecordingIntegrityAudioCaptureActive = recordingIntegrity.Audio.AudioCaptureActive,
+            RecordingIntegrityAudioFramesArrived = recordingIntegrity.Audio.AudioFramesArrived,
+            RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.Audio.AudioFramesWrittenToSink,
+            RecordingIntegrityAudioSamplesEncoded = recordingIntegrity.Audio.AudioSamplesEncoded,
+            RecordingIntegrityAudioDropEvents = recordingIntegrity.Audio.AudioDropEvents,
+            RecordingIntegrityAudioDiscontinuities = recordingIntegrity.Audio.AudioDiscontinuities,
+            RecordingIntegrityAudioTimestampErrors = recordingIntegrity.Audio.AudioTimestampErrors,
+            RecordingIntegrityAudioCallbackGaps = recordingIntegrity.Audio.AudioCallbackGaps,
+            RecordingIntegrityAvSyncDriftMs = recordingIntegrity.AvSync.AvSyncDriftMs,
+            RecordingIntegrityAvSyncDriftRateMsPerSec = recordingIntegrity.AvSync.AvSyncDriftRateMsPerSec,
+            RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.AvSync.EncoderAvSyncDriftMs,
+            RecordingIntegrityEncoderAvSyncCorrectionSamples = recordingIntegrity.AvSync.EncoderAvSyncCorrectionSamples,
+            RecordingIntegrityReason = recordingIntegrity.Summary.Reason,
+            RequestedWidth = captureFormat.Requested.Width,
+            RequestedHeight = captureFormat.Requested.Height,
+            RequestedFrameRate = captureFormat.Requested.FrameRate,
+            RequestedFrameRateArg = captureFormat.Requested.FrameRateArg,
+            RequestedFrameRateNumerator = captureFormat.Requested.FrameRateNumerator,
+            RequestedFrameRateDenominator = captureFormat.Requested.FrameRateDenominator,
+            RequestedPixelFormat = captureFormat.Requested.PixelFormat,
+            RequestedFormat = captureFormat.Requested.Format,
+            RequestedQuality = captureFormat.Requested.Quality,
+            RequestedHdrEnabled = captureFormat.Requested.HdrEnabled,
+            RequestedHdrMasteringMetadata = captureFormat.Requested.HdrMasteringMetadata,
+            RequestedAudioEnabled = captureFormat.Requested.AudioEnabled,
+            HdrActivationReason = captureFormat.HdrRequest.ActivationReason,
+            HdrAutoDowngraded = captureFormat.HdrRequest.AutoDowngraded,
+            HdrAutoDowngradeReason = captureFormat.HdrRequest.AutoDowngradeReason,
+            HdrRequestedButSourceNot10Bit = captureFormat.HdrRequest.RequestedButSourceNot10Bit,
+            ActualWidth = captureFormat.Actual.Width,
+            ActualHeight = captureFormat.Actual.Height,
+            ActualFrameRate = captureFormat.Actual.FrameRate,
+            ActualFrameRateArg = captureFormat.Actual.FrameRateArg,
+            NegotiatedWidth = captureFormat.Negotiated.Width,
+            NegotiatedHeight = captureFormat.Negotiated.Height,
+            NegotiatedFrameRate = captureFormat.Negotiated.FrameRate,
+            NegotiatedFrameRateArg = captureFormat.Negotiated.FrameRateArg,
+            NegotiatedFrameRateNumerator = captureFormat.Negotiated.FrameRateNumerator,
+            NegotiatedFrameRateDenominator = captureFormat.Negotiated.FrameRateDenominator,
+            NegotiatedPixelFormat = captureFormat.Negotiated.PixelFormat,
+            RequestedReaderSubtype = captureFormat.ReaderObservation.RequestedReaderSubtype,
+            ReaderSourceStreamType = captureFormat.ReaderObservation.ReaderSourceStreamType,
+            ReaderSourceSubtype = captureFormat.ReaderObservation.ReaderSourceSubtype,
+            FirstObservedFramePixelFormat = captureFormat.ReaderObservation.FirstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,
+            LatestObservedSurfaceFormat = captureFormat.ReaderObservation.LatestObservedSurfaceFormat,
+            ObservedP010FrameCount = captureFormat.ReaderObservation.ObservedP010FrameCount,
+            ObservedNv12FrameCount = captureFormat.ReaderObservation.ObservedNv12FrameCount,
+            ObservedOtherFrameCount = captureFormat.ReaderObservation.ObservedOtherFrameCount,
+            ObservedP010BitDepthSampleCount = captureFormat.ReaderObservation.ObservedP010BitDepthSampleCount,
+            ObservedP010Low2BitNonZeroPercent = captureFormat.ReaderObservation.ObservedP010Low2BitNonZeroPercent,
+            ObservedP010Likely8BitUpscaled = captureFormat.ReaderObservation.ObservedP010Likely8BitUpscaled,
+            EncoderInputPixelFormat = captureFormat.Encoder.InputPixelFormat,
+            EncoderOutputPixelFormat = captureFormat.Encoder.OutputPixelFormat,
+            EncoderVideoCodec = captureFormat.Encoder.VideoCodec,
+            EncoderVideoProfile = captureFormat.Encoder.VideoProfile,
+            EncoderTenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed,
+            MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters,
+            NegotiatedMediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken,
+            PreviewFramesArrived = previewSummary.Frame.FramesArrived,
+            PreviewFramesDisplayed = previewSummary.Frame.FramesDisplayed,
+            PreviewFramesDropped = previewSummary.Frame.FramesDropped,
+            PreviewCadenceSampleCount = previewSummary.Cadence.SampleCount,
+            PreviewCadenceObservedFps = previewSummary.Cadence.ObservedFps,
+            PreviewCadenceExpectedIntervalMs = previewSummary.Cadence.ExpectedIntervalMs,
+            PreviewCadenceAverageIntervalMs = previewSummary.Cadence.AverageIntervalMs,
+            PreviewCadenceP95IntervalMs = previewSummary.Cadence.P95IntervalMs,
+            PreviewCadenceP99IntervalMs = previewSummary.Cadence.P99IntervalMs,
+            PreviewCadenceMaxIntervalMs = previewSummary.Cadence.MaxIntervalMs,
+            PreviewCadenceOnePercentLowFps = previewSummary.Cadence.OnePercentLowFps,
+            PreviewCadenceFivePercentLowFps = previewSummary.Cadence.FivePercentLowFps,
+            PreviewCadenceSampleDurationMs = previewSummary.Cadence.SampleDurationMs,
+            PreviewCadenceRecentIntervalsMs = previewSummary.Cadence.RecentIntervalsMs,
+            PreviewCadenceJitterStdDevMs = previewSummary.Cadence.JitterStdDevMs,
+            PreviewCadenceSlowFrameCount = previewSummary.Cadence.SlowFrameCount,
+            PreviewCadenceSlowFramePercent = previewSummary.Cadence.SlowFramePercent,
+            PreviewGpuActive = previewSummary.Surface.GpuActive,
+            PreviewPlaceholderVisible = previewSummary.Surface.PlaceholderVisible,
+            PreviewGpuElementVisible = previewSummary.Surface.GpuElementVisible,
+            PreviewCpuElementVisible = previewSummary.Surface.CpuElementVisible,
+            PreviewRendererAttached = previewSummary.Surface.RendererAttached,
+            PreviewStartupState = previewSummary.Startup.State,
+            PreviewAttemptId = previewSummary.Startup.AttemptId,
+            PreviewStartupElapsedMs = previewSummary.Startup.ElapsedMs,
+            PreviewStartupTimeoutMs = previewSummary.Startup.TimeoutMs,
+            PreviewGpuSignalMediaOpened = previewSummary.Startup.GpuSignalMediaOpened,
+            PreviewGpuSignalFirstFrame = previewSummary.Startup.GpuSignalFirstFrame,
+            PreviewGpuSignalPlaybackAdvancing = previewSummary.Startup.GpuSignalPlaybackAdvancing,
+            PreviewStartupRequiredSignals = previewSummary.Startup.RequiredSignals,
+            PreviewStartupReceivedSignals = previewSummary.Startup.ReceivedSignals,
+            PreviewStartupStrategy = previewSummary.Startup.Strategy,
+            PreviewStartupMissingSignals = previewSummary.Startup.MissingSignals,
+            PreviewRecoveryAttemptCount = previewSummary.Startup.RecoveryAttemptCount,
+            PreviewLastFailureReason = previewSummary.Startup.LastFailureReason,
+            PreviewFirstVisualConfirmed = previewSummary.Startup.FirstVisualConfirmed,
+            PreviewBlankSuspected = previewSummary.Startup.BlankSuspected,
+            PreviewStalled = previewSummary.Startup.Stalled,
+            PreviewRendererMode = previewSummary.Startup.RendererMode,
+            PreviewD3DPresentSyncInterval = previewD3D.PresentSyncInterval,
+            PreviewD3DMaxFrameLatency = previewD3D.MaxFrameLatency,
+            PreviewD3DSwapChainBufferCount = previewD3D.SwapChainBufferCount,
+            PreviewD3DSwapChainAddress = previewD3D.SwapChainAddress,
+            PreviewD3DFramesSubmitted = previewD3D.FramesSubmitted,
+            PreviewD3DFramesRendered = previewD3D.FramesRendered,
+            PreviewD3DFramesDropped = previewD3D.FramesDropped,
+            PreviewD3DRenderThreadFailureCount = previewD3D.RenderThreadFailureCount,
+            PreviewD3DLastRenderThreadFailureType = previewD3D.LastRenderThreadFailureType,
+            PreviewD3DLastRenderThreadFailureMessage = previewD3D.LastRenderThreadFailureMessage,
+            PreviewD3DLastRenderThreadFailureHResult = previewD3D.LastRenderThreadFailureHResult,
+            PreviewD3DPendingFrameCount = previewD3D.PendingFrameCount,
+            PreviewD3DInputColorSpace = previewD3D.InputColorSpace,
+            PreviewD3DOutputColorSpace = previewD3D.OutputColorSpace,
+            PreviewD3DCpuTimingSampleCount = previewD3D.CpuTiming.SampleCount,
+            PreviewD3DInputUploadCpuAvgMs = previewD3D.CpuTiming.InputUploadAvgMs,
+            PreviewD3DInputUploadCpuP95Ms = previewD3D.CpuTiming.InputUploadP95Ms,
+            PreviewD3DInputUploadCpuP99Ms = previewD3D.CpuTiming.InputUploadP99Ms,
+            PreviewD3DInputUploadCpuMaxMs = previewD3D.CpuTiming.InputUploadMaxMs,
+            PreviewD3DRenderSubmitCpuAvgMs = previewD3D.CpuTiming.RenderSubmitAvgMs,
+            PreviewD3DRenderSubmitCpuP95Ms = previewD3D.CpuTiming.RenderSubmitP95Ms,
+            PreviewD3DRenderSubmitCpuP99Ms = previewD3D.CpuTiming.RenderSubmitP99Ms,
+            PreviewD3DRenderSubmitCpuMaxMs = previewD3D.CpuTiming.RenderSubmitMaxMs,
+            PreviewD3DPresentCallAvgMs = previewD3D.CpuTiming.PresentCallAvgMs,
+            PreviewD3DPresentCallP95Ms = previewD3D.CpuTiming.PresentCallP95Ms,
+            PreviewD3DPresentCallP99Ms = previewD3D.CpuTiming.PresentCallP99Ms,
+            PreviewD3DPresentCallMaxMs = previewD3D.CpuTiming.PresentCallMaxMs,
+            PreviewD3DTotalFrameCpuAvgMs = previewD3D.CpuTiming.TotalFrameAvgMs,
+            PreviewD3DTotalFrameCpuP95Ms = previewD3D.CpuTiming.TotalFrameP95Ms,
+            PreviewD3DTotalFrameCpuP99Ms = previewD3D.CpuTiming.TotalFrameP99Ms,
+            PreviewD3DTotalFrameCpuMaxMs = previewD3D.CpuTiming.TotalFrameMaxMs,
+            PreviewD3DPipelineLatencySampleCount = previewD3D.PipelineLatency.SampleCount,
+            PreviewD3DPipelineLatencyAvgMs = previewD3D.PipelineLatency.AvgMs,
+            PreviewD3DPipelineLatencyP95Ms = previewD3D.PipelineLatency.P95Ms,
+            PreviewD3DPipelineLatencyP99Ms = previewD3D.PipelineLatency.P99Ms,
+            PreviewD3DPipelineLatencyMaxMs = previewD3D.PipelineLatency.MaxMs,
+            PreviewD3DFrameLatencyWaitEnabled = previewD3D.FrameLatencyWait.Enabled,
+            PreviewD3DFrameLatencyWaitHandleActive = previewD3D.FrameLatencyWait.HandleActive,
+            PreviewD3DFrameLatencyWaitCallCount = previewD3D.FrameLatencyWait.CallCount,
+            PreviewD3DFrameLatencyWaitSignaledCount = previewD3D.FrameLatencyWait.SignaledCount,
+            PreviewD3DFrameLatencyWaitTimeoutCount = previewD3D.FrameLatencyWait.TimeoutCount,
+            PreviewD3DFrameLatencyWaitUnexpectedResultCount = previewD3D.FrameLatencyWait.UnexpectedResultCount,
+            PreviewD3DFrameLatencyWaitLastResult = previewD3D.FrameLatencyWait.LastResult,
+            PreviewD3DFrameLatencyWaitLastMs = previewD3D.FrameLatencyWait.LastMs,
+            PreviewD3DFrameLatencyWaitSampleCount = previewD3D.FrameLatencyWait.SampleCount,
+            PreviewD3DFrameLatencyWaitAvgMs = previewD3D.FrameLatencyWait.AvgMs,
+            PreviewD3DFrameLatencyWaitP95Ms = previewD3D.FrameLatencyWait.P95Ms,
+            PreviewD3DFrameLatencyWaitP99Ms = previewD3D.FrameLatencyWait.P99Ms,
+            PreviewD3DFrameLatencyWaitMaxMs = previewD3D.FrameLatencyWait.MaxMs,
+            PreviewD3DFrameStatsSampleCount = previewD3D.FrameStats.SampleCount,
+            PreviewD3DFrameStatsSuccessCount = previewD3D.FrameStats.SuccessCount,
+            PreviewD3DFrameStatsFailureCount = previewD3D.FrameStats.FailureCount,
+            PreviewD3DFrameStatsLastError = previewD3D.FrameStats.LastError,
+            PreviewD3DFrameStatsPresentCount = previewD3D.FrameStats.PresentCount,
+            PreviewD3DFrameStatsPresentRefreshCount = previewD3D.FrameStats.PresentRefreshCount,
+            PreviewD3DFrameStatsSyncRefreshCount = previewD3D.FrameStats.SyncRefreshCount,
+            PreviewD3DFrameStatsSyncQpcTime = previewD3D.FrameStats.SyncQpcTime,
+            PreviewD3DFrameStatsLastPresentDelta = previewD3D.FrameStats.LastPresentDelta,
+            PreviewD3DFrameStatsLastPresentRefreshDelta = previewD3D.FrameStats.LastPresentRefreshDelta,
+            PreviewD3DFrameStatsLastSyncRefreshDelta = previewD3D.FrameStats.LastSyncRefreshDelta,
+            PreviewD3DFrameStatsMissedRefreshCount = previewD3D.FrameStats.MissedRefreshCount,
+            PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3D.FrameStats.RecentMissedRefreshCount,
+            PreviewD3DFrameStatsRecentFailureCount = previewD3D.FrameStats.RecentFailureCount,
+            PreviewD3DLastSubmittedPreviewPresentId = previewD3D.FrameFlow.LastSubmittedPreviewPresentId,
+            PreviewD3DLastSubmittedSourceSequenceNumber = previewD3D.FrameFlow.LastSubmittedSourceSequenceNumber,
+            PreviewD3DLastSubmittedSourcePtsTicks = previewD3D.FrameFlow.LastSubmittedSourcePtsTicks,
+            PreviewD3DLastSubmittedQpc = previewD3D.FrameFlow.LastSubmittedQpc,
+            PreviewD3DLastSubmittedUtcUnixMs = previewD3D.FrameFlow.LastSubmittedUtcUnixMs,
+            PreviewD3DLastRenderedPreviewPresentId = previewD3D.FrameFlow.LastRenderedPreviewPresentId,
+            PreviewD3DLastRenderedSourceSequenceNumber = previewD3D.FrameFlow.LastRenderedSourceSequenceNumber,
+            PreviewD3DLastRenderedSourcePtsTicks = previewD3D.FrameFlow.LastRenderedSourcePtsTicks,
+            PreviewD3DLastRenderedQpc = previewD3D.FrameFlow.LastRenderedQpc,
+            PreviewD3DLastRenderedUtcUnixMs = previewD3D.FrameFlow.LastRenderedUtcUnixMs,
+            PreviewD3DLastRenderedSchedulerToPresentMs = previewD3D.FrameFlow.LastRenderedSchedulerToPresentMs,
+            PreviewD3DLastRenderedPipelineLatencyMs = previewD3D.FrameFlow.LastRenderedPipelineLatencyMs,
+            PreviewD3DLastDroppedPreviewPresentId = previewD3D.FrameFlow.LastDroppedPreviewPresentId,
+            PreviewD3DLastDroppedSourceSequenceNumber = previewD3D.FrameFlow.LastDroppedSourceSequenceNumber,
+            PreviewD3DLastDroppedSourcePtsTicks = previewD3D.FrameFlow.LastDroppedSourcePtsTicks,
+            PreviewD3DLastDroppedQpc = previewD3D.FrameFlow.LastDroppedQpc,
+            PreviewD3DLastDroppedUtcUnixMs = previewD3D.FrameFlow.LastDroppedUtcUnixMs,
+            PreviewD3DLastDropReason = previewD3D.FrameFlow.LastDropReason,
+            PreviewD3DRecentSlowFrames = previewD3D.FrameFlow.RecentSlowFrames,
+            PreviewGpuPlaybackState = previewSummary.GpuPlayback.PlaybackState,
+            PreviewGpuNaturalVideoWidth = previewSummary.GpuPlayback.NaturalVideoWidth,
+            PreviewGpuNaturalVideoHeight = previewSummary.GpuPlayback.NaturalVideoHeight,
+            PreviewGpuPositionMs = previewSummary.GpuPlayback.PositionMs,
+            PreviewGpuPositionEventCount = previewSummary.GpuPlayback.PositionEventCount,
+            PreviewHdrInputDetected = previewSummary.Color.HdrInputDetected,
+            PreviewToneMapMode = previewSummary.Color.ToneMapMode,
+            PreviewColorContext = previewSummary.Color.ColorContext,
+            ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,
+            FfmpegVideoQueueDepth = recordingPipeline.Ingest.FfmpegVideoQueueDepth,
+            FfmpegAudioQueueDepth = recordingPipeline.Ingest.FfmpegAudioQueueDepth,
+            VideoFramesArrived = recordingPipeline.Ingest.VideoFramesArrived,
+            VideoFramesQueued = recordingPipeline.Ingest.VideoFramesQueued,
+            VideoFramesDropped = recordingPipeline.Ingest.VideoFramesDropped,
+            VideoFramesDroppedBacklog = recordingPipeline.Ingest.VideoFramesDroppedBacklog,
+            VideoFramesConverted = recordingPipeline.Ingest.VideoFramesConverted,
+            VideoFramesEnqueued = recordingPipeline.Ingest.VideoFramesEnqueued,
+            VideoDropsQueueSaturated = recordingPipeline.Ingest.VideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction,
+            RecordingEncodingFailed = recordingPipeline.Encoder.EncodingFailed,
+            RecordingEncodingFailureType = recordingPipeline.Encoder.EncodingFailureType,
+            RecordingEncodingFailureMessage = recordingPipeline.Encoder.EncodingFailureMessage,
+            RecordingVideoQueueCapacity = recordingPipeline.VideoQueue.Capacity,
+            RecordingVideoQueueMaxDepth = recordingPipeline.VideoQueue.MaxDepth,
+            RecordingVideoFramesSubmittedToEncoder = recordingPipeline.VideoQueue.FramesSubmittedToEncoder,
+            RecordingVideoEncoderPts = recordingPipeline.VideoQueue.EncoderPts,
+            RecordingVideoEncoderPacketsWritten = recordingPipeline.VideoQueue.EncoderPacketsWritten,
+            RecordingVideoEncoderDroppedFrames = recordingPipeline.VideoQueue.EncoderDroppedFrames,
+            RecordingVideoSequenceGaps = recordingPipeline.VideoQueue.SequenceGaps,
+            RecordingVideoQueueOldestFrameAgeMs = recordingPipeline.VideoQueue.OldestFrameAgeMs,
+            RecordingVideoQueueLastLatencyMs = recordingPipeline.VideoQueue.LastLatencyMs,
+            RecordingVideoQueueLatencySampleCount = recordingPipeline.VideoQueue.LatencySampleCount,
+            RecordingVideoQueueLatencyAvgMs = recordingPipeline.VideoQueue.LatencyAvgMs,
+            RecordingVideoQueueLatencyP95Ms = recordingPipeline.VideoQueue.LatencyP95Ms,
+            RecordingVideoQueueLatencyP99Ms = recordingPipeline.VideoQueue.LatencyP99Ms,
+            RecordingVideoQueueLatencyMaxMs = recordingPipeline.VideoQueue.LatencyMaxMs,
+            RecordingVideoBackpressureWaitMs = recordingPipeline.VideoQueue.BackpressureWaitMs,
+            RecordingVideoBackpressureEvents = recordingPipeline.VideoQueue.BackpressureEvents,
+            RecordingVideoBackpressureLastWaitMs = recordingPipeline.VideoQueue.BackpressureLastWaitMs,
+            RecordingVideoBackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs,
+            RecordingGpuQueueDepth = recordingPipeline.HardwareQueues.GpuQueueDepth,
+            RecordingGpuQueueCapacity = recordingPipeline.HardwareQueues.GpuQueueCapacity,
+            RecordingGpuQueueMaxDepth = recordingPipeline.HardwareQueues.GpuQueueMaxDepth,
+            RecordingGpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,
+            RecordingGpuFramesDropped = recordingPipeline.HardwareQueues.GpuFramesDropped,
+            RecordingCudaQueueDepth = recordingPipeline.HardwareQueues.CudaQueueDepth,
+            RecordingCudaQueueCapacity = recordingPipeline.HardwareQueues.CudaQueueCapacity,
+            RecordingCudaQueueMaxDepth = recordingPipeline.HardwareQueues.CudaQueueMaxDepth,
+            RecordingCudaFramesEnqueued = recordingPipeline.HardwareQueues.CudaFramesEnqueued,
+            RecordingCudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped,
+            FlashbackEncodingFailed = flashbackRecording.EncodingFailed,
+            FlashbackEncodingFailureType = flashbackRecording.EncodingFailureType,
+            FlashbackEncodingFailureMessage = flashbackRecording.EncodingFailureMessage,
+            FatalCleanupInProgress = flashbackRecording.FatalCleanupInProgress,
+            FlashbackCleanupInProgress = flashbackRecording.CleanupInProgress,
+            FlashbackForceRotateActive = flashbackRecording.ForceRotateActive,
+            FlashbackForceRotateRequested = flashbackRecording.ForceRotateRequested,
+            FlashbackForceRotateDraining = flashbackRecording.ForceRotateDraining,
+            FlashbackTempDriveFreeBytes = flashbackRecording.StartupCache.TempDriveFreeBytes,
+            FlashbackStartupCacheBudgetBytes = flashbackRecording.StartupCache.BudgetBytes,
+            FlashbackStartupCacheBytes = flashbackRecording.StartupCache.Bytes,
+            FlashbackStartupCacheSessionCount = flashbackRecording.StartupCache.SessionCount,
+            FlashbackStartupCacheDeletedSessionCount = flashbackRecording.StartupCache.DeletedSessionCount,
+            FlashbackStartupCacheFreedBytes = flashbackRecording.StartupCache.FreedBytes,
+            FlashbackStartupCacheOverBudget = flashbackRecording.StartupCache.OverBudget,
+            FlashbackVideoQueueCapacity = flashbackRecording.Queues.VideoQueueCapacity,
+            FlashbackVideoQueueMaxDepth = flashbackRecording.Queues.VideoQueueMaxDepth,
+            FlashbackVideoFramesSubmittedToEncoder = flashbackRecording.Queues.VideoFramesSubmittedToEncoder,
+            FlashbackVideoEncoderPts = flashbackRecording.Queues.VideoEncoderPts,
+            FlashbackVideoEncoderPacketsWritten = flashbackRecording.Queues.VideoEncoderPacketsWritten,
+            FlashbackVideoEncoderDroppedFrames = flashbackRecording.Queues.VideoEncoderDroppedFrames,
+            FlashbackVideoSequenceGaps = flashbackRecording.Queues.VideoSequenceGaps,
+            FlashbackVideoQueueRejectedFrames = flashbackRecording.Queues.VideoQueueRejectedFrames,
+            FlashbackVideoQueueLastRejectReason = flashbackRecording.Queues.VideoQueueLastRejectReason,
+            FlashbackVideoQueueOldestFrameAgeMs = flashbackRecording.Queues.VideoQueueOldestFrameAgeMs,
+            FlashbackVideoQueueLastLatencyMs = flashbackRecording.Queues.VideoQueueLastLatencyMs,
+            FlashbackVideoQueueLatencySampleCount = flashbackRecording.Queues.VideoQueueLatencySampleCount,
+            FlashbackVideoQueueLatencyAvgMs = flashbackRecording.Queues.VideoQueueLatencyAvgMs,
+            FlashbackVideoQueueLatencyP95Ms = flashbackRecording.Queues.VideoQueueLatencyP95Ms,
+            FlashbackVideoQueueLatencyP99Ms = flashbackRecording.Queues.VideoQueueLatencyP99Ms,
+            FlashbackVideoQueueLatencyMaxMs = flashbackRecording.Queues.VideoQueueLatencyMaxMs,
+            FlashbackVideoBackpressureWaitMs = flashbackRecording.Queues.VideoBackpressureWaitMs,
+            FlashbackVideoBackpressureEvents = flashbackRecording.Queues.VideoBackpressureEvents,
+            FlashbackVideoBackpressureLastWaitMs = flashbackRecording.Queues.VideoBackpressureLastWaitMs,
+            FlashbackVideoBackpressureMaxWaitMs = flashbackRecording.Queues.VideoBackpressureMaxWaitMs,
+            FlashbackGpuQueueDepth = flashbackRecording.Queues.GpuQueueDepth,
+            FlashbackGpuQueueCapacity = flashbackRecording.Queues.GpuQueueCapacity,
+            FlashbackGpuQueueMaxDepth = flashbackRecording.Queues.GpuQueueMaxDepth,
+            FlashbackGpuFramesEnqueued = flashbackRecording.Queues.GpuFramesEnqueued,
+            FlashbackGpuFramesDropped = flashbackRecording.Queues.GpuFramesDropped,
+            FlashbackGpuQueueRejectedFrames = flashbackRecording.Queues.GpuQueueRejectedFrames,
+            FlashbackGpuQueueLastRejectReason = flashbackRecording.Queues.GpuQueueLastRejectReason,
+            AudioDropsQueueSaturated = audioDrops.QueueSaturated,
+            AudioDropsBacklogEviction = audioDrops.BacklogEviction,
+            AudioChunksDropped = audioDrops.ChunksDropped,
+            AudioQueueDropsRealtime = audioDrops.QueueDropsRealtime,
+            AudioQueueDropsFileWriter = audioDrops.QueueDropsFileWriter,
+            EstimatedPipelineLatencyMs = previewSummary.Frame.EstimatedPipelineLatencyMs,
+            ExpectedCaptureFrameRate = captureCadence.ExpectedFrameRate,
+            CaptureCadenceSampleCount = captureCadence.SampleCount,
+            CaptureCadenceObservedFps = captureCadence.ObservedFps,
+            CaptureCadenceExpectedIntervalMs = captureCadence.ExpectedIntervalMs,
+            CaptureCadenceAverageIntervalMs = captureCadence.AverageIntervalMs,
+            CaptureCadenceP95IntervalMs = captureCadence.P95IntervalMs,
+            CaptureCadenceP99IntervalMs = captureCadence.P99IntervalMs,
+            CaptureCadenceMaxIntervalMs = captureCadence.MaxIntervalMs,
+            CaptureCadenceOnePercentLowFps = captureCadence.OnePercentLowFps,
+            CaptureCadenceFivePercentLowFps = captureCadence.FivePercentLowFps,
+            CaptureCadenceSampleDurationMs = captureCadence.SampleDurationMs,
+            CaptureCadenceRecentIntervalsMs = captureCadence.RecentIntervalsMs,
+            CaptureCadenceJitterStdDevMs = captureCadence.JitterStdDevMs,
+            CaptureCadenceSevereGapCount = captureCadence.SevereGapCount,
+            CaptureCadenceEstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,
+            CaptureCadenceEstimatedDropPercent = captureCadence.EstimatedDropPercent,
+            MjpegDecodeSampleCount = mjpeg.Timing.DecodeSampleCount,
+            MjpegDecodeAvgMs = mjpeg.Timing.DecodeAvgMs,
+            MjpegDecodeP95Ms = mjpeg.Timing.DecodeP95Ms,
+            MjpegDecodeMaxMs = mjpeg.Timing.DecodeMaxMs,
+            MjpegInteropCopySampleCount = mjpeg.Timing.InteropCopySampleCount,
+            MjpegInteropCopyAvgMs = mjpeg.Timing.InteropCopyAvgMs,
+            MjpegInteropCopyP95Ms = mjpeg.Timing.InteropCopyP95Ms,
+            MjpegInteropCopyMaxMs = mjpeg.Timing.InteropCopyMaxMs,
+            MjpegCallbackSampleCount = mjpeg.Timing.CallbackSampleCount,
+            MjpegCallbackAvgMs = mjpeg.Timing.CallbackAvgMs,
+            MjpegCallbackP95Ms = mjpeg.Timing.CallbackP95Ms,
+            MjpegCallbackMaxMs = mjpeg.Timing.CallbackMaxMs,
+            MjpegDecoderCount = mjpeg.Timing.DecoderCount,
+            MjpegReorderSampleCount = mjpeg.Timing.ReorderSampleCount,
+            MjpegReorderAvgMs = mjpeg.Timing.ReorderAvgMs,
+            MjpegReorderP95Ms = mjpeg.Timing.ReorderP95Ms,
+            MjpegReorderMaxMs = mjpeg.Timing.ReorderMaxMs,
+            MjpegPipelineSampleCount = mjpeg.Timing.PipelineSampleCount,
+            MjpegPipelineAvgMs = mjpeg.Timing.PipelineAvgMs,
+            MjpegPipelineP95Ms = mjpeg.Timing.PipelineP95Ms,
+            MjpegPipelineMaxMs = mjpeg.Timing.PipelineMaxMs,
+            MjpegTotalDecoded = mjpeg.TotalDecoded,
+            MjpegTotalEmitted = mjpeg.TotalEmitted,
+            MjpegTotalDropped = mjpeg.TotalDropped,
+            MjpegCompressedFramesQueued = mjpeg.CompressedFramesQueued,
+            MjpegCompressedFramesDequeued = mjpeg.CompressedFramesDequeued,
+            MjpegCompressedDropsQueueFull = mjpeg.CompressedDropsQueueFull,
+            MjpegCompressedDropsByteBudget = mjpeg.CompressedDropsByteBudget,
+            MjpegCompressedDropsDisposed = mjpeg.CompressedDropsDisposed,
+            MjpegDecodeFailures = mjpeg.DecodeFailures,
+            MjpegReorderCollisions = mjpeg.ReorderCollisions,
+            MjpegEmitFailures = mjpeg.EmitFailures,
+            MjpegCompressedQueueDepth = mjpeg.CompressedQueueDepth,
+            MjpegCompressedQueueBytes = mjpeg.CompressedQueueBytes,
+            MjpegCompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,
+            MjpegReorderSkips = mjpeg.ReorderSkips,
+            MjpegReorderBufferDepth = mjpeg.ReorderBufferDepth,
+            MjpegPeakReorderDepth = mjpeg.PeakReorderDepth,
+            MjpegPeakCompressedQueueBytes = mjpeg.PeakCompressedQueueBytes,
+            MjpegReorderRingForceDrops = mjpeg.ReorderRingForceDrops,
+            MjpegPreviewJitterEnabled = mjpeg.PreviewJitter.Queue.Enabled,
+            MjpegPreviewJitterTargetDepth = mjpeg.PreviewJitter.Queue.TargetDepth,
+            MjpegPreviewJitterMaxDepth = mjpeg.PreviewJitter.Queue.MaxDepth,
+            MjpegPreviewJitterQueueDepth = mjpeg.PreviewJitter.Queue.QueueDepth,
+            MjpegPreviewJitterTotalQueued = mjpeg.PreviewJitter.Queue.TotalQueued,
+            MjpegPreviewJitterTotalSubmitted = mjpeg.PreviewJitter.Queue.TotalSubmitted,
+            MjpegPreviewJitterTotalDropped = mjpeg.PreviewJitter.Queue.TotalDropped,
+            MjpegPreviewJitterUnderflowCount = mjpeg.PreviewJitter.Queue.UnderflowCount,
+            MjpegPreviewJitterResumeReprimeCount = mjpeg.PreviewJitter.Queue.ResumeReprimeCount,
+            MjpegPreviewJitterInputSampleCount = mjpeg.PreviewJitter.Timing.InputSampleCount,
+            MjpegPreviewJitterInputAvgMs = mjpeg.PreviewJitter.Timing.InputAvgMs,
+            MjpegPreviewJitterInputP95Ms = mjpeg.PreviewJitter.Timing.InputP95Ms,
+            MjpegPreviewJitterInputMaxMs = mjpeg.PreviewJitter.Timing.InputMaxMs,
+            MjpegPreviewJitterOutputSampleCount = mjpeg.PreviewJitter.Timing.OutputSampleCount,
+            MjpegPreviewJitterOutputAvgMs = mjpeg.PreviewJitter.Timing.OutputAvgMs,
+            MjpegPreviewJitterOutputP95Ms = mjpeg.PreviewJitter.Timing.OutputP95Ms,
+            MjpegPreviewJitterOutputMaxMs = mjpeg.PreviewJitter.Timing.OutputMaxMs,
+            MjpegPreviewJitterLatencySampleCount = mjpeg.PreviewJitter.Timing.LatencySampleCount,
+            MjpegPreviewJitterLatencyAvgMs = mjpeg.PreviewJitter.Timing.LatencyAvgMs,
+            MjpegPreviewJitterLatencyP95Ms = mjpeg.PreviewJitter.Timing.LatencyP95Ms,
+            MjpegPreviewJitterLatencyMaxMs = mjpeg.PreviewJitter.Timing.LatencyMaxMs,
+            MjpegPreviewJitterDeadlineDropCount = mjpeg.PreviewJitter.Adaptive.DeadlineDropCount,
+            MjpegPreviewJitterClearedDropCount = mjpeg.PreviewJitter.Adaptive.ClearedDropCount,
+            MjpegPreviewJitterTargetIncreaseCount = mjpeg.PreviewJitter.Adaptive.TargetIncreaseCount,
+            MjpegPreviewJitterTargetDecreaseCount = mjpeg.PreviewJitter.Adaptive.TargetDecreaseCount,
+            MjpegPreviewJitterLastSelectedPreviewPresentId = mjpeg.PreviewJitter.Events.LastSelectedPreviewPresentId,
+            MjpegPreviewJitterLastSelectedSourceSequenceNumber = mjpeg.PreviewJitter.Events.LastSelectedSourceSequenceNumber,
+            MjpegPreviewJitterLastSelectedQpc = mjpeg.PreviewJitter.Events.LastSelectedQpc,
+            MjpegPreviewJitterLastSelectedSourceLatencyMs = mjpeg.PreviewJitter.Events.LastSelectedSourceLatencyMs,
+            MjpegPreviewJitterLastDroppedSourceSequenceNumber = mjpeg.PreviewJitter.Events.LastDroppedSourceSequenceNumber,
+            MjpegPreviewJitterLastDropQpc = mjpeg.PreviewJitter.Events.LastDropQpc,
+            MjpegPreviewJitterLastDropReason = mjpeg.PreviewJitter.Events.LastDropReason,
+            MjpegPreviewJitterLastUnderflowQpc = mjpeg.PreviewJitter.Events.LastUnderflowQpc,
+            MjpegPreviewJitterLastUnderflowReason = mjpeg.PreviewJitter.Events.LastUnderflowReason,
+            MjpegPreviewJitterLastUnderflowQueueDepth = mjpeg.PreviewJitter.Events.LastUnderflowQueueDepth,
+            MjpegPreviewJitterLastUnderflowInputAgeMs = mjpeg.PreviewJitter.Events.LastUnderflowInputAgeMs,
+            MjpegPreviewJitterLastUnderflowOutputAgeMs = mjpeg.PreviewJitter.Events.LastUnderflowOutputAgeMs,
+            MjpegPreviewJitterLastScheduleLateMs = mjpeg.PreviewJitter.Events.LastScheduleLateMs,
+            MjpegPreviewJitterMaxScheduleLateMs = mjpeg.PreviewJitter.Events.MaxScheduleLateMs,
+            MjpegPreviewJitterScheduleLateCount = mjpeg.PreviewJitter.Events.ScheduleLateCount,
+            MjpegPacketHashSampleCount = mjpeg.PacketHash.SampleCount,
+            MjpegPacketHashUniqueFrameCount = mjpeg.PacketHash.UniqueFrameCount,
+            MjpegPacketHashDuplicateFrameCount = mjpeg.PacketHash.DuplicateFrameCount,
+            MjpegPacketHashLongestDuplicateRun = mjpeg.PacketHash.LongestDuplicateRun,
+            MjpegPacketHashInputObservedFps = mjpeg.PacketHash.InputObservedFps,
+            MjpegPacketHashUniqueObservedFps = mjpeg.PacketHash.UniqueObservedFps,
+            MjpegPacketHashDuplicateFramePercent = mjpeg.PacketHash.DuplicateFramePercent,
+            MjpegPacketHashLastHash = mjpeg.PacketHash.LastHash,
+            MjpegPacketHashLastFrameDuplicate = mjpeg.PacketHash.LastFrameDuplicate,
+            MjpegPacketHashPattern = mjpeg.PacketHash.Pattern,
+            MjpegPacketHashRecentInputIntervalsMs = mjpeg.PacketHash.RecentInputIntervalsMs,
+            MjpegPacketHashRecentUniqueIntervalsMs = mjpeg.PacketHash.RecentUniqueIntervalsMs,
+            MjpegPacketHashRecentDuplicateFlags = mjpeg.PacketHash.RecentDuplicateFlags,
+            VisualCadenceSampleCount = visualCadence.SampleCount,
+            VisualCadenceChangedFrameCount = visualCadence.ChangedFrameCount,
+            VisualCadenceRepeatFrameCount = visualCadence.RepeatFrameCount,
+            VisualCadenceLongestRepeatRun = visualCadence.LongestRepeatRun,
+            VisualCadenceOutputObservedFps = visualCadence.OutputObservedFps,
+            VisualCadenceChangeObservedFps = visualCadence.ChangeObservedFps,
+            VisualCadenceRepeatFramePercent = visualCadence.RepeatFramePercent,
+            VisualCadenceLastDelta = visualCadence.LastDelta,
+            VisualCadenceAverageDelta = visualCadence.AverageDelta,
+            VisualCadenceP95Delta = visualCadence.P95Delta,
+            VisualCadenceMotionScore = visualCadence.MotionScore,
+            VisualCadenceMotionConfidence = visualCadence.MotionConfidence,
+            VisualCadenceRecentOutputIntervalsMs = visualCadence.RecentOutputIntervalsMs,
+            VisualCadenceRecentChangeIntervalsMs = visualCadence.RecentChangeIntervalsMs,
+            VisualCenterCadenceSampleCount = visualCadence.CenterSampleCount,
+            VisualCenterCadenceChangedFrameCount = visualCadence.CenterChangedFrameCount,
+            VisualCenterCadenceRepeatFrameCount = visualCadence.CenterRepeatFrameCount,
+            VisualCenterCadenceLongestRepeatRun = visualCadence.CenterLongestRepeatRun,
+            VisualCenterCadenceOutputObservedFps = visualCadence.CenterOutputObservedFps,
+            VisualCenterCadenceChangeObservedFps = visualCadence.CenterChangeObservedFps,
+            VisualCenterCadenceRepeatFramePercent = visualCadence.CenterRepeatFramePercent,
+            VisualCenterCadenceLastDelta = visualCadence.CenterLastDelta,
+            VisualCenterCadenceAverageDelta = visualCadence.CenterAverageDelta,
+            VisualCenterCadenceP95Delta = visualCadence.CenterP95Delta,
+            VisualCenterCadenceMotionScore = visualCadence.CenterMotionScore,
+            VisualCenterCadenceMotionConfidence = visualCadence.CenterMotionConfidence,
+            VisualCenterCadenceRecentOutputIntervalsMs = visualCadence.CenterRecentOutputIntervalsMs,
+            VisualCenterCadenceRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs,
+            MjpegPerDecoder = mjpeg.Timing.PerDecoder,
+            RecordingVideoBytes = recordingOutput.RecordingVideoBytes,
+            RecordingAudioBytes = recordingOutput.RecordingAudioBytes,
+            RecordingTotalBytes = recordingOutput.RecordingTotalBytes,
+            RecordingFileGrowing = recordingOutput.RecordingFileGrowing,
+            LastOutputPath = recordingOutput.LastOutputPath,
+            LastFinalizeStatus = recordingOutput.LastFinalizeStatus,
+            LastFinalizeUtc = recordingOutput.LastFinalizeUtc,
+            RecordingLifecyclePhase = recordingOutput.RecordingLifecyclePhase,
+            RecordingFinalizeOutcome = recordingOutput.RecordingFinalizeOutcome,
+            RecordingFinalizeFailureCode = recordingOutput.RecordingFinalizeFailureCode,
+            RecordingFinalizationVerificationCompleted = recordingOutput.RecordingFinalizationVerificationCompleted,
+            RecordingFinalizationCleanupPending = recordingOutput.RecordingFinalizationCleanupPending,
+            RecordingFinalizationElapsedMs = recordingOutput.RecordingFinalizationElapsedMs,
+            RecordingRecoveryPath = recordingOutput.RecordingRecoveryPath,
+            RecordingRequestedTracks = recordingOutput.RecordingRequestedTracks,
+            RecordingObservedTracks = recordingOutput.RecordingObservedTracks,
+            LastPreservedArtifacts = recordingOutput.LastPreservedArtifacts,
+            RecordingFinalizationProgressStage = recordingOutput.RecordingFinalizationProgressStage,
+            LastRecordingFinalizationProgressUtc = recordingOutput.LastRecordingFinalizationProgressUtc,
+            LastOutputExists = recordingOutput.LastOutputExists,
+            LastOutputSizeBytes = recordingOutput.LastOutputSizeBytes,
+            LastVerification = recordingOutput.LastVerification,
+            HdrTruthVerdict = hdrPipeline.TruthVerdict,
+            MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,
+            MemoryPrivateBytesMb = processResourceProjection.MemoryPrivateBytesMb,
+            MemoryManagedHeapMb = processResourceProjection.MemoryManagedHeapMb,
+            MemoryTotalAllocatedMb = processResourceProjection.MemoryTotalAllocatedMb,
+            ProcessCpuPercent = processResourceProjection.ProcessCpuPercent,
+            ProcessCpuTotalProcessorTimeMs = processResourceProjection.ProcessCpuTotalProcessorTimeMs,
+            MemoryGcHeapSizeMb = processResourceProjection.MemoryGcHeapSizeMb,
+            MemoryGcGen0Collections = processResourceProjection.MemoryGcGen0Collections,
+            MemoryGcGen1Collections = processResourceProjection.MemoryGcGen1Collections,
+            MemoryGcGen2Collections = processResourceProjection.MemoryGcGen2Collections,
+            MemoryGcPauseTimePercent = processResourceProjection.MemoryGcPauseTimePercent,
+            MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,
+            ThreadPoolWorkerAvailable = processResourceProjection.ThreadPoolWorkerAvailable,
+            ThreadPoolWorkerMax = processResourceProjection.ThreadPoolWorkerMax,
+            ThreadPoolIoAvailable = processResourceProjection.ThreadPoolIoAvailable,
+            ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax,
+            AvSyncCaptureDriftMs = avSync.CaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs = avSync.EncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = avSync.EncoderCorrectionSamples,
+            FlashbackActive = flashbackRecording.Runtime.Active,
+            FlashbackBufferedDurationMs = flashbackRecording.Runtime.BufferedDurationMs,
+            FlashbackDiskBytes = flashbackRecording.Runtime.DiskBytes,
+            FlashbackTotalBytesWritten = flashbackRecording.Runtime.TotalBytesWritten,
+            FlashbackOutputBytes = flashbackRecording.Runtime.OutputBytes,
+            FlashbackFilePath = flashbackRecording.Runtime.FilePath,
+            FlashbackEncodedFrames = flashbackRecording.Runtime.EncodedFrames,
+            FlashbackDroppedFrames = flashbackRecording.Runtime.DroppedFrames,
+            FlashbackGpuEncoding = flashbackRecording.Runtime.GpuEncoding,
+            FlashbackBackendSettingsStale = flashbackRecording.Backend.SettingsStale,
+            FlashbackBackendSettingsStaleReason = flashbackRecording.Backend.SettingsStaleReason,
+            FlashbackBackendActiveFormat = flashbackRecording.Backend.ActiveFormat,
+            FlashbackBackendRequestedFormat = flashbackRecording.Backend.RequestedFormat,
+            FlashbackBackendActivePreset = flashbackRecording.Backend.ActivePreset,
+            FlashbackBackendRequestedPreset = flashbackRecording.Backend.RequestedPreset,
+            FlashbackExportVerificationFormat = flashbackRecording.Backend.ExportVerificationFormat,
+            FlashbackCodecDowngradeReason = flashbackRecording.Backend.CodecDowngradeReason,
+            EncoderCodecName = flashbackRecording.Encoder.CodecName,
+            EncoderTargetBitRate = flashbackRecording.Encoder.TargetBitRate,
+            EncoderWidth = flashbackRecording.Encoder.Width,
+            EncoderHeight = flashbackRecording.Encoder.Height,
+            EncoderFrameRate = flashbackRecording.Encoder.FrameRate,
+            EncoderFrameRateNumerator = flashbackRecording.Encoder.FrameRateNumerator,
+            EncoderFrameRateDenominator = flashbackRecording.Encoder.FrameRateDenominator,
+            FlashbackVideoQueueDepth = flashbackRecording.Queues.VideoQueueDepth,
+            FlashbackAudioQueueDepth = flashbackRecording.Queues.AudioQueueDepth,
+            FlashbackAudioQueueCapacity = flashbackRecording.Queues.AudioQueueCapacity,
+            FlashbackPlaybackState = flashbackPlayback.State,
+            FlashbackPlaybackPositionMs = flashbackPlayback.PositionMs,
+            FlashbackDecoderHwAccel = flashbackPlayback.DecoderHwAccel,
+            FlashbackPlaybackFrameCount = flashbackPlayback.FrameCount,
+            FlashbackPlaybackLateFrames = flashbackPlayback.LateFrames,
+            FlashbackPlaybackDroppedFrames = flashbackPlayback.DroppedFrames,
+            FlashbackPlaybackAudioMasterDelayDoubles = flashbackPlayback.AudioMaster.DelayDoubles,
+            FlashbackPlaybackAudioMasterDelayShrinks = flashbackPlayback.AudioMaster.DelayShrinks,
+            FlashbackPlaybackAudioMasterFallbacks = flashbackPlayback.AudioMaster.Fallbacks,
+            FlashbackPlaybackAudioMasterUnavailableFallbacks = flashbackPlayback.AudioMaster.UnavailableFallbacks,
+            FlashbackPlaybackAudioMasterStaleFallbacks = flashbackPlayback.AudioMaster.StaleFallbacks,
+            FlashbackPlaybackAudioMasterDriftOutlierFallbacks = flashbackPlayback.AudioMaster.DriftOutlierFallbacks,
+            FlashbackPlaybackAudioMasterLastFallbackReason = flashbackPlayback.AudioMaster.LastFallbackReason,
+            FlashbackPlaybackAudioMasterLastFallbackDriftMs = flashbackPlayback.AudioMaster.LastFallbackDriftMs,
+            FlashbackPlaybackAudioMasterLastFallbackClockAgeMs = flashbackPlayback.AudioMaster.LastFallbackClockAgeMs,
+            FlashbackPlaybackSegmentSwitches = flashbackPlayback.Timing.SegmentSwitches,
+            FlashbackPlaybackFmp4Reopens = flashbackPlayback.Timing.Fmp4Reopens,
+            FlashbackPlaybackWriteHeadWaits = flashbackPlayback.Timing.WriteHeadWaits,
+            FlashbackPlaybackNearLiveSnaps = flashbackPlayback.Timing.NearLiveSnaps,
+            FlashbackPlaybackDecodeErrorSnaps = flashbackPlayback.Timing.DecodeErrorSnaps,
+            FlashbackPlaybackSubmitFailures = flashbackPlayback.Timing.SubmitFailures,
+            FlashbackPlaybackLastDropUtcUnixMs = flashbackPlayback.Timing.LastDropUtcUnixMs,
+            FlashbackPlaybackLastDropReason = flashbackPlayback.Timing.LastDropReason,
+            FlashbackPlaybackLastSubmitFailureUtcUnixMs = flashbackPlayback.Timing.LastSubmitFailureUtcUnixMs,
+            FlashbackPlaybackLastSubmitFailure = flashbackPlayback.Timing.LastSubmitFailure,
+            FlashbackPlaybackLastSegmentSwitchUtcUnixMs = flashbackPlayback.Timing.LastSegmentSwitchUtcUnixMs,
+            FlashbackPlaybackLastFmp4ReopenUtcUnixMs = flashbackPlayback.Timing.LastFmp4ReopenUtcUnixMs,
+            FlashbackPlaybackLastWriteHeadWaitGapMs = flashbackPlayback.Timing.LastWriteHeadWaitGapMs,
+            FlashbackPlaybackTargetFps = flashbackPlayback.Timing.TargetFps,
+            FlashbackPlaybackObservedFps = flashbackPlayback.Timing.ObservedFps,
+            FlashbackPlaybackAvgFrameMs = flashbackPlayback.Timing.AvgFrameMs,
+            FlashbackPlaybackCadenceSampleCount = flashbackPlayback.Timing.CadenceSampleCount,
+            FlashbackPlaybackP95FrameMs = flashbackPlayback.Timing.P95FrameMs,
+            FlashbackPlaybackP99FrameMs = flashbackPlayback.Timing.P99FrameMs,
+            FlashbackPlaybackMaxFrameMs = flashbackPlayback.Timing.MaxFrameMs,
+            FlashbackPlaybackSlowFrames = flashbackPlayback.Timing.SlowFrames,
+            FlashbackPlaybackSlowFramePercent = flashbackPlayback.Timing.SlowFramePercent,
+            FlashbackPlaybackOnePercentLowFps = flashbackPlayback.Timing.OnePercentLowFps,
+            FlashbackPlaybackFivePercentLowFps = flashbackPlayback.Timing.FivePercentLowFps,
+            FlashbackPlaybackSampleDurationMs = flashbackPlayback.Timing.SampleDurationMs,
+            FlashbackPlaybackRecentFrameIntervalsMs = flashbackPlayback.Timing.RecentFrameIntervalsMs,
+            FlashbackPlaybackPtsCadenceMismatchCount = flashbackPlayback.Timing.PtsCadenceMismatchCount,
+            FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs = flashbackPlayback.Timing.LastPtsCadenceMismatchUtcUnixMs,
+            FlashbackPlaybackLastPtsCadenceDeltaMs = flashbackPlayback.Timing.LastPtsCadenceDeltaMs,
+            FlashbackPlaybackLastPtsCadenceExpectedMs = flashbackPlayback.Timing.LastPtsCadenceExpectedMs,
+            FlashbackPlaybackSeekForwardDecodeCapHits = flashbackPlayback.Decode.SeekForwardDecodeCapHits,
+            FlashbackPlaybackLastSeekHitForwardDecodeCap = flashbackPlayback.Decode.LastSeekHitForwardDecodeCap,
+            FlashbackPlaybackDecodeSampleCount = flashbackPlayback.Decode.SampleCount,
+            FlashbackPlaybackDecodeAvgMs = flashbackPlayback.Decode.AvgMs,
+            FlashbackPlaybackDecodeP95Ms = flashbackPlayback.Decode.P95Ms,
+            FlashbackPlaybackDecodeP99Ms = flashbackPlayback.Decode.P99Ms,
+            FlashbackPlaybackDecodeMaxMs = flashbackPlayback.Decode.MaxMs,
+            FlashbackPlaybackMaxDecodePhase = flashbackPlayback.Decode.MaxPhase,
+            FlashbackPlaybackMaxDecodeReceiveMs = flashbackPlayback.Decode.MaxReceiveMs,
+            FlashbackPlaybackMaxDecodeFeedMs = flashbackPlayback.Decode.MaxFeedMs,
+            FlashbackPlaybackMaxDecodeReadMs = flashbackPlayback.Decode.MaxReadMs,
+            FlashbackPlaybackMaxDecodeSendMs = flashbackPlayback.Decode.MaxSendMs,
+            FlashbackPlaybackMaxDecodeAudioMs = flashbackPlayback.Decode.MaxAudioMs,
+            FlashbackPlaybackMaxDecodeConvertMs = flashbackPlayback.Decode.MaxConvertMs,
+            FlashbackPlaybackMaxDecodeUtcUnixMs = flashbackPlayback.Decode.MaxUtcUnixMs,
+            FlashbackPlaybackMaxDecodePositionMs = flashbackPlayback.Decode.MaxPositionMs,
+            FlashbackAvDriftMs = flashbackPlayback.Timing.AvDriftMs,
+            FlashbackPlaybackThreadAlive = flashbackPlayback.Commands.ThreadAlive,
+            FlashbackPlaybackCommandsEnqueued = flashbackPlayback.Commands.Enqueued,
+            FlashbackPlaybackCommandsProcessed = flashbackPlayback.Commands.Processed,
+            FlashbackPlaybackCommandsDropped = flashbackPlayback.Commands.Dropped,
+            FlashbackPlaybackCommandsSkippedNotReady = flashbackPlayback.Commands.SkippedNotReady,
+            FlashbackPlaybackScrubUpdatesCoalesced = flashbackPlayback.Commands.ScrubUpdatesCoalesced,
+            FlashbackPlaybackSeekCommandsCoalesced = flashbackPlayback.Commands.SeekCommandsCoalesced,
+            FlashbackPlaybackCommandQueueCapacity = flashbackPlayback.Commands.QueueCapacity,
+            FlashbackPlaybackPendingCommands = flashbackPlayback.Commands.Pending,
+            FlashbackPlaybackMaxPendingCommands = flashbackPlayback.Commands.MaxPending,
+            FlashbackPlaybackLastCommandQueueLatencyMs = flashbackPlayback.Commands.LastQueueLatencyMs,
+            FlashbackPlaybackMaxCommandQueueLatencyMs = flashbackPlayback.Commands.MaxQueueLatencyMs,
+            FlashbackPlaybackMaxCommandQueueLatencyCommand = flashbackPlayback.Commands.MaxQueueLatencyCommand,
+            FlashbackPlaybackLastCommandQueued = flashbackPlayback.Commands.LastQueued,
+            FlashbackPlaybackLastCommandProcessed = flashbackPlayback.Commands.LastProcessed,
+            FlashbackPlaybackLastCommandQueuedUtcUnixMs = flashbackPlayback.Commands.LastQueuedUtcUnixMs,
+            FlashbackPlaybackLastCommandProcessedUtcUnixMs = flashbackPlayback.Commands.LastProcessedUtcUnixMs,
+            FlashbackPlaybackLastCommandFailureUtcUnixMs = flashbackPlayback.Commands.LastFailureUtcUnixMs,
+            FlashbackPlaybackLastCommandFailure = flashbackPlayback.Commands.LastFailure,
+            FlashbackExportActive = flashbackExport.Active,
+            FlashbackExportId = flashbackExport.Id,
+            FlashbackExportStatus = flashbackExport.Status,
+            FlashbackExportOutputPath = flashbackExport.OutputPath,
+            FlashbackExportStartedUtcUnixMs = flashbackExport.StartedUtcUnixMs,
+            FlashbackExportLastProgressUtcUnixMs = flashbackExport.LastProgressUtcUnixMs,
+            FlashbackExportCompletedUtcUnixMs = flashbackExport.CompletedUtcUnixMs,
+            FlashbackExportElapsedMs = flashbackExport.ElapsedMs,
+            FlashbackExportLastProgressAgeMs = flashbackExport.LastProgressAgeMs,
+            FlashbackExportOutputBytes = flashbackExport.OutputBytes,
+            FlashbackExportThroughputBytesPerSec = flashbackExport.ThroughputBytesPerSec,
+            FlashbackExportSegmentsProcessed = flashbackExport.SegmentsProcessed,
+            FlashbackExportTotalSegments = flashbackExport.TotalSegments,
+            FlashbackExportPercent = flashbackExport.Percent,
+            FlashbackExportInPointMs = flashbackExport.InPointMs,
+            FlashbackExportOutPointMs = flashbackExport.OutPointMs,
+            FlashbackExportMessage = flashbackExport.Message,
+            FlashbackExportFailureKind = flashbackExport.FailureKind,
+            FlashbackExportForceRotateFallbacks = flashbackExport.ForceRotateFallbacks,
+            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExport.LastForceRotateFallbackUtcUnixMs,
+            FlashbackExportLastForceRotateFallbackSegments = flashbackExport.LastForceRotateFallbackSegments,
+            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExport.LastForceRotateFallbackInPointMs,
+            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExport.LastForceRotateFallbackOutPointMs,
+            LastExportId = flashbackExportLastResult.LastExportId,
+            LastExportPath = flashbackExportLastResult.LastExportPath,
+            LastExportSuccess = flashbackExportLastResult.LastExportSuccess,
+            LastExportMessage = flashbackExportLastResult.LastExportMessage
+        };
     }
-
-    private readonly record struct AutomationSnapshotFlattenedProjectionSet(
-        SnapshotStatusFlattenedProjection SnapshotStatus,
-        SnapshotEvaluationFlattenedProjection SnapshotEvaluation,
-        AudioAndIngestFlattenedProjection AudioAndIngest,
-        AudioDropsFlattenedProjection AudioDrops,
-        CaptureCommandFlattenedProjection CaptureCommand,
-        SettingsFlattenedProjection Settings,
-        RecordingIntegrityProjection RecordingIntegrity,
-        SourceFlattenedProjection Source,
-        ProcessResourceFlattenedProjection ProcessResource,
-        AvSyncFlattenedProjection AvSync,
-        CaptureTransportFlattenedProjection CaptureTransport,
-        CaptureFormatFlattenedProjection CaptureFormat,
-        RecordingOutputProjection RecordingOutput,
-        RecordingBackendProjection RecordingBackend,
-        RecordingPipelineFlattenedProjection RecordingPipeline,
-        CaptureCadenceFlattenedProjection CaptureCadence,
-        VisualCadenceFlattenedProjection VisualCadence,
-        MjpegFlattenedProjection Mjpeg,
-        MjpegTimingFlattenedProjection MjpegTiming,
-        MjpegPreviewJitterFlattenedProjection MjpegPreviewJitter,
-        MjpegPacketHashFlattenedProjection MjpegPacketHash,
-        PreviewRuntimeFlattenedProjection PreviewRuntime,
-        PreviewD3DFlattenedProjection PreviewD3D,
-        HdrPipelineFlattenedProjection HdrPipeline,
-        FlashbackExportFlattenedProjection FlashbackExport,
-        FlashbackRecordingFlattenedProjection FlashbackRecording,
-        FlashbackPlaybackFlattenedProjection FlashbackPlayback);
 
     private SnapshotStatusProjection BuildSnapshotStatusProjection(
         ViewModelRuntimeSnapshot viewModelSnapshot,
@@ -330,62 +1043,6 @@ public sealed partial class AutomationDiagnosticsHub
         };
 
     private readonly record struct SnapshotStatusProjection
-    {
-        public DateTimeOffset TimestampUtc { get; init; }
-        public long SnapshotCollectionEpoch { get; init; }
-        public DateTimeOffset SnapshotCollectionStartedUtc { get; init; }
-        public DateTimeOffset SnapshotCollectionCompletedUtc { get; init; }
-        public long SnapshotCollectionDurationMs { get; init; }
-        public bool SnapshotMixedEpochs { get; init; }
-        public string SnapshotMixedEpochReason { get; init; }
-        public long SnapshotViewModelEpoch { get; init; }
-        public long SnapshotCaptureRuntimeEpoch { get; init; }
-        public long SnapshotCaptureHealthEpoch { get; init; }
-        public long SnapshotRecordingStatsEpoch { get; init; }
-        public long SnapshotPreviewRuntimeEpoch { get; init; }
-        public long SnapshotOutputEpoch { get; init; }
-        public long SnapshotSourceTelemetryEpoch { get; init; }
-        public bool IsInitialized { get; init; }
-        public bool IsPreviewing { get; init; }
-        public bool IsRecording { get; init; }
-        public bool VerificationInProgress { get; init; }
-        public bool IsAudioEnabled { get; init; }
-        public bool IsAudioPreviewEnabled { get; init; }
-        public bool IsCustomAudioInputEnabled { get; init; }
-        public CaptureSessionState SessionState { get; init; }
-        public string StatusText { get; init; }
-    }
-
-    private static SnapshotStatusFlattenedProjection BuildSnapshotStatusFlattenedProjection(
-        SnapshotStatusProjection snapshotStatus)
-        => new()
-        {
-            TimestampUtc = snapshotStatus.TimestampUtc,
-            SnapshotCollectionEpoch = snapshotStatus.SnapshotCollectionEpoch,
-            SnapshotCollectionStartedUtc = snapshotStatus.SnapshotCollectionStartedUtc,
-            SnapshotCollectionCompletedUtc = snapshotStatus.SnapshotCollectionCompletedUtc,
-            SnapshotCollectionDurationMs = snapshotStatus.SnapshotCollectionDurationMs,
-            SnapshotMixedEpochs = snapshotStatus.SnapshotMixedEpochs,
-            SnapshotMixedEpochReason = snapshotStatus.SnapshotMixedEpochReason,
-            SnapshotViewModelEpoch = snapshotStatus.SnapshotViewModelEpoch,
-            SnapshotCaptureRuntimeEpoch = snapshotStatus.SnapshotCaptureRuntimeEpoch,
-            SnapshotCaptureHealthEpoch = snapshotStatus.SnapshotCaptureHealthEpoch,
-            SnapshotRecordingStatsEpoch = snapshotStatus.SnapshotRecordingStatsEpoch,
-            SnapshotPreviewRuntimeEpoch = snapshotStatus.SnapshotPreviewRuntimeEpoch,
-            SnapshotOutputEpoch = snapshotStatus.SnapshotOutputEpoch,
-            SnapshotSourceTelemetryEpoch = snapshotStatus.SnapshotSourceTelemetryEpoch,
-            IsInitialized = snapshotStatus.IsInitialized,
-            IsPreviewing = snapshotStatus.IsPreviewing,
-            IsRecording = snapshotStatus.IsRecording,
-            VerificationInProgress = snapshotStatus.VerificationInProgress,
-            IsAudioEnabled = snapshotStatus.IsAudioEnabled,
-            IsAudioPreviewEnabled = snapshotStatus.IsAudioPreviewEnabled,
-            IsCustomAudioInputEnabled = snapshotStatus.IsCustomAudioInputEnabled,
-            SessionState = snapshotStatus.SessionState,
-            StatusText = snapshotStatus.StatusText
-        };
-
-    private readonly record struct SnapshotStatusFlattenedProjection
     {
         public DateTimeOffset TimestampUtc { get; init; }
         public long SnapshotCollectionEpoch { get; init; }
@@ -466,58 +1123,6 @@ public sealed partial class AutomationDiagnosticsHub
         public double PerformanceThresholdVerificationDropPercent { get; init; }
     }
 
-    private static SnapshotEvaluationFlattenedProjection BuildSnapshotEvaluationFlattenedProjection(
-        SnapshotEvaluationProjection snapshotEvaluation)
-        => new()
-        {
-            PerformanceScore = snapshotEvaluation.PerformanceScore,
-            PerformancePerfectionMet = snapshotEvaluation.PerformancePerfectionMet,
-            PerformanceSummary = snapshotEvaluation.PerformanceSummary,
-            DiagnosticHealthStatus = snapshotEvaluation.DiagnosticHealthStatus,
-            DiagnosticLikelyStage = snapshotEvaluation.DiagnosticLikelyStage,
-            DiagnosticSummary = snapshotEvaluation.DiagnosticSummary,
-            DiagnosticEvidence = snapshotEvaluation.DiagnosticEvidence,
-            DiagnosticSourceLane = snapshotEvaluation.DiagnosticSourceLane,
-            DiagnosticDecodeLane = snapshotEvaluation.DiagnosticDecodeLane,
-            DiagnosticPreviewLane = snapshotEvaluation.DiagnosticPreviewLane,
-            DiagnosticRenderLane = snapshotEvaluation.DiagnosticRenderLane,
-            DiagnosticPresentLane = snapshotEvaluation.DiagnosticPresentLane,
-            DiagnosticRecordingLane = snapshotEvaluation.DiagnosticRecordingLane,
-            DiagnosticAudioLane = snapshotEvaluation.DiagnosticAudioLane,
-            PreviewPacingLikelySlowStage = snapshotEvaluation.PreviewPacingLikelySlowStage,
-            PreviewPacingSlowStageConfidence = snapshotEvaluation.PreviewPacingSlowStageConfidence,
-            PreviewPacingSlowStageEvidence = snapshotEvaluation.PreviewPacingSlowStageEvidence,
-            PerformanceThresholdCaptureDropPercent = snapshotEvaluation.PerformanceThresholdCaptureDropPercent,
-            PerformanceThresholdCaptureP95Multiplier = snapshotEvaluation.PerformanceThresholdCaptureP95Multiplier,
-            PerformanceThresholdPreviewSlowPercent = snapshotEvaluation.PerformanceThresholdPreviewSlowPercent,
-            PerformanceThresholdVerificationDropPercent = snapshotEvaluation.PerformanceThresholdVerificationDropPercent
-        };
-
-    private readonly record struct SnapshotEvaluationFlattenedProjection
-    {
-        public double PerformanceScore { get; init; }
-        public bool PerformancePerfectionMet { get; init; }
-        public string PerformanceSummary { get; init; }
-        public string DiagnosticHealthStatus { get; init; }
-        public string DiagnosticLikelyStage { get; init; }
-        public string DiagnosticSummary { get; init; }
-        public string DiagnosticEvidence { get; init; }
-        public string DiagnosticSourceLane { get; init; }
-        public string DiagnosticDecodeLane { get; init; }
-        public string DiagnosticPreviewLane { get; init; }
-        public string DiagnosticRenderLane { get; init; }
-        public string DiagnosticPresentLane { get; init; }
-        public string DiagnosticRecordingLane { get; init; }
-        public string DiagnosticAudioLane { get; init; }
-        public string PreviewPacingLikelySlowStage { get; init; }
-        public string PreviewPacingSlowStageConfidence { get; init; }
-        public string PreviewPacingSlowStageEvidence { get; init; }
-        public double PerformanceThresholdCaptureDropPercent { get; init; }
-        public double PerformanceThresholdCaptureP95Multiplier { get; init; }
-        public double PerformanceThresholdPreviewSlowPercent { get; init; }
-        public double PerformanceThresholdVerificationDropPercent { get; init; }
-    }
-
     private static UserSettingsProjection BuildUserSettingsProjection(ViewModelRuntimeSnapshot viewModelSnapshot)
         => new()
         {
@@ -543,76 +1148,6 @@ public sealed partial class AutomationDiagnosticsHub
         };
 
     private readonly record struct UserSettingsProjection
-    {
-        public string? SelectedDeviceId { get; init; }
-        public string? SelectedDeviceName { get; init; }
-        public string? SelectedAudioInputDeviceId { get; init; }
-        public string? SelectedAudioInputDeviceName { get; init; }
-        public string? SelectedResolution { get; init; }
-        public double SelectedFrameRate { get; init; }
-        public double? SelectedFriendlyFrameRate { get; init; }
-        public double? SelectedExactFrameRate { get; init; }
-        public string? SelectedExactFrameRateArg { get; init; }
-        public string? DisabledResolutionReason { get; init; }
-        public string? DisabledFrameRateReason { get; init; }
-        public string SelectedRecordingFormat { get; init; }
-        public string SelectedQuality { get; init; }
-        public string SelectedPreset { get; init; }
-        public string SelectedSplitEncodeMode { get; init; }
-        public string SelectedVideoFormat { get; init; }
-        public double CustomBitrateMbps { get; init; }
-        public double PreviewVolumePercent { get; init; }
-        public bool IsStatsVisible { get; init; }
-    }
-
-    private static RecordingSettingsProjection BuildRecordingSettingsProjection(UserSettingsProjection userSettings)
-        => new()
-        {
-            SelectedRecordingFormat = userSettings.SelectedRecordingFormat,
-            SelectedQuality = userSettings.SelectedQuality,
-            SelectedPreset = userSettings.SelectedPreset,
-            SelectedSplitEncodeMode = userSettings.SelectedSplitEncodeMode,
-            SelectedVideoFormat = userSettings.SelectedVideoFormat,
-            CustomBitrateMbps = userSettings.CustomBitrateMbps
-        };
-
-    private readonly record struct RecordingSettingsProjection
-    {
-        public string SelectedRecordingFormat { get; init; }
-        public string SelectedQuality { get; init; }
-        public string SelectedPreset { get; init; }
-        public string SelectedSplitEncodeMode { get; init; }
-        public string SelectedVideoFormat { get; init; }
-        public double CustomBitrateMbps { get; init; }
-    }
-
-    private static SettingsFlattenedProjection BuildSettingsFlattenedProjection(
-        UserSettingsProjection userSettings,
-        RecordingSettingsProjection recordingSettings)
-        => new()
-        {
-            SelectedDeviceId = userSettings.SelectedDeviceId,
-            SelectedDeviceName = userSettings.SelectedDeviceName,
-            SelectedAudioInputDeviceId = userSettings.SelectedAudioInputDeviceId,
-            SelectedAudioInputDeviceName = userSettings.SelectedAudioInputDeviceName,
-            SelectedResolution = userSettings.SelectedResolution,
-            SelectedFrameRate = userSettings.SelectedFrameRate,
-            SelectedFriendlyFrameRate = userSettings.SelectedFriendlyFrameRate,
-            SelectedExactFrameRate = userSettings.SelectedExactFrameRate,
-            SelectedExactFrameRateArg = userSettings.SelectedExactFrameRateArg,
-            DisabledResolutionReason = userSettings.DisabledResolutionReason,
-            DisabledFrameRateReason = userSettings.DisabledFrameRateReason,
-            SelectedRecordingFormat = recordingSettings.SelectedRecordingFormat,
-            SelectedQuality = recordingSettings.SelectedQuality,
-            SelectedPreset = recordingSettings.SelectedPreset,
-            SelectedSplitEncodeMode = recordingSettings.SelectedSplitEncodeMode,
-            SelectedVideoFormat = recordingSettings.SelectedVideoFormat,
-            CustomBitrateMbps = recordingSettings.CustomBitrateMbps,
-            PreviewVolumePercent = userSettings.PreviewVolumePercent,
-            IsStatsVisible = userSettings.IsStatsVisible
-        };
-
-    private readonly record struct SettingsFlattenedProjection
     {
         public string? SelectedDeviceId { get; init; }
         public string? SelectedDeviceName { get; init; }
@@ -676,48 +1211,6 @@ public sealed partial class AutomationDiagnosticsHub
         public int ThreadPoolIoMax { get; init; }
     }
 
-    private static ProcessResourceFlattenedProjection BuildProcessResourceFlattenedProjection(
-        ProcessResourceProjection processResourceProjection)
-        => new()
-        {
-            MemoryWorkingSetMb = processResourceProjection.MemoryWorkingSetMb,
-            MemoryPrivateBytesMb = processResourceProjection.MemoryPrivateBytesMb,
-            MemoryManagedHeapMb = processResourceProjection.MemoryManagedHeapMb,
-            MemoryTotalAllocatedMb = processResourceProjection.MemoryTotalAllocatedMb,
-            ProcessCpuPercent = processResourceProjection.ProcessCpuPercent,
-            ProcessCpuTotalProcessorTimeMs = processResourceProjection.ProcessCpuTotalProcessorTimeMs,
-            MemoryGcHeapSizeMb = processResourceProjection.MemoryGcHeapSizeMb,
-            MemoryGcGen0Collections = processResourceProjection.MemoryGcGen0Collections,
-            MemoryGcGen1Collections = processResourceProjection.MemoryGcGen1Collections,
-            MemoryGcGen2Collections = processResourceProjection.MemoryGcGen2Collections,
-            MemoryGcPauseTimePercent = processResourceProjection.MemoryGcPauseTimePercent,
-            MemoryGcFragmentationPercent = processResourceProjection.MemoryGcFragmentationPercent,
-            ThreadPoolWorkerAvailable = processResourceProjection.ThreadPoolWorkerAvailable,
-            ThreadPoolWorkerMax = processResourceProjection.ThreadPoolWorkerMax,
-            ThreadPoolIoAvailable = processResourceProjection.ThreadPoolIoAvailable,
-            ThreadPoolIoMax = processResourceProjection.ThreadPoolIoMax
-        };
-
-    private readonly record struct ProcessResourceFlattenedProjection
-    {
-        public double MemoryWorkingSetMb { get; init; }
-        public double MemoryPrivateBytesMb { get; init; }
-        public double MemoryManagedHeapMb { get; init; }
-        public double MemoryTotalAllocatedMb { get; init; }
-        public double ProcessCpuPercent { get; init; }
-        public double ProcessCpuTotalProcessorTimeMs { get; init; }
-        public double MemoryGcHeapSizeMb { get; init; }
-        public int MemoryGcGen0Collections { get; init; }
-        public int MemoryGcGen1Collections { get; init; }
-        public int MemoryGcGen2Collections { get; init; }
-        public double MemoryGcPauseTimePercent { get; init; }
-        public double MemoryGcFragmentationPercent { get; init; }
-        public int ThreadPoolWorkerAvailable { get; init; }
-        public int ThreadPoolWorkerMax { get; init; }
-        public int ThreadPoolIoAvailable { get; init; }
-        public int ThreadPoolIoMax { get; init; }
-    }
-
     private static AvSyncProjection BuildAvSyncProjection(CaptureRuntimeSnapshot captureRuntime)
         => new()
         {
@@ -727,24 +1220,7 @@ public sealed partial class AutomationDiagnosticsHub
             EncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples
         };
 
-    private static AvSyncFlattenedProjection BuildAvSyncFlattenedProjection(AvSyncProjection avSync)
-        => new()
-        {
-            CaptureDriftMs = avSync.CaptureDriftMs,
-            CaptureDriftRateMsPerSec = avSync.CaptureDriftRateMsPerSec,
-            EncoderDriftMs = avSync.EncoderDriftMs,
-            EncoderCorrectionSamples = avSync.EncoderCorrectionSamples
-        };
-
     private readonly record struct AvSyncProjection
-    {
-        public double? CaptureDriftMs { get; init; }
-        public double? CaptureDriftRateMsPerSec { get; init; }
-        public double? EncoderDriftMs { get; init; }
-        public long? EncoderCorrectionSamples { get; init; }
-    }
-
-    private readonly record struct AvSyncFlattenedProjection
     {
         public double? CaptureDriftMs { get; init; }
         public double? CaptureDriftRateMsPerSec { get; init; }
@@ -774,48 +1250,6 @@ public sealed partial class AutomationDiagnosticsHub
         };
 
     private readonly record struct CaptureCadenceProjection
-    {
-        public double ExpectedFrameRate { get; init; }
-        public int SampleCount { get; init; }
-        public double ObservedFps { get; init; }
-        public double ExpectedIntervalMs { get; init; }
-        public double AverageIntervalMs { get; init; }
-        public double P95IntervalMs { get; init; }
-        public double P99IntervalMs { get; init; }
-        public double MaxIntervalMs { get; init; }
-        public double OnePercentLowFps { get; init; }
-        public double FivePercentLowFps { get; init; }
-        public double SampleDurationMs { get; init; }
-        public double[] RecentIntervalsMs { get; init; }
-        public double JitterStdDevMs { get; init; }
-        public long SevereGapCount { get; init; }
-        public long EstimatedDroppedFrames { get; init; }
-        public double EstimatedDropPercent { get; init; }
-    }
-
-    private static CaptureCadenceFlattenedProjection BuildCaptureCadenceFlattenedProjection(
-        CaptureCadenceProjection captureCadence)
-        => new()
-        {
-            ExpectedFrameRate = captureCadence.ExpectedFrameRate,
-            SampleCount = captureCadence.SampleCount,
-            ObservedFps = captureCadence.ObservedFps,
-            ExpectedIntervalMs = captureCadence.ExpectedIntervalMs,
-            AverageIntervalMs = captureCadence.AverageIntervalMs,
-            P95IntervalMs = captureCadence.P95IntervalMs,
-            P99IntervalMs = captureCadence.P99IntervalMs,
-            MaxIntervalMs = captureCadence.MaxIntervalMs,
-            OnePercentLowFps = captureCadence.OnePercentLowFps,
-            FivePercentLowFps = captureCadence.FivePercentLowFps,
-            SampleDurationMs = captureCadence.SampleDurationMs,
-            RecentIntervalsMs = captureCadence.RecentIntervalsMs,
-            JitterStdDevMs = captureCadence.JitterStdDevMs,
-            SevereGapCount = captureCadence.SevereGapCount,
-            EstimatedDroppedFrames = captureCadence.EstimatedDroppedFrames,
-            EstimatedDropPercent = captureCadence.EstimatedDropPercent
-        };
-
-    private readonly record struct CaptureCadenceFlattenedProjection
     {
         public double ExpectedFrameRate { get; init; }
         public int SampleCount { get; init; }
@@ -869,72 +1303,6 @@ public sealed partial class AutomationDiagnosticsHub
         };
 
     private readonly record struct VisualCadenceProjection
-    {
-        public int SampleCount { get; init; }
-        public long ChangedFrameCount { get; init; }
-        public long RepeatFrameCount { get; init; }
-        public long LongestRepeatRun { get; init; }
-        public double OutputObservedFps { get; init; }
-        public double ChangeObservedFps { get; init; }
-        public double RepeatFramePercent { get; init; }
-        public double LastDelta { get; init; }
-        public double AverageDelta { get; init; }
-        public double P95Delta { get; init; }
-        public double MotionScore { get; init; }
-        public string MotionConfidence { get; init; }
-        public double[] RecentOutputIntervalsMs { get; init; }
-        public double[] RecentChangeIntervalsMs { get; init; }
-        public int CenterSampleCount { get; init; }
-        public long CenterChangedFrameCount { get; init; }
-        public long CenterRepeatFrameCount { get; init; }
-        public long CenterLongestRepeatRun { get; init; }
-        public double CenterOutputObservedFps { get; init; }
-        public double CenterChangeObservedFps { get; init; }
-        public double CenterRepeatFramePercent { get; init; }
-        public double CenterLastDelta { get; init; }
-        public double CenterAverageDelta { get; init; }
-        public double CenterP95Delta { get; init; }
-        public double CenterMotionScore { get; init; }
-        public string CenterMotionConfidence { get; init; }
-        public double[] CenterRecentOutputIntervalsMs { get; init; }
-        public double[] CenterRecentChangeIntervalsMs { get; init; }
-    }
-
-    private static VisualCadenceFlattenedProjection BuildVisualCadenceFlattenedProjection(
-        VisualCadenceProjection visualCadence)
-        => new()
-        {
-            SampleCount = visualCadence.SampleCount,
-            ChangedFrameCount = visualCadence.ChangedFrameCount,
-            RepeatFrameCount = visualCadence.RepeatFrameCount,
-            LongestRepeatRun = visualCadence.LongestRepeatRun,
-            OutputObservedFps = visualCadence.OutputObservedFps,
-            ChangeObservedFps = visualCadence.ChangeObservedFps,
-            RepeatFramePercent = visualCadence.RepeatFramePercent,
-            LastDelta = visualCadence.LastDelta,
-            AverageDelta = visualCadence.AverageDelta,
-            P95Delta = visualCadence.P95Delta,
-            MotionScore = visualCadence.MotionScore,
-            MotionConfidence = visualCadence.MotionConfidence,
-            RecentOutputIntervalsMs = visualCadence.RecentOutputIntervalsMs,
-            RecentChangeIntervalsMs = visualCadence.RecentChangeIntervalsMs,
-            CenterSampleCount = visualCadence.CenterSampleCount,
-            CenterChangedFrameCount = visualCadence.CenterChangedFrameCount,
-            CenterRepeatFrameCount = visualCadence.CenterRepeatFrameCount,
-            CenterLongestRepeatRun = visualCadence.CenterLongestRepeatRun,
-            CenterOutputObservedFps = visualCadence.CenterOutputObservedFps,
-            CenterChangeObservedFps = visualCadence.CenterChangeObservedFps,
-            CenterRepeatFramePercent = visualCadence.CenterRepeatFramePercent,
-            CenterLastDelta = visualCadence.CenterLastDelta,
-            CenterAverageDelta = visualCadence.CenterAverageDelta,
-            CenterP95Delta = visualCadence.CenterP95Delta,
-            CenterMotionScore = visualCadence.CenterMotionScore,
-            CenterMotionConfidence = visualCadence.CenterMotionConfidence,
-            CenterRecentOutputIntervalsMs = visualCadence.CenterRecentOutputIntervalsMs,
-            CenterRecentChangeIntervalsMs = visualCadence.CenterRecentChangeIntervalsMs
-        };
-
-    private readonly record struct VisualCadenceFlattenedProjection
     {
         public int SampleCount { get; init; }
         public long ChangedFrameCount { get; init; }
@@ -1079,107 +1447,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string SourceTargetSummaryText { get; init; }
     }
 
-    private static SourceFlattenedProjection BuildSourceFlattenedProjection(
-        SourceSignalProjection sourceSignal,
-        SourceTelemetryProjection sourceTelemetry)
-        => new()
-        {
-            Signal = BuildSourceSignalFlattenedProjection(sourceSignal),
-            Telemetry = BuildSourceTelemetryFlattenedProjection(sourceTelemetry)
-        };
-
-    private static SourceSignalFlattenedProjection BuildSourceSignalFlattenedProjection(
-        SourceSignalProjection sourceSignal)
-        => new()
-        {
-            DetectedSourceFrameRate = sourceSignal.DetectedFrameRate,
-            DetectedSourceFrameRateArg = sourceSignal.DetectedFrameRateArg,
-            SourceFrameRateOrigin = sourceSignal.FrameRateOrigin,
-            SourceWidth = sourceSignal.Width,
-            SourceHeight = sourceSignal.Height,
-            SourceIsHdr = sourceSignal.IsHdr,
-            SourceVideoFormat = sourceSignal.VideoFormat,
-            SourceColorimetry = sourceSignal.Colorimetry,
-            SourceQuantization = sourceSignal.Quantization,
-            SourceHdrTransferFunction = sourceSignal.HdrTransferFunction,
-            SourceHdrTransferCode = sourceSignal.HdrTransferCode,
-            SourceFirmware = sourceSignal.Firmware,
-            SourceAudioFormat = sourceSignal.AudioFormat,
-            SourceAudioSampleRate = sourceSignal.AudioSampleRate,
-            SourceInputSource = sourceSignal.InputSource,
-            SourceUsbHostProtocol = sourceSignal.UsbHostProtocol,
-            SourceHdcpMode = sourceSignal.HdcpMode,
-            SourceHdcpVersion = sourceSignal.HdcpVersion,
-            SourceRxTxHdcpVersion = sourceSignal.RxTxHdcpVersion,
-            SourceRawTimingHex = sourceSignal.RawTimingHex
-        };
-
-    private readonly record struct SourceSignalFlattenedProjection
-    {
-        public double? DetectedSourceFrameRate { get; init; }
-        public string? DetectedSourceFrameRateArg { get; init; }
-        public string SourceFrameRateOrigin { get; init; }
-        public int? SourceWidth { get; init; }
-        public int? SourceHeight { get; init; }
-        public bool? SourceIsHdr { get; init; }
-        public string? SourceVideoFormat { get; init; }
-        public string? SourceColorimetry { get; init; }
-        public string? SourceQuantization { get; init; }
-        public string? SourceHdrTransferFunction { get; init; }
-        public int? SourceHdrTransferCode { get; init; }
-        public string? SourceFirmware { get; init; }
-        public string? SourceAudioFormat { get; init; }
-        public string? SourceAudioSampleRate { get; init; }
-        public string? SourceInputSource { get; init; }
-        public string? SourceUsbHostProtocol { get; init; }
-        public string? SourceHdcpMode { get; init; }
-        public string? SourceHdcpVersion { get; init; }
-        public string? SourceRxTxHdcpVersion { get; init; }
-        public string? SourceRawTimingHex { get; init; }
-    }
-
-    private static SourceTelemetryFlattenedProjection BuildSourceTelemetryFlattenedProjection(
-        SourceTelemetryProjection sourceTelemetry)
-        => new()
-        {
-            SourceTelemetryAvailability = sourceTelemetry.SourceTelemetryAvailability,
-            SourceTelemetryOriginDetail = sourceTelemetry.SourceTelemetryOriginDetail,
-            SourceTelemetryConfidence = sourceTelemetry.SourceTelemetryConfidence,
-            SourceTelemetryDiagnosticSummary = sourceTelemetry.SourceTelemetryDiagnosticSummary,
-            SourceTelemetryDetails = sourceTelemetry.SourceTelemetryDetails,
-            SourceTelemetryTimestampUtc = sourceTelemetry.SourceTelemetryTimestampUtc,
-            SourceTelemetryAgeSeconds = sourceTelemetry.SourceTelemetryAgeSeconds,
-            SourceTelemetryBackend = sourceTelemetry.SourceTelemetryBackend,
-            SourceTelemetrySuppressed = sourceTelemetry.SourceTelemetrySuppressed,
-            SourceTelemetrySuppressedReason = sourceTelemetry.SourceTelemetrySuppressedReason,
-            SourceTelemetryCircuitState = sourceTelemetry.SourceTelemetryCircuitState,
-            SourceTelemetrySummaryText = sourceTelemetry.SourceTelemetrySummaryText,
-            SourceTargetSummaryText = sourceTelemetry.SourceTargetSummaryText
-        };
-
-    private readonly record struct SourceTelemetryFlattenedProjection
-    {
-        public string SourceTelemetryAvailability { get; init; }
-        public string SourceTelemetryOriginDetail { get; init; }
-        public string SourceTelemetryConfidence { get; init; }
-        public string? SourceTelemetryDiagnosticSummary { get; init; }
-        public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; }
-        public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
-        public int? SourceTelemetryAgeSeconds { get; init; }
-        public string SourceTelemetryBackend { get; init; }
-        public bool SourceTelemetrySuppressed { get; init; }
-        public string? SourceTelemetrySuppressedReason { get; init; }
-        public string SourceTelemetryCircuitState { get; init; }
-        public string SourceTelemetrySummaryText { get; init; }
-        public string SourceTargetSummaryText { get; init; }
-    }
-
-    private readonly record struct SourceFlattenedProjection
-    {
-        public SourceSignalFlattenedProjection Signal { get; init; }
-        public SourceTelemetryFlattenedProjection Telemetry { get; init; }
-    }
-
     private static CaptureCommandProjection BuildCaptureCommandProjection(ViewModelRuntimeSnapshot viewModelSnapshot)
         => new()
         {
@@ -1217,887 +1484,6 @@ public sealed partial class AutomationDiagnosticsHub
         public string LastError { get; init; }
     }
 
-    private static CaptureCommandFlattenedProjection BuildCaptureCommandFlattenedProjection(
-        CaptureCommandProjection captureCommands)
-        => new()
-        {
-            CommandsEnqueued = captureCommands.CommandsEnqueued,
-            CommandsCompleted = captureCommands.CommandsCompleted,
-            CommandsFailed = captureCommands.CommandsFailed,
-            CommandsCanceled = captureCommands.CommandsCanceled,
-            CommandsCoalesced = captureCommands.CommandsCoalesced,
-            PendingCommands = captureCommands.PendingCommands,
-            MaxPendingCommands = captureCommands.MaxPendingCommands,
-            OldestPendingCommandAgeMs = captureCommands.OldestPendingCommandAgeMs,
-            LastQueueLatencyMs = captureCommands.LastQueueLatencyMs,
-            MaxQueueLatencyMs = captureCommands.MaxQueueLatencyMs,
-            LastCommand = captureCommands.LastCommand,
-            LastOutcome = captureCommands.LastOutcome,
-            LastCorrelationId = captureCommands.LastCorrelationId,
-            LastError = captureCommands.LastError
-        };
-
-    private readonly record struct CaptureCommandFlattenedProjection
-    {
-        public long CommandsEnqueued { get; init; }
-        public long CommandsCompleted { get; init; }
-        public long CommandsFailed { get; init; }
-        public long CommandsCanceled { get; init; }
-        public long CommandsCoalesced { get; init; }
-        public int PendingCommands { get; init; }
-        public int MaxPendingCommands { get; init; }
-        public long OldestPendingCommandAgeMs { get; init; }
-        public long LastQueueLatencyMs { get; init; }
-        public long MaxQueueLatencyMs { get; init; }
-        public string LastCommand { get; init; }
-        public string LastOutcome { get; init; }
-        public string LastCorrelationId { get; init; }
-        public string LastError { get; init; }
-    }
-
-    private static AutomationSnapshot BuildAutomationSnapshotFromFlattenedProjections(
-        AutomationSnapshotFlattenedProjectionSet flattened)
-    {
-        var snapshotStatusFlattening = flattened.SnapshotStatus;
-        var snapshotEvaluationFlattening = flattened.SnapshotEvaluation;
-        var audioAndIngestFlattening = flattened.AudioAndIngest;
-        var audioDropsFlattening = flattened.AudioDrops;
-        var captureCommandFlattening = flattened.CaptureCommand;
-        var settingsFlattening = flattened.Settings;
-        var recordingIntegrity = flattened.RecordingIntegrity;
-        var sourceFlattening = flattened.Source;
-        var processResourceFlattening = flattened.ProcessResource;
-        var avSyncFlattening = flattened.AvSync;
-        var captureTransportFlattening = flattened.CaptureTransport;
-        var captureFormatFlattening = flattened.CaptureFormat;
-        var recordingOutputFlattening = flattened.RecordingOutput;
-        var recordingBackend = flattened.RecordingBackend;
-        var recordingPipelineFlattening = flattened.RecordingPipeline;
-        var captureCadenceFlattening = flattened.CaptureCadence;
-        var visualCadenceFlattening = flattened.VisualCadence;
-        var mjpegFlattening = flattened.Mjpeg;
-        var mjpegTimingFlattening = flattened.MjpegTiming;
-        var mjpegPreviewJitterFlattening = flattened.MjpegPreviewJitter;
-        var mjpegPacketHashFlattening = flattened.MjpegPacketHash;
-        var previewRuntimeFlattening = flattened.PreviewRuntime;
-        var previewD3DFlattening = flattened.PreviewD3D;
-        var hdrPipelineFlattening = flattened.HdrPipeline;
-        var flashbackExportFlattening = flattened.FlashbackExport;
-        var flashbackRecordingFlattening = flattened.FlashbackRecording;
-        var flashbackPlaybackFlattening = flattened.FlashbackPlayback;
-
-        return new AutomationSnapshot
-        {
-            TimestampUtc = snapshotStatusFlattening.TimestampUtc,
-            SnapshotCollectionEpoch = snapshotStatusFlattening.SnapshotCollectionEpoch,
-            SnapshotCollectionStartedUtc = snapshotStatusFlattening.SnapshotCollectionStartedUtc,
-            SnapshotCollectionCompletedUtc = snapshotStatusFlattening.SnapshotCollectionCompletedUtc,
-            SnapshotCollectionDurationMs = snapshotStatusFlattening.SnapshotCollectionDurationMs,
-            SnapshotMixedEpochs = snapshotStatusFlattening.SnapshotMixedEpochs,
-            SnapshotMixedEpochReason = snapshotStatusFlattening.SnapshotMixedEpochReason,
-            SnapshotViewModelEpoch = snapshotStatusFlattening.SnapshotViewModelEpoch,
-            SnapshotCaptureRuntimeEpoch = snapshotStatusFlattening.SnapshotCaptureRuntimeEpoch,
-            SnapshotCaptureHealthEpoch = snapshotStatusFlattening.SnapshotCaptureHealthEpoch,
-            SnapshotRecordingStatsEpoch = snapshotStatusFlattening.SnapshotRecordingStatsEpoch,
-            SnapshotPreviewRuntimeEpoch = snapshotStatusFlattening.SnapshotPreviewRuntimeEpoch,
-            SnapshotOutputEpoch = snapshotStatusFlattening.SnapshotOutputEpoch,
-            SnapshotSourceTelemetryEpoch = snapshotStatusFlattening.SnapshotSourceTelemetryEpoch,
-            IsInitialized = snapshotStatusFlattening.IsInitialized,
-            IsPreviewing = snapshotStatusFlattening.IsPreviewing,
-            IsRecording = snapshotStatusFlattening.IsRecording,
-            VerificationInProgress = snapshotStatusFlattening.VerificationInProgress,
-            IsAudioEnabled = snapshotStatusFlattening.IsAudioEnabled,
-            IsAudioPreviewEnabled = snapshotStatusFlattening.IsAudioPreviewEnabled,
-            IsCustomAudioInputEnabled = snapshotStatusFlattening.IsCustomAudioInputEnabled,
-            SessionState = snapshotStatusFlattening.SessionState,
-            StatusText = snapshotStatusFlattening.StatusText,
-            PerformanceScore = snapshotEvaluationFlattening.PerformanceScore,
-            PerformancePerfectionMet = snapshotEvaluationFlattening.PerformancePerfectionMet,
-            PerformanceSummary = snapshotEvaluationFlattening.PerformanceSummary,
-            DiagnosticHealthStatus = snapshotEvaluationFlattening.DiagnosticHealthStatus,
-            DiagnosticLikelyStage = snapshotEvaluationFlattening.DiagnosticLikelyStage,
-            DiagnosticSummary = snapshotEvaluationFlattening.DiagnosticSummary,
-            DiagnosticEvidence = snapshotEvaluationFlattening.DiagnosticEvidence,
-            DiagnosticSourceLane = snapshotEvaluationFlattening.DiagnosticSourceLane,
-            DiagnosticDecodeLane = snapshotEvaluationFlattening.DiagnosticDecodeLane,
-            DiagnosticPreviewLane = snapshotEvaluationFlattening.DiagnosticPreviewLane,
-            DiagnosticRenderLane = snapshotEvaluationFlattening.DiagnosticRenderLane,
-            DiagnosticPresentLane = snapshotEvaluationFlattening.DiagnosticPresentLane,
-            DiagnosticRecordingLane = snapshotEvaluationFlattening.DiagnosticRecordingLane,
-            DiagnosticAudioLane = snapshotEvaluationFlattening.DiagnosticAudioLane,
-            PreviewPacingLikelySlowStage = snapshotEvaluationFlattening.PreviewPacingLikelySlowStage,
-            PreviewPacingSlowStageConfidence = snapshotEvaluationFlattening.PreviewPacingSlowStageConfidence,
-            PreviewPacingSlowStageEvidence = snapshotEvaluationFlattening.PreviewPacingSlowStageEvidence,
-            CaptureCommandCommandsEnqueued = captureCommandFlattening.CommandsEnqueued,
-            CaptureCommandCommandsCompleted = captureCommandFlattening.CommandsCompleted,
-            CaptureCommandCommandsFailed = captureCommandFlattening.CommandsFailed,
-            CaptureCommandCommandsCanceled = captureCommandFlattening.CommandsCanceled,
-            CaptureCommandCommandsCoalesced = captureCommandFlattening.CommandsCoalesced,
-            CaptureCommandPendingCommands = captureCommandFlattening.PendingCommands,
-            CaptureCommandMaxPendingCommands = captureCommandFlattening.MaxPendingCommands,
-            CaptureCommandOldestPendingCommandAgeMs = captureCommandFlattening.OldestPendingCommandAgeMs,
-            CaptureCommandLastQueueLatencyMs = captureCommandFlattening.LastQueueLatencyMs,
-            CaptureCommandMaxQueueLatencyMs = captureCommandFlattening.MaxQueueLatencyMs,
-            CaptureCommandLastCommand = captureCommandFlattening.LastCommand,
-            CaptureCommandLastOutcome = captureCommandFlattening.LastOutcome,
-            CaptureCommandLastCorrelationId = captureCommandFlattening.LastCorrelationId,
-            CaptureCommandLastError = captureCommandFlattening.LastError,
-            PerformanceThresholdCaptureDropPercent = snapshotEvaluationFlattening.PerformanceThresholdCaptureDropPercent,
-            PerformanceThresholdCaptureP95Multiplier = snapshotEvaluationFlattening.PerformanceThresholdCaptureP95Multiplier,
-            PerformanceThresholdPreviewSlowPercent = snapshotEvaluationFlattening.PerformanceThresholdPreviewSlowPercent,
-            PerformanceThresholdVerificationDropPercent = snapshotEvaluationFlattening.PerformanceThresholdVerificationDropPercent,
-            SelectedDeviceId = settingsFlattening.SelectedDeviceId,
-            SelectedDeviceName = settingsFlattening.SelectedDeviceName,
-            SelectedAudioInputDeviceId = settingsFlattening.SelectedAudioInputDeviceId,
-            SelectedAudioInputDeviceName = settingsFlattening.SelectedAudioInputDeviceName,
-            SelectedResolution = settingsFlattening.SelectedResolution,
-            SelectedFrameRate = settingsFlattening.SelectedFrameRate,
-            SelectedFriendlyFrameRate = settingsFlattening.SelectedFriendlyFrameRate,
-            SelectedExactFrameRate = settingsFlattening.SelectedExactFrameRate,
-            SelectedExactFrameRateArg = settingsFlattening.SelectedExactFrameRateArg,
-            DisabledResolutionReason = settingsFlattening.DisabledResolutionReason,
-            DisabledFrameRateReason = settingsFlattening.DisabledFrameRateReason,
-            DetectedSourceFrameRate = sourceFlattening.Signal.DetectedSourceFrameRate,
-            DetectedSourceFrameRateArg = sourceFlattening.Signal.DetectedSourceFrameRateArg,
-            SourceFrameRateOrigin = sourceFlattening.Signal.SourceFrameRateOrigin,
-            SourceWidth = sourceFlattening.Signal.SourceWidth,
-            SourceHeight = sourceFlattening.Signal.SourceHeight,
-            SourceIsHdr = sourceFlattening.Signal.SourceIsHdr,
-            SourceVideoFormat = sourceFlattening.Signal.SourceVideoFormat,
-            SourceColorimetry = sourceFlattening.Signal.SourceColorimetry,
-            SourceQuantization = sourceFlattening.Signal.SourceQuantization,
-            SourceHdrTransferFunction = sourceFlattening.Signal.SourceHdrTransferFunction,
-            SourceHdrTransferCode = sourceFlattening.Signal.SourceHdrTransferCode,
-            SourceFirmware = sourceFlattening.Signal.SourceFirmware,
-            SourceAudioFormat = sourceFlattening.Signal.SourceAudioFormat,
-            SourceAudioSampleRate = sourceFlattening.Signal.SourceAudioSampleRate,
-            SourceInputSource = sourceFlattening.Signal.SourceInputSource,
-            SourceUsbHostProtocol = sourceFlattening.Signal.SourceUsbHostProtocol,
-            SourceHdcpMode = sourceFlattening.Signal.SourceHdcpMode,
-            SourceHdcpVersion = sourceFlattening.Signal.SourceHdcpVersion,
-            SourceRxTxHdcpVersion = sourceFlattening.Signal.SourceRxTxHdcpVersion,
-            SourceRawTimingHex = sourceFlattening.Signal.SourceRawTimingHex,
-            SourceTelemetryAvailability = sourceFlattening.Telemetry.SourceTelemetryAvailability,
-            SourceTelemetryOriginDetail = sourceFlattening.Telemetry.SourceTelemetryOriginDetail,
-            SourceTelemetryConfidence = sourceFlattening.Telemetry.SourceTelemetryConfidence,
-            SourceTelemetryDiagnosticSummary = sourceFlattening.Telemetry.SourceTelemetryDiagnosticSummary,
-            SourceTelemetryDetails = sourceFlattening.Telemetry.SourceTelemetryDetails,
-            SourceTelemetryTimestampUtc = sourceFlattening.Telemetry.SourceTelemetryTimestampUtc,
-            SourceTelemetryAgeSeconds = sourceFlattening.Telemetry.SourceTelemetryAgeSeconds,
-            SourceTelemetryBackend = sourceFlattening.Telemetry.SourceTelemetryBackend,
-            SourceTelemetrySuppressed = sourceFlattening.Telemetry.SourceTelemetrySuppressed,
-            SourceTelemetrySuppressedReason = sourceFlattening.Telemetry.SourceTelemetrySuppressedReason,
-            SourceTelemetryCircuitState = sourceFlattening.Telemetry.SourceTelemetryCircuitState,
-            SourceTelemetrySummaryText = sourceFlattening.Telemetry.SourceTelemetrySummaryText,
-            SourceTargetSummaryText = sourceFlattening.Telemetry.SourceTargetSummaryText,
-            SelectedRecordingFormat = settingsFlattening.SelectedRecordingFormat,
-            SelectedQuality = settingsFlattening.SelectedQuality,
-            SelectedPreset = settingsFlattening.SelectedPreset,
-            SelectedSplitEncodeMode = settingsFlattening.SelectedSplitEncodeMode,
-            SelectedVideoFormat = settingsFlattening.SelectedVideoFormat,
-            CustomBitrateMbps = settingsFlattening.CustomBitrateMbps,
-            PreviewVolumePercent = settingsFlattening.PreviewVolumePercent,
-            IsStatsVisible = settingsFlattening.IsStatsVisible,
-            IsHdrAvailable = hdrPipelineFlattening.IsHdrAvailable,
-            IsHdrEnabled = hdrPipelineFlattening.IsHdrEnabled,
-            HdrOutputActive = hdrPipelineFlattening.HdrOutputActive,
-            HdrRuntimeState = hdrPipelineFlattening.HdrRuntimeState,
-            HdrReadinessReason = hdrPipelineFlattening.HdrReadinessReason,
-            HdrWarmupState = hdrPipelineFlattening.HdrWarmupState,
-            HdrWarmupRequiredP010Frames = hdrPipelineFlattening.HdrWarmupRequiredP010Frames,
-            HdrWarmupAllowedNonP010Frames = hdrPipelineFlattening.HdrWarmupAllowedNonP010Frames,
-            HdrWarmupObservedP010Frames = hdrPipelineFlattening.HdrWarmupObservedP010Frames,
-            HdrWarmupObservedNonP010Frames = hdrPipelineFlattening.HdrWarmupObservedNonP010Frames,
-            HdrDowngradeCode = hdrPipelineFlattening.HdrDowngradeCode,
-            RequestedPipelineMode = hdrPipelineFlattening.RequestedPipelineMode,
-            ActivePipelineMode = hdrPipelineFlattening.ActivePipelineMode,
-            PipelineModeMatched = hdrPipelineFlattening.PipelineModeMatched,
-            PipelineModeStatus = hdrPipelineFlattening.PipelineModeStatus,
-            PipelineModeReason = hdrPipelineFlattening.PipelineModeReason,
-            TelemetryAlignmentStatus = hdrPipelineFlattening.TelemetryAlignmentStatus,
-            TelemetryAlignmentReason = hdrPipelineFlattening.TelemetryAlignmentReason,
-            OutputPath = recordingOutputFlattening.OutputPath,
-            RecordingTime = recordingOutputFlattening.RecordingTime,
-            RecordingSizeInfo = recordingOutputFlattening.RecordingSizeInfo,
-            RecordingBitrateInfo = recordingOutputFlattening.RecordingBitrateInfo,
-            AudioPeak = audioAndIngestFlattening.Signal.Peak,
-            AudioClipping = audioAndIngestFlattening.Signal.Clipping,
-            AudioSignalPresent = audioAndIngestFlattening.Signal.SignalPresent,
-            AudioMutedSuspected = audioAndIngestFlattening.Signal.MutedSuspected,
-            AudioReaderActive = audioAndIngestFlattening.Ingest.AudioReaderActive,
-            AudioFramesArrived = audioAndIngestFlattening.Ingest.AudioFramesArrived,
-            AudioFramesWrittenToSink = audioAndIngestFlattening.Ingest.AudioFramesWrittenToSink,
-            VideoReaderActive = audioAndIngestFlattening.Ingest.VideoReaderActive,
-            IngestVideoFramesArrived = audioAndIngestFlattening.Ingest.VideoFramesArrived,
-            IngestVideoFramesWrittenToSink = audioAndIngestFlattening.Ingest.VideoFramesWrittenToSink,
-            IngestLastVideoFrameAgeMs = audioAndIngestFlattening.Ingest.LastVideoFrameAgeMs,
-            VideoIngestErrorCount = audioAndIngestFlattening.Ingest.VideoIngestErrorCount,
-            MfSourceReaderFramesDelivered = audioAndIngestFlattening.SourceReader.FramesDelivered,
-            MfSourceReaderFramesDropped = audioAndIngestFlattening.SourceReader.FramesDropped,
-            MfSourceReaderNegotiatedFormat = audioAndIngestFlattening.SourceReader.NegotiatedFormat,
-            SourceReaderReadOutstanding = audioAndIngestFlattening.SourceReader.ReadOutstanding,
-            SourceReaderReadOutstandingMs = audioAndIngestFlattening.SourceReader.ReadOutstandingMs,
-            SourceReaderLastFrameTickMs = audioAndIngestFlattening.SourceReader.LastFrameTickMs,
-            SourceReaderFrameChannelDepth = audioAndIngestFlattening.SourceReader.FrameChannelDepth,
-            WasapiCaptureCallbackCount = audioAndIngestFlattening.WasapiCapture.CallbackCount,
-            WasapiCaptureCallbackAvgIntervalMs = audioAndIngestFlattening.WasapiCapture.CallbackAvgIntervalMs,
-            WasapiCaptureCallbackMaxIntervalMs = audioAndIngestFlattening.WasapiCapture.CallbackMaxIntervalMs,
-            WasapiCaptureCallbackSevereGapCount = audioAndIngestFlattening.WasapiCapture.CallbackSevereGapCount,
-            WasapiCaptureAudioDiscontinuityCount = audioAndIngestFlattening.WasapiCapture.AudioDiscontinuityCount,
-            WasapiCaptureAudioTimestampErrorCount = audioAndIngestFlattening.WasapiCapture.AudioTimestampErrorCount,
-            WasapiCaptureAudioGlitchCount = audioAndIngestFlattening.WasapiCapture.AudioGlitchCount,
-            WasapiCaptureCallbackSilenceCount = audioAndIngestFlattening.WasapiCapture.CallbackSilenceCount,
-            WasapiCaptureLastCallbackTickMs = audioAndIngestFlattening.WasapiCapture.LastCallbackTickMs,
-            WasapiCaptureAudioLevelEventsFired = audioAndIngestFlattening.WasapiCapture.AudioLevelEventsFired,
-            WasapiCaptureAudioLevelLastFireTickMs = audioAndIngestFlattening.WasapiCapture.AudioLevelLastFireTickMs,
-            WasapiPlaybackRenderCallbackCount = audioAndIngestFlattening.WasapiPlayback.RenderCallbackCount,
-            WasapiPlaybackRenderSilenceCount = audioAndIngestFlattening.WasapiPlayback.RenderSilenceCount,
-            WasapiPlaybackQueueDepth = audioAndIngestFlattening.WasapiPlayback.QueueDepth,
-            WasapiPlaybackQueueDropCount = audioAndIngestFlattening.WasapiPlayback.QueueDropCount,
-            WasapiPlaybackQueueDurationMs = audioAndIngestFlattening.WasapiPlayback.QueueDurationMs,
-            WasapiPlaybackActiveChunkDurationMs = audioAndIngestFlattening.WasapiPlayback.ActiveChunkDurationMs,
-            WasapiPlaybackEndpointQueuedDurationMs = audioAndIngestFlattening.WasapiPlayback.EndpointQueuedDurationMs,
-            WasapiPlaybackBufferedDurationMs = audioAndIngestFlattening.WasapiPlayback.BufferedDurationMs,
-            WasapiPlaybackStreamLatencyMs = audioAndIngestFlattening.WasapiPlayback.StreamLatencyMs,
-            WasapiPlaybackLastRenderTickMs = audioAndIngestFlattening.WasapiPlayback.LastRenderTickMs,
-            AudioBufferHealthStatus = audioAndIngestFlattening.BufferHealth.Status,
-            AudioBufferHealthReason = audioAndIngestFlattening.BufferHealth.Reason,
-            AudioBufferUnderrunDetected = audioAndIngestFlattening.BufferHealth.UnderrunDetected,
-            AudioBufferOverrunDetected = audioAndIngestFlattening.BufferHealth.OverrunDetected,
-            AudioBufferUnderrunEvents = audioAndIngestFlattening.BufferHealth.UnderrunEvents,
-            AudioBufferOverrunEvents = audioAndIngestFlattening.BufferHealth.OverrunEvents,
-            MemoryPreference = captureTransportFlattening.MemoryPreference,
-            VideoRequestedSubtype = captureTransportFlattening.VideoRequestedSubtype,
-            VideoNegotiatedSubtype = captureTransportFlattening.VideoNegotiatedSubtype,
-            FrameLedgerCapacity = captureTransportFlattening.FrameLedgerCapacity,
-            FrameLedgerEventCount = captureTransportFlattening.FrameLedgerEventCount,
-            FrameLedgerDroppedEventCount = captureTransportFlattening.FrameLedgerDroppedEventCount,
-            FrameLedgerRecentEvents = captureTransportFlattening.FrameLedgerRecentEvents,
-            PreviewAdapterColorMetadata = previewRuntimeFlattening.Color.AdapterColorMetadata,
-            EncoderVideoFramesEnqueued = recordingPipelineFlattening.Encoder.VideoFramesEnqueued,
-            EncoderVideoFramesEncoded = recordingPipelineFlattening.Encoder.VideoFramesEncoded,
-            EncoderLastEnqueueAgeMs = recordingPipelineFlattening.Encoder.LastEnqueueAgeMs,
-            EncoderLastWriteAgeMs = recordingPipelineFlattening.Encoder.LastWriteAgeMs,
-            RecordingBackend = recordingBackend.Backend,
-            AudioPathMode = recordingBackend.AudioPathMode,
-            MuxResult = recordingBackend.MuxResult,
-            RecordingIntegrityStatus = recordingIntegrity.Summary.Status,
-            RecordingIntegrityComplete = recordingIntegrity.Summary.Complete,
-            RecordingIntegrityBackend = recordingIntegrity.Summary.Backend,
-            RecordingIntegrityCompletedUtc = recordingIntegrity.Summary.CompletedUtc,
-            RecordingIntegritySourceFrames = recordingIntegrity.Video.SourceFrames,
-            RecordingIntegrityAcceptedFrames = recordingIntegrity.Video.AcceptedFrames,
-            RecordingIntegrityPipelineDroppedFrames = recordingIntegrity.Video.PipelineDroppedFrames,
-            RecordingIntegrityQueueDroppedFrames = recordingIntegrity.Video.QueueDroppedFrames,
-            RecordingIntegritySubmittedFrames = recordingIntegrity.Video.SubmittedFrames,
-            RecordingIntegrityEncodedFrames = recordingIntegrity.Video.EncodedFrames,
-            RecordingIntegrityPacketsWritten = recordingIntegrity.Video.PacketsWritten,
-            RecordingIntegrityEncoderDroppedFrames = recordingIntegrity.Video.EncoderDroppedFrames,
-            RecordingIntegritySequenceGaps = recordingIntegrity.Video.SequenceGaps,
-            RecordingIntegrityQueueMaxDepth = recordingIntegrity.Backpressure.QueueMaxDepth,
-            RecordingIntegrityQueueOldestFrameAgeMs = recordingIntegrity.Backpressure.QueueOldestFrameAgeMs,
-            RecordingIntegrityBackpressureWaitMs = recordingIntegrity.Backpressure.BackpressureWaitMs,
-            RecordingIntegrityBackpressureEvents = recordingIntegrity.Backpressure.BackpressureEvents,
-            RecordingIntegrityBackpressureMaxWaitMs = recordingIntegrity.Backpressure.BackpressureMaxWaitMs,
-            RecordingIntegrityAudioStatus = recordingIntegrity.Audio.AudioStatus,
-            RecordingIntegrityAudioEnabled = recordingIntegrity.Audio.AudioEnabled,
-            RecordingIntegrityAudioCaptureActive = recordingIntegrity.Audio.AudioCaptureActive,
-            RecordingIntegrityAudioFramesArrived = recordingIntegrity.Audio.AudioFramesArrived,
-            RecordingIntegrityAudioFramesWrittenToSink = recordingIntegrity.Audio.AudioFramesWrittenToSink,
-            RecordingIntegrityAudioSamplesEncoded = recordingIntegrity.Audio.AudioSamplesEncoded,
-            RecordingIntegrityAudioDropEvents = recordingIntegrity.Audio.AudioDropEvents,
-            RecordingIntegrityAudioDiscontinuities = recordingIntegrity.Audio.AudioDiscontinuities,
-            RecordingIntegrityAudioTimestampErrors = recordingIntegrity.Audio.AudioTimestampErrors,
-            RecordingIntegrityAudioCallbackGaps = recordingIntegrity.Audio.AudioCallbackGaps,
-            RecordingIntegrityAvSyncDriftMs = recordingIntegrity.AvSync.AvSyncDriftMs,
-            RecordingIntegrityAvSyncDriftRateMsPerSec = recordingIntegrity.AvSync.AvSyncDriftRateMsPerSec,
-            RecordingIntegrityEncoderAvSyncDriftMs = recordingIntegrity.AvSync.EncoderAvSyncDriftMs,
-            RecordingIntegrityEncoderAvSyncCorrectionSamples = recordingIntegrity.AvSync.EncoderAvSyncCorrectionSamples,
-            RecordingIntegrityReason = recordingIntegrity.Summary.Reason,
-            RequestedWidth = captureFormatFlattening.Requested.Width,
-            RequestedHeight = captureFormatFlattening.Requested.Height,
-            RequestedFrameRate = captureFormatFlattening.Requested.FrameRate,
-            RequestedFrameRateArg = captureFormatFlattening.Requested.FrameRateArg,
-            RequestedFrameRateNumerator = captureFormatFlattening.Requested.FrameRateNumerator,
-            RequestedFrameRateDenominator = captureFormatFlattening.Requested.FrameRateDenominator,
-            RequestedPixelFormat = captureFormatFlattening.Requested.PixelFormat,
-            RequestedFormat = captureFormatFlattening.Requested.Format,
-            RequestedQuality = captureFormatFlattening.Requested.Quality,
-            RequestedHdrEnabled = captureFormatFlattening.Requested.HdrEnabled,
-            RequestedHdrMasteringMetadata = captureFormatFlattening.Requested.HdrMasteringMetadata,
-            RequestedAudioEnabled = captureFormatFlattening.Requested.AudioEnabled,
-            HdrActivationReason = captureFormatFlattening.HdrRequest.ActivationReason,
-            HdrAutoDowngraded = captureFormatFlattening.HdrRequest.AutoDowngraded,
-            HdrAutoDowngradeReason = captureFormatFlattening.HdrRequest.AutoDowngradeReason,
-            HdrRequestedButSourceNot10Bit = captureFormatFlattening.HdrRequest.RequestedButSourceNot10Bit,
-            ActualWidth = captureFormatFlattening.Actual.Width,
-            ActualHeight = captureFormatFlattening.Actual.Height,
-            ActualFrameRate = captureFormatFlattening.Actual.FrameRate,
-            ActualFrameRateArg = captureFormatFlattening.Actual.FrameRateArg,
-            NegotiatedWidth = captureFormatFlattening.Negotiated.Width,
-            NegotiatedHeight = captureFormatFlattening.Negotiated.Height,
-            NegotiatedFrameRate = captureFormatFlattening.Negotiated.FrameRate,
-            NegotiatedFrameRateArg = captureFormatFlattening.Negotiated.FrameRateArg,
-            NegotiatedFrameRateNumerator = captureFormatFlattening.Negotiated.FrameRateNumerator,
-            NegotiatedFrameRateDenominator = captureFormatFlattening.Negotiated.FrameRateDenominator,
-            NegotiatedPixelFormat = captureFormatFlattening.Negotiated.PixelFormat,
-            RequestedReaderSubtype = captureFormatFlattening.ReaderObservation.RequestedReaderSubtype,
-            ReaderSourceStreamType = captureFormatFlattening.ReaderObservation.ReaderSourceStreamType,
-            ReaderSourceSubtype = captureFormatFlattening.ReaderObservation.ReaderSourceSubtype,
-            FirstObservedFramePixelFormat = captureFormatFlattening.ReaderObservation.FirstObservedFramePixelFormat,
-            LatestObservedFramePixelFormat = captureFormatFlattening.ReaderObservation.LatestObservedFramePixelFormat,
-            LatestObservedSurfaceFormat = captureFormatFlattening.ReaderObservation.LatestObservedSurfaceFormat,
-            ObservedP010FrameCount = captureFormatFlattening.ReaderObservation.ObservedP010FrameCount,
-            ObservedNv12FrameCount = captureFormatFlattening.ReaderObservation.ObservedNv12FrameCount,
-            ObservedOtherFrameCount = captureFormatFlattening.ReaderObservation.ObservedOtherFrameCount,
-            ObservedP010BitDepthSampleCount = captureFormatFlattening.ReaderObservation.ObservedP010BitDepthSampleCount,
-            ObservedP010Low2BitNonZeroPercent = captureFormatFlattening.ReaderObservation.ObservedP010Low2BitNonZeroPercent,
-            ObservedP010Likely8BitUpscaled = captureFormatFlattening.ReaderObservation.ObservedP010Likely8BitUpscaled,
-            EncoderInputPixelFormat = captureFormatFlattening.Encoder.InputPixelFormat,
-            EncoderOutputPixelFormat = captureFormatFlattening.Encoder.OutputPixelFormat,
-            EncoderVideoCodec = captureFormatFlattening.Encoder.VideoCodec,
-            EncoderVideoProfile = captureFormatFlattening.Encoder.VideoProfile,
-            EncoderTenBitPipelineConfirmed = captureFormatFlattening.Encoder.TenBitPipelineConfirmed,
-            MfReadwriteDisableConverters = captureFormatFlattening.ReaderObservation.MfReadwriteDisableConverters,
-            NegotiatedMediaSubtypeToken = captureFormatFlattening.Negotiated.MediaSubtypeToken,
-            PreviewFramesArrived = previewRuntimeFlattening.Frame.FramesArrived,
-            PreviewFramesDisplayed = previewRuntimeFlattening.Frame.FramesDisplayed,
-            PreviewFramesDropped = previewRuntimeFlattening.Frame.FramesDropped,
-            PreviewCadenceSampleCount = previewRuntimeFlattening.Cadence.SampleCount,
-            PreviewCadenceObservedFps = previewRuntimeFlattening.Cadence.ObservedFps,
-            PreviewCadenceExpectedIntervalMs = previewRuntimeFlattening.Cadence.ExpectedIntervalMs,
-            PreviewCadenceAverageIntervalMs = previewRuntimeFlattening.Cadence.AverageIntervalMs,
-            PreviewCadenceP95IntervalMs = previewRuntimeFlattening.Cadence.P95IntervalMs,
-            PreviewCadenceP99IntervalMs = previewRuntimeFlattening.Cadence.P99IntervalMs,
-            PreviewCadenceMaxIntervalMs = previewRuntimeFlattening.Cadence.MaxIntervalMs,
-            PreviewCadenceOnePercentLowFps = previewRuntimeFlattening.Cadence.OnePercentLowFps,
-            PreviewCadenceFivePercentLowFps = previewRuntimeFlattening.Cadence.FivePercentLowFps,
-            PreviewCadenceSampleDurationMs = previewRuntimeFlattening.Cadence.SampleDurationMs,
-            PreviewCadenceRecentIntervalsMs = previewRuntimeFlattening.Cadence.RecentIntervalsMs,
-            PreviewCadenceJitterStdDevMs = previewRuntimeFlattening.Cadence.JitterStdDevMs,
-            PreviewCadenceSlowFrameCount = previewRuntimeFlattening.Cadence.SlowFrameCount,
-            PreviewCadenceSlowFramePercent = previewRuntimeFlattening.Cadence.SlowFramePercent,
-            PreviewGpuActive = previewRuntimeFlattening.Surface.GpuActive,
-            PreviewPlaceholderVisible = previewRuntimeFlattening.Surface.PlaceholderVisible,
-            PreviewGpuElementVisible = previewRuntimeFlattening.Surface.GpuElementVisible,
-            PreviewCpuElementVisible = previewRuntimeFlattening.Surface.CpuElementVisible,
-            PreviewRendererAttached = previewRuntimeFlattening.Surface.RendererAttached,
-            PreviewStartupState = previewRuntimeFlattening.Startup.State,
-            PreviewAttemptId = previewRuntimeFlattening.Startup.AttemptId,
-            PreviewStartupElapsedMs = previewRuntimeFlattening.Startup.ElapsedMs,
-            PreviewStartupTimeoutMs = previewRuntimeFlattening.Startup.TimeoutMs,
-            PreviewGpuSignalMediaOpened = previewRuntimeFlattening.Startup.GpuSignalMediaOpened,
-            PreviewGpuSignalFirstFrame = previewRuntimeFlattening.Startup.GpuSignalFirstFrame,
-            PreviewGpuSignalPlaybackAdvancing = previewRuntimeFlattening.Startup.GpuSignalPlaybackAdvancing,
-            PreviewStartupRequiredSignals = previewRuntimeFlattening.Startup.RequiredSignals,
-            PreviewStartupReceivedSignals = previewRuntimeFlattening.Startup.ReceivedSignals,
-            PreviewStartupStrategy = previewRuntimeFlattening.Startup.Strategy,
-            PreviewStartupMissingSignals = previewRuntimeFlattening.Startup.MissingSignals,
-            PreviewRecoveryAttemptCount = previewRuntimeFlattening.Startup.RecoveryAttemptCount,
-            PreviewLastFailureReason = previewRuntimeFlattening.Startup.LastFailureReason,
-            PreviewFirstVisualConfirmed = previewRuntimeFlattening.Startup.FirstVisualConfirmed,
-            PreviewBlankSuspected = previewRuntimeFlattening.Startup.BlankSuspected,
-            PreviewStalled = previewRuntimeFlattening.Startup.Stalled,
-            PreviewRendererMode = previewRuntimeFlattening.Startup.RendererMode,
-            PreviewD3DPresentSyncInterval = previewD3DFlattening.PresentSyncInterval,
-            PreviewD3DMaxFrameLatency = previewD3DFlattening.MaxFrameLatency,
-            PreviewD3DSwapChainBufferCount = previewD3DFlattening.SwapChainBufferCount,
-            PreviewD3DSwapChainAddress = previewD3DFlattening.SwapChainAddress,
-            PreviewD3DFramesSubmitted = previewD3DFlattening.FramesSubmitted,
-            PreviewD3DFramesRendered = previewD3DFlattening.FramesRendered,
-            PreviewD3DFramesDropped = previewD3DFlattening.FramesDropped,
-            PreviewD3DRenderThreadFailureCount = previewD3DFlattening.RenderThreadFailureCount,
-            PreviewD3DLastRenderThreadFailureType = previewD3DFlattening.LastRenderThreadFailureType,
-            PreviewD3DLastRenderThreadFailureMessage = previewD3DFlattening.LastRenderThreadFailureMessage,
-            PreviewD3DLastRenderThreadFailureHResult = previewD3DFlattening.LastRenderThreadFailureHResult,
-            PreviewD3DPendingFrameCount = previewD3DFlattening.PendingFrameCount,
-            PreviewD3DInputColorSpace = previewD3DFlattening.InputColorSpace,
-            PreviewD3DOutputColorSpace = previewD3DFlattening.OutputColorSpace,
-            PreviewD3DCpuTimingSampleCount = previewD3DFlattening.CpuTiming.SampleCount,
-            PreviewD3DInputUploadCpuAvgMs = previewD3DFlattening.CpuTiming.InputUploadCpuAvgMs,
-            PreviewD3DInputUploadCpuP95Ms = previewD3DFlattening.CpuTiming.InputUploadCpuP95Ms,
-            PreviewD3DInputUploadCpuP99Ms = previewD3DFlattening.CpuTiming.InputUploadCpuP99Ms,
-            PreviewD3DInputUploadCpuMaxMs = previewD3DFlattening.CpuTiming.InputUploadCpuMaxMs,
-            PreviewD3DRenderSubmitCpuAvgMs = previewD3DFlattening.CpuTiming.RenderSubmitCpuAvgMs,
-            PreviewD3DRenderSubmitCpuP95Ms = previewD3DFlattening.CpuTiming.RenderSubmitCpuP95Ms,
-            PreviewD3DRenderSubmitCpuP99Ms = previewD3DFlattening.CpuTiming.RenderSubmitCpuP99Ms,
-            PreviewD3DRenderSubmitCpuMaxMs = previewD3DFlattening.CpuTiming.RenderSubmitCpuMaxMs,
-            PreviewD3DPresentCallAvgMs = previewD3DFlattening.CpuTiming.PresentCallAvgMs,
-            PreviewD3DPresentCallP95Ms = previewD3DFlattening.CpuTiming.PresentCallP95Ms,
-            PreviewD3DPresentCallP99Ms = previewD3DFlattening.CpuTiming.PresentCallP99Ms,
-            PreviewD3DPresentCallMaxMs = previewD3DFlattening.CpuTiming.PresentCallMaxMs,
-            PreviewD3DTotalFrameCpuAvgMs = previewD3DFlattening.CpuTiming.TotalFrameCpuAvgMs,
-            PreviewD3DTotalFrameCpuP95Ms = previewD3DFlattening.CpuTiming.TotalFrameCpuP95Ms,
-            PreviewD3DTotalFrameCpuP99Ms = previewD3DFlattening.CpuTiming.TotalFrameCpuP99Ms,
-            PreviewD3DTotalFrameCpuMaxMs = previewD3DFlattening.CpuTiming.TotalFrameCpuMaxMs,
-            PreviewD3DPipelineLatencySampleCount = previewD3DFlattening.LatencyAndStats.PipelineLatencySampleCount,
-            PreviewD3DPipelineLatencyAvgMs = previewD3DFlattening.LatencyAndStats.PipelineLatencyAvgMs,
-            PreviewD3DPipelineLatencyP95Ms = previewD3DFlattening.LatencyAndStats.PipelineLatencyP95Ms,
-            PreviewD3DPipelineLatencyP99Ms = previewD3DFlattening.LatencyAndStats.PipelineLatencyP99Ms,
-            PreviewD3DPipelineLatencyMaxMs = previewD3DFlattening.LatencyAndStats.PipelineLatencyMaxMs,
-            PreviewD3DFrameLatencyWaitEnabled = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitEnabled,
-            PreviewD3DFrameLatencyWaitHandleActive = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitHandleActive,
-            PreviewD3DFrameLatencyWaitCallCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitCallCount,
-            PreviewD3DFrameLatencyWaitSignaledCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitSignaledCount,
-            PreviewD3DFrameLatencyWaitTimeoutCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitTimeoutCount,
-            PreviewD3DFrameLatencyWaitUnexpectedResultCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitUnexpectedResultCount,
-            PreviewD3DFrameLatencyWaitLastResult = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitLastResult,
-            PreviewD3DFrameLatencyWaitLastMs = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitLastMs,
-            PreviewD3DFrameLatencyWaitSampleCount = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitSampleCount,
-            PreviewD3DFrameLatencyWaitAvgMs = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitAvgMs,
-            PreviewD3DFrameLatencyWaitP95Ms = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitP95Ms,
-            PreviewD3DFrameLatencyWaitP99Ms = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitP99Ms,
-            PreviewD3DFrameLatencyWaitMaxMs = previewD3DFlattening.LatencyAndStats.FrameLatencyWaitMaxMs,
-            PreviewD3DFrameStatsSampleCount = previewD3DFlattening.LatencyAndStats.FrameStatsSampleCount,
-            PreviewD3DFrameStatsSuccessCount = previewD3DFlattening.LatencyAndStats.FrameStatsSuccessCount,
-            PreviewD3DFrameStatsFailureCount = previewD3DFlattening.LatencyAndStats.FrameStatsFailureCount,
-            PreviewD3DFrameStatsLastError = previewD3DFlattening.LatencyAndStats.FrameStatsLastError,
-            PreviewD3DFrameStatsPresentCount = previewD3DFlattening.LatencyAndStats.FrameStatsPresentCount,
-            PreviewD3DFrameStatsPresentRefreshCount = previewD3DFlattening.LatencyAndStats.FrameStatsPresentRefreshCount,
-            PreviewD3DFrameStatsSyncRefreshCount = previewD3DFlattening.LatencyAndStats.FrameStatsSyncRefreshCount,
-            PreviewD3DFrameStatsSyncQpcTime = previewD3DFlattening.LatencyAndStats.FrameStatsSyncQpcTime,
-            PreviewD3DFrameStatsLastPresentDelta = previewD3DFlattening.LatencyAndStats.FrameStatsLastPresentDelta,
-            PreviewD3DFrameStatsLastPresentRefreshDelta = previewD3DFlattening.LatencyAndStats.FrameStatsLastPresentRefreshDelta,
-            PreviewD3DFrameStatsLastSyncRefreshDelta = previewD3DFlattening.LatencyAndStats.FrameStatsLastSyncRefreshDelta,
-            PreviewD3DFrameStatsMissedRefreshCount = previewD3DFlattening.LatencyAndStats.FrameStatsMissedRefreshCount,
-            PreviewD3DFrameStatsRecentMissedRefreshCount = previewD3DFlattening.LatencyAndStats.FrameStatsRecentMissedRefreshCount,
-            PreviewD3DFrameStatsRecentFailureCount = previewD3DFlattening.LatencyAndStats.FrameStatsRecentFailureCount,
-            PreviewD3DLastSubmittedPreviewPresentId = previewD3DFlattening.FrameFlow.LastSubmittedPreviewPresentId,
-            PreviewD3DLastSubmittedSourceSequenceNumber = previewD3DFlattening.FrameFlow.LastSubmittedSourceSequenceNumber,
-            PreviewD3DLastSubmittedSourcePtsTicks = previewD3DFlattening.FrameFlow.LastSubmittedSourcePtsTicks,
-            PreviewD3DLastSubmittedQpc = previewD3DFlattening.FrameFlow.LastSubmittedQpc,
-            PreviewD3DLastSubmittedUtcUnixMs = previewD3DFlattening.FrameFlow.LastSubmittedUtcUnixMs,
-            PreviewD3DLastRenderedPreviewPresentId = previewD3DFlattening.FrameFlow.LastRenderedPreviewPresentId,
-            PreviewD3DLastRenderedSourceSequenceNumber = previewD3DFlattening.FrameFlow.LastRenderedSourceSequenceNumber,
-            PreviewD3DLastRenderedSourcePtsTicks = previewD3DFlattening.FrameFlow.LastRenderedSourcePtsTicks,
-            PreviewD3DLastRenderedQpc = previewD3DFlattening.FrameFlow.LastRenderedQpc,
-            PreviewD3DLastRenderedUtcUnixMs = previewD3DFlattening.FrameFlow.LastRenderedUtcUnixMs,
-            PreviewD3DLastRenderedSchedulerToPresentMs = previewD3DFlattening.FrameFlow.LastRenderedSchedulerToPresentMs,
-            PreviewD3DLastRenderedPipelineLatencyMs = previewD3DFlattening.FrameFlow.LastRenderedPipelineLatencyMs,
-            PreviewD3DLastDroppedPreviewPresentId = previewD3DFlattening.FrameFlow.LastDroppedPreviewPresentId,
-            PreviewD3DLastDroppedSourceSequenceNumber = previewD3DFlattening.FrameFlow.LastDroppedSourceSequenceNumber,
-            PreviewD3DLastDroppedSourcePtsTicks = previewD3DFlattening.FrameFlow.LastDroppedSourcePtsTicks,
-            PreviewD3DLastDroppedQpc = previewD3DFlattening.FrameFlow.LastDroppedQpc,
-            PreviewD3DLastDroppedUtcUnixMs = previewD3DFlattening.FrameFlow.LastDroppedUtcUnixMs,
-            PreviewD3DLastDropReason = previewD3DFlattening.FrameFlow.LastDropReason,
-            PreviewD3DRecentSlowFrames = previewD3DFlattening.FrameFlow.RecentSlowFrames,
-            PreviewGpuPlaybackState = previewRuntimeFlattening.GpuPlayback.PlaybackState,
-            PreviewGpuNaturalVideoWidth = previewRuntimeFlattening.GpuPlayback.NaturalVideoWidth,
-            PreviewGpuNaturalVideoHeight = previewRuntimeFlattening.GpuPlayback.NaturalVideoHeight,
-            PreviewGpuPositionMs = previewRuntimeFlattening.GpuPlayback.PositionMs,
-            PreviewGpuPositionEventCount = previewRuntimeFlattening.GpuPlayback.PositionEventCount,
-            PreviewHdrInputDetected = previewRuntimeFlattening.Color.HdrInputDetected,
-            PreviewToneMapMode = previewRuntimeFlattening.Color.ToneMapMode,
-            PreviewColorContext = previewRuntimeFlattening.Color.ColorContext,
-            ConversionQueueDepth = recordingPipelineFlattening.Ingest.ConversionQueueDepth,
-            FfmpegVideoQueueDepth = recordingPipelineFlattening.Ingest.FfmpegVideoQueueDepth,
-            FfmpegAudioQueueDepth = recordingPipelineFlattening.Ingest.FfmpegAudioQueueDepth,
-            VideoFramesArrived = recordingPipelineFlattening.Ingest.VideoFramesArrived,
-            VideoFramesQueued = recordingPipelineFlattening.Ingest.VideoFramesQueued,
-            VideoFramesDropped = recordingPipelineFlattening.Ingest.VideoFramesDropped,
-            VideoFramesDroppedBacklog = recordingPipelineFlattening.Ingest.VideoFramesDroppedBacklog,
-            VideoFramesConverted = recordingPipelineFlattening.Ingest.VideoFramesConverted,
-            VideoFramesEnqueued = recordingPipelineFlattening.Ingest.VideoFramesEnqueued,
-            VideoDropsQueueSaturated = recordingPipelineFlattening.Ingest.VideoDropsQueueSaturated,
-            VideoDropsBacklogEviction = recordingPipelineFlattening.Ingest.VideoDropsBacklogEviction,
-            RecordingEncodingFailed = recordingPipelineFlattening.Encoder.EncodingFailed,
-            RecordingEncodingFailureType = recordingPipelineFlattening.Encoder.EncodingFailureType,
-            RecordingEncodingFailureMessage = recordingPipelineFlattening.Encoder.EncodingFailureMessage,
-            RecordingVideoQueueCapacity = recordingPipelineFlattening.VideoQueue.Capacity,
-            RecordingVideoQueueMaxDepth = recordingPipelineFlattening.VideoQueue.MaxDepth,
-            RecordingVideoFramesSubmittedToEncoder = recordingPipelineFlattening.VideoQueue.FramesSubmittedToEncoder,
-            RecordingVideoEncoderPts = recordingPipelineFlattening.VideoQueue.EncoderPts,
-            RecordingVideoEncoderPacketsWritten = recordingPipelineFlattening.VideoQueue.EncoderPacketsWritten,
-            RecordingVideoEncoderDroppedFrames = recordingPipelineFlattening.VideoQueue.EncoderDroppedFrames,
-            RecordingVideoSequenceGaps = recordingPipelineFlattening.VideoQueue.SequenceGaps,
-            RecordingVideoQueueOldestFrameAgeMs = recordingPipelineFlattening.VideoQueue.OldestFrameAgeMs,
-            RecordingVideoQueueLastLatencyMs = recordingPipelineFlattening.VideoQueue.LastLatencyMs,
-            RecordingVideoQueueLatencySampleCount = recordingPipelineFlattening.VideoQueue.LatencySampleCount,
-            RecordingVideoQueueLatencyAvgMs = recordingPipelineFlattening.VideoQueue.LatencyAvgMs,
-            RecordingVideoQueueLatencyP95Ms = recordingPipelineFlattening.VideoQueue.LatencyP95Ms,
-            RecordingVideoQueueLatencyP99Ms = recordingPipelineFlattening.VideoQueue.LatencyP99Ms,
-            RecordingVideoQueueLatencyMaxMs = recordingPipelineFlattening.VideoQueue.LatencyMaxMs,
-            RecordingVideoBackpressureWaitMs = recordingPipelineFlattening.VideoQueue.BackpressureWaitMs,
-            RecordingVideoBackpressureEvents = recordingPipelineFlattening.VideoQueue.BackpressureEvents,
-            RecordingVideoBackpressureLastWaitMs = recordingPipelineFlattening.VideoQueue.BackpressureLastWaitMs,
-            RecordingVideoBackpressureMaxWaitMs = recordingPipelineFlattening.VideoQueue.BackpressureMaxWaitMs,
-            RecordingGpuQueueDepth = recordingPipelineFlattening.HardwareQueues.GpuQueueDepth,
-            RecordingGpuQueueCapacity = recordingPipelineFlattening.HardwareQueues.GpuQueueCapacity,
-            RecordingGpuQueueMaxDepth = recordingPipelineFlattening.HardwareQueues.GpuQueueMaxDepth,
-            RecordingGpuFramesEnqueued = recordingPipelineFlattening.HardwareQueues.GpuFramesEnqueued,
-            RecordingGpuFramesDropped = recordingPipelineFlattening.HardwareQueues.GpuFramesDropped,
-            RecordingCudaQueueDepth = recordingPipelineFlattening.HardwareQueues.CudaQueueDepth,
-            RecordingCudaQueueCapacity = recordingPipelineFlattening.HardwareQueues.CudaQueueCapacity,
-            RecordingCudaQueueMaxDepth = recordingPipelineFlattening.HardwareQueues.CudaQueueMaxDepth,
-            RecordingCudaFramesEnqueued = recordingPipelineFlattening.HardwareQueues.CudaFramesEnqueued,
-            RecordingCudaFramesDropped = recordingPipelineFlattening.HardwareQueues.CudaFramesDropped,
-            FlashbackEncodingFailed = flashbackRecordingFlattening.EncodingFailed,
-            FlashbackEncodingFailureType = flashbackRecordingFlattening.EncodingFailureType,
-            FlashbackEncodingFailureMessage = flashbackRecordingFlattening.EncodingFailureMessage,
-            FatalCleanupInProgress = flashbackRecordingFlattening.FatalCleanupInProgress,
-            FlashbackCleanupInProgress = flashbackRecordingFlattening.CleanupInProgress,
-            FlashbackForceRotateActive = flashbackRecordingFlattening.ForceRotateActive,
-            FlashbackForceRotateRequested = flashbackRecordingFlattening.ForceRotateRequested,
-            FlashbackForceRotateDraining = flashbackRecordingFlattening.ForceRotateDraining,
-            FlashbackTempDriveFreeBytes = flashbackRecordingFlattening.StartupCache.TempDriveFreeBytes,
-            FlashbackStartupCacheBudgetBytes = flashbackRecordingFlattening.StartupCache.BudgetBytes,
-            FlashbackStartupCacheBytes = flashbackRecordingFlattening.StartupCache.Bytes,
-            FlashbackStartupCacheSessionCount = flashbackRecordingFlattening.StartupCache.SessionCount,
-            FlashbackStartupCacheDeletedSessionCount = flashbackRecordingFlattening.StartupCache.DeletedSessionCount,
-            FlashbackStartupCacheFreedBytes = flashbackRecordingFlattening.StartupCache.FreedBytes,
-            FlashbackStartupCacheOverBudget = flashbackRecordingFlattening.StartupCache.OverBudget,
-            FlashbackVideoQueueCapacity = flashbackRecordingFlattening.Queues.VideoQueueCapacity,
-            FlashbackVideoQueueMaxDepth = flashbackRecordingFlattening.Queues.VideoQueueMaxDepth,
-            FlashbackVideoFramesSubmittedToEncoder = flashbackRecordingFlattening.Queues.VideoFramesSubmittedToEncoder,
-            FlashbackVideoEncoderPts = flashbackRecordingFlattening.Queues.VideoEncoderPts,
-            FlashbackVideoEncoderPacketsWritten = flashbackRecordingFlattening.Queues.VideoEncoderPacketsWritten,
-            FlashbackVideoEncoderDroppedFrames = flashbackRecordingFlattening.Queues.VideoEncoderDroppedFrames,
-            FlashbackVideoSequenceGaps = flashbackRecordingFlattening.Queues.VideoSequenceGaps,
-            FlashbackVideoQueueRejectedFrames = flashbackRecordingFlattening.Queues.VideoQueueRejectedFrames,
-            FlashbackVideoQueueLastRejectReason = flashbackRecordingFlattening.Queues.VideoQueueLastRejectReason,
-            FlashbackVideoQueueOldestFrameAgeMs = flashbackRecordingFlattening.Queues.VideoQueueOldestFrameAgeMs,
-            FlashbackVideoQueueLastLatencyMs = flashbackRecordingFlattening.Queues.VideoQueueLastLatencyMs,
-            FlashbackVideoQueueLatencySampleCount = flashbackRecordingFlattening.Queues.VideoQueueLatencySampleCount,
-            FlashbackVideoQueueLatencyAvgMs = flashbackRecordingFlattening.Queues.VideoQueueLatencyAvgMs,
-            FlashbackVideoQueueLatencyP95Ms = flashbackRecordingFlattening.Queues.VideoQueueLatencyP95Ms,
-            FlashbackVideoQueueLatencyP99Ms = flashbackRecordingFlattening.Queues.VideoQueueLatencyP99Ms,
-            FlashbackVideoQueueLatencyMaxMs = flashbackRecordingFlattening.Queues.VideoQueueLatencyMaxMs,
-            FlashbackVideoBackpressureWaitMs = flashbackRecordingFlattening.Queues.VideoBackpressureWaitMs,
-            FlashbackVideoBackpressureEvents = flashbackRecordingFlattening.Queues.VideoBackpressureEvents,
-            FlashbackVideoBackpressureLastWaitMs = flashbackRecordingFlattening.Queues.VideoBackpressureLastWaitMs,
-            FlashbackVideoBackpressureMaxWaitMs = flashbackRecordingFlattening.Queues.VideoBackpressureMaxWaitMs,
-            FlashbackGpuQueueDepth = flashbackRecordingFlattening.Queues.GpuQueueDepth,
-            FlashbackGpuQueueCapacity = flashbackRecordingFlattening.Queues.GpuQueueCapacity,
-            FlashbackGpuQueueMaxDepth = flashbackRecordingFlattening.Queues.GpuQueueMaxDepth,
-            FlashbackGpuFramesEnqueued = flashbackRecordingFlattening.Queues.GpuFramesEnqueued,
-            FlashbackGpuFramesDropped = flashbackRecordingFlattening.Queues.GpuFramesDropped,
-            FlashbackGpuQueueRejectedFrames = flashbackRecordingFlattening.Queues.GpuQueueRejectedFrames,
-            FlashbackGpuQueueLastRejectReason = flashbackRecordingFlattening.Queues.GpuQueueLastRejectReason,
-            AudioDropsQueueSaturated = audioDropsFlattening.QueueSaturated,
-            AudioDropsBacklogEviction = audioDropsFlattening.BacklogEviction,
-            AudioChunksDropped = audioDropsFlattening.ChunksDropped,
-            AudioQueueDropsRealtime = audioDropsFlattening.QueueDropsRealtime,
-            AudioQueueDropsFileWriter = audioDropsFlattening.QueueDropsFileWriter,
-            EstimatedPipelineLatencyMs = previewRuntimeFlattening.Frame.EstimatedPipelineLatencyMs,
-            ExpectedCaptureFrameRate = captureCadenceFlattening.ExpectedFrameRate,
-            CaptureCadenceSampleCount = captureCadenceFlattening.SampleCount,
-            CaptureCadenceObservedFps = captureCadenceFlattening.ObservedFps,
-            CaptureCadenceExpectedIntervalMs = captureCadenceFlattening.ExpectedIntervalMs,
-            CaptureCadenceAverageIntervalMs = captureCadenceFlattening.AverageIntervalMs,
-            CaptureCadenceP95IntervalMs = captureCadenceFlattening.P95IntervalMs,
-            CaptureCadenceP99IntervalMs = captureCadenceFlattening.P99IntervalMs,
-            CaptureCadenceMaxIntervalMs = captureCadenceFlattening.MaxIntervalMs,
-            CaptureCadenceOnePercentLowFps = captureCadenceFlattening.OnePercentLowFps,
-            CaptureCadenceFivePercentLowFps = captureCadenceFlattening.FivePercentLowFps,
-            CaptureCadenceSampleDurationMs = captureCadenceFlattening.SampleDurationMs,
-            CaptureCadenceRecentIntervalsMs = captureCadenceFlattening.RecentIntervalsMs,
-            CaptureCadenceJitterStdDevMs = captureCadenceFlattening.JitterStdDevMs,
-            CaptureCadenceSevereGapCount = captureCadenceFlattening.SevereGapCount,
-            CaptureCadenceEstimatedDroppedFrames = captureCadenceFlattening.EstimatedDroppedFrames,
-            CaptureCadenceEstimatedDropPercent = captureCadenceFlattening.EstimatedDropPercent,
-            MjpegDecodeSampleCount = mjpegTimingFlattening.DecodeSampleCount,
-            MjpegDecodeAvgMs = mjpegTimingFlattening.DecodeAvgMs,
-            MjpegDecodeP95Ms = mjpegTimingFlattening.DecodeP95Ms,
-            MjpegDecodeMaxMs = mjpegTimingFlattening.DecodeMaxMs,
-            MjpegInteropCopySampleCount = mjpegTimingFlattening.InteropCopySampleCount,
-            MjpegInteropCopyAvgMs = mjpegTimingFlattening.InteropCopyAvgMs,
-            MjpegInteropCopyP95Ms = mjpegTimingFlattening.InteropCopyP95Ms,
-            MjpegInteropCopyMaxMs = mjpegTimingFlattening.InteropCopyMaxMs,
-            MjpegCallbackSampleCount = mjpegTimingFlattening.CallbackSampleCount,
-            MjpegCallbackAvgMs = mjpegTimingFlattening.CallbackAvgMs,
-            MjpegCallbackP95Ms = mjpegTimingFlattening.CallbackP95Ms,
-            MjpegCallbackMaxMs = mjpegTimingFlattening.CallbackMaxMs,
-            MjpegDecoderCount = mjpegTimingFlattening.DecoderCount,
-            MjpegReorderSampleCount = mjpegTimingFlattening.ReorderSampleCount,
-            MjpegReorderAvgMs = mjpegTimingFlattening.ReorderAvgMs,
-            MjpegReorderP95Ms = mjpegTimingFlattening.ReorderP95Ms,
-            MjpegReorderMaxMs = mjpegTimingFlattening.ReorderMaxMs,
-            MjpegPipelineSampleCount = mjpegTimingFlattening.PipelineSampleCount,
-            MjpegPipelineAvgMs = mjpegTimingFlattening.PipelineAvgMs,
-            MjpegPipelineP95Ms = mjpegTimingFlattening.PipelineP95Ms,
-            MjpegPipelineMaxMs = mjpegTimingFlattening.PipelineMaxMs,
-            MjpegTotalDecoded = mjpegFlattening.TotalDecoded,
-            MjpegTotalEmitted = mjpegFlattening.TotalEmitted,
-            MjpegTotalDropped = mjpegFlattening.TotalDropped,
-            MjpegCompressedFramesQueued = mjpegFlattening.CompressedFramesQueued,
-            MjpegCompressedFramesDequeued = mjpegFlattening.CompressedFramesDequeued,
-            MjpegCompressedDropsQueueFull = mjpegFlattening.CompressedDropsQueueFull,
-            MjpegCompressedDropsByteBudget = mjpegFlattening.CompressedDropsByteBudget,
-            MjpegCompressedDropsDisposed = mjpegFlattening.CompressedDropsDisposed,
-            MjpegDecodeFailures = mjpegFlattening.DecodeFailures,
-            MjpegReorderCollisions = mjpegFlattening.ReorderCollisions,
-            MjpegEmitFailures = mjpegFlattening.EmitFailures,
-            MjpegCompressedQueueDepth = mjpegFlattening.CompressedQueueDepth,
-            MjpegCompressedQueueBytes = mjpegFlattening.CompressedQueueBytes,
-            MjpegCompressedQueueByteBudget = mjpegFlattening.CompressedQueueByteBudget,
-            MjpegReorderSkips = mjpegFlattening.ReorderSkips,
-            MjpegReorderBufferDepth = mjpegFlattening.ReorderBufferDepth,
-            MjpegPeakReorderDepth = mjpegFlattening.PeakReorderDepth,
-            MjpegPeakCompressedQueueBytes = mjpegFlattening.PeakCompressedQueueBytes,
-            MjpegReorderRingForceDrops = mjpegFlattening.ReorderRingForceDrops,
-            MjpegPreviewJitterEnabled = mjpegPreviewJitterFlattening.Queue.Enabled,
-            MjpegPreviewJitterTargetDepth = mjpegPreviewJitterFlattening.Queue.TargetDepth,
-            MjpegPreviewJitterMaxDepth = mjpegPreviewJitterFlattening.Queue.MaxDepth,
-            MjpegPreviewJitterQueueDepth = mjpegPreviewJitterFlattening.Queue.QueueDepth,
-            MjpegPreviewJitterTotalQueued = mjpegPreviewJitterFlattening.Queue.TotalQueued,
-            MjpegPreviewJitterTotalSubmitted = mjpegPreviewJitterFlattening.Queue.TotalSubmitted,
-            MjpegPreviewJitterTotalDropped = mjpegPreviewJitterFlattening.Queue.TotalDropped,
-            MjpegPreviewJitterUnderflowCount = mjpegPreviewJitterFlattening.Queue.UnderflowCount,
-            MjpegPreviewJitterResumeReprimeCount = mjpegPreviewJitterFlattening.Queue.ResumeReprimeCount,
-            MjpegPreviewJitterInputSampleCount = mjpegPreviewJitterFlattening.Timing.InputSampleCount,
-            MjpegPreviewJitterInputAvgMs = mjpegPreviewJitterFlattening.Timing.InputAvgMs,
-            MjpegPreviewJitterInputP95Ms = mjpegPreviewJitterFlattening.Timing.InputP95Ms,
-            MjpegPreviewJitterInputMaxMs = mjpegPreviewJitterFlattening.Timing.InputMaxMs,
-            MjpegPreviewJitterOutputSampleCount = mjpegPreviewJitterFlattening.Timing.OutputSampleCount,
-            MjpegPreviewJitterOutputAvgMs = mjpegPreviewJitterFlattening.Timing.OutputAvgMs,
-            MjpegPreviewJitterOutputP95Ms = mjpegPreviewJitterFlattening.Timing.OutputP95Ms,
-            MjpegPreviewJitterOutputMaxMs = mjpegPreviewJitterFlattening.Timing.OutputMaxMs,
-            MjpegPreviewJitterLatencySampleCount = mjpegPreviewJitterFlattening.Timing.LatencySampleCount,
-            MjpegPreviewJitterLatencyAvgMs = mjpegPreviewJitterFlattening.Timing.LatencyAvgMs,
-            MjpegPreviewJitterLatencyP95Ms = mjpegPreviewJitterFlattening.Timing.LatencyP95Ms,
-            MjpegPreviewJitterLatencyMaxMs = mjpegPreviewJitterFlattening.Timing.LatencyMaxMs,
-            MjpegPreviewJitterDeadlineDropCount = mjpegPreviewJitterFlattening.Adaptive.DeadlineDropCount,
-            MjpegPreviewJitterClearedDropCount = mjpegPreviewJitterFlattening.Adaptive.ClearedDropCount,
-            MjpegPreviewJitterTargetIncreaseCount = mjpegPreviewJitterFlattening.Adaptive.TargetIncreaseCount,
-            MjpegPreviewJitterTargetDecreaseCount = mjpegPreviewJitterFlattening.Adaptive.TargetDecreaseCount,
-            MjpegPreviewJitterLastSelectedPreviewPresentId = mjpegPreviewJitterFlattening.Events.LastSelectedPreviewPresentId,
-            MjpegPreviewJitterLastSelectedSourceSequenceNumber = mjpegPreviewJitterFlattening.Events.LastSelectedSourceSequenceNumber,
-            MjpegPreviewJitterLastSelectedQpc = mjpegPreviewJitterFlattening.Events.LastSelectedQpc,
-            MjpegPreviewJitterLastSelectedSourceLatencyMs = mjpegPreviewJitterFlattening.Events.LastSelectedSourceLatencyMs,
-            MjpegPreviewJitterLastDroppedSourceSequenceNumber = mjpegPreviewJitterFlattening.Events.LastDroppedSourceSequenceNumber,
-            MjpegPreviewJitterLastDropQpc = mjpegPreviewJitterFlattening.Events.LastDropQpc,
-            MjpegPreviewJitterLastDropReason = mjpegPreviewJitterFlattening.Events.LastDropReason,
-            MjpegPreviewJitterLastUnderflowQpc = mjpegPreviewJitterFlattening.Events.LastUnderflowQpc,
-            MjpegPreviewJitterLastUnderflowReason = mjpegPreviewJitterFlattening.Events.LastUnderflowReason,
-            MjpegPreviewJitterLastUnderflowQueueDepth = mjpegPreviewJitterFlattening.Events.LastUnderflowQueueDepth,
-            MjpegPreviewJitterLastUnderflowInputAgeMs = mjpegPreviewJitterFlattening.Events.LastUnderflowInputAgeMs,
-            MjpegPreviewJitterLastUnderflowOutputAgeMs = mjpegPreviewJitterFlattening.Events.LastUnderflowOutputAgeMs,
-            MjpegPreviewJitterLastScheduleLateMs = mjpegPreviewJitterFlattening.Events.LastScheduleLateMs,
-            MjpegPreviewJitterMaxScheduleLateMs = mjpegPreviewJitterFlattening.Events.MaxScheduleLateMs,
-            MjpegPreviewJitterScheduleLateCount = mjpegPreviewJitterFlattening.Events.ScheduleLateCount,
-            MjpegPacketHashSampleCount = mjpegPacketHashFlattening.SampleCount,
-            MjpegPacketHashUniqueFrameCount = mjpegPacketHashFlattening.UniqueFrameCount,
-            MjpegPacketHashDuplicateFrameCount = mjpegPacketHashFlattening.DuplicateFrameCount,
-            MjpegPacketHashLongestDuplicateRun = mjpegPacketHashFlattening.LongestDuplicateRun,
-            MjpegPacketHashInputObservedFps = mjpegPacketHashFlattening.InputObservedFps,
-            MjpegPacketHashUniqueObservedFps = mjpegPacketHashFlattening.UniqueObservedFps,
-            MjpegPacketHashDuplicateFramePercent = mjpegPacketHashFlattening.DuplicateFramePercent,
-            MjpegPacketHashLastHash = mjpegPacketHashFlattening.LastHash,
-            MjpegPacketHashLastFrameDuplicate = mjpegPacketHashFlattening.LastFrameDuplicate,
-            MjpegPacketHashPattern = mjpegPacketHashFlattening.Pattern,
-            MjpegPacketHashRecentInputIntervalsMs = mjpegPacketHashFlattening.RecentInputIntervalsMs,
-            MjpegPacketHashRecentUniqueIntervalsMs = mjpegPacketHashFlattening.RecentUniqueIntervalsMs,
-            MjpegPacketHashRecentDuplicateFlags = mjpegPacketHashFlattening.RecentDuplicateFlags,
-            VisualCadenceSampleCount = visualCadenceFlattening.SampleCount,
-            VisualCadenceChangedFrameCount = visualCadenceFlattening.ChangedFrameCount,
-            VisualCadenceRepeatFrameCount = visualCadenceFlattening.RepeatFrameCount,
-            VisualCadenceLongestRepeatRun = visualCadenceFlattening.LongestRepeatRun,
-            VisualCadenceOutputObservedFps = visualCadenceFlattening.OutputObservedFps,
-            VisualCadenceChangeObservedFps = visualCadenceFlattening.ChangeObservedFps,
-            VisualCadenceRepeatFramePercent = visualCadenceFlattening.RepeatFramePercent,
-            VisualCadenceLastDelta = visualCadenceFlattening.LastDelta,
-            VisualCadenceAverageDelta = visualCadenceFlattening.AverageDelta,
-            VisualCadenceP95Delta = visualCadenceFlattening.P95Delta,
-            VisualCadenceMotionScore = visualCadenceFlattening.MotionScore,
-            VisualCadenceMotionConfidence = visualCadenceFlattening.MotionConfidence,
-            VisualCadenceRecentOutputIntervalsMs = visualCadenceFlattening.RecentOutputIntervalsMs,
-            VisualCadenceRecentChangeIntervalsMs = visualCadenceFlattening.RecentChangeIntervalsMs,
-            VisualCenterCadenceSampleCount = visualCadenceFlattening.CenterSampleCount,
-            VisualCenterCadenceChangedFrameCount = visualCadenceFlattening.CenterChangedFrameCount,
-            VisualCenterCadenceRepeatFrameCount = visualCadenceFlattening.CenterRepeatFrameCount,
-            VisualCenterCadenceLongestRepeatRun = visualCadenceFlattening.CenterLongestRepeatRun,
-            VisualCenterCadenceOutputObservedFps = visualCadenceFlattening.CenterOutputObservedFps,
-            VisualCenterCadenceChangeObservedFps = visualCadenceFlattening.CenterChangeObservedFps,
-            VisualCenterCadenceRepeatFramePercent = visualCadenceFlattening.CenterRepeatFramePercent,
-            VisualCenterCadenceLastDelta = visualCadenceFlattening.CenterLastDelta,
-            VisualCenterCadenceAverageDelta = visualCadenceFlattening.CenterAverageDelta,
-            VisualCenterCadenceP95Delta = visualCadenceFlattening.CenterP95Delta,
-            VisualCenterCadenceMotionScore = visualCadenceFlattening.CenterMotionScore,
-            VisualCenterCadenceMotionConfidence = visualCadenceFlattening.CenterMotionConfidence,
-            VisualCenterCadenceRecentOutputIntervalsMs = visualCadenceFlattening.CenterRecentOutputIntervalsMs,
-            VisualCenterCadenceRecentChangeIntervalsMs = visualCadenceFlattening.CenterRecentChangeIntervalsMs,
-            MjpegPerDecoder = mjpegTimingFlattening.PerDecoder,
-            RecordingVideoBytes = recordingOutputFlattening.RecordingVideoBytes,
-            RecordingAudioBytes = recordingOutputFlattening.RecordingAudioBytes,
-            RecordingTotalBytes = recordingOutputFlattening.RecordingTotalBytes,
-            RecordingFileGrowing = recordingOutputFlattening.RecordingFileGrowing,
-            LastOutputPath = recordingOutputFlattening.LastOutputPath,
-            LastFinalizeStatus = recordingOutputFlattening.LastFinalizeStatus,
-            LastFinalizeUtc = recordingOutputFlattening.LastFinalizeUtc,
-            RecordingLifecyclePhase = recordingOutputFlattening.RecordingLifecyclePhase,
-            RecordingFinalizeOutcome = recordingOutputFlattening.RecordingFinalizeOutcome,
-            RecordingFinalizeFailureCode = recordingOutputFlattening.RecordingFinalizeFailureCode,
-            RecordingFinalizationVerificationCompleted = recordingOutputFlattening.RecordingFinalizationVerificationCompleted,
-            RecordingFinalizationCleanupPending = recordingOutputFlattening.RecordingFinalizationCleanupPending,
-            RecordingFinalizationElapsedMs = recordingOutputFlattening.RecordingFinalizationElapsedMs,
-            RecordingRecoveryPath = recordingOutputFlattening.RecordingRecoveryPath,
-            RecordingRequestedTracks = recordingOutputFlattening.RecordingRequestedTracks,
-            RecordingObservedTracks = recordingOutputFlattening.RecordingObservedTracks,
-            LastPreservedArtifacts = recordingOutputFlattening.LastPreservedArtifacts,
-            RecordingFinalizationProgressStage = recordingOutputFlattening.RecordingFinalizationProgressStage,
-            LastRecordingFinalizationProgressUtc = recordingOutputFlattening.LastRecordingFinalizationProgressUtc,
-            LastOutputExists = recordingOutputFlattening.LastOutputExists,
-            LastOutputSizeBytes = recordingOutputFlattening.LastOutputSizeBytes,
-            LastVerification = recordingOutputFlattening.LastVerification,
-            HdrTruthVerdict = hdrPipelineFlattening.TruthVerdict,
-            MemoryWorkingSetMb = processResourceFlattening.MemoryWorkingSetMb,
-            MemoryPrivateBytesMb = processResourceFlattening.MemoryPrivateBytesMb,
-            MemoryManagedHeapMb = processResourceFlattening.MemoryManagedHeapMb,
-            MemoryTotalAllocatedMb = processResourceFlattening.MemoryTotalAllocatedMb,
-            ProcessCpuPercent = processResourceFlattening.ProcessCpuPercent,
-            ProcessCpuTotalProcessorTimeMs = processResourceFlattening.ProcessCpuTotalProcessorTimeMs,
-            MemoryGcHeapSizeMb = processResourceFlattening.MemoryGcHeapSizeMb,
-            MemoryGcGen0Collections = processResourceFlattening.MemoryGcGen0Collections,
-            MemoryGcGen1Collections = processResourceFlattening.MemoryGcGen1Collections,
-            MemoryGcGen2Collections = processResourceFlattening.MemoryGcGen2Collections,
-            MemoryGcPauseTimePercent = processResourceFlattening.MemoryGcPauseTimePercent,
-            MemoryGcFragmentationPercent = processResourceFlattening.MemoryGcFragmentationPercent,
-            ThreadPoolWorkerAvailable = processResourceFlattening.ThreadPoolWorkerAvailable,
-            ThreadPoolWorkerMax = processResourceFlattening.ThreadPoolWorkerMax,
-            ThreadPoolIoAvailable = processResourceFlattening.ThreadPoolIoAvailable,
-            ThreadPoolIoMax = processResourceFlattening.ThreadPoolIoMax,
-            AvSyncCaptureDriftMs = avSyncFlattening.CaptureDriftMs,
-            AvSyncCaptureDriftRateMsPerSec = avSyncFlattening.CaptureDriftRateMsPerSec,
-            AvSyncEncoderDriftMs = avSyncFlattening.EncoderDriftMs,
-            AvSyncEncoderCorrectionSamples = avSyncFlattening.EncoderCorrectionSamples,
-            FlashbackActive = flashbackRecordingFlattening.Runtime.Active,
-            FlashbackBufferedDurationMs = flashbackRecordingFlattening.Runtime.BufferedDurationMs,
-            FlashbackDiskBytes = flashbackRecordingFlattening.Runtime.DiskBytes,
-            FlashbackTotalBytesWritten = flashbackRecordingFlattening.Runtime.TotalBytesWritten,
-            FlashbackOutputBytes = flashbackRecordingFlattening.Runtime.OutputBytes,
-            FlashbackFilePath = flashbackRecordingFlattening.Runtime.FilePath,
-            FlashbackEncodedFrames = flashbackRecordingFlattening.Runtime.EncodedFrames,
-            FlashbackDroppedFrames = flashbackRecordingFlattening.Runtime.DroppedFrames,
-            FlashbackGpuEncoding = flashbackRecordingFlattening.Runtime.GpuEncoding,
-            FlashbackBackendSettingsStale = flashbackRecordingFlattening.Backend.SettingsStale,
-            FlashbackBackendSettingsStaleReason = flashbackRecordingFlattening.Backend.SettingsStaleReason,
-            FlashbackBackendActiveFormat = flashbackRecordingFlattening.Backend.ActiveFormat,
-            FlashbackBackendRequestedFormat = flashbackRecordingFlattening.Backend.RequestedFormat,
-            FlashbackBackendActivePreset = flashbackRecordingFlattening.Backend.ActivePreset,
-            FlashbackBackendRequestedPreset = flashbackRecordingFlattening.Backend.RequestedPreset,
-            FlashbackExportVerificationFormat = flashbackRecordingFlattening.Backend.ExportVerificationFormat,
-            FlashbackCodecDowngradeReason = flashbackRecordingFlattening.Backend.CodecDowngradeReason,
-            EncoderCodecName = flashbackRecordingFlattening.Encoder.CodecName,
-            EncoderTargetBitRate = flashbackRecordingFlattening.Encoder.TargetBitRate,
-            EncoderWidth = flashbackRecordingFlattening.Encoder.Width,
-            EncoderHeight = flashbackRecordingFlattening.Encoder.Height,
-            EncoderFrameRate = flashbackRecordingFlattening.Encoder.FrameRate,
-            EncoderFrameRateNumerator = flashbackRecordingFlattening.Encoder.FrameRateNumerator,
-            EncoderFrameRateDenominator = flashbackRecordingFlattening.Encoder.FrameRateDenominator,
-            FlashbackVideoQueueDepth = flashbackRecordingFlattening.Queues.VideoQueueDepth,
-            FlashbackAudioQueueDepth = flashbackRecordingFlattening.Queues.AudioQueueDepth,
-            FlashbackAudioQueueCapacity = flashbackRecordingFlattening.Queues.AudioQueueCapacity,
-            FlashbackPlaybackState = flashbackPlaybackFlattening.State,
-            FlashbackPlaybackPositionMs = flashbackPlaybackFlattening.PositionMs,
-            FlashbackDecoderHwAccel = flashbackPlaybackFlattening.DecoderHwAccel,
-            FlashbackPlaybackFrameCount = flashbackPlaybackFlattening.FrameCount,
-            FlashbackPlaybackLateFrames = flashbackPlaybackFlattening.LateFrames,
-            FlashbackPlaybackDroppedFrames = flashbackPlaybackFlattening.DroppedFrames,
-            FlashbackPlaybackAudioMasterDelayDoubles = flashbackPlaybackFlattening.AudioMaster.DelayDoubles,
-            FlashbackPlaybackAudioMasterDelayShrinks = flashbackPlaybackFlattening.AudioMaster.DelayShrinks,
-            FlashbackPlaybackAudioMasterFallbacks = flashbackPlaybackFlattening.AudioMaster.Fallbacks,
-            FlashbackPlaybackAudioMasterUnavailableFallbacks = flashbackPlaybackFlattening.AudioMaster.UnavailableFallbacks,
-            FlashbackPlaybackAudioMasterStaleFallbacks = flashbackPlaybackFlattening.AudioMaster.StaleFallbacks,
-            FlashbackPlaybackAudioMasterDriftOutlierFallbacks = flashbackPlaybackFlattening.AudioMaster.DriftOutlierFallbacks,
-            FlashbackPlaybackAudioMasterLastFallbackReason = flashbackPlaybackFlattening.AudioMaster.LastFallbackReason,
-            FlashbackPlaybackAudioMasterLastFallbackDriftMs = flashbackPlaybackFlattening.AudioMaster.LastFallbackDriftMs,
-            FlashbackPlaybackAudioMasterLastFallbackClockAgeMs = flashbackPlaybackFlattening.AudioMaster.LastFallbackClockAgeMs,
-            FlashbackPlaybackSegmentSwitches = flashbackPlaybackFlattening.Timing.SegmentSwitches,
-            FlashbackPlaybackFmp4Reopens = flashbackPlaybackFlattening.Timing.Fmp4Reopens,
-            FlashbackPlaybackWriteHeadWaits = flashbackPlaybackFlattening.Timing.WriteHeadWaits,
-            FlashbackPlaybackNearLiveSnaps = flashbackPlaybackFlattening.Timing.NearLiveSnaps,
-            FlashbackPlaybackDecodeErrorSnaps = flashbackPlaybackFlattening.Timing.DecodeErrorSnaps,
-            FlashbackPlaybackSubmitFailures = flashbackPlaybackFlattening.Timing.SubmitFailures,
-            FlashbackPlaybackLastDropUtcUnixMs = flashbackPlaybackFlattening.Timing.LastDropUtcUnixMs,
-            FlashbackPlaybackLastDropReason = flashbackPlaybackFlattening.Timing.LastDropReason,
-            FlashbackPlaybackLastSubmitFailureUtcUnixMs = flashbackPlaybackFlattening.Timing.LastSubmitFailureUtcUnixMs,
-            FlashbackPlaybackLastSubmitFailure = flashbackPlaybackFlattening.Timing.LastSubmitFailure,
-            FlashbackPlaybackLastSegmentSwitchUtcUnixMs = flashbackPlaybackFlattening.Timing.LastSegmentSwitchUtcUnixMs,
-            FlashbackPlaybackLastFmp4ReopenUtcUnixMs = flashbackPlaybackFlattening.Timing.LastFmp4ReopenUtcUnixMs,
-            FlashbackPlaybackLastWriteHeadWaitGapMs = flashbackPlaybackFlattening.Timing.LastWriteHeadWaitGapMs,
-            FlashbackPlaybackTargetFps = flashbackPlaybackFlattening.Timing.TargetFps,
-            FlashbackPlaybackObservedFps = flashbackPlaybackFlattening.Timing.ObservedFps,
-            FlashbackPlaybackAvgFrameMs = flashbackPlaybackFlattening.Timing.AvgFrameMs,
-            FlashbackPlaybackCadenceSampleCount = flashbackPlaybackFlattening.Timing.CadenceSampleCount,
-            FlashbackPlaybackP95FrameMs = flashbackPlaybackFlattening.Timing.P95FrameMs,
-            FlashbackPlaybackP99FrameMs = flashbackPlaybackFlattening.Timing.P99FrameMs,
-            FlashbackPlaybackMaxFrameMs = flashbackPlaybackFlattening.Timing.MaxFrameMs,
-            FlashbackPlaybackSlowFrames = flashbackPlaybackFlattening.Timing.SlowFrames,
-            FlashbackPlaybackSlowFramePercent = flashbackPlaybackFlattening.Timing.SlowFramePercent,
-            FlashbackPlaybackOnePercentLowFps = flashbackPlaybackFlattening.Timing.OnePercentLowFps,
-            FlashbackPlaybackFivePercentLowFps = flashbackPlaybackFlattening.Timing.FivePercentLowFps,
-            FlashbackPlaybackSampleDurationMs = flashbackPlaybackFlattening.Timing.SampleDurationMs,
-            FlashbackPlaybackRecentFrameIntervalsMs = flashbackPlaybackFlattening.Timing.RecentFrameIntervalsMs,
-            FlashbackPlaybackPtsCadenceMismatchCount = flashbackPlaybackFlattening.Timing.PtsCadenceMismatchCount,
-            FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs = flashbackPlaybackFlattening.Timing.LastPtsCadenceMismatchUtcUnixMs,
-            FlashbackPlaybackLastPtsCadenceDeltaMs = flashbackPlaybackFlattening.Timing.LastPtsCadenceDeltaMs,
-            FlashbackPlaybackLastPtsCadenceExpectedMs = flashbackPlaybackFlattening.Timing.LastPtsCadenceExpectedMs,
-            FlashbackPlaybackSeekForwardDecodeCapHits = flashbackPlaybackFlattening.Decode.SeekForwardDecodeCapHits,
-            FlashbackPlaybackLastSeekHitForwardDecodeCap = flashbackPlaybackFlattening.Decode.LastSeekHitForwardDecodeCap,
-            FlashbackPlaybackDecodeSampleCount = flashbackPlaybackFlattening.Decode.SampleCount,
-            FlashbackPlaybackDecodeAvgMs = flashbackPlaybackFlattening.Decode.AvgMs,
-            FlashbackPlaybackDecodeP95Ms = flashbackPlaybackFlattening.Decode.P95Ms,
-            FlashbackPlaybackDecodeP99Ms = flashbackPlaybackFlattening.Decode.P99Ms,
-            FlashbackPlaybackDecodeMaxMs = flashbackPlaybackFlattening.Decode.MaxMs,
-            FlashbackPlaybackMaxDecodePhase = flashbackPlaybackFlattening.Decode.MaxPhase,
-            FlashbackPlaybackMaxDecodeReceiveMs = flashbackPlaybackFlattening.Decode.MaxReceiveMs,
-            FlashbackPlaybackMaxDecodeFeedMs = flashbackPlaybackFlattening.Decode.MaxFeedMs,
-            FlashbackPlaybackMaxDecodeReadMs = flashbackPlaybackFlattening.Decode.MaxReadMs,
-            FlashbackPlaybackMaxDecodeSendMs = flashbackPlaybackFlattening.Decode.MaxSendMs,
-            FlashbackPlaybackMaxDecodeAudioMs = flashbackPlaybackFlattening.Decode.MaxAudioMs,
-            FlashbackPlaybackMaxDecodeConvertMs = flashbackPlaybackFlattening.Decode.MaxConvertMs,
-            FlashbackPlaybackMaxDecodeUtcUnixMs = flashbackPlaybackFlattening.Decode.MaxUtcUnixMs,
-            FlashbackPlaybackMaxDecodePositionMs = flashbackPlaybackFlattening.Decode.MaxPositionMs,
-            FlashbackAvDriftMs = flashbackPlaybackFlattening.Timing.AvDriftMs,
-            FlashbackPlaybackThreadAlive = flashbackPlaybackFlattening.Commands.ThreadAlive,
-            FlashbackPlaybackCommandsEnqueued = flashbackPlaybackFlattening.Commands.Enqueued,
-            FlashbackPlaybackCommandsProcessed = flashbackPlaybackFlattening.Commands.Processed,
-            FlashbackPlaybackCommandsDropped = flashbackPlaybackFlattening.Commands.Dropped,
-            FlashbackPlaybackCommandsSkippedNotReady = flashbackPlaybackFlattening.Commands.SkippedNotReady,
-            FlashbackPlaybackScrubUpdatesCoalesced = flashbackPlaybackFlattening.Commands.ScrubUpdatesCoalesced,
-            FlashbackPlaybackSeekCommandsCoalesced = flashbackPlaybackFlattening.Commands.SeekCommandsCoalesced,
-            FlashbackPlaybackCommandQueueCapacity = flashbackPlaybackFlattening.Commands.QueueCapacity,
-            FlashbackPlaybackPendingCommands = flashbackPlaybackFlattening.Commands.Pending,
-            FlashbackPlaybackMaxPendingCommands = flashbackPlaybackFlattening.Commands.MaxPending,
-            FlashbackPlaybackLastCommandQueueLatencyMs = flashbackPlaybackFlattening.Commands.LastQueueLatencyMs,
-            FlashbackPlaybackMaxCommandQueueLatencyMs = flashbackPlaybackFlattening.Commands.MaxQueueLatencyMs,
-            FlashbackPlaybackMaxCommandQueueLatencyCommand = flashbackPlaybackFlattening.Commands.MaxQueueLatencyCommand,
-            FlashbackPlaybackLastCommandQueued = flashbackPlaybackFlattening.Commands.LastQueued,
-            FlashbackPlaybackLastCommandProcessed = flashbackPlaybackFlattening.Commands.LastProcessed,
-            FlashbackPlaybackLastCommandQueuedUtcUnixMs = flashbackPlaybackFlattening.Commands.LastQueuedUtcUnixMs,
-            FlashbackPlaybackLastCommandProcessedUtcUnixMs = flashbackPlaybackFlattening.Commands.LastProcessedUtcUnixMs,
-            FlashbackPlaybackLastCommandFailureUtcUnixMs = flashbackPlaybackFlattening.Commands.LastFailureUtcUnixMs,
-            FlashbackPlaybackLastCommandFailure = flashbackPlaybackFlattening.Commands.LastFailure,
-            FlashbackExportActive = flashbackExportFlattening.Active,
-            FlashbackExportId = flashbackExportFlattening.Id,
-            FlashbackExportStatus = flashbackExportFlattening.Status,
-            FlashbackExportOutputPath = flashbackExportFlattening.OutputPath,
-            FlashbackExportStartedUtcUnixMs = flashbackExportFlattening.StartedUtcUnixMs,
-            FlashbackExportLastProgressUtcUnixMs = flashbackExportFlattening.LastProgressUtcUnixMs,
-            FlashbackExportCompletedUtcUnixMs = flashbackExportFlattening.CompletedUtcUnixMs,
-            FlashbackExportElapsedMs = flashbackExportFlattening.ElapsedMs,
-            FlashbackExportLastProgressAgeMs = flashbackExportFlattening.LastProgressAgeMs,
-            FlashbackExportOutputBytes = flashbackExportFlattening.OutputBytes,
-            FlashbackExportThroughputBytesPerSec = flashbackExportFlattening.ThroughputBytesPerSec,
-            FlashbackExportSegmentsProcessed = flashbackExportFlattening.SegmentsProcessed,
-            FlashbackExportTotalSegments = flashbackExportFlattening.TotalSegments,
-            FlashbackExportPercent = flashbackExportFlattening.Percent,
-            FlashbackExportInPointMs = flashbackExportFlattening.InPointMs,
-            FlashbackExportOutPointMs = flashbackExportFlattening.OutPointMs,
-            FlashbackExportMessage = flashbackExportFlattening.Message,
-            FlashbackExportFailureKind = flashbackExportFlattening.FailureKind,
-            FlashbackExportForceRotateFallbacks = flashbackExportFlattening.ForceRotateFallbacks,
-            FlashbackExportLastForceRotateFallbackUtcUnixMs = flashbackExportFlattening.LastForceRotateFallbackUtcUnixMs,
-            FlashbackExportLastForceRotateFallbackSegments = flashbackExportFlattening.LastForceRotateFallbackSegments,
-            FlashbackExportLastForceRotateFallbackInPointMs = flashbackExportFlattening.LastForceRotateFallbackInPointMs,
-            FlashbackExportLastForceRotateFallbackOutPointMs = flashbackExportFlattening.LastForceRotateFallbackOutPointMs,
-            LastExportId = flashbackExportFlattening.LastExportId,
-            LastExportPath = flashbackExportFlattening.LastExportPath,
-            LastExportSuccess = flashbackExportFlattening.LastExportSuccess,
-            LastExportMessage = flashbackExportFlattening.LastExportMessage
-        };
-    }
-
     private static CaptureFormatProjection BuildCaptureFormatProjection(CaptureRuntimeSnapshot captureRuntime)
         => new()
         {
@@ -2107,18 +1493,6 @@ public sealed partial class AutomationDiagnosticsHub
             Negotiated = BuildCaptureFormatNegotiatedProjection(captureRuntime),
             ReaderObservation = BuildCaptureFormatReaderObservationProjection(captureRuntime),
             Encoder = BuildCaptureFormatEncoderProjection(captureRuntime)
-        };
-
-    private static CaptureFormatFlattenedProjection BuildCaptureFormatFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            Requested = BuildCaptureFormatRequestedFlattenedProjection(captureFormat),
-            HdrRequest = BuildCaptureFormatHdrRequestFlattenedProjection(captureFormat),
-            Actual = BuildCaptureFormatActualFlattenedProjection(captureFormat),
-            Negotiated = BuildCaptureFormatNegotiatedFlattenedProjection(captureFormat),
-            ReaderObservation = BuildCaptureFormatReaderObservationFlattenedProjection(captureFormat),
-            Encoder = BuildCaptureFormatEncoderFlattenedProjection(captureFormat)
         };
 
     private readonly record struct CaptureFormatProjection
@@ -2148,41 +1522,7 @@ public sealed partial class AutomationDiagnosticsHub
             AudioEnabled = captureRuntime.RequestedAudioEnabled
         };
 
-    private static CaptureFormatRequestedFlattenedProjection BuildCaptureFormatRequestedFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            Width = captureFormat.Requested.Width,
-            Height = captureFormat.Requested.Height,
-            FrameRate = captureFormat.Requested.FrameRate,
-            FrameRateArg = captureFormat.Requested.FrameRateArg,
-            FrameRateNumerator = captureFormat.Requested.FrameRateNumerator,
-            FrameRateDenominator = captureFormat.Requested.FrameRateDenominator,
-            PixelFormat = captureFormat.Requested.PixelFormat,
-            Format = captureFormat.Requested.Format,
-            Quality = captureFormat.Requested.Quality,
-            HdrEnabled = captureFormat.Requested.HdrEnabled,
-            HdrMasteringMetadata = captureFormat.Requested.HdrMasteringMetadata,
-            AudioEnabled = captureFormat.Requested.AudioEnabled
-        };
-
     private readonly record struct CaptureFormatRequestedProjection
-    {
-        public uint? Width { get; init; }
-        public uint? Height { get; init; }
-        public double? FrameRate { get; init; }
-        public string? FrameRateArg { get; init; }
-        public uint? FrameRateNumerator { get; init; }
-        public uint? FrameRateDenominator { get; init; }
-        public string? PixelFormat { get; init; }
-        public string? Format { get; init; }
-        public string? Quality { get; init; }
-        public bool? HdrEnabled { get; init; }
-        public bool? HdrMasteringMetadata { get; init; }
-        public bool? AudioEnabled { get; init; }
-    }
-
-    private readonly record struct CaptureFormatRequestedFlattenedProjection
     {
         public uint? Width { get; init; }
         public uint? Height { get; init; }
@@ -2207,25 +1547,7 @@ public sealed partial class AutomationDiagnosticsHub
             RequestedButSourceNot10Bit = captureRuntime.HdrRequestedButSourceNot10Bit
         };
 
-    private static CaptureFormatHdrRequestFlattenedProjection BuildCaptureFormatHdrRequestFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            ActivationReason = captureFormat.HdrRequest.ActivationReason,
-            AutoDowngraded = captureFormat.HdrRequest.AutoDowngraded,
-            AutoDowngradeReason = captureFormat.HdrRequest.AutoDowngradeReason,
-            RequestedButSourceNot10Bit = captureFormat.HdrRequest.RequestedButSourceNot10Bit
-        };
-
     private readonly record struct CaptureFormatHdrRequestProjection
-    {
-        public string ActivationReason { get; init; }
-        public bool AutoDowngraded { get; init; }
-        public string AutoDowngradeReason { get; init; }
-        public bool RequestedButSourceNot10Bit { get; init; }
-    }
-
-    private readonly record struct CaptureFormatHdrRequestFlattenedProjection
     {
         public string ActivationReason { get; init; }
         public bool AutoDowngraded { get; init; }
@@ -2242,25 +1564,7 @@ public sealed partial class AutomationDiagnosticsHub
             FrameRateArg = captureRuntime.ActualFrameRateArg
         };
 
-    private static CaptureFormatActualFlattenedProjection BuildCaptureFormatActualFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            Width = captureFormat.Actual.Width,
-            Height = captureFormat.Actual.Height,
-            FrameRate = captureFormat.Actual.FrameRate,
-            FrameRateArg = captureFormat.Actual.FrameRateArg
-        };
-
     private readonly record struct CaptureFormatActualProjection
-    {
-        public uint? Width { get; init; }
-        public uint? Height { get; init; }
-        public double? FrameRate { get; init; }
-        public string? FrameRateArg { get; init; }
-    }
-
-    private readonly record struct CaptureFormatActualFlattenedProjection
     {
         public uint? Width { get; init; }
         public uint? Height { get; init; }
@@ -2281,33 +1585,7 @@ public sealed partial class AutomationDiagnosticsHub
             MediaSubtypeToken = captureRuntime.NegotiatedMediaSubtypeToken
         };
 
-    private static CaptureFormatNegotiatedFlattenedProjection BuildCaptureFormatNegotiatedFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            Width = captureFormat.Negotiated.Width,
-            Height = captureFormat.Negotiated.Height,
-            FrameRate = captureFormat.Negotiated.FrameRate,
-            FrameRateArg = captureFormat.Negotiated.FrameRateArg,
-            FrameRateNumerator = captureFormat.Negotiated.FrameRateNumerator,
-            FrameRateDenominator = captureFormat.Negotiated.FrameRateDenominator,
-            PixelFormat = captureFormat.Negotiated.PixelFormat,
-            MediaSubtypeToken = captureFormat.Negotiated.MediaSubtypeToken
-        };
-
     private readonly record struct CaptureFormatNegotiatedProjection
-    {
-        public uint? Width { get; init; }
-        public uint? Height { get; init; }
-        public double? FrameRate { get; init; }
-        public string? FrameRateArg { get; init; }
-        public uint? FrameRateNumerator { get; init; }
-        public uint? FrameRateDenominator { get; init; }
-        public string? PixelFormat { get; init; }
-        public string? MediaSubtypeToken { get; init; }
-    }
-
-    private readonly record struct CaptureFormatNegotiatedFlattenedProjection
     {
         public uint? Width { get; init; }
         public uint? Height { get; init; }
@@ -2337,43 +1615,7 @@ public sealed partial class AutomationDiagnosticsHub
             MfReadwriteDisableConverters = captureRuntime.MfReadwriteDisableConverters
         };
 
-    private static CaptureFormatReaderObservationFlattenedProjection BuildCaptureFormatReaderObservationFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            RequestedReaderSubtype = captureFormat.ReaderObservation.RequestedReaderSubtype,
-            ReaderSourceStreamType = captureFormat.ReaderObservation.ReaderSourceStreamType,
-            ReaderSourceSubtype = captureFormat.ReaderObservation.ReaderSourceSubtype,
-            FirstObservedFramePixelFormat = captureFormat.ReaderObservation.FirstObservedFramePixelFormat,
-            LatestObservedFramePixelFormat = captureFormat.ReaderObservation.LatestObservedFramePixelFormat,
-            LatestObservedSurfaceFormat = captureFormat.ReaderObservation.LatestObservedSurfaceFormat,
-            ObservedP010FrameCount = captureFormat.ReaderObservation.ObservedP010FrameCount,
-            ObservedNv12FrameCount = captureFormat.ReaderObservation.ObservedNv12FrameCount,
-            ObservedOtherFrameCount = captureFormat.ReaderObservation.ObservedOtherFrameCount,
-            ObservedP010BitDepthSampleCount = captureFormat.ReaderObservation.ObservedP010BitDepthSampleCount,
-            ObservedP010Low2BitNonZeroPercent = captureFormat.ReaderObservation.ObservedP010Low2BitNonZeroPercent,
-            ObservedP010Likely8BitUpscaled = captureFormat.ReaderObservation.ObservedP010Likely8BitUpscaled,
-            MfReadwriteDisableConverters = captureFormat.ReaderObservation.MfReadwriteDisableConverters
-        };
-
     private readonly record struct CaptureFormatReaderObservationProjection
-    {
-        public string? RequestedReaderSubtype { get; init; }
-        public string? ReaderSourceStreamType { get; init; }
-        public string? ReaderSourceSubtype { get; init; }
-        public string? FirstObservedFramePixelFormat { get; init; }
-        public string? LatestObservedFramePixelFormat { get; init; }
-        public string? LatestObservedSurfaceFormat { get; init; }
-        public long ObservedP010FrameCount { get; init; }
-        public long ObservedNv12FrameCount { get; init; }
-        public long ObservedOtherFrameCount { get; init; }
-        public long ObservedP010BitDepthSampleCount { get; init; }
-        public double ObservedP010Low2BitNonZeroPercent { get; init; }
-        public bool? ObservedP010Likely8BitUpscaled { get; init; }
-        public bool? MfReadwriteDisableConverters { get; init; }
-    }
-
-    private readonly record struct CaptureFormatReaderObservationFlattenedProjection
     {
         public string? RequestedReaderSubtype { get; init; }
         public string? ReaderSourceStreamType { get; init; }
@@ -2400,27 +1642,7 @@ public sealed partial class AutomationDiagnosticsHub
             TenBitPipelineConfirmed = captureRuntime.EncoderTenBitPipelineConfirmed
         };
 
-    private static CaptureFormatEncoderFlattenedProjection BuildCaptureFormatEncoderFlattenedProjection(
-        CaptureFormatProjection captureFormat)
-        => new()
-        {
-            InputPixelFormat = captureFormat.Encoder.InputPixelFormat,
-            OutputPixelFormat = captureFormat.Encoder.OutputPixelFormat,
-            VideoCodec = captureFormat.Encoder.VideoCodec,
-            VideoProfile = captureFormat.Encoder.VideoProfile,
-            TenBitPipelineConfirmed = captureFormat.Encoder.TenBitPipelineConfirmed
-        };
-
     private readonly record struct CaptureFormatEncoderProjection
-    {
-        public string? InputPixelFormat { get; init; }
-        public string? OutputPixelFormat { get; init; }
-        public string? VideoCodec { get; init; }
-        public string? VideoProfile { get; init; }
-        public bool? TenBitPipelineConfirmed { get; init; }
-    }
-
-    private readonly record struct CaptureFormatEncoderFlattenedProjection
     {
         public string? InputPixelFormat { get; init; }
         public string? OutputPixelFormat { get; init; }
@@ -2450,40 +1672,6 @@ public sealed partial class AutomationDiagnosticsHub
         public long FrameLedgerEventCount { get; init; }
         public long FrameLedgerDroppedEventCount { get; init; }
         public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; }
-    }
-
-    private static CaptureTransportFlattenedProjection BuildCaptureTransportFlattenedProjection(
-        CaptureTransportProjection captureTransport)
-        => new()
-        {
-            MemoryPreference = captureTransport.MemoryPreference,
-            VideoRequestedSubtype = captureTransport.VideoRequestedSubtype,
-            VideoNegotiatedSubtype = captureTransport.VideoNegotiatedSubtype,
-            FrameLedgerCapacity = captureTransport.FrameLedgerCapacity,
-            FrameLedgerEventCount = captureTransport.FrameLedgerEventCount,
-            FrameLedgerDroppedEventCount = captureTransport.FrameLedgerDroppedEventCount,
-            FrameLedgerRecentEvents = captureTransport.FrameLedgerRecentEvents
-        };
-
-    private readonly record struct CaptureTransportFlattenedProjection
-    {
-        public string MemoryPreference { get; init; }
-        public string VideoRequestedSubtype { get; init; }
-        public string VideoNegotiatedSubtype { get; init; }
-        public int FrameLedgerCapacity { get; init; }
-        public long FrameLedgerEventCount { get; init; }
-        public long FrameLedgerDroppedEventCount { get; init; }
-        public FrameLedgerEventSnapshot[] FrameLedgerRecentEvents { get; init; }
-    }
-
-    private readonly record struct CaptureFormatFlattenedProjection
-    {
-        public CaptureFormatRequestedFlattenedProjection Requested { get; init; }
-        public CaptureFormatHdrRequestFlattenedProjection HdrRequest { get; init; }
-        public CaptureFormatActualFlattenedProjection Actual { get; init; }
-        public CaptureFormatNegotiatedFlattenedProjection Negotiated { get; init; }
-        public CaptureFormatReaderObservationFlattenedProjection ReaderObservation { get; init; }
-        public CaptureFormatEncoderFlattenedProjection Encoder { get; init; }
     }
 
     private static bool IsHdrSubtype(string? subtype)
@@ -2716,54 +1904,6 @@ public sealed partial class AutomationDiagnosticsHub
         public HdrTruthVerdict TruthVerdict { get; init; }
     }
 
-    private static HdrPipelineFlattenedProjection BuildHdrPipelineFlattenedProjection(
-        HdrPipelineProjection hdrPipeline)
-        => new()
-        {
-            IsHdrAvailable = hdrPipeline.IsHdrAvailable,
-            IsHdrEnabled = hdrPipeline.IsHdrEnabled,
-            HdrOutputActive = hdrPipeline.HdrOutputActive,
-            HdrRuntimeState = hdrPipeline.HdrRuntimeState,
-            HdrReadinessReason = hdrPipeline.HdrReadinessReason,
-            HdrWarmupState = hdrPipeline.HdrWarmupState,
-            HdrWarmupRequiredP010Frames = hdrPipeline.HdrWarmupRequiredP010Frames,
-            HdrWarmupAllowedNonP010Frames = hdrPipeline.HdrWarmupAllowedNonP010Frames,
-            HdrWarmupObservedP010Frames = hdrPipeline.HdrWarmupObservedP010Frames,
-            HdrWarmupObservedNonP010Frames = hdrPipeline.HdrWarmupObservedNonP010Frames,
-            HdrDowngradeCode = hdrPipeline.HdrDowngradeCode,
-            RequestedPipelineMode = hdrPipeline.RequestedPipelineMode,
-            ActivePipelineMode = hdrPipeline.ActivePipelineMode,
-            PipelineModeMatched = hdrPipeline.PipelineModeMatched,
-            PipelineModeStatus = hdrPipeline.PipelineModeStatus,
-            PipelineModeReason = hdrPipeline.PipelineModeReason,
-            TelemetryAlignmentStatus = hdrPipeline.TelemetryAlignmentStatus,
-            TelemetryAlignmentReason = hdrPipeline.TelemetryAlignmentReason,
-            TruthVerdict = hdrPipeline.TruthVerdict
-        };
-
-    private readonly record struct HdrPipelineFlattenedProjection
-    {
-        public bool IsHdrAvailable { get; init; }
-        public bool IsHdrEnabled { get; init; }
-        public bool HdrOutputActive { get; init; }
-        public string HdrRuntimeState { get; init; }
-        public string HdrReadinessReason { get; init; }
-        public string HdrWarmupState { get; init; }
-        public int HdrWarmupRequiredP010Frames { get; init; }
-        public int HdrWarmupAllowedNonP010Frames { get; init; }
-        public int HdrWarmupObservedP010Frames { get; init; }
-        public int HdrWarmupObservedNonP010Frames { get; init; }
-        public string HdrDowngradeCode { get; init; }
-        public string RequestedPipelineMode { get; init; }
-        public string ActivePipelineMode { get; init; }
-        public bool PipelineModeMatched { get; init; }
-        public string PipelineModeStatus { get; init; }
-        public string PipelineModeReason { get; init; }
-        public string TelemetryAlignmentStatus { get; init; }
-        public string TelemetryAlignmentReason { get; init; }
-        public HdrTruthVerdict TruthVerdict { get; init; }
-    }
-
     private readonly record struct PreviewHdrState(bool InputDetected, string ToneMapMode);
 
     private static MjpegProjection BuildMjpegProjection(CaptureHealthSnapshot health)
@@ -2861,61 +2001,7 @@ public sealed partial class AutomationDiagnosticsHub
                 : Array.Empty<MjpegDecoderAutomationSnapshot>()
         };
 
-    private static MjpegTimingFlattenedProjection BuildMjpegTimingFlattenedProjection(
-        MjpegTimingProjection timing)
-        => new()
-        {
-            DecodeSampleCount = timing.DecodeSampleCount,
-            DecodeAvgMs = timing.DecodeAvgMs,
-            DecodeP95Ms = timing.DecodeP95Ms,
-            DecodeMaxMs = timing.DecodeMaxMs,
-            InteropCopySampleCount = timing.InteropCopySampleCount,
-            InteropCopyAvgMs = timing.InteropCopyAvgMs,
-            InteropCopyP95Ms = timing.InteropCopyP95Ms,
-            InteropCopyMaxMs = timing.InteropCopyMaxMs,
-            CallbackSampleCount = timing.CallbackSampleCount,
-            CallbackAvgMs = timing.CallbackAvgMs,
-            CallbackP95Ms = timing.CallbackP95Ms,
-            CallbackMaxMs = timing.CallbackMaxMs,
-            DecoderCount = timing.DecoderCount,
-            ReorderSampleCount = timing.ReorderSampleCount,
-            ReorderAvgMs = timing.ReorderAvgMs,
-            ReorderP95Ms = timing.ReorderP95Ms,
-            ReorderMaxMs = timing.ReorderMaxMs,
-            PipelineSampleCount = timing.PipelineSampleCount,
-            PipelineAvgMs = timing.PipelineAvgMs,
-            PipelineP95Ms = timing.PipelineP95Ms,
-            PipelineMaxMs = timing.PipelineMaxMs,
-            PerDecoder = timing.PerDecoder
-        };
-
     private readonly record struct MjpegTimingProjection
-    {
-        public int DecodeSampleCount { get; init; }
-        public double DecodeAvgMs { get; init; }
-        public double DecodeP95Ms { get; init; }
-        public double DecodeMaxMs { get; init; }
-        public int InteropCopySampleCount { get; init; }
-        public double InteropCopyAvgMs { get; init; }
-        public double InteropCopyP95Ms { get; init; }
-        public double InteropCopyMaxMs { get; init; }
-        public int CallbackSampleCount { get; init; }
-        public double CallbackAvgMs { get; init; }
-        public double CallbackP95Ms { get; init; }
-        public double CallbackMaxMs { get; init; }
-        public int DecoderCount { get; init; }
-        public int ReorderSampleCount { get; init; }
-        public double ReorderAvgMs { get; init; }
-        public double ReorderP95Ms { get; init; }
-        public double ReorderMaxMs { get; init; }
-        public int PipelineSampleCount { get; init; }
-        public double PipelineAvgMs { get; init; }
-        public double PipelineP95Ms { get; init; }
-        public double PipelineMaxMs { get; init; }
-        public MjpegDecoderAutomationSnapshot[] PerDecoder { get; init; }
-    }
-
-    private readonly record struct MjpegTimingFlattenedProjection
     {
         public int DecodeSampleCount { get; init; }
         public double DecodeAvgMs { get; init; }
@@ -2986,34 +2072,6 @@ public sealed partial class AutomationDiagnosticsHub
         public long ResumeReprimeCount { get; init; }
     }
 
-    private static MjpegPreviewJitterQueueFlattenedProjection BuildMjpegPreviewJitterQueueFlattenedProjection(
-        MjpegPreviewJitterQueueProjection queue)
-        => new()
-        {
-            Enabled = queue.Enabled,
-            TargetDepth = queue.TargetDepth,
-            MaxDepth = queue.MaxDepth,
-            QueueDepth = queue.QueueDepth,
-            TotalQueued = queue.TotalQueued,
-            TotalSubmitted = queue.TotalSubmitted,
-            TotalDropped = queue.TotalDropped,
-            UnderflowCount = queue.UnderflowCount,
-            ResumeReprimeCount = queue.ResumeReprimeCount
-        };
-
-    private readonly record struct MjpegPreviewJitterQueueFlattenedProjection
-    {
-        public bool Enabled { get; init; }
-        public int TargetDepth { get; init; }
-        public int MaxDepth { get; init; }
-        public int QueueDepth { get; init; }
-        public long TotalQueued { get; init; }
-        public long TotalSubmitted { get; init; }
-        public long TotalDropped { get; init; }
-        public long UnderflowCount { get; init; }
-        public long ResumeReprimeCount { get; init; }
-    }
-
     private static MjpegPreviewJitterTimingProjection BuildMjpegPreviewJitterTimingProjection(
         CaptureHealthSnapshot health)
         => new()
@@ -3048,40 +2106,6 @@ public sealed partial class AutomationDiagnosticsHub
         public double LatencyMaxMs { get; init; }
     }
 
-    private static MjpegPreviewJitterTimingFlattenedProjection BuildMjpegPreviewJitterTimingFlattenedProjection(
-        MjpegPreviewJitterTimingProjection timing)
-        => new()
-        {
-            InputSampleCount = timing.InputSampleCount,
-            InputAvgMs = timing.InputAvgMs,
-            InputP95Ms = timing.InputP95Ms,
-            InputMaxMs = timing.InputMaxMs,
-            OutputSampleCount = timing.OutputSampleCount,
-            OutputAvgMs = timing.OutputAvgMs,
-            OutputP95Ms = timing.OutputP95Ms,
-            OutputMaxMs = timing.OutputMaxMs,
-            LatencySampleCount = timing.LatencySampleCount,
-            LatencyAvgMs = timing.LatencyAvgMs,
-            LatencyP95Ms = timing.LatencyP95Ms,
-            LatencyMaxMs = timing.LatencyMaxMs
-        };
-
-    private readonly record struct MjpegPreviewJitterTimingFlattenedProjection
-    {
-        public int InputSampleCount { get; init; }
-        public double InputAvgMs { get; init; }
-        public double InputP95Ms { get; init; }
-        public double InputMaxMs { get; init; }
-        public int OutputSampleCount { get; init; }
-        public double OutputAvgMs { get; init; }
-        public double OutputP95Ms { get; init; }
-        public double OutputMaxMs { get; init; }
-        public int LatencySampleCount { get; init; }
-        public double LatencyAvgMs { get; init; }
-        public double LatencyP95Ms { get; init; }
-        public double LatencyMaxMs { get; init; }
-    }
-
     private static MjpegPreviewJitterAdaptiveProjection BuildMjpegPreviewJitterAdaptiveProjection(
         CaptureHealthSnapshot health)
         => new()
@@ -3093,24 +2117,6 @@ public sealed partial class AutomationDiagnosticsHub
         };
 
     private readonly record struct MjpegPreviewJitterAdaptiveProjection
-    {
-        public long DeadlineDropCount { get; init; }
-        public long ClearedDropCount { get; init; }
-        public long TargetIncreaseCount { get; init; }
-        public long TargetDecreaseCount { get; init; }
-    }
-
-    private static MjpegPreviewJitterAdaptiveFlattenedProjection BuildMjpegPreviewJitterAdaptiveFlattenedProjection(
-        MjpegPreviewJitterAdaptiveProjection adaptive)
-        => new()
-        {
-            DeadlineDropCount = adaptive.DeadlineDropCount,
-            ClearedDropCount = adaptive.ClearedDropCount,
-            TargetIncreaseCount = adaptive.TargetIncreaseCount,
-            TargetDecreaseCount = adaptive.TargetDecreaseCount
-        };
-
-    private readonly record struct MjpegPreviewJitterAdaptiveFlattenedProjection
     {
         public long DeadlineDropCount { get; init; }
         public long ClearedDropCount { get; init; }
@@ -3158,64 +2164,6 @@ public sealed partial class AutomationDiagnosticsHub
         public long ScheduleLateCount { get; init; }
     }
 
-    private static MjpegPreviewJitterEventFlattenedProjection BuildMjpegPreviewJitterEventFlattenedProjection(
-        MjpegPreviewJitterEventProjection events)
-        => new()
-        {
-            LastSelectedPreviewPresentId = events.LastSelectedPreviewPresentId,
-            LastSelectedSourceSequenceNumber = events.LastSelectedSourceSequenceNumber,
-            LastSelectedQpc = events.LastSelectedQpc,
-            LastSelectedSourceLatencyMs = events.LastSelectedSourceLatencyMs,
-            LastDroppedSourceSequenceNumber = events.LastDroppedSourceSequenceNumber,
-            LastDropQpc = events.LastDropQpc,
-            LastDropReason = events.LastDropReason,
-            LastUnderflowQpc = events.LastUnderflowQpc,
-            LastUnderflowReason = events.LastUnderflowReason,
-            LastUnderflowQueueDepth = events.LastUnderflowQueueDepth,
-            LastUnderflowInputAgeMs = events.LastUnderflowInputAgeMs,
-            LastUnderflowOutputAgeMs = events.LastUnderflowOutputAgeMs,
-            LastScheduleLateMs = events.LastScheduleLateMs,
-            MaxScheduleLateMs = events.MaxScheduleLateMs,
-            ScheduleLateCount = events.ScheduleLateCount
-        };
-
-    private readonly record struct MjpegPreviewJitterEventFlattenedProjection
-    {
-        public long LastSelectedPreviewPresentId { get; init; }
-        public long LastSelectedSourceSequenceNumber { get; init; }
-        public long LastSelectedQpc { get; init; }
-        public double LastSelectedSourceLatencyMs { get; init; }
-        public long LastDroppedSourceSequenceNumber { get; init; }
-        public long LastDropQpc { get; init; }
-        public string LastDropReason { get; init; }
-        public long LastUnderflowQpc { get; init; }
-        public string LastUnderflowReason { get; init; }
-        public int LastUnderflowQueueDepth { get; init; }
-        public double LastUnderflowInputAgeMs { get; init; }
-        public double LastUnderflowOutputAgeMs { get; init; }
-        public double LastScheduleLateMs { get; init; }
-        public double MaxScheduleLateMs { get; init; }
-        public long ScheduleLateCount { get; init; }
-    }
-
-    private static MjpegPreviewJitterFlattenedProjection BuildMjpegPreviewJitterFlattenedProjection(
-        MjpegPreviewJitterProjection previewJitter)
-        => new()
-        {
-            Queue = BuildMjpegPreviewJitterQueueFlattenedProjection(previewJitter.Queue),
-            Timing = BuildMjpegPreviewJitterTimingFlattenedProjection(previewJitter.Timing),
-            Adaptive = BuildMjpegPreviewJitterAdaptiveFlattenedProjection(previewJitter.Adaptive),
-            Events = BuildMjpegPreviewJitterEventFlattenedProjection(previewJitter.Events)
-        };
-
-    private readonly record struct MjpegPreviewJitterFlattenedProjection
-    {
-        public MjpegPreviewJitterQueueFlattenedProjection Queue { get; init; }
-        public MjpegPreviewJitterTimingFlattenedProjection Timing { get; init; }
-        public MjpegPreviewJitterAdaptiveFlattenedProjection Adaptive { get; init; }
-        public MjpegPreviewJitterEventFlattenedProjection Events { get; init; }
-    }
-
     private static MjpegPacketHashProjection BuildMjpegPacketHashProjection(CaptureHealthSnapshot health)
         => new()
         {
@@ -3234,25 +2182,6 @@ public sealed partial class AutomationDiagnosticsHub
             RecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags
         };
 
-    private static MjpegPacketHashFlattenedProjection BuildMjpegPacketHashFlattenedProjection(
-        MjpegPacketHashProjection packetHash)
-        => new()
-        {
-            SampleCount = packetHash.SampleCount,
-            UniqueFrameCount = packetHash.UniqueFrameCount,
-            DuplicateFrameCount = packetHash.DuplicateFrameCount,
-            LongestDuplicateRun = packetHash.LongestDuplicateRun,
-            InputObservedFps = packetHash.InputObservedFps,
-            UniqueObservedFps = packetHash.UniqueObservedFps,
-            DuplicateFramePercent = packetHash.DuplicateFramePercent,
-            LastHash = packetHash.LastHash,
-            LastFrameDuplicate = packetHash.LastFrameDuplicate,
-            Pattern = packetHash.Pattern,
-            RecentInputIntervalsMs = packetHash.RecentInputIntervalsMs,
-            RecentUniqueIntervalsMs = packetHash.RecentUniqueIntervalsMs,
-            RecentDuplicateFlags = packetHash.RecentDuplicateFlags
-        };
-
     private readonly record struct MjpegPacketHashProjection
     {
         public int SampleCount { get; init; }
@@ -3268,72 +2197,6 @@ public sealed partial class AutomationDiagnosticsHub
         public double[] RecentInputIntervalsMs { get; init; }
         public double[] RecentUniqueIntervalsMs { get; init; }
         public int[] RecentDuplicateFlags { get; init; }
-    }
-
-    private readonly record struct MjpegPacketHashFlattenedProjection
-    {
-        public int SampleCount { get; init; }
-        public long UniqueFrameCount { get; init; }
-        public long DuplicateFrameCount { get; init; }
-        public long LongestDuplicateRun { get; init; }
-        public double InputObservedFps { get; init; }
-        public double UniqueObservedFps { get; init; }
-        public double DuplicateFramePercent { get; init; }
-        public string LastHash { get; init; }
-        public bool LastFrameDuplicate { get; init; }
-        public string Pattern { get; init; }
-        public double[] RecentInputIntervalsMs { get; init; }
-        public double[] RecentUniqueIntervalsMs { get; init; }
-        public int[] RecentDuplicateFlags { get; init; }
-    }
-
-    private static MjpegFlattenedProjection BuildMjpegFlattenedProjection(MjpegProjection mjpeg)
-    {
-        return new()
-        {
-            TotalDecoded = mjpeg.TotalDecoded,
-            TotalEmitted = mjpeg.TotalEmitted,
-            TotalDropped = mjpeg.TotalDropped,
-            CompressedFramesQueued = mjpeg.CompressedFramesQueued,
-            CompressedFramesDequeued = mjpeg.CompressedFramesDequeued,
-            CompressedDropsQueueFull = mjpeg.CompressedDropsQueueFull,
-            CompressedDropsByteBudget = mjpeg.CompressedDropsByteBudget,
-            CompressedDropsDisposed = mjpeg.CompressedDropsDisposed,
-            DecodeFailures = mjpeg.DecodeFailures,
-            ReorderCollisions = mjpeg.ReorderCollisions,
-            EmitFailures = mjpeg.EmitFailures,
-            CompressedQueueDepth = mjpeg.CompressedQueueDepth,
-            CompressedQueueBytes = mjpeg.CompressedQueueBytes,
-            CompressedQueueByteBudget = mjpeg.CompressedQueueByteBudget,
-            ReorderSkips = mjpeg.ReorderSkips,
-            ReorderBufferDepth = mjpeg.ReorderBufferDepth,
-            PeakReorderDepth = mjpeg.PeakReorderDepth,
-            PeakCompressedQueueBytes = mjpeg.PeakCompressedQueueBytes,
-            ReorderRingForceDrops = mjpeg.ReorderRingForceDrops,
-        };
-    }
-
-    private readonly record struct MjpegFlattenedProjection
-    {
-        public long TotalDecoded { get; init; }
-        public long TotalEmitted { get; init; }
-        public long TotalDropped { get; init; }
-        public long CompressedFramesQueued { get; init; }
-        public long CompressedFramesDequeued { get; init; }
-        public long CompressedDropsQueueFull { get; init; }
-        public long CompressedDropsByteBudget { get; init; }
-        public long CompressedDropsDisposed { get; init; }
-        public long DecodeFailures { get; init; }
-        public long ReorderCollisions { get; init; }
-        public long EmitFailures { get; init; }
-        public int CompressedQueueDepth { get; init; }
-        public long CompressedQueueBytes { get; init; }
-        public long CompressedQueueByteBudget { get; init; }
-        public long ReorderSkips { get; init; }
-        public int ReorderBufferDepth { get; init; }
-        public int PeakReorderDepth { get; init; }
-        public long PeakCompressedQueueBytes { get; init; }
-        public long ReorderRingForceDrops { get; init; }
     }
 
     private static RecordingIntegrityProjection BuildRecordingIntegrityProjection(CaptureRuntimeSnapshot captureRuntime)
@@ -3480,16 +2343,6 @@ public sealed partial class AutomationDiagnosticsHub
             HardwareQueues = BuildRecordingPipelineHardwareQueuesProjection(health)
         };
 
-    private static RecordingPipelineFlattenedProjection BuildRecordingPipelineFlattenedProjection(
-        RecordingPipelineProjection recordingPipeline)
-        => new()
-        {
-            Encoder = BuildRecordingPipelineEncoderFlattenedProjection(recordingPipeline),
-            Ingest = BuildRecordingPipelineIngestFlattenedProjection(recordingPipeline),
-            VideoQueue = BuildRecordingPipelineVideoQueueFlattenedProjection(recordingPipeline),
-            HardwareQueues = BuildRecordingPipelineHardwareQueuesFlattenedProjection(recordingPipeline)
-        };
-
     private readonly record struct RecordingPipelineProjection
     {
         public RecordingPipelineEncoderProjection Encoder { get; init; }
@@ -3510,31 +2363,7 @@ public sealed partial class AutomationDiagnosticsHub
             EncodingFailureMessage = health.RecordingEncodingFailureMessage
         };
 
-    private static RecordingPipelineEncoderFlattenedProjection BuildRecordingPipelineEncoderFlattenedProjection(
-        RecordingPipelineProjection recordingPipeline)
-        => new()
-        {
-            VideoFramesEnqueued = recordingPipeline.Encoder.VideoFramesEnqueued,
-            VideoFramesEncoded = recordingPipeline.Encoder.VideoFramesEncoded,
-            LastEnqueueAgeMs = recordingPipeline.Encoder.LastEnqueueAgeMs,
-            LastWriteAgeMs = recordingPipeline.Encoder.LastWriteAgeMs,
-            EncodingFailed = recordingPipeline.Encoder.EncodingFailed,
-            EncodingFailureType = recordingPipeline.Encoder.EncodingFailureType,
-            EncodingFailureMessage = recordingPipeline.Encoder.EncodingFailureMessage
-        };
-
     private readonly record struct RecordingPipelineEncoderProjection
-    {
-        public long VideoFramesEnqueued { get; init; }
-        public long VideoFramesEncoded { get; init; }
-        public long LastEnqueueAgeMs { get; init; }
-        public long LastWriteAgeMs { get; init; }
-        public bool EncodingFailed { get; init; }
-        public string? EncodingFailureType { get; init; }
-        public string? EncodingFailureMessage { get; init; }
-    }
-
-    private readonly record struct RecordingPipelineEncoderFlattenedProjection
     {
         public long VideoFramesEnqueued { get; init; }
         public long VideoFramesEncoded { get; init; }
@@ -3561,39 +2390,7 @@ public sealed partial class AutomationDiagnosticsHub
             VideoDropsBacklogEviction = health.VideoDropsBacklogEviction
         };
 
-    private static RecordingPipelineIngestFlattenedProjection BuildRecordingPipelineIngestFlattenedProjection(
-        RecordingPipelineProjection recordingPipeline)
-        => new()
-        {
-            ConversionQueueDepth = recordingPipeline.Ingest.ConversionQueueDepth,
-            FfmpegVideoQueueDepth = recordingPipeline.Ingest.FfmpegVideoQueueDepth,
-            FfmpegAudioQueueDepth = recordingPipeline.Ingest.FfmpegAudioQueueDepth,
-            VideoFramesArrived = recordingPipeline.Ingest.VideoFramesArrived,
-            VideoFramesQueued = recordingPipeline.Ingest.VideoFramesQueued,
-            VideoFramesDropped = recordingPipeline.Ingest.VideoFramesDropped,
-            VideoFramesDroppedBacklog = recordingPipeline.Ingest.VideoFramesDroppedBacklog,
-            VideoFramesConverted = recordingPipeline.Ingest.VideoFramesConverted,
-            VideoFramesEnqueued = recordingPipeline.Ingest.VideoFramesEnqueued,
-            VideoDropsQueueSaturated = recordingPipeline.Ingest.VideoDropsQueueSaturated,
-            VideoDropsBacklogEviction = recordingPipeline.Ingest.VideoDropsBacklogEviction
-        };
-
     private readonly record struct RecordingPipelineIngestProjection
-    {
-        public int ConversionQueueDepth { get; init; }
-        public int FfmpegVideoQueueDepth { get; init; }
-        public int FfmpegAudioQueueDepth { get; init; }
-        public long VideoFramesArrived { get; init; }
-        public long VideoFramesQueued { get; init; }
-        public long VideoFramesDropped { get; init; }
-        public long VideoFramesDroppedBacklog { get; init; }
-        public long VideoFramesConverted { get; init; }
-        public long VideoFramesEnqueued { get; init; }
-        public long VideoDropsQueueSaturated { get; init; }
-        public long VideoDropsBacklogEviction { get; init; }
-    }
-
-    private readonly record struct RecordingPipelineIngestFlattenedProjection
     {
         public int ConversionQueueDepth { get; init; }
         public int FfmpegVideoQueueDepth { get; init; }
@@ -3631,53 +2428,7 @@ public sealed partial class AutomationDiagnosticsHub
             BackpressureMaxWaitMs = health.RecordingVideoBackpressureMaxWaitMs
         };
 
-    private static RecordingPipelineVideoQueueFlattenedProjection BuildRecordingPipelineVideoQueueFlattenedProjection(
-        RecordingPipelineProjection recordingPipeline)
-        => new()
-        {
-            Capacity = recordingPipeline.VideoQueue.Capacity,
-            MaxDepth = recordingPipeline.VideoQueue.MaxDepth,
-            FramesSubmittedToEncoder = recordingPipeline.VideoQueue.FramesSubmittedToEncoder,
-            EncoderPts = recordingPipeline.VideoQueue.EncoderPts,
-            EncoderPacketsWritten = recordingPipeline.VideoQueue.EncoderPacketsWritten,
-            EncoderDroppedFrames = recordingPipeline.VideoQueue.EncoderDroppedFrames,
-            SequenceGaps = recordingPipeline.VideoQueue.SequenceGaps,
-            OldestFrameAgeMs = recordingPipeline.VideoQueue.OldestFrameAgeMs,
-            LastLatencyMs = recordingPipeline.VideoQueue.LastLatencyMs,
-            LatencySampleCount = recordingPipeline.VideoQueue.LatencySampleCount,
-            LatencyAvgMs = recordingPipeline.VideoQueue.LatencyAvgMs,
-            LatencyP95Ms = recordingPipeline.VideoQueue.LatencyP95Ms,
-            LatencyP99Ms = recordingPipeline.VideoQueue.LatencyP99Ms,
-            LatencyMaxMs = recordingPipeline.VideoQueue.LatencyMaxMs,
-            BackpressureWaitMs = recordingPipeline.VideoQueue.BackpressureWaitMs,
-            BackpressureEvents = recordingPipeline.VideoQueue.BackpressureEvents,
-            BackpressureLastWaitMs = recordingPipeline.VideoQueue.BackpressureLastWaitMs,
-            BackpressureMaxWaitMs = recordingPipeline.VideoQueue.BackpressureMaxWaitMs
-        };
-
     private readonly record struct RecordingPipelineVideoQueueProjection
-    {
-        public int Capacity { get; init; }
-        public int MaxDepth { get; init; }
-        public long FramesSubmittedToEncoder { get; init; }
-        public long EncoderPts { get; init; }
-        public long EncoderPacketsWritten { get; init; }
-        public long EncoderDroppedFrames { get; init; }
-        public long SequenceGaps { get; init; }
-        public long OldestFrameAgeMs { get; init; }
-        public long LastLatencyMs { get; init; }
-        public int LatencySampleCount { get; init; }
-        public double LatencyAvgMs { get; init; }
-        public double LatencyP95Ms { get; init; }
-        public double LatencyP99Ms { get; init; }
-        public double LatencyMaxMs { get; init; }
-        public long BackpressureWaitMs { get; init; }
-        public long BackpressureEvents { get; init; }
-        public long BackpressureLastWaitMs { get; init; }
-        public long BackpressureMaxWaitMs { get; init; }
-    }
-
-    private readonly record struct RecordingPipelineVideoQueueFlattenedProjection
     {
         public int Capacity { get; init; }
         public int MaxDepth { get; init; }
@@ -3714,22 +2465,6 @@ public sealed partial class AutomationDiagnosticsHub
             CudaFramesDropped = health.RecordingCudaFramesDropped
         };
 
-    private static RecordingPipelineHardwareQueuesFlattenedProjection BuildRecordingPipelineHardwareQueuesFlattenedProjection(
-        RecordingPipelineProjection recordingPipeline)
-        => new()
-        {
-            GpuQueueDepth = recordingPipeline.HardwareQueues.GpuQueueDepth,
-            GpuQueueCapacity = recordingPipeline.HardwareQueues.GpuQueueCapacity,
-            GpuQueueMaxDepth = recordingPipeline.HardwareQueues.GpuQueueMaxDepth,
-            GpuFramesEnqueued = recordingPipeline.HardwareQueues.GpuFramesEnqueued,
-            GpuFramesDropped = recordingPipeline.HardwareQueues.GpuFramesDropped,
-            CudaQueueDepth = recordingPipeline.HardwareQueues.CudaQueueDepth,
-            CudaQueueCapacity = recordingPipeline.HardwareQueues.CudaQueueCapacity,
-            CudaQueueMaxDepth = recordingPipeline.HardwareQueues.CudaQueueMaxDepth,
-            CudaFramesEnqueued = recordingPipeline.HardwareQueues.CudaFramesEnqueued,
-            CudaFramesDropped = recordingPipeline.HardwareQueues.CudaFramesDropped
-        };
-
     private readonly record struct RecordingPipelineHardwareQueuesProjection
     {
         public int GpuQueueDepth { get; init; }
@@ -3742,28 +2477,6 @@ public sealed partial class AutomationDiagnosticsHub
         public int CudaQueueMaxDepth { get; init; }
         public long CudaFramesEnqueued { get; init; }
         public long CudaFramesDropped { get; init; }
-    }
-
-    private readonly record struct RecordingPipelineHardwareQueuesFlattenedProjection
-    {
-        public int GpuQueueDepth { get; init; }
-        public int GpuQueueCapacity { get; init; }
-        public int GpuQueueMaxDepth { get; init; }
-        public long GpuFramesEnqueued { get; init; }
-        public long GpuFramesDropped { get; init; }
-        public int CudaQueueDepth { get; init; }
-        public int CudaQueueCapacity { get; init; }
-        public int CudaQueueMaxDepth { get; init; }
-        public long CudaFramesEnqueued { get; init; }
-        public long CudaFramesDropped { get; init; }
-    }
-
-    private readonly record struct RecordingPipelineFlattenedProjection
-    {
-        public RecordingPipelineEncoderFlattenedProjection Encoder { get; init; }
-        public RecordingPipelineIngestFlattenedProjection Ingest { get; init; }
-        public RecordingPipelineVideoQueueFlattenedProjection VideoQueue { get; init; }
-        public RecordingPipelineHardwareQueuesFlattenedProjection HardwareQueues { get; init; }
     }
 
     private static RecordingOutputProjection BuildRecordingOutputProjection(
@@ -3890,24 +2603,6 @@ public sealed partial class AutomationDiagnosticsHub
         public bool MutedSuspected { get; init; }
     }
 
-    private static AudioSignalFlattenedProjection BuildAudioSignalFlattenedProjection(
-        AudioSignalProjection signal)
-        => new()
-        {
-            Peak = signal.Peak,
-            Clipping = signal.Clipping,
-            SignalPresent = signal.SignalPresent,
-            MutedSuspected = signal.MutedSuspected
-        };
-
-    private readonly record struct AudioSignalFlattenedProjection
-    {
-        public double Peak { get; init; }
-        public bool Clipping { get; init; }
-        public bool SignalPresent { get; init; }
-        public bool MutedSuspected { get; init; }
-    }
-
     private static CaptureIngestProjection BuildCaptureIngestProjection(CaptureRuntimeSnapshot captureRuntime)
         => new()
         {
@@ -3945,56 +2640,6 @@ public sealed partial class AutomationDiagnosticsHub
         public long SourceReaderReadOutstandingMs { get; init; }
         public long SourceReaderLastFrameTickMs { get; init; }
         public int SourceReaderFrameChannelDepth { get; init; }
-    }
-
-    private static CaptureIngestFlattenedProjection BuildCaptureIngestFlattenedProjection(
-        CaptureIngestProjection ingest)
-        => new()
-        {
-            AudioReaderActive = ingest.AudioReaderActive,
-            AudioFramesArrived = ingest.AudioFramesArrived,
-            AudioFramesWrittenToSink = ingest.AudioFramesWrittenToSink,
-            VideoReaderActive = ingest.VideoReaderActive,
-            VideoFramesArrived = ingest.VideoFramesArrived,
-            VideoFramesWrittenToSink = ingest.VideoFramesWrittenToSink,
-            LastVideoFrameAgeMs = ingest.LastVideoFrameAgeMs,
-            VideoIngestErrorCount = ingest.VideoIngestErrorCount
-        };
-
-    private readonly record struct CaptureIngestFlattenedProjection
-    {
-        public bool AudioReaderActive { get; init; }
-        public long AudioFramesArrived { get; init; }
-        public long AudioFramesWrittenToSink { get; init; }
-        public bool VideoReaderActive { get; init; }
-        public long VideoFramesArrived { get; init; }
-        public long VideoFramesWrittenToSink { get; init; }
-        public long LastVideoFrameAgeMs { get; init; }
-        public long VideoIngestErrorCount { get; init; }
-    }
-
-    private static SourceReaderFlattenedProjection BuildSourceReaderFlattenedProjection(
-        CaptureIngestProjection ingest)
-        => new()
-        {
-            FramesDelivered = ingest.MfSourceReaderFramesDelivered,
-            FramesDropped = ingest.MfSourceReaderFramesDropped,
-            NegotiatedFormat = ingest.MfSourceReaderNegotiatedFormat,
-            ReadOutstanding = ingest.SourceReaderReadOutstanding,
-            ReadOutstandingMs = ingest.SourceReaderReadOutstandingMs,
-            LastFrameTickMs = ingest.SourceReaderLastFrameTickMs,
-            FrameChannelDepth = ingest.SourceReaderFrameChannelDepth
-        };
-
-    private readonly record struct SourceReaderFlattenedProjection
-    {
-        public long FramesDelivered { get; init; }
-        public long FramesDropped { get; init; }
-        public string? NegotiatedFormat { get; init; }
-        public bool ReadOutstanding { get; init; }
-        public long ReadOutstandingMs { get; init; }
-        public long LastFrameTickMs { get; init; }
-        public int FrameChannelDepth { get; init; }
     }
 
     private static WasapiAudioProjection BuildWasapiAudioProjection(CaptureRuntimeSnapshot captureRuntime)
@@ -4060,90 +2705,6 @@ public sealed partial class AutomationDiagnosticsHub
         public long BufferOverrunEvents { get; init; }
     }
 
-    private static AudioBufferHealthFlattenedProjection BuildAudioBufferHealthFlattenedProjection(
-        WasapiAudioProjection wasapi)
-        => new()
-        {
-            Status = wasapi.BufferHealthStatus,
-            Reason = wasapi.BufferHealthReason,
-            UnderrunDetected = wasapi.BufferUnderrunDetected,
-            OverrunDetected = wasapi.BufferOverrunDetected,
-            UnderrunEvents = wasapi.BufferUnderrunEvents,
-            OverrunEvents = wasapi.BufferOverrunEvents
-        };
-
-    private readonly record struct AudioBufferHealthFlattenedProjection
-    {
-        public string Status { get; init; }
-        public string Reason { get; init; }
-        public bool UnderrunDetected { get; init; }
-        public bool OverrunDetected { get; init; }
-        public long UnderrunEvents { get; init; }
-        public long OverrunEvents { get; init; }
-    }
-
-    private static WasapiCaptureFlattenedProjection BuildWasapiCaptureFlattenedProjection(
-        WasapiAudioProjection wasapi)
-        => new()
-        {
-            CallbackCount = wasapi.CaptureCallbackCount,
-            CallbackAvgIntervalMs = wasapi.CaptureCallbackAvgIntervalMs,
-            CallbackMaxIntervalMs = wasapi.CaptureCallbackMaxIntervalMs,
-            CallbackSevereGapCount = wasapi.CaptureCallbackSevereGapCount,
-            AudioDiscontinuityCount = wasapi.CaptureAudioDiscontinuityCount,
-            AudioTimestampErrorCount = wasapi.CaptureAudioTimestampErrorCount,
-            AudioGlitchCount = wasapi.CaptureAudioGlitchCount,
-            CallbackSilenceCount = wasapi.CaptureCallbackSilenceCount,
-            LastCallbackTickMs = wasapi.CaptureLastCallbackTickMs,
-            AudioLevelEventsFired = wasapi.CaptureAudioLevelEventsFired,
-            AudioLevelLastFireTickMs = wasapi.CaptureAudioLevelLastFireTickMs
-        };
-
-    private readonly record struct WasapiCaptureFlattenedProjection
-    {
-        public long CallbackCount { get; init; }
-        public double CallbackAvgIntervalMs { get; init; }
-        public double CallbackMaxIntervalMs { get; init; }
-        public long CallbackSevereGapCount { get; init; }
-        public long AudioDiscontinuityCount { get; init; }
-        public long AudioTimestampErrorCount { get; init; }
-        public long AudioGlitchCount { get; init; }
-        public int CallbackSilenceCount { get; init; }
-        public long LastCallbackTickMs { get; init; }
-        public long AudioLevelEventsFired { get; init; }
-        public long AudioLevelLastFireTickMs { get; init; }
-    }
-
-    private static WasapiPlaybackFlattenedProjection BuildWasapiPlaybackFlattenedProjection(
-        WasapiAudioProjection wasapi)
-        => new()
-        {
-            RenderCallbackCount = wasapi.PlaybackRenderCallbackCount,
-            RenderSilenceCount = wasapi.PlaybackRenderSilenceCount,
-            QueueDepth = wasapi.PlaybackQueueDepth,
-            QueueDropCount = wasapi.PlaybackQueueDropCount,
-            QueueDurationMs = wasapi.PlaybackQueueDurationMs,
-            ActiveChunkDurationMs = wasapi.PlaybackActiveChunkDurationMs,
-            EndpointQueuedDurationMs = wasapi.PlaybackEndpointQueuedDurationMs,
-            BufferedDurationMs = wasapi.PlaybackBufferedDurationMs,
-            StreamLatencyMs = wasapi.PlaybackStreamLatencyMs,
-            LastRenderTickMs = wasapi.PlaybackLastRenderTickMs
-        };
-
-    private readonly record struct WasapiPlaybackFlattenedProjection
-    {
-        public long RenderCallbackCount { get; init; }
-        public int RenderSilenceCount { get; init; }
-        public int QueueDepth { get; init; }
-        public int QueueDropCount { get; init; }
-        public double QueueDurationMs { get; init; }
-        public double ActiveChunkDurationMs { get; init; }
-        public double EndpointQueuedDurationMs { get; init; }
-        public double BufferedDurationMs { get; init; }
-        public double StreamLatencyMs { get; init; }
-        public long LastRenderTickMs { get; init; }
-    }
-
     private static AudioDropsProjection BuildAudioDropsProjection(CaptureHealthSnapshot health)
         => new()
         {
@@ -4154,16 +2715,6 @@ public sealed partial class AutomationDiagnosticsHub
             QueueDropsFileWriter = health.AudioChunksDropped
         };
 
-    private static AudioDropsFlattenedProjection BuildAudioDropsFlattenedProjection(AudioDropsProjection audioDrops)
-        => new()
-        {
-            QueueSaturated = audioDrops.QueueSaturated,
-            BacklogEviction = audioDrops.BacklogEviction,
-            ChunksDropped = audioDrops.ChunksDropped,
-            QueueDropsRealtime = audioDrops.QueueDropsRealtime,
-            QueueDropsFileWriter = audioDrops.QueueDropsFileWriter
-        };
-
     private readonly record struct AudioDropsProjection
     {
         public long QueueSaturated { get; init; }
@@ -4171,37 +2722,6 @@ public sealed partial class AutomationDiagnosticsHub
         public long ChunksDropped { get; init; }
         public long QueueDropsRealtime { get; init; }
         public long QueueDropsFileWriter { get; init; }
-    }
-
-    private readonly record struct AudioDropsFlattenedProjection
-    {
-        public long QueueSaturated { get; init; }
-        public long BacklogEviction { get; init; }
-        public long ChunksDropped { get; init; }
-        public long QueueDropsRealtime { get; init; }
-        public long QueueDropsFileWriter { get; init; }
-    }
-
-    private static AudioAndIngestFlattenedProjection BuildAudioAndIngestFlattenedProjection(
-        AudioAndIngestProjection audioAndIngest)
-        => new()
-        {
-            Signal = BuildAudioSignalFlattenedProjection(audioAndIngest.Signal),
-            Ingest = BuildCaptureIngestFlattenedProjection(audioAndIngest.Ingest),
-            SourceReader = BuildSourceReaderFlattenedProjection(audioAndIngest.Ingest),
-            WasapiCapture = BuildWasapiCaptureFlattenedProjection(audioAndIngest.Wasapi),
-            WasapiPlayback = BuildWasapiPlaybackFlattenedProjection(audioAndIngest.Wasapi),
-            BufferHealth = BuildAudioBufferHealthFlattenedProjection(audioAndIngest.Wasapi)
-        };
-
-    private readonly record struct AudioAndIngestFlattenedProjection
-    {
-        public AudioSignalFlattenedProjection Signal { get; init; }
-        public CaptureIngestFlattenedProjection Ingest { get; init; }
-        public SourceReaderFlattenedProjection SourceReader { get; init; }
-        public WasapiCaptureFlattenedProjection WasapiCapture { get; init; }
-        public WasapiPlaybackFlattenedProjection WasapiPlayback { get; init; }
-        public AudioBufferHealthFlattenedProjection BufferHealth { get; init; }
     }
 
     private static PreviewRuntimeProjection BuildPreviewRuntimeProjection(
@@ -4216,18 +2736,6 @@ public sealed partial class AutomationDiagnosticsHub
             Startup = BuildPreviewRuntimeStartupProjection(previewRuntime),
             GpuPlayback = BuildPreviewRuntimeGpuPlaybackProjection(previewRuntime),
             Color = BuildPreviewRuntimeColorProjection(previewHdrState, captureRuntime)
-        };
-
-    private static PreviewRuntimeFlattenedProjection BuildPreviewRuntimeFlattenedProjection(
-        PreviewRuntimeProjection previewSummary)
-        => new()
-        {
-            Frame = BuildPreviewRuntimeFrameFlattenedProjection(previewSummary.Frame),
-            Cadence = BuildPreviewRuntimeCadenceFlattenedProjection(previewSummary.Cadence),
-            Surface = BuildPreviewRuntimeSurfaceFlattenedProjection(previewSummary.Surface),
-            Startup = BuildPreviewRuntimeStartupFlattenedProjection(previewSummary.Startup),
-            GpuPlayback = BuildPreviewRuntimeGpuPlaybackFlattenedProjection(previewSummary.GpuPlayback),
-            Color = BuildPreviewRuntimeColorFlattenedProjection(previewSummary.Color)
         };
 
     private readonly record struct PreviewRuntimeProjection
@@ -4249,25 +2757,7 @@ public sealed partial class AutomationDiagnosticsHub
             EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs
         };
 
-    private static PreviewRuntimeFrameFlattenedProjection BuildPreviewRuntimeFrameFlattenedProjection(
-        PreviewRuntimeFrameProjection frame)
-        => new()
-        {
-            FramesArrived = frame.FramesArrived,
-            FramesDisplayed = frame.FramesDisplayed,
-            FramesDropped = frame.FramesDropped,
-            EstimatedPipelineLatencyMs = frame.EstimatedPipelineLatencyMs
-        };
-
     private readonly record struct PreviewRuntimeFrameProjection
-    {
-        public long FramesArrived { get; init; }
-        public long FramesDisplayed { get; init; }
-        public long FramesDropped { get; init; }
-        public long EstimatedPipelineLatencyMs { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeFrameFlattenedProjection
     {
         public long FramesArrived { get; init; }
         public long FramesDisplayed { get; init; }
@@ -4295,45 +2785,7 @@ public sealed partial class AutomationDiagnosticsHub
             SlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent
         };
 
-    private static PreviewRuntimeCadenceFlattenedProjection BuildPreviewRuntimeCadenceFlattenedProjection(
-        PreviewRuntimeCadenceProjection cadence)
-        => new()
-        {
-            SampleCount = cadence.SampleCount,
-            ObservedFps = cadence.ObservedFps,
-            ExpectedIntervalMs = cadence.ExpectedIntervalMs,
-            AverageIntervalMs = cadence.AverageIntervalMs,
-            P95IntervalMs = cadence.P95IntervalMs,
-            P99IntervalMs = cadence.P99IntervalMs,
-            MaxIntervalMs = cadence.MaxIntervalMs,
-            OnePercentLowFps = cadence.OnePercentLowFps,
-            FivePercentLowFps = cadence.FivePercentLowFps,
-            SampleDurationMs = cadence.SampleDurationMs,
-            RecentIntervalsMs = cadence.RecentIntervalsMs,
-            JitterStdDevMs = cadence.JitterStdDevMs,
-            SlowFrameCount = cadence.SlowFrameCount,
-            SlowFramePercent = cadence.SlowFramePercent
-        };
-
     private readonly record struct PreviewRuntimeCadenceProjection
-    {
-        public int SampleCount { get; init; }
-        public double ObservedFps { get; init; }
-        public double ExpectedIntervalMs { get; init; }
-        public double AverageIntervalMs { get; init; }
-        public double P95IntervalMs { get; init; }
-        public double P99IntervalMs { get; init; }
-        public double MaxIntervalMs { get; init; }
-        public double OnePercentLowFps { get; init; }
-        public double FivePercentLowFps { get; init; }
-        public double SampleDurationMs { get; init; }
-        public double[] RecentIntervalsMs { get; init; }
-        public double JitterStdDevMs { get; init; }
-        public long SlowFrameCount { get; init; }
-        public double SlowFramePercent { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeCadenceFlattenedProjection
     {
         public int SampleCount { get; init; }
         public double ObservedFps { get; init; }
@@ -4362,25 +2814,7 @@ public sealed partial class AutomationDiagnosticsHub
             AdapterColorMetadata = captureRuntime.PreviewColorMetadata
         };
 
-    private static PreviewRuntimeColorFlattenedProjection BuildPreviewRuntimeColorFlattenedProjection(
-        PreviewRuntimeColorProjection color)
-        => new()
-        {
-            HdrInputDetected = color.HdrInputDetected,
-            ToneMapMode = color.ToneMapMode,
-            ColorContext = color.ColorContext,
-            AdapterColorMetadata = color.AdapterColorMetadata
-        };
-
     private readonly record struct PreviewRuntimeColorProjection
-    {
-        public bool HdrInputDetected { get; init; }
-        public string ToneMapMode { get; init; }
-        public string? ColorContext { get; init; }
-        public string AdapterColorMetadata { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeColorFlattenedProjection
     {
         public bool HdrInputDetected { get; init; }
         public string ToneMapMode { get; init; }
@@ -4398,27 +2832,7 @@ public sealed partial class AutomationDiagnosticsHub
             RendererAttached = previewRuntime.RendererAttached
         };
 
-    private static PreviewRuntimeSurfaceFlattenedProjection BuildPreviewRuntimeSurfaceFlattenedProjection(
-        PreviewRuntimeSurfaceProjection surface)
-        => new()
-        {
-            GpuActive = surface.GpuActive,
-            PlaceholderVisible = surface.PlaceholderVisible,
-            GpuElementVisible = surface.GpuElementVisible,
-            CpuElementVisible = surface.CpuElementVisible,
-            RendererAttached = surface.RendererAttached
-        };
-
     private readonly record struct PreviewRuntimeSurfaceProjection
-    {
-        public bool GpuActive { get; init; }
-        public bool PlaceholderVisible { get; init; }
-        public bool GpuElementVisible { get; init; }
-        public bool CpuElementVisible { get; init; }
-        public bool RendererAttached { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeSurfaceFlattenedProjection
     {
         public bool GpuActive { get; init; }
         public bool PlaceholderVisible { get; init; }
@@ -4450,51 +2864,7 @@ public sealed partial class AutomationDiagnosticsHub
             RendererMode = previewRuntime.RendererMode
         };
 
-    private static PreviewRuntimeStartupFlattenedProjection BuildPreviewRuntimeStartupFlattenedProjection(
-        PreviewRuntimeStartupProjection startup)
-        => new()
-        {
-            State = startup.State,
-            AttemptId = startup.AttemptId,
-            ElapsedMs = startup.ElapsedMs,
-            TimeoutMs = startup.TimeoutMs,
-            GpuSignalMediaOpened = startup.GpuSignalMediaOpened,
-            GpuSignalFirstFrame = startup.GpuSignalFirstFrame,
-            GpuSignalPlaybackAdvancing = startup.GpuSignalPlaybackAdvancing,
-            RequiredSignals = startup.RequiredSignals,
-            ReceivedSignals = startup.ReceivedSignals,
-            Strategy = startup.Strategy,
-            MissingSignals = startup.MissingSignals,
-            RecoveryAttemptCount = startup.RecoveryAttemptCount,
-            LastFailureReason = startup.LastFailureReason,
-            FirstVisualConfirmed = startup.FirstVisualConfirmed,
-            BlankSuspected = startup.BlankSuspected,
-            Stalled = startup.Stalled,
-            RendererMode = startup.RendererMode
-        };
-
     private readonly record struct PreviewRuntimeStartupProjection
-    {
-        public string State { get; init; }
-        public string? AttemptId { get; init; }
-        public double? ElapsedMs { get; init; }
-        public int TimeoutMs { get; init; }
-        public bool GpuSignalMediaOpened { get; init; }
-        public bool GpuSignalFirstFrame { get; init; }
-        public bool GpuSignalPlaybackAdvancing { get; init; }
-        public PreviewStartupSignalFlags RequiredSignals { get; init; }
-        public PreviewStartupSignalFlags ReceivedSignals { get; init; }
-        public string Strategy { get; init; }
-        public string? MissingSignals { get; init; }
-        public int RecoveryAttemptCount { get; init; }
-        public string? LastFailureReason { get; init; }
-        public bool FirstVisualConfirmed { get; init; }
-        public bool BlankSuspected { get; init; }
-        public bool Stalled { get; init; }
-        public string RendererMode { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeStartupFlattenedProjection
     {
         public string State { get; init; }
         public string? AttemptId { get; init; }
@@ -4526,17 +2896,6 @@ public sealed partial class AutomationDiagnosticsHub
             PositionEventCount = previewRuntime.GpuPositionEventCount
         };
 
-    private static PreviewRuntimeGpuPlaybackFlattenedProjection BuildPreviewRuntimeGpuPlaybackFlattenedProjection(
-        PreviewRuntimeGpuPlaybackProjection gpuPlayback)
-        => new()
-        {
-            PlaybackState = gpuPlayback.PlaybackState,
-            NaturalVideoWidth = gpuPlayback.NaturalVideoWidth,
-            NaturalVideoHeight = gpuPlayback.NaturalVideoHeight,
-            PositionMs = gpuPlayback.PositionMs,
-            PositionEventCount = gpuPlayback.PositionEventCount
-        };
-
     private readonly record struct PreviewRuntimeGpuPlaybackProjection
     {
         public string PlaybackState { get; init; }
@@ -4544,25 +2903,6 @@ public sealed partial class AutomationDiagnosticsHub
         public int NaturalVideoHeight { get; init; }
         public double PositionMs { get; init; }
         public long PositionEventCount { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeGpuPlaybackFlattenedProjection
-    {
-        public string PlaybackState { get; init; }
-        public int NaturalVideoWidth { get; init; }
-        public int NaturalVideoHeight { get; init; }
-        public double PositionMs { get; init; }
-        public long PositionEventCount { get; init; }
-    }
-
-    private readonly record struct PreviewRuntimeFlattenedProjection
-    {
-        public PreviewRuntimeFrameFlattenedProjection Frame { get; init; }
-        public PreviewRuntimeCadenceFlattenedProjection Cadence { get; init; }
-        public PreviewRuntimeSurfaceFlattenedProjection Surface { get; init; }
-        public PreviewRuntimeStartupFlattenedProjection Startup { get; init; }
-        public PreviewRuntimeGpuPlaybackFlattenedProjection GpuPlayback { get; init; }
-        public PreviewRuntimeColorFlattenedProjection Color { get; init; }
     }
 
     private static PreviewD3DProjection BuildPreviewD3DProjection(
@@ -4814,218 +3154,4 @@ public sealed partial class AutomationDiagnosticsHub
         public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }
     }
 
-    private static PreviewD3DFlattenedProjection BuildPreviewD3DFlattenedProjection(
-        PreviewD3DProjection previewD3D)
-        => new()
-        {
-            PresentSyncInterval = previewD3D.PresentSyncInterval,
-            MaxFrameLatency = previewD3D.MaxFrameLatency,
-            SwapChainBufferCount = previewD3D.SwapChainBufferCount,
-            SwapChainAddress = previewD3D.SwapChainAddress,
-            FramesSubmitted = previewD3D.FramesSubmitted,
-            FramesRendered = previewD3D.FramesRendered,
-            FramesDropped = previewD3D.FramesDropped,
-            RenderThreadFailureCount = previewD3D.RenderThreadFailureCount,
-            LastRenderThreadFailureType = previewD3D.LastRenderThreadFailureType,
-            LastRenderThreadFailureMessage = previewD3D.LastRenderThreadFailureMessage,
-            LastRenderThreadFailureHResult = previewD3D.LastRenderThreadFailureHResult,
-            PendingFrameCount = previewD3D.PendingFrameCount,
-            InputColorSpace = previewD3D.InputColorSpace,
-            OutputColorSpace = previewD3D.OutputColorSpace,
-            CpuTiming = BuildPreviewD3DCpuTimingFlattenedProjection(previewD3D.CpuTiming),
-            LatencyAndStats = BuildPreviewD3DLatencyAndStatsFlattenedProjection(
-                previewD3D.PipelineLatency,
-                previewD3D.FrameLatencyWait,
-                previewD3D.FrameStats),
-            FrameFlow = BuildPreviewD3DFrameFlowFlattenedProjection(previewD3D.FrameFlow)
-        };
-
-    private readonly record struct PreviewD3DFlattenedProjection
-    {
-        public int PresentSyncInterval { get; init; }
-        public int MaxFrameLatency { get; init; }
-        public int SwapChainBufferCount { get; init; }
-        public string SwapChainAddress { get; init; }
-        public long FramesSubmitted { get; init; }
-        public long FramesRendered { get; init; }
-        public long FramesDropped { get; init; }
-        public long RenderThreadFailureCount { get; init; }
-        public string LastRenderThreadFailureType { get; init; }
-        public string LastRenderThreadFailureMessage { get; init; }
-        public int LastRenderThreadFailureHResult { get; init; }
-        public int PendingFrameCount { get; init; }
-        public string InputColorSpace { get; init; }
-        public string OutputColorSpace { get; init; }
-        public PreviewD3DCpuTimingFlattenedProjection CpuTiming { get; init; }
-        public PreviewD3DLatencyAndStatsFlattenedProjection LatencyAndStats { get; init; }
-        public PreviewD3DFrameFlowFlattenedProjection FrameFlow { get; init; }
-    }
-
-    private static PreviewD3DCpuTimingFlattenedProjection BuildPreviewD3DCpuTimingFlattenedProjection(
-        PreviewD3DCpuTimingProjection cpuTiming)
-        => new()
-        {
-            SampleCount = cpuTiming.SampleCount,
-            InputUploadCpuAvgMs = cpuTiming.InputUploadAvgMs,
-            InputUploadCpuP95Ms = cpuTiming.InputUploadP95Ms,
-            InputUploadCpuP99Ms = cpuTiming.InputUploadP99Ms,
-            InputUploadCpuMaxMs = cpuTiming.InputUploadMaxMs,
-            RenderSubmitCpuAvgMs = cpuTiming.RenderSubmitAvgMs,
-            RenderSubmitCpuP95Ms = cpuTiming.RenderSubmitP95Ms,
-            RenderSubmitCpuP99Ms = cpuTiming.RenderSubmitP99Ms,
-            RenderSubmitCpuMaxMs = cpuTiming.RenderSubmitMaxMs,
-            PresentCallAvgMs = cpuTiming.PresentCallAvgMs,
-            PresentCallP95Ms = cpuTiming.PresentCallP95Ms,
-            PresentCallP99Ms = cpuTiming.PresentCallP99Ms,
-            PresentCallMaxMs = cpuTiming.PresentCallMaxMs,
-            TotalFrameCpuAvgMs = cpuTiming.TotalFrameAvgMs,
-            TotalFrameCpuP95Ms = cpuTiming.TotalFrameP95Ms,
-            TotalFrameCpuP99Ms = cpuTiming.TotalFrameP99Ms,
-            TotalFrameCpuMaxMs = cpuTiming.TotalFrameMaxMs
-        };
-
-    private readonly record struct PreviewD3DCpuTimingFlattenedProjection
-    {
-        public int SampleCount { get; init; }
-        public double InputUploadCpuAvgMs { get; init; }
-        public double InputUploadCpuP95Ms { get; init; }
-        public double InputUploadCpuP99Ms { get; init; }
-        public double InputUploadCpuMaxMs { get; init; }
-        public double RenderSubmitCpuAvgMs { get; init; }
-        public double RenderSubmitCpuP95Ms { get; init; }
-        public double RenderSubmitCpuP99Ms { get; init; }
-        public double RenderSubmitCpuMaxMs { get; init; }
-        public double PresentCallAvgMs { get; init; }
-        public double PresentCallP95Ms { get; init; }
-        public double PresentCallP99Ms { get; init; }
-        public double PresentCallMaxMs { get; init; }
-        public double TotalFrameCpuAvgMs { get; init; }
-        public double TotalFrameCpuP95Ms { get; init; }
-        public double TotalFrameCpuP99Ms { get; init; }
-        public double TotalFrameCpuMaxMs { get; init; }
-    }
-
-    private static PreviewD3DLatencyAndStatsFlattenedProjection BuildPreviewD3DLatencyAndStatsFlattenedProjection(
-        PreviewD3DPipelineLatencyProjection pipelineLatency,
-        PreviewD3DFrameLatencyWaitProjection frameLatencyWait,
-        PreviewD3DFrameStatsProjection frameStats)
-        => new()
-        {
-            PipelineLatencySampleCount = pipelineLatency.SampleCount,
-            PipelineLatencyAvgMs = pipelineLatency.AvgMs,
-            PipelineLatencyP95Ms = pipelineLatency.P95Ms,
-            PipelineLatencyP99Ms = pipelineLatency.P99Ms,
-            PipelineLatencyMaxMs = pipelineLatency.MaxMs,
-            FrameLatencyWaitEnabled = frameLatencyWait.Enabled,
-            FrameLatencyWaitHandleActive = frameLatencyWait.HandleActive,
-            FrameLatencyWaitCallCount = frameLatencyWait.CallCount,
-            FrameLatencyWaitSignaledCount = frameLatencyWait.SignaledCount,
-            FrameLatencyWaitTimeoutCount = frameLatencyWait.TimeoutCount,
-            FrameLatencyWaitUnexpectedResultCount = frameLatencyWait.UnexpectedResultCount,
-            FrameLatencyWaitLastResult = frameLatencyWait.LastResult,
-            FrameLatencyWaitLastMs = frameLatencyWait.LastMs,
-            FrameLatencyWaitSampleCount = frameLatencyWait.SampleCount,
-            FrameLatencyWaitAvgMs = frameLatencyWait.AvgMs,
-            FrameLatencyWaitP95Ms = frameLatencyWait.P95Ms,
-            FrameLatencyWaitP99Ms = frameLatencyWait.P99Ms,
-            FrameLatencyWaitMaxMs = frameLatencyWait.MaxMs,
-            FrameStatsSampleCount = frameStats.SampleCount,
-            FrameStatsSuccessCount = frameStats.SuccessCount,
-            FrameStatsFailureCount = frameStats.FailureCount,
-            FrameStatsLastError = frameStats.LastError,
-            FrameStatsPresentCount = frameStats.PresentCount,
-            FrameStatsPresentRefreshCount = frameStats.PresentRefreshCount,
-            FrameStatsSyncRefreshCount = frameStats.SyncRefreshCount,
-            FrameStatsSyncQpcTime = frameStats.SyncQpcTime,
-            FrameStatsLastPresentDelta = frameStats.LastPresentDelta,
-            FrameStatsLastPresentRefreshDelta = frameStats.LastPresentRefreshDelta,
-            FrameStatsLastSyncRefreshDelta = frameStats.LastSyncRefreshDelta,
-            FrameStatsMissedRefreshCount = frameStats.MissedRefreshCount,
-            FrameStatsRecentMissedRefreshCount = frameStats.RecentMissedRefreshCount,
-            FrameStatsRecentFailureCount = frameStats.RecentFailureCount
-        };
-
-    private readonly record struct PreviewD3DLatencyAndStatsFlattenedProjection
-    {
-        public int PipelineLatencySampleCount { get; init; }
-        public double PipelineLatencyAvgMs { get; init; }
-        public double PipelineLatencyP95Ms { get; init; }
-        public double PipelineLatencyP99Ms { get; init; }
-        public double PipelineLatencyMaxMs { get; init; }
-        public bool FrameLatencyWaitEnabled { get; init; }
-        public bool FrameLatencyWaitHandleActive { get; init; }
-        public long FrameLatencyWaitCallCount { get; init; }
-        public long FrameLatencyWaitSignaledCount { get; init; }
-        public long FrameLatencyWaitTimeoutCount { get; init; }
-        public long FrameLatencyWaitUnexpectedResultCount { get; init; }
-        public uint FrameLatencyWaitLastResult { get; init; }
-        public double FrameLatencyWaitLastMs { get; init; }
-        public int FrameLatencyWaitSampleCount { get; init; }
-        public double FrameLatencyWaitAvgMs { get; init; }
-        public double FrameLatencyWaitP95Ms { get; init; }
-        public double FrameLatencyWaitP99Ms { get; init; }
-        public double FrameLatencyWaitMaxMs { get; init; }
-        public long FrameStatsSampleCount { get; init; }
-        public long FrameStatsSuccessCount { get; init; }
-        public long FrameStatsFailureCount { get; init; }
-        public string FrameStatsLastError { get; init; }
-        public long FrameStatsPresentCount { get; init; }
-        public long FrameStatsPresentRefreshCount { get; init; }
-        public long FrameStatsSyncRefreshCount { get; init; }
-        public long FrameStatsSyncQpcTime { get; init; }
-        public long FrameStatsLastPresentDelta { get; init; }
-        public long FrameStatsLastPresentRefreshDelta { get; init; }
-        public long FrameStatsLastSyncRefreshDelta { get; init; }
-        public long FrameStatsMissedRefreshCount { get; init; }
-        public long FrameStatsRecentMissedRefreshCount { get; init; }
-        public long FrameStatsRecentFailureCount { get; init; }
-    }
-
-    private static PreviewD3DFrameFlowFlattenedProjection BuildPreviewD3DFrameFlowFlattenedProjection(
-        PreviewD3DFrameFlowProjection frameFlow)
-        => new()
-        {
-            LastSubmittedPreviewPresentId = frameFlow.LastSubmittedPreviewPresentId,
-            LastSubmittedSourceSequenceNumber = frameFlow.LastSubmittedSourceSequenceNumber,
-            LastSubmittedSourcePtsTicks = frameFlow.LastSubmittedSourcePtsTicks,
-            LastSubmittedQpc = frameFlow.LastSubmittedQpc,
-            LastSubmittedUtcUnixMs = frameFlow.LastSubmittedUtcUnixMs,
-            LastRenderedPreviewPresentId = frameFlow.LastRenderedPreviewPresentId,
-            LastRenderedSourceSequenceNumber = frameFlow.LastRenderedSourceSequenceNumber,
-            LastRenderedSourcePtsTicks = frameFlow.LastRenderedSourcePtsTicks,
-            LastRenderedQpc = frameFlow.LastRenderedQpc,
-            LastRenderedUtcUnixMs = frameFlow.LastRenderedUtcUnixMs,
-            LastRenderedSchedulerToPresentMs = frameFlow.LastRenderedSchedulerToPresentMs,
-            LastRenderedPipelineLatencyMs = frameFlow.LastRenderedPipelineLatencyMs,
-            LastDroppedPreviewPresentId = frameFlow.LastDroppedPreviewPresentId,
-            LastDroppedSourceSequenceNumber = frameFlow.LastDroppedSourceSequenceNumber,
-            LastDroppedSourcePtsTicks = frameFlow.LastDroppedSourcePtsTicks,
-            LastDroppedQpc = frameFlow.LastDroppedQpc,
-            LastDroppedUtcUnixMs = frameFlow.LastDroppedUtcUnixMs,
-            LastDropReason = frameFlow.LastDropReason,
-            RecentSlowFrames = frameFlow.RecentSlowFrames
-        };
-
-    private readonly record struct PreviewD3DFrameFlowFlattenedProjection
-    {
-        public long LastSubmittedPreviewPresentId { get; init; }
-        public long LastSubmittedSourceSequenceNumber { get; init; }
-        public long LastSubmittedSourcePtsTicks { get; init; }
-        public long LastSubmittedQpc { get; init; }
-        public long LastSubmittedUtcUnixMs { get; init; }
-        public long LastRenderedPreviewPresentId { get; init; }
-        public long LastRenderedSourceSequenceNumber { get; init; }
-        public long LastRenderedSourcePtsTicks { get; init; }
-        public long LastRenderedQpc { get; init; }
-        public long LastRenderedUtcUnixMs { get; init; }
-        public double LastRenderedSchedulerToPresentMs { get; init; }
-        public double LastRenderedPipelineLatencyMs { get; init; }
-        public long LastDroppedPreviewPresentId { get; init; }
-        public long LastDroppedSourceSequenceNumber { get; init; }
-        public long LastDroppedSourcePtsTicks { get; init; }
-        public long LastDroppedQpc { get; init; }
-        public long LastDroppedUtcUnixMs { get; init; }
-        public string LastDropReason { get; init; }
-        public PreviewSlowFrameDiagnostic[] RecentSlowFrames { get; init; }
-    }
 }

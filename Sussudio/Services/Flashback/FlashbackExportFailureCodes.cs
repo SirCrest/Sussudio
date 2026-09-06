@@ -32,6 +32,9 @@ internal static class FlashbackExportFailureCodes
         IEnumerable<string>? preservedArtifacts = null)
         => FinalizeResult.Failure(outputPath, message, preservedArtifacts, failureCode);
 
+    internal static bool IsCancelled(FinalizeResult result)
+        => !result.Succeeded && result.FailureCode == Cancelled;
+
     // These category spellings are part of the existing automation response.
     internal static string Classify(FinalizeResult result)
         => result.Succeeded ? string.Empty : result.FailureCode switch
@@ -63,7 +66,12 @@ internal static class FlashbackExportFailureCodes
                 return exportException.FailureCode;
         }
 
-        return Failed;
+        return exception switch
+        {
+            ObjectDisposedException => Disposed,
+            TimeoutException => Timeout,
+            _ => Failed
+        };
     }
 }
 

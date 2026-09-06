@@ -50,7 +50,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private long _lastAudioPtsTicks;  // PTS of last audio chunk delivered to WASAPI
     private long _lastVideoPtsTicks;  // PTS of last video frame displayed
 
-    // --- Scrub state restoration (M16 fix) ---
+    // Remember whether to resume playback when scrubbing ends.
     private bool _wasPlayingBeforeScrub;
 
     private readonly FlashbackPlaybackCommandMailbox _commandMailbox;
@@ -2097,7 +2097,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
                 return;
             }
 
-            // Skip invalid or non-monotonic PTS (L8 fix).
+            // Drop invalid timestamps and audio that would move the playback clock backward.
             var prevPts = Interlocked.Read(ref _lastAudioPtsTicks);
             if (chunk.Pts.Ticks <= 0 || chunk.Pts.Ticks <= prevPts)
             {
