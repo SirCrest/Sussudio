@@ -275,7 +275,7 @@
 
             <InfoBar x:Name="RecordingRecoveryInfoBar"
                      AutomationProperties.AutomationId="RecordingRecoveryInfoBar"
-                     Title="Recording failed"
+                     Title="An earlier recording failed"
                      Severity="Error"
                      IsOpen="False"
                      IsClosable="True"

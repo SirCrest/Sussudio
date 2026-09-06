@@ -2038,10 +2038,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_DRAIN_COMPLETE");
+            // Native cleanup resets the encoder PTS cursor. Preserve the final
+            // submitted position so a sink cycle keeps its last short segment.
+            var finalPts = ResolveEncoderPts();
             _encoder.FlushAndClose();
 
             // Register the final active segment
-            var finalPts = ResolveEncoderPts();
             if (finalPts > TimeSpan.Zero)
             {
                 if (_tsFilePath != null && finalPts > _segmentStartPts)

@@ -21,6 +21,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 {
     public const string DefaultPipeName = AutomationPipeProtocol.DefaultPipeName;
     private const int MaxRequestCharacters = 1024 * 1024;
+    private const int MaxConcurrentConnections = 4;
 
     private readonly IAutomationCommandDispatcher _commandDispatcher;
     private readonly string _pipeName;
@@ -116,7 +117,16 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
 
         _cts = new CancellationTokenSource();
-        _serverTask = Task.Run(() => RunServerLoopAsync(initialServer, _cts.Token));
+        var serverToken = _cts.Token;
+        var workers = new Task[MaxConcurrentConnections];
+        for (var i = 0; i < workers.Length; i++)
+        {
+            var workerInitialServer = i == 0 ? initialServer : null;
+            workers[i] = Task.Run(() => RunServerLoopAsync(workerInitialServer, serverToken));
+        }
+        // Long exports and file verification must leave a pipe available for
+        // diagnostics. Each worker owns one connection and joins the same shutdown.
+        _serverTask = Task.WhenAll(workers);
         Logger.Log($"Automation pipe server started on '{_pipeName}' ({_pipeSecurityMode}).");
         return true;
     }

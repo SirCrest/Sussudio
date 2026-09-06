@@ -679,6 +679,10 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped();
 
     [Fact]
+    public Task FlashbackExporterRetainsHiddenDecoderPreroll()
+        => global::Program.FlashbackExporter_RetainsHiddenDecoderPreroll();
+
+    [Fact]
     public Task FlashbackExporterReturnsCancellationResultWhileWaitingForExportLock()
         => global::Program.FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled();
 
@@ -963,7 +967,9 @@ static partial class Program
         var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
         AssertEqual(0, (int)resolve.Invoke(null, new object[] { 0.49, 29L, false })!, "Flashback export throttle idle");
-        AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.49, 0L, true })!, "Flashback export throttle high-resolution live baseline");
+        AssertEqual(1, (int)resolve.Invoke(null, new object[] { 0.49, 0L, true })!, "Flashback export throttle high-resolution live baseline");
+        AssertEqual(16, (int)resolve.Invoke(null, new object[] { 0.50, 0L, true })!, "High-resolution baseline must not hide queue pressure");
+        AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.90, 0L, true })!, "High-resolution severe pressure still backs off");
         AssertEqual(16, (int)resolve.Invoke(null, new object[] { 0.50, 0L, false })!, "Flashback export throttle queue half full");
         AssertEqual(16, (int)resolve.Invoke(null, new object[] { 0.0, 30L, false })!, "Flashback export throttle oldest frame mild pressure");
         AssertEqual(20, (int)resolve.Invoke(null, new object[] { 0.70, 0L, false })!, "Flashback export throttle medium queue pressure");
@@ -1638,6 +1644,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static Task FlashbackExporter_RetainsHiddenDecoderPreroll()
+    {
+        var exporter = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var normalize = exporter.GetMethod("NormalizePacketTimestamps", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var resolveBase = exporter.GetMethod("ResolveSegmentOutputTimestampBaseUs", BindingFlags.Static | BindingFlags.NonPublic)!;
+        // A GOP before a non-keyframe cut must retain distinct negative timestamps.
+        // Clamping them to zero destroys decoding order and exposes the lead-in.
+        Assert.Equal((-300L, -320L), ((long, long))normalize.Invoke(null, new object[] { -300L, -320L, true })!);
+        Assert.Equal((-290L, -310L), ((long, long))normalize.Invoke(null, new object[] { -290L, -310L, true })!);
+        Assert.Equal((0L, 0L), ((long, long))normalize.Invoke(null, new object[] { -300L, -320L, false })!);
+        Assert.Equal((long.MinValue, long.MinValue), ((long, long))normalize.Invoke(null, new object[] { long.MinValue, long.MinValue, true })!);
+        Assert.Equal(1_350_000L, resolveBase.Invoke(null, new object[] { 1_000_000L, 350_000L }));
+        Assert.Equal(long.MaxValue, resolveBase.Invoke(null, new object[] { long.MaxValue - 2, 10L }));
+        var createState = exporter.GetMethod("CreateSegmentPacketWriteState", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var state = createState.Invoke(null, new object[] { 0, 2, true, 165_700_000L, 30_000L, 5_130_000L, 0L, 0, 8_333L })!;
+        state.GetType().GetProperty("MinBaseUs")!.SetValue(state, 165_630_667L);
+        Assert.Equal(165_700_000L, state.GetType().GetProperty("TimestampOriginUs")!.GetValue(state));
+        Assert.Equal(165_730_000L, resolveBase.Invoke(null, new object[] { state.GetType().GetProperty("TimestampOriginUs")!.GetValue(state)!, 30_000L }));
+        var source = ReadFlashbackExporterSource();
+        AssertContains(source, "outputContext->avoid_negative_ts = ffmpeg.AVFMT_AVOID_NEG_TS_DISABLED;");
+        AssertContains(source, "\"use_editlist\", \"1\"");
+        AssertContains(source, "ffmpeg.av_seek_frame(_activeInputContext, state.VideoStreamIndex, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD)");
+        AssertContains(source, "if ((packet->flags & ffmpeg.AV_PKT_FLAG_KEY) == 0) continue;");
+        AssertContains(source, "var keyframeLimitUs = Math.Max(targetUs, state.TimestampBasesUs[state.VideoStreamIndex]);");
+        AssertContains(source, "if (ptsUs > keyframeLimitUs) break;");
+        AssertContains(source, "FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);");
+        AssertContains(source, "preservePreroll: state.UseSegmentTimeline && state.SegmentInOffsetUs > 0");
+        AssertDoesNotContain(source, "comparePtsUs < state.SegmentInOffsetUs");
+        return Task.CompletedTask;
+    }
+
     internal static Task FlashbackExporter_TimestampConversionsAreSaturating()
     {
         var sourceText = ReadFlashbackExporterSource();
@@ -1672,10 +1709,10 @@ static partial class Program
         AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
         AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(packetTimingText, "private static bool TryResolveTimestampBase(AVPacket* packet, out long timestampBase)");
-        AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet)");
-        AssertContains(packetTimingText, "if (packet->pts != ffmpeg.AV_NOPTS_VALUE && packet->pts < 0)");
-        AssertContains(packetTimingText, "if (packet->dts != ffmpeg.AV_NOPTS_VALUE && packet->dts < 0)");
-        AssertContains(packetTimingText, "packet->pts != ffmpeg.AV_NOPTS_VALUE &&\n            packet->dts != ffmpeg.AV_NOPTS_VALUE &&\n            packet->pts < packet->dts");
+        AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet, bool preservePreroll = false)");
+        AssertContains(packetTimingText, "if (pts != ffmpeg.AV_NOPTS_VALUE && pts < 0) pts = 0;");
+        AssertContains(packetTimingText, "if (dts != ffmpeg.AV_NOPTS_VALUE && dts < 0) dts = 0;");
+        AssertContains(packetTimingText, "pts != ffmpeg.AV_NOPTS_VALUE && dts != ffmpeg.AV_NOPTS_VALUE && pts < dts");
         AssertContains(packetTimingText, "private long FlushBufferedPackets(");
         AssertContains(packetTimingText, "private static void FreeBufferedPackets(");
         AssertContains(packetTimingText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
@@ -1876,7 +1913,7 @@ static partial class Program
         AssertContains(libAvErrorsText, "private static string GetErrorString(int errorCode)");
         AssertContains(packetTimingText, "private static long ResolveFrameDurationUs(AVStream* videoStream)");
         AssertContains(packetTimingText, "private static long ResolveSegmentBoundaryTimestampRepairUs(");
-        AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet)");
+        AssertContains(packetTimingText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet, bool preservePreroll = false)");
         AssertContains(packetBuffersText, "private long FlushBufferedPackets(");
         AssertContains(packetBuffersText, "private static void FreeBufferedPackets(");
         AssertContains(packetBuffersText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
@@ -3371,11 +3408,9 @@ static partial class Program
         AssertContains(sourceText, "command_pending={commandPending} pending_command={pendingCommandKind}");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"audio_prebuffer_{operation}\");");
         AssertContains(sourceText, "released_frames={prebufferReleasedFrames}");
-        // Keep-frames prebuffer (fix A): CPU frames decoded for the audio prebuffer
-        // are retained in prebufferedFrames (bounded) so the resume does not
-        // rewind-seek and re-decode the interval; the rewind runs only when
-        // frames had to be released (hw frames, cap overflow, or discard).
-        AssertContains(sourceText, "private const int PlaybackAudioPrebufferMaxHeldFrames = 32;");
+        // Borrowed CPU data cannot remain queued across repeated decode calls.
+        // Priming beyond one frame must use the bounded rewind path.
+        AssertContains(sourceText, "private const int PlaybackAudioPrebufferMaxHeldFrames = 1;");
         AssertContains(sourceText, "prebufferedFrames.Count < PlaybackAudioPrebufferMaxHeldFrames)");
         AssertContains(sourceText, "prebufferedFrames.Enqueue(frame);");
         AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"prebuffer_cap_{operation}\");");
@@ -3743,6 +3778,11 @@ static partial class Program
         AssertContains(sourceText, "if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, \"seek_keyframe\"))\n                    {\n                        Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}\");\n                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, \"seek_keyframe\", cancellationToken))\n                            goto seekSuccess;\n                    }");
         AssertContains(sourceText, "SetReopenFailure(\"segment_switch\", \"seek_failed\", segSwitchTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL");
+        var segmentSwitch = sourceText.Substring(sourceText.IndexOf("private bool TrySwitchToNextSegment(", StringComparison.Ordinal));
+        AssertOccursBefore(segmentSwitch, "decoder.BeginCompletedInputDrain(cancellationToken)", "decoder.CloseFile();");
+        Assert.True(segmentSwitch.IndexOf("RestoreAudioCallback(decoder, audioGate, audioGate);", StringComparison.Ordinal) <
+                    segmentSwitch.IndexOf("SeekToWithCapTelemetry(decoder, segSwitchTarget", StringComparison.Ordinal),
+                    "Segment forward decode must preserve new audio and reject previously queued packets.");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"segment_switch_seek_failed\");");
         AssertContains(sourceText, "SetReopenFailure(\"fmp4_reopen\", \"seek_failed\", resumeTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL");
@@ -5489,6 +5529,9 @@ static partial class Program
         AssertContains(sourceText, "private const int MaxMpegTsAnalyzeDurationUs = 5 * 1000 * 1000;");
         AssertContains(sourceText, "_formatCtx->probesize = MaxMpegTsProbeSizeBytes;");
         AssertContains(sourceText, "_formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;");
+        AssertContains(sourceText, "codecId is AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264");
+        AssertContains(sourceText, "ffmpeg.av_dict_set(&probeOptions[i], \"skip_frame\", \"all\", 0)");
+        AssertContains(sourceText, "ffmpeg.av_dict_free(&probeOptions[i]);");
         AssertContains(sourceText, "if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))");
         AssertContains(sourceText, "if (!IsValidStreamIndex(_videoStreamIndex, streamCount))");
         AssertContains(sourceText, "if (_audioStreamIndex >= 0 && !IsValidStreamIndex(_audioStreamIndex, streamCount))");
@@ -5624,6 +5667,9 @@ static partial class Program
         AssertContains(sourceText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(sourceText, "public bool BeginCompletedInputDrain(CancellationToken cancellationToken = default)");
+        AssertContains(sourceText, "if (_completedInputDrainStarted)");
+        AssertContains(sourceText, "ffmpeg.avcodec_send_packet(_videoCodecCtx, null)");
         AssertContains(sourceText, "if (!SeekToKeyframe(target, cancellationToken))");
         AssertContains(sourceText, "if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))");
         AssertContains(sourceText, "if (!FeedNextVideoPacket(cancellationToken))");

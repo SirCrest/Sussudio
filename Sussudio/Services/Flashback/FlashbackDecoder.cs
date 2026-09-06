@@ -85,6 +85,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     // not discard it — stash it so the next TryDecodeNextVideoFrame() returns it.
     private DecodedVideoFrame _pendingVideoFrame;
     private bool _hasPendingVideoFrame;
+    private bool _completedInputDrainStarted;
     private bool _suppressRecoverableSeekLogsForNextVideoFrame;
 
     // SeekTo forward-decode cap observability
@@ -369,6 +370,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         ThrowIfNotInitialized();
         ThrowIfDisposed();
+        var openStartedAt = Stopwatch.GetTimestamp();
 
         if (_isOpen)
         {
@@ -404,9 +406,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _formatCtx->probesize = MaxMpegTsProbeSizeBytes;
             _formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;
 
-            ThrowIfError(
-                ffmpeg.avformat_find_stream_info(_formatCtx, null),
-                "avformat_find_stream_info");
+            var probeStartedAt = Stopwatch.GetTimestamp();
+            FindInputStreamInfo();
+            var probeMs = Stopwatch.GetElapsedTime(probeStartedAt).TotalMilliseconds;
             if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))
             {
                 throw CreateException(streamCountFailure);
@@ -430,6 +432,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             }
 
             // Set up video decoder
+            var codecStartedAt = Stopwatch.GetTimestamp();
             InitializeVideoDecoder();
 
             // Set up audio decoder (if present)
@@ -451,13 +454,53 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             Logger.Log($"FLASHBACK_DECODER_OPEN path='{filePath}' " +
                        $"video={_videoWidth}x{_videoHeight} fps={_frameRate:F2} hdr={_isHdr} " +
                        $"hw_accel={((_isD3D11HwAccelerated ? "D3D11VA" : "Software"))} " +
-                       $"audio={(_audioStreamIndex >= 0 ? "yes" : "no")}");
+                       $"audio={(_audioStreamIndex >= 0 ? "yes" : "no")} " +
+                       $"probe_ms={probeMs:F1} codec_ms={Stopwatch.GetElapsedTime(codecStartedAt).TotalMilliseconds:F1} total_ms={Stopwatch.GetElapsedTime(openStartedAt).TotalMilliseconds:F1}");
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_DECODER_OPEN_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
             CloseFileCore();
             throw;
+        }
+    }
+
+    private void FindInputStreamInfo()
+    {
+        if (_formatCtx->nb_streams == 0)
+        {
+            // Some demuxers discover their streams only while probing.
+            ThrowIfError(ffmpeg.avformat_find_stream_info(_formatCtx, null), "avformat_find_stream_info");
+            return;
+        }
+
+        if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var failure))
+            throw CreateException(failure);
+
+        var probeOptions = stackalloc AVDictionary*[streamCount];
+        for (var i = 0; i < streamCount; i++)
+            probeOptions[i] = null;
+
+        try
+        {
+            for (var i = 0; i < streamCount; i++)
+            {
+                var codecId = _formatCtx->streams[i]->codecpar->codec_id;
+                if (codecId is AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264)
+                {
+                    // SPS headers supply these codecs' dimensions and pixel format.
+                    // Avoid decoding a full 4K frame on FFmpeg's single probe thread.
+                    // These options do not affect the separate playback decoder.
+                    ThrowIfError(ffmpeg.av_dict_set(&probeOptions[i], "skip_frame", "all", 0), "av_dict_set(probe_skip_frame)");
+                }
+            }
+
+            ThrowIfError(ffmpeg.avformat_find_stream_info(_formatCtx, probeOptions), "avformat_find_stream_info");
+        }
+        finally
+        {
+            for (var i = 0; i < streamCount; i++)
+                ffmpeg.av_dict_free(&probeOptions[i]);
         }
     }
 
@@ -503,6 +546,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         Logger.Log($"FLASHBACK_DECODER_CLOSE_CORE path='{_currentFilePath}' had_swr={_swrCtx != null} had_video={_videoCodecCtx != null} had_audio={_audioCodecCtx != null}");
         _isOpen = false;
+        _completedInputDrainStarted = false;
         _suppressRecoverableSeekLogsForNextVideoFrame = false;
 
         // Clear any stashed pending frame (free held D3D11VA surface if present).
@@ -642,6 +686,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         ThrowIfNotOpen();
         cancellationToken.ThrowIfCancellationRequested();
+        _completedInputDrainStarted = false;
 
         var streamTimestamp = ToStreamTimestamp(target, _videoTimeBase);
         var result = ffmpeg.av_seek_frame(
@@ -863,6 +908,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             Logger.Log($"FLASHBACK_DECODER_VIDEO_ERROR receive_frame code={receiveResult}");
             return false;
         }
+    }
+
+    public bool BeginCompletedInputDrain(CancellationToken cancellationToken = default)
+    {
+        ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_completedInputDrainStarted)
+            return false;
+
+        // Only the controller can establish that a file has finished growing.
+        // Frame-threaded decoding retains its last frames until explicit EOF.
+        ThrowIfError(ffmpeg.avcodec_send_packet(_videoCodecCtx, null), "avcodec_send_packet(completed_input)");
+        _completedInputDrainStarted = true;
+        return true;
     }
 
     /// <summary>

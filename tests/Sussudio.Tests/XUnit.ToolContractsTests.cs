@@ -1100,6 +1100,58 @@ public sealed class McpWindowPreviewToolContractsTests
 
 public sealed class McpDiagnosticSessionCommandRunContextContractsTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PlaybackCleanupWaitsForLiveStateAfterAcknowledgement(bool failSnapshot)
+    {
+        var snapshots = 0;
+        var goLiveAcknowledged = false;
+        var actions = new List<string>();
+        var failures = new List<Exception>();
+        var assembly = ToolFormatterTestAssembly.Load(global::Program.SsctlAssemblyRelativePath);
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> send = (command, _, _) =>
+        {
+            if (command == "FlashbackAction")
+            {
+                goLiveAcknowledged = true;
+                return Task.FromResult(JsonSerializer.SerializeToElement(new { Success = true }));
+            }
+            Assert.Equal("GetSnapshot", command);
+            Assert.True(goLiveAcknowledged);
+            Assert.DoesNotContain("flashback playback returned live", actions);
+            snapshots++;
+            if (failSnapshot) throw new InvalidOperationException("snapshot unavailable");
+            return Task.FromResult(JsonSerializer.SerializeToElement(new
+            {
+                Success = true,
+                Snapshot = new { FlashbackPlaybackState = snapshots == 1 ? "Playing" : "Live" }
+            }));
+        };
+        var channelType = assembly.GetType("Sussudio.Tools.DiagnosticSessionCommandChannel", true)!;
+        using var channel = (IDisposable)Activator.CreateInstance(channelType, BindingFlags.Instance | BindingFlags.NonPublic, null,
+            new object[] { send, CancellationToken.None, new List<string>() }, null)!;
+        var cleanupType = assembly.GetType("Sussudio.Tools.DiagnosticSessionCleanupActions", true)!;
+        var method = cleanupType.GetMethod("RestoreLiveFlashbackPlaybackAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var task = (Task)method.Invoke(null, new object[]
+        {
+            true, actions, channel, new Action<string>(_ => { }),
+            new Action<Exception, string>((error, _) => failures.Add(error))
+        })!;
+        await task.WaitAsync(TimeSpan.FromSeconds(5));
+        if (failSnapshot)
+        {
+            Assert.Single(failures);
+            Assert.DoesNotContain("flashback playback returned live", actions);
+        }
+        else
+        {
+            Assert.Empty(failures);
+            Assert.Equal(2, snapshots);
+            Assert.Contains("flashback playback returned live", actions);
+        }
+    }
+
     [Fact]
     public Task PipeRetryPolicyOwnsConnectRetryClassification()
         => global::Program.DiagnosticSessionPipeRetryPolicy_OwnsConnectRetryClassification();

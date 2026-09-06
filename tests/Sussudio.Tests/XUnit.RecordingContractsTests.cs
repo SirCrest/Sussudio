@@ -265,6 +265,10 @@ public sealed class CoreRuntimeRecordingContractsTests
         => global::Program.LibAvEncoder_MapNvencPreset_MapsCorrectly();
 
     [Fact]
+    public Task LibAvEncoderRetainsAudioEvidenceAfterNativeCleanup()
+        => global::Program.LibAvEncoder_RetainsAudioEvidenceAfterNativeCleanup();
+
+    [Fact]
     public Task LibAvEncoderThrowsOnNegativeNativeErrors()
         => global::Program.LibAvEncoder_ThrowIfError_ThrowsOnNegative();
 
@@ -5042,6 +5046,27 @@ static partial class Program
         AssertDoesNotContain(sourceText, "var movflags = options.FragmentedMp4\n                        ? \"frag_keyframe+empty_moov\"");
         AssertDoesNotContain(sourceText, "var movflags = (_options?.FragmentedMp4 ?? false)\n                    ? \"frag_keyframe+empty_moov\"");
 
+        return Task.CompletedTask;
+    }
+
+    internal static Task LibAvEncoder_RetainsAudioEvidenceAfterNativeCleanup()
+    {
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
+        var encoder = RuntimeHelpers.GetUninitializedObject(encoderType);
+        encoderType.GetField("_audioSamplesReceived", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(encoder, 576000L);
+        encoderType.GetField("_micSamplesReceived", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(encoder, 575520L);
+        var cleanup = encoderType.GetMethod("ReleaseNativeResources", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var args = new object?[] { false, null };
+        AssertEqual(575520L, (long)cleanup.Invoke(encoder, args)!, "Cleanup microphone evidence");
+        Assert.Null(args[1]);
+        AssertEqual(576000L, (long)encoderType.GetProperty("AudioSamplesReceived")!.GetValue(encoder)!, "Final game-audio samples");
+        AssertEqual(575520L, (long)encoderType.GetProperty("MicrophoneSamplesReceived")!.GetValue(encoder)!, "Final microphone samples");
+        cleanup.Invoke(encoder, args);
+        AssertEqual(575520L, (long)encoderType.GetProperty("MicrophoneSamplesReceived")!.GetValue(encoder)!, "Repeated cleanup preserves evidence");
+
+        var source = ReadLibAvEncoderSource();
+        AssertContains(source, "if (options.ContainerFormat == \"mpegts\" || options.FragmentedMp4)");
+        AssertContains(source, "av_opt_set_int(codecContext->priv_data, \"delay\", 0, 0)");
         return Task.CompletedTask;
     }
 

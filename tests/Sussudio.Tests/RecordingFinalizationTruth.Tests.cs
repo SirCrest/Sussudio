@@ -96,6 +96,11 @@ public sealed class RecordingFinalizationTruthTests
     [Fact]
     public void FinalizationOwner_ClosesThenReopensBeforeVerified()
     {
+        var flashbackSink = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
+        AssertInOrder(Slice(flashbackSink, "private void EncodingLoop", "private bool DrainVideoPackets"),
+            "var finalPts = ResolveEncoderPts();",
+            "_encoder.FlushAndClose();",
+            "_bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, finalPts, finalSegmentBytes);");
         var sink = RuntimeContractSource.ReadRepoFile(
             "Sussudio/Services/Recording/LibAvRecordingSink.cs");
         var loop = Slice(sink, "private void EncodingLoop", "private void CompleteWriter");

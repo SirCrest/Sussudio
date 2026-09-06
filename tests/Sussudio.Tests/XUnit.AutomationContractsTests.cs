@@ -114,6 +114,10 @@ public sealed class AutomationAppSurfaceContractsTests
         => global::Program.NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary();
 
     [Fact]
+    public Task AutomationPipeServerKeepsDiagnosticsAvailableBesideBusyClients()
+        => global::Program.NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients();
+
+    [Fact]
     public Task MainWindowWiresAutomationPipeAuthFallbackPolicy()
         => global::Program.MainWindowAutomation_WiresPipeAuthFallbackPolicy();
 
@@ -2757,7 +2761,7 @@ static partial class Program
                        securityDescriptor: new byte[] { 1, 2, 3 },
                        secureServerStreamFactory: _ =>
                        {
-                           secureSuccessCalls++;
+                           Interlocked.Increment(ref secureSuccessCalls);
                            return CreateTestPipeServerStream($"unit-pipe-secure-{Guid.NewGuid():N}");
                        },
                        defaultServerStreamFactory: () =>
@@ -2769,7 +2773,7 @@ static partial class Program
                 AssertEqual(true, StartNamedPipeAutomationServer(server), "explicit security starts without token");
             }
 
-            AssertEqual(1, secureSuccessCalls, "explicit security factory call count");
+            Assert.InRange(secureSuccessCalls, 1, 4);
             AssertEqual(0, secureSuccessDefaultCalls, "default fallback skipped when explicit security succeeds");
 
             var failedNoTokenSecureCalls = 0;
@@ -2809,7 +2813,7 @@ static partial class Program
                        },
                        defaultServerStreamFactory: () =>
                        {
-                           tokenFallbackDefaultCalls++;
+                           Interlocked.Increment(ref tokenFallbackDefaultCalls);
                            return CreateTestPipeServerStream($"unit-pipe-token-default-{Guid.NewGuid():N}");
                        }))
             {
@@ -2817,7 +2821,7 @@ static partial class Program
             }
 
             AssertEqual(1, tokenFallbackSecureCalls, "token fallback tries explicit security first");
-            AssertEqual(1, tokenFallbackDefaultCalls, "token fallback opens default pipe once");
+            Assert.InRange(tokenFallbackDefaultCalls, 1, 4);
 
             var missingDescriptorDefaultCalls = 0;
             using (var server = CreateNamedPipeAutomationServer(
@@ -2872,6 +2876,41 @@ static partial class Program
         AssertDoesNotContain(pipeServerText, "reader.ReadLineAsync().WaitAsync(requestCancellation.Token)");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var pipeName = $"unit-pipe-concurrent-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName));
+        Assert.True(StartNamedPipeAutomationServer(server));
+        var busyClients = new List<NamedPipeClientStream>();
+        try
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+                busyClients.Add(client);
+                await client.ConnectAsync(5000);
+                // Leave this connection awaiting its request, like another busy client.
+            }
+
+            using var diagnosticClient = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+            await diagnosticClient.ConnectAsync(5000);
+            using var writer = new StreamWriter(diagnosticClient, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
+            using var reader = new StreamReader(diagnosticClient, Encoding.UTF8, leaveOpen: true);
+            await writer.WriteLineAsync("{}");
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var response = await reader.ReadLineAsync(deadline.Token);
+            Assert.False(string.IsNullOrWhiteSpace(response));
+            using var json = JsonDocument.Parse(response!);
+            Assert.Equal(JsonValueKind.Object, json.RootElement.ValueKind);
+        }
+        finally
+        {
+            foreach (var client in busyClients) client.Dispose();
+        }
     }
 
     internal static async Task NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary()

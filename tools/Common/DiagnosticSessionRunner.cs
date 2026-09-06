@@ -780,6 +780,21 @@ internal static class DiagnosticSessionCleanupActions
                     false,
                     cleanupCts.Token)
                 .ConfigureAwait(false);
+            // The command acknowledges mailbox admission before playback moves.
+            // Observe completion before publishing the final cleanup snapshot.
+            while (true)
+            {
+                var response = await commandChannel.SendWithTokenAsync(
+                    AutomationCommandKind.GetSnapshot, null, 5_000, false, cleanupCts.Token).ConfigureAwait(false);
+                if (!IsSuccess(response))
+                    throw new InvalidOperationException("Unable to confirm Flashback returned live.");
+                if (TryGetSnapshot(response, out var snapshot) &&
+                    string.Equals(GetString(snapshot, "FlashbackPlaybackState"), "Live", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+                await Task.Delay(100, cleanupCts.Token).ConfigureAwait(false);
+            }
             actions.Add("flashback playback returned live");
         }
         catch (Exception ex)

@@ -681,6 +681,12 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
 
         var preset = MapNvencPreset(options.NvencPreset);
         ThrowIfError(ffmpeg.av_opt_set(codecContext->priv_data, "preset", preset, 0), "av_opt_set(preset)");
+        if (options.ContainerFormat == "mpegts" || options.FragmentedMp4)
+        {
+            // Rotated files must start with their forced IDR, not delayed packets
+            // from the previous segment. Regular MP4 recording keeps its usual delay.
+            ThrowIfError(ffmpeg.av_opt_set_int(codecContext->priv_data, "delay", 0, 0), "av_opt_set_int(delay)");
+        }
 
         if (!TryMapSplitEncodeMode(options.SplitEncodeMode, out var splitEncodeMode))
         {
@@ -1347,8 +1353,9 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         _nextVideoPts = 0;
         _audio.NextPts = 0;
         _mic.NextPts = 0;
+        // Finalization reads these counters after native resources are closed.
+        // Keep microphone totals just like game-audio totals until the next initialization.
         var finalMicSamplesReceived = _micSamplesReceived;
-        _micSamplesReceived = 0;
         _mic.CachedTimeBase = default;
         _isOpen = false;
         _headerWritten = false;

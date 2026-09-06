@@ -260,7 +260,9 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/NamedPipeAutomationServer.cs` owns automation
   pipe constructor/configuration state, server start/stop/dispose, the accept
   loop, per-connection safety/disposal, request-session handoff, error/timeout
-  responses, fallback trace logging, bounded per-request JSON line framing,
+  responses, four bounded connection workers so diagnostics remain available
+  during long exports, cancellation and joining of those workers at shutdown,
+  fallback trace logging, bounded per-request JSON line framing,
   oversize-request rejection, client PID logging, dispatch timeouts, late
   dispatch observation, response writing,
   Windows pipe security descriptor setup, fallback policy, P/Invoke, and secure
@@ -756,8 +758,10 @@ Entry points:
   per-frame HDR side-data attachment/removal, HDR mastering-display metadata
   parsing, video packet drains, bitstream-filter drains, timestamp rescaling,
   interleaved video packet writes, and hardware-frame unref cleanup.
-- `LibAvEncoder.cs` also owns output rotation, IO close/reopen, stream
-  reinitialization, video bitstream-filter reset, segment runtime reset, MP4
+- `LibAvEncoder.cs` also owns output rotation, zero-delay NVENC output for
+  independently decodable rotated files, IO close/reopen, stream reinitialization,
+  retained game-audio/microphone counters for finalization after native cleanup,
+  video bitstream-filter reset, segment runtime reset, MP4
   muxer option policy for open and rotated outputs, flush/final close, dispose,
   trailer writing, close-result logging, final output telemetry, native
   frame/context/buffer release, hardware texture pool release, and encoder
@@ -822,6 +826,8 @@ Entry points:
   retention policy.
 - `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup, temp-drive free-space probing, session-directory naming/path-safety scanner helpers, startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
 - `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, dispose shell,
+  H.264/HEVC header-only probing, completed-input decoder drains (only after
+  the controller has found a successor file),
   stream-count/index bounds, decoded frame-size/dimension validation,
   D3D11/software decoded-frame validation, decoded video/audio output DTOs,
   keyframe/exact seek control flow, seek timestamp conversion helpers,
@@ -884,7 +890,8 @@ Entry points:
   validation/return, playback PTS gate handling, pooled audio-buffer return
   warnings, playback-state audio/preview routing, best-effort preview
   submission guards, audio renderer pause/resume/flush guards, playback
-  startup/seek audio prebuffering, target/timeout/frame-budget policy, decoder
+  startup/seek audio prebuffering, target/timeout/frame-budget policy, borrowed
+  CPU-frame retention capped at one before rewind, decoder
   rewind after decode-ahead audio priming, audio-master clock sample state,
   stale-clock detection, read-only A/V drift projection, clock-drift
   computation, correction policy, delay-adjustment counter projection,
@@ -919,7 +926,11 @@ Entry points:
 - `FlashbackExporter.cs` owns the native export session: disposal/cancellation,
   export locking, FFmpeg input/output context setup, stream-template/layout
   validation, public request routing, packet pumping/rebasing, progress/pacing,
-  result shaping, and FFmpeg error formatting.
+  result shaping, and FFmpeg error formatting. Segment cuts retain keyframe
+  decoding preroll at negative timestamps and use MP4 edit lists to present
+  the requested start without exposing preroll or dropping reference frames.
+  Segment timeline metadata supplies the input timestamp origin; delayed AAC
+  packets do not move the requested video cut.
 - `FlashbackExportFailureCodes.cs` owns export failure codes and their existing
   automation categories. Producers attach codes to `FinalizeResult`; diagnostics
   and automation classify those codes without interpreting display messages or
@@ -2786,7 +2797,8 @@ Primary owners:
   invocation, terminal live-state write, and completion context handoff consumed by the post-cleanup completion phase.
   It also owns diagnostic-session cleanup and recording-check flow, cleanup
   ordering, stage/action naming, cleanup result handoff,
-  recording stop for verification, Flashback playback go-live restore, preview
+  recording stop for verification, Flashback playback go-live restore with
+  state confirmation after mailbox acknowledgement, preview
   stop, Flashback enable-state restore through typed automation commands,
   deferred Flashback recording-settings restore, last-recording or Flashback
   export verification command selection, payload shape, 60-second timeout,

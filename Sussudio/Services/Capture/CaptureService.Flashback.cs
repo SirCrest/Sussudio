@@ -2035,17 +2035,14 @@ public partial class CaptureService
             return 20;
         }
 
-        if (liveHighResolution)
-        {
-            return 25;
-        }
-
         if (queueRatio >= 0.50 || oldestFrameAgeMs >= 30)
         {
             return 16;
         }
 
-        return 0;
+        // A small baseline yield leaves room for live capture. A fixed 25 ms
+        // every four packets made healthy 4K exports slower than real time.
+        return liveHighResolution ? 1 : 0;
     }
 
     private static string? TryGetFullPath(string? path)

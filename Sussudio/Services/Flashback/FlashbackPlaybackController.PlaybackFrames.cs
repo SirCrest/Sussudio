@@ -973,6 +973,14 @@ internal sealed partial class FlashbackPlaybackController
             return false;
         }
 
+        // A successor proves the current file is complete. Present the decoder's
+        // delayed tail before changing files; temporary EOF at the live edge stays open.
+        if (decoder.BeginCompletedInputDrain(cancellationToken))
+        {
+            playbackContinues = true;
+            return true;
+        }
+
         var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
         if (currentOpenFilePath != null &&
             nextSegmentStart.HasValue &&
@@ -1008,7 +1016,9 @@ internal sealed partial class FlashbackPlaybackController
             // the last played sample and the seek point would otherwise be dropped,
             // causing an audible gap at segment boundaries.
             var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
-            decoder.AudioChunkCallback = null;
+            // Forward decode encounters the next segment's opening audio packets.
+            // Keep them, while rejecting any audio already queued from the old segment.
+            RestoreAudioCallback(decoder, audioGate, audioGate);
             var segSwitchTarget = SaturatingAdd(pos, frozenValidStart);
             if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
                 segSwitchTarget = nextSegmentStart.Value;
@@ -1020,7 +1030,6 @@ internal sealed partial class FlashbackPlaybackController
                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "segment_switch_seek_failed");
                 return true;
             }
-            RestoreAudioCallback(decoder, audioGate);
             ResetPlaybackPtsCadenceBaseline();
             pacingStopwatch.Restart();
             playbackContinues = true;

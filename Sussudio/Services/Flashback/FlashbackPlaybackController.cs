@@ -1676,10 +1676,10 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     private const int PlaybackAudioPrebufferTimeoutMs = 1000;
     private const int PlaybackAudioPrebufferRetryDelayMs = 20;
     private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;
-    // Cap on decoded video frames held across the audio prebuffer. CPU frames only:
-    // a D3D11VA frame pins a decoder-pool surface, and pool depth is not guaranteed
-    // to cover the prebuffer budget, so hardware frames keep the release+rewind path.
-    private const int PlaybackAudioPrebufferMaxHeldFrames = 32;
+    // CPU frame data is borrowed until the next decode call. Retain at most
+    // one frame; if priming needs another, discard and rewind before playback.
+    // Hardware frames retain decoder surfaces and always use release + rewind.
+    private const int PlaybackAudioPrebufferMaxHeldFrames = 1;
     private const int AudioRenderStateTransitionTimeoutMs = 100;
     // Must stay strictly greater than ActiveFmp4ReopenNearLiveGuard (250ms):
     // clamped targets at exactly the guard distance would fall inside the
