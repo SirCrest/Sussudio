@@ -661,6 +661,56 @@ internal sealed partial class FlashbackPlaybackController
         return TryDecodeNextVideoFrameWithMetrics(decoder, out frame, cancellationToken);
     }
 
+    private bool FillHardwarePlaybackReadAhead(
+        FlashbackDecoder decoder,
+        Queue<DecodedVideoFrame> prebufferedFrames,
+        Stopwatch pacingStopwatch,
+        TimeSpan frozenValidStart,
+        ref bool fileOpen,
+        CancellationToken cancellationToken)
+    {
+        if (!decoder.IsD3D11HwAccelerated)
+            return true;
+
+        var lastDecodedPts = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
+        foreach (var queued in prebufferedFrames)
+            lastDecodedPts = queued.Pts;
+
+        // Hardware frames hold independent AVFrame references. Software frames
+        // borrow a two-buffer ring and must never enter this read-ahead path.
+        // The attempt bound also covers empty segments and decoder drain steps.
+        for (var attempt = 0;
+             attempt < FlashbackDecoder.MaxRetainedHardwareFrames + 4 &&
+             prebufferedFrames.Count < FlashbackDecoder.MaxRetainedHardwareFrames;
+             attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (TryDecodeNextVideoFrameWithMetrics(decoder, out var decoded, cancellationToken))
+            {
+                prebufferedFrames.Enqueue(decoded);
+                lastDecodedPts = decoded.Pts;
+                if (!decoded.IsD3D11Texture)
+                    break;
+                continue;
+            }
+
+            // Read the successor while the old segment's queued pictures still
+            // cover its audio tail. No video frame is presented early.
+            if (!TrySwitchToNextSegment(
+                    decoder, pacingStopwatch, _currentOpenFilePath, lastDecodedPts,
+                    SaturatingSubtract(lastDecodedPts, frozenValidStart), frozenValidStart,
+                    ref fileOpen, cancellationToken, out var playbackContinues))
+                break;
+            if (!playbackContinues)
+            {
+                ClearPrebufferedFrames(prebufferedFrames, "hardware_read_ahead_stopped");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private void ClearPrebufferedFrames(Queue<DecodedVideoFrame> prebufferedFrames, string operation)
     {
         if (prebufferedFrames.Count == 0)
@@ -797,6 +847,10 @@ internal sealed partial class FlashbackPlaybackController
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (!FillHardwarePlaybackReadAhead(
+                    decoder, prebufferedFrames, pacingStopwatch, frozenValidStart,
+                    ref fileOpen, cancellationToken))
+                return false;
             if (!TryReadNextPlaybackFrame(decoder, prebufferedFrames, out var videoFrame, cancellationToken))
             {
                 return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);

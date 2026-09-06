@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-06T17:01:19Z
+Generated UTC: 2026-09-06T17:34:57Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 139 |
 | Test .cs files | 48 |
 | Core app .cs files (Sussudio/) | 105 |
-| Core app nonblank LoC (Sussudio/) | 95680 |
+| Core app nonblank LoC (Sussudio/) | 95765 |
 | Sussudio.Tests .cs files | 47 |
-| Sussudio.Tests nonblank LoC | 63847 |
+| Sussudio.Tests nonblank LoC | 63900 |
 | Production .cs files under 60 lines | 1 (0.7%) |
 | Production .cs files under 80 lines | 4 (2.9%) |
 
@@ -21,11 +21,11 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Type | Files | Total lines | Sample paths |
 | --- | ---: | ---: | --- |
 | CaptureService | 6 | 11229 | Sussudio/Services/Capture/CaptureService.cs, Sussudio/Services/Capture/CaptureService.Flashback.cs, Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs, Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs, Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs, Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
-| AutomationDiagnosticsHub | 4 | 7431 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
+| AutomationDiagnosticsHub | 4 | 7435 | Sussudio/Services/Automation/AutomationDiagnosticsHub.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs, Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | D3D11PreviewRenderer | 3 | 5282 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
-| FlashbackPlaybackController | 3 | 4670 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
+| FlashbackPlaybackController | 3 | 4725 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | LibAvEncoder | 3 | 3064 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
-| MainViewModel | 3 | 5275 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
+| MainViewModel | 3 | 5293 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 573 | Sussudio/AppRuntime.cs |
 | SettingsJsonContext | 1 | 765 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 283 | Sussudio/App.xaml.cs |
@@ -47,7 +47,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2519 | Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs |
 | 2469 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs |
 | 2380 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
-| 2108 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
+| 2123 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 2103 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
 | 2090 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1963 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
@@ -66,7 +66,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1437 | Sussudio/Services/Audio/WasapiAudioPlayback.cs |
 | 1415 | Sussudio/Services/Recording/LibAvEncoder.cs |
 | 1382 | Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs |
-| 1363 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs |
+| 1367 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs |
 
 ## Sample production files under 60 lines
 

@@ -18,6 +18,7 @@ public partial class MainViewModel
     private bool _suppressFlashbackFormatCycle;
     private bool _suppressFlashbackEncoderSettingsCycle;
     private CancellationTokenSource? _exportCts;
+    private readonly SemaphoreSlim _flashbackExportRequestGate = new(1, 1);
     private int _flashbackExportOperationId;
     private int _flashbackSettingsRestartGeneration;
     private Task? _pendingFlashbackCycleTask;
@@ -795,6 +796,12 @@ public partial class MainViewModel
     private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync(
         Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
     {
+        await _flashbackExportRequestGate.WaitAsync();
+        if (Volatile.Read(ref _disposeState) != 0)
+        {
+            _flashbackExportRequestGate.Release();
+            return new ExportFlashbackOutcome.Failed("The app is closing.");
+        }
         // Export snapshots the flashback backend under CaptureService locks, then runs
         // outside the transition lock so long FFmpeg work does not block lifecycle commands.
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
@@ -847,6 +854,7 @@ public partial class MainViewModel
             {
                 DisposeFlashbackExportCtsBestEffort(exportCts, "ui_stale");
             }
+            _flashbackExportRequestGate.Release();
         }
     }
 
@@ -980,6 +988,14 @@ public partial class MainViewModel
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
         double seconds, string outputPath, bool useSelectionRange, bool force, CancellationToken cancellationToken = default)
     {
+        // Queue exports independently of capture lifecycle commands. Replacing
+        // the active cancellation source here used to cancel a concurrent client.
+        await _flashbackExportRequestGate.WaitAsync(cancellationToken);
+        if (Volatile.Read(ref _disposeState) != 0)
+        {
+            _flashbackExportRequestGate.Release();
+            return FlashbackExportFailureCodes.Create(outputPath, "The app is closing.", FlashbackExportFailureCodes.Disposed);
+        }
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
         var oldExportCts = _exportCts;
         CancelFlashbackExportCts(oldExportCts);
@@ -1051,6 +1067,7 @@ public partial class MainViewModel
                 finally
                 {
                     DisposeFlashbackExportCtsBestEffort(exportCts, "automation_dispatcher_cleanup");
+                    _flashbackExportRequestGate.Release();
                 }
             }))
             {
@@ -1061,6 +1078,7 @@ public partial class MainViewModel
                     _exportCts = null;
                 }
                 DisposeFlashbackExportCtsBestEffort(exportCts, "automation_inline_cleanup");
+                _flashbackExportRequestGate.Release();
             }
         }
     }

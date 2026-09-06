@@ -660,8 +660,12 @@ public sealed partial class AutomationDiagnosticsHub
     {
         var recordingIntegrityIncomplete =
             string.Equals(captureRuntime.RecordingIntegrityStatus, "Incomplete", StringComparison.OrdinalIgnoreCase);
+        // Recovery history remains visible in the banner and snapshot. It does
+        // not describe the health of a new idle capture session.
+        var recoveredRecordingFailure = !isRecording &&
+            string.Equals(health.RecordingEncodingFailureType, "RecoveredFinalizationFailure", StringComparison.Ordinal);
         var recordingIntegrityFailed =
-            health.RecordingEncodingFailed ||
+            (health.RecordingEncodingFailed && !recoveredRecordingFailure) ||
             (recordingIntegrityIncomplete && !isRecording);
 
         if (recordingIntegrityFailed)

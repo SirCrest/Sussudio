@@ -54,6 +54,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private const int OutputAudioSampleRate = 48000;
     private const int OutputAudioChannels = 2;
     private const int VideoFrameBufferCount = 2;
+    internal const int MaxRetainedHardwareFrames = 12;
     private const int MaxSupportedInputStreams = 64;
     private const int MaxDecodedVideoDimension = 8192;
     private const int MaxDecodedVideoFrameBytes = 512 * 1024 * 1024;
@@ -843,7 +844,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         cancellationToken.ThrowIfCancellationRequested();
         _lastSeekHitForwardDecodeCap = false;
 
-        if (!SeekToKeyframe(target, cancellationToken))
+        // A TS binary seek can land between keyframes and return the next IDR,
+        // after the requested frame. Start one encoder GOP earlier for exact seeks.
+        var seekStart = ResolveExactSeekStart(target, _currentFilePath);
+        if (!SeekToKeyframe(seekStart, cancellationToken))
         {
             return false;
         }
@@ -1015,6 +1019,15 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         ThrowIfError(ffmpeg.avcodec_send_packet(_videoCodecCtx, null), "avcodec_send_packet(completed_input)");
         _completedInputDrainStarted = true;
         return true;
+    }
+
+    private static TimeSpan ResolveExactSeekStart(TimeSpan target, string? filePath)
+    {
+        if (!string.Equals(System.IO.Path.GetExtension(filePath), ".ts", StringComparison.OrdinalIgnoreCase))
+            return target;
+
+        var preroll = TimeSpan.FromSeconds(2);
+        return target > preroll ? target - preroll : TimeSpan.Zero;
     }
 
     /// <summary>
@@ -1507,7 +1520,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             }
 
             decoderCtx->get_format = GetFormatD3D11Callback;
-            decoderCtx->extra_hw_frames = 4;
+            // Playback retains a bounded read-ahead queue plus the last submitted
+            // frame. Reserve those surfaces in addition to the codec's own pool.
+            decoderCtx->extra_hw_frames = MaxRetainedHardwareFrames + 4;
 
             var openResult = ffmpeg.avcodec_open2(decoderCtx, codec, null);
             if (openResult < 0)

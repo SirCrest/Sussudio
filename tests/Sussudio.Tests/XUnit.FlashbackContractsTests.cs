@@ -365,6 +365,19 @@ public sealed class FlashbackModelsTests
 
 public sealed class FlashbackDecoderContractsTests
 {
+    [Theory]
+    [InlineData(760.0, "capture.ts", 758.0)]
+    [InlineData(1.0, "capture.TS", 0.0)]
+    [InlineData(0.0, "capture.ts", 0.0)]
+    [InlineData(760.0, "capture.mp4", 760.0)]
+    public void ExactMpegTsSeeksAllowThePrecedingKeyframe(double target, string path, double expected)
+    {
+        var decoder = SussudioAssembly.Load().GetType("Sussudio.Services.Flashback.FlashbackDecoder", true)!;
+        var resolve = decoder.GetMethod("ResolveExactSeekStart", BindingFlags.Static | BindingFlags.NonPublic)!;
+        Assert.Equal(TimeSpan.FromSeconds(expected),
+            (TimeSpan)resolve.Invoke(null, new object[] { TimeSpan.FromSeconds(target), path })!);
+    }
+
     public FlashbackDecoderContractsTests()
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();
@@ -3439,7 +3452,19 @@ static partial class Program
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferRetryDelayMs = 20;");
         AssertContains(audioPrebufferText, "private const int PlaybackAudioPrebufferDecodeFrameBudget = 96;");
         AssertContains(sourceText, "var prebufferedFrames = new Queue<DecodedVideoFrame>();");
+        var hardwareReadAhead = ExtractTextBetween(sourceText,
+            "private bool FillHardwarePlaybackReadAhead(", "private void ClearPrebufferedFrames(");
+        AssertContains(hardwareReadAhead, "if (!decoder.IsD3D11HwAccelerated)");
+        AssertContains(hardwareReadAhead, "prebufferedFrames.Count < FlashbackDecoder.MaxRetainedHardwareFrames");
+        AssertContains(hardwareReadAhead, "attempt < FlashbackDecoder.MaxRetainedHardwareFrames + 4");
+        AssertContains(hardwareReadAhead, "if (!decoded.IsD3D11Texture)");
+        AssertContains(hardwareReadAhead, "TrySwitchToNextSegment(");
+        AssertContains(hardwareReadAhead, "ClearPrebufferedFrames(prebufferedFrames, \"hardware_read_ahead_stopped\");");
+        var decoderSource = ReadFlashbackDecoderSource();
+        AssertContains(decoderSource, "internal const int MaxRetainedHardwareFrames = 12;");
+        AssertContains(decoderSource, "decoderCtx->extra_hw_frames = MaxRetainedHardwareFrames + 4;");
         AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"command_{cmd.Kind}\");");
+        AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, \"playback_stopped\");");
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
         AssertContains(sourceText, "ChannelReader<PlaybackCommand> commandChannel,");
         AssertContains(sourceText, "TimeSpan resumeTarget,");
@@ -5720,7 +5745,8 @@ static partial class Program
         AssertOccursBefore(playback, "decoder.TryContinueMpegTsSegment(nextFile, cancellationToken)", "decoder.BeginCompletedInputDrain(cancellationToken)");
         AssertContains(sourceText, "if (_completedInputDrainStarted)");
         AssertContains(sourceText, "ffmpeg.avcodec_send_packet(_videoCodecCtx, null)");
-        AssertContains(sourceText, "if (!SeekToKeyframe(target, cancellationToken))");
+        AssertContains(sourceText, "var seekStart = ResolveExactSeekStart(target, _currentFilePath);");
+        AssertContains(sourceText, "if (!SeekToKeyframe(seekStart, cancellationToken))");
         AssertContains(sourceText, "if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))");
         AssertContains(sourceText, "if (!FeedNextVideoPacket(cancellationToken))");
         AssertContains(sourceText, "cancellationToken.ThrowIfCancellationRequested();");

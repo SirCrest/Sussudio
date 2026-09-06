@@ -22,6 +22,29 @@ namespace Sussudio.Tests
 
 public sealed class AutomationAppSurfaceContractsTests
 {
+    [Theory]
+    [InlineData(true, "RecoveredFinalizationFailure", "NotStarted", false, false)]
+    [InlineData(true, "InvalidOperationException", "NotStarted", false, true)]
+    [InlineData(true, "RecoveredFinalizationFailure", "Incomplete", false, true)]
+    [InlineData(true, "RecoveredFinalizationFailure", "NotStarted", true, true)]
+    [InlineData(false, "", "Incomplete", false, true)]
+    public void RestoredRecordingHistoryDoesNotMarkANewCaptureAsFailed(
+        bool encodingFailed, string failureType, string integrityStatus, bool isRecording, bool expectedFailure)
+    {
+        var hub = SussudioAssembly.Load().GetType("Sussudio.Services.Automation.AutomationDiagnosticsHub", true)!;
+        var evaluate = hub.GetMethod("TryBuildRealtimeRecordingDiagnosticEvaluation", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var parameters = evaluate.GetParameters();
+        var runtime = Activator.CreateInstance(parameters[0].ParameterType)!;
+        var health = Activator.CreateInstance(parameters[1].ParameterType)!;
+        var lanes = Activator.CreateInstance(parameters[3].ParameterType)!;
+        runtime.GetType().GetProperty("RecordingIntegrityStatus")!.SetValue(runtime, integrityStatus);
+        runtime.GetType().GetProperty("RecordingIntegrityAudioStatus")!.SetValue(runtime, "NotStarted");
+        health.GetType().GetProperty("RecordingEncodingFailed")!.SetValue(health, encodingFailed);
+        health.GetType().GetProperty("RecordingEncodingFailureType")!.SetValue(health, failureType);
+        var result = evaluate.Invoke(null, new[] { runtime, health, (object)isRecording, lanes });
+        Assert.Equal(expectedFailure, result != null);
+    }
+
     public AutomationAppSurfaceContractsTests()
     {
         global::Program.EnsureTargetAssemblyLoadedForXUnit();
@@ -6887,6 +6910,12 @@ static partial class Program
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
         AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
+        AssertContains(viewModelFlashbackStateText, "private readonly SemaphoreSlim _flashbackExportRequestGate = new(1, 1);");
+        AssertMemberContains(flashbackExportOperationText, "ExportFlashbackCoreAsync", "await _flashbackExportRequestGate.WaitAsync();");
+        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "await _flashbackExportRequestGate.WaitAsync(cancellationToken);");
+        AssertMemberContains(flashbackExportAutomationText, "ExportFlashbackAutomationAsync", "Volatile.Read(ref _disposeState) != 0");
+        AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");\n                    _flashbackExportRequestGate.Release();");
+        AssertContains(rawFlashbackExportAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");\n                _flashbackExportRequestGate.Release();");
         AssertContains(flashbackExportOperationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(flashbackExportOperationText, "CancelFlashbackExportCts(oldExportCts);");
         AssertContains(flashbackExportOperationText, "IsCurrentFlashbackExport(exportId, exportCts)");

@@ -83,6 +83,7 @@ internal sealed partial class FlashbackPlaybackController
                             if (!PaceAndDecodeFrame(decoder, prebufferedFrames, commandGeneration.Reader, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token))
                             {
                                 isPlaying = false;
+                                ClearPrebufferedFrames(prebufferedFrames, "playback_stopped");
                             }
                         }
                         continue;

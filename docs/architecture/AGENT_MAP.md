@@ -298,7 +298,8 @@ Automation diagnostics ownership:
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   performance scoring, root diagnostic verdict orchestration, final
   healthy/mixed diagnostic fallback, Flashback-specific diagnostic verdict
-  ordering, Flashback storage pressure, recording encoder failure,
+  ordering, Flashback storage pressure, current recording encoder failure
+  separated from restored recovery history,
   export-rotation gap, backend staleness, recording degradation, Flashback
   recording diagnostic condition assembly, active/stalled export, playback
   command, playback performance, frametime, and submission diagnostic verdicts,
@@ -828,11 +829,13 @@ Entry points:
 - `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup, temp-drive free-space probing, session-directory naming/path-safety scanner helpers, startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
 - `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, dispose shell,
   H.264/HEVC header-only probing, compatible MPEG-TS input continuation with
-  retained codec state and validated stream parameters, completed-input decoder drains (only after
+  retained codec state and validated stream parameters, hardware surface capacity
+  for the controller's bounded read-ahead queue, completed-input decoder drains (only after
   the controller has found a successor file),
   stream-count/index bounds, decoded frame-size/dimension validation,
   D3D11/software decoded-frame validation, decoded video/audio output DTOs,
-  keyframe/exact seek control flow, seek timestamp conversion helpers,
+  keyframe/exact seek control flow, MPEG-TS exact-seek GOP preroll,
+  seek timestamp conversion helpers,
   pending-frame transfer, seek-cap diagnostics, seek-buffer flushing, video
   frame receive, packet feeding, inline audio interleave during video reads,
   audio codec/resampler initialization, audio callback failure handling,
@@ -914,7 +917,9 @@ Entry points:
   switching, active fMP4 reopen/reseek recovery, post-switch audio gates,
   decode-error snap, near-live snap, and playback failure recovery back to live
   state.
-- `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, prebuffer cleanup, A/V drift frame-skip catch-up policy, held playback frame backing state, release-for-live reset policy, best-effort decoded frame release warnings, continuous playback frame progression, decoded-frame submission flow, live-recovery policy invocation, cadence pacing, and A/V drift diagnostics.
+- `FlashbackPlaybackController.PlaybackFrames.cs` owns playback-frame dequeue/decode selection, bounded GPU read-ahead with retained hardware frames and early segment continuation, prebuffer cleanup, A/V drift frame-skip catch-up policy, held playback frame backing state, release-for-live reset policy, best-effort decoded frame release warnings, continuous playback frame progression, decoded-frame submission flow, live-recovery policy invocation, cadence pacing, and A/V drift diagnostics.
+  The playback thread releases the read-ahead queue when continuous playback
+  stops, as well as on commands and thread exit.
 - `FlashbackPlaybackController.cs` owns the marker command API, in/out marker state, file-PTS projection, marker normalization, invalid-range clearing, recovery restore, out-point pause checks, scrub/seek clamp policy, saturating timestamp math, active fMP4 segment detection, and playback path comparison.
 - `FlashbackPlaybackController.cs` owns component lifecycle, dispose,
   preview-detach deferred reattach lifecycle, playback cadence/decode metric
@@ -2346,7 +2351,8 @@ Primary current owners:
   automation-facing Flashback playback action dispatch.
   `MainViewModel.FlashbackState.cs` owns Flashback UI export commands,
   save-picker flow, active-export guard, user-facing export result/status
-  handling, shared export operation lifecycle, progress handoff, stale-result
+  handling, shared export operation lifecycle, asynchronous request serialization
+  through UI cleanup, progress handoff, stale-result
   classification, current-operation checks, CTS cancellation/disposal cleanup,
   and automation-facing export execution with linked cancellation and dispatcher
   cleanup.
