@@ -35,5 +35,6 @@
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewFrameTimeHistory.cs" Link="Production\PreviewFrameTimeHistory.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Stats\FrameTimeGraphGeometry.cs" Link="Production\FrameTimeGraphGeometry.cs" />
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewInputViewCache.cs" Link="Production\PreviewInputViewCache.cs" />
+    <Compile Include="..\..\Sussudio\ViewModels\PreviewAudioTransitionControllers.cs" Link="Production\PreviewAudioTransitionControllers.cs" />
   </ItemGroup>
 </Project>
