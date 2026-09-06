@@ -2181,7 +2181,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     lastDtsPerStream,
                     totalEstimatedBytes,
                     bytesProcessed,
-                    outputPtsOffsetUs,
+                    ResolveSegmentOutputOffsetUs(segment.StartPts, inPoint, outputPtsOffsetUs),
                     useSegmentTimeline,
                     segmentExportWindow.SegmentTimelineStartUs,
                     segmentInOffsetUs,
@@ -2599,6 +2599,16 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         => inOffsetUs > 0 && segmentBaseUs > long.MaxValue - inOffsetUs
             ? long.MaxValue
             : segmentBaseUs + Math.Max(0, inOffsetUs);
+
+    private static long ResolveSegmentOutputOffsetUs(TimeSpan? segmentStartPts, TimeSpan inPoint, long fallbackOffsetUs)
+    {
+        // Encoder delay can put the preceding segment's final packets in this file.
+        // Keep their shared timeline instead of packing this file after the last
+        // observed frame, which would overlap those delayed packets at the join.
+        return segmentStartPts.HasValue
+            ? ToMicrosecondsSaturated(SaturatingSubtract(segmentStartPts.Value, inPoint))
+            : fallbackOffsetUs;
+    }
 
     private SegmentPacketWriteOutcome WriteRebasedSegmentPacket(
         ref SegmentPacketWriteState state,

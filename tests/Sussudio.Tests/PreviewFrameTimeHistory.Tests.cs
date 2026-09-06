@@ -6,6 +6,10 @@ using Xunit.Abstractions;
 
 namespace Sussudio.Tests;
 
+[CollectionDefinition(nameof(PreviewPerformanceCollection), DisableParallelization = true)]
+public sealed class PreviewPerformanceCollection { }
+
+[Collection(nameof(PreviewPerformanceCollection))]
 public sealed class PreviewFrameTimeHistoryTests
 {
     private readonly ITestOutputHelper _output;
@@ -117,7 +121,8 @@ public sealed class PreviewFrameTimeHistoryTests
         PreviewFrameTimeCursor cursor = default;
         PreviewFrameTimeSample? previous = null;
         var tick = 1L;
-        for (var i = 0; i < 100; i++)
+        // Exercise retention eviction and ring wrap before measuring warm updates.
+        for (var i = 0; i < history.Capacity + fps * 12; i++)
             Update(history, ref cursor, ref previous, copied, tick += step, frequency, scale);
 
         var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();

@@ -930,7 +930,8 @@ Entry points:
   decoding preroll at negative timestamps and use MP4 edit lists to present
   the requested start without exposing preroll or dropping reference frames.
   Segment timeline metadata supplies the input timestamp origin; delayed AAC
-  packets do not move the requested video cut.
+  packets do not move the requested video cut. The same timeline fixes output
+  segment offsets so delayed packets cannot overlap the preceding segment.
 - `FlashbackExportFailureCodes.cs` owns export failure codes and their existing
   automation categories. Producers attach codes to `FinalizeResult`; diagnostics
   and automation classify those codes without interpreting display messages or

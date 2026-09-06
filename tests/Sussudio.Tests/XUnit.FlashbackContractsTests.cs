@@ -683,6 +683,10 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackExporter_RetainsHiddenDecoderPreroll();
 
     [Fact]
+    public Task FlashbackExporterPreservesTimelineAcrossDelayedSegmentPackets()
+        => global::Program.FlashbackExporter_PreservesTimelineAcrossDelayedSegmentPackets();
+
+    [Fact]
     public Task FlashbackExporterReturnsCancellationResultWhileWaitingForExportLock()
         => global::Program.FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled();
 
@@ -1672,6 +1676,27 @@ static partial class Program
         AssertContains(source, "FreeBufferedPackets(state.BufferedPackets, state.BufferedStreamIndices);");
         AssertContains(source, "preservePreroll: state.UseSegmentTimeline && state.SegmentInOffsetUs > 0");
         AssertDoesNotContain(source, "comparePtsUs < state.SegmentInOffsetUs");
+        return Task.CompletedTask;
+    }
+
+    internal static Task FlashbackExporter_PreservesTimelineAcrossDelayedSegmentPackets()
+    {
+        var exporter = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var resolveOffset = exporter.GetMethod("ResolveSegmentOutputOffsetUs", BindingFlags.Static | BindingFlags.NonPublic)!;
+        long Offset(TimeSpan? start, TimeSpan inPoint, long fallback)
+            => (long)resolveOffset.Invoke(null, new object?[] { start, inPoint, fallback })!;
+
+        // Real 4K120 rotation: the next file contains two delayed packets before
+        // its nominal 150-second boundary. Packing after the preceding file's
+        // last frame would overlap them and collapse two frame durations.
+        var offsetUs = Offset(TimeSpan.FromMilliseconds(1_002_975), TimeSpan.FromMilliseconds(852_975), 149_983_333);
+        Assert.Equal(150_000_000L, offsetUs);
+        Assert.Equal(149_983_333L, offsetUs - 16_667);
+        Assert.Equal(149_991_667L, offsetUs - 8_333);
+        Assert.Equal(175_000L, Offset(TimeSpan.FromMilliseconds(1_002_975), TimeSpan.FromMilliseconds(1_002_800), 158_333));
+        Assert.Equal(0L, Offset(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(12), 0));
+        Assert.Equal(7_000_000L, Offset(null, TimeSpan.Zero, 7_000_000));
+        AssertContains(ReadFlashbackExporterSource(), "ResolveSegmentOutputOffsetUs(segment.StartPts, inPoint, outputPtsOffsetUs)");
         return Task.CompletedTask;
     }
 

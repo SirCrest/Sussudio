@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-06T10:12:15Z
+Generated UTC: 2026-09-06T10:40:18Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 139 |
 | Test .cs files | 48 |
 | Core app .cs files (Sussudio/) | 105 |
-| Core app nonblank LoC (Sussudio/) | 95556 |
+| Core app nonblank LoC (Sussudio/) | 95565 |
 | Sussudio.Tests .cs files | 47 |
-| Sussudio.Tests nonblank LoC | 63798 |
+| Sussudio.Tests nonblank LoC | 63824 |
 | Production .cs files under 60 lines | 1 (0.7%) |
 | Production .cs files under 80 lines | 4 (2.9%) |
 
@@ -39,7 +39,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | ---: | --- |
 | 3157 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 3112 | Sussudio/ViewModels/MainViewModel.cs |
-| 2983 | Sussudio/Services/Flashback/FlashbackExporter.cs |
+| 2993 | Sussudio/Services/Flashback/FlashbackExporter.cs |
 | 2949 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2592 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
 | 2579 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
