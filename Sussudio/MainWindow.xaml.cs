@@ -15,6 +15,7 @@ using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Gpu;
+using Sussudio.Services.Preview;
 using Sussudio.ViewModels;
 
 namespace Sussudio;
@@ -67,6 +68,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeWindowShutdownCleanupController();
 
         var appWindow = InitializeNativeShellWindow();
+        appWindow.Changed += StatsWindowVisibility_Changed;
+        Activated += StatsWindow_Activated;
         RegisterCloseLifecycle(appWindow);
         InitializeShellControllers();
 
@@ -659,9 +662,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void StopStatsOverlayForShutdown()
     {
+        AppWindow.Changed -= StatsWindowVisibility_Changed;
+        Activated -= StatsWindow_Activated;
         DetachStatsOverlayToggleBindings();
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
+        _statsOverlayCompositionController.Dispose();
     }
 
     private void StopRecordingVisualsForShutdown()
@@ -1603,6 +1609,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DispatcherQueue = _dispatcherQueue,
             StatsToggle = StatsToggle,
             StatsDockPanel = StatsDockPanel,
+            StatsDockMotionSurface = StatsDockMotionSurface,
             FrameTimeOverlay = FrameTimeOverlay,
             FrameTimeOverlayToggle = FrameTimeOverlayToggle,
             IsWindowClosing = () => _isWindowClosing,
@@ -1614,7 +1621,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         => new()
         {
             GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,
+            GetCaptureSessionEpoch = ViewModel.GetCaptureSnapshotProducerEpoch,
             GetRenderer = () => _previewRendererHostController.Renderer,
+            CopyFrameTimeSamples = CopyPresentFrameTimeSamples,
             GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs,
             IsPreviewing = () => ViewModel.IsPreviewing,
             IsRecording = () => ViewModel.IsRecording,
@@ -1623,6 +1632,25 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private StatsSnapshot GetStatsSnapshot()
         => _statsOverlayCompositionController.GetStatsSnapshot();
 
+    private PreviewFrameTimeHistoryRead CopyPresentFrameTimeSamples(
+        PreviewFrameTimeCursor cursor,
+        Span<PreviewFrameTimeSample> destination)
+        => _previewRendererHostController.Renderer?.CopyPresentFrameTimeSamples(cursor, destination) ?? default;
+
+    private void StatsWindowVisibility_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+        => UpdateStatsWindowVisibility();
+
+    private void StatsWindow_Activated(object sender, WindowActivatedEventArgs args)
+        => UpdateStatsWindowVisibility();
+
+    private void UpdateStatsWindowVisibility()
+    {
+        var appWindow = AppWindow;
+        var minimized = appWindow.Presenter is OverlappedPresenter presenter &&
+            presenter.State == OverlappedPresenterState.Minimized;
+        _statsOverlayCompositionController.SetWindowVisible(appWindow.IsVisible && !minimized && !_isWindowClosing);
+    }
+
     private StatsOverlayDockTargetsContext CreateStatsOverlayDockTargetsContext()
         => new()
         {
@@ -1630,6 +1658,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SessionStateValue = Stats_SessionStateValue,
             SummaryCaptureValue = Stats_SummaryCaptureValue,
             SummaryPreviewValue = Stats_SummaryPreviewValue,
+            SummaryRecordingValue = Stats_SummaryRecordingValue,
             SummaryRendererFpsValue = Stats_SummaryRendererFpsValue,
             SummaryVisualFpsValue = Stats_SummaryVisualFpsValue,
             SummaryLatencyValue = Stats_SummaryLatencyValue,
@@ -1689,10 +1718,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FrameTimePreviewValue = FrameTime_PreviewValue,
             FrameTimeLatencyValue = FrameTime_LatencyValue,
             FrameTimeStatusValue = FrameTime_StatusValue,
+            FrameTimeFpsScaleValue = FrameTime_FpsScaleValue,
+            FrameTimeBudgetScaleValue = FrameTime_BudgetScaleValue,
             FrameTimeCanvas = FrameTime_Canvas,
-            FrameTimeVisualLine = FrameTime_VisualLine,
-            FrameTimePreviewLine = FrameTime_PreviewLine,
-            FrameTimeExpectedLine = FrameTime_ExpectedLine,
+            FpsCanvas = FrameTime_FpsCanvas,
         };
 
     private void AttachStatsOverlayToggleBindings()

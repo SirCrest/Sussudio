@@ -30,4 +30,9 @@
     <Compile Include="..\..\Sussudio\Controllers\Audio\AudioControlBindingController.cs" Link="Production\AudioControlBindingController.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Capture\CaptureBindingControllers.cs" Link="Production\CaptureBindingControllers.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Pure telemetry/geometry code is tested directly without loading WinUI. -->
+    <Compile Include="..\..\Sussudio\Services\Preview\PreviewFrameTimeHistory.cs" Link="Production\PreviewFrameTimeHistory.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\Stats\FrameTimeGraphGeometry.cs" Link="Production\FrameTimeGraphGeometry.cs" />
+  </ItemGroup>
 </Project>

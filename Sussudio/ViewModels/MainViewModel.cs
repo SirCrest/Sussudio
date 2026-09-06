@@ -1358,6 +1358,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
+    internal long GetCaptureSnapshotProducerEpoch() => _captureService.SessionGeneration;
     public CaptureDiagnosticsSnapshot GetCaptureDiagnosticsSnapshot() => _captureService.GetDiagnosticsSnapshot();
     public RecordingStats GetRecordingStatsSnapshot() => _captureService.GetRecordingStats();
     internal ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetMjpegPipelineTimingDetails()

@@ -825,8 +825,8 @@ internal sealed partial class D3D11PreviewRenderer
         _multithread = device.QueryInterfaceOrNull<ID3D11Multithread>();
         _multithread?.SetMultithreadProtected(true);
 
-        // Keep the compositor queue shallow. This defaults to 2 for latency,
-        // but is env-tunable while we measure DWM pacing behavior.
+        // Keep the compositor queue shallow. Maximum frame latency defaults to
+        // one; the environment override supports controlled pacing comparisons.
         using var dxgiDevice1 = device.QueryInterfaceOrNull<IDXGIDevice1>();
         dxgiDevice1?.SetMaximumFrameLatency((uint)_dxgiMaxFrameLatency);
 
@@ -928,7 +928,7 @@ internal sealed partial class D3D11PreviewRenderer
         _configuredOutputWidth = target.Width;
         _configuredOutputHeight = target.Height;
         DisposeProcessorResources();
-        ConfigureFrameLatencyWaitableObject();
+        // ResizeBuffers preserves the swap chain and its waitable handle.
         ApplyCompositionScaleTransform(_swapChain);
         Interlocked.Exchange(ref _swapChainColorSpaceDirty, 1);
     }
@@ -979,9 +979,9 @@ internal sealed partial class D3D11PreviewRenderer
     {
         _swapChain3?.Dispose();
         _swapChain3 = null;
+        DisposeFrameLatencyWaitHandle();
         _swapChain2?.Dispose();
         _swapChain2 = null;
-        _frameLatencyWaitHandle = IntPtr.Zero;
         _swapChain!.Dispose();
 
         var fallbackDescription = CreateCompositionSwapChainDescription(
@@ -1475,6 +1475,7 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void DisposeProcessorResources()
     {
+        ClearExternalInputViewCache();
         DisposeProcessorInputResources();
         DisposeHdrInputResources();
         DisposeNv12ShaderResourceViews();
@@ -1567,9 +1568,9 @@ internal sealed partial class D3D11PreviewRenderer
 
         _swapChain3?.Dispose();
         _swapChain3 = null;
+        DisposeFrameLatencyWaitHandle();
         _swapChain2?.Dispose();
         _swapChain2 = null;
-        _frameLatencyWaitHandle = IntPtr.Zero;
         _swapChain?.Dispose();
         _swapChain = null;
         _factory?.Dispose();

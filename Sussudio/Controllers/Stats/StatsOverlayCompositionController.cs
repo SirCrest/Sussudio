@@ -1,17 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
-using Microsoft.UI.Xaml.Shapes;
 using Sussudio.Models;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 using Sussudio.ViewModels;
-using Windows.Foundation;
 
 namespace Sussudio.Controllers;
 
@@ -29,6 +26,7 @@ internal sealed class StatsOverlayShellContext
     public required DispatcherQueue DispatcherQueue { get; init; }
     public required ToggleButton StatsToggle { get; init; }
     public required Border StatsDockPanel { get; init; }
+    public required FrameworkElement StatsDockMotionSurface { get; init; }
     public required FrameworkElement FrameTimeOverlay { get; init; }
     public required ToggleButton FrameTimeOverlayToggle { get; init; }
     public required Func<bool> IsWindowClosing { get; init; }
@@ -38,33 +36,35 @@ internal sealed class StatsOverlayShellContext
 
 internal sealed class StatsOverlayControllerContext
 {
-    public required DispatcherQueue DispatcherQueue { get; init; }
     public required ToggleButton StatsToggle { get; init; }
     public required Border StatsDockPanel { get; init; }
+    public required FrameworkElement StatsDockMotionSurface { get; init; }
     public required FrameworkElement FrameTimeOverlay { get; init; }
     public required ToggleButton FrameTimeOverlayToggle { get; init; }
     public required Func<bool> IsWindowClosing { get; init; }
+    public required Func<bool> IsPreviewing { get; init; }
     public required Action<bool> SetStatsVisible { get; init; }
-    public required Func<StatsSnapshot> GetStatsSnapshot { get; init; }
-    public required Action UpdateStatsDock { get; init; }
+    public required StatsUiSampler Sampler { get; init; }
+    public required Action<StatsSnapshot, bool> UpdateStatsDock { get; init; }
     public required Action<StatsSnapshot> UpdateFrameTimeOverlay { get; init; }
-    public required Action<string> Log { get; init; }
+    public required Action<bool> SetGraphActive { get; init; }
 }
 
-internal sealed class StatsOverlayController
+internal sealed class StatsOverlayController : IDisposable
 {
-    private const double StatsDockPanelWidth = 360;
-
     private readonly StatsOverlayControllerContext _context;
-    private DispatcherQueueTimer? _statsPollTimer;
-    private Storyboard? _statsDockStoryboard;
-    private Storyboard? _showStatsDockStoryboard;
-    private Storyboard? _hideStatsDockStoryboard;
+    private readonly StatsDockMotionController _dockMotion;
+    private IDisposable? _subscription;
     private bool _toggleBindingsAttached;
+    private bool _dockVisible;
+    private bool _windowVisible = true;
+    private bool _disposed;
 
     public StatsOverlayController(StatsOverlayControllerContext context)
     {
         _context = context;
+        _dockMotion = new StatsDockMotionController(context.StatsDockPanel, context.StatsDockMotionSurface);
+        _dockVisible = context.StatsDockPanel.Visibility == Visibility.Visible;
     }
 
     public bool IsFrameTimeOverlayVisible
@@ -72,11 +72,10 @@ internal sealed class StatsOverlayController
 
     public void AttachToggleBindings()
     {
-        if (_toggleBindingsAttached)
+        if (_toggleBindingsAttached || _disposed)
         {
             return;
         }
-
         _context.StatsToggle.Checked += StatsToggle_Checked;
         _context.StatsToggle.Unchecked += StatsToggle_Unchecked;
         _context.FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;
@@ -90,7 +89,6 @@ internal sealed class StatsOverlayController
         {
             return;
         }
-
         _context.StatsToggle.Checked -= StatsToggle_Checked;
         _context.StatsToggle.Unchecked -= StatsToggle_Unchecked;
         _context.FrameTimeOverlayToggle.Checked -= FrameTimeOverlayToggle_Checked;
@@ -100,12 +98,10 @@ internal sealed class StatsOverlayController
 
     public void HandleStatsToggleChecked()
     {
-        if (_context.IsWindowClosing())
+        if (!_context.IsWindowClosing())
         {
-            return;
+            _context.SetStatsVisible(true);
         }
-
-        _context.SetStatsVisible(true);
     }
 
     public void HandleStatsToggleUnchecked()
@@ -117,26 +113,21 @@ internal sealed class StatsOverlayController
         {
             _context.StatsToggle.IsChecked = visible;
         }
-
         ApplyStatsVisibility(visible, immediate);
     }
 
     public void ApplyStatsVisibility(bool visible, bool immediate = false)
     {
+        _dockVisible = visible;
         if (visible)
         {
-            ShowDockPanel();
-            _context.UpdateStatsDock();
-            StartPolling();
-            return;
+            _dockMotion.Show(immediate);
         }
-
-        if (!IsFrameTimeOverlayVisible)
+        else
         {
-            StopPolling();
+            _dockMotion.Hide(immediate);
         }
-
-        HideDockPanel(immediate);
+        RefreshActivity();
     }
 
     public void SetFrameTimeOverlayVisible(bool visible)
@@ -145,175 +136,82 @@ internal sealed class StatsOverlayController
         {
             _context.FrameTimeOverlayToggle.IsChecked = visible;
         }
+        _context.FrameTimeOverlay.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        RefreshActivity();
+    }
 
-        if (visible)
+    public void SetWindowVisible(bool visible)
+    {
+        _windowVisible = visible;
+        RefreshActivity();
+    }
+
+    public void StartPolling() => RefreshActivity();
+
+    public void StopPolling()
+    {
+        var subscription = _subscription;
+        _subscription = null;
+        subscription?.Dispose();
+        _context.SetGraphActive(false);
+    }
+
+    public void ShowDockPanel() => ApplyStatsVisibility(true);
+    public void HideDockPanel(bool immediate = false) => ApplyStatsVisibility(false, immediate);
+
+    private void RefreshActivity()
+    {
+        var active = !_disposed && !_context.IsWindowClosing() && _windowVisible;
+        _context.SetGraphActive(active && IsFrameTimeOverlayVisible && _context.IsPreviewing());
+        if (active && (_dockVisible || IsFrameTimeOverlayVisible))
         {
-            SetVisibilityIfChanged(_context.FrameTimeOverlay, Visibility.Visible);
-            StartPolling();
-            _context.UpdateFrameTimeOverlay(_context.GetStatsSnapshot());
-            return;
+            _subscription ??= _context.Sampler.Subscribe(ApplySample);
         }
-
-        SetVisibilityIfChanged(_context.FrameTimeOverlay, Visibility.Collapsed);
-        if (_context.StatsDockPanel.Visibility != Visibility.Visible)
+        else
         {
             StopPolling();
         }
     }
 
-    public void StartPolling()
+    private void ApplySample(StatsUiSample sample)
     {
-        _statsPollTimer ??= _context.DispatcherQueue.CreateTimer();
-        _statsPollTimer.Interval = TimeSpan.FromMilliseconds(500);
-        _statsPollTimer.IsRepeating = true;
-        _statsPollTimer.Tick -= StatsPollTimer_Tick;
-        _statsPollTimer.Tick += StatsPollTimer_Tick;
-        _statsPollTimer.Start();
-    }
-
-    public void StopPolling()
-    {
-        if (_statsPollTimer == null)
+        if (_disposed || !_windowVisible || _context.IsWindowClosing())
         {
             return;
         }
-
-        _statsPollTimer.Stop();
-        _statsPollTimer.Tick -= StatsPollTimer_Tick;
-        _statsPollTimer = null;
-    }
-
-    public void ShowDockPanel()
-    {
-        EnsureDockAnimations();
-        StopDockAnimation();
-        _context.StatsDockPanel.Width = 0;
-        _context.StatsDockPanel.Opacity = 0;
-        _context.StatsDockPanel.Visibility = Visibility.Visible;
-        _statsDockStoryboard = _showStatsDockStoryboard;
-        _showStatsDockStoryboard?.Begin();
-    }
-
-    public void HideDockPanel(bool immediate = false)
-    {
-        EnsureDockAnimations();
-        StopDockAnimation();
-        if (immediate || _context.StatsDockPanel.Visibility != Visibility.Visible)
+        if (_dockVisible)
         {
-            _context.StatsDockPanel.Width = 0;
-            _context.StatsDockPanel.Visibility = Visibility.Collapsed;
-            _context.StatsDockPanel.Opacity = 1;
+            _context.UpdateStatsDock(sample.Snapshot, sample.HealthUpdated);
+        }
+        if (IsFrameTimeOverlayVisible)
+        {
+            _context.UpdateFrameTimeOverlay(sample.Snapshot);
+        }
+        _context.SetGraphActive(IsFrameTimeOverlayVisible && sample.Snapshot.Previewing);
+    }
+
+    private void StatsToggle_Checked(object sender, RoutedEventArgs e) => HandleStatsToggleChecked();
+    private void StatsToggle_Unchecked(object sender, RoutedEventArgs e) => HandleStatsToggleUnchecked();
+    private void FrameTimeOverlayToggle_Checked(object sender, RoutedEventArgs e) => SetFrameTimeOverlayVisible(true);
+    private void FrameTimeOverlayToggle_Unchecked(object sender, RoutedEventArgs e) => SetFrameTimeOverlayVisible(false);
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
             return;
         }
-
-        _statsDockStoryboard = _hideStatsDockStoryboard;
-        _hideStatsDockStoryboard?.Begin();
-    }
-
-    private void StatsPollTimer_Tick(DispatcherQueueTimer sender, object args)
-    {
-        try
-        {
-            _context.UpdateStatsDock();
-            if (IsFrameTimeOverlayVisible)
-            {
-                _context.UpdateFrameTimeOverlay(_context.GetStatsSnapshot());
-            }
-        }
-        catch (Exception ex)
-        {
-            _context.Log($"STATS_POLL_TIMER_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
-    }
-
-    private void StatsToggle_Checked(object sender, RoutedEventArgs e)
-        => HandleStatsToggleChecked();
-
-    private void StatsToggle_Unchecked(object sender, RoutedEventArgs e)
-        => HandleStatsToggleUnchecked();
-
-    private void FrameTimeOverlayToggle_Checked(object sender, RoutedEventArgs e)
-        => SetFrameTimeOverlayVisible(true);
-
-    private void FrameTimeOverlayToggle_Unchecked(object sender, RoutedEventArgs e)
-        => SetFrameTimeOverlayVisible(false);
-
-    private void StopDockAnimation()
-    {
-        _statsDockStoryboard?.Stop();
-        _statsDockStoryboard = null;
-    }
-
-    private void EnsureDockAnimations()
-    {
-        _showStatsDockStoryboard ??= CreateStatsDockStoryboard(showing: true);
-        _hideStatsDockStoryboard ??= CreateStatsDockStoryboard(showing: false);
-    }
-
-    private Storyboard CreateStatsDockStoryboard(bool showing)
-    {
-        var durationMs = showing ? 400 : 300;
-        var easing = new CubicEase { EasingMode = showing ? EasingMode.EaseOut : EasingMode.EaseIn };
-        var duration = TimeSpan.FromMilliseconds(durationMs);
-
-        var storyboard = new Storyboard();
-
-        var widthAnim = new DoubleAnimation
-        {
-            To = showing ? StatsDockPanelWidth : 0,
-            Duration = duration,
-            EasingFunction = easing,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(widthAnim, _context.StatsDockPanel);
-        Storyboard.SetTargetProperty(widthAnim, "Width");
-
-        var fade = new DoubleAnimation
-        {
-            To = showing ? 1 : 0,
-            Duration = duration,
-            EasingFunction = easing
-        };
-        Storyboard.SetTarget(fade, _context.StatsDockPanel);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-
-        storyboard.Children.Add(widthAnim);
-        storyboard.Children.Add(fade);
-        storyboard.Completed += (_, _) =>
-        {
-            if (!ReferenceEquals(_statsDockStoryboard, storyboard))
-            {
-                return;
-            }
-
-            _statsDockStoryboard = null;
-            if (showing)
-            {
-                _context.StatsDockPanel.Width = StatsDockPanelWidth;
-                _context.StatsDockPanel.Opacity = 1;
-                return;
-            }
-
-            _context.StatsDockPanel.Width = 0;
-            _context.StatsDockPanel.Visibility = Visibility.Collapsed;
-            _context.StatsDockPanel.Opacity = 1;
-        };
-
-        return storyboard;
-    }
-
-    private static void SetVisibilityIfChanged(UIElement element, Visibility visibility)
-    {
-        if (element.Visibility != visibility)
-        {
-            element.Visibility = visibility;
-        }
+        _disposed = true;
+        DetachToggleBindings();
+        StopPolling();
+        _dockMotion.Dispose();
     }
 }
-
 internal sealed class StatsOverlaySnapshotSourceContext
 {
     public required Func<CaptureHealthSnapshot> GetCaptureHealthSnapshot { get; init; }
+    public required Func<long> GetCaptureSessionEpoch { get; init; }
+    public required CopyFrameTimeSamples CopyFrameTimeSamples { get; init; }
     public required Func<D3D11PreviewRenderer?> GetRenderer { get; init; }
     public required Func<double> GetPreviewMinPresentationIntervalMs { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
@@ -326,6 +224,7 @@ internal sealed class StatsOverlayDockTargetsContext
     public required TextBlock SessionStateValue { get; init; }
     public required TextBlock SummaryCaptureValue { get; init; }
     public required TextBlock SummaryPreviewValue { get; init; }
+    public required TextBlock SummaryRecordingValue { get; init; }
     public required TextBlock SummaryRendererFpsValue { get; init; }
     public required TextBlock SummaryVisualFpsValue { get; init; }
     public required TextBlock SummaryLatencyValue { get; init; }
@@ -383,15 +282,14 @@ internal sealed class StatsOverlayFrameTimeTargetsContext
     public required TextBlock FrameTimePreviewValue { get; init; }
     public required TextBlock FrameTimeLatencyValue { get; init; }
     public required TextBlock FrameTimeStatusValue { get; init; }
-    public required Canvas FrameTimeCanvas { get; init; }
-    public required Polyline FrameTimeVisualLine { get; init; }
-    public required Polyline FrameTimePreviewLine { get; init; }
-    public required Line FrameTimeExpectedLine { get; init; }
+    public required TextBlock FrameTimeFpsScaleValue { get; init; }
+    public required TextBlock FrameTimeBudgetScaleValue { get; init; }
+    public required FrameworkElement FpsCanvas { get; init; }
+    public required FrameworkElement FrameTimeCanvas { get; init; }
 }
 
 internal sealed class StatsSnapshotProviderContext
 {
-    public required Func<CaptureHealthSnapshot> GetCaptureHealthSnapshot { get; init; }
     public required Func<D3D11PreviewRenderer?> GetRenderer { get; init; }
     public required Func<double> GetPreviewMinPresentationIntervalMs { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
@@ -400,22 +298,38 @@ internal sealed class StatsSnapshotProviderContext
 
 internal sealed class StatsSnapshotProvider
 {
-    private const int RecentSampleCount = 180;
-
     private readonly StatsSnapshotProviderContext _context;
+    private D3D11PreviewRenderer? _sampledRenderer;
+    private StatsSnapshotRenderMetrics _renderMetrics;
+    private double _sampledExpectedIntervalMs;
 
     public StatsSnapshotProvider(StatsSnapshotProviderContext context)
     {
         _context = context;
     }
 
-    public StatsSnapshot GetSnapshot()
+    public StatsSnapshot GetSnapshot(CaptureHealthSnapshot health, bool refreshDetails)
     {
-        var health = _context.GetCaptureHealthSnapshot();
-        var renderer = BuildRenderMetrics(_context.GetRenderer(), _context.GetPreviewMinPresentationIntervalMs());
+        var renderer = _context.GetRenderer();
+        var expectedIntervalMs = _context.GetPreviewMinPresentationIntervalMs();
+        if (refreshDetails || !ReferenceEquals(renderer, _sampledRenderer) || expectedIntervalMs != _sampledExpectedIntervalMs)
+        {
+            _renderMetrics = BuildRenderMetrics(renderer, expectedIntervalMs);
+            _sampledRenderer = renderer;
+            _sampledExpectedIntervalMs = expectedIntervalMs;
+        }
+
+        var renderMetrics = _renderMetrics with
+        {
+            FramesSubmitted = renderer?.FramesSubmitted ?? 0,
+            FramesRendered = renderer?.FramesRendered ?? 0,
+            FramesDropped = renderer?.FramesDropped ?? 0,
+            PreviewNaturalWidth = renderer?.NaturalWidth ?? 0,
+            PreviewNaturalHeight = renderer?.NaturalHeight ?? 0
+        };
         var viewState = new StatsSnapshotViewState(_context.IsPreviewing(), _context.IsRecording());
 
-        return StatsSnapshotBuilder.Build(health, renderer, viewState);
+        return StatsSnapshotBuilder.Build(health, renderMetrics, viewState);
     }
 
     private static StatsSnapshotRenderMetrics BuildRenderMetrics(
@@ -438,8 +352,8 @@ internal sealed class StatsSnapshotProvider
             FramesDropped: renderer?.FramesDropped ?? 0,
             PreviewNaturalWidth: renderer?.NaturalWidth ?? 0,
             PreviewNaturalHeight: renderer?.NaturalHeight ?? 0,
-            PreviewRecentPresentIntervalsMs: renderer?.GetRecentPresentIntervalsMs(RecentSampleCount) ?? Array.Empty<double>(),
-            PreviewRecentLatencyMs: renderer?.GetRecentPipelineLatencyMs(RecentSampleCount) ?? Array.Empty<double>());
+            PreviewRecentPresentIntervalsMs: presentCadence?.RecentIntervalsMs ?? Array.Empty<double>(),
+            PreviewRecentLatencyMs: Array.Empty<double>());
     }
 }
 
@@ -520,11 +434,6 @@ internal sealed class FrameTimeOverlayPresentationControllerContext
     public required TextBlock VisualValue { get; init; }
     public required TextBlock PreviewValue { get; init; }
     public required TextBlock LatencyValue { get; init; }
-    public required TextBlock StatusValue { get; init; }
-    public required Canvas Canvas { get; init; }
-    public required Polyline VisualLine { get; init; }
-    public required Polyline PreviewLine { get; init; }
-    public required Line ExpectedLine { get; init; }
 }
 
 internal sealed class FrameTimeOverlayPresentationController
@@ -539,47 +448,10 @@ internal sealed class FrameTimeOverlayPresentationController
     public void Apply(StatsSnapshot snapshot)
     {
         var presentation = StatsPresentationBuilder.BuildFrameTimePresentation(snapshot);
-
         SetTextIfChanged(_context.SourceValue, presentation.SourceText);
         SetTextIfChanged(_context.VisualValue, presentation.VisualText);
         SetTextIfChanged(_context.PreviewValue, presentation.PreviewText);
         SetTextIfChanged(_context.LatencyValue, presentation.LatencyText);
-        SetTextIfChanged(_context.StatusValue, presentation.StatusText);
-
-        UpdateExpectedLine(presentation.Range);
-        UpdateLine(_context.VisualLine, presentation.VisualSamples, presentation.Range);
-        UpdateLine(_context.PreviewLine, presentation.PreviewSamples, presentation.Range);
-    }
-
-    private void UpdateLine(
-        Polyline line,
-        IReadOnlyList<double> samples,
-        StatsFrameTimeRange range)
-    {
-        line.Points.Clear();
-        if (samples.Count <= 1)
-        {
-            return;
-        }
-
-        var canvasSize = FrameTimeOverlayGeometry.ResolveCanvasSize(
-            _context.Canvas.ActualWidth,
-            _context.Canvas.ActualHeight);
-        for (var i = 0; i < samples.Count; i++)
-        {
-            line.Points.Add(FrameTimeOverlayGeometry.ProjectSample(i, samples.Count, samples[i], range, canvasSize));
-        }
-    }
-
-    private void UpdateExpectedLine(StatsFrameTimeRange range)
-    {
-        var canvasSize = FrameTimeOverlayGeometry.ResolveCanvasSize(
-            _context.Canvas.ActualWidth,
-            _context.Canvas.ActualHeight);
-        var line = FrameTimeOverlayGeometry.ProjectExpectedLine(range, canvasSize);
-        _context.ExpectedLine.X2 = line.X2;
-        _context.ExpectedLine.Y1 = line.Y;
-        _context.ExpectedLine.Y2 = line.Y;
     }
 
     private static void SetTextIfChanged(TextBlock target, string value)
@@ -590,50 +462,6 @@ internal sealed class FrameTimeOverlayPresentationController
         }
     }
 }
-
-internal readonly record struct FrameTimeOverlayCanvasSize(double Width, double Height);
-
-internal readonly record struct FrameTimeOverlayExpectedLineGeometry(double X2, double Y);
-
-internal static class FrameTimeOverlayGeometry
-{
-    public const double FallbackWidth = 500;
-    public const double FallbackHeight = 92;
-
-    public static FrameTimeOverlayCanvasSize ResolveCanvasSize(double actualWidth, double actualHeight)
-    {
-        var width = actualWidth > 1 ? actualWidth : FallbackWidth;
-        var height = actualHeight > 1 ? actualHeight : FallbackHeight;
-        return new FrameTimeOverlayCanvasSize(width, height);
-    }
-
-    public static Point ProjectSample(
-        int sampleIndex,
-        int sampleCount,
-        double sampleMs,
-        StatsFrameTimeRange range,
-        FrameTimeOverlayCanvasSize canvasSize)
-    {
-        var x = sampleCount <= 1 ? 0 : sampleIndex * canvasSize.Width / (sampleCount - 1);
-        var y = ProjectY(sampleMs, range, canvasSize.Height);
-        return new Point(x, y);
-    }
-
-    public static FrameTimeOverlayExpectedLineGeometry ProjectExpectedLine(
-        StatsFrameTimeRange range,
-        FrameTimeOverlayCanvasSize canvasSize)
-    {
-        var y = ProjectY(range.ExpectedMs, range, canvasSize.Height);
-        return new FrameTimeOverlayExpectedLineGeometry(canvasSize.Width, y);
-    }
-
-    private static double ProjectY(double frameTimeMs, StatsFrameTimeRange range, double height)
-    {
-        var normalized = Math.Clamp((frameTimeMs - range.MinMs) / range.SpanMs, 0.0, 1.0);
-        return height - normalized * height;
-    }
-}
-
 internal sealed class StatsDockControllerGraphContext
 {
     public required Func<bool> IsWindowClosing { get; init; }
@@ -674,8 +502,8 @@ internal sealed class StatsDockControllerGraph
             statsHardwareRowsController);
     }
 
-    public void RefreshDock()
-        => _refreshController.RefreshDock();
+    public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)
+        => _refreshController.RefreshDock(snapshot, refreshDetails);
 
     public void RefreshDiagnosticsSection()
         => _refreshController.RefreshDiagnosticsSection();
@@ -688,6 +516,7 @@ internal sealed class StatsDockControllerGraph
             SessionStateValue = context.DockTargets.SessionStateValue,
             SummaryCaptureValue = context.DockTargets.SummaryCaptureValue,
             SummaryPreviewValue = context.DockTargets.SummaryPreviewValue,
+            SummaryRecordingValue = context.DockTargets.SummaryRecordingValue,
             SummaryRendererFpsValue = context.DockTargets.SummaryRendererFpsValue,
             SummaryVisualFpsValue = context.DockTargets.SummaryVisualFpsValue,
             SummaryLatencyValue = context.DockTargets.SummaryLatencyValue,
@@ -793,17 +622,47 @@ internal sealed class StatsDockControllerGraph
     }
 }
 
-internal sealed class StatsOverlayCompositionController
+internal sealed class StatsOverlayCompositionController : IDisposable
 {
+    private readonly StatsOverlayCompositionControllerContext _context;
     private readonly StatsOverlayController _statsOverlayController;
     private readonly StatsDockControllerGraph _statsDockControllerGraph;
     private readonly StatsSnapshotProvider _statsSnapshotProvider;
+    private readonly StatsUiSampler _sampler;
+    private readonly DispatcherQueueTimer _statsPollTimer;
+    private readonly FrameTimeGraphController _frameTimeGraph;
     private readonly FrameTimeOverlayPresentationController _frameTimeOverlayPresentationController;
     private readonly StatsSectionChromeController _statsSectionChromeController;
+    private bool _disposed;
 
     public StatsOverlayCompositionController(StatsOverlayCompositionControllerContext context)
     {
+        _context = context;
         _statsSnapshotProvider = CreateSnapshotProvider(context);
+        _sampler = new StatsUiSampler(
+            context.SnapshotSources.GetCaptureSessionEpoch,
+            context.SnapshotSources.GetCaptureHealthSnapshot,
+            _statsSnapshotProvider.GetSnapshot,
+            context.Shell.Log);
+        _statsPollTimer = context.Shell.DispatcherQueue.CreateTimer();
+        _statsPollTimer.Interval = TimeSpan.FromMilliseconds(StatsUiSampler.LabelIntervalMs);
+        _statsPollTimer.IsRepeating = true;
+        _statsPollTimer.Tick += StatsPollTimer_Tick;
+        _sampler.DemandChanged += SetSamplingDemand;
+        _frameTimeGraph = new FrameTimeGraphController(new FrameTimeGraphControllerContext
+        {
+            DispatcherQueue = context.Shell.DispatcherQueue,
+            FpsHost = context.FrameTimeTargets.FpsCanvas,
+            FrameTimeHost = context.FrameTimeTargets.FrameTimeCanvas,
+            CopySamples = context.SnapshotSources.CopyFrameTimeSamples,
+            SetHistoryStatus = status => context.FrameTimeTargets.FrameTimeStatusValue.Text = status,
+            SetScaleLabels = (fps, budget) =>
+            {
+                context.FrameTimeTargets.FrameTimeFpsScaleValue.Text = fps;
+                context.FrameTimeTargets.FrameTimeBudgetScaleValue.Text = budget;
+            },
+            Log = context.Shell.Log
+        });
         _frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);
         _statsDockControllerGraph = CreateDockControllerGraph(context);
         _statsOverlayController = CreateOverlayController(context);
@@ -844,6 +703,9 @@ internal sealed class StatsOverlayCompositionController
     public void StopPolling()
         => _statsOverlayController.StopPolling();
 
+    public void SetWindowVisible(bool visible)
+        => _statsOverlayController.SetWindowVisible(visible);
+
     public void ShowDockPanel()
         => _statsOverlayController.ShowDockPanel();
 
@@ -851,7 +713,10 @@ internal sealed class StatsOverlayCompositionController
         => _statsOverlayController.HideDockPanel(immediate);
 
     public StatsSnapshot GetStatsSnapshot()
-        => _statsSnapshotProvider.GetSnapshot();
+        => _sampler.GetSnapshot();
+
+    public IDisposable SubscribeToStats(Action<StatsSnapshot> receiveSnapshot)
+        => _sampler.Subscribe(sample => receiveSnapshot(sample.Snapshot));
 
     public void ToggleSectionFromHeader(object sender)
         => _statsSectionChromeController.ToggleFromHeader(sender);
@@ -867,13 +732,15 @@ internal sealed class StatsOverlayCompositionController
         }
 
         _frameTimeOverlayPresentationController.Apply(snapshot);
+        var expectedIntervalMs = _context.SnapshotSources.GetPreviewMinPresentationIntervalMs();
+        var expectedFps = expectedIntervalMs > 0 ? 1000.0 / expectedIntervalMs : snapshot.SourceExpectedFps;
+        _frameTimeGraph.SetExpectedFrameRate(expectedFps);
     }
 
     private static StatsSnapshotProvider CreateSnapshotProvider(StatsOverlayCompositionControllerContext context)
     {
         return new StatsSnapshotProvider(new StatsSnapshotProviderContext
         {
-            GetCaptureHealthSnapshot = context.SnapshotSources.GetCaptureHealthSnapshot,
             GetRenderer = context.SnapshotSources.GetRenderer,
             GetPreviewMinPresentationIntervalMs = context.SnapshotSources.GetPreviewMinPresentationIntervalMs,
             IsPreviewing = context.SnapshotSources.IsPreviewing,
@@ -885,17 +752,18 @@ internal sealed class StatsOverlayCompositionController
     {
         return new StatsOverlayController(new StatsOverlayControllerContext
         {
-            DispatcherQueue = context.Shell.DispatcherQueue,
             StatsToggle = context.Shell.StatsToggle,
             StatsDockPanel = context.Shell.StatsDockPanel,
+            StatsDockMotionSurface = context.Shell.StatsDockMotionSurface,
             FrameTimeOverlay = context.Shell.FrameTimeOverlay,
             FrameTimeOverlayToggle = context.Shell.FrameTimeOverlayToggle,
             IsWindowClosing = context.Shell.IsWindowClosing,
+            IsPreviewing = context.SnapshotSources.IsPreviewing,
             SetStatsVisible = context.Shell.SetStatsVisible,
-            GetStatsSnapshot = GetStatsSnapshot,
+            Sampler = _sampler,
             UpdateStatsDock = _statsDockControllerGraph.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
-            Log = context.Shell.Log
+            SetGraphActive = _frameTimeGraph.SetActive
         });
     }
 
@@ -931,13 +799,44 @@ internal sealed class StatsOverlayCompositionController
             SourceValue = context.FrameTimeTargets.FrameTimeSourceValue,
             VisualValue = context.FrameTimeTargets.FrameTimeVisualValue,
             PreviewValue = context.FrameTimeTargets.FrameTimePreviewValue,
-            LatencyValue = context.FrameTimeTargets.FrameTimeLatencyValue,
-            StatusValue = context.FrameTimeTargets.FrameTimeStatusValue,
-            Canvas = context.FrameTimeTargets.FrameTimeCanvas,
-            VisualLine = context.FrameTimeTargets.FrameTimeVisualLine,
-            PreviewLine = context.FrameTimeTargets.FrameTimePreviewLine,
-            ExpectedLine = context.FrameTimeTargets.FrameTimeExpectedLine
+            LatencyValue = context.FrameTimeTargets.FrameTimeLatencyValue
         });
+    }
+
+    private void SetSamplingDemand(bool active)
+    {
+        if (active && !_disposed)
+        {
+            _statsPollTimer.Start();
+        }
+        else
+        {
+            _statsPollTimer.Stop();
+        }
+    }
+
+    private void StatsPollTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        if (_context.Shell.IsWindowClosing())
+        {
+            Dispose();
+            return;
+        }
+        _sampler.Tick();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+        _disposed = true;
+        _statsOverlayController.Dispose();
+        _sampler.Dispose();
+        _statsPollTimer.Stop();
+        _statsPollTimer.Tick -= StatsPollTimer_Tick;
+        _frameTimeGraph.Dispose();
     }
 }
 
@@ -952,6 +851,7 @@ internal sealed class StatsDockPresentationControllerContext
     public required TextBlock SessionStateValue { get; init; }
     public required TextBlock SummaryCaptureValue { get; init; }
     public required TextBlock SummaryPreviewValue { get; init; }
+    public required TextBlock SummaryRecordingValue { get; init; }
     public required TextBlock SummaryRendererFpsValue { get; init; }
     public required TextBlock SummaryVisualFpsValue { get; init; }
     public required TextBlock SummaryLatencyValue { get; init; }
@@ -1012,6 +912,7 @@ internal sealed class StatsDockPresentationController
         SetTextIfChanged(_context.SessionStateValue, presentation.SessionState);
         SetTextIfChanged(_context.SummaryCaptureValue, presentation.SummaryCapture);
         SetTextIfChanged(_context.SummaryPreviewValue, presentation.SummaryPreview);
+        SetTextIfChanged(_context.SummaryRecordingValue, presentation.SummaryRecording);
         SetTextIfChanged(_context.SummaryRendererFpsValue, presentation.SummaryRendererFps);
         SetTextIfChanged(_context.SummaryVisualFpsValue, presentation.SummaryVisualFps);
         SetTextIfChanged(_context.SummaryLatencyValue, presentation.SummaryLatency);
@@ -1377,21 +1278,23 @@ internal sealed class StatsDockRefreshController
         _context = context;
     }
 
-    public void RefreshDock()
+    public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)
     {
         if (_context.IsWindowClosing() || !_context.IsStatsDockVisible())
         {
             return;
         }
 
-        var snapshot = _context.GetStatsSnapshot();
         var presentation = StatsPresentationBuilder.BuildDockPresentation(snapshot);
 
         _context.DockPresentationController.Apply(presentation);
 
-        UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
-        _context.HardwareRowsController.UpdateDecodeSection();
-        _context.HardwareRowsController.UpdateGpuSection();
+        if (refreshDetails)
+        {
+            UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
+            _context.HardwareRowsController.UpdateDecodeSection();
+            _context.HardwareRowsController.UpdateGpuSection();
+        }
     }
 
     public void RefreshDiagnosticsSection()

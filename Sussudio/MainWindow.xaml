@@ -133,63 +133,76 @@
 
                     <Border x:Name="FrameTimeOverlay"
                             AutomationProperties.AutomationId="FrameTimeOverlay"
+                            RequestedTheme="Dark"
                             Visibility="Collapsed"
                             IsHitTestVisible="False"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Top"
                             Margin="14,14,14,0"
-                            MaxWidth="520"
-                            Padding="10"
-                            CornerRadius="6"
-                            Background="#CC080808"
-                            BorderBrush="#44FFFFFF"
+                            MaxWidth="600"
+                            Padding="14"
+                            CornerRadius="10"
+                            Background="#EB10151D"
+                            BorderBrush="#FF303E4F"
                             BorderThickness="1">
-                        <Grid RowSpacing="6">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="92" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid ColumnSpacing="12">
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <TextBlock Text="SUSSUDIO / PERFORMANCE" FontSize="11" CharacterSpacing="110"
+                                           FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <TextBlock Text="PRESENT-CALL TIMING" FontSize="10" HorizontalAlignment="Right"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <Grid ColumnSpacing="16" Margin="0,2,0,4">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="FrameTime_SourceValue" AutomationProperties.AutomationId="FrameTime_SourceValue" Text="Source —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="FrameTime_VisualValue" AutomationProperties.AutomationId="FrameTime_VisualValue" Grid.Column="1" Text="Visual —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="FrameTime_PreviewValue" AutomationProperties.AutomationId="FrameTime_PreviewValue" Grid.Column="2" Text="Preview —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="FrameTime_LatencyValue" AutomationProperties.AutomationId="FrameTime_LatencyValue" Grid.Column="3" Text="Latency —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Preview presents" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock x:Name="FrameTime_PreviewValue" AutomationProperties.AutomationId="FrameTime_PreviewValue"
+                                               Text="—" FontFamily="Consolas" FontSize="18" Foreground="#FFEED779" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="3">
+                                    <TextBlock Text="Capture delivery" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock x:Name="FrameTime_SourceValue" AutomationProperties.AutomationId="FrameTime_SourceValue"
+                                               Text="—" FontFamily="Consolas" FontSize="18" Foreground="{ThemeResource TextFillColorPrimaryBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="3">
+                                    <TextBlock Text="Visual changes" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock x:Name="FrameTime_VisualValue" AutomationProperties.AutomationId="FrameTime_VisualValue"
+                                               Text="—" FontFamily="Consolas" FontSize="18" Foreground="{ThemeResource TextFillColorPrimaryBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
                             </Grid>
-                            <Canvas x:Name="FrameTime_Canvas"
-                                    AutomationProperties.AutomationId="FrameTime_Canvas"
-                                    Grid.Row="1"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch">
-                                <Polyline x:Name="FrameTime_VisualLine"
-                                          Stroke="#55D6FF"
-                                          StrokeThickness="2" />
-                                <Polyline x:Name="FrameTime_PreviewLine"
-                                          Stroke="#70F08B"
-                                          StrokeThickness="2" />
-                                <Line x:Name="FrameTime_ExpectedLine"
-                                      X1="0"
-                                      Y1="46"
-                                      X2="500"
-                                      Y2="46"
-                                      Stroke="#33FFFFFF"
-                                      StrokeThickness="1" />
-                            </Canvas>
+                            <Grid>
+                                <TextBlock Text="FRAME RATE · FPS" FontSize="10" CharacterSpacing="80" Foreground="#FFEED779" />
+                                <TextBlock x:Name="FrameTime_FpsScaleValue" Text="60 fps source" FontSize="10" HorizontalAlignment="Right"
+                                           FontFamily="Consolas" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <Grid x:Name="FrameTime_FpsCanvas" AutomationProperties.AutomationId="FrameTime_FpsCanvas"
+                                  Height="68" Background="#FF171E28" />
+                            <Grid>
+                                <TextBlock Text="FRAME TIME · ms" FontSize="10" CharacterSpacing="80" Foreground="#FF51D1FF" />
+                                <TextBlock x:Name="FrameTime_BudgetScaleValue" Text="16.67 / 33.33 / 50.00 ms" FontSize="10" HorizontalAlignment="Right"
+                                           FontFamily="Consolas" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <Grid x:Name="FrameTime_Canvas" AutomationProperties.AutomationId="FrameTime_Canvas"
+                                  Height="92" Background="#FF171E28" />
+                            <Grid>
+                                <TextBlock Text="−10 s" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="−5 s" FontSize="10" HorizontalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock Text="Now" FontSize="10" HorizontalAlignment="Right" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
                             <TextBlock x:Name="FrameTime_StatusValue"
                                        AutomationProperties.AutomationId="FrameTime_StatusValue"
-                                       Grid.Row="2"
-                                       Text="Blue=visual changes  Green=preview presents"
-                                       Foreground="#99FFFFFF"
+                                       Text="Waiting for preview samples"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       FontSize="11" TextWrapping="Wrap" />
+                            <TextBlock x:Name="FrameTime_LatencyValue" AutomationProperties.AutomationId="FrameTime_LatencyValue"
+                                       Text="Estimated capture → preview —" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        FontFamily="Consolas"
-                                       FontSize="11"
-                                       TextTrimming="CharacterEllipsis" />
-                        </Grid>
+                                       FontSize="11" TextWrapping="Wrap" />
+                        </StackPanel>
                     </Border>
                     </Grid>
                     </Border>
@@ -281,20 +294,13 @@
         <!-- Stats Dock Panel — full-height right column, outside preview grid -->
         <Border x:Name="StatsDockPanel"
                 AutomationProperties.AutomationId="StatsDockPanel"
+                RequestedTheme="Dark"
                 Grid.Column="1"
                 Grid.RowSpan="4"
                 Visibility="Collapsed"
-                Width="0"
+                Width="360"
                 MaxWidth="360"
-                Margin="0,8,12,16"
-                    Padding="12"
-                    BorderThickness="0"
-                    CornerRadius="8">
-                <Border.Background>
-                    <AcrylicBrush TintColor="#0A0A0A"
-                                  TintOpacity="0.80"
-                                  FallbackColor="#141414"/>
-                </Border.Background>
+                Margin="0,8,12,16">
                 <Border.Resources>
                     <Style x:Key="DockStatsLabelStyle" TargetType="TextBlock">
                         <Setter Property="FontSize" Value="12" />
@@ -313,81 +319,71 @@
                         <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
                     </Style>
                     <Style x:Key="DockStatsRowStyle" TargetType="Border">
-                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="Padding" Value="8,6" />
                         <Setter Property="CornerRadius" Value="4" />
                     </Style>
                     <Style x:Key="DockStatsRowAltStyle" TargetType="Border">
-                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="Padding" Value="8,6" />
                         <Setter Property="CornerRadius" Value="4" />
                         <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
                     </Style>
                 </Border.Resources>
-                <Border.RenderTransform>
-                    <TranslateTransform x:Name="StatsDockTranslate" X="0"/>
-                </Border.RenderTransform>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,14,0">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="Stats"
-                                   Style="{ThemeResource SubtitleTextBlockStyle}" />
+                <Border x:Name="StatsDockMotionSurface" Padding="14" CornerRadius="10"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="PERFORMANCE" FontSize="11" CharacterSpacing="140"
+                                       FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="Live capture" FontSize="22" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                        </StackPanel>
 
                         <TextBlock x:Name="Stats_SessionStateValue"
                                    AutomationProperties.AutomationId="Stats_SessionStateValue"
                                    Text="Idle"
                                    Style="{StaticResource DockStatsLabelStyle}" />
 
-                        <StackPanel Spacing="2">
-                            <TextBlock Text="Live Summary" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Capture" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SummaryCaptureValue" AutomationProperties.AutomationId="Stats_SummaryCaptureValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
+                        <StackPanel Spacing="8">
+                            <Border Padding="12" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="CAPTURE" FontSize="10" CharacterSpacing="100" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryCaptureValue" AutomationProperties.AutomationId="Stats_SummaryCaptureValue"
+                                               Text="—" Style="{StaticResource DockStatsValueStyle}" FontSize="15" TextWrapping="Wrap" />
+                                </StackPanel>
                             </Border>
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Preview" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SummaryPreviewValue" AutomationProperties.AutomationId="Stats_SummaryPreviewValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
+                            <Border Padding="12" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                <StackPanel Spacing="5">
+                                    <Grid>
+                                        <TextBlock Text="PREVIEW PRESENTS" FontSize="10" CharacterSpacing="100" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                        <TextBlock x:Name="Stats_SummaryPreviewValue" AutomationProperties.AutomationId="Stats_SummaryPreviewValue"
+                                                   Text="—" Style="{StaticResource DockStatsValueStyle}" FontSize="11" HorizontalAlignment="Right" />
+                                    </Grid>
+                                    <TextBlock x:Name="Stats_SummaryRendererFpsValue" AutomationProperties.AutomationId="Stats_SummaryRendererFpsValue"
+                                               Text="—" Style="{StaticResource DockStatsValueStyle}" FontSize="14" TextWrapping="Wrap"
+                                               ToolTipService.ToolTip="P99 equivalent FPS is 1000 divided by the P99 present interval. It is not an average of the slowest 1% of frames." />
+                                    <TextBlock Text="Visual repeats in sampled crop" Style="{StaticResource DockStatsLabelStyle}" FontSize="11" Margin="0,3,0,0" />
+                                    <TextBlock x:Name="Stats_SummaryVisualFpsValue" AutomationProperties.AutomationId="Stats_SummaryVisualFpsValue"
+                                               Text="—" Style="{StaticResource DockStatsValueStyle}" FontSize="11" TextWrapping="Wrap" />
+                                    <Grid Margin="0,3,0,0">
+                                        <TextBlock Text="Estimated capture → preview" Style="{StaticResource DockStatsLabelStyle}" FontSize="11" />
+                                        <TextBlock x:Name="Stats_SummaryLatencyValue" AutomationProperties.AutomationId="Stats_SummaryLatencyValue"
+                                                   Text="—" Style="{StaticResource DockStatsValueStyle}" FontSize="11" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </StackPanel>
                             </Border>
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Preview Cadence" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SummaryRendererFpsValue" AutomationProperties.AutomationId="Stats_SummaryRendererFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" TextAlignment="Right" TextWrapping="NoWrap" MaxLines="1" />
-                                </Grid>
-                            </Border>
-                            <Border Style="{StaticResource DockStatsRowStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Visual Repeat" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SummaryVisualFpsValue" AutomationProperties.AutomationId="Stats_SummaryVisualFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
-                            </Border>
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Latency" Style="{StaticResource DockStatsLabelStyle}" />
-                                    <TextBlock x:Name="Stats_SummaryLatencyValue" AutomationProperties.AutomationId="Stats_SummaryLatencyValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
-                                </Grid>
+                            <Border Padding="12" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="RECORDING" FontSize="10" CharacterSpacing="100" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryRecordingValue" AutomationProperties.AutomationId="Stats_SummaryRecordingValue"
+                                               Text="Not recording" Style="{StaticResource DockStatsValueStyle}" FontSize="14" TextWrapping="Wrap" />
+                                </StackPanel>
                             </Border>
                         </StackPanel>
+
+                        <TextBlock Text="DETAILS" FontSize="10" CharacterSpacing="140"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
                         <StackPanel Spacing="2">
                             <Grid x:Name="SourceSignal_Header" AutomationProperties.AutomationId="SourceSignal_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="SourceSignal_Content">
@@ -535,7 +531,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Capture Frame Time" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Capture delivery" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="SourceCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -614,7 +610,7 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" />
                             </Grid>
-                            <StackPanel x:Name="Decode_Content" Spacing="2" />
+                            <StackPanel x:Name="Decode_Content" Spacing="2" Visibility="Collapsed" />
                         </StackPanel>
 
                         <StackPanel Spacing="2">
@@ -623,7 +619,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Preview Frame Time" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Preview present timing" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="PreviewCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -665,7 +661,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Slow" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Long intervals" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_PreviewSlowValue" AutomationProperties.AutomationId="Stats_PreviewSlowValue" Grid.Column="1" Text="0 frames (0.0%)" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -721,7 +717,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Frame Counters" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Delivery and queue counts" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Frames_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -768,7 +764,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="System" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Legacy health score" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Performance_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -798,7 +794,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Telemetry Details" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Diagnostics and evidence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Diagnostics_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -874,10 +870,11 @@
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
-                            <StackPanel x:Name="GPU_Content" Spacing="2" />
+                            <StackPanel x:Name="GPU_Content" Spacing="2" Visibility="Collapsed" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
+                </Border>
             </Border>
 
         <!-- Row 1: Settings Shelf (own grid row so preview resizes) -->

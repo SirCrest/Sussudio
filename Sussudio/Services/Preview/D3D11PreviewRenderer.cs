@@ -12,6 +12,7 @@ using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Win32.SafeHandles;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 
@@ -61,6 +62,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly int _swapChainBufferCount = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_SWAPCHAIN_BUFFER_COUNT", 2, 2, 4);
     private readonly int _maxPendingFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_QUEUE_DEPTH", 4, 1, 8);
     private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
+    private readonly bool _externalInputViewCacheEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_INPUT_VIEW_CACHE", 1, 0, 1) != 0;
     private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
     private readonly int _dxgiFrameStatisticsSampleIntervalFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL", 2, 1, 120);
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
@@ -113,7 +115,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
     private const uint WaitObject0 = 0;
     private const uint WaitTimeout = 258;
-    private IntPtr _frameLatencyWaitHandle;
+    private SafeWaitHandle? _frameLatencyWaitHandle;
     private int _stopRequested;
     private int _inNativeCall; // 1 while render thread is between guard-check and Present return
     private int _pendingFrameCount;
@@ -846,7 +848,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     private bool ProcessRenderThreadFrameOrIdle()
     {
-        if (!TryDequeuePendingFrame(out var frame))
+        if (_pendingFrames.IsEmpty)
         {
             ResetFrameReady("render_loop_idle");
             if (!_pendingFrames.IsEmpty ||
@@ -859,9 +861,32 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return true;
         }
 
-        frame = SkipStalePendingFrames(frame);
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            return false;
+        }
 
+        // Resize and wait before selecting a frame: new arrivals can replace a stale
+        // queued frame while the display or resize operation is still busy.
         TryResizeOutputForPendingFrame();
+        WaitForFrameLatencySignal();
+
+        if (Volatile.Read(ref _stopRequested) != 0)
+        {
+            return false;
+        }
+
+        if (Volatile.Read(ref _sharedDeviceResetPending) != 0)
+        {
+            return true;
+        }
+
+        if (!TryDequeuePendingFrame(out var frame))
+        {
+            return true;
+        }
+
+        frame = SkipStalePendingFrames(frame);
 
         if (Volatile.Read(ref _stopRequested) != 0)
         {
@@ -879,7 +904,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 return true;
             }
 
-            WaitForFrameLatencySignal();
             var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
             RenderFrame(frame);
             if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)
@@ -946,11 +970,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Logger.Log($"D3D11_PREVIEW_OUTPUT_RESIZED width={target.Width} height={target.Height} count={resizeCount} debounceMs={PreviewOutputSizePolicy.ResizeDebounceMilliseconds}.");
     }
 
-    // The jitter buffer is the pacer of record; this queue is only a shock
-    // absorber. Present(1) blocks per vsync, so once frames back up here each
-    // one displays a full refresh late and latency ratchets until something
-    // drops. Skip ahead to the newest still-fresh frame instead of presenting
-    // a stale backlog one vsync at a time.
+    // Skip stale queued frames after the display wait so a backlog does not add
+    // another refresh of latency per frame. Both direct capture and the MJPEG
+    // jitter scheduler supply submission timestamps for this freshness check.
     private PendingFrame SkipStalePendingFrames(PendingFrame frame)
     {
         if (!_renderStaleDropEnabled)
@@ -975,8 +997,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     private bool IsStaleScheduledFrame(PendingFrame frame, long nowTick)
     {
-        // Only jitter-scheduled live frames carry a scheduler tick; redraws and
-        // direct submissions are never dropped here.
+        // Live capture and continuous playback carry submission timestamps.
+        // Seek/step redraws are excluded through CountForPresentCadence.
         if (frame.SchedulerSubmitTick <= 0 || !frame.CountForPresentCadence)
         {
             return false;
@@ -988,7 +1010,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     private void ConfigureFrameLatencyWaitableObject()
     {
-        _frameLatencyWaitHandle = IntPtr.Zero;
+        DisposeFrameLatencyWaitHandle();
         _swapChain2?.Dispose();
         _swapChain2 = null;
 
@@ -1005,24 +1027,37 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         _swapChain2.MaximumFrameLatency = (uint)_dxgiMaxFrameLatency;
-        _frameLatencyWaitHandle = _swapChain2.FrameLatencyWaitableObject;
-        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{_frameLatencyWaitHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
+        var nativeHandle = _swapChain2.FrameLatencyWaitableObject;
+        if (nativeHandle != IntPtr.Zero)
+        {
+            _frameLatencyWaitHandle = new SafeWaitHandle(nativeHandle, ownsHandle: true);
+        }
+
+        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{nativeHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
     }
 
     private void WaitForFrameLatencySignal()
     {
-        if (!_waitableSwapChainEnabled || _frameLatencyWaitHandle == IntPtr.Zero)
+        var waitHandle = _frameLatencyWaitHandle;
+        if (!_waitableSwapChainEnabled || waitHandle == null || waitHandle.IsInvalid || waitHandle.IsClosed)
         {
             return;
         }
 
         var waitStart = Stopwatch.GetTimestamp();
-        var result = WaitForSingleObject(_frameLatencyWaitHandle, 8);
+        var result = WaitForSingleObject(waitHandle, 8);
         TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
         if (result != WaitObject0 && result != WaitTimeout)
         {
             Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
         }
+    }
+
+    private void DisposeFrameLatencyWaitHandle()
+    {
+        // Configuration and cleanup run on the render thread after its wait has
+        // returned. SafeHandle also pins the handle for the duration of a native wait.
+        Interlocked.Exchange(ref _frameLatencyWaitHandle, null)?.Dispose();
     }
 
     private void CleanupRenderThreadExit()
@@ -1398,7 +1433,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     }
 
     [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
-    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+    private static extern uint WaitForSingleObject(SafeWaitHandle handle, uint milliseconds);
 
 public readonly record struct PresentCadenceMetrics(
         int SampleCount,
@@ -1482,6 +1517,7 @@ public readonly record struct PresentCadenceMetrics(
         long MissedRefreshCount);
 
     private readonly object _presentCadenceLock = new();
+    private readonly PreviewFrameTimeHistory _presentFrameTimeHistory = new();
     private double[] _presentIntervalWindowMs = new double[1200];
     private int _presentIntervalCount;
     private int _presentIntervalIndex;
@@ -1580,6 +1616,7 @@ public readonly record struct PresentCadenceMetrics(
                 _presentIntervalWindowMs = new double[targetSize];
                 _presentIntervalCount = 0;
                 _presentIntervalIndex = 0;
+                _presentFrameTimeHistory.Reset();
             }
         }
 
@@ -1707,6 +1744,15 @@ public readonly record struct PresentCadenceMetrics(
             SlowFramePercent: slowPercent);
     }
 
+    public PreviewFrameTimeHistoryRead CopyPresentFrameTimeSamples(
+        PreviewFrameTimeCursor cursor, Span<PreviewFrameTimeSample> destination)
+    {
+        lock (_presentCadenceLock)
+        {
+            return _presentFrameTimeHistory.CopyAfter(cursor, destination);
+        }
+    }
+
     public double[] GetRecentPresentIntervalsMs(int maxSamples)
     {
         lock (_presentCadenceLock)
@@ -1800,7 +1846,7 @@ public readonly record struct PresentCadenceMetrics(
         var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
         return new FrameLatencyWaitMetrics(
             Enabled: _waitableSwapChainEnabled,
-            HandleActive: _frameLatencyWaitHandle != IntPtr.Zero,
+            HandleActive: _frameLatencyWaitHandle is { IsInvalid: false, IsClosed: false },
             CallCount: Interlocked.Read(ref _frameLatencyWaitCallCount),
             SignaledCount: Interlocked.Read(ref _frameLatencyWaitSignaledCount),
             TimeoutCount: Interlocked.Read(ref _frameLatencyWaitTimeoutCount),
@@ -2103,27 +2149,32 @@ public readonly record struct PresentCadenceMetrics(
         if (!countSample)
         {
             Interlocked.Exchange(ref _presentCadenceBaselinePending, 1);
+            RecordPresentHistoryGap(nowTick);
             return 0;
         }
 
         if (previousTick <= 0)
         {
+            RecordPresentHistoryGap(nowTick);
             return 0;
         }
 
         if (Interlocked.Exchange(ref _presentCadenceBaselinePending, 0) != 0)
         {
+            RecordPresentHistoryGap(nowTick);
             return 0;
         }
 
         var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
         if (intervalMs <= 0 || intervalMs > 5000)
         {
+            RecordPresentHistoryGap(nowTick);
             return 0;
         }
 
         lock (_presentCadenceLock)
         {
+            _presentFrameTimeHistory.Append(nowTick, intervalMs);
             _presentIntervalWindowMs[_presentIntervalIndex] = intervalMs;
             _presentIntervalIndex = (_presentIntervalIndex + 1) % _presentIntervalWindowMs.Length;
             if (_presentIntervalCount < _presentIntervalWindowMs.Length)
@@ -2133,6 +2184,14 @@ public readonly record struct PresentCadenceMetrics(
         }
 
         return intervalMs;
+    }
+
+    private void RecordPresentHistoryGap(long timestampQpc)
+    {
+        lock (_presentCadenceLock)
+        {
+            _presentFrameTimeHistory.Append(timestampQpc, 0, PreviewFrameTimeSampleFlags.GapBefore);
+        }
     }
 
     private void TrackPipelineLatency(long arrivalTick, long estimatedVisibleTick)
@@ -2231,6 +2290,7 @@ public readonly record struct PresentCadenceMetrics(
         Interlocked.Exchange(ref _measuredRefreshIntervalTicks, 0);
         lock (_presentCadenceLock)
         {
+            _presentFrameTimeHistory.Reset();
             Array.Clear(_presentIntervalWindowMs, 0, _presentIntervalWindowMs.Length);
             _presentIntervalCount = 0;
             _presentIntervalIndex = 0;
