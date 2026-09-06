@@ -761,11 +761,12 @@ Entry points:
 - `LibAvEncoder.cs` also owns output rotation, zero-delay NVENC output for
   independently decodable rotated files, IO close/reopen, stream reinitialization,
   retained game-audio/microphone counters for finalization after native cleanup,
-  video bitstream-filter reset, segment runtime reset, MP4
+  video bitstream-filter reset, segment runtime reset, container
   muxer option policy for open and rotated outputs, flush/final close, dispose,
   trailer writing, close-result logging, final output telemetry, native
   frame/context/buffer release, hardware texture pool release, and encoder
-  state reset.
+  state reset. MPEG-TS outputs preserve the encoder clock across segments,
+  including the negative AAC priming timestamps at startup.
 - `Sussudio/Services/Recording/RecordingArtifactManager.cs` owns recording
   context creation, temp/final output file naming, HDR-active context fields,
   mux success/failure finalization, final-output validation, rollback,
@@ -826,7 +827,8 @@ Entry points:
   retention policy.
 - `FlashbackStartupCacheCleanup.cs` owns startup stale-root/stale-session cleanup, temp-drive free-space probing, session-directory naming/path-safety scanner helpers, startup session-cache budget calculation, session-directory stats, oldest-session eviction, and cache-budget cleanup telemetry.
 - `FlashbackDecoder.cs` owns decoder lifecycle, file open/close, dispose shell,
-  H.264/HEVC header-only probing, completed-input decoder drains (only after
+  H.264/HEVC header-only probing, compatible MPEG-TS input continuation with
+  retained codec state and validated stream parameters, completed-input decoder drains (only after
   the controller has found a successor file),
   stream-count/index bounds, decoded frame-size/dimension validation,
   D3D11/software decoded-frame validation, decoded video/audio output DTOs,
@@ -932,6 +934,8 @@ Entry points:
   Segment timeline metadata supplies the input timestamp origin; delayed AAC
   packets do not move the requested video cut. The same timeline fixes output
   segment offsets so delayed packets cannot overlap the preceding segment.
+  `FlashbackEncoderSink` rounds resumed encoder counters to the nearest frame
+  and sample so floating-point conversion cannot replay the previous timestamp.
 - `FlashbackExportFailureCodes.cs` owns export failure codes and their existing
   automation categories. Producers attach codes to `FinalizeResult`; diagnostics
   and automation classify those codes without interpreting display messages or

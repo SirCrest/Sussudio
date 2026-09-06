@@ -973,6 +973,20 @@ internal sealed partial class FlashbackPlaybackController
             return false;
         }
 
+        var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
+        if (nextSegmentStart.HasValue &&
+            nextSegmentStart.Value - lastFrameAbsPts <= TimeSpan.FromMilliseconds(250) &&
+            decoder.TryContinueMpegTsSegment(nextFile, cancellationToken))
+        {
+            _currentOpenFilePath = nextFile;
+            Interlocked.Increment(ref _playbackSegmentSwitches);
+            Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_CONTINUE pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
+            playbackContinues = true;
+            return true;
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_CONTINUE_FALLBACK next_start_ms={nextSegmentStart?.TotalMilliseconds:F3} last_frame_ms={lastFrameAbsPts.TotalMilliseconds:F3}");
         // A successor proves the current file is complete. Present the decoder's
         // delayed tail before changing files; temporary EOF at the live edge stays open.
         if (decoder.BeginCompletedInputDrain(cancellationToken))
@@ -981,7 +995,6 @@ internal sealed partial class FlashbackPlaybackController
             return true;
         }
 
-        var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
         if (currentOpenFilePath != null &&
             nextSegmentStart.HasValue &&
             nextSegmentStart.Value - lastFrameAbsPts > TimeSpan.FromMilliseconds(250))

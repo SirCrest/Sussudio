@@ -407,7 +407,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;
 
             var probeStartedAt = Stopwatch.GetTimestamp();
-            FindInputStreamInfo();
+            FindInputStreamInfo(_formatCtx);
             var probeMs = Stopwatch.GetElapsedTime(probeStartedAt).TotalMilliseconds;
             if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))
             {
@@ -465,16 +465,16 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
     }
 
-    private void FindInputStreamInfo()
+    private static void FindInputStreamInfo(AVFormatContext* formatCtx)
     {
-        if (_formatCtx->nb_streams == 0)
+        if (formatCtx->nb_streams == 0)
         {
             // Some demuxers discover their streams only while probing.
-            ThrowIfError(ffmpeg.avformat_find_stream_info(_formatCtx, null), "avformat_find_stream_info");
+            ThrowIfError(ffmpeg.avformat_find_stream_info(formatCtx, null), "avformat_find_stream_info");
             return;
         }
 
-        if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var failure))
+        if (!TryGetInputStreamCount(formatCtx, out var streamCount, out var failure))
             throw CreateException(failure);
 
         var probeOptions = stackalloc AVDictionary*[streamCount];
@@ -485,7 +485,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             for (var i = 0; i < streamCount; i++)
             {
-                var codecId = _formatCtx->streams[i]->codecpar->codec_id;
+                var codecId = formatCtx->streams[i]->codecpar->codec_id;
                 if (codecId is AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264)
                 {
                     // SPS headers supply these codecs' dimensions and pixel format.
@@ -495,13 +495,106 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 }
             }
 
-            ThrowIfError(ffmpeg.avformat_find_stream_info(_formatCtx, probeOptions), "avformat_find_stream_info");
+            ThrowIfError(ffmpeg.avformat_find_stream_info(formatCtx, probeOptions), "avformat_find_stream_info");
         }
         finally
         {
             for (var i = 0; i < streamCount; i++)
                 ffmpeg.av_dict_free(&probeOptions[i]);
         }
+    }
+
+    /// <summary>
+    /// Advances a completed MPEG-TS input without draining the codecs. Delayed
+    /// video frames and queued audio remain continuous across compatible segments.
+    /// A rejected candidate leaves the current input untouched for drain/reopen.
+    /// </summary>
+    public bool TryContinueMpegTsSegment(string filePath, CancellationToken cancellationToken = default)
+    {
+        ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_completedInputDrainStarted || _hasPendingVideoFrame ||
+            !string.Equals(System.IO.Path.GetExtension(_currentFilePath), ".ts", StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(System.IO.Path.GetExtension(filePath), ".ts", StringComparison.OrdinalIgnoreCase) ||
+            _videoCodecCtx->codec_id is not (AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264))
+        {
+            Logger.Log($"FLASHBACK_DECODER_CONTINUE_SKIP drained={_completedInputDrainStarted} pending={_hasPendingVideoFrame} codec={_videoCodecCtx->codec_id}");
+            return false;
+        }
+
+        var startedAt = Stopwatch.GetTimestamp();
+        AVFormatContext* candidate = null;
+        try
+        {
+            ThrowIfError(ffmpeg.avformat_open_input(&candidate, filePath, null, null), "avformat_open_input(continuation)");
+            candidate->flags |= ffmpeg.AVFMT_FLAG_GENPTS;
+            candidate->probesize = MaxMpegTsProbeSizeBytes;
+            // Continuation needs matching codec headers, not a duration or frame-rate
+            // estimate. Keep the ordinary full probe for a rejected candidate.
+            candidate->max_analyze_duration = 100_000;
+            candidate->skip_estimate_duration_from_pts = 1;
+            candidate->fps_probe_size = 0;
+            FindInputStreamInfo(candidate);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!TryGetInputStreamCount(candidate, out var streamCount, out _) ||
+                !IsValidStreamIndex(_videoStreamIndex, streamCount) ||
+                candidate->nb_streams != _formatCtx->nb_streams)
+                return false;
+
+            for (var i = 0; i < streamCount; i++)
+            {
+                var current = _formatCtx->streams[i];
+                var next = candidate->streams[i];
+                if (current->time_base.num != next->time_base.num ||
+                    current->time_base.den != next->time_base.den ||
+                    !AreContinuationParametersCompatible(current->codecpar, next->codecpar))
+                {
+                    Logger.Log($"FLASHBACK_DECODER_CONTINUE_SKIP stream={i} current_codec={current->codecpar->codec_id} next_codec={next->codecpar->codec_id} current_format={current->codecpar->format} next_format={next->codecpar->format} current_profile={current->codecpar->profile} next_profile={next->codecpar->profile} current_extra={current->codecpar->extradata_size} next_extra={next->codecpar->extradata_size}");
+                    return false;
+                }
+            }
+
+            // Do not seek or flush: the new demuxer still owns its opening packets,
+            // and the codecs still own the previous segment's delayed frames.
+            var previous = _formatCtx;
+            _formatCtx = candidate;
+            candidate = null;
+            ffmpeg.avformat_close_input(&previous);
+            _currentFilePath = filePath;
+            Logger.Log($"FLASHBACK_DECODER_CONTINUE path='{filePath}' elapsed_ms={Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds:F1}");
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_DECODER_CONTINUE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return false;
+        }
+        finally
+        {
+            if (candidate != null)
+                ffmpeg.avformat_close_input(&candidate);
+        }
+    }
+
+    private static bool AreContinuationParametersCompatible(AVCodecParameters* current, AVCodecParameters* next)
+    {
+        if (current == null || next == null ||
+            current->codec_type != next->codec_type || current->codec_id != next->codec_id ||
+            current->format != next->format || current->profile != next->profile ||
+            current->width != next->width || current->height != next->height ||
+            current->sample_rate != next->sample_rate ||
+            ffmpeg.av_channel_layout_compare(&current->ch_layout, &next->ch_layout) != 0 ||
+            current->extradata_size != next->extradata_size || current->extradata_size < 0)
+            return false;
+
+        return current->extradata_size == 0 ||
+            (current->extradata != null && next->extradata != null &&
+             new ReadOnlySpan<byte>(current->extradata, current->extradata_size)
+                 .SequenceEqual(new ReadOnlySpan<byte>(next->extradata, next->extradata_size)));
     }
 
     /// <summary>

@@ -4851,7 +4851,7 @@ static partial class Program
         AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
         AssertContains(initializationText, "public void Initialize(LibAvEncoderOptions options)");
         AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
-        AssertContains(initializationText, "ApplyMp4MuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
+        AssertContains(initializationText, "ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
         AssertContains(initializationText, "CleanupResources(writeTrailer: false);");
         AssertEqual(
             false,
@@ -5001,7 +5001,7 @@ static partial class Program
         AssertContains(outputLifecycleText, "private void ReinitializeOutputContext(string outputPath, out double openOutputMs, out double headerMs)");
         AssertContains(outputLifecycleText, "private void ReinitializeVideoStream()");
         AssertContains(outputLifecycleText, "private void ResetSegmentRuntimeState()");
-        AssertContains(outputLifecycleText, "private static unsafe void ApplyMp4MuxerOptions(");
+        AssertContains(outputLifecycleText, "private static unsafe void ApplyMuxerOptions(");
         AssertContains(outputLifecycleText, "frag_keyframe+empty_moov");
         AssertContains(outputLifecycleText, "public void FlushAndClose()");
         AssertContains(outputLifecycleText, "public void Dispose()");
@@ -5036,9 +5036,9 @@ static partial class Program
     {
         var sourceText = ReadLibAvEncoderSource();
 
-        AssertContains(sourceText, "private static unsafe void ApplyMp4MuxerOptions(");
-        AssertContains(sourceText, "ApplyMp4MuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
-        AssertContains(sourceText, "ApplyMp4MuxerOptions(containerFormat, _options?.FragmentedMp4 ?? false, &muxerOptions, \"rotate\");");
+        AssertContains(sourceText, "private static unsafe void ApplyMuxerOptions(");
+        AssertContains(sourceText, "ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
+        AssertContains(sourceText, "ApplyMuxerOptions(containerFormat, _options?.FragmentedMp4 ?? false, &muxerOptions, \"rotate\");");
         AssertContains(sourceText, "frag_keyframe+empty_moov");
         AssertContains(sourceText, "ffmpeg.av_dict_set(muxerOptions, \"frag_duration\", \"100000\", 0)");
         AssertContains(sourceText, "ffmpeg.av_dict_set(muxerOptions, \"flush_packets\", \"1\", 0)");

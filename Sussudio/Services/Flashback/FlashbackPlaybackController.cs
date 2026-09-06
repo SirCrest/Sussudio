@@ -2290,7 +2290,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
             // At HFR, per-frame corrections are visible, so correct
             // proportionally once drift is outside the lip-sync band instead
             // of accepting a persistent 100ms error.
-            const double syncThresholdMs = 40.0;
+            // Leaving video 40ms behind audio also starves the shared demuxer's
+            // audio queue at segment edges. Keep a tighter lead/lag band.
+            const double syncThresholdMs = 10.0;
             const double MaxAudioMasterCorrectionMs = 500.0;
             const double AudioMasterCorrectionGain = 0.10;
             const double MaxAudioMasterCorrectionFrameRatio = 0.25;

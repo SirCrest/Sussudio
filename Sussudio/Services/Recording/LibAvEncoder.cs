@@ -553,7 +553,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             AVDictionary* muxerOptions = null;
             try
             {
-                ApplyMp4MuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, "open");
+                ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, "open");
                 ThrowIfError(ffmpeg.avformat_write_header(_formatCtx, &muxerOptions), "avformat_write_header");
                 _headerWritten = true;
             }
@@ -876,7 +876,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         try
         {
             phaseStartedAt = Stopwatch.GetTimestamp();
-            ApplyMp4MuxerOptions(containerFormat, _options?.FragmentedMp4 ?? false, &muxerOptions, "rotate");
+            ApplyMuxerOptions(containerFormat, _options?.FragmentedMp4 ?? false, &muxerOptions, "rotate");
             ThrowIfError(ffmpeg.avformat_write_header(_formatCtx, &muxerOptions), "avformat_write_header(rotate)");
             _headerWritten = true;
             headerMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
@@ -978,12 +978,20 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         _flushSent = false;
     }
 
-    private static unsafe void ApplyMp4MuxerOptions(
+    private static unsafe void ApplyMuxerOptions(
         string containerFormat,
         bool fragmentedMp4,
         AVDictionary** muxerOptions,
         string operation)
     {
+        if (containerFormat == "mpegts")
+        {
+            // AAC priming starts before video PTS zero. Preserve the encoder clock
+            // instead of shifting only the first segment to make its audio positive.
+            ThrowIfError(ffmpeg.av_dict_set(muxerOptions, "avoid_negative_ts", "disabled", 0), $"av_dict_set(avoid_negative_ts,{operation})");
+            return;
+        }
+
         if (containerFormat != "mp4")
         {
             return;

@@ -238,8 +238,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             if (ptsBaseOffset > TimeSpan.Zero)
             {
-                var initialVideoPts = ToNonNegativeLongSaturated(ptsBaseOffset.TotalSeconds * sessionFrameRate);
-                var initialAudioPts = ToNonNegativeLongSaturated(ptsBaseOffset.TotalSeconds * 48_000);
+                var (initialVideoPts, initialAudioPts) = ResolveInitialEncoderPts(ptsBaseOffset, sessionFrameRate);
                 _encoder.SetInitialPts(initialVideoPts, initialAudioPts);
                 Logger.Log($"FLASHBACK_SINK_PTS_CONTINUE v_pts={initialVideoPts} a_pts={initialAudioPts} offset_s={ptsBaseOffset.TotalSeconds:F1}");
             }
@@ -858,6 +857,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             $"microphone={Interlocked.Read(ref _microphonePacketsRetired)}/{boundary.MicrophonePacketsAccepted} " +
             $"gpu={Interlocked.Read(ref _gpuPacketsRetired)}/{boundary.GpuPacketsAccepted}");
         return false;
+    }
+
+    private static (long VideoPts, long AudioPts) ResolveInitialEncoderPts(TimeSpan position, double frameRate)
+    {
+        // TimeSpan conversion can land just below an exact frame/sample boundary.
+        // Truncation would replay the preceding timestamp after a sink restart.
+        return (
+            ToNonNegativeLongSaturated(Math.Round(position.TotalSeconds * frameRate, MidpointRounding.AwayFromZero)),
+            ToNonNegativeLongSaturated(Math.Round(position.TotalSeconds * 48_000, MidpointRounding.AwayFromZero)));
     }
 
     private static long ToNonNegativeLongSaturated(double value)

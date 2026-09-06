@@ -507,6 +507,21 @@ public sealed class FlashbackEncoderSinkContractsTests
         => global::Program.FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate();
 
     [Fact]
+    public void FlashbackEncoderRestartKeepsTheNextFrameTimestamp()
+    {
+        var sink = SussudioAssembly.Load().GetType("Sussudio.Services.Flashback.FlashbackEncoderSink", true)!;
+        var resolve = sink.GetMethod("ResolveInitialEncoderPts", BindingFlags.Static | BindingFlags.NonPublic)!;
+        (long VideoPts, long AudioPts) Resolve(TimeSpan position, double fps)
+            => ((long, long))resolve.Invoke(null, new object[] { position, fps })!;
+
+        // This exact resumed timestamp previously truncated to video frame 43207,
+        // repeating the preceding segment's final frame timestamp at 4K120.
+        Assert.Equal((43_208L, 17_283_200L), Resolve(TimeSpan.FromTicks(3_600_666_666), 120));
+        Assert.Equal((12_001L, 9_610_401L), Resolve(TimeSpan.FromSeconds(12_001 / (60_000.0 / 1001)), 60_000.0 / 1001));
+        Assert.Equal((0L, 0L), Resolve(TimeSpan.Zero, 120));
+    }
+
+    [Fact]
     public Task FlashbackEncoderSinkRestoresActiveSegmentAfterRotationFailure()
         => global::Program.FlashbackEncoderSink_RotateFailureRestoresActiveSegment();
 
@@ -3515,7 +3530,7 @@ static partial class Program
         AssertContains(sourceText, "TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"play\")");
         AssertContains(sourceText, "SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, \"playback_decode\");");
         AssertContains(sourceText, "private void UpdateDecoderHwAccel(FlashbackDecoder decoder)");
-        AssertContains(sourceText, "const double syncThresholdMs = 40.0;");
+        AssertContains(sourceText, "const double syncThresholdMs = 10.0;");
         AssertContains(sourceText, "const double MaxAudioMasterCorrectionMs = 500.0;");
         AssertContains(sourceText, "const double AudioMasterCorrectionGain = 0.10;");
         AssertContains(sourceText, "const double MaxAudioMasterCorrectionFrameRatio = 0.25;");
@@ -5693,6 +5708,16 @@ static partial class Program
         AssertContains(sourceText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
         AssertContains(sourceText, "public bool BeginCompletedInputDrain(CancellationToken cancellationToken = default)");
+        var continuation = ExtractTextBetween(sourceText,
+            "public bool TryContinueMpegTsSegment(", "private static bool AreContinuationParametersCompatible(");
+        AssertContains(continuation, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertOccursBefore(continuation, "AreContinuationParametersCompatible(current->codecpar, next->codecpar)", "_formatCtx = candidate;");
+        AssertContains(continuation, "if (candidate != null)\n                ffmpeg.avformat_close_input(&candidate);");
+        AssertDoesNotContain(continuation, "avcodec_flush_buffers");
+        AssertDoesNotContain(continuation, "avcodec_send_packet");
+        AssertDoesNotContain(continuation, "SeekTo(");
+        var playback = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs");
+        AssertOccursBefore(playback, "decoder.TryContinueMpegTsSegment(nextFile, cancellationToken)", "decoder.BeginCompletedInputDrain(cancellationToken)");
         AssertContains(sourceText, "if (_completedInputDrainStarted)");
         AssertContains(sourceText, "ffmpeg.avcodec_send_packet(_videoCodecCtx, null)");
         AssertContains(sourceText, "if (!SeekToKeyframe(target, cancellationToken))");
