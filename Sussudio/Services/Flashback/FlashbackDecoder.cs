@@ -1578,6 +1578,14 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             _videoCodecCtx->thread_count = 1;
         }
+        else
+        {
+            // FFmpeg's single-thread default cannot sustain 4K120 HEVC playback.
+            // Bound frame parallelism so playback keeps headroom for live capture
+            // without unbounded decoded-frame memory or startup latency.
+            _videoCodecCtx->thread_count = Math.Clamp(Environment.ProcessorCount / 2, 1, 12);
+            _videoCodecCtx->thread_type = ffmpeg.FF_THREAD_FRAME | ffmpeg.FF_THREAD_SLICE;
+        }
 
         ThrowIfError(
             ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),
@@ -1616,7 +1624,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         var videoCodecName = codec->name != null ? Marshal.PtrToStringAnsi((IntPtr)codec->name) : "?";
         Logger.Log($"FLASHBACK_DECODER_VIDEO codec={videoCodecName} hw_accel=Software " +
                    $"pix_fmt={_decodedPixelFormat} target={targetFormat} " +
-                   $"needs_convert={_needsConvert}");
+                   $"needs_convert={_needsConvert} threads={_videoCodecCtx->thread_count} thread_type={_videoCodecCtx->active_thread_type}");
     }
 
     private void AllocateVideoOutputBuffers()

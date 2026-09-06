@@ -279,15 +279,9 @@ public partial class CaptureService
 
             _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
             _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
-            _actualFrameRateNumerator = settings.RequestedFrameRateNumerator;
-            _actualFrameRateDenominator = settings.RequestedFrameRateDenominator;
-            _actualFrameRate = _actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 0
-                ? (double)_actualFrameRateNumerator.Value / _actualFrameRateDenominator.Value
-                : unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
-            _actualFrameRateArg = ResolveFrameRateArg(settings, _actualFrameRate ?? settings.FrameRate);
+            SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate);
             _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
             _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
-            TryCorrectFrameRateFromTelemetry();
 
             wasapiCapture = await StartPreviewAudioGraphAsync(settings, audioDeviceId, transitionToken).ConfigureAwait(false);
 

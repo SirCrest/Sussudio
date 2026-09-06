@@ -297,7 +297,6 @@ public partial class CaptureService
         var effectiveHeight = _actualHeight ?? settings.Height;
         var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
         await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
-        TryCorrectFrameRateFromTelemetry();
         var hdrPipelineRequested = HdrOutputPolicy.IsEnabled(settings);
         if (hdrPipelineRequested && _latestSourceTelemetry.IsHdr == false)
         {
@@ -360,14 +359,8 @@ public partial class CaptureService
         _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
         _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
         _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
-        _actualFrameRateNumerator = settings.RequestedFrameRateNumerator;
-        _actualFrameRateDenominator = settings.RequestedFrameRateDenominator;
-        _actualFrameRate = _actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 0
-            ? (double)_actualFrameRateNumerator.Value / _actualFrameRateDenominator.Value
-            : unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
-        _actualFrameRateArg = ResolveFrameRateArg(settings, _actualFrameRate ?? effectiveFrameRate);
+        SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate);
         _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
-        TryCorrectFrameRateFromTelemetry();
 
         var activeRecordingSink = rollback.RecordingSink
             ?? throw new InvalidOperationException("Recording requires an active sink.");

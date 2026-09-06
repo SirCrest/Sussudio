@@ -4255,9 +4255,9 @@ static partial class Program
         AssertContains(flashbackFinalizeText, "var fbRecordingContext = _recordingBackend.DetachFlashbackBackend();");
         AssertContains(flashbackRecordingText, "_recordingBackend.IsFlashbackBackend(_flashbackBackend.Sink)");
         AssertContains(flashbackRecordingText, "private FlashbackSessionContext CreateFlashbackSessionContext(");
-        AssertContains(flashbackRecordingText, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
-        AssertContains(flashbackRecordingText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
-        AssertContains(flashbackRecordingText, "private static readonly (int Numerator, int Denominator)[] CommonFlashbackFrameRateParts");
+        AssertContains(flashbackRecordingText, "var frameRateParts = ResolveCaptureDeliveryFrameRateParts(settings, frameRate);");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveCaptureDeliveryFrameRateParts(");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static readonly (int Numerator, int Denominator)[] CommonCaptureFrameRateParts");
         AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackExportVerificationFormat(");
         AssertContains(flashbackRecordingText, "private static string? ResolveFlashbackCodecDowngradeReason(");
         AssertEqual(

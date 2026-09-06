@@ -62,7 +62,7 @@ mentions the moved files.
 | Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | WASAPI render lifecycle, bounded sample buffering, PTS advancement, and volume ramps. |
 | WASAPI interop | `Sussudio/Services/Audio/WasapiComInterop.cs` | Core Audio COM contracts, native formats, endpoint helpers, and device-change notification. |
 | WASAPI worker quarantine | `Sussudio/Services/Audio/WasapiWorkerQuarantine.cs` | Retain native resources for late-exiting workers and block unsafe restart until they exit. |
-| MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | Paced frame emission, display-clock alignment, adaptive depth, and lease ownership. |
+| MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | Paced frame emission anchored to capture cadence, optional display-clock alignment, adaptive depth, and lease ownership. |
 | MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Gpu/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | Optional NVML sampling and graceful unavailable telemetry. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
@@ -76,7 +76,7 @@ mentions the moved files.
 | Portable release tooling | `tools/reliability-gates.ps1`, `tools/package-github-release.ps1`, `tools/release/release-helpers.ps1`, `Sussudio/ffmpeg/manifest.json` | Reliability gates, package assembly, shared release helpers, and native-runtime manifest. |
 | Flashback | `FlashbackDecoder.cs`, `FlashbackPlaybackController.cs`, `FlashbackPlaybackCommandMailbox.cs`, `FlashbackPlaybackController.PlaybackFrames.cs`, `FlashbackPlaybackController.ThreadCommands.cs`, `FlashbackEncoderSink.cs`, `FlashbackBufferManager.cs`, `FlashbackStartupCacheCleanup.cs`, `FlashbackExporter.cs`, `FlashbackExportOutputTransaction.cs`, `FlashbackExportPlanner.cs` | Buffer retention, encoding, playback, and transactional export. See [Flashback](#flashback) for per-owner lifetimes and invariants. |
 | Flashback playback command handlers | `FlashbackPlaybackController.ThreadCommands.cs` | Playback-thread dispatch, seek/scrub transitions, frame stepping, and terminal live restore. |
-| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling, render passes, GPU resource lifetime, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
+| Preview rendering | `D3D11PreviewRenderer.cs`, `D3D11PreviewRenderer.RenderPasses.cs`, `D3D11PreviewRenderer.Resources.cs`, `PreviewOutputSizePolicy.cs`, `PreviewScreenshotCapture.cs` | Render-thread scheduling with waitable presentation, render passes, GPU resource lifetime, and screenshots. See [UI and presentation](#ui-shell-and-presentation). |
 | UI shell | `MainWindow.*.cs` XAML adapters plus `Sussudio/Controllers/*Controller.cs` shell controllers | XAML adapters delegate feature behavior to named controllers. See [UI and presentation](#ui-shell-and-presentation). |
 | Presentation | `MainViewModel.*.cs` facade/feature partial family, `Sussudio/ViewModels/MainViewModel.cs`, plus focused `Sussudio/ViewModels` policy/presentation helpers | View-model facade, feature state, and presentation policies. See [UI and presentation](#ui-shell-and-presentation). |
 
@@ -559,9 +559,12 @@ Important entry points:
 - `CaptureService.Flashback.cs` owns Flashback recording backend
   ownership checks, audio attachment, encoded-frame forwarding, and recording
   topology validation, Flashback recording session-context construction, codec
-  selection, GPU handle handoff, HDR guardrails, delivered-cadence frame-rate
-  rational preservation/inference, and legacy Flashback export
+  selection, GPU handle handoff, HDR guardrails, and legacy Flashback export
   verification/downgrade snapshot fields.
+- `CaptureService.RuntimeSnapshots.cs` owns delivered-cadence frame-rate
+  rational preservation/inference shared by Flashback, regular recording, and
+  negotiated capture snapshots. HDMI source timing remains separate from USB
+  delivery timing; source telemetry only supplies provisional initialization.
 - `CaptureService.HealthSnapshots.cs` samples health snapshot field groups,
   owns the private field builders, the service-state/scalar handoff, and the
   final `CaptureHealthSnapshot` DTO construction consumed by diagnostics and
@@ -830,7 +833,8 @@ Entry points:
   device-context initialization, get-format callback behavior, hardware decoder
   context setup, D3D11VA/software fallback selection, D3D11VA decoder
   selection, hardware-config diagnostics, frame-rate metadata, MJPEG
-  single-thread decode policy, software output-buffer allocation, decoded video
+  single-thread decode policy, bounded interframe software decode threading,
+  software output-buffer allocation, decoded video
   frame output, hardware/software frame selection, PTS-to-TimeSpan conversion,
   best-effort frame timestamp selection, software plane copies, and
   YUV-to-NV12/P010 conversion kernels.
@@ -2212,7 +2216,8 @@ Primary current owners:
   settings persistence, and the pure percent-to-XU-byte analog gain curve helper
   used by device-native gain application.
   `MainViewModel.AudioState.cs` owns audio capture property
-  handlers. `MainViewModel.AudioState.cs` owns audio-preview property
+  handlers and serializes complete monitoring ramp/teardown/restart transitions
+  so an older disable cannot stop newly enabled audio. It owns audio-preview property
   handlers, microphone monitor property handlers, and selected-microphone
   property handlers.
   `MainViewModel.cs`

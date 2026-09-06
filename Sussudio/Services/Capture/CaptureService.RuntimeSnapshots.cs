@@ -1670,7 +1670,8 @@ public partial class CaptureService
     /// When the driver reports integer frame rates (for example 120/1 for MJPG)
     /// but source telemetry confirms NTSC timing (for example vfreq=11987 is
     /// about 119.88fps), override the actual frame rate to the correct NTSC
-    /// rational. This affects recording metadata, cadence tracking, and UI display.
+    /// rational for provisional initialization. Once USB capture opens, negotiated
+    /// delivery timing owns recording metadata, cadence tracking, and UI display.
     /// </summary>
     private void TryCorrectFrameRateFromTelemetry()
     {
@@ -1704,25 +1705,105 @@ public partial class CaptureService
         _actualFrameRateArg = $"{ntscNumerator}/{ntscDenominator}";
     }
 
-    private static string ResolveFrameRateArg(CaptureSettings settings, double fallbackFrameRate)
+    private void SetActualCaptureFrameRate(CaptureSettings settings, double deliveryFrameRate)
     {
-        if (!string.IsNullOrWhiteSpace(settings.RequestedFrameRateArg))
-        {
-            return settings.RequestedFrameRateArg!;
-        }
-
-        if (settings.RequestedFrameRateNumerator.HasValue &&
-            settings.RequestedFrameRateDenominator.HasValue &&
-            settings.RequestedFrameRateNumerator.Value > 0 &&
-            settings.RequestedFrameRateDenominator.Value > 0)
-        {
-            return $"{settings.RequestedFrameRateNumerator.Value}/{settings.RequestedFrameRateDenominator.Value}";
-        }
-
-        return fallbackFrameRate > 0
-            ? fallbackFrameRate.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
-            : "60";
+        var parts = ResolveCaptureDeliveryFrameRateParts(settings, deliveryFrameRate);
+        _actualFrameRate = parts.EffectiveFrameRate;
+        _actualFrameRateNumerator = parts.Numerator is int numerator ? (uint)numerator : null;
+        _actualFrameRateDenominator = parts.Denominator is int denominator ? (uint)denominator : null;
+        _actualFrameRateArg = FormatCaptureFrameRateArg(parts);
     }
+
+    private static string ResolveFrameRateArg(CaptureSettings settings, double deliveryFrameRate)
+        => FormatCaptureFrameRateArg(ResolveCaptureDeliveryFrameRateParts(settings, deliveryFrameRate));
+
+    private static string FormatCaptureFrameRateArg((int? Numerator, int? Denominator, double EffectiveFrameRate) parts)
+        => parts.Numerator.HasValue && parts.Denominator is > 0
+            ? $"{parts.Numerator}/{parts.Denominator}"
+            : double.IsFinite(parts.EffectiveFrameRate) && parts.EffectiveFrameRate > 0
+                ? parts.EffectiveFrameRate.ToString("0.#########", System.Globalization.CultureInfo.InvariantCulture)
+                : "60";
+
+    private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveCaptureDeliveryFrameRateParts(
+        CaptureSettings settings,
+        double deliveryFrameRate)
+    {
+        // Preserve exact rationals only when they describe the actual delivered USB cadence.
+        // A source-reported 120000/1001 rate paired with ~120 delivered frames/sec causes A/V
+        // drift if we stamp video against the slower source clock.
+        if (!double.IsFinite(deliveryFrameRate) || deliveryFrameRate <= 0)
+        {
+            return (null, null, deliveryFrameRate);
+        }
+
+        if (settings.RequestedFrameRateNumerator is not uint numerator ||
+            settings.RequestedFrameRateDenominator is not uint denominator ||
+            numerator == 0 ||
+            denominator == 0 ||
+            numerator > int.MaxValue ||
+            denominator > int.MaxValue)
+        {
+            return InferCaptureDeliveryFrameRateParts(deliveryFrameRate);
+        }
+
+        var rationalFps = numerator / (double)denominator;
+        if (!double.IsFinite(rationalFps) || rationalFps <= 0)
+        {
+            return (null, null, deliveryFrameRate);
+        }
+
+        var deltaFps = Math.Abs(rationalFps - deliveryFrameRate);
+        var toleranceFps = Math.Max(0.01, deliveryFrameRate * 0.0001);
+        if (deltaFps > toleranceFps)
+        {
+            Logger.Log(
+                $"CAPTURE_FRAME_RATE_RATIONAL_REJECT requested={numerator}/{denominator} " +
+                $"rational={rationalFps:0.######} delivery={deliveryFrameRate:0.######} " +
+                $"delta={deltaFps:0.######} tolerance={toleranceFps:0.######}");
+            return InferCaptureDeliveryFrameRateParts(deliveryFrameRate);
+        }
+
+        Logger.Log(
+            $"CAPTURE_FRAME_RATE_RATIONAL_ACCEPT requested={numerator}/{denominator} " +
+            $"delivery={deliveryFrameRate:0.######} effective={rationalFps:0.######}");
+        return ((int)numerator, (int)denominator, rationalFps);
+    }
+
+    private static (int? Numerator, int? Denominator, double EffectiveFrameRate) InferCaptureDeliveryFrameRateParts(double deliveryFrameRate)
+    {
+        foreach (var (numerator, denominator) in CommonCaptureFrameRateParts)
+        {
+            var rationalFps = numerator / (double)denominator;
+            var deltaFps = Math.Abs(rationalFps - deliveryFrameRate);
+            var toleranceFps = Math.Max(0.01, deliveryFrameRate * 0.0001);
+            if (deltaFps <= toleranceFps)
+            {
+                Logger.Log(
+                    $"CAPTURE_FRAME_RATE_RATIONAL_INFER inferred={numerator}/{denominator} " +
+                    $"delivery={deliveryFrameRate:0.######} effective={rationalFps:0.######}");
+                return (numerator, denominator, rationalFps);
+            }
+        }
+
+        return (null, null, deliveryFrameRate);
+    }
+
+    private static readonly (int Numerator, int Denominator)[] CommonCaptureFrameRateParts =
+    {
+        (24, 1),
+        (24000, 1001),
+        (25, 1),
+        (30, 1),
+        (30000, 1001),
+        (50, 1),
+        (60, 1),
+        (60000, 1001),
+        (100, 1),
+        (120, 1),
+        (120000, 1001),
+        (144, 1),
+        (240, 1)
+    };
 
     private void StartTelemetryPoll()
     {

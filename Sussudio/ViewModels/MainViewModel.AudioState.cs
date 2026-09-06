@@ -37,6 +37,7 @@ public partial class MainViewModel
     private double? _pendingSavedMicrophoneVolume;
     private string? _pendingSavedMicrophoneVolumeDeviceId;
     private int _audioEnabledChangeGeneration;
+    private readonly SemaphoreSlim _audioMonitoringTransitionGate = new(1, 1);
     private int _audioInputSwitchGeneration;
     private bool _suppressAudioPreviewEnabledChangeOperation;
     private bool _suppressMicrophoneMonitorUpdate;
@@ -185,7 +186,8 @@ public partial class MainViewModel
         {
             var description = value ? "audio monitoring enable" : "audio monitoring mute";
             EnqueueUiOperation(
-                () => SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false),
+                () => RunAudioMonitoringTransitionAsync(
+                    () => SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)),
                 description);
         }
 
@@ -445,6 +447,21 @@ public partial class MainViewModel
         }
     }
 
+    private async Task RunAudioMonitoringTransitionAsync(Func<Task> transition)
+    {
+        // UI operations can overlap at awaits. Keep the complete ramp/teardown
+        // ahead of the next restart so an older off request cannot stop new audio.
+        await _audioMonitoringTransitionGate.WaitAsync();
+        try
+        {
+            await transition();
+        }
+        finally
+        {
+            _audioMonitoringTransitionGate.Release();
+        }
+    }
+
     partial void OnIsAudioEnabledChanged(bool value)
     {
         Logger.Log($"Audio capture enabled: {value}");
@@ -468,7 +485,7 @@ public partial class MainViewModel
 
             if (IsPreviewing && IsInitialized)
             {
-                EnqueueUiOperation(async () =>
+                EnqueueUiOperation(() => RunAudioMonitoringTransitionAsync(async () =>
                 {
                     if (changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled)
                     {
@@ -485,7 +502,7 @@ public partial class MainViewModel
                         "audio_capture_enable",
                         teardownCapture: false,
                         afterMonitoringStarted: () => _sessionCoordinator.RestartFlashbackAsync(settings));
-                }, "audio preview restart + flashback cycle");
+                }), "audio preview restart + flashback cycle");
             }
         }
         else
@@ -503,7 +520,7 @@ public partial class MainViewModel
                 }
             }
 
-            EnqueueUiOperation(async () =>
+            EnqueueUiOperation(() => RunAudioMonitoringTransitionAsync(async () =>
             {
                 if (changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled)
                 {
@@ -512,7 +529,7 @@ public partial class MainViewModel
                 }
 
                 await SetAudioMonitoringEnabledWithVolumeTransitionAsync(false, "audio_capture_disable", teardownCapture: true);
-            }, "audio capture teardown");
+            }), "audio capture teardown");
 
             ResetAudioMeter();
         }

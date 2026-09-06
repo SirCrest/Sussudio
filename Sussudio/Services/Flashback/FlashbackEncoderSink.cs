@@ -424,7 +424,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Volatile.Write(ref _videoQueueCapacity, videoQueueCapacity);
         if (!_encoder.UseHardwareFrames && IsHighResolutionFrame(sessionContext))
         {
-            Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={sessionContext.Width} height={sessionContext.Height} â€” GPU encoding unavailable, performance will be severely degraded");
+            Logger.Log($"FLASHBACK_SINK_CPU_INPUT_UPLOAD codec={sessionContext.CodecName} width={sessionContext.Width} height={sessionContext.Height} hardware_frames=false");
         }
 
         if (_encoder.UseHardwareFrames)

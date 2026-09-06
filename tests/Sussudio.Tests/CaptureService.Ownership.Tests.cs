@@ -904,6 +904,14 @@ static partial class Program
         AssertContains(telemetryText, "private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(");
         AssertContains(telemetryText, "private void TryCorrectFrameRateFromTelemetry()");
         AssertContains(telemetryText, "private static string ResolveFrameRateArg(");
+        AssertContains(telemetryText, "private void SetActualCaptureFrameRate(");
+        AssertContains(telemetryText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveCaptureDeliveryFrameRateParts(");
+        foreach (var path in new[] { "Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs", "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs" })
+        {
+            var source = ReadRepoFile(path);
+            AssertContains(source, "SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps :");
+            AssertDoesNotContain(source, "TryCorrectFrameRateFromTelemetry();");
+        }
         AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(");
         AssertEqual(
             false,

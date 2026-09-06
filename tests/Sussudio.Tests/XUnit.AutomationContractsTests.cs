@@ -652,6 +652,10 @@ public sealed class AutomationCaptureFlashbackRoutingContractsTests
         => global::Program.CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational();
 
     [Fact]
+    public Task AudioMonitoringTransitionsFinishTeardownBeforeRestart()
+        => global::Program.MainViewModel_AudioMonitoringTransitionsFinishTeardownBeforeRestart();
+
+    [Fact]
     public Task FlashbackEnableDisablePreservesPreviewState()
         => global::Program.CaptureService_FlashbackEnableDisable_PreservesPreviewState();
 
@@ -3853,16 +3857,16 @@ static partial class Program
         var createFlashbackSessionContext = ExtractTextBetween(
             captureServiceText,
             "private FlashbackSessionContext CreateFlashbackSessionContext",
-            "    private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts");
-        AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
+            "    private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync");
+        AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveCaptureDeliveryFrameRateParts(settings, frameRate);");
         AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
         AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
-        AssertContains(captureServiceText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
-        AssertContains(captureServiceText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) InferFlashbackSessionFrameRateParts(double deliveryFrameRate)");
-        AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_ACCEPT");
-        AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_REJECT");
-        AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_INFER");
-        AssertContains(captureServiceText, "deltaFps > toleranceFps");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveCaptureDeliveryFrameRateParts(");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) InferCaptureDeliveryFrameRateParts(double deliveryFrameRate)");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "CAPTURE_FRAME_RATE_RATIONAL_ACCEPT");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "CAPTURE_FRAME_RATE_RATIONAL_REJECT");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "CAPTURE_FRAME_RATE_RATIONAL_INFER");
+        AssertContains(ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs"), "deltaFps > toleranceFps");
         AssertContains(createFlashbackSessionContext, "RecordingFormat.Av1Mp4 => \"av1_nvenc\"");
         AssertContains(createFlashbackSessionContext, "AV1 recording requires the av1_nvenc encoder");
         AssertDoesNotContain(createFlashbackSessionContext, "UseTransportStreamFlashbackCodec");
@@ -3933,9 +3937,9 @@ static partial class Program
     {
         var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = captureServiceType.GetMethod(
-            "ResolveFlashbackSessionFrameRateParts",
+            "ResolveCaptureDeliveryFrameRateParts",
             BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("ResolveFlashbackSessionFrameRateParts not found.");
+            ?? throw new InvalidOperationException("ResolveCaptureDeliveryFrameRateParts not found.");
 
         var integerResult = method.Invoke(null, new[] { BuildFrameRateSettings(120u, 1u), 120.0 })!;
         AssertFlashbackFrameRateParts(integerResult, 120, 1, 120.0, "integer 120 delivered cadence");
@@ -3956,7 +3960,63 @@ static partial class Program
         var measuredNtscResult = method.Invoke(null, new[] { BuildFrameRateSettings(null, null), 120000d / 1001d })!;
         AssertFlashbackFrameRateParts(measuredNtscResult, 120000, 1001, 120000d / 1001d, "missing rational infers NTSC delivered cadence");
 
+        var resolveRecordingArg = captureServiceType.GetMethod("ResolveFrameRateArg", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var setActualRate = captureServiceType.GetMethod("SetActualCaptureFrameRate", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var service = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(captureServiceType);
+        foreach (var (requestedNumerator, requestedDenominator, deliveryRate, expectedArg) in new[]
+        {
+            (120000u, 1001u, 120.0, "120/1"),
+            (120u, 1u, 120000d / 1001d, "120000/1001"),
+            (60000u, 1001u, 60.0, "60/1"),
+            (60000u, 1001u, 60000d / 1001d, "60000/1001")
+        })
+        {
+            var settings = BuildFrameRateSettings(requestedNumerator, requestedDenominator);
+            SetPropertyOrBackingField(settings, "RequestedFrameRateArg", $"{requestedNumerator}/{requestedDenominator}");
+            AssertEqual(expectedArg, resolveRecordingArg.Invoke(null, new[] { settings, deliveryRate }), "recording follows USB cadence");
+            setActualRate.Invoke(service, new[] { settings, deliveryRate });
+            AssertEqual(expectedArg, captureServiceType.GetField("_actualFrameRateArg", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service), "snapshot follows USB cadence");
+            AssertNearlyEqual(deliveryRate, (double)captureServiceType.GetField("_actualFrameRate", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service)!, 0.000001, "actual delivered frame rate");
+            AssertEqual($"{requestedNumerator}/{requestedDenominator}", settings.GetType().GetProperty("RequestedFrameRateArg")!.GetValue(settings), "requested source cadence remains unchanged");
+        }
+
         return Task.CompletedTask;
+    }
+
+    internal static async Task MainViewModel_AudioMonitoringTransitionsFinishTeardownBeforeRestart()
+    {
+        var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
+        var viewModel = RuntimeHelpers.GetUninitializedObject(viewModelType);
+        using var gate = new SemaphoreSlim(1, 1);
+        viewModelType.GetField("_audioMonitoringTransitionGate", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(viewModel, gate);
+        var method = viewModelType.GetMethod("RunAudioMonitoringTransitionAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Task Run(Func<Task> transition) => (Task)method.Invoke(viewModel, new object[] { transition })!;
+        var rampDownStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var completeRampDown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var audioReaderActive = true;
+        var restartStarted = false;
+        var teardown = Run(async () =>
+        {
+            rampDownStarted.SetResult();
+            await completeRampDown.Task;
+            audioReaderActive = false;
+        });
+        await rampDownStarted.Task;
+        var restart = Run(() =>
+        {
+            restartStarted = true;
+            audioReaderActive = true;
+            return Task.CompletedTask;
+        });
+        Assert.False(restartStarted);
+        Assert.False(restart.IsCompleted);
+        completeRampDown.SetResult();
+        await Task.WhenAll(teardown, restart).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.True(audioReaderActive);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Run(() => throw new InvalidOperationException("transition failed")));
+        await Run(() => { audioReaderActive = false; return Task.CompletedTask; }).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(audioReaderActive);
     }
 
     private static object BuildFrameRateSettings(uint? numerator, uint? denominator)

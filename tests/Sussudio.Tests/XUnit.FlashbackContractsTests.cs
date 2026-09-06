@@ -4796,7 +4796,7 @@ static partial class Program
         AssertContains(startupQueuesText, "Channel.CreateBounded<GpuFramePacket>");
         AssertContains(startupQueuesText, "Channel.CreateBounded<VideoFramePacket>");
         AssertContains(startupQueuesText, "Channel.CreateBounded<AudioSamplePacket>");
-        AssertContains(startupQueuesText, "FLASHBACK_SINK_WARN_CPU_ENCODING");
+        AssertContains(startupQueuesText, "FLASHBACK_SINK_CPU_INPUT_UPLOAD");
         AssertContains(startupQueuesText, "FLASHBACK_SINK_GPU_QUEUE_INIT");
 
         AssertContains(startupRollbackText, "private void RollBackStartFailure(Exception ex, string? startupGeneratedSegmentPath)");
@@ -5422,6 +5422,8 @@ static partial class Program
         var sourceText = ReadFlashbackDecoderSource();
 
         AssertContains(sourceText, "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)\n        {\n            _videoCodecCtx->thread_count = 1;\n        }");
+        AssertContains(sourceText, "_videoCodecCtx->thread_count = Math.Clamp(Environment.ProcessorCount / 2, 1, 12);");
+        AssertOccursBefore(sourceText, "_videoCodecCtx->thread_type = ffmpeg.FF_THREAD_FRAME | ffmpeg.FF_THREAD_SLICE;", "ThrowIfError(\n            ffmpeg.avcodec_open2(_videoCodecCtx, codec, null),");
         AssertOccursBefore(
             sourceText,
             "if (codecPar->codec_id == AVCodecID.AV_CODEC_ID_MJPEG)",
