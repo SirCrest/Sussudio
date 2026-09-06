@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-06T22:10:59Z
+Generated UTC: 2026-09-06T22:16:24Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,7 +10,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 139 |
 | Test .cs files | 52 |
 | Core app .cs files (Sussudio/) | 105 |
-| Core app nonblank LoC (Sussudio/) | 95802 |
+| Core app nonblank LoC (Sussudio/) | 95799 |
 | Sussudio.Tests .cs files | 51 |
 | Sussudio.Tests nonblank LoC | 65077 |
 | Production .cs files under 60 lines | 1 (0.7%) |
@@ -27,7 +27,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | LibAvEncoder | 3 | 3064 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | MainViewModel | 3 | 5293 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 573 | Sussudio/AppRuntime.cs |
-| SettingsJsonContext | 1 | 765 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
+| SettingsJsonContext | 1 | 785 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 283 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 716 | Sussudio/Services/Capture/DeviceService.cs |
 | StatsWindow | 1 | 328 | Sussudio/StatsWindow.xaml.cs |
@@ -40,7 +40,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 3157 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 3112 | Sussudio/ViewModels/MainViewModel.cs |
 | 2993 | Sussudio/Services/Flashback/FlashbackExporter.cs |
-| 2957 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
+| 2945 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2619 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 2592 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
 | 2556 | Sussudio/MainWindow.xaml.cs |
@@ -49,7 +49,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2380 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2123 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 2103 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
-| 2090 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
+| 2078 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1963 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 1932 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1808 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |

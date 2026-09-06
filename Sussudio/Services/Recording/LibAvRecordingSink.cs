@@ -913,7 +913,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
         if (ReferenceEquals(completedTask, _encodingTask))
         {
-            ObserveEncodingTaskCompletion(_encodingTask);
+            _encodingFailure ??= EncodingTaskHelpers.ObserveCompletion(_encodingTask);
             FinalizeDisposeCore();
             return;
         }
@@ -945,18 +945,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 Logger.Log("LIBAV_SINK_DISPOSE_DEFERRED_COMPLETE");
             }
         });
-    }
-
-    private void ObserveEncodingTaskCompletion(Task encodingTask)
-    {
-        try
-        {
-            encodingTask.GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            _encodingFailure ??= ex;
-        }
     }
 
     private void FinalizeDisposeCore()

@@ -309,6 +309,26 @@ internal static class RingBufferHelpers
     }
 }
 
+// Shared join of an encoder sink's background encoding task during dispose.
+// Both sinks keep the first failure so the caller can surface it later; the
+// failure must never escape dispose, and neither sink may block differently
+// from the other. Ownership of the retained exception stays with each sink.
+internal static class EncodingTaskHelpers
+{
+    public static Exception? ObserveCompletion(Task encodingTask)
+    {
+        try
+        {
+            encodingTask.GetAwaiter().GetResult();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
+    }
+}
+
 // Shared nearest-rank percentile selection for already-sorted telemetry
 // samples. Collection, copying, and sorting remain with each metric owner so
 // this helper cannot extend locks or change hot-path allocation behavior.
