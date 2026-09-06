@@ -295,7 +295,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             useMjpegHighFrameRateMode,
             requireP010,
             requestedPixelFormat);
-        var preferGpuNativeMjpegDecode = ShouldPreferGpuNativeMjpegDecode(useMjpegHighFrameRateDecode);
+        var preferGpuNativeMjpegDecode = ShouldPreferGpuNativeMjpegDecode(useMjpegHighFrameRateDecode, fps);
         var useExternalMjpegDecode = useMjpegHighFrameRateDecode && !preferGpuNativeMjpegDecode;
         ParallelMjpegDecodePipeline? mjpegPipeline = null;
         var capture = new MfSourceReaderVideoCapture();
@@ -316,6 +316,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         try
         {
             useExternalMjpegDecode = await InitializeMjpegSourceReaderWithFallbackAsync(
+                    useMjpegHighFrameRateDecode,
                     preferGpuNativeMjpegDecode,
                     InitializeSourceReaderAsync,
                     ex => Logger.Log(
@@ -584,21 +585,25 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode)
+    private static bool ShouldPreferGpuNativeMjpegDecode(bool isMjpegHighFrameRateDecode, double fps)
         => isMjpegHighFrameRateDecode &&
-           EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_GPU_NATIVE_DECODE", 1, 0, 1) != 0;
+           // D3D-backed output does not guarantee that MF's MJPEG conversion can
+           // sustain 120 fps. Parallel decode keeps source reads independent of
+           // that conversion; retain the native path at 60 fps and an A/B override.
+           EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_GPU_NATIVE_DECODE", fps > 60 ? 0 : 1, 0, 1) != 0;
 
     private static async Task<bool> InitializeMjpegSourceReaderWithFallbackAsync(
+        bool isMjpegHighFrameRateDecode,
         bool preferGpuNative,
         Func<bool, Task> initializeAsync,
         Action<Exception> reportNativeFailure)
     {
-        var useExternalDecode = !preferGpuNative;
+        var useExternalDecode = isMjpegHighFrameRateDecode && !preferGpuNative;
         try
         {
             await initializeAsync(useExternalDecode).ConfigureAwait(false);
         }
-        catch (Exception ex) when (preferGpuNative)
+        catch (Exception ex) when (isMjpegHighFrameRateDecode && preferGpuNative)
         {
             // Some drivers expose MJPG without a usable D3D11 Media Foundation
             // transform. Retry only the existing raw-MJPG software path.

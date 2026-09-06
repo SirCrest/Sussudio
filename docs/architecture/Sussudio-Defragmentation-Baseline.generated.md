@@ -1,6 +1,6 @@
 # Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-06T06:06:28Z
+Generated UTC: 2026-09-06T08:26:14Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 139 |
 | Test .cs files | 48 |
 | Core app .cs files (Sussudio/) | 105 |
-| Core app nonblank LoC (Sussudio/) | 95387 |
+| Core app nonblank LoC (Sussudio/) | 95392 |
 | Sussudio.Tests .cs files | 47 |
-| Sussudio.Tests nonblank LoC | 63531 |
+| Sussudio.Tests nonblank LoC | 63574 |
 | Production .cs files under 60 lines | 1 (0.7%) |
 | Production .cs files under 80 lines | 4 (2.9%) |
 
@@ -53,7 +53,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 1932 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1882 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 1808 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
-| 1770 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
+| 1775 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
 | 1745 | tools/Common/DiagnosticSessionResultBuilder.cs |
 | 1734 | Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs |
 | 1727 | Sussudio/Services/Automation/AutomationCommandDispatcher.cs |

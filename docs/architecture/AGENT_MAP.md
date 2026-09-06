@@ -56,7 +56,7 @@ mentions the moved files.
 | Device audio control | `Sussudio/Services/Audio/NativeXuAudioControlService.cs` | Native XU audio mode/gain mutation and readback; preserve unrelated payload bytes. |
 | Device audio mode validation | `Sussudio/Models/DeviceAudioModeParser.cs` | Validate and canonicalize HDMI/Analog automation values before mutation. |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfInterop.cs` | Media Foundation reader lifecycle and nonblocking sample-to-frame delivery. |
-| Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs` | Source/decoder lifecycle, preview ingress, and recording/Flashback sink delivery. |
+| Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs` | Source/decoder lifecycle, preview ingress, and recording/Flashback sink delivery. MJPEG above 60 fps defaults to parallel decode; native MF conversion remains available at lower rates and through its environment override. Uncompressed inputs never enter JPEG decode fallback. |
 | Capture cadence trackers | `Sussudio/Services/Capture/CaptureCadenceTrackers.cs` | Decoded-frame visual cadence and luma sampling. Source-packet hashing belongs to the MJPEG decoder below. |
 | Audio capture | `Sussudio/Services/Audio/WasapiAudioCapture.cs` | WASAPI capture lifecycle, conversion/resampling, pooled packets, and sink fan-out. |
 | Audio playback | `Sussudio/Services/Audio/WasapiAudioPlayback.cs` | WASAPI render lifecycle, bounded sample buffering, PTS advancement, and volume ramps. |
