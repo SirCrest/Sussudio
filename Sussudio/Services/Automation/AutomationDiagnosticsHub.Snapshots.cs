@@ -873,7 +873,7 @@ public sealed partial class AutomationDiagnosticsHub
         }
         catch (Exception ex)
         {
-            Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
+            Logger.Log($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
             return BuildLastOutputProbe(lastOutputPath, exists: false, sizeBytes: null, isRecording: isRecording);
         }
     }
@@ -1079,7 +1079,7 @@ public sealed partial class AutomationDiagnosticsHub
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
+                    Logger.Log($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
                 }
             }
         }
@@ -1128,7 +1128,7 @@ public sealed partial class AutomationDiagnosticsHub
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
+                    Logger.Log($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
                 }
             }
         }

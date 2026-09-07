@@ -155,7 +155,7 @@ public sealed partial class StatsWindow : Window
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in StatsWindow always-on-top toggle: {ex.Message}");
+            Logger.Log($"Suppressed exception in StatsWindow always-on-top toggle: {ex.Message}");
         }
     }
 

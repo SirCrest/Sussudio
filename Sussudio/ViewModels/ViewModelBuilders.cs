@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Sussudio.Models;
@@ -21,7 +20,7 @@ internal static class OutputDriveSpacePresentationBuilder
         }
         catch (Exception ex)
         {
-            Trace.TraceWarning($"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}");
+            Logger.Log($"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}");
             return "";
         }
     }

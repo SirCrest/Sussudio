@@ -514,16 +514,41 @@ internal sealed class WindowCloseLifecycleController
         return AwaitWindowCloseRequestAsync(completion.Task, closeCompletionTask);
     }
 
+    // RO_E_CLOSED / RPC_E_DISCONNECTED: the two HRESULTs a window that has
+    // already closed reports, whatever CLR exception type wraps them.
+    private const int WindowAlreadyClosedHResult = unchecked((int)0x80000013);
+    private const int WindowDisconnectedHResult = unchecked((int)0x80010108);
+
     public static bool IsCloseAlreadyInProgressException(Exception ex)
     {
-        if (ex is InvalidOperationException && string.IsNullOrWhiteSpace(ex.Message))
+        if (ex is null)
+        {
+            return false;
+        }
+
+        if (ex.HResult == WindowAlreadyClosedHResult || ex.HResult == WindowDisconnectedHResult)
         {
             return true;
         }
 
-        var message = ex.Message ?? string.Empty;
-        return message.IndexOf("closing", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               message.IndexOf("closed", StringComparison.OrdinalIgnoreCase) >= 0;
+        // WinUI raises a bare InvalidOperationException for a redundant Close().
+        // ObjectDisposedException derives from InvalidOperationException but always
+        // describes a disposed resource rather than window lifecycle, so it is
+        // excluded: its "Cannot access a closed stream" text used to match the
+        // substring test below and record an unrelated failure as a completed
+        // close, skipping the rethrow that would have surfaced it.
+        if (ex is not InvalidOperationException || ex is ObjectDisposedException)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(ex.Message))
+        {
+            return true;
+        }
+
+        return ex.Message.Contains("closing", StringComparison.OrdinalIgnoreCase) ||
+               ex.Message.Contains("closed", StringComparison.OrdinalIgnoreCase);
     }
 
     private Task GetCompletionTask(CancellationToken cancellationToken)

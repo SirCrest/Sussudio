@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;

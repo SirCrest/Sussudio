@@ -988,6 +988,7 @@ static partial class Program
     {
         var repoRoot = GetRepoRoot();
         AssertServiceNamespaceFolderRules(repoRoot);
+        AssertServiceDependencyDirection(repoRoot);
         AssertServiceNamespaceNativeXuProbeOwnership(repoRoot);
         AssertServiceNamespaceSourceOwnership(repoRoot);
         AssertServiceContractsBoundaryOwnership(repoRoot);
@@ -1026,6 +1027,50 @@ static partial class Program
             if (RootServicesUsingRegex.IsMatch(code))
             {
                 throw new InvalidOperationException($"{Path.GetRelativePath(repoRoot, file)} imports the flat Services namespace.");
+            }
+        }
+    }
+
+    // Namespace-folder rules above pin where a service file lives, not which
+    // service it may import. That gap let two reverse dependencies into Capture
+    // and Flashback survive after their real usage was removed. Preview,
+    // Recording, Gpu, Runtime and Contracts are consumed by the capture and
+    // flashback pipelines, so an import in the other direction is a cycle.
+    private static readonly string[] LeafServiceDomains =
+    {
+        "Contracts", "Runtime", "Gpu", "Preview", "Recording"
+    };
+
+    private static readonly string[] OrchestrationServiceDomains =
+    {
+        "Capture", "Flashback", "Automation", "Audio", "Telemetry"
+    };
+
+    private static void AssertServiceDependencyDirection(string repoRoot)
+    {
+        var servicesRoot = Path.Combine(repoRoot, "Sussudio", "Services");
+
+        foreach (var file in EnumerateSourceFiles(servicesRoot, SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(servicesRoot, file);
+            var domain = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+            if (Array.IndexOf(LeafServiceDomains, domain) < 0)
+            {
+                continue;
+            }
+
+            var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
+            foreach (var forbidden in OrchestrationServiceDomains)
+            {
+                if (Regex.IsMatch(
+                        code,
+                        $@"^\s*using\s+Sussudio\.Services\.{forbidden}\s*;",
+                        RegexOptions.Multiline | RegexOptions.CultureInvariant))
+                {
+                    throw new InvalidOperationException(
+                        $"Sussudio/Services/{relative} imports Sussudio.Services.{forbidden}; " +
+                        $"{domain} is consumed by {forbidden} and must not depend back on it.");
+                }
             }
         }
     }
