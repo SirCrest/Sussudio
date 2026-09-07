@@ -420,7 +420,7 @@ public class DeviceService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in DeviceService.TryDeleteCorruptCache: {ex.Message}");
+            Logger.Log($"Suppressed exception in DeviceService.TryDeleteCorruptCache: {ex.Message}");
         }
     }
 

@@ -288,7 +288,7 @@ internal static class FfmpegRuntimeLocator
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in FfmpegRuntimeLocator path probe: {ex.Message}");
+            Logger.Log($"Suppressed exception in FfmpegRuntimeLocator path probe: {ex.Message}");
             return false;
         }
     }

@@ -242,7 +242,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer pipe dispose: {ex.Message}");
+                Logger.Log($"Suppressed exception in NamedPipeAutomationServer pipe dispose: {ex.Message}");
             }
         }
     }
@@ -275,7 +275,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
+            Logger.Log($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
         }
     }
 

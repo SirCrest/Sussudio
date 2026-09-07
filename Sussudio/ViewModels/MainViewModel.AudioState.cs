@@ -754,7 +754,7 @@ public partial class MainViewModel
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainViewModel mic volume readback: {ex.Message}");
+                Logger.Log($"Suppressed exception in MainViewModel mic volume readback: {ex.Message}");
             }
         }
 

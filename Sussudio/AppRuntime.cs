@@ -257,6 +257,10 @@ public static class RuntimePaths
 // counted and reported in aggregate by the background writer.
 public static class Logger
 {
+    // Failures inside the logger itself report through Trace, never through
+    // Logger.Log: routing them back into this class would re-enter the write
+    // path that is already failing. Everywhere else in the app, diagnostics
+    // go to Logger.Log so they reach the log file operators actually read.
     private const int MaxDrainBatchEntries = 256;
     private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("Sussudio_Debug.log");
 

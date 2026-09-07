@@ -348,7 +348,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Cleaning up and rethrowing from WasapiAudioPlayback.InitializeAsync: {ex.Message}");
+            Logger.Log($"Cleaning up and rethrowing from WasapiAudioPlayback.InitializeAsync: {ex.Message}");
             renderEvent?.Dispose();
             WasapiComInterop.ReleaseComObject(ref audioRenderClient);
             WasapiComInterop.ReleaseComObject(ref audioClient3);
@@ -416,7 +416,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Cleaning up and rethrowing from WasapiAudioPlayback.Start: {ex.Message}");
+            Logger.Log($"Cleaning up and rethrowing from WasapiAudioPlayback.Start: {ex.Message}");
             Interlocked.Exchange(ref _started, 0);
             if (_renderThread?.IsAlive != true)
             {

@@ -498,7 +498,7 @@ internal static class WasapiComInterop
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiComInterop.ReleaseComObject<T>: {ex.Message}");
+            Logger.Log($"Suppressed exception in WasapiComInterop.ReleaseComObject<T>: {ex.Message}");
         }
         finally
         {
@@ -522,7 +522,7 @@ internal static class WasapiComInterop
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiComInterop.SafeReleaseComObject: {ex.Message}");
+            Logger.Log($"Suppressed exception in WasapiComInterop.SafeReleaseComObject: {ex.Message}");
         }
     }
 

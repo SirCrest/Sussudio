@@ -257,7 +257,7 @@ namespace Sussudio
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning($"Suppressed exception in App.OnLaunched exe mtime probe: {ex.Message}");
+                    Logger.Log($"Suppressed exception in App.OnLaunched exe mtime probe: {ex.Message}");
                 }
 
                 var assembly = Assembly.GetExecutingAssembly();
@@ -272,7 +272,7 @@ namespace Sussudio
             }
             catch (Exception ex)
             {
-                Trace.TraceWarning($"Suppressed exception in App.OnLaunched startup logging: {ex.Message}");
+                Logger.Log($"Suppressed exception in App.OnLaunched startup logging: {ex.Message}");
             }
 
             _window = new MainWindow();

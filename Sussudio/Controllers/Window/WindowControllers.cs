@@ -599,7 +599,7 @@ internal sealed class WindowCloseRequestController
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Cleaning up and rethrowing from MainWindow.RequestWindowClose: {ex.Message}");
+            Logger.Log($"Cleaning up and rethrowing from MainWindow.RequestWindowClose: {ex.Message}");
             _context.LifecycleController.ResetRequestedAfterFailure();
             _context.LifecycleController.CompleteRequest(ex);
             throw;
@@ -694,7 +694,7 @@ internal sealed class WindowAppClosingController
         }
         catch (Exception logEx)
         {
-            System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
+            Logger.Log($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
         }
     }
 }
@@ -947,7 +947,7 @@ internal sealed class WindowShutdownCleanupController
         }
         catch (Exception logEx)
         {
-            Trace.TraceWarning($"WINDOW_CLOSED_TRIGGER log failed: {logEx.Message}");
+            Logger.Log($"WINDOW_CLOSED_TRIGGER log failed: {logEx.Message}");
         }
     }
 }
