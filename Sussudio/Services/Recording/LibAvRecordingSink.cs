@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
 using Sussudio.Services.Contracts;
-using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;

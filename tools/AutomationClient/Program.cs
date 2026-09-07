@@ -8,6 +8,10 @@ using Sussudio.Tools;
 // protocol for low-level contract tests.
 internal static class Program
 {
+    // Local so this tool does not compile the whole diagnostic-session
+    // subsystem in tools/Common just to reach one options instance.
+    private static readonly JsonSerializerOptions PrettyJson = new() { WriteIndented = true };
+
     public static async Task<int> Main(string[] args)
     {
         // Operator Ctrl-C / CI SIGTERM must give the in-flight pipe call a
@@ -82,7 +86,7 @@ internal static class Program
             if (options.Pretty)
             {
                 using var responseDocument = JsonDocument.Parse(responseLine);
-                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, ToolJsonOptions.Pretty);
+                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, PrettyJson);
                 Console.WriteLine(pretty);
             }
             else

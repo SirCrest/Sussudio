@@ -183,7 +183,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     mediaSource = CreateMediaSource(deviceSymbolicLink);
                     if (deviceOpenAttempt > 1)
                     {
-                        Log($"MF_SOURCE_OPEN_BUSY_RECOVERED attempt={deviceOpenAttempt}");
+                        Logger.Log($"MF_SOURCE_OPEN_BUSY_RECOVERED attempt={deviceOpenAttempt}");
                     }
 
                     deviceOpenLastEx = null;
@@ -194,7 +194,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 {
                     deviceOpenLastEx = ex;
                     var hr = GetDeviceBusyHResult(ex, hrDeviceBusyDirect, hrDeviceBusyActivate);
-                    Log($"MF_SOURCE_OPEN_BUSY_RETRY attempt={deviceOpenAttempt} hr=0x{hr:X8} device='{deviceSymbolicLink}'");
+                    Logger.Log($"MF_SOURCE_OPEN_BUSY_RETRY attempt={deviceOpenAttempt} hr=0x{hr:X8} device='{deviceSymbolicLink}'");
                     Thread.Sleep(deviceOpenDelaysMs[deviceOpenAttempt - 1]);
                 }
             }
@@ -245,7 +245,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     MfInteropHelpers.ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource(hfr_mjpeg_d3d)");
                 }
 
-                Log(
+                Logger.Log(
                     "MF_SOURCE_READER_D3D_INIT_WARN " +
                     $"stage=CreateSourceReader hr=0x{createSourceReaderHr:X8} " +
                     "fallback=cpu_only");
@@ -350,7 +350,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 useConvertedMjpegNv12,
                 useRawMjpgOutput);
 
-            Log(
+            Logger.Log(
                 "MF_SOURCE_READER_INIT " +
                 $"device='{deviceSymbolicLink}' " +
                 $"requested={width}x{height}@{fps:0.###} " +
@@ -363,7 +363,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Log(
+            Logger.Log(
                 "MF_SOURCE_READER_INIT_FAIL " +
                 $"device='{deviceSymbolicLink}' " +
                 $"requested={width}x{height}@{fps:0.###} " +
@@ -504,7 +504,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             if (rawBitsPerSecond > usb30BandwidthBits &&
                 !string.Equals(nativeFormatName, "MJPG", StringComparison.OrdinalIgnoreCase))
             {
-                Log($"MF_NATIVE_FORMAT_OVERRIDE negotiated={nativeFormatName} raw_bps={rawBitsPerSecond:0} usb_bps={usb30BandwidthBits:0} => MJPG");
+                Logger.Log($"MF_NATIVE_FORMAT_OVERRIDE negotiated={nativeFormatName} raw_bps={rawBitsPerSecond:0} usb_bps={usb30BandwidthBits:0} => MJPG");
                 nativeFormatName = "MJPG";
             }
         }
@@ -578,7 +578,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Log(
+            Logger.Log(
                 "MF_SOURCE_READER_D3D_INIT_WARN " +
                 $"stage=SetUnknown type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message} " +
                 "fallback=cpu_only");
@@ -616,7 +616,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return mediaSource;
             }
 
-            Log(
+            Logger.Log(
                 "MF_SOURCE_READER_DEVICE_OPEN_DIRECT_FAIL " +
                 $"device='{deviceSymbolicLink}' hr=0x{directHr:X8}");
             return CreateMediaSourceByEnumeration(deviceSymbolicLink, directHr);
@@ -818,7 +818,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 if (hasSubtype && subtype == requestedSubtype)
                 {
                     requestedSubtypeCount++;
-                    Log($"MF_SOURCE_READER_NATIVE_{requestedSubtypeName} index={index} {nWidth}x{nHeight}@{nFps:0.###}");
+                    Logger.Log($"MF_SOURCE_READER_NATIVE_{requestedSubtypeName} index={index} {nWidth}x{nHeight}@{nFps:0.###}");
                 }
 
                 if (!hasSubtype || subtype != requestedSubtype)
@@ -857,7 +857,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
 
         var subtypeList = string.Join(", ", subtypeSummary.Select(kv => $"{kv.Key}={kv.Value}"));
-        Log(
+        Logger.Log(
             "MF_SOURCE_READER_NATIVE_TYPES " +
             $"total={totalNativeTypes} requested_subtype={requestedSubtypeName} " +
             $"requested_count={requestedSubtypeCount} subtypes=[{subtypeList}]");
@@ -1038,7 +1038,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _readTask = Task.Run(() => ReadLoop(onFrame, onDualFrame, readToken), CancellationToken.None);
         }
 
-        Log(
+        Logger.Log(
             "MF_SOURCE_READER_START " +
             $"device='{_deviceSymbolicLink}' negotiated='{_negotiatedFormat}' d3d_manager_enabled={_sourceReaderD3DEnabled}");
     }
@@ -1071,7 +1071,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Log($"MF_SOURCE_READER_STOP_WAIT_ERROR type={ex.GetType().Name} msg={ex.Message}");
+                Logger.Log($"MF_SOURCE_READER_STOP_WAIT_ERROR type={ex.GetType().Name} msg={ex.Message}");
             }
         }
 
@@ -1117,7 +1117,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         using var mmcss = MmcssThreadRegistration.TryRegister(
             _readLoopMmcssTask,
             _readLoopMmcssPriority,
-            message => Log(message));
+            message => Logger.Log(message));
 
         while (!ct.IsCancellationRequested)
         {
@@ -1175,7 +1175,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
                 if ((flags & MfConstants.MF_SOURCE_READERF_ENDOFSTREAM) != 0)
                 {
-                    Log("MF_SOURCE_READER_EOS reached end-of-stream.");
+                    Logger.Log("MF_SOURCE_READER_EOS reached end-of-stream.");
                     SignalFatalError(new InvalidOperationException(
                         "The video source reached end-of-stream unexpectedly while capture was active."));
                     break;
@@ -1204,7 +1204,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             catch (Exception ex)
             {
                 Interlocked.Increment(ref _framesDropped);
-                Log(
+                Logger.Log(
                     "MF_SOURCE_READER_FRAME_ERROR " +
                     $"type={ex.GetType().Name} " +
                     $"hr=0x{ex.HResult:X8} " +
@@ -1434,17 +1434,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Log($"MF_SOURCE_SHUTDOWN_FAIL hr=0x{ex.HResult:X8}");
+                Logger.Log($"MF_SOURCE_SHUTDOWN_FAIL hr=0x{ex.HResult:X8}");
             }
         }
 
         WasapiComInterop.ReleaseComObject(ref mediaSource);
-    }
-
-    private static void Log(string message)
-    {
-        Debug.WriteLine(message);
-        Logger.Log(message);
     }
 
     private static bool IsDeviceBusyHResult(Exception ex, int hrDirect, int hrActivate)
@@ -1476,7 +1470,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         catch (Exception callbackEx)
         {
-            Log($"MF_SOURCE_READER_FATAL_ERROR_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+            Logger.Log($"MF_SOURCE_READER_FATAL_ERROR_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
         }
     }
 
@@ -1613,7 +1607,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 var probeCount = Interlocked.Increment(ref _framesDropped);
                 if (probeCount <= 3)
                 {
-                    Log($"MF_SOURCE_READER_BUFFER_PROBE ctcb_hr=0x{ctcbHr:X8} sample_type={sample.GetType().Name}");
+                    Logger.Log($"MF_SOURCE_READER_BUFFER_PROBE ctcb_hr=0x{ctcbHr:X8} sample_type={sample.GetType().Name}");
                 }
                 return;
             }
@@ -1944,7 +1938,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         {
             if (Interlocked.CompareExchange(ref _dxgiBufferProbeDone, 1, 0) == 0)
             {
-                Log(
+                Logger.Log(
                     "MF_SOURCE_READER_D3D_BUFFER_MISS " +
                     $"buffer_type={buffer.GetType().Name} fallback=cpu");
             }
@@ -1959,7 +1953,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             var failureCount = Interlocked.Increment(ref _dxgiResourceFailureCount);
             if (failureCount <= 3)
             {
-                Log(
+                Logger.Log(
                     "MF_SOURCE_READER_D3D_RESOURCE_FAIL " +
                     $"stage=GetResource hr=0x{getResourceHr:X8} fallback=cpu");
             }
@@ -1974,7 +1968,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             var failureCount = Interlocked.Increment(ref _dxgiResourceFailureCount);
             if (failureCount <= 3)
             {
-                Log(
+                Logger.Log(
                     "MF_SOURCE_READER_D3D_RESOURCE_FAIL " +
                     $"stage=GetSubresourceIndex hr=0x{subresourceHr:X8} fallback=cpu");
             }
@@ -2006,11 +2000,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             {
                 var iidSample = new Guid("c40a00f2-b93a-4d80-ae8c-5a1c634f58e4");
                 var qiHr = Marshal.QueryInterface(punk, ref iidSample, out var pSample);
-                Log($"VTABLE_DIAG QI_for_IMFSample hr=0x{qiHr:X8} pUnk=0x{punk:X16} pSample=0x{pSample:X16} same={punk == pSample}");
+                Logger.Log($"VTABLE_DIAG QI_for_IMFSample hr=0x{qiHr:X8} pUnk=0x{punk:X16} pSample=0x{pSample:X16} same={punk == pSample}");
 
                 if (qiHr < 0 || pSample == IntPtr.Zero)
                 {
-                    Log("VTABLE_DIAG QI FAILED — cannot diagnose vtable");
+                    Logger.Log("VTABLE_DIAG QI FAILED — cannot diagnose vtable");
                     return;
                 }
 
@@ -2024,7 +2018,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         var fn = *(IntPtr*)((byte*)vtable + 35 * sizeof(IntPtr));
                         long time = -1;
                         var hr = ((delegate* unmanaged[Stdcall]<IntPtr, long*, int>)fn)(pSample, &time);
-                        Log($"VTABLE_DIAG RAW slot35_GetSampleTime hr=0x{hr:X8} time={time}");
+                        Logger.Log($"VTABLE_DIAG RAW slot35_GetSampleTime hr=0x{hr:X8} time={time}");
                     }
 
                     // GetBufferCount = slot 39
@@ -2033,7 +2027,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         var fn = *(IntPtr*)((byte*)vtable + 39 * sizeof(IntPtr));
                         int count = -1;
                         var hr = ((delegate* unmanaged[Stdcall]<IntPtr, int*, int>)fn)(pSample, &count);
-                        Log($"VTABLE_DIAG RAW slot39_GetBufferCount hr=0x{hr:X8} count={count}");
+                        Logger.Log($"VTABLE_DIAG RAW slot39_GetBufferCount hr=0x{hr:X8} count={count}");
                     }
 
                     // ConvertToContiguousBuffer = slot 41
@@ -2042,7 +2036,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         var fn = *(IntPtr*)((byte*)vtable + 41 * sizeof(IntPtr));
                         IntPtr buf = IntPtr.Zero;
                         var hr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr*, int>)fn)(pSample, &buf);
-                        Log($"VTABLE_DIAG RAW slot41_ConvertToContiguousBuffer hr=0x{hr:X8} buffer=0x{buf:X16}");
+                        Logger.Log($"VTABLE_DIAG RAW slot41_ConvertToContiguousBuffer hr=0x{hr:X8} buffer=0x{buf:X16}");
                         if (buf != IntPtr.Zero)
                         {
                             // Probe the buffer: Lock it to see actual frame data
@@ -2053,7 +2047,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                             int maxLen = 0, curLen = 0;
                             var lockHr = ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr*, int*, int*, int>)lockFn)(
                                 buf, &dataPtr, &maxLen, &curLen);
-                            Log($"VTABLE_DIAG RAW buffer_Lock hr=0x{lockHr:X8} data=0x{dataPtr:X16} maxLen={maxLen} curLen={curLen}");
+                            Logger.Log($"VTABLE_DIAG RAW buffer_Lock hr=0x{lockHr:X8} data=0x{dataPtr:X16} maxLen={maxLen} curLen={curLen}");
 
                             if (lockHr >= 0)
                             {
@@ -2069,15 +2063,15 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     // Managed interface dispatch is what .NET thinks the slots are.
                     {
                         var hr = sample.GetSampleTime(out var time);
-                        Log($"VTABLE_DIAG MANAGED GetSampleTime hr=0x{hr:X8} time={time}");
+                        Logger.Log($"VTABLE_DIAG MANAGED GetSampleTime hr=0x{hr:X8} time={time}");
                     }
                     {
                         var hr = sample.GetBufferCount(out var count);
-                        Log($"VTABLE_DIAG MANAGED GetBufferCount hr=0x{hr:X8} count={count}");
+                        Logger.Log($"VTABLE_DIAG MANAGED GetBufferCount hr=0x{hr:X8} count={count}");
                     }
                     {
                         var hr = sample.ConvertToContiguousBuffer(out var buf);
-                        Log($"VTABLE_DIAG MANAGED ConvertToContiguousBuffer hr=0x{hr:X8} buffer={(buf != null ? "non-null" : "null")}");
+                        Logger.Log($"VTABLE_DIAG MANAGED ConvertToContiguousBuffer hr=0x{hr:X8} buffer={(buf != null ? "non-null" : "null")}");
                         if (buf != null)
                         {
                             Marshal.ReleaseComObject(buf);
@@ -2096,7 +2090,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Log($"VTABLE_DIAG EXCEPTION type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"VTABLE_DIAG EXCEPTION type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
     }
 #endif
