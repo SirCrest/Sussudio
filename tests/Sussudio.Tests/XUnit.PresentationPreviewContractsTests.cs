@@ -1389,7 +1389,7 @@ static partial class Program
         AssertContains(videoProcessorPipelineText, "ApplyColorSpaces(isHdr);");
         AssertContains(videoProcessorPipelineText, "_videoDevice.CreateVideoProcessorOutputView(");
         AssertContains(videoProcessorPipelineText, "_videoContext1.VideoProcessorSetStreamColorSpace1(");
-        AssertContains(videoProcessorPipelineText, "D3D11 preview color space input=");
+        AssertContains(videoProcessorPipelineText, "D3D11_PREVIEW_COLOR_SPACE input=");
         AssertContains(resourcesText, "private void CleanupD3DResources()");
         AssertContains(resourcesText, "DisposeInputTextureResources();");
         AssertContains(resourcesText, "DisposeShaderPipelineResources();");

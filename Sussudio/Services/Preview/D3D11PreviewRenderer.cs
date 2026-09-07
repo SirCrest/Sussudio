@@ -298,7 +298,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Volatile.Write(ref _requestedOutputHeight, target.Height);
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
         SignalFrameReady("panel_size_changed");
-        Logger.Log($"D3D11 preview panel size requested width={pixelWidth} height={pixelHeight} target={target.Width}x{target.Height} scale={rasterizationScale}.");
+        Logger.Log($"D3D11_PREVIEW_PANEL_SIZE width={pixelWidth} height={pixelHeight} target={target.Width}x{target.Height} scale={rasterizationScale}.");
     }
 
     public void SubmitRawFrame(
@@ -728,7 +728,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             _renderThread.Start();
         }
 
-        Logger.Log($"D3D11 preview renderer start width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
+        Logger.Log($"D3D11_PREVIEW_RENDERER_START width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
     }
 
     private void RenderThreadMain()
@@ -769,7 +769,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
         catch (Exception ex)
         {
-            Logger.Log($"D3D11 preview renderer thread failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_RENDER_THREAD_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             NotifyRenderThreadFailed(ex);
         }
         finally
@@ -805,7 +805,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
         catch (Exception ex)
         {
-            Logger.Log($"D3D11 preview shared device rebind failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_SHARED_DEVICE_REBIND_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             CleanupD3DResources();
         }
     }
@@ -839,7 +839,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 return true;
             }
 
-            Logger.Log($"D3D11 preview composition transform update failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_COMPOSITION_TRANSFORM_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
 
         return true;
@@ -925,7 +925,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             }
             else
             {
-                Logger.Log($"D3D11 preview render failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             TrackFrameDropped(frame, "render-failed");
@@ -1021,7 +1021,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         _swapChain2 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
         if (_swapChain2 == null)
         {
-            Logger.Log("D3D11 preview waitable swap chain unavailable: IDXGISwapChain2 not supported.");
+            Logger.Log("D3D11_PREVIEW_WAITABLE_SWAPCHAIN_UNAVAILABLE reason=IDXGISwapChain2_unsupported");
             return;
         }
 
@@ -1032,7 +1032,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             _frameLatencyWaitHandle = new SafeWaitHandle(nativeHandle, ownsHandle: true);
         }
 
-        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{nativeHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
+        Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_CONFIGURED handle=0x{nativeHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
     }
 
     private void WaitForFrameLatencySignal()
@@ -1048,7 +1048,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
         if (result != WaitObject0 && result != WaitTimeout)
         {
-            Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
+            Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_WAIT result={result}.");
         }
     }
 
@@ -1085,7 +1085,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         // and size; replacing a still-attached stale chain later lets WinUI call
         // through a released native reference during SetSwapChain(newPtr).
         Stop();
-        Logger.Log("D3D11 preview renderer render thread stopped for reinit.");
+        Logger.Log("D3D11_PREVIEW_RENDER_THREAD_STOPPED reason=reinit");
     }
 
     public void Stop()
@@ -1143,7 +1143,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             }
             catch (Exception ex)
             {
-                Logger.Log($"D3D11 preview swap chain unbind failed: {ex.GetType().Name} msg={ex.Message}");
+                Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_UNBIND_FAILED type={ex.GetType().Name} msg={ex.Message}");
             }
         }
 
@@ -1154,7 +1154,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
             {
-                Logger.Log($"D3D11 preview renderer stop timed out after {_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
+                Logger.Log($"D3D11_PREVIEW_RENDERER_STOP_TIMEOUT timeout_ms={_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
                 throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
             }
         }
@@ -1176,7 +1176,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
         Volatile.Write(ref _rendererMode, RendererModeNone);
         ResetPresentCadence();
-        Logger.Log("D3D11 preview renderer stop completed.");
+        Logger.Log("D3D11_PREVIEW_RENDERER_STOP_OK");
     }
 
     private void WaitForNativeCallToDrainOrThrow(string operation)
@@ -1192,7 +1192,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (stopwatch.ElapsedMilliseconds >= _nativeStopFenceTimeoutMs)
             {
-                Logger.Log($"D3D11 preview renderer {operation} timed out waiting for native render call to return after {_nativeStopFenceTimeoutMs}ms.");
+                Logger.Log($"D3D11_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT op={operation} timeout_ms={_nativeStopFenceTimeoutMs}ms.");
                 throw new TimeoutException("D3D11 preview native render call did not return before timeout.");
             }
 
@@ -1269,7 +1269,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             0, uniformScale,
             offsetX, offsetY);
 
-        Logger.Log($"D3D11 preview composition transform set scale={uniformScale:F4} offset=({offsetX:F1},{offsetY:F1}) panel={panelLogicalW:F0}x{panelLogicalH:F0} swap={swapW}x{swapH}.");
+        Logger.Log($"D3D11_PREVIEW_COMPOSITION_TRANSFORM_SET scale={uniformScale:F4} offset=({offsetX:F1},{offsetY:F1}) panel={panelLogicalW:F0}x{panelLogicalH:F0} swap={swapW}x{swapH}.");
     }
 
     private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)
@@ -1345,7 +1345,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             if (Volatile.Read(ref _stopRequested) != 0)
             {
                 aborted = true;
-                Logger.Log($"D3D11 preview swap-chain binding aborted at {elapsedMs}ms: stop requested during UI dispatcher wait.");
+                Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_BIND_ABORTED elapsed_ms={elapsedMs}ms: stop requested during UI dispatcher wait.");
                 break;
             }
         }
@@ -1369,7 +1369,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (uiError is OperationCanceledException)
             {
-                Logger.Log("D3D11 preview swap-chain binding cancelled on UI thread; renderer shutting down.");
+                Logger.Log("D3D11_PREVIEW_SWAPCHAIN_BIND_CANCELLED reason=shutting_down");
                 return;
             }
 
@@ -1404,7 +1404,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 catch
                 {
                     // Best-effort: panel may already be torn down during app shutdown.
-                    Logger.Log("D3D11 preview swap chain unbind skipped: UI callback failed during cleanup.");
+                    Logger.Log("D3D11_PREVIEW_SWAPCHAIN_UNBIND_SKIPPED reason=ui_callback_failed");
                 }
                 finally
                 {
@@ -1416,18 +1416,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             {
                 if (!done.Wait(TimeSpan.FromSeconds(2)))
                 {
-                    Logger.Log("D3D11 preview swap chain unbind timed out on UI thread during cleanup.");
+                    Logger.Log("D3D11_PREVIEW_SWAPCHAIN_UNBIND_TIMEOUT");
                 }
             }
             else
             {
-                Logger.Log("D3D11 preview swap chain unbind enqueue failed during cleanup.");
+                Logger.Log("D3D11_PREVIEW_SWAPCHAIN_UNBIND_ENQUEUE_FAILED");
             }
         }
         catch (Exception ex)
         {
             // Dispatcher may be shut down; safe to ignore during cleanup.
-            Logger.Log($"D3D11 preview swap chain unbind ignored during cleanup: {ex.GetType().Name}: {ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_UNBIND_IGNORED type={ex.GetType().Name}: {ex.Message}");
         }
     }
 
