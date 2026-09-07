@@ -65,6 +65,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
     private readonly int _dxgiFrameStatisticsSampleIntervalFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL", 2, 1, 120);
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
+    private readonly bool _compositionModeProbeEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_COMPOSITION_MODE_PROBE", 0, 0, 1) != 0;
+    private string _lastCompositionProbeState = string.Empty;
     private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
     private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
     private readonly bool _renderStaleDropEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_STALE_DROP", 1, 0, 1) != 0;
@@ -1914,6 +1916,11 @@ public readonly record struct PresentCadenceMetrics(
             return;
         }
 
+        if (_compositionModeProbeEnabled && frameCounter % 120 == 0)
+        {
+            TraceCompositionMode(frameCounter);
+        }
+
         try
         {
             if (_dxgiFrameStatisticsDwmFlushEnabled)
@@ -1997,6 +2004,39 @@ public readonly record struct PresentCadenceMetrics(
                 _dxgiFrameStatisticsFailureCount++;
                 _dxgiFrameStatisticsLastError = $"{ex.GetType().Name}:0x{ex.HResult:X8}";
             }
+        }
+    }
+
+    private void TraceCompositionMode(long frameCounter)
+    {
+        // Opt-in diagnostics use a short-lived interface on the render thread.
+        // No retained COM ownership or presentation settings change is needed.
+        try
+        {
+            using var media = _swapChain?.QueryInterfaceOrNull<IDXGISwapChainMedia>();
+            if (media == null)
+            {
+                if (_lastCompositionProbeState != "unavailable")
+                    Logger.Log("D3D11_PREVIEW_COMPOSITION unavailable=IDXGISwapChainMedia");
+                _lastCompositionProbeState = "unavailable";
+                return;
+            }
+
+            var stats = media.FrameStatisticsMedia;
+            var state = stats.CompositionMode.ToString();
+            if (state != _lastCompositionProbeState || frameCounter % 1200 == 0)
+            {
+                Logger.Log($"D3D11_PREVIEW_COMPOSITION mode={state} presentCount={stats.PresentCount} refreshCount={stats.PresentRefreshCount} approvedDuration={stats.ApprovedPresentDuration} swap=0x{_swapChain!.NativePointer.ToInt64():X}");
+            }
+            _lastCompositionProbeState = state;
+        }
+        catch (Exception ex)
+        {
+            // A diagnostic probe must not affect renderer health or frame flow.
+            var state = $"error:0x{ex.HResult:X8}";
+            if (state != _lastCompositionProbeState)
+                Logger.Log($"D3D11_PREVIEW_COMPOSITION {state} type={ex.GetType().Name}");
+            _lastCompositionProbeState = state;
         }
     }
 
