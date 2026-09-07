@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;

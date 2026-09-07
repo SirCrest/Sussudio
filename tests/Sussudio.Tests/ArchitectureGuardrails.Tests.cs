@@ -955,7 +955,6 @@ static partial class Program
         return string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
             (fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
              fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
-             fileName.StartsWith("PreviewAudioTransitionControllers", StringComparison.Ordinal) ||
              string.Equals(fileName, "ViewModelBuilders.cs", StringComparison.Ordinal));
     }
 
@@ -969,7 +968,6 @@ static partial class Program
                 fileName.StartsWith("MainWindow", StringComparison.Ordinal)) ||
             (string.Equals(directory, "Sussudio/ViewModels", StringComparison.OrdinalIgnoreCase) &&
                 (fileName.StartsWith("MainViewModel", StringComparison.Ordinal) ||
-                 fileName.StartsWith("PreviewAudioTransitionControllers", StringComparison.Ordinal) ||
                  fileName.StartsWith("StatsPresentationBuilder", StringComparison.Ordinal) ||
                  fileName.StartsWith("StatsSnapshot", StringComparison.Ordinal) ||
                  string.Equals(fileName, "ViewModelSelectionPolicies.cs", StringComparison.Ordinal) ||
@@ -2103,7 +2101,7 @@ static partial class Program
         var mainViewModelDeviceAudioRequestControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelDeviceControllers.cs"));
         var mainViewModelCaptureModePropertyChangesText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         var mainViewModelCompositionText = mainViewModelText;
-        var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "UiDispatchControllers.cs"));
+        var mainViewModelUiDispatchControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "Dispatch", "UiDispatchControllers.cs"));
         var mainViewModelRuntimeLifecycleControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
         var mainViewModelRuntimeEventIngressControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));
         var mainViewModelDisposalControllerText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Controllers", "ViewModel", "MainViewModelLifecycleController.cs"));

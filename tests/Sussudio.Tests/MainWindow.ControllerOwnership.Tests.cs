@@ -2055,7 +2055,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
             .Replace("\r\n", "\n");
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
         var windowDispatchControllerSource = ExtractTypeBlock(dispatchControllerSource, "WindowUiDispatchController");
 
@@ -2093,7 +2093,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         var mainWindowSource = ReadMainWindowCompositionSource();
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
         var adapterSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
@@ -2141,7 +2141,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
     {
         var dispatchingSource = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
         var previewActionsSource = ReadMainWindowPreviewTransitionsAdapterSource();
         var flashbackSource = ReadMainWindowFlashbackAdapterSource();
@@ -2184,7 +2184,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
     internal static async Task WindowUiDispatchCancellation_DoesNotCompleteWindowCloseRequest()
     {
-        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+        var dispatchControllerSource = ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
             .Replace("\r\n", "\n");
         var windowDispatchControllerSource = ExtractTypeBlock(dispatchControllerSource, "WindowUiDispatchController");
         var lifecycleController = CreateInstance("Sussudio.Controllers.WindowCloseLifecycleController");

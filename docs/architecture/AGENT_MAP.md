@@ -54,7 +54,7 @@ mentions the moved files.
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
 | Native XU KS bridge | `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
 | Device audio control | `Sussudio/Services/Audio/NativeXuAudioControlService.cs` | Native XU audio mode/gain mutation and readback; preserve unrelated payload bytes. |
-| Device audio mode validation | `Sussudio/Models/DeviceAudioModeParser.cs` | Validate and canonicalize HDMI/Analog automation values before mutation. |
+| Device audio mode validation | `Sussudio/Models/Audio/DeviceAudioModeParser.cs` | Validate and canonicalize HDMI/Analog automation values before mutation. |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfInterop.cs` | Media Foundation reader lifecycle and nonblocking sample-to-frame delivery. |
 | Capture fan-out | `Sussudio/Services/Capture/UnifiedVideoCapture.cs` | Source/decoder lifecycle, preview ingress, and recording/Flashback sink delivery. MJPEG above 60 fps defaults to parallel decode; native MF conversion remains available at lower rates and through its environment override. Uncompressed inputs never enter JPEG decode fallback. |
 | Capture cadence trackers | `Sussudio/Services/Capture/CaptureCadenceTrackers.cs` | Decoded-frame visual cadence and luma sampling. Source-packet hashing belongs to the MJPEG decoder below. |
@@ -1087,7 +1087,7 @@ Primary current owners:
   `Sussudio/MainWindow.xaml.cs` is the XAML-facing shell
   launch/chrome native-window adapter and keeps the `_hwnd` field consumed by screenshot and window
   automation paths.
-- `Sussudio/Controllers/UiDispatchControllers.cs` owns MainWindow
+- `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs` owns MainWindow
   UI-thread direct execution, dispatcher enqueue/cancellation/error wrapping,
   preview-snapshot-style result dispatch with three-attempt enqueue retry, and
   guarded async event-handler status updates used by automation adapters and
@@ -2203,7 +2203,7 @@ Primary current owners:
   timeline/export state plus buffer, bitrate, playback-state, in/out marker,
   and gap-from-live UI projection. Keep callback-thread meter targets
   in `MainViewModel.AudioState.cs` and out of the root facade file.
-  `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`
+  `Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`
   owns audio ramp diagnostic state, bounded ring-buffer storage, snapshot
   projection, trace session start/complete, trace-point capture, sampler loop,
   delayed sampler shutdown, preview-volume save suppression/override state,
@@ -2244,7 +2244,7 @@ Primary current owners:
   `MainViewModel.cs`
   owns capture-mode property handlers for selected resolution, selected format,
   selected video format, and MJPEG decoder count changes.
-  `Sussudio/Controllers/UiDispatchControllers.cs` owns
+  `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs` owns
   shared view-model UI dispatcher enqueue/invoke policy, disposal skip logging,
   cancellation handoff, enqueue-failure logging, status projection, and the UI
   dispatch graph-port contract for dispatcher access, disposal state, logging,

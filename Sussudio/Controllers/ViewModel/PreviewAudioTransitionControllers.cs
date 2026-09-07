@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 
-namespace Sussudio.ViewModels;
+namespace Sussudio.Controllers;
 
 internal sealed class AudioRampTraceRecorderContext
 {

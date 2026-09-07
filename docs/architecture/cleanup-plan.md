@@ -187,7 +187,7 @@ owner, fold it back into that owner and update the source-shape tests and
    state, bounded ring-buffer storage, snapshot projection, trace session
    start/complete, trace-point capture, sampler loop, delayed sampler
    shutdown, and preview-volume transition mechanics live in
-   `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, with
+   `Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`, with
    `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
    trace/preview-volume controller wiring owner;
    preview-volume save/override, ramp adapter methods, preview monitoring
@@ -232,10 +232,10 @@ owner, fold it back into that owner and update the source-shape tests and
    selection handlers also live in `MainViewModel.AudioState.cs`,
    capture-mode property handlers live in `MainViewModel.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
-   `Sussudio/Controllers/UiDispatchControllers.cs`.
+   `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`.
    The UI dispatch graph-port contract for dispatcher access, disposal state,
    logging, exception logging, and status text projection lives with
-   `Sussudio/Controllers/UiDispatchControllers.cs`, while
+   `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`, while
    `MainViewModel.cs` keeps the stable private adapter names and
    preview event fan-out beside the controller graph handoff;
    periodic timer refresh orchestration and initial
@@ -1282,7 +1282,7 @@ finalization owners.
 
 UI-thread dispatching helpers, preview-snapshot-style result dispatch with
 three-attempt enqueue retry, and guarded async event-handler execution now live
-in `Sussudio/Controllers/UiDispatchControllers.cs`.
+in `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`.
 `Sussudio/MainWindow.xaml.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
@@ -2768,7 +2768,7 @@ and volume save suppression now live with preview start/stop/reinit event
 routing in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`.
 `Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter.
 Preview-audio volume transition mechanics and ramp diagnostics now live in
-`Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, which owns
+`Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`, which owns
 save suppression/override state, transition priming and restore behavior,
 trace adapters, property-to-session volume forwarding, ramp constants/easing,
 async ramp-down/ramp-up execution, bounded trace storage, trace session

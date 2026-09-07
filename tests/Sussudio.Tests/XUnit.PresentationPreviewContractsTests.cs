@@ -3674,7 +3674,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
         var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
@@ -5703,7 +5703,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
 
         var audioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
-        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs");
+        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs");
         var previewChanged = ExtractMemberCode(audioStateCode, "OnPreviewVolumeChanged");
         var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
         var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
@@ -5891,11 +5891,11 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs").Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs").Replace("\r\n", "\n");
+        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderText = audioRampTraceRecorderRootText;
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var playbackRenderText = playbackText;
@@ -6636,7 +6636,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     internal static Task MainViewModelUiDispatchController_UsesDependencyCompositionContext()
     {
         var controllerGraphText = ReadMainViewModelControllerGraphSource();
-        var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs").Replace("\r\n", "\n");
+        var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerGraphText, "private sealed class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");

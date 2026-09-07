@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Controllers;
 using Sussudio.ViewModels;
 using Xunit;
 

@@ -23,7 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
     <!-- Execute the complete managed controller logic with test-only UI boundaries. -->
-    <Compile Include="..\..\Sussudio\Controllers\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\Dispatch\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
     <!-- Dependency-free production policies executed directly by their unit tests. -->
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewOutputSizePolicy.cs" Link="Production\PreviewOutputSizePolicy.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\PreviewPacingSlowStageClassifier.cs" Link="Production\PreviewPacingSlowStageClassifier.cs" />
@@ -35,6 +35,6 @@
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewFrameTimeHistory.cs" Link="Production\PreviewFrameTimeHistory.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Stats\FrameTimeGraphGeometry.cs" Link="Production\FrameTimeGraphGeometry.cs" />
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewInputViewCache.cs" Link="Production\PreviewInputViewCache.cs" />
-    <Compile Include="..\..\Sussudio\ViewModels\PreviewAudioTransitionControllers.cs" Link="Production\PreviewAudioTransitionControllers.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\ViewModel\PreviewAudioTransitionControllers.cs" Link="Production\PreviewAudioTransitionControllers.cs" />
   </ItemGroup>
 </Project>
