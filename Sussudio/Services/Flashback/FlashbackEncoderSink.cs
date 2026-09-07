@@ -745,7 +745,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     _recordingOutputPath ?? string.Empty,
                     drainFailure,
                     _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
-                    "recording-flashback-encode-drain-timeout");
+                    RecordingFailureCodes.FlashbackEncodeDrainTimeout);
             }
 
             // Check if the encoding loop crashed during the recording
@@ -965,7 +965,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     outputPath,
                     "Stopped (flashback encode drain timed out)",
                     null,
-                    "recording-flashback-encode-drain-timeout");
+                    RecordingFailureCodes.FlashbackEncodeDrainTimeout);
             }
 
             try
@@ -985,7 +985,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 outputPath,
                 $"Stopped (flashback encode failed: {_encodingFailure.Message})",
                 null,
-                "recording-flashback-encode-failed");
+                RecordingFailureCodes.FlashbackEncodeFailed);
         }
 
         Logger.Log(

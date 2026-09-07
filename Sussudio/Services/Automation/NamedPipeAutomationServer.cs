@@ -264,7 +264,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     };
 
     private AutomationCommandResponse CreateRequestTimeoutResponse()
-        => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", "request-timeout");
+        => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", AutomationErrorCodes.RequestTimeout);
 
     private static void TraceFallback(string line)
     {
@@ -319,7 +319,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
                 if (request == null)
                 {
-                    response = CreateErrorResponse("Request payload was empty.", "invalid-request");
+                    response = CreateErrorResponse("Request payload was empty.", AutomationErrorCodes.InvalidRequest);
                 }
                 else
                 {
@@ -334,22 +334,22 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (JsonException ex)
             {
-                response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
+                response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", AutomationErrorCodes.InvalidJson);
             }
             catch (AutomationRequestTooLargeException ex)
             {
-                response = CreateErrorResponse(ex.Message, "request-too-large");
+                response = CreateErrorResponse(ex.Message, AutomationErrorCodes.RequestTooLarge);
             }
             catch (OperationCanceledException)
             {
                 var timedOut = requestTimeout.IsCancellationRequested;
                 response = CreateErrorResponse(
                     timedOut ? $"Request timed out after {_owner._requestTimeoutMs} ms." : "Request canceled.",
-                    timedOut ? "request-timeout" : "canceled");
+                    timedOut ? AutomationErrorCodes.RequestTimeout : AutomationErrorCodes.Canceled);
             }
             catch (Exception ex)
             {
-                response = CreateErrorResponse($"Request execution failed: {ex.Message}", "execution-failed");
+                response = CreateErrorResponse($"Request execution failed: {ex.Message}", AutomationErrorCodes.ExecutionFailed);
             }
             finally
             {

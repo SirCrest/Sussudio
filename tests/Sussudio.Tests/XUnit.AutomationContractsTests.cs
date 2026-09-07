@@ -851,7 +851,7 @@ static partial class Program
         AssertContains(customCommandsText, "var condition = ParseWaitCondition(payload);");
         AssertContains(customCommandsText, "Math.Clamp(GetInt(payload, \"timeoutMs\") ?? DefaultWaitTimeoutMs, 250, 300_000)");
         AssertContains(customCommandsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
-        AssertContains(customCommandsText, "errorCode: met ? null : \"timeout\"");
+        AssertContains(customCommandsText, "errorCode: met ? null : AutomationErrorCodes.Timeout");
         AssertContains(customCommandsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
         AssertContains(customCommandsText, "private static bool ConditionSatisfied(");
         AssertEqual(
@@ -863,7 +863,7 @@ static partial class Program
         AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
         AssertContains(customCommandsText, "var assertions = ParseAssertions(payload);");
         AssertContains(customCommandsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
-        AssertContains(customCommandsText, "errorCode: passed ? null : \"assertion-failed\"");
+        AssertContains(customCommandsText, "errorCode: passed ? null : AutomationErrorCodes.AssertionFailed");
         AssertContains(customCommandsText, "private static List<SnapshotAssertion> ParseAssertions(");
         AssertContains(customCommandsText, "private static bool TryEvaluateAssertion(");
         AssertEqual(
@@ -1380,8 +1380,8 @@ static partial class Program
         AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
         AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
         AssertContains(dispatcherText, "Logger.LogEvent(\"AUTH_FAILED\"");
-        AssertContains(dispatcherText, "errorCode: authorized ? null : \"unauthorized\"");
-        AssertContains(dispatcherText, "errorCode: \"unauthorized\"");
+        AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
+        AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");
     }
 
@@ -1465,9 +1465,9 @@ static partial class Program
         AssertContains(windowCommandsText, "_closeArmActionId = armed ? actionId : null;");
         AssertContains(windowCommandsText, "Window close arm state requested: {(armed ? \"armed\" : \"disarmed\")}.");
         AssertContains(windowCommandsText, "if (action == AutomationWindowAction.Close)");
-        AssertContains(windowCommandsText, "window-close-not-armed");
-        AssertContains(windowCommandsText, "window-close-action-id-required");
-        AssertContains(windowCommandsText, "window-close-action-id-mismatch");
+        AssertContains(windowCommandsText, "AutomationErrorCodes.WindowCloseNotArmed");
+        AssertContains(windowCommandsText, "AutomationErrorCodes.WindowCloseActionIdRequired");
+        AssertContains(windowCommandsText, "AutomationErrorCodes.WindowCloseActionIdMismatch");
         AssertContains(windowCommandsText, "_closeArmActionId = null;");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);");
@@ -1503,7 +1503,7 @@ static partial class Program
         AssertContains(customCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
         AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
         AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
-        AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : \"verification-failed\"");
+        AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : AutomationErrorCodes.VerificationFailed");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VerificationCommands.cs")),
@@ -2890,12 +2890,12 @@ static partial class Program
         AssertDoesNotContain(pipeServerText, "DispatchContinues");
         AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
-        AssertContains(pipeServerText, "\"request-timeout\"");
+        AssertContains(pipeServerText, "AutomationErrorCodes.RequestTimeout");
         AssertContains(pipeServerText, "private const int MaxRequestCharacters = 1024 * 1024;");
         AssertContains(pipeServerText, "ReadRequestLineAsync(reader, requestCancellation.Token)");
         AssertContains(pipeServerText, "request.Length > MaxRequestCharacters + 1");
         AssertContains(pipeServerText, "request.Length == MaxRequestCharacters + 1 && request[^1] != '\\r'");
-        AssertContains(pipeServerText, "\"request-too-large\"");
+        AssertContains(pipeServerText, "AutomationErrorCodes.RequestTooLarge");
         AssertDoesNotContain(pipeServerText, "reader.ReadLineAsync().WaitAsync(requestCancellation.Token)");
 
         return Task.CompletedTask;
@@ -5835,7 +5835,7 @@ static partial class Program
         AssertDoesNotContain(interfaceText, "PreviewColorProbeResult ProbePreviewColor();");
         AssertContains(dispatcherText, "await _flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "return CreateFlashbackActionRejectedResponse(");
-        AssertContains(dispatcherText, "errorCode: \"flashback-action-failed\"");
+        AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.FlashbackActionFailed");
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
@@ -8034,7 +8034,7 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "private void UpdateAudioSignalAlerts(");
         AssertContains(diagnostics.AlertsText, "\"audio-muted-suspect\"");
         AssertContains(diagnostics.AlertsText, "private void UpdateRecordingGrowthAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"recording-not-growing\"");
+        AssertContains(diagnostics.AlertsText, "RecordingFailureCodes.NotGrowing");
         AssertContains(diagnostics.AlertsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");

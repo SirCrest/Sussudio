@@ -1355,7 +1355,7 @@ static partial class Program
         AssertContains(verifierSource, "ffmpeg.avformat_open_input");
         AssertContains(verifierSource, "ffmpeg.avformat_find_stream_info");
         AssertContains(verifierSource, "ResolveStreamDurationSeconds");
-        AssertContains(verifierSource, "recording-audio-duration-mismatch");
+        AssertContains(verifierSource, "RecordingFailureCodes.AudioDurationMismatch");
         AssertContains(verifierSource, ".Failure(failureCode, detail, outputBytes)");
         AssertContains(verifierSource, ".WithTrackEvidence(requestedTracks, observedTracks)");
         AssertContains(verifierSource, ".Success(outputBytes)");
@@ -4058,7 +4058,7 @@ static partial class Program
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
         AssertContains(captureServiceText, "$\"Unified video recording stop failed: {ex.Message}\",");
-        AssertContains(captureServiceText, "\"recording-unified-stop-failed\");");
+        AssertContains(captureServiceText, "RecordingFailureCodes.UnifiedStopFailed);");
         AssertContains(captureServiceText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(captureServiceText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(captureServiceText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
@@ -4356,7 +4356,7 @@ static partial class Program
         AssertContains(lifecycleText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolvedWithArtifacts(");
         AssertContains(lifecycleText, "var unresolvedResult = EnsureRecordingFailureRecovery(");
         AssertContains(lifecycleText, "private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
-        AssertContains(lifecycleText, "recording-program-audio-integrity-failed");
+        AssertContains(lifecycleText, "RecordingFailureCodes.ProgramAudioIntegrityFailed");
         AssertContains(libAvFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
         AssertContains(flashbackFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
         AssertContains(lifecycleText, "_recordingLifecyclePhase = RecordingLifecyclePhase.Finalizing;");

@@ -128,12 +128,12 @@ public sealed class RecordingFinalizationTruthTests
             "avformat_find_stream_info",
             "av_read_frame",
             "avformat_close_input");
-        Assert.Contains("recording-stream-topology-mismatch", verifier, StringComparison.Ordinal);
-        Assert.Contains("recording-required-stream-has-no-packets", verifier, StringComparison.Ordinal);
-        Assert.Contains("recording-video-duration-invalid", verifier, StringComparison.Ordinal);
-        Assert.Contains("recording-video-duration-short", verifier, StringComparison.Ordinal);
-        Assert.Contains("recording-audio-duration-invalid", verifier, StringComparison.Ordinal);
-        Assert.Contains("recording-audio-duration-mismatch", verifier, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.StreamTopologyMismatch", verifier, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.RequiredStreamHasNoPackets", verifier, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.VideoDurationInvalid", verifier, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.VideoDurationShort", verifier, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.AudioDurationInvalid", verifier, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.AudioDurationMismatch", verifier, StringComparison.Ordinal);
         Assert.Contains("MaxVideoDurationShortfallSeconds = 2.0", verifier, StringComparison.Ordinal);
         Assert.Contains("Math.Min(", verifier, StringComparison.Ordinal);
         Assert.Contains("BuildRequestedTracks(context)", verifier, StringComparison.Ordinal);
@@ -205,9 +205,9 @@ public sealed class RecordingFinalizationTruthTests
             "Math.Max(priorResult.FinalizationElapsedMs, sinkResult.FinalizationElapsedMs)",
             recordingLifecycle,
             StringComparison.Ordinal);
-        Assert.Contains("recording-sink-dispose-failed", recordingLifecycle, StringComparison.Ordinal);
-        Assert.Contains("recording-video-capture-dispose-failed", recordingLifecycle, StringComparison.Ordinal);
-        Assert.Contains("recording-program-audio-dispose-failed", recordingLifecycle, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.SinkDisposeFailed", recordingLifecycle, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.VideoCaptureDisposeFailed", recordingLifecycle, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.ProgramAudioDisposeFailed", recordingLifecycle, StringComparison.Ordinal);
         Assert.True(
             CountOccurrences(
                 recordingLifecycle,
@@ -231,7 +231,7 @@ public sealed class RecordingFinalizationTruthTests
         Assert.Contains("Flashback recording requested a microphone", flashback, StringComparison.Ordinal);
         Assert.Contains("FoldRecordingAudioFaultIntoFinalizeResult", flashback, StringComparison.Ordinal);
         Assert.Contains("WaitForFlashbackRecordingFinalizeAsync", flashback, StringComparison.Ordinal);
-        Assert.Contains("recording-flashback-finalization-timeout", flashback, StringComparison.Ordinal);
+        Assert.Contains("RecordingFailureCodes.FlashbackFinalizationTimeout", flashback, StringComparison.Ordinal);
     }
 
     private static int CountOccurrences(string value, string expected)
@@ -474,6 +474,114 @@ public sealed class RecordingFinalizationTruthTests
             var current = source.IndexOf(marker, previous + 1, StringComparison.Ordinal);
             Assert.True(current > previous, $"Missing or out-of-order marker: {marker}");
             previous = current;
+        }
+    }
+
+    // The emitting sites now reference RecordingFailureCodes.X rather than
+    // spelling the wire string inline, so the string itself has to stay pinned
+    // somewhere: this is that place. RecordingFinalizeFailureCode and the
+    // verification result carry these values to ssctl and MCP clients, so a
+    // changed value here is a breaking change for them.
+    [Fact]
+    public void RecordingFailureCodes_PinTheWireValuesTheEmittingSitesReference()
+    {
+        var registry = RuntimeContractSource.ReadRepoFile(
+            "Sussudio/Services/Recording/RecordingFailureCodes.cs");
+
+        var expected = new (string Name, string Value)[]
+        {
+            ("FinalizationTimeout", "recording-finalization-timeout"),
+            ("FinalizationUnresolved", "recording-finalization-unresolved"),
+            ("FinalizationFailed", "recording-finalization-failed"),
+            ("StreamTopologyMismatch", "recording-stream-topology-mismatch"),
+            ("RequiredStreamHasNoPackets", "recording-required-stream-has-no-packets"),
+            ("VideoDurationInvalid", "recording-video-duration-invalid"),
+            ("VideoDurationShort", "recording-video-duration-short"),
+            ("AudioDurationInvalid", "recording-audio-duration-invalid"),
+            ("AudioDurationMismatch", "recording-audio-duration-mismatch"),
+            ("SinkDisposeFailed", "recording-sink-dispose-failed"),
+            ("VideoCaptureDisposeFailed", "recording-video-capture-dispose-failed"),
+            ("ProgramAudioDisposeFailed", "recording-program-audio-dispose-failed"),
+            ("ProgramAudioIntegrityFailed", "recording-program-audio-integrity-failed"),
+            ("FlashbackFinalizationTimeout", "recording-flashback-finalization-timeout"),
+            ("FlashbackEncodeDrainTimeout", "recording-flashback-encode-drain-timeout"),
+            ("NotGrowing", "recording-not-growing"),
+            ("MuxFailed", "recording-mux-failed"),
+            ("FinalOutputInvalid", "recording-final-output-invalid"),
+            ("UnifiedStopFailed", "recording-unified-stop-failed"),
+            ("StopFailed", "recording-stop-failed"),
+        };
+
+        foreach (var (name, value) in expected)
+        {
+            Assert.Contains(
+                $"internal const string {name} = \"{value}\";",
+                registry,
+                StringComparison.Ordinal);
+        }
+
+        // The contract's own fallback stays inline in ServiceContracts.cs so the
+        // Contracts layer does not import Services/Recording; keep the two in step.
+        var serviceContracts = RuntimeContractSource.ReadRepoFile(
+            "Sussudio/Services/Contracts/ServiceContracts.cs");
+        Assert.Contains(
+            "failureCode: \"recording-finalization-failed\"",
+            serviceContracts,
+            StringComparison.Ordinal);
+    }
+
+    // Same contract, other side of the pipe: AutomationCommandResponse.ErrorCode
+    // reaches ssctl, the MCP server and AutomationClient, and the dispatcher and
+    // pipe server now reference these constants instead of spelling them inline.
+    [Fact]
+    public void AutomationErrorCodes_PinTheWireValuesTheDispatcherReferences()
+    {
+        var registry = RuntimeContractSource.ReadRepoFile(
+            "Sussudio/Services/Automation/AutomationErrorCodes.cs");
+
+        var expected = new (string Name, string Value)[]
+        {
+            ("Canceled", "canceled"),
+            ("CommandFailed", "command-failed"),
+            ("ManifestMismatch", "manifest-mismatch"),
+            ("NotReady", "not-ready"),
+            ("Unauthorized", "unauthorized"),
+            ("UnsupportedCommand", "unsupported-command"),
+            ("AssertionFailed", "assertion-failed"),
+            ("ExportFailed", "export-failed"),
+            ("FlashbackActionFailed", "flashback-action-failed"),
+            ("Timeout", "timeout"),
+            ("VerificationFailed", "verification-failed"),
+            ("WindowCloseActionIdMismatch", "window-close-action-id-mismatch"),
+            ("WindowCloseActionIdRequired", "window-close-action-id-required"),
+            ("WindowCloseNotArmed", "window-close-not-armed"),
+            ("ExecutionFailed", "execution-failed"),
+            ("InvalidJson", "invalid-json"),
+            ("InvalidRequest", "invalid-request"),
+            ("RequestTimeout", "request-timeout"),
+            ("RequestTooLarge", "request-too-large"),
+        };
+
+        foreach (var (name, value) in expected)
+        {
+            Assert.Contains(
+                $"internal const string {name} = \"{value}\";",
+                registry,
+                StringComparison.Ordinal);
+        }
+
+        // No emitting site should spell a protocol error code inline any more.
+        foreach (var relativePath in new[]
+                 {
+                     "Sussudio/Services/Automation/AutomationCommandDispatcher.cs",
+                     "Sussudio/Services/Automation/NamedPipeAutomationServer.cs",
+                 })
+        {
+            var source = RuntimeContractSource.ReadRepoFile(relativePath);
+            foreach (var (_, value) in expected)
+            {
+                Assert.DoesNotContain($"errorCode: \"{value}\"", source, StringComparison.Ordinal);
+            }
         }
     }
 }

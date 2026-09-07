@@ -169,7 +169,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return CreateResponse(
                 correlationId,
                 "Command canceled.",
-                errorCode: "canceled",
+                errorCode: AutomationErrorCodes.Canceled,
                 success: false,
                 status: AutomationResponseStatus.Error,
                 includeSnapshot: false);
@@ -187,7 +187,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return CreateResponse(
                 correlationId,
                 message,
-                errorCode: "command-failed",
+                errorCode: AutomationErrorCodes.CommandFailed,
                 success: false,
                 status: AutomationResponseStatus.Error,
                 elapsedMs: (long)Math.Round(Stopwatch.GetElapsedTime(commandStartedAt).TotalMilliseconds));
@@ -294,7 +294,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     correlationId,
                     $"Automation command manifest revision mismatch (client={request.ManifestRevision.Value}, server={AutomationPipeProtocol.CommandManifestRevision}). " +
                     "Rebuild ssctl/MCP/StreamDeck against the current Sussudio source to refresh the numeric command IDs.",
-                    errorCode: "manifest-mismatch",
+                    errorCode: AutomationErrorCodes.ManifestMismatch,
                     success: false,
                     status: AutomationResponseStatus.Error,
                     includeSnapshot: false);
@@ -315,7 +315,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 authorized
                     ? "Authentication accepted."
                     : "Authentication rejected.",
-                errorCode: authorized ? null : "unauthorized",
+                errorCode: authorized ? null : AutomationErrorCodes.Unauthorized,
                 success: authorized,
                 status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
                 includeSnapshot: false);
@@ -326,7 +326,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return CreateResponse(
                 correlationId,
                 "Unauthorized command request.",
-                errorCode: "unauthorized",
+                errorCode: AutomationErrorCodes.Unauthorized,
                 success: false,
                 status: AutomationResponseStatus.Error,
                 includeSnapshot: false);
@@ -337,7 +337,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return CreateResponse(
                 correlationId,
                 "Automation is still initializing devices; retry shortly.",
-                errorCode: "not-ready",
+                errorCode: AutomationErrorCodes.NotReady,
                 success: false,
                 status: AutomationResponseStatus.NotReady,
                 retryAfterMs: 1000);
@@ -629,7 +629,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 LastCommandFailure = lastFailure,
                 LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs
             },
-            errorCode: "flashback-action-failed",
+            errorCode: AutomationErrorCodes.FlashbackActionFailed,
             success: false,
             status: AutomationResponseStatus.Error,
             snapshot: snapshot);
@@ -754,7 +754,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 return CreateResponse(
                     correlationId,
                     $"Unsupported command: {request.Command}",
-                    errorCode: "unsupported-command",
+                    errorCode: AutomationErrorCodes.UnsupportedCommand,
                     success: false,
                 status: AutomationResponseStatus.Error);
         }
@@ -1076,7 +1076,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return CreateResponse(
                 correlationId,
                 "ArmClose requires an actionId so the close request can prove it belongs to this arm.",
-                errorCode: "window-close-action-id-required",
+                errorCode: AutomationErrorCodes.WindowCloseActionIdRequired,
                 success: false,
                 status: AutomationResponseStatus.Error);
         }
@@ -1103,7 +1103,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 return CreateResponse(
                     correlationId,
                     "Window close requires the actionId sent with the matching ArmClose request.",
-                    errorCode: "window-close-action-id-required",
+                    errorCode: AutomationErrorCodes.WindowCloseActionIdRequired,
                     success: false,
                     status: AutomationResponseStatus.Error);
             }
@@ -1123,7 +1123,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 return CreateResponse(
                     correlationId,
                     "Window close is disallowed until ArmClose is requested.",
-                    errorCode: "window-close-not-armed",
+                    errorCode: AutomationErrorCodes.WindowCloseNotArmed,
                     success: false,
                     status: AutomationResponseStatus.Error);
             }
@@ -1133,7 +1133,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 return CreateResponse(
                     correlationId,
                     "Window close actionId does not match the armed close request.",
-                    errorCode: "window-close-action-id-mismatch",
+                    errorCode: AutomationErrorCodes.WindowCloseActionIdMismatch,
                     success: false,
                     status: AutomationResponseStatus.Error);
             }
@@ -1223,7 +1223,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 ["passed"] = passed,
                 ["failures"] = failures
             },
-            errorCode: passed ? null : "assertion-failed",
+            errorCode: passed ? null : AutomationErrorCodes.AssertionFailed,
             success: passed,
             status: passed ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
             snapshot: snapshot);
@@ -1406,7 +1406,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 ["timeoutMs"] = timeoutMs,
                 ["pollMs"] = pollMs
             },
-            errorCode: met ? null : "timeout",
+            errorCode: met ? null : AutomationErrorCodes.Timeout,
             success: met,
             status: met ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
             snapshot: snapshot);
@@ -1570,7 +1570,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 Verification = verification,
                 HdrParity = verification.HdrParity
             },
-            errorCode: verification.Succeeded ? null : "verification-failed",
+            errorCode: verification.Succeeded ? null : AutomationErrorCodes.VerificationFailed,
             success: verification.Succeeded,
             status: verification.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error,
             elapsedMs: elapsedMs);

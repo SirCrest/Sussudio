@@ -70,7 +70,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
         if (string.IsNullOrWhiteSpace(outputPath))
         {
             return Failure(
-                "recording-output-path-empty",
+                RecordingFailureCodes.OutputPathEmpty,
                 "output path is empty");
         }
 
@@ -80,7 +80,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (!File.Exists(outputPath))
             {
                 return Failure(
-                    "recording-output-missing",
+                    RecordingFailureCodes.OutputMissing,
                     "output file is missing");
             }
 
@@ -88,14 +88,14 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (outputBytes <= 0)
             {
                 return Failure(
-                    "recording-output-empty",
+                    RecordingFailureCodes.OutputEmpty,
                     "output file is empty");
             }
         }
         catch (Exception ex)
         {
             return Failure(
-                "recording-output-stat-failed",
+                RecordingFailureCodes.OutputStatFailed,
                 $"output file length is unavailable: {ex.Message}");
         }
 
@@ -108,7 +108,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (openResult < 0 || formatContext == null)
             {
                 return Failure(
-                    "recording-reopen-failed",
+                    RecordingFailureCodes.ReopenFailed,
                     $"avformat_open_input failed with libav error {openResult}",
                     outputBytes);
             }
@@ -117,7 +117,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (infoResult < 0)
             {
                 return Failure(
-                    "recording-stream-info-failed",
+                    RecordingFailureCodes.StreamInfoFailed,
                     $"avformat_find_stream_info failed with libav error {infoResult}",
                     outputBytes);
             }
@@ -126,7 +126,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (nativeStreamCount == 0 || nativeStreamCount > MaxSupportedStreams)
             {
                 return Failure(
-                    "recording-stream-count-invalid",
+                    RecordingFailureCodes.StreamCountInvalid,
                     $"stream count {nativeStreamCount} is outside 1..{MaxSupportedStreams}",
                     outputBytes);
             }
@@ -145,7 +145,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                 if (stream == null || stream->codecpar == null)
                 {
                     return Failure(
-                        "recording-stream-metadata-missing",
+                        RecordingFailureCodes.StreamMetadataMissing,
                         $"stream {streamIndex} has no codec parameters",
                         outputBytes);
                 }
@@ -158,7 +158,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                     if (!IsPlausibleDuration(duration))
                     {
                         return Failure(
-                            "recording-video-duration-invalid",
+                            RecordingFailureCodes.VideoDurationInvalid,
                             $"video stream {streamIndex} duration is missing or implausible",
                             outputBytes);
                     }
@@ -168,7 +168,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                     if (stream->codecpar->codec_id != expectedCodec)
                     {
                         return Failure(
-                            "recording-video-codec-mismatch",
+                            RecordingFailureCodes.VideoCodecMismatch,
                             $"video codec is {stream->codecpar->codec_id}; expected {expectedCodec}",
                             outputBytes);
                     }
@@ -177,7 +177,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                         stream->codecpar->height != checked((int)context.EffectiveHeight))
                     {
                         return Failure(
-                            "recording-video-dimensions-mismatch",
+                            RecordingFailureCodes.VideoDimensionsMismatch,
                             $"video dimensions are {stream->codecpar->width}x{stream->codecpar->height}; " +
                             $"expected {context.EffectiveWidth}x{context.EffectiveHeight}",
                             outputBytes);
@@ -189,7 +189,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                          stream->codecpar->color_space != AVColorSpace.AVCOL_SPC_BT2020_NCL))
                     {
                         return Failure(
-                            "recording-hdr-metadata-mismatch",
+                            RecordingFailureCodes.HdrMetadataMismatch,
                             "HDR output is missing BT.2020/PQ/non-constant-luminance stream metadata",
                             outputBytes);
                     }
@@ -202,7 +202,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                     if (!IsPlausibleDuration(duration))
                     {
                         return Failure(
-                            "recording-audio-duration-invalid",
+                            RecordingFailureCodes.AudioDurationInvalid,
                             $"audio stream {streamIndex} duration is missing or implausible",
                             outputBytes);
                     }
@@ -212,7 +212,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                         stream->codecpar->ch_layout.nb_channels <= 0)
                     {
                         return Failure(
-                            "recording-audio-metadata-invalid",
+                            RecordingFailureCodes.AudioMetadataInvalid,
                             $"audio stream {streamIndex} has invalid codec/rate/channel metadata",
                             outputBytes);
                     }
@@ -222,7 +222,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (videoStreamIndexes.Count != 1 || audioStreamIndexes.Count != expectedAudioStreams)
             {
                 return Failure(
-                    "recording-stream-topology-mismatch",
+                    RecordingFailureCodes.StreamTopologyMismatch,
                     $"observed video={videoStreamIndexes.Count}, audio={audioStreamIndexes.Count}; " +
                     $"expected video=1, audio={expectedAudioStreams}",
                     outputBytes);
@@ -239,7 +239,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                     if (videoDuration < expectedSeconds - allowedShortfallSeconds)
                     {
                         return Failure(
-                            "recording-video-duration-short",
+                            RecordingFailureCodes.VideoDurationShort,
                             $"video duration {videoDuration:0.###}s is shorter than the {expectedSeconds:0.###}s recording interval",
                             outputBytes);
                     }
@@ -251,7 +251,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
                     if (skewSeconds > MaxRequestedAudioDurationSkewSeconds)
                     {
                         return Failure(
-                            "recording-audio-duration-mismatch",
+                            RecordingFailureCodes.AudioDurationMismatch,
                             $"audio stream {audioStreamIndexes[audioIndex]} differs from video duration by {skewSeconds:0.###} seconds",
                             outputBytes);
                     }
@@ -262,7 +262,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (packet == null)
             {
                 return Failure(
-                    "recording-packet-allocation-failed",
+                    RecordingFailureCodes.PacketAllocationFailed,
                     "libav could not allocate a verification packet",
                     outputBytes);
             }
@@ -284,7 +284,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
             if (requiredStreams.Count > 0)
             {
                 return Failure(
-                    "recording-required-stream-has-no-packets",
+                    RecordingFailureCodes.RequiredStreamHasNoPackets,
                     $"required stream(s) {string.Join(',', requiredStreams)} had no readable packet",
                     outputBytes);
             }
@@ -296,7 +296,7 @@ internal sealed unsafe class InProcessRecordingStructureVerifier
         catch (Exception ex)
         {
             return Failure(
-                "recording-structure-verification-exception",
+                RecordingFailureCodes.StructureVerificationException,
                 ex.Message,
                 outputBytes);
         }

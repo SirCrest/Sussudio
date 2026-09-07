@@ -9,6 +9,7 @@ using Sussudio.Services.Capture;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
 using Sussudio.ViewModels;
+using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Automation;
 
@@ -1765,7 +1766,7 @@ public sealed partial class AutomationDiagnosticsHub
     private void UpdateRecordingGrowthAlerts(AutomationSnapshot snapshot)
     {
         SetAlertState(
-            "recording-not-growing",
+            RecordingFailureCodes.NotGrowing,
             snapshot.IsRecording && !snapshot.RecordingFileGrowing,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Recording,

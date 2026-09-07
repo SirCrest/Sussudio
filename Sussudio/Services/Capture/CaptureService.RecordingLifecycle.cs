@@ -60,7 +60,7 @@ public partial class CaptureService
             _lastPreservedArtifacts = recovery.PreservedArtifacts;
             _recordingLifecyclePhase = RecordingLifecyclePhase.Idle;
             _lastFinalizeOutcome = RecordingFinalizeOutcome.Failed;
-            _lastFinalizeFailureCode = "recording-recovery-restored";
+            _lastFinalizeFailureCode = RecordingFailureCodes.RecoveryRestored;
             _lastFinalizationVerificationCompleted = false;
             _recordingFinalizationCleanupPending = false;
             _lastFinalizationElapsedMs = 0;
@@ -838,7 +838,7 @@ public partial class CaptureService
                 fallbackOutputPath,
                 statusMessage,
                 preservedArtifacts,
-                "recording-finalization-unresolved"),
+                RecordingFailureCodes.FinalizationUnresolved),
             _recordingBackend.Context);
         PublishRecordingFinalizedOutcome(unresolvedResult, updateOutputPath: false);
     }
@@ -1030,7 +1030,7 @@ public partial class CaptureService
                 result.OutputPath,
                 "Recording failed (finalization context was unavailable for verification)",
                 result.PreservedArtifacts,
-                "recording-verification-context-missing",
+                RecordingFailureCodes.VerificationContextMissing,
                 result.CleanupPending,
                 result.RecoveryPath,
                 verificationCompleted: false,
@@ -1111,7 +1111,7 @@ public partial class CaptureService
             ? "Recording failed (WASAPI audio capture faulted)."
             : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
         Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
-        return result.AsFailure(statusMessage, "recording-audio-capture-failed");
+        return result.AsFailure(statusMessage, RecordingFailureCodes.AudioCaptureFailed);
     }
 
     private FinalizeResult FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
@@ -1141,7 +1141,7 @@ public partial class CaptureService
         Logger.Log(
             $"RECORDING_MICROPHONE_INTEGRITY_FAIL samples={recordedSamples} " +
             $"drops={droppedPackets} discontinuities={microphoneDiscontinuities}");
-        return result.AsFailure(reason, "recording-microphone-integrity-failed");
+        return result.AsFailure(reason, RecordingFailureCodes.MicrophoneIntegrityFailed);
     }
 
     private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
@@ -1173,7 +1173,7 @@ public partial class CaptureService
             $"discontinuities={audioCounters.AudioDiscontinuities} " +
             $"timestamp_errors={audioCounters.AudioTimestampErrors} " +
             $"callback_gaps={audioCounters.AudioCallbackGaps}");
-        return result.AsFailure(reason, "recording-program-audio-integrity-failed");
+        return result.AsFailure(reason, RecordingFailureCodes.ProgramAudioIntegrityFailed);
     }
 
     private FinalizeResult FoldRecordedRuntimeFailureIntoFinalizeResult(FinalizeResult result)
@@ -1198,7 +1198,7 @@ public partial class CaptureService
         Logger.Log(
             "RECORDING_RUNTIME_FAILURE_FOLDED " +
             $"type='{failureType}' message='{failureMessage}'");
-        return result.AsFailure($"Recording failed ({failureType}: {failureMessage})", "recording-runtime-failed");
+        return result.AsFailure($"Recording failed ({failureType}: {failureMessage})", RecordingFailureCodes.RuntimeFailed);
     }
 
     private void PublishLibAvRecordingIntegrity(
@@ -1917,7 +1917,7 @@ public partial class CaptureService
                         fallbackOutputPath,
                         $"Unified video recording stop failed: {ex.Message}",
                         null,
-                        "recording-unified-stop-failed");
+                        RecordingFailureCodes.UnifiedStopFailed);
                 }
             }
             finally
@@ -2034,7 +2034,7 @@ public partial class CaptureService
                     fallbackOutputPath,
                     $"Recording stop failed: {ex.Message}",
                     null,
-                    "recording-stop-failed");
+                    RecordingFailureCodes.StopFailed);
             }
         }
         finally
@@ -2056,7 +2056,7 @@ public partial class CaptureService
                 Logger.Log($"Recording sink dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = result.AsFailure($"Recording dispose failed: {ex.Message}", "recording-sink-dispose-failed");
+                    result = result.AsFailure($"Recording dispose failed: {ex.Message}", RecordingFailureCodes.SinkDisposeFailed);
                 }
             }
         }
@@ -2133,7 +2133,7 @@ public partial class CaptureService
                             fallbackOutputPath,
                             "Recording failed because the video capture worker did not stop within the finalization deadline; cleanup continues in quarantine.",
                             result.PreservedArtifacts,
-                            "recording-video-capture-cleanup-timeout",
+                            RecordingFailureCodes.VideoCaptureCleanupTimeout,
                             cleanupPending: true,
                             recoveryPath: result.RecoveryPath,
                             verificationCompleted: result.VerificationCompleted,
@@ -2147,7 +2147,7 @@ public partial class CaptureService
                 Logger.Log($"Unified video capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = result.AsFailure($"Unified video capture dispose failed: {ex.Message}", "recording-video-capture-dispose-failed");
+                    result = result.AsFailure($"Unified video capture dispose failed: {ex.Message}", RecordingFailureCodes.VideoCaptureDisposeFailed);
                 }
             }
         }
@@ -2193,7 +2193,7 @@ public partial class CaptureService
                         fallbackOutputPath,
                         "Recording failed because the program-audio worker did not stop within the emergency deadline; cleanup continues in quarantine.",
                         result.PreservedArtifacts,
-                        "recording-program-audio-cleanup-timeout",
+                        RecordingFailureCodes.ProgramAudioCleanupTimeout,
                         cleanupPending: true,
                         recoveryPath: result.RecoveryPath,
                         verificationCompleted: result.VerificationCompleted,
@@ -2206,7 +2206,7 @@ public partial class CaptureService
                 Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = result.AsFailure($"Recording WASAPI capture dispose failed: {ex.Message}", "recording-program-audio-dispose-failed");
+                    result = result.AsFailure($"Recording WASAPI capture dispose failed: {ex.Message}", RecordingFailureCodes.ProgramAudioDisposeFailed);
                 }
             }
         }

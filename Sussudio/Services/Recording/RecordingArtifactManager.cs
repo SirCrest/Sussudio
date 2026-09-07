@@ -120,7 +120,7 @@ public sealed class RecordingArtifactManager
                     context.FinalOutputPath,
                     $"Stopped (final output invalid: {directOutputFailure})",
                     null,
-                    "recording-final-output-invalid");
+                    RecordingFailureCodes.FinalOutputInvalid);
             }
 
             return FinalizeResult.Success(context.FinalOutputPath, "Stopped");
@@ -134,7 +134,7 @@ public sealed class RecordingArtifactManager
                     context.FinalOutputPath,
                     $"Stopped (final output invalid: {muxedOutputFailure})",
                     GetExistingTempArtifacts(context),
-                    "recording-final-output-invalid");
+                    RecordingFailureCodes.FinalOutputInvalid);
             }
 
             TryDelete(context.VideoOutputPath);
@@ -161,7 +161,7 @@ public sealed class RecordingArtifactManager
             context.FinalOutputPath,
             $"Stopped (mux failed: {reason})",
             preserved,
-            "recording-mux-failed");
+            RecordingFailureCodes.MuxFailed);
     }
 
     public Task RollbackAsync(RecordingContext? context, CancellationToken cancellationToken = default)

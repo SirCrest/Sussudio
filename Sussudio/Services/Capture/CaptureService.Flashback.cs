@@ -1342,7 +1342,7 @@ public partial class CaptureService
                         ? "Recording failed (emergency Flashback finalization exceeded five seconds; cleanup continues in quarantine)."
                         : "Recording failed (Flashback finalization made no progress for 30 seconds or exceeded 120 seconds; cleanup continues in quarantine).",
                     Array.Empty<string>(),
-                    "recording-flashback-finalization-timeout",
+                    RecordingFailureCodes.FlashbackFinalizationTimeout,
                     cleanupPending: true,
                     recoveryPath: null,
                     verificationCompleted: false,

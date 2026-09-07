@@ -685,7 +685,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     "Stopped (recording sink was disposed before verification completed)",
-                    "recording-sink-disposed-before-verification");
+                    RecordingFailureCodes.SinkDisposedBeforeVerification);
         }
 
         // Cancellation is honored only before stop commits. Once the writers are
@@ -724,7 +724,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     timeoutStatus,
-                    "recording-finalization-timeout",
+                    RecordingFailureCodes.FinalizationTimeout,
                     cleanupPending: true);
             }
 
@@ -743,7 +743,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 context,
                 outputPath,
                 "Recording failed (finalization worker was unavailable)",
-                "recording-finalization-worker-missing");
+                RecordingFailureCodes.FinalizationWorkerMissing);
         }
 
         if (_encodingFailure != null)
@@ -753,7 +753,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 context,
                 outputPath,
                 $"Recording failed (libav finalization failed: {_encodingFailure.Message})",
-                "recording-libav-finalization-failed",
+                RecordingFailureCodes.LibavFinalizationFailed,
                 verificationCompleted: _structureVerificationCompleted);
         }
 
@@ -763,7 +763,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 context,
                 outputPath,
                 "Recording failed (structural verification did not complete)",
-                "recording-structure-verification-incomplete");
+                RecordingFailureCodes.StructureVerificationIncomplete);
         }
 
         if (context?.HdrPipelineActive == true)
@@ -778,7 +778,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s)",
-                    "recording-finalization-timeout",
+                    RecordingFailureCodes.FinalizationTimeout,
                     verificationCompleted: true);
             }
 
@@ -795,7 +795,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s during HDR validation)",
-                    "recording-finalization-timeout",
+                    RecordingFailureCodes.FinalizationTimeout,
                     verificationCompleted: true);
             }
 
@@ -813,7 +813,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                         context,
                         outputPath,
                         $"Stopped (hdr validation failed: {validationDetail})",
-                        "recording-hdr-validation-failed",
+                        RecordingFailureCodes.HdrValidationFailed,
                         verificationCompleted: true);
                 }
             }
@@ -1980,7 +1980,7 @@ internal static class HdrValidationRunner
     {
         if (context == null)
         {
-            return (false, "recording-context-missing");
+            return (false, RecordingFailureCodes.ContextMissing);
         }
 
         if (string.IsNullOrWhiteSpace(outputPath) || !File.Exists(outputPath))
