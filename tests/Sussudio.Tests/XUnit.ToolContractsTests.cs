@@ -10996,7 +10996,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var coreRuntimeContractsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var architectureGuardrailsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs")
+        var architectureGuardrailsText = RuntimeContractSource.ReadRepoFile("tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
 
         Assert.Contains("SUSSUDIO_TEST_CONFIGURATION", harnessText);

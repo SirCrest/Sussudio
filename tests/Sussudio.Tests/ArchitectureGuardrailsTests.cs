@@ -906,7 +906,7 @@ static partial class Program
         var testsDirectory = Path.Combine(repoRoot, "tests", "Sussudio.Tests");
         return EnumerateSourceFiles(testsDirectory, SearchOption.TopDirectoryOnly)
             .Select(file => NormalizeRepoRelativePath(repoRoot, file))
-            .Where(file => (GetRepoFileName(file).StartsWith("ArchitectureDocs", StringComparison.Ordinal) || string.Equals(GetRepoFileName(file), "ArchitectureGuardrails.Tests.cs", StringComparison.Ordinal)))
+            .Where(file => (GetRepoFileName(file).StartsWith("ArchitectureDocs", StringComparison.Ordinal) || string.Equals(GetRepoFileName(file), "ArchitectureGuardrailsTests.cs", StringComparison.Ordinal)))
             .OrderBy(file => file, StringComparer.OrdinalIgnoreCase);
     }
 

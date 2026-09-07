@@ -30,9 +30,9 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   texture/subresource cache reuse, eviction, and allocation checks.
 - `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` owns shared fanout, cadence,
   visibility demand, epoch changes, and exception recovery checks.
-- `tests/Sussudio.Tests/PreviewFrameTimeHistory.Tests.cs` directly tests the pure
+- `tests/Sussudio.Tests/PreviewFrameTimeHistoryTests.cs` directly tests the pure
   linked history/geometry sources, including timestamp gaps and warmed allocations.
-- `tests/Sussudio.Tests/StatsPresentationPolish.Tests.cs` owns motion state and
+- `tests/Sussudio.Tests/StatsPresentationPolishTests.cs` owns motion state and
   human-readable presentation contracts.
 
 - xUnit 2.9 + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` referenced
@@ -49,7 +49,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   ported RecordingStats value-contract check.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface
   checks, including the bool/visibility converter wrapper class.
-- `MainWindow.ControllerOwnership.Tests.cs` owns source-contract checks for
+- `MainWindowControllerOwnershipTests.cs` owns source-contract checks for
   stats overlay lifecycle and section chrome wiring, with xUnit wrappers in
   `XUnit.PresentationPreviewContractsTests.cs`. The remaining stats
   presentation checks still migrate incrementally from the legacy catalog.
@@ -99,7 +99,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `XUnit.RecordingContractsTests.cs` owns recording contract DTO checks plus
   the former legacy temp artifact finalization and rollback behavior checks
   for recording output cleanup.
-- `MjpegPipeline.Tests.cs` owns the former legacy CPU MJPEG pipeline,
+- `MjpegPipelineTests.cs` owns the former legacy CPU MJPEG pipeline,
   timing metric, stopwatch timeout, software decoder shape, pooled-frame
   lease/fan-out, preview jitter, cadence, queued lease-release, and xUnit
   execution-surface checks.
@@ -124,7 +124,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   fMP4 reopen, seek recovery, in/out marker API, normalization, disposal,
   marker clamp, root state, transition, audio guard checks, command queue, and
   source-shape backing `Program` methods.
-- `MainWindow.ControllerOwnership.Tests.cs` owns the former legacy MainWindow
+- `MainWindowControllerOwnershipTests.cs` owns the former legacy MainWindow
   UI contract and stats snapshot construction/health/renderer metric projection
   checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit
@@ -237,7 +237,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   present cadence, device-lost, diagnostics, contracts/metrics ownership,
   runtime capture, render setup/resource, and render pipeline checks. The legacy
   D3D catalog hook was removed after the final group moved to xUnit.
-- `ArchitectureGuardrails.Tests.cs` owns the former legacy
+- `ArchitectureGuardrailsTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, test-project shape guard,
   architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
@@ -245,8 +245,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   `XUnit.ToolContractsTests.cs` (automation client timeout policy,
   advanced command-map alignment, and pipe/tool protocol contracts through
   `AutomationToolContractsProtocolXunitTests`),
-  `XUnit.CoreRuntimeContractsTests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
-  and `CaptureService.Ownership.Tests.cs` already run through `dotnet test`.
+  `XUnit.CoreRuntimeContractsTests.cs`, `MainWindowControllerOwnershipTests.cs`,
+  and `CaptureServiceOwnershipTests.cs` already run through `dotnet test`.
 
 ## Targeting reality
 

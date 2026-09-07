@@ -377,7 +377,7 @@ public sealed class FrameTimeGraphGeometryTests
         }
     }
 
-    // ---- Regression cases migrated from PreviewFrameTimeHistory.Tests.cs -------
+    // ---- Regression cases migrated from PreviewFrameTimeHistoryTests.cs -------
     // Preserved verbatim so the original graph contracts keep their coverage.
 
     [Fact]

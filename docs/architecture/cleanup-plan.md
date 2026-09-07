@@ -1124,7 +1124,7 @@ guards also live in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`; they req
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
-`tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns
+`tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` owns
   shared implementations for consolidated AGENT_MAP reference resolution,
   test-owner code-span coverage, automation consumer checklist coverage,
   UI/presentation ownership coverage, CaptureService ownership coverage,
@@ -1144,7 +1144,7 @@ capture/recording object factories, tool assembly loading, isolated load
 contexts, and stale-build detection.
 Synthetic MJPEG timing metric factories live with the CaptureService ownership
 and cached-metrics scenarios that use them in
-`tests/Sussudio.Tests/CaptureService.Ownership.Tests.cs`.
+`tests/Sussudio.Tests/CaptureServiceOwnershipTests.cs`.
 
 Shared capture configuration reflection helpers for remaining legacy capture
 model checks now live in `tests/Sussudio.Tests/HarnessCore.cs`.
@@ -1164,7 +1164,7 @@ removal from the legacy offline harness catalog. Keep the public wrapper
 classes in this file unless a group needs independent fixture state.
 
 CPU MJPEG pipeline runtime checks now execute through
-`tests/Sussudio.Tests/MjpegPipeline.Tests.cs`, keeping pipeline,
+`tests/Sussudio.Tests/MjpegPipelineTests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, queued lease-release contracts, and the
 shared pooled-frame/jitter-buffer helper surface in xUnit after their removal
 from the legacy harness catalog.
@@ -2413,7 +2413,7 @@ empty state, group headers, row rendering, lifecycle, sizing, polling,
 controller composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
 diagnostic row pooling contract checks now live in two focused owners:
-`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` covers overlay
+`tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs` covers overlay
 lifecycle and section chrome through the MainWindow controller ownership
 surface, while
 `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` covers dock presentation
@@ -2893,7 +2893,7 @@ responsive visibility for the complete control-bar label set, and
 capture-settings grid placement together with the rest of shell chrome.
 `MainWindow.xaml.cs` remains the XAML-facing adapter.
 Responsive layout ownership checks live in
-`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs`.
+`tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 `Sussudio/Controllers/Capture/CaptureBindingControllers.cs`. The
