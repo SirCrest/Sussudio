@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-07T08:52:09Z
+Generated UTC: 2026-09-07T08:56:15Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,7 +10,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 140 |
 | Test .cs files | 54 |
 | Core app .cs files (Sussudio/) | 105 |
-| Core app nonblank LoC (Sussudio/) | 95850 |
+| Core app nonblank LoC (Sussudio/) | 95852 |
 | Sussudio.Tests .cs files | 51 |
 | Sussudio.Tests nonblank LoC | 65117 |
 | Production .cs files under 60 lines | 2 (1.4%) |
@@ -25,11 +25,11 @@ Root: C:\Users\crest\source\repos\Sussudio
 | D3D11PreviewRenderer | 3 | 5321 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.RenderPasses.cs, Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs |
 | FlashbackPlaybackController | 3 | 4725 | Sussudio/Services/Flashback/FlashbackPlaybackController.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.PlaybackFrames.cs, Sussudio/Services/Flashback/FlashbackPlaybackController.ThreadCommands.cs |
 | LibAvEncoder | 3 | 3064 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
-| MainViewModel | 3 | 5294 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
+| MainViewModel | 3 | 5295 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 577 | Sussudio/AppRuntime.cs |
 | SettingsJsonContext | 1 | 785 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 283 | Sussudio/App.xaml.cs |
-| DeviceFormatCacheJsonContext | 1 | 716 | Sussudio/Services/Capture/DeviceService.cs |
+| DeviceFormatCacheJsonContext | 1 | 717 | Sussudio/Services/Capture/DeviceService.cs |
 | StatsWindow | 1 | 328 | Sussudio/StatsWindow.xaml.cs |
 | MainWindow | 1 | 2556 | Sussudio/MainWindow.xaml.cs |
 

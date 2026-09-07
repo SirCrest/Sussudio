@@ -1469,7 +1469,7 @@ path resolution, format cache serialization, and inline/background format
 probing together there.
 
 Native XU Kernel Streaming calls are grouped under
-`Sussudio/Services/Capture/NativeXu/`. Keep KS category constants, DTOs,
+`Sussudio/Services/NativeXu/`. Keep KS category constants, DTOs,
 SetupAPI interface enumeration, handle opening, topology node parsing, XU
 GET/SET transfer shapes, and P/Invoke struct declarations in
 `KsExtensionUnitNative.cs`. Keep shared 4K X identity, selected-interface
@@ -1848,7 +1848,7 @@ Public device command routing now stays with the read/transport owner while
 shared device support continues to enforce identity, selected-interface, and
 transport gates.
 Shared device identity, selected-interface projection, and native transport
-gating live in `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs`;
+gating live in `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs`;
 the root provider dispatches through that support into telemetry polling.
 
 Selector-4 I2C payload writes stay with the provider's XU transport in

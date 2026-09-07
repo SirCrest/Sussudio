@@ -1,9 +1,9 @@
 using Microsoft.Win32.SafeHandles;
 using System.Globalization;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Telemetry;
 using static NativeXuProbeI2cTransport;
+using Sussudio.Services.NativeXu;
 
 static class NativeXuProbeI2cCommands
 {

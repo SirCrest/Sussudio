@@ -8,10 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using AviInfoFrameInfo = Sussudio.Services.Telemetry.NativeXuAtProtocol.AviInfoFrameInfo;
 using HdrMetadataInfo = Sussudio.Services.Telemetry.NativeXuAtProtocol.HdrMetadataInfo;
+using Sussudio.Services.NativeXu;
 
 namespace Sussudio.Services.Telemetry;
 

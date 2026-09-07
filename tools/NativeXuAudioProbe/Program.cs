@@ -3,9 +3,9 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Telemetry;
+using Sussudio.Services.NativeXu;
 
 var deviceNameFilter = args.Length > 0 ? args[0] : "4K X";
 if (args.Length > 0 && string.Equals(args[0], "rtk-i2c", StringComparison.OrdinalIgnoreCase))

@@ -6205,7 +6205,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "public async Task<bool> SetAudioModeAsync(");
         AssertContains(rootText, "public async Task<bool> SetAnalogGainPercentAsync(");
         AssertContains(rootText, "internal sealed record DeviceAudioControlState(");
-        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static readonly int[] InputByteIndexes");

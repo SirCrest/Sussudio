@@ -1036,7 +1036,7 @@ static partial class Program
     // flashback pipelines, so an import in the other direction is a cycle.
     private static readonly string[] LeafServiceDomains =
     {
-        "Contracts", "Runtime", "Gpu", "Preview", "Recording"
+        "Contracts", "Runtime", "Gpu", "Preview", "Recording", "NativeXu"
     };
 
     private static readonly string[] OrchestrationServiceDomains =
@@ -2534,7 +2534,7 @@ static partial class Program
 
         var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
         var nativeXuAtRollingPollText = nativeXuAtProviderText;
-        var nativeXuDeviceSupportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "NativeXu", "KsExtensionUnitNative.cs"));
+        var nativeXuDeviceSupportText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "NativeXu", "KsExtensionUnitNative.cs"));
         AssertContains(nativeXuAtProviderText, "device.NativeXuInterfacePath");
         AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.TryGetSupported4kXIds(device, out var vendorId, out var productId)");
         AssertContains(nativeXuAtProviderText, "NativeXuDeviceSupport.EnumerateSelectedInterfaces(vendorId, productId, device)");

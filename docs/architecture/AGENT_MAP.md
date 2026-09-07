@@ -52,7 +52,7 @@ mentions the moved files.
 | App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths, bounded asynchronous logging, rotation, and fatal breadcrumbs. |
 | App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy in imported targets. |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
-| Native XU KS bridge | `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
+| Native XU KS bridge | `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
 | Device audio control | `Sussudio/Services/Audio/NativeXuAudioControlService.cs` | Native XU audio mode/gain mutation and readback; preserve unrelated payload bytes. |
 | Device audio mode validation | `Sussudio/Models/Audio/DeviceAudioModeParser.cs` | Validate and canonicalize HDMI/Analog automation values before mutation. |
 | Capture source reader | `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`, `MfInterop.cs` | Media Foundation reader lifecycle and nonblocking sample-to-frame delivery. |
@@ -467,7 +467,7 @@ Important entry points:
   interface path resolution for supported devices, inline/background Media
   Foundation format probing, persisted format-cache DTOs and load/save/delete
   helpers, and pixel-format/frame-rate normalization.
-- `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` owns supported
+- `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` owns supported
   4K X VID/PID recognition, selected-interface projection, and the shared
   native XU transport gate used by telemetry, audio controls, discovery, and
   NativeXuAudioProbe linked-source builds.

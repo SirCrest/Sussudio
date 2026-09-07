@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.NativeXu;
 
 namespace Sussudio.Services.Capture;
 

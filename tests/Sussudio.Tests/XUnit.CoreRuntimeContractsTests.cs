@@ -1186,11 +1186,11 @@ static partial class Program
             "NativeXuAudioProbe.csproj"));
         AssertEqual(
             1,
-            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs"),
+            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\NativeXu\KsExtensionUnitNative.cs"),
             "NativeXuAudioProbe links the consolidated Native XU bridge");
         AssertEqual(
             0,
-            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\Capture\NativeXu\NativeXuDeviceSupport.cs"),
+            CountCompileInclude(probeIncludes, @"..\..\Sussudio\Services\NativeXu\NativeXuDeviceSupport.cs"),
             "NativeXuDeviceSupport folded into the Native XU bridge linked source");
         AssertContains(rootText, "internal static class NativeXuDeviceSupport");
         AssertContains(rootText, "public static bool TryGetSupported4kXIds(");
@@ -1207,7 +1207,7 @@ static partial class Program
         {
             AssertEqual(
                 false,
-                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "NativeXu", removedFile)),
+                File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "NativeXu", removedFile)),
                 $"{removedFile} removed");
             AssertEqual(
                 0,
@@ -1328,14 +1328,14 @@ static partial class Program
     }
 
     private static string ReadKsExtensionUnitNativeFile(string fileName) =>
-        ReadRepoFile($"Sussudio/Services/Capture/NativeXu/{fileName}");
+        ReadRepoFile($"Sussudio/Services/NativeXu/{fileName}");
 
     internal static Task NativeXuAtCommandProvider_DeviceCommandsOwnPublicCommandSurface()
     {
         var providerRootText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs")
             .Replace("\r\n", "\n");
         var deviceCommandsText = providerRootText;
-        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
         var probeProjectText = ReadRepoFile("tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj");
 
