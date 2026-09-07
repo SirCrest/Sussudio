@@ -599,7 +599,7 @@ internal sealed class WindowCloseRequestController
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainWindow.RequestWindowClose: {ex.Message}");
+            System.Diagnostics.Trace.TraceWarning($"Cleaning up and rethrowing from MainWindow.RequestWindowClose: {ex.Message}");
             _context.LifecycleController.ResetRequestedAfterFailure();
             _context.LifecycleController.CompleteRequest(ex);
             throw;

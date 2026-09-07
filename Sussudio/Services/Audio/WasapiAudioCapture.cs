@@ -218,7 +218,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture.InitializeAsync: {ex.Message}");
+            System.Diagnostics.Trace.TraceWarning($"Cleaning up and rethrowing from WasapiAudioCapture.InitializeAsync: {ex.Message}");
             captureEvent?.Dispose();
             WasapiComInterop.ReleaseComObject(ref audioCaptureClient);
             WasapiComInterop.ReleaseComObject(ref audioClient3);
@@ -306,7 +306,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         catch (Exception ex)
         {
             recordingStartupReady?.TrySetException(ex);
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture.StartCapture: {ex.Message}");
+            System.Diagnostics.Trace.TraceWarning($"Cleaning up and rethrowing from WasapiAudioCapture.StartCapture: {ex.Message}");
             Interlocked.Exchange(ref _terminal, 1);
             Interlocked.Exchange(ref _initialized, 0);
             Interlocked.Exchange(ref _shutdownInitiated, 1);
