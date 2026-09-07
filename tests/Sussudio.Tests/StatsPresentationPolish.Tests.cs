@@ -132,7 +132,7 @@ public sealed class StatsPresentationPolishTests
         => Activator.CreateInstance(Require(name), nonPublic: true)!;
 
     private static object CreateSnapshot()
-        => RuntimeHelpers.GetUninitializedObject(Require("Sussudio.StatsSnapshot"));
+        => RuntimeHelpers.GetUninitializedObject(Require("Sussudio.ViewModels.StatsSnapshot"));
 
     private static object Build(string method, object snapshot)
         => Require("Sussudio.ViewModels.StatsPresentationBuilder").GetMethod(method)!.Invoke(null, new[] { snapshot })!;

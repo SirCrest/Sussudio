@@ -7,6 +7,12 @@ using System.Linq;
 using System.Text.Json;
 using Sussudio.Models;
 
+// Deliberate two-namespace file: AutomationCommandKind is declared in
+// Sussudio.Models while the catalog and manifest below are Sussudio.Tools, so the
+// wire enum and the numeric ID table that orders it cannot drift apart in separate
+// files. Splitting the enum into its own AutomationCommandKind.cs is blocked by
+// ArchitectureGuardrails ("AutomationCommandKind numeric ID table lives with
+// AutomationCommandCatalog"); change the guard first if you disagree.
 namespace Sussudio.Models
 {
     // Numeric automation command identifiers shared by the app, ssctl, MCP, and the

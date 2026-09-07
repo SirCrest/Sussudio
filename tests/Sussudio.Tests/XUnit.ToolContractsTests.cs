@@ -10782,7 +10782,7 @@ static partial class Program
     internal static async Task AutomationClient_MainSendsSharedEnvelopeForTypedRecordingCommand()
     {
         var assembly = LoadToolAssemblyIsolated(global::Program.AutomationClientAssemblyRelativePath);
-        var entryPoint = assembly.GetType("Program")
+        var entryPoint = assembly.GetType("Sussudio.Tools.AutomationClient.Program")
             ?? throw new InvalidOperationException("AutomationClient Program type not found.");
         var main = entryPoint.GetMethod("Main", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("AutomationClient Program.Main not found.");

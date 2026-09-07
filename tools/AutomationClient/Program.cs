@@ -3,6 +3,8 @@ using System.Globalization;
 using System.Text;
 using Sussudio.Tools;
 
+namespace Sussudio.Tools.AutomationClient;
+
 // Generic automation-pipe client used by scripts and ad hoc debugging. ssctl
 // is the friendlier CLI; this tool stays close to the raw command/payload
 // protocol for low-level contract tests.

@@ -3514,7 +3514,7 @@ public class StatsPresentationTests
     public void DockEncoderPresentation_FormatsCodecAndBitrate()
     {
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var snapshotType = RequireType("Sussudio.ViewModels.StatsSnapshot");
         var buildDockPresentation = builderType.GetMethod("BuildDockPresentation", ReflectionFlags.Static)
             ?? throw new InvalidOperationException("BuildDockPresentation was not found.");
 
@@ -3563,7 +3563,7 @@ public class StatsPresentationTests
     public void WindowPresentation_FormatsDetachedWindowText()
     {
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var snapshotType = RequireType("Sussudio.ViewModels.StatsSnapshot");
         var buildWindowPresentation = builderType.GetMethod("BuildStatsWindowPresentation", ReflectionFlags.Static)
             ?? throw new InvalidOperationException("BuildStatsWindowPresentation was not found.");
 
@@ -3630,7 +3630,7 @@ public class StatsPresentationTests
     public void VisualPresentation_TreatsExpectedDisplayRepeatAsGood()
     {
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var snapshotType = RequireType("Sussudio.ViewModels.StatsSnapshot");
         var buildDockPresentation = builderType.GetMethod("BuildDockPresentation", ReflectionFlags.Static)
             ?? throw new InvalidOperationException("BuildDockPresentation was not found.");
 

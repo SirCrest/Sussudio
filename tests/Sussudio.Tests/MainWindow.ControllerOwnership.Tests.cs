@@ -2469,7 +2469,7 @@ namespace Sussudio.Tests
             0);
         SetPropertyOrBackingField(health, "SourceTelemetryDetails", details);
 
-        var renderMetricsType = RequireType("Sussudio.StatsSnapshotRenderMetrics");
+        var renderMetricsType = RequireType("Sussudio.ViewModels.StatsSnapshotRenderMetrics");
         var renderMetrics = Activator.CreateInstance(
                 renderMetricsType,
                 20,
@@ -2490,11 +2490,11 @@ namespace Sussudio.Tests
                 new[] { 12.0d, 14.5d })
             ?? throw new InvalidOperationException("Failed to create StatsSnapshotRenderMetrics.");
 
-        var viewStateType = RequireType("Sussudio.StatsSnapshotViewState");
+        var viewStateType = RequireType("Sussudio.ViewModels.StatsSnapshotViewState");
         var viewState = Activator.CreateInstance(viewStateType, true, false)
             ?? throw new InvalidOperationException("Failed to create StatsSnapshotViewState.");
 
-        var builderType = RequireType("Sussudio.StatsSnapshotBuilder");
+        var builderType = RequireType("Sussudio.ViewModels.StatsSnapshotBuilder");
         var build = builderType.GetMethod("Build", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("StatsSnapshotBuilder.Build was not found.");
         return build.Invoke(null, new[] { health, renderMetrics, viewState })

@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using Sussudio.Models;
 using Sussudio.Services.Automation;
-using Sussudio.ViewModels;
 
-namespace Sussudio
+namespace Sussudio.ViewModels
 {
     public sealed record StatsSnapshot(
         int SourceCadenceSamples,

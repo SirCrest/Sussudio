@@ -191,7 +191,7 @@ public sealed class StatsUiSamplerTests
             var assembly = SussudioAssembly.Load();
             _samplerType = assembly.GetType("Sussudio.Controllers.StatsUiSampler", throwOnError: true)!;
             var healthType = assembly.GetType("Sussudio.Models.CaptureHealthSnapshot", throwOnError: true)!;
-            var snapshotType = assembly.GetType("Sussudio.StatsSnapshot", throwOnError: true)!;
+            var snapshotType = assembly.GetType("Sussudio.ViewModels.StatsSnapshot", throwOnError: true)!;
             var constructor = _samplerType.GetConstructors().Single();
             var parameters = constructor.GetParameters();
             _sampler = constructor.Invoke(new object[]

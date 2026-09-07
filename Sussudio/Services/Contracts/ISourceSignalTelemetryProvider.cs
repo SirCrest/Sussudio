@@ -5,6 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 
+// Deliberate namespace/folder exception: these DTOs are declared in Sussudio.Models
+// while living under Services/Contracts, so they stay beside the probe-linked
+// provider contract that is their only producer. Splitting them into
+// Sussudio/Models/Telemetry/SourceSignalTelemetrySnapshot.cs is blocked by
+// ArchitectureGuardrails ("source telemetry DTOs live with the probe-linked
+// telemetry provider contract"); change the guard first if you disagree.
 namespace Sussudio.Models
 {
     // Availability describes whether telemetry is usable, separate from the
