@@ -1913,7 +1913,11 @@ public partial class CaptureService
                 Logger.Log($"Unified video recording stop failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video recording stop failed: {ex.Message}");
+                    result = FinalizeResult.Failure(
+                        fallbackOutputPath,
+                        $"Unified video recording stop failed: {ex.Message}",
+                        null,
+                        "recording-unified-stop-failed");
                 }
             }
             finally
@@ -2026,7 +2030,11 @@ public partial class CaptureService
             Logger.Log($"Recording sink stop failed: {ex.Message}");
             if (result.Succeeded)
             {
-                result = FinalizeResult.Failure(fallbackOutputPath, $"Recording stop failed: {ex.Message}");
+                result = FinalizeResult.Failure(
+                    fallbackOutputPath,
+                    $"Recording stop failed: {ex.Message}",
+                    null,
+                    "recording-stop-failed");
             }
         }
         finally

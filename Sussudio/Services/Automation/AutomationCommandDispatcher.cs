@@ -988,7 +988,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 FailureKind = failureKind,
                 FileSizeBytes = File.Exists(exportResult.OutputPath) ? new FileInfo(exportResult.OutputPath).Length : 0L
             },
-            errorCode: exportResult.Succeeded ? null : "export-failed",
+            // Carry the producer-assigned code in the same top-level field every
+            // other command uses, instead of discarding the 17-value taxonomy
+            // Classify just produced. FailureKind keeps its category spelling.
+            errorCode: exportResult.Succeeded
+                ? null
+                : string.IsNullOrEmpty(exportResult.FailureCode) ? "export-failed" : exportResult.FailureCode,
             success: exportResult.Succeeded,
             status: exportResult.Succeeded ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error);
     }

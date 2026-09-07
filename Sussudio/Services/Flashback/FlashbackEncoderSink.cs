@@ -961,7 +961,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 CancelEncodingCts("stop_timeout");
                 CompletePendingForceRotateWithEmptyResult();
                 Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
-                return FinalizeResult.Failure(outputPath, "Stopped (flashback encode drain timed out)");
+                return FinalizeResult.Failure(
+                    outputPath,
+                    "Stopped (flashback encode drain timed out)",
+                    null,
+                    "recording-flashback-encode-drain-timeout");
             }
 
             try
@@ -977,7 +981,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (_encodingFailure != null)
         {
             Logger.Log($"FLASHBACK_SINK_STOP_FAIL type={_encodingFailure.GetType().Name} msg={_encodingFailure.Message}");
-            return FinalizeResult.Failure(outputPath, $"Stopped (flashback encode failed: {_encodingFailure.Message})");
+            return FinalizeResult.Failure(
+                outputPath,
+                $"Stopped (flashback encode failed: {_encodingFailure.Message})",
+                null,
+                "recording-flashback-encode-failed");
         }
 
         Logger.Log(

@@ -4057,7 +4057,8 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
-        AssertContains(captureServiceText, "FinalizeResult.Failure(fallbackOutputPath, $\"Unified video recording stop failed: {ex.Message}\");");
+        AssertContains(captureServiceText, "$\"Unified video recording stop failed: {ex.Message}\",");
+        AssertContains(captureServiceText, "\"recording-unified-stop-failed\");");
         AssertContains(captureServiceText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(captureServiceText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(captureServiceText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
