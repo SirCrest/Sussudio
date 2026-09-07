@@ -78,7 +78,6 @@ tools/RtkIoShim/*.lib
 tools/RtkIoShim/*.obj
 .desloppify/
 .desloppify.bak.*/
-.duat/
 presentmon*.json
 rtk_io_shim.log
 
