@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Compile Include="..\Common\**\*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\DiagnosticSession\**\*.cs" Link="DiagnosticSession\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

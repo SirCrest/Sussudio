@@ -44,7 +44,7 @@ mentions the moved files.
 
 | Area | Current owners / split families | Responsibility / details |
 |------|---------------------|----------------------|
-| Diagnostic sessions | `tools/Common/DiagnosticSessionRunner.cs`, `tools/Common/DiagnosticSessionRunContext.cs`, `tools/Common/DiagnosticSessionResult.cs` | Run phases, mutable session context, and result handoffs. See [tooling](#tooling-and-diagnostics) for scenario owners. |
+| Diagnostic sessions | `tools/DiagnosticSession/DiagnosticSessionRunner.cs`, `tools/DiagnosticSession/DiagnosticSessionRunContext.cs`, `tools/DiagnosticSession/DiagnosticSessionResult.cs` | Run phases, mutable session context, and result handoffs. See [tooling](#tooling-and-diagnostics) for scenario owners. |
 | Offline regression harness | `tests/Sussudio.Tests/HarnessCore.cs`, focused `tests/Sussudio.Tests/XUnit.*.cs` slices | Assembly-load smoke entry point and shared test helpers; xUnit slices and focused contract tests own regression execution. |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | Lifecycle transitions, resource ownership, recording/Flashback orchestration, and snapshots. See [capture](#capture-runtime) for the responsibility split. |
 | App shell | `Sussudio/App.xaml.cs` | Startup, single-instance activation, and recoverable/fatal exception policy. |
@@ -2719,7 +2719,7 @@ Primary owners:
   row/channel records, and the operator-facing verdict text.
 - Shared PresentMon option precedence and preview-present field extraction live
   in `tools/Common/PresentMon/PresentMonProbe.cs`.
-- `tools/Common/DiagnosticSessionResult.cs` owns diagnostic session run
+- `tools/DiagnosticSession/DiagnosticSessionResult.cs` owns diagnostic session run
   options, sampled snapshot DTOs, shared tool invocation defaults, the ssctl
   usage string, explicit scenario phase input handoff, mutable in-flight phase
   state, immutable scenario phase result handoff consumed by completion, and
@@ -2734,7 +2734,7 @@ Primary owners:
   formatting used by scenarios, result builders, result formatters, and
   validation policies. Keep `DiagnosticSessionRunner.Format(...)` as the
   stable compatibility wrapper.
-- `tools/Common/DiagnosticSessionScenarioCatalog.cs` owns scenario name
+- `tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs` owns scenario name
   constants, MCP-compatible scenario description text, the CLI help-list
   constant, the `Names` projection, normalization, entry lookup, requirement
   queries, export-verification lookup, scenario ordering, and core, Flashback
@@ -2749,7 +2749,7 @@ Primary owners:
   registration delegation, deferred Flashback recording-settings task
   registration, direct Flashback playback start command, optional PresentMon
   launch, correlation snapshot capture, and `presentmon.csv` output selection.
-- `tools/Common/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
+- `tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
   orchestration from analysis and artifact paths into the named projection set,
@@ -2783,7 +2783,7 @@ Primary owners:
   tolerated-warning reason selection, and health warning text emitted during
   result construction. Keep `summary.json` field shape stable in the builder
   family.
-- `tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
+- `tools/DiagnosticSession/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure:
   bootstrap, scenario normalization, scenario-plan selection, duration/sample
   clamping, session identity, output-directory creation, runner process
   metadata, actions, warnings, samples, terminal exception state, last-stage
@@ -2800,7 +2800,7 @@ Primary owners:
   automation response shape helpers for snapshot and verification envelopes,
   unknown-state warning, live-state handoff, run-context disposal, and
   scenario/completion context construction.
-- `tools/Common/DiagnosticSessionRunner.cs` owns the public diagnostic-session
+- `tools/DiagnosticSession/DiagnosticSessionRunner.cs` owns the public diagnostic-session
   compatibility surface, phase sequencing around context creation, initial
   snapshot capture, named scenario phase invocation and execution, cleanup,
   post-cleanup evidence/result sequence, result-build request mapping,
@@ -2823,7 +2823,7 @@ Primary owners:
   running checkpoint callbacks. Keep the `timeline` and `final-snapshot` stage
   names stable there. It also owns the per-output-directory exclusive lock that
   prevents concurrent diagnostic sessions from writing the same artifact set.
-- `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
+- `tools/DiagnosticSession/DiagnosticSessionFlashbackCycleScenarios.cs` owns Flashback
   restart/encoder/lifecycle and preview-cycle diagnostic task registration,
   priorities, task labels, started action strings, restart-cycle playback
   priming/restart/refill/export verification, encoder-cycle preset cycling,
@@ -2834,7 +2834,7 @@ Primary owners:
   Flashback/encoder validation, export-while-preview-off verification,
   playback-under-preview-stop validation, recording-backed readiness/counter
   validation, and restart frame-flow validation.
-- `tools/Common/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
+- `tools/DiagnosticSession/DiagnosticSessionMetrics.cs` owns read-only diagnostic-session
   metric DTOs and projections: source/preview/visual cadence aggregation,
   visual-cadence health classification, D3D metric aggregation, playback
   command-health deltas, shared counter-delta helpers, and Flashback diagnostic
@@ -2851,7 +2851,7 @@ Primary owners:
   segment count; keep those counters derived outside export-observed relevance
   gating. These helpers remain snapshot-only projections and must not send
   automation commands.
-- `tools/Common/DiagnosticSessionFlashbackSupport.cs` owns Flashback diagnostic
+- `tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs` owns Flashback diagnostic
   support helpers: rotated-export segment-count parsing, strict export
   verification payload construction, range-selection cleanup, the audio-toggle
   companion used by the range export audio-switch scenario, read-only
@@ -2862,7 +2862,7 @@ Primary owners:
   position convergence, parsed segment DTOs, and Flashback recording, playback,
   and preview scheduler warning policy over already projected metrics. Keep
   state-mutating scenario steps in the scenario owners.
-- `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
+- `tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs` owns Flashback
   export diagnostic scenario task registration plus concurrent export, rotated
   export, disable-during-export command coordination, export-during-playback
   choreography, selection-range export orchestration, rejected-export dispatch,
@@ -2870,7 +2870,7 @@ Primary owners:
   backend-stability assertions. Keep the scenario registration, command flows,
   verification, cleanup, and playback command-health checks together in this
   scenario-family owner.
-- `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs` owns deferred
+- `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs` owns deferred
   recording-settings preset state, during-recording preset mutation,
   restart/disable rejection-message policy, active-recording backend/file/
   counter stability checks, post-stop preset verification, encoder-frame
@@ -2878,13 +2878,13 @@ Primary owners:
   completed-segment playback scenario: task registration, target acquisition,
   boundary-crossing playback, go-live restore, snapshot/FPS/command-health
   validation, and recording-assisted segment rotation fallback.
-- `tools/Common/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
+- `tools/DiagnosticSession/DiagnosticSessionFlashbackStressScenario.cs` owns Flashback
   stress thresholds, stress/scrub-stress task registration, main stress and
   scrub-stress command choreography, stress export verification, warmed-playback
   frame/FPS/1% low checks, audio-master fallback delta capture/classification,
   shared command-drain polling, and command-health/latency/final-state warning
   policy.
-- `tools/Common/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
+- `tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs` owns diagnostic-session health
   observation, severity, Flashback warmup filtering, source/preview/Flashback
   health-observation classifiers, sparse-cadence tolerances, and tolerated
   Flashback warning classification.
@@ -2916,7 +2916,7 @@ Primary owners:
   interval, frame-budget, and tick-age display helpers.
 - Keep new scenario booleans and grouped derivations with
   `DiagnosticSessionScenarioPlan` in
-  `tools/Common/DiagnosticSessionScenarioCatalog.cs` instead of adding string
+  `tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs` instead of adding string
   comparisons in `DiagnosticSessionRunner`.
 - `tools/Common/PresentMon/PresentMonProbe.cs` owns the complete PresentMon
   probe: option/result, summary, swap-chain, app-correlation summary, and metric
@@ -2978,11 +2978,11 @@ Invariants:
 - Preserve pipe error-code semantics when refactoring diagnostic-session retry:
   `pipe-access-denied` is permanent, while connect failed/timeout are retried.
 - Add new diagnostic-session scenario names and requirement/query helpers in
-  `tools/Common/DiagnosticSessionScenarioCatalog.cs` only when a new entry shape
+  `tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs` only when a new entry shape
   needs them, plus export verification metadata and plan metadata in
-  `tools/Common/DiagnosticSessionScenarioCatalog.cs` before wiring scenario
+  `tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs` before wiring scenario
   behavior into `DiagnosticSessionRunner`. Preserve the final order there.
 - Keep diagnostic-session grouped policy derivation in
   `DiagnosticSessionScenarioPlan` inside
-  `tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner should consume
+  `tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs`; the runner should consume
   named properties instead of comparing normalized scenario strings directly.

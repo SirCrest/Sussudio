@@ -44,9 +44,9 @@ owner, fold it back into that owner and update the source-shape tests and
 
 1. Keep diagnostic-session runner internals aligned by owner.
 
-   `tools/Common/DiagnosticSessionRunner.cs` owns the public compatibility
+   `tools/DiagnosticSession/DiagnosticSessionRunner.cs` owns the public compatibility
    surface plus the visible run phase sequence, while
-   `tools/Common/DiagnosticSessionRunContext.cs` owns the
+   `tools/DiagnosticSession/DiagnosticSessionRunContext.cs` owns the
    cohesive mutable per-run context: snapshot, live-state, disposal, and
    explicit scenario/completion context construction.
    `DiagnosticSessionRunner.cs` owns the
@@ -650,7 +650,7 @@ Changed ownership:
 Diagnostic session scenario names, CLI help text, MCP-compatible description
 text, normalization, setup requirements, export verification metadata, ordering,
 and scenario-level plan lookup now live together in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner still owns
+`tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs`; the runner still owns
 execution flow and summary writing.
 
 Automation diagnostics now have named partial owners instead of one large hub
@@ -2964,7 +2964,7 @@ pure truncation text policy.
 `MainWindow.xaml.cs` is the XAML-facing adapter used by binding setup,
 property changes, and button events.
 
-Diagnostic session DTOs live in `tools/Common/DiagnosticSessionResult.cs`,
+Diagnostic session DTOs live in `tools/DiagnosticSession/DiagnosticSessionResult.cs`,
 which owns run options, sampled snapshot DTOs, shared tool invocation defaults,
 the ssctl diagnostic-session usage string, explicit scenario phase input
 handoff, immutable completion handoff, mutable in-flight phase state, and the
@@ -3010,7 +3010,7 @@ cadence, preview scheduler, preview D3D, preview visual cadence, process,
 recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in
-`tools/Common/DiagnosticSessionResult.cs` beside the public result DTO model.
+`tools/DiagnosticSession/DiagnosticSessionResult.cs` beside the public result DTO model.
 The formatter owns the public `Format(...)` flow, section ordering, and all
 rendered rows: overview, capture mode, recording verification, PresentMon,
 Flashback playback/recording/export, preview scheduler, preview D3D, visual
@@ -3020,7 +3020,7 @@ The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
 and MCP callers do not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs`. The root owns result phase
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission plus summary-write failure repair while the runner keeps the
 phase sequence. It also owns final-result orchestration from analysis and
@@ -3071,12 +3071,12 @@ and source-telemetry DTO projection values live in
 `DiagnosticSessionResultBuilder.cs`.
 
 Diagnostic-session result artifact setup now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs` beside summary writing. It owns
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` beside summary writing. It owns
 result artifact path construction, pre-summary sample, frame-ledger, and
 timeline writes while the builder keeps summary field construction.
 
 Shared diagnostic-session optional text formatting now lives in
-`tools/Common/DiagnosticSessionResult.cs` alongside the human-readable result
+`tools/DiagnosticSession/DiagnosticSessionResult.cs` alongside the human-readable result
 text owner. Keep cross-cutting `FormatOptional(...)` handling there instead of
 reintroducing private duplicates in scenario, result builder, formatter, or
 validation policy files.
@@ -3125,7 +3125,7 @@ Shared option precedence and preview-present field extraction belong to
 `tools/Common/PresentMon/PresentMonProbe.cs`.
 
 Diagnostic-session command sending now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable run
 infrastructure that constructs, owns, and disposes the channel. Scenario setup
 and cleanup pass the channel itself for lifecycle mutations so
 `SetFlashbackEnabled`, `SetPreviewEnabled`, `SetRecordingEnabled`, and
@@ -3133,23 +3133,23 @@ and cleanup pass the channel itself for lifecycle mutations so
 keeps phase orchestration and its public string delegate compatibility.
 
 Diagnostic-session JSON artifact helpers now live in
-`tools/Common/DiagnosticSessionResultBuilder.cs` beside pre-summary artifact
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` beside pre-summary artifact
 path construction and writes. The runner still owns the session lifecycle,
 while JSON object creation, best-effort file writes, and frame-ledger trace
 construction stay in the result-builder helper section. Snapshot / verification
 response-shape extraction now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable run
 infrastructure that consumes initial snapshots and hands response helpers to
 scenario files.
 
 Diagnostic-session initial snapshot capture now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable initial
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable initial
 snapshot fields. It owns the baseline snapshot capture through
 `AutomationCommandKind.GetSnapshot`, the unknown-state warning, and
 initial-snapshot exception recording while the runner keeps phase ordering.
 
 Diagnostic-session run context now lives in
-`tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
 owns the cohesive mutable per-run context: bootstrap, actions, warnings,
 samples, terminal exception state, last-stage tracking, best-effort artifact
 write failure recording, command channel, scenario cancellation source, initial
@@ -3158,32 +3158,32 @@ scenario/completion context construction with the explicit callback/token
 handoffs consumed by scenario and completion phases.
 
 Diagnostic-session live breadcrumbs now live in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run context
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable run context
 that owns their lifecycle. It owns the `session-live.json` path, payload shape,
 health and warning projection, terminal override mapping, and sampling
 live-state write throttle.
 
 Diagnostic-session run bootstrap now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable per-run
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable per-run
 context that consumes it. It owns scenario normalization, scenario-plan
 selection, duration/sample clamping, session identity, output-directory
 creation, and runner process metadata while the runner keeps command-channel
 lifetime and phase ordering.
 
 Diagnostic-session output locking now lives in
-`tools/Common/DiagnosticSessionRunner.cs` beside the phase sequence that
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the phase sequence that
 acquires it. It owns the `.sussudio-diag.lock` file, exclusive
 `FileShare.None` open, delete-on-close cleanup, and concurrent-output-directory
 failure message.
 
 Diagnostic-session background task tracking now lives in
-`tools/Common/DiagnosticSessionRunner.cs`. It owns scenario task registration,
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs`. It owns scenario task registration,
 deterministic await order, normal registered scenario completion, PresentMon and
 deferred Flashback recording-settings task tracking, interrupted-session
 observation, warning collection, and the drain handoff record.
 
 Diagnostic-session scenario activation now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs` beside the scenario metadata
+`tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs` beside the scenario metadata
 that drives setup requirements. It owns initial setup ordering and result
 handoff, Flashback enable/disable for scenario requirements, preview start and
 video-flow wait, recording start and Flashback recording-readiness wait, public
@@ -3197,7 +3197,7 @@ mutations should use `DiagnosticSessionCommandChannel` typed
 `AutomationCommandKind` sends.
 
 Diagnostic-session post-run actions now live in
-`tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the completion phase that
 orders them. The runner owns the public cleanup flow and ordering, recording
 stop for verification, Flashback playback go-live restore, preview stop,
 Flashback enable-state restore, typed automation command sends, cleanup result
@@ -3208,12 +3208,12 @@ Flashback recording validation. Result analysis validation owns the post-cleanup
 warning validator.
 
 Diagnostic-session post-run snapshot fetches now live in
-`tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the completion phase that
 orders them. It owns performance timeline artifact input and final health
 snapshot refresh.
 
 Diagnostic-session scenario metadata now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs`. The catalog owns
+`tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs`. The catalog owns
 normalization and entry lookup, scenario names, HelpList/Description text,
 the `Names` projection, requirement queries, export-verification lookup, and
 scenario ordering by composing focused entry groups for core, Flashback
@@ -3225,7 +3225,7 @@ including the preview-cycle grouped predicate, so the runner does not grow
 direct scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns warnings
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs`. It owns warnings
 for preview, Flashback, and playback state that remain active after the runner
 attempts cleanup.
 
@@ -3241,12 +3241,12 @@ diagnostics. Startup only delegates selected cycle, lifecycle, and preview-cycle
 scenario registration.
 
 Diagnostic-session sampling now lives in
-`tools/Common/DiagnosticSessionRunner.cs` beside the scenario phase sequence
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the scenario phase sequence
 that invokes it. Keep the sample append before the optional checkpoint callback
 so checkpoint failures cannot orphan an unseen sample.
 
 Diagnostic-session metric projection now lives in
-`tools/Common/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
+`tools/DiagnosticSession/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
 projections: source, preview, and visual cadence aggregation, visual-cadence
 health classification, D3D metric aggregation, playback command-health deltas,
 shared counter-delta helpers, and Flashback recording/export metrics,
@@ -3259,7 +3259,7 @@ derived outside export-observed relevance gating. These helpers remain
 snapshot-only projections and must not send automation commands.
 
 Diagnostic-session Flashback support helpers now live in
-`tools/Common/DiagnosticSessionFlashbackSupport.cs`, which owns strict export
+`tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`, which owns strict export
 verification payload construction, rotated-export segment-count parsing,
 range-selection cleanup, read-only segment parsing/waits/playback headroom
 polling, and recording/playback/preview warning validation. Keep scenario
@@ -3288,13 +3288,13 @@ policy.
 
 Diagnostic-session Flashback rejected-export scenarios now live with the
 Flashback export scenario owner in
-`tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`. The export scenario
+`tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs`. The export scenario
 owner covers selected rejected-export dispatch, inactive-buffer failure-kind and
 last-result assertions, and active-Flashback-recording failure-kind and
 backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral and segment playback
-now live in `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs`, which
+now live in `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs`, which
 owns deferred preset state, during-recording command choreography,
 restart/disable rejection policy, active recording backend/file/counter
 stability checks, post-stop preset verification, encoder-frame checks,
@@ -3313,7 +3313,7 @@ playback-boundary headroom polling while the runner keeps scenario command
 sequencing.
 
 Diagnostic-session Flashback snapshot waits are also a support section of
-`tools/Common/DiagnosticSessionFlashbackSupport.cs`. The
+`tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`. The
 `DiagnosticSessionFlashbackWaits` helper owns read-only polling loops for
 preview-active state, Flashback-active state, Flashback-backed recording
 readiness, stress buffer readiness, playback state, boundary crossing,
@@ -3321,7 +3321,7 @@ warmed-playback frame-count/FPS, and position convergence while the runner
 keeps scenario command sequencing.
 
 Diagnostic-session Flashback metrics live in
-`tools/Common/DiagnosticSessionMetrics.cs`, including the
+`tools/DiagnosticSession/DiagnosticSessionMetrics.cs`, including the
 `FlashbackRecordingSessionMetrics`, `FlashbackExportSessionMetrics`,
 `FlashbackPlaybackSessionMetrics`, and `FlashbackPlaybackResultMetrics` handoff
 shapes; recording metric projection; export-relevance and snapshot max
@@ -3334,7 +3334,7 @@ and stage end-snapshot reads. Preserve the final `init` DTO construction unless
 a broader construction pattern replaces it deliberately.
 
 Diagnostic-session Flashback stress orchestration now lives in
-`tools/Common/DiagnosticSessionFlashbackStressScenario.cs`, which owns stress
+`tools/DiagnosticSession/DiagnosticSessionFlashbackStressScenario.cs`, which owns stress
 thresholds, stress/scrub-stress task registration, main stress and scrub-stress
 command choreography, stress export verification, warmed-playback frame/FPS/1%
 low checks, audio-master fallback delta capture/classification, shared
@@ -3342,12 +3342,12 @@ live/empty-queue drain polling, and command-health/latency/final-state warning
 policy while the runner only starts the scenario tasks.
 
 Diagnostic-session Flashback validation is also a section of
-`tools/Common/DiagnosticSessionFlashbackSupport.cs`. It owns recording,
+`tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`. It owns recording,
 playback, and preview scheduler warning thresholds over already projected
 metrics while the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
-`tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
+`tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
 observation, Flashback warmup filtering, source/preview/Flashback
 health-observation classifiers, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning emission.

@@ -8868,8 +8868,8 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSupportSource()
                 + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionRunContext.cs")
                 + "\n" + ReadDiagnosticSessionMetricsSource()
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadDiagnosticSessionScenarioCatalogSource(),
@@ -8888,12 +8888,12 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioCatalogSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs");
+        return ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackSupportSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs");
+        return ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs");
     }
 
     private static string ReadNormalizedRepoFile(string path)

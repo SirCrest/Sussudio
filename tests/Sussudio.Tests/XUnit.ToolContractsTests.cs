@@ -2520,7 +2520,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionResultBuilderAnalysisSource()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         return ExtractTextBetween(
             builderText,
@@ -2532,7 +2532,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var modelText = ReadDiagnosticSessionModelsSource();
-        var resultText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs");
+        var resultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResult.cs");
 
         AssertContains(modelText, "public sealed class DiagnosticSessionOptions");
         AssertContains(modelText, "public sealed class DiagnosticSessionResult");
@@ -2591,16 +2591,16 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
-        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs")
+        var formatterRootText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResult.cs")
             .Replace("\r\n", "\n");
-        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
+        var validationText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(formatterRootText, "internal static class DiagnosticSessionOptionalTextFormatter");
         AssertContains(formatterRootText, "internal static string FormatOptional(string value)");
         AssertContains(formatterRootText, "string.IsNullOrWhiteSpace(value) ? \"none\" : value");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionOptionalTextFormatter.cs")), "Optional diagnostic text formatting stays folded into DiagnosticSessionResult.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultFormatter.cs")), "Diagnostic session result text formatting stays folded into DiagnosticSessionResult.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionOptionalTextFormatter.cs")), "Optional diagnostic text formatting stays folded into DiagnosticSessionResult.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultFormatter.cs")), "Diagnostic session result text formatting stays folded into DiagnosticSessionResult.cs");
         AssertContains(builderText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(formatterText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
         AssertContains(validationText, "using static Sussudio.Tools.DiagnosticSessionOptionalTextFormatter;");
@@ -2623,8 +2623,8 @@ static partial class Program
         AssertContains(responseJsonText, "internal static class DiagnosticSessionAutomationResponseJson");
         AssertContains(responseJsonText, "internal static bool TryGetSnapshot(");
         AssertContains(responseJsonText, "internal static bool TryGetVerification(");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultArtifacts.cs")), "Result artifact helpers stay folded into DiagnosticSessionResultBuilder.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionAutomationResponseJson.cs")), "Automation response JSON helpers stay folded into DiagnosticSessionRunContext.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultArtifacts.cs")), "Result artifact helpers stay folded into DiagnosticSessionResultBuilder.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionAutomationResponseJson.cs")), "Automation response JSON helpers stay folded into DiagnosticSessionRunContext.cs");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionAutomationResponseJson;");
         AssertContains(initialSnapshotText, "using static Sussudio.Tools.DiagnosticSessionJsonArtifacts;");
         AssertDoesNotContain(builderText, "TryGetSnapshot(");
@@ -2687,7 +2687,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var formatterText = ReadDiagnosticSessionResultFormatterSource();
-        var formatterRootText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs")
+        var formatterRootText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResult.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(formatterRootText, "public static class DiagnosticSessionResultFormatter");
@@ -2768,7 +2768,7 @@ static partial class Program
         AssertContains(formatterRootText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertContains(formatterRootText, "VisualCadenceLongestRepeatRunAtEnd");
         AssertContains(runnerText, "return DiagnosticSessionResultFormatter.Format(result);");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultFormatter.cs")), "DiagnosticSessionResultFormatter lives with the diagnostic result model surface");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultFormatter.cs")), "DiagnosticSessionResultFormatter lives with the diagnostic result model surface");
         AssertDoesNotContain(runnerText, "== Diagnostic Session:");
         AssertDoesNotContain(runnerText, "\"Flashback Playback Perf: \"");
         AssertDoesNotContain(runnerText, "private static string FormatFrameRate(");
@@ -2927,14 +2927,14 @@ static partial class Program
 
     private static void AssertDiagnosticSessionResultBuilderPreviewProjectionOwnership()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var previewResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var previewD3DResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var previewD3DResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
 
@@ -2988,7 +2988,7 @@ static partial class Program
         AssertContains(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
         AssertContains(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
-        AssertContains(ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs"), "RunFlashbackEncoderCycle");
+        AssertContains(ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs"), "RunFlashbackEncoderCycle");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
         AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
@@ -3038,13 +3038,13 @@ static partial class Program
         AssertContains(healthText, "present/display warning tolerated for strict artifact verification scenario");
         AssertContains(healthText, "present/display warning tolerated for flashback control scenario");
         AssertContains(
-            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs"),
             "diagnostic health degraded during session: health=Warning stage=present_display");
         AssertContains(
-            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs"),
             "diagnostic health degraded during session: health=Warning stage=audio");
         AssertContains(
-            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs"),
             "diagnostic health degraded during session: health=Warning stage=source_capture");
         AssertContains(healthText, "scenarioPlan.ToleratesStrictArtifactDiagnosticHealthWarning");
         AssertContains(healthText, "scenarioPlan.ToleratesControlOnlyDiagnosticHealthWarning");
@@ -3055,7 +3055,7 @@ static partial class Program
         AssertContains(overviewText, "IsVisuallyVerifiedPreviewWarning(request, analysis)) &&");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
             "diagnostic health verdict helpers folded into analysis owner");
         AssertDoesNotContain(analysisText, "diagnostic health {toleratedReason}:");
 
@@ -3096,7 +3096,7 @@ static partial class Program
     private static void AssertDiagnosticSessionResultBuilderSummaryArtifactHandoffOwnership()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var runExecutionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+        var runExecutionText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var completionText = runExecutionText;
         var builderText = ReadDiagnosticSessionResultBuilderSource();
@@ -3125,12 +3125,12 @@ static partial class Program
 
     private static void AssertDiagnosticSessionResultBuilderCoreOwnership()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var resultBuildRequestText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var resultBuildRequestText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var diagnosticHealthText = analysisText;
@@ -3179,33 +3179,33 @@ static partial class Program
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
         AssertContains(analysisText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions));");
         AssertContains(
-            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs"),
             "\"flashback preview: scheduler deadline drops increased delta=\"");
         AssertContains(
-            ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs"),
+            ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs"),
             "\"flashback preview: present/display pressure \"");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Analysis.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Analysis.cs")),
             "diagnostic-session analysis folded into DiagnosticSessionResultBuilder.cs");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.DiagnosticHealth.cs")),
             "diagnostic health verdict helpers folded into DiagnosticSessionResultBuilder.cs");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
             "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Flattening.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Flattening.cs")),
             "final result DTO flattening folded into DiagnosticSessionResultBuilder.cs");
         AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertContains(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
         AssertContains(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.Projections.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Projections.cs")),
             "result projection set folded into DiagnosticSessionResultBuilder.cs");
         AssertContains(builderText, "return new DiagnosticSessionResult\n        {");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
@@ -3214,7 +3214,7 @@ static partial class Program
     private static void AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership()
     {
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
-        var previewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var previewResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(analysisText, "previewScheduler,");
@@ -3254,21 +3254,21 @@ static partial class Program
         AssertDoesNotContain(analysisText, "var previewSchedulerMaxScheduleLateMsObserved = samples");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.PreviewScheduler.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.PreviewScheduler.cs")),
             "preview scheduler analysis folded into DiagnosticSessionResultBuilder.cs");
     }
 
     private static void AssertDiagnosticSessionResultBuilderOverviewAndCaptureProjectionOwnership()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
-        var overviewResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var overviewResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var captureResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var captureResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
@@ -3318,15 +3318,15 @@ static partial class Program
 
     private static void AssertDiagnosticSessionResultBuilderFlashbackProjectionOwnership()
     {
-        var builderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var flashbackPlaybackResultText = projectionSetText;
-        var flashbackRecordingResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var flashbackRecordingResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportResultText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var flashbackExportResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(builderText, "return FlattenResultProjectionSet(");
@@ -3404,7 +3404,7 @@ static partial class Program
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
         AssertEqual(
             false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
+            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
             "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics");
         AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics");
@@ -6141,22 +6141,22 @@ static partial class Program
     // Diagnostic-session backing methods live with the tool xUnit wrappers.
     private static string ReadDiagnosticSessionBackgroundTasksSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunner.cs");
+            "tools/DiagnosticSession/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionCleanupActionsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunner.cs");
+            "tools/DiagnosticSession/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionScenarioSetupSource()
         => ReadDiagnosticSessionScenarioStartupSource();
 
     private static string ReadDiagnosticSessionFlashbackCycleScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackCycleScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackExportScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackExportScenarios.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs");
 
     private static string ReadDiagnosticSessionFlashbackLifecycleScenariosSource()
         => ReadDiagnosticSessionFlashbackCycleScenariosSource();
@@ -6169,59 +6169,59 @@ static partial class Program
 
     private static string ReadDiagnosticSessionFlashbackRecordingSettingsScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs");
 
     private static string ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs");
 
     private static string ReadDiagnosticSessionFlashbackSegmentsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackSupport.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs");
 
     private static string ReadDiagnosticSessionFlashbackStressScenarioSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackStressScenario.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackStressScenario.cs");
 
     private static string ReadDiagnosticSessionFlashbackWaitsSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionFlashbackSupport.cs");
+            "tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs");
 
     private static string ReadDiagnosticSessionMetricsSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionMetrics.cs");
+        => ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionMetrics.cs");
 
     private static string ReadDiagnosticSessionModelsSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionResult.cs");
+        => ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionResult.cs");
 
     private static string ReadDiagnosticSessionResultBuilderSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionResultBuilder.cs");
+            "tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs");
 
     private static string ReadDiagnosticSessionResultFormatterSource()
         => ReadDiagnosticSessionModelsSource();
 
     private static string ReadDiagnosticSessionRunnerSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunner.cs",
-            "tools/Common/DiagnosticSessionRunContext.cs");
+            "tools/DiagnosticSession/DiagnosticSessionRunner.cs",
+            "tools/DiagnosticSession/DiagnosticSessionRunContext.cs");
 
     private static string ReadDiagnosticSessionRunExecutionRootSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunner.cs");
+        => ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionRunContextSource()
-        => ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs");
+        => ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionRunContext.cs");
 
     private static string ReadDiagnosticSessionRunContextRootSource()
         => ReadDiagnosticSessionRunContextSource();
 
     private static string ReadDiagnosticSessionRunExecutionScenarioSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunner.cs",
-            "tools/Common/DiagnosticSessionResult.cs");
+            "tools/DiagnosticSession/DiagnosticSessionRunner.cs",
+            "tools/DiagnosticSession/DiagnosticSessionResult.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionRunner.cs");
+            "tools/DiagnosticSession/DiagnosticSessionRunner.cs");
 
     private static string ReadDiagnosticSessionRunExecutionCompletionRootSource()
         => ReadDiagnosticSessionRunExecutionRootSource();
@@ -6231,7 +6231,7 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioStartupSource()
         => ReadNormalizedSourceFiles(
-            "tools/Common/DiagnosticSessionScenarioCatalog.cs");
+            "tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs");
 
     private static string ReadNormalizedSourceFiles(params string[] paths)
     {
@@ -6248,7 +6248,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var policyText = ReadRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
+        var policyText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(policyText, "internal static class DiagnosticSessionHealthPolicy");
@@ -6274,7 +6274,7 @@ static partial class Program
         AssertDoesNotContain(runnerText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionHealthTolerances.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionHealthTolerances.cs")),
             "diagnostic-session health tolerance classifiers folded into the health policy owner");
 
         return Task.CompletedTask;
@@ -6284,7 +6284,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var bootstrapText = ReadDiagnosticSessionRunContextSource();
-        var catalogText = ReadRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs")
+        var catalogText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(catalogText, "internal static class DiagnosticSessionScenarioCatalog");
@@ -6319,7 +6319,7 @@ static partial class Program
         AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runCombined: true)");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioCatalog.Entries.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioCatalog.Entries.cs")),
             "Diagnostic session scenario entries folded into the catalog owner");
         AssertContains(catalogText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
         AssertContains(catalogText, "internal static DiagnosticSessionScenarioPlan Create(");
@@ -6341,7 +6341,7 @@ static partial class Program
         AssertContains(catalogText, "RunFlashbackSegmentPlayback");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioPlan.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPlan.cs")),
             "Diagnostic session scenario plan flags live with the catalog that constructs every plan");
         AssertContains(bootstrapText, "var scenarioPlan = DiagnosticSessionScenarioPlan.From(scenario);");
         AssertContains(runnerText, "ScenarioPlan = RunBootstrap.ScenarioPlan;");
@@ -6393,7 +6393,7 @@ static partial class Program
         AssertDoesNotContain(setupText, "sendAsync(\"SetRecordingEnabled\"");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioActivation.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioActivation.cs")),
             "diagnostic-session scenario setup/startup activation folded into the scenario catalog owner");
 
         return Task.CompletedTask;
@@ -6493,7 +6493,7 @@ static partial class Program
         AssertDoesNotContain(runnerText, "async Task ObserveTaskAfterFaultAsync(Task? task, string stage)");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionBackgroundTasks.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionBackgroundTasks.cs")),
             "diagnostic-session background task drain folded into DiagnosticSessionRunner.cs");
 
         return Task.CompletedTask;
@@ -6533,7 +6533,7 @@ static partial class Program
         AssertOccursBefore(scenarioText, "samples.Add(new DiagnosticSessionSample", "await sampleCheckpointAsync().ConfigureAwait(false);");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioPhaseRunner.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPhaseRunner.cs")),
             "diagnostic-session scenario phase runner folded into DiagnosticSessionRunner.cs");
 
         return Task.CompletedTask;
@@ -6545,7 +6545,7 @@ static partial class Program
         var runAsyncText = ExtractMemberCode(runnerText, "RunAsync");
         var builderText = ReadDiagnosticSessionResultBuilderSource();
         var cleanupActionsText = ReadDiagnosticSessionCleanupActionsSource();
-        var cleanupText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var cleanupText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(cleanupActionsText, "internal static class DiagnosticSessionCleanupActions");
@@ -6653,7 +6653,7 @@ static partial class Program
         AssertContains(runnerText, "postRunSnapshots.Timeline");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionPostRunSnapshots.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionPostRunSnapshots.cs")),
             "post-run timeline and final-snapshot capture lives with the runner completion phase");
 
         return Task.CompletedTask;
@@ -6698,7 +6698,7 @@ static partial class Program
 
     internal static Task DiagnosticSessionRunner_OwnsCompatibilitySurface()
     {
-        var runnerText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+        var runnerText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         var executionText = ReadDiagnosticSessionRunExecutionRootSource();
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
@@ -6775,7 +6775,7 @@ static partial class Program
         AssertContains(channelText, "SendCommandWithConnectRetryAsync(");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionPipeRetryPolicy.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionPipeRetryPolicy.cs")),
             "diagnostic-session pipe retry policy lives with the run-context command-channel transport owner");
         AssertDoesNotContain(executionText, "using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;");
         AssertDoesNotContain(executionText, "private static bool IsSyntheticPipeConnectFailure(");
@@ -6821,7 +6821,7 @@ static partial class Program
         AssertDoesNotContain(channelText, "\"GetSnapshot\"");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionCommandChannel.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionCommandChannel.cs")),
             "diagnostic-session command channel lives with DiagnosticSessionRunContext.cs");
         AssertContains(contextText, "CommandChannel = new DiagnosticSessionCommandChannel(");
         AssertContains(executionText, "context.CommandChannel,");
@@ -6842,7 +6842,7 @@ static partial class Program
         var contextText = ReadDiagnosticSessionRunContextSource();
         var scenarioText = ReadDiagnosticSessionRunExecutionScenarioSource();
         var phaseRunnerText = ReadDiagnosticSessionRunExecutionRootSource();
-        var phaseModelsText = ReadRepoFile("tools/Common/DiagnosticSessionResult.cs")
+        var phaseModelsText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResult.cs")
             .Replace("\r\n", "\n");
         var completionText = phaseRunnerText;
         var backgroundTasksText = ReadDiagnosticSessionBackgroundTasksSource();
@@ -6894,11 +6894,11 @@ static partial class Program
         AssertDoesNotContain(phaseRunnerText, "backgroundTasks.AwaitScenarioTasksAsync()");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionScenarioPhaseRunner.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPhaseRunner.cs")),
             "diagnostic-session scenario phase runner folded into DiagnosticSessionRunner.cs");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionBackgroundTasks.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionBackgroundTasks.cs")),
             "diagnostic-session background task drain folded into DiagnosticSessionRunner.cs");
         AssertOccursBefore(phaseRunnerText, "DiagnosticSessionScenarioSetup.RunAsync(", "DiagnosticSessionScenarioStartup.StartAsync(");
         AssertOccursBefore(phaseRunnerText, "DiagnosticSessionScenarioStartup.StartAsync(", "RunSamplingAndCompleteAsync(context, backgroundTasks, scenarioPhase)");
@@ -6923,7 +6923,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var recordingVerificationText = recordingChecksText;
         var postRunText = completionRootText;
-        var resultBuilderText = ReadRepoFile("tools/Common/DiagnosticSessionResultBuilder.cs")
+        var resultBuilderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md")
             .Replace("\r\n", "\n");
@@ -6985,7 +6985,7 @@ static partial class Program
         AssertContains(contextText, "internal void RecordTerminalException(Exception ex, string stage)");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionRunState.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionRunState.cs")),
             "run state stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var lastStage = \"initializing\";");
         AssertDoesNotContain(runnerText, "Exception? terminalException = null;");
@@ -7016,7 +7016,7 @@ static partial class Program
         AssertContains(contextText, "_liveStateWriter.WriteSamplingLiveStateBestEffortAsync(");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionLiveStateWriter.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionLiveStateWriter.cs")),
             "live-state writer stays folded into DiagnosticSessionRunContext.cs");
         AssertDoesNotContain(runnerText, "var livePath = runState.LivePath;");
 
@@ -7064,7 +7064,7 @@ static partial class Program
         AssertDoesNotContain(executionText, "new DiagnosticSessionCommandChannel(");
         AssertDoesNotContain(executionText, "new DiagnosticSessionLiveStateWriter(");
 
-        AssertContains(agentMapText, "`tools/Common/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure");
+        AssertContains(agentMapText, "`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` owns diagnostic-session core mutable run infrastructure");
         AssertContains(agentMapText, "initial snapshot state, baseline snapshot capture");
         AssertContains(agentMapText, "live-state handoff, run-context disposal");
         AssertContains(agentMapText, "scenario/completion context construction");
@@ -8098,7 +8098,7 @@ static partial class Program
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var builderText = ReadDiagnosticSessionResultBuilderSource();
-        var validationText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
+        var validationText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(validationText, "internal static class DiagnosticSessionFlashbackValidation");
@@ -8343,7 +8343,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var startupText = ReadDiagnosticSessionScenarioStartupSource();
         var scenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
-        var rootText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
+        var rootText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs")
             .Replace("\r\n", "\n");
         var disableDuringExportText = rootText;
         var playbackText = rootText;
@@ -8439,7 +8439,7 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var exportScenariosText = ReadDiagnosticSessionFlashbackExportScenariosSource();
         var stressText = ReadDiagnosticSessionFlashbackStressScenarioSource();
-        var exportHelpersText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs")
+        var exportHelpersText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(exportHelpersText, "internal static class DiagnosticSessionFlashbackExports");
@@ -8600,15 +8600,15 @@ static partial class Program
         AssertContains(cyclesText, "15,\n                \"flashback-recording-preview-cycle-task\",");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackPreviewCycleScenarios.Playback.cs")),
             "Flashback playback preview-cycle scenario stays with the preview-cycle scenario family");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackPreviewCycleScenarios.Recording.cs")),
             "Flashback recording preview-cycle scenario stays with the preview-cycle scenario family");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackPreviewCycleScenarios.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackPreviewCycleScenarios.cs")),
             "Flashback preview-cycle scenario family folded into the Flashback cycle scenario owner");
         AssertContains(startupText, "DiagnosticSessionFlashbackPreviewCycleScenarios.RegisterSelectedFlashbackPreviewCycleScenarioTasks(");
         AssertDoesNotContain(startupText, "using static Sussudio.Tools.DiagnosticSessionFlashbackPreviewCycleScenarios;");
@@ -8626,7 +8626,7 @@ static partial class Program
     internal static Task DiagnosticSessionFlashbackRejectedExports_OwnRejectionFlows()
     {
         var runnerText = ReadDiagnosticSessionRunnerSource();
-        var rejectedExportsText = ReadRepoFile("tools/Common/DiagnosticSessionFlashbackExportScenarios.cs")
+        var rejectedExportsText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rejectedExportsText, "internal static class DiagnosticSessionFlashbackExportScenarios");
@@ -8646,7 +8646,7 @@ static partial class Program
         AssertContains(runnerText, "DiagnosticSessionFlashbackExportScenarios.RunSelectedRejectedExportScenariosAsync(");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackRejectedExports.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackRejectedExports.cs")),
             "Flashback rejected-export scenarios stay folded into the export scenario owner");
         AssertDoesNotContain(runnerText, "DiagnosticSessionFlashbackRejectedExports.");
         AssertDoesNotContain(runnerText, "RunFlashbackExportRejectedAsync(");
@@ -8780,13 +8780,13 @@ static partial class Program
         var exportText = metricsText;
 
         AssertContains(metricsText, "internal static class DiagnosticSessionFlashbackMetrics");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.cs")), "Flashback metrics stay folded into DiagnosticSessionMetrics.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.RecordingExport.cs")), "Flashback recording/export metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")), "Flashback playback session metrics stay folded into the consolidated metrics owner");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "Common", "DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")), "Flashback playback result metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.cs")), "Flashback metrics stay folded into DiagnosticSessionMetrics.cs");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.Recording.cs")), "Flashback recording metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.Export.cs")), "Flashback export metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.PlaybackObservation.cs")), "Flashback playback observation metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.RecordingExport.cs")), "Flashback recording/export metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.PlaybackSession.cs")), "Flashback playback session metrics stay folded into the consolidated metrics owner");
+        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionFlashbackMetrics.PlaybackResult.cs")), "Flashback playback result metrics stay folded into the consolidated metrics owner");
         AssertContains(recordingText, "internal sealed class FlashbackRecordingSessionMetrics");
         AssertContains(playbackSessionText, "internal sealed class FlashbackPlaybackSessionMetrics");
         AssertContains(playbackResultText, "internal sealed class FlashbackPlaybackResultMetrics");
@@ -11155,9 +11155,9 @@ public sealed class AutomationToolContractsProtocolXunitTests
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var mcpPipeText = RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var diagnosticSessionText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+        var diagnosticSessionText = RuntimeContractSource.ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
-        var diagnosticSessionCommandChannelText = RuntimeContractSource.ReadRepoFile("tools/Common/DiagnosticSessionRunContext.cs")
+        var diagnosticSessionCommandChannelText = RuntimeContractSource.ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionRunContext.cs")
             .Replace("\r\n", "\n", StringComparison.Ordinal);
         var diagnosticSessionPipeRetryText = diagnosticSessionCommandChannelText;
         var automationPipeProtocolText = RuntimeContractSource.ReadRepoFile("Sussudio.Automation.Contracts/AutomationPipeProtocol.cs")
@@ -11236,7 +11236,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("SendCommandWithConnectRetryAsync(", diagnosticSessionCommandChannelText);
         Assert.DoesNotContain("using static Sussudio.Tools.DiagnosticSessionPipeRetryPolicy;", diagnosticSessionText);
         Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "Common", "DiagnosticSessionCommandChannel.cs")),
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionCommandChannel.cs")),
             "diagnostic-session command channel should stay with the run-context infrastructure owner.");
         Assert.Contains("internal static class DiagnosticSessionPipeRetryPolicy", diagnosticSessionPipeRetryText);
         Assert.Contains("internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionPipeRetryText);
@@ -11245,7 +11245,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("IsPermanentPipeConnectFailure(ex.ErrorCode)", diagnosticSessionPipeRetryText);
         Assert.Contains("\"pipe-access-denied\"", diagnosticSessionPipeRetryText);
         Assert.False(
-            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "Common", "DiagnosticSessionPipeRetryPolicy.cs")),
+            File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionPipeRetryPolicy.cs")),
             "diagnostic-session pipe retry policy should stay with the command channel transport owner.");
         Assert.DoesNotContain("private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(", diagnosticSessionText);
     }

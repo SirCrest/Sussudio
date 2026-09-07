@@ -250,7 +250,7 @@ static partial class Program
     {
         var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md");
         var ownerBulletRegex = new Regex(
-            @"^\s*-\s+`(?<path>tools/Common/[^`]+\.cs)`\s+(?:also\s+owns|owns|is)\b",
+            @"^\s*-\s+`(?<path>tools/(?:Common|DiagnosticSession)/[^`]+\.cs)`\s+(?:also\s+owns|owns|is)\b",
             RegexOptions.CultureInvariant);
         var firstLineByPath = new Dictionary<string, int>(StringComparer.Ordinal);
         var duplicates = new List<string>();
@@ -870,7 +870,11 @@ static partial class Program
 
     private static IEnumerable<string> EnumerateToolAutomationPartialFamilyFiles(string repoRoot)
     {
-        var commonDirectory = Path.Combine(repoRoot, "tools", "Common");
+        var sharedDirectories = new[]
+        {
+            Path.Combine(repoRoot, "tools", "Common"),
+            Path.Combine(repoRoot, "tools", "DiagnosticSession"),
+        };
         var familyPrefixes = new[]
         {
             "AutomationPipeClient",
@@ -879,7 +883,9 @@ static partial class Program
             "DiagnosticSessionFlashbackMetrics",
         };
 
-        return EnumerateSourceFiles(commonDirectory, SearchOption.AllDirectories)
+        return sharedDirectories
+            .Where(Directory.Exists)
+            .SelectMany(directory => EnumerateSourceFiles(directory, SearchOption.AllDirectories))
             .Select(file => NormalizeRepoRelativePath(repoRoot, file))
             .Where(file => familyPrefixes.Any(prefix =>
                 GetRepoFileName(file).StartsWith(prefix, StringComparison.Ordinal)))
