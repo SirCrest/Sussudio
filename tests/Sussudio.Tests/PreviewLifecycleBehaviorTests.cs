@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Linq.Expressions;
@@ -70,6 +70,12 @@ namespace Sussudio.Tests
         [Fact]
         public Task BackendStopFailureRestoresTheCapturedVolumeOperation()
             => global::Program.PreviewLifecycle_BackendStopFailureRestoresVolumeOperation();
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public Task CaptureErrorRecoveryForASupersededSessionDoesNotTearDown(bool supersededBeforeDispatch)
+            => global::Program.PreviewLifecycle_StaleCaptureErrorRecoveryDoesNotTearDown(supersededBeforeDispatch);
     }
 }
 
@@ -380,6 +386,44 @@ static partial class Program
         return coordinator;
     }
 
+    // A delayed audio-error recovery must not tear down a newer capture session.
+    // The origin generation is checked before UI mutation and again after each
+    // asynchronous wait, so both a superseded dispatch and a session that changes
+    // mid-recovery must leave the current session untouched.
+    internal static async Task PreviewLifecycle_StaleCaptureErrorRecoveryDoesNotTearDown(bool supersededBeforeDispatch)
+    {
+        var harness = new PreviewLifecycleHarness { Initialized = true, Previewing = true };
+        var currentGeneration = supersededBeforeDispatch ? 8L : 7L;
+        var checks = 0;
+        harness.CaptureErrorCurrent = generation =>
+        {
+            // false from the first check models an error that arrives already superseded;
+            // otherwise the session advances after admission but before the recovery runs.
+            if (!supersededBeforeDispatch && ++checks == 1)
+            {
+                currentGeneration = 8L;
+                return true;
+            }
+
+            return generation == currentGeneration;
+        };
+
+        await harness.RecoverCaptureError(7L).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Empty(harness.Reinitializations());
+        Assert.DoesNotContain("initialized:False", harness.Trace);
+        Assert.True(harness.Initialized);
+        Assert.True(harness.Previewing);
+        Assert.False(harness.Reinitializing);
+        Assert.Equal(0, harness.BuildSettingsCalls);
+
+        // The same path still recovers once the origin matches the live session.
+        harness.CaptureErrorCurrent = _ => true;
+        await harness.RecoverCaptureError(currentGeneration).WaitAsync(TimeSpan.FromSeconds(5));
+
+        Assert.Equal(new[] { "reinit:audio device invalidated" }, harness.Reinitializations());
+    }
+
     private sealed class PreviewLifecycleHarness
     {
         private readonly object _controller;
@@ -396,6 +440,7 @@ static partial class Program
         public Exception? BuildFailure;
         public Action? BeforeBuildSettings;
         public Task? PendingCycle;
+        public Func<long, bool> CaptureErrorCurrent = _ => true;
         public Action? ObserveCallback;
         public Func<Task> StopRenderer = () => Task.FromException(CreatePreviewRendererAbort());
         public Func<CancellationToken, Task> StartRecording = _ => Task.CompletedTask;
@@ -454,6 +499,7 @@ static partial class Program
             Set(reinitialize, "IsRecordingTransitioning", new Func<bool>(() => RecordingTransitioning));
             Set(reinitialize, "SetIsPreviewReinitializing", new Action<bool>(value => { Record("reinitializing:" + value); Reinitializing = value; }));
             Set(reinitialize, "PreviewReinitializeDebounceMs", 0);
+            SetOriginPredicate(reinitialize, "IsCaptureErrorCurrent", origin => CaptureErrorCurrent(OriginGeneration(origin)));
             Set(reinitialize, "PendingFlashbackCycleTask", new Func<Task?>(() => PendingCycle));
             Set(reinitialize, "FlashbackCycleBeforeReinitializeTimeoutMs", 5000);
             Set(reinitialize, "AwaitWithTimeoutAsync", new Func<Task, int, string, Task>((task, _, _) => task));
@@ -510,10 +556,38 @@ static partial class Program
         public Task SetPreviewEnabled(bool enabled, CancellationToken cancellationToken) => Call("SetPreviewEnabledAsync", enabled, cancellationToken);
         public Task<bool> Reinitialize(string reason) => (Task<bool>)Call("ReinitializeDeviceWithResultAsync", reason);
         public Task ReinitializeWithoutResult(string reason) => Call("ReinitializeDeviceAsync", reason);
+        public Task RecoverCaptureError(long generation) => Call("RecoverCaptureErrorAsync", CreateAudioCaptureOrigin(generation));
         public string[] Reinitializations() => Trace.Where(item => item.StartsWith("reinit:", StringComparison.Ordinal)).ToArray();
         private Task Call(string method, params object[] arguments) => (Task)_controller.GetType().GetMethod(method)!.Invoke(_controller, arguments)!;
         private void Record(string item) { ObserveCallback?.Invoke(); Trace.Enqueue(item); }
         private static void Set(object context, string property, object? value) => SetPropertyOrBackingField(context, property, value);
+        // CaptureErrorOrigin is internal to Sussudio, so the delegate is built against
+        // the context property's own type and the origin is reduced to its generation.
+        private static void SetOriginPredicate(object context, string propertyName, Func<object, bool> predicate)
+        {
+            var property = context.GetType().GetProperty(propertyName)!;
+            var invoke = property.PropertyType.GetMethod("Invoke")!;
+            var parameters = invoke.GetParameters()
+                .Select(parameter => Expression.Parameter(parameter.ParameterType, parameter.Name))
+                .ToArray();
+            var body = Expression.Invoke(
+                Expression.Constant(predicate),
+                Expression.Convert(parameters[0], typeof(object)));
+            property.SetValue(context, Expression.Lambda(property.PropertyType, body, parameters).Compile());
+        }
+
+        private static object CreateAudioCaptureOrigin(long generation)
+        {
+            var kindType = RequireType("Sussudio.Models.CaptureErrorOriginKind");
+            var kind = Enum.Parse(kindType, "AudioCaptureRegistration");
+            return Activator.CreateInstance(
+                RequireType("Sussudio.Models.CaptureErrorOrigin"),
+                new[] { kind, generation })!;
+        }
+
+        private static long OriginGeneration(object origin)
+            => (long)origin.GetType().GetProperty("Generation")!.GetValue(origin)!;
+
         private static void SetFactory(object context, string propertyName, Func<object?> factory)
         {
             var property = context.GetType().GetProperty(propertyName)!;
