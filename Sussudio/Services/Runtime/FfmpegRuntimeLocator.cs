@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -242,13 +242,21 @@ internal static class FfmpegRuntimeLocator
 
             if (!proc.WaitForExit(5000))
             {
+                Logger.Log($"FFMPEG_PATH_PROBE_TIMEOUT tool='{toolFileName}' timeoutMs=5000 pid={proc.Id}");
                 try
                 {
                     proc.Kill(entireProcessTree: true);
                 }
-                catch
+                catch (Exception killEx) when (!proc.HasExited)
                 {
-                    // Best-effort: where.exe may have already exited.
+                    // An already-exited probe is the expected race and stays quiet;
+                    // a live process that resisted termination is worth recording.
+                    Logger.Log(
+                        $"FFMPEG_PATH_PROBE_KILL_FAIL pid={proc.Id} type={killEx.GetType().Name} msg='{killEx.Message}'");
+                }
+                catch (Exception)
+                {
+                    // where.exe exited between the timeout and the kill.
                 }
 
                 return false;

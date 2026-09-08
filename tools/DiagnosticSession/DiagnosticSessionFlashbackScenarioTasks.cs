@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using static Sussudio.Tools.AutomationSnapshotFormatter;
 using static Sussudio.Tools.DiagnosticSessionFlashbackSegments;
 using static Sussudio.Tools.DiagnosticSessionFlashbackWaits;
@@ -619,7 +619,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         if (readySnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback segment playback: recording-assisted Flashback backend did not become ready");
-            await TryStopRecordingAsync(sendCommandAsync).ConfigureAwait(false);
+            await TryStopRecordingAsync(sendCommandAsync, warnings).ConfigureAwait(false);
             return false;
         }
 
@@ -659,7 +659,8 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
     }
 
     private static async Task TryStopRecordingAsync(
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        List<string> warnings)
     {
         try
         {
@@ -669,9 +670,13 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
                     null)
                 .ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
-            // Best-effort cleanup for diagnostics; the caller records the primary warning.
+            // Cleanup stays best-effort so the caller's primary warning is still the first
+            // one reported, but a stop that never reached the app leaves the session
+            // recording and must appear in the diagnostic report.
+            warnings.Add(
+                $"flashback segment playback: recording-assisted cleanup stop failed - {ex.GetType().Name}: {ex.Message}");
         }
     }
 }

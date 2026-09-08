@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -1265,9 +1265,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 thread.Priority = previousPriority;
             }
-            catch
+            catch (Exception ex)
             {
-                // Best effort: thread-pool priority restore should not mask export cleanup.
+                // Restoring priority must not mask export cleanup, but a thread left at
+                // BelowNormal explains later pacing anomalies on this pool thread.
+                Logger.Log(
+                    $"FLASHBACK_EXPORT_PRIORITY_RESTORE_FAIL target={previousPriority} " +
+                    $"type={ex.GetType().Name} msg='{ex.Message}'");
             }
 
             cleanup();

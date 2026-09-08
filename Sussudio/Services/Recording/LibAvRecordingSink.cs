@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
@@ -534,9 +534,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 OnEncodingFailed?.Invoke(ex);
             }
-            catch
+            catch (Exception callbackEx)
             {
-                // Best effort: callback must not mask the original failure.
+                // The callback boundary stays nonthrowing so the original encoder
+                // failure survives, but a faulting subscriber leaves evidence.
+                Logger.Log(
+                    $"LIBAV_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg='{callbackEx.Message}'");
             }
         }
     }

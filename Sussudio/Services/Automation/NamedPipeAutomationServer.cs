@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.IO;
 using System.IO.Pipes;
@@ -22,6 +22,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     public const string DefaultPipeName = AutomationPipeProtocol.DefaultPipeName;
     private const int MaxRequestCharacters = 1024 * 1024;
     private const int MaxConcurrentConnections = 4;
+    private const int StopWaitTimeoutMs = 5000;
 
     private readonly IAutomationCommandDispatcher _commandDispatcher;
     private readonly string _pipeName;
@@ -144,20 +145,27 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
         try
         {
-            await serverTask.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+            await serverTask.WaitAsync(TimeSpan.FromMilliseconds(StopWaitTimeoutMs), cancellationToken).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
-            // Server loop did not stop within 5s; proceed with cleanup.
+            Logger.Log(
+                $"AUTOMATION_PIPE_STOP_TIMEOUT timeoutMs={StopWaitTimeoutMs} - server loop is still running; proceeding with cleanup.");
         }
         catch (OperationCanceledException)
         {
-            /* Expected during shutdown - server loop cancelled via disposal */
+            // Workers cancel through _cts during shutdown, so the wait observes a
+            // canceled task; a caller token can also abandon a still-draining loop.
         }
 
         _cts?.Dispose();
         _cts = null;
-        Logger.Log("Automation pipe server stopped.");
+
+        // Each worker owns its own exit, so report what the server loop actually did
+        // rather than assuming the bounded wait succeeded.
+        Logger.Log(serverTask.IsCompleted
+            ? "Automation pipe server stopped."
+            : "AUTOMATION_PIPE_STOP_INCOMPLETE - cleanup finished while the server loop was still running.");
     }
 
     public void Dispose()

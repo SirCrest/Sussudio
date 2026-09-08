@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
@@ -50,6 +50,16 @@ namespace Sussudio.Tests
         [Fact]
         public void OutputLockPreservesAnUnrelatedIOException()
             => global::Program.DiagnosticInfrastructure_OutputLockPreservesMissingDirectory();
+
+        [Fact]
+        public Task ASucceedingRecoveryStopAddsNoWarning()
+            => global::Program.DiagnosticInfrastructure_RecoveryStopSucceeds();
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task AFailedOrCanceledRecoveryStopKeepsThePrimaryWarningAndRecordsItsCause(bool canceled)
+            => global::Program.DiagnosticInfrastructure_RecoveryStopFailureRecorded(canceled);
     }
 }
 
@@ -431,6 +441,53 @@ static partial class Program
         Assert.False(Directory.Exists(directory));
     }
 
+    // Recovery cleanup is best-effort, but a stop that never reached the app leaves the
+    // session recording; the transport failure has to reach the diagnostic report.
+    internal static async Task DiagnosticInfrastructure_RecoveryStopSucceeds()
+    {
+        var warnings = new List<string> { "primary readiness warning" };
+        var commands = new List<string>();
+
+        await InvokeDiagnosticRecoveryStopAsync(
+            (command, _, _) =>
+            {
+                commands.Add(command);
+                return Task.FromResult(JsonDocument.Parse("{\"Success\":true}").RootElement.Clone());
+            },
+            warnings).ConfigureAwait(false);
+
+        Assert.Equal(new[] { "SetRecordingEnabled" }, commands);
+        Assert.Equal(new[] { "primary readiness warning" }, warnings);
+    }
+
+    internal static async Task DiagnosticInfrastructure_RecoveryStopFailureRecorded(bool canceled)
+    {
+        var warnings = new List<string> { "primary readiness warning" };
+        Exception failure = canceled
+            ? new OperationCanceledException("diagnostic transport canceled")
+            : new IOException("diagnostic pipe closed");
+
+        await InvokeDiagnosticRecoveryStopAsync(
+            (_, _, _) => Task.FromException<JsonElement>(failure),
+            warnings).ConfigureAwait(false);
+
+        Assert.Equal(2, warnings.Count);
+        Assert.Equal("primary readiness warning", warnings[0]);
+        Assert.Contains("recording-assisted cleanup stop failed", warnings[1]);
+        Assert.Contains(failure.GetType().Name, warnings[1]);
+        Assert.Contains(failure.Message, warnings[1]);
+    }
+
+    private static Task InvokeDiagnosticRecoveryStopAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        List<string> warnings)
+    {
+        var method = LoadDiagnosticSessionRunnerAssembly()
+            .GetType("Sussudio.Tools.DiagnosticSessionFlashbackSegmentPlaybackScenarios", throwOnError: true)!
+            .GetMethod("TryStopRecordingAsync", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Diagnostic recovery stop helper was not found.");
+        return (Task)method.Invoke(null, new object[] { sendCommandAsync, warnings })!;
+    }
     private static Func<string, FileStream> GetDiagnosticInfrastructureOutputLock()
         => LoadDiagnosticSessionRunnerAssembly().GetType("Sussudio.Tools.DiagnosticSessionRunner", throwOnError: true)!
             .GetMethod("AcquireOutputLock", BindingFlags.Static | BindingFlags.NonPublic)!

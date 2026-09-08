@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -751,9 +751,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             {
                 _ = Marshal.Release(activatePtr);
             }
-            catch
+            catch (Exception ex)
             {
-                // Best effort.
+                // A failed release still leaks only this activation, so the loop keeps
+                // draining the rest; record which one and why.
+                Logger.Log(
+                    $"MF_ACTIVATE_RELEASE_FAIL index={i} type={ex.GetType().Name} " +
+                    $"hr=0x{ex.HResult:X8} msg='{ex.Message}'");
             }
         }
     }
