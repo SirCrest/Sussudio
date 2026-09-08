@@ -692,7 +692,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested -= ViewModel_PreviewReinitRequested;
-        ViewModel.PreviewRendererStopRequested -= ViewModel_PreviewRendererStopRequested;
     }
 
     private AudioControlBindingController _audioControlBindingController = null!;
@@ -1309,6 +1308,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsRecording = () => ViewModel.IsRecording,
             IsRecordingTransitioning = () => ViewModel.IsRecordingTransitioning,
             GetStatusText = () => ViewModel.StatusText,
+            SetStatusText = value => ViewModel.StatusText = value,
             StopRecordingBeforeCloseAsync = TryStopRecordingBeforeCloseAsync,
             PrepareForCloseAsync = ViewModel.DisposeAsync,
             IsEmergencyClosePending = () => Volatile.Read(ref _wasapiEmergencyCloseStarted) != 0,
@@ -1618,8 +1618,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsRecording = () => ViewModel.IsRecording,
         };
 
-    private StatsSnapshot GetStatsSnapshot()
-        => _statsOverlayCompositionController.GetStatsSnapshot();
+    private StatsSnapshot RefreshStatsIfDueAndGetSnapshot()
+        => _statsOverlayCompositionController.RefreshStatsIfDueAndGetSnapshot();
 
     private PreviewFrameTimeHistoryRead CopyPresentFrameTimeSamples(
         PreviewFrameTimeCursor cursor,
@@ -2079,6 +2079,7 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     {
         ViewModel.DisposePreviewAudioVolume();
         _previewRendererHostController.StopForShutdown();
+        ViewModel.PreviewRendererStopRequested -= ViewModel_PreviewRendererStopRequested;
     }
 
     public long RendererReinitUnsafeWindows

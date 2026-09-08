@@ -721,13 +721,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             const string message = "Flashback recording was not active.";
             Logger.Log($"FLASHBACK_RECORDING_END_REJECTED reason='{message}'");
-            return new FinalizeResult
-            {
-                Succeeded = false,
-                OutputPath = _recordingOutputPath ?? string.Empty,
-                StatusMessage = message,
-                PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
-            };
+            return FinalizeResult.Failure(
+                _recordingOutputPath ?? string.Empty,
+                message,
+                _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
+                RecordingFailureCodes.FinalizationFailed);
         }
 
         try
@@ -753,13 +751,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (failure != null)
             {
                 Logger.Log($"FLASHBACK_RECORDING_FAIL type={failure.GetType().Name} error='{failure.Message}'");
-                return new FinalizeResult
-                {
-                    Succeeded = false,
-                    OutputPath = _recordingOutputPath ?? string.Empty,
-                    StatusMessage = $"Flashback recording failed: {failure.Message}",
-                    PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
-                };
+                return FinalizeResult.Failure(
+                    _recordingOutputPath ?? string.Empty,
+                    $"Flashback recording failed: {failure.Message}",
+                    _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
+                    RecordingFailureCodes.FlashbackEncodeFailed);
             }
 
             // Use the PTS latched when the exact pre-boundary video packet retired.
@@ -2097,16 +2093,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_SINK_ENCODING_LOOP_FATAL type={ex.GetType().Name} msg={ex.Message}");
-            _encodingFailure = ex;
+            FailEncoding(ex);
             CompletePendingForceRotateWithEmptyResult();
-            lock (_sync) { _started = false; }
-
-            // Notify the owning service so it can surface the failure
-            try { _onFatalError?.Invoke(ex); }
-            catch (Exception callbackEx)
-            {
-                Logger.Log($"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
-            }
 
             // Register the active segment so PurgeAllSegments can clean it up
             if (_tsFilePath != null)
@@ -2359,13 +2347,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)
     {
-        string? completedPath = null;
+        var completedPath = _tsFilePath;
+        var completedStartPts = _segmentStartPts;
+        var completedStartBytes = Interlocked.Read(ref _segmentStartBytes);
+        var completedSegmentBytes = 0L;
         string? newPath = null;
         var encoderRotated = false;
         try
         {
-            completedPath = _tsFilePath;
-            var completedStartPts = _segmentStartPts;
             newPath = preparedPath ?? _bufferManager.GenerateSegmentPath();
 
             // RotateOutput flushes encoder queues, writes trailer, then resets
@@ -2374,8 +2363,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             var result = _rotateOutputOverride is null
                 ? _encoder.RotateOutput(newPath)
                 : _rotateOutputOverride(newPath);
-            var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));
             encoderRotated = true;
+            completedSegmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, completedStartBytes);
 
             _segmentStartPts = currentPts;
             _tsFilePath = newPath;
@@ -2386,7 +2375,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _bufferManager.MarkActiveSegmentStart(newPath, _segmentStartPts);
             Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);
 
-            _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);
+            _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, completedSegmentBytes);
 
             // Update disk bytes tracking.
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
@@ -2396,38 +2385,34 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             Logger.Log(
                 $"FLASHBACK_SINK_ROTATE new_segment='{Path.GetFileName(newPath)}' " +
-                $"prev_bytes={segmentBytes} " +
+                $"prev_bytes={completedSegmentBytes} " +
                 $"segment_start_ms={(long)currentPts.TotalMilliseconds}");
             return true;
         }
         catch (Exception ex)
         {
+            var terminalFailure = encoderRotated || !_encoder.IsEncoding;
             if (newPath != null && !encoderRotated)
             {
-                if (preparedPath != null)
+                try
                 {
-                    _bufferManager.AbandonReservedSegmentPath(newPath);
+                    if (preparedPath != null)
+                    {
+                        _bufferManager.AbandonReservedSegmentPath(newPath);
+                    }
+                    else
+                    {
+                        _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+                    }
                 }
-                else
+                catch (Exception cleanupEx)
                 {
-                    _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+                    Logger.Log($"FLASHBACK_SINK_ROTATE_ABANDON_FAIL path='{newPath}' type={cleanupEx.GetType().Name} msg={cleanupEx.Message}");
                 }
             }
 
             Interlocked.Increment(ref _segmentRotationFailures);
-
-            // A wedged rotation (e.g. persistent file-handle contention) never
-            // completes the active segment and eviction can't reclaim it. After
-            // repeated consecutive failures, fail the encoder so the fatal path
-            // (preserve + auto-restart, see CaptureService) gets a fresh sink and
-            // segment file rather than growing the active segment unbounded.
             var consecutive = Interlocked.Increment(ref _consecutiveRotationFailures);
-            if (consecutive >= MaxConsecutiveRotationFailures)
-            {
-                Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_ESCALATE consecutive={consecutive}");
-                FailEncoding(new IOException(
-                    $"Flashback segment rotation failed {consecutive} consecutive times: {ex.Message}", ex));
-            }
 
             // Register the segment that was open before the rotation attempt so its
             // data remains visible in the buffer index even though rotation failed.
@@ -2435,21 +2420,40 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 try
                 {
-                    var failPts = ResolveEncoderPts();
-                    if (failPts > _segmentStartPts)
+                    var failPts = encoderRotated ? currentPts : ResolveEncoderPts();
+                    if (failPts > completedStartPts)
                     {
-                        var failSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));
-                        _bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);
+                        var failSegmentBytes = encoderRotated
+                            ? completedSegmentBytes
+                            : NonNegativeByteDelta(_encoder.TotalBytesWritten, completedStartBytes);
+                        _bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);
                         Logger.Log(
                             $"FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTERED " +
                             $"path='{completedPath}' frames={_encoder.VideoPacketsWritten} " +
-                            $"start_ms={(long)_segmentStartPts.TotalMilliseconds} end_ms={(long)failPts.TotalMilliseconds}");
+                            $"start_ms={(long)completedStartPts.TotalMilliseconds} end_ms={(long)failPts.TotalMilliseconds}");
                     }
                 }
                 catch (Exception segmentEx)
                 {
                     Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTER_FAIL type={segmentEx.GetType().Name} msg={segmentEx.Message}");
                 }
+            }
+
+            if (terminalFailure)
+            {
+                // Stop this drain before another packet can obscure the original
+                // rotation error with EnsureOpen. The encoding loop publishes it.
+                Logger.Log($"FLASHBACK_SINK_ROTATE_TERMINAL type={ex.GetType().Name} msg={ex.Message}");
+                throw;
+            }
+
+            // Only failures before the native transition can retain a usable
+            // output. Bound those retries so a stuck path cannot grow forever.
+            if (consecutive >= MaxConsecutiveRotationFailures)
+            {
+                Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_ESCALATE consecutive={consecutive}");
+                FailEncoding(new IOException(
+                    $"Flashback segment rotation failed {consecutive} consecutive times: {ex.Message}", ex));
             }
 
             // Advance _segmentStartPts to prevent infinite retry on every frame.
@@ -2819,8 +2823,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (pendingRequest != null)
         {
-            _bufferManager.AbandonReservedSegmentPath(pendingRequest.PreparedPath);
-            pendingRequest.CompleteEmpty();
+            try
+            {
+                _bufferManager.AbandonReservedSegmentPath(pendingRequest.PreparedPath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_ABANDON_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+            finally
+            {
+                pendingRequest.CompleteEmpty();
+            }
         }
     }
 

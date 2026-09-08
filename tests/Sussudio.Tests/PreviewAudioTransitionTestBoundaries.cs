@@ -1,5 +1,3 @@
-using System;
-
 // Passive model shapes for the complete linked PreviewAudioTransitionControllers.cs.
 // These declare only the members that file reads or writes, with the same names and
 // types as production. They contain no ramp policy, no trace retention policy, and

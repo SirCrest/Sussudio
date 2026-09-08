@@ -1014,7 +1014,7 @@ static partial class Program
         AssertContains(cleanupText, "EnterCleanupState();");
         AssertContains(cleanupText, "await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertContains(cleanupText, "public void Dispose()");
-        AssertContains(cleanupText, "public async ValueTask DisposeAsync()");
+        AssertContains(cleanupText, "public ValueTask DisposeAsync()");
         AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "CaptureService.ResourceRelease.cs")), "CaptureService resource-release helpers stay folded into CaptureService.cs");
         AssertContains(resourceReleaseText, "private void DisposeCoordinationLocksBestEffort()");
         AssertContains(resourceReleaseText, "private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");

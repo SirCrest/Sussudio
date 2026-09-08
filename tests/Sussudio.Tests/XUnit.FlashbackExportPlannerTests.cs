@@ -189,7 +189,6 @@ public sealed class FlashbackExportPlannerTests
         var request = Get<object>(requestPlan, "Request");
 
         Assert.False(Get<bool>(request, "FastStart"));
-        Assert.True(Get<bool>(request, "Force"));
         Assert.Equal(TimeSpan.Zero, Get<TimeSpan>(request, "InPoint"));
         Assert.Equal(TimeSpan.FromSeconds(10), Get<TimeSpan>(request, "OutPoint"));
         Assert.Equal("output.mp4", Get<string>(request, "OutputPath"));
@@ -286,7 +285,6 @@ public sealed class FlashbackExportPlannerTests
             TimeSpan.Zero,
             TimeSpan.FromSeconds(10),
             "output.mp4",
-            true,
             CreateTypedArray(PathSnapshotType, paths),
             CreateTypedArray(MetadataType, metadata),
             activeFilePath);

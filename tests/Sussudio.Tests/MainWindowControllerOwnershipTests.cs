@@ -2309,16 +2309,16 @@ namespace Sussudio.Tests
             File.Exists(Path.Combine(Environment.CurrentDirectory, "Sussudio", "ViewModels", "StatsSnapshot.cs")),
             "stats snapshot DTO and builder folded into StatsPresentationBuilder.cs");
         AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
-        AssertContains(statsOverlayText, "private StatsSnapshot GetStatsSnapshot()");
+        AssertContains(statsOverlayText, "private StatsSnapshot RefreshStatsIfDueAndGetSnapshot()");
         AssertContains(statsOverlayCompositionText, "private readonly StatsSnapshotProvider _statsSnapshotProvider;");
         AssertContains(statsOverlayText, "GetCaptureHealthSnapshot = ViewModel.GetCaptureHealthSnapshot,");
         AssertContains(statsOverlayText, "GetRenderer = () => _previewRendererHostController.Renderer,");
         AssertContains(statsOverlayText, "GetPreviewMinPresentationIntervalMs = () => _previewRendererHostController.PreviewMinPresentationIntervalMs");
         AssertContains(statsOverlayText, "IsPreviewing = () => ViewModel.IsPreviewing,");
         AssertContains(statsOverlayText, "IsRecording = () => ViewModel.IsRecording");
-        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.GetStatsSnapshot();");
+        AssertContains(statsOverlayText, "=> _statsOverlayCompositionController.RefreshStatsIfDueAndGetSnapshot();");
         AssertContains(statsOverlayCompositionText, "private static StatsSnapshotProvider CreateSnapshotProvider(");
-        AssertContains(statsOverlayCompositionText, "=> _sampler.GetSnapshot();");
+        AssertContains(statsOverlayCompositionText, "=> _sampler.RefreshIfDueAndGetSnapshot();");
         AssertContains(statsSnapshotProviderText, "internal sealed class StatsSnapshotProvider");
         AssertDoesNotContain(statsSnapshotProviderText, "internal sealed partial class StatsSnapshotProvider");
         AssertContains(statsSnapshotProviderText, "private StatsSnapshotRenderMetrics _renderMetrics;");

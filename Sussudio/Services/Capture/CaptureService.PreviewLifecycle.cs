@@ -119,7 +119,7 @@ public partial class CaptureService
             catch (Exception ex)
             {
                 stopFailure = ex;
-                commitStoppedState = true;
+                commitStoppedState = Volatile.Read(ref _cleanupRequired) == 0;
                 throw;
             }
             finally
@@ -142,7 +142,7 @@ public partial class CaptureService
             }
 
             StatusChanged?.Invoke(this, "Preview stopped");
-        }, cancellationToken);
+        }, cancellationToken, cleanupRetainedResources: true);
 
     private async Task RecyclePreviewPipelineForStartAsync(
         CaptureSettings settings,
@@ -295,6 +295,7 @@ public partial class CaptureService
         {
             Logger.Log($"Unified preview start failed: {ex.Message}");
             var previewStartRollbackToken = CancellationToken.None;
+            await StopPreviewRendererBeforeCaptureCleanupAsync(previewStartRollbackToken).ConfigureAwait(false);
             await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken).ConfigureAwait(false);
             _videoPipeline.ClearCapture();
             if (unifiedVideoCapture != null)
@@ -320,9 +321,11 @@ public partial class CaptureService
         CancellationToken transitionToken,
         bool purgeFlashbackSegments)
     {
+        Volatile.Write(ref _cleanupRequired, 1);
+        await StopPreviewRendererBeforeCaptureCleanupAsync(transitionToken).ConfigureAwait(false);
         _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 
-        var unifiedVideoCapture = _videoPipeline.TakeCapture();
+        var unifiedVideoCapture = _videoPipeline.Capture;
         var videoCaptureCleanupDeferred = false;
         if (unifiedVideoCapture != null)
         {
@@ -350,6 +353,7 @@ public partial class CaptureService
                 SetPendingLibAvCleanupTask(
                     Task.WhenAll(pendingLibAvDrainTask, captureCleanupTask),
                     "LibAv+PreviewPipeline");
+                _videoPipeline.ClearCapture();
                 videoCaptureCleanupDeferred = true;
             }
             else
@@ -369,6 +373,7 @@ public partial class CaptureService
         if (unifiedVideoCapture != null && !videoCaptureCleanupDeferred)
         {
             await unifiedVideoCapture.DisposeForPreviewReinitAsync().ConfigureAwait(false);
+            _videoPipeline.ClearCapture();
         }
 
         var capture = _previewAudioGraph.ProgramCapture;
@@ -384,6 +389,7 @@ public partial class CaptureService
         }
 
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+        Volatile.Write(ref _cleanupRequired, 0);
     }
 
     public int GetNegotiatedVideoWidth() => _videoPipeline.NegotiatedVideoWidth;
@@ -392,6 +398,15 @@ public partial class CaptureService
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
+        if (sink != null)
+        {
+            ThrowIfDisposed();
+            if (Volatile.Read(ref _cleanupRequired) != 0)
+            {
+                throw new InvalidOperationException("Capture cleanup must complete before attaching a preview renderer.");
+            }
+        }
+
         var controller = _flashbackBackend.PlaybackController;
         if (sink == null && controller is { IsDisposed: false, IsInitialized: true })
         {

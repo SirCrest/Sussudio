@@ -1557,15 +1557,11 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void CleanupD3DResources()
     {
+        // Keep every native owner intact until the panel acknowledges detach.
+        UnbindSwapChainFromPanel();
         DisposeProcessorResources();
         DisposeFrameCaptureStagingResources();
         DisposeInputTextureResources();
-
-        // Stop() unbinds the panel before waking the render thread, while the
-        // swap chain is still alive. Cleanup can then release the DXGI objects
-        // without leaving SwapChainPanel holding a stale native reference.
-        Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
-        Interlocked.Exchange(ref _swapChainAddress, 0);
 
         _swapChain3?.Dispose();
         _swapChain3 = null;

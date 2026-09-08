@@ -414,6 +414,20 @@ public sealed class AutomationDispatcherContractsTests
     public Task AutomationDispatcherExtractsBoolPayloadFields()
         => global::Program.AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload();
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("false")]
+    [InlineData("true")]
+    [InlineData("\"false\"")]
+    [InlineData("\"true\"")]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData("null")]
+    [InlineData("\"ignored\"")]
+    [InlineData("{}")]
+    public Task AutomationDispatcherIgnoresLegacyFlashbackExportForce(string? forceJson)
+        => global::Program.AutomationCommandDispatcher_FlashbackExport_IgnoresLegacyForce(forceJson);
+
     [Fact]
     public Task AutomationDispatcherExtractsIntPayloadFields()
         => global::Program.AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload();
@@ -1570,6 +1584,64 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    internal static async Task AutomationCommandDispatcher_FlashbackExport_IgnoresLegacyForce(string? forceJson)
+    {
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var outputPath = Path.Combine(Path.GetTempPath(), $"fb_legacy_force_{Guid.NewGuid():N}.mp4");
+        const string failureCode = "flashback-export-invalid-output-path";
+        const string message = "Flashback export does not overwrite existing files.";
+        var failureFactory = RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes")
+            .GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var failure = failureFactory.Invoke(null, new object?[] { outputPath, message, failureCode, null })!;
+        var exportCalls = 0;
+
+        var viewModel = CreateConfiguredProxy(viewModelType, (method, args) =>
+        {
+            if (method?.Name == "ExportFlashbackAutomationAsync")
+            {
+                exportCalls++;
+                AssertEqual(4, args!.Length, "export port receives no retired force parameter");
+                AssertEqual(12.5, args[0], "export port receives requested seconds");
+                AssertEqual(outputPath, args[1], "export port receives requested output path");
+                AssertEqual(true, args[2], "export port receives requested selection policy");
+                AssertEqual(typeof(CancellationToken), args[3]!.GetType(), "export port receives cancellation token");
+                return CreateTaskFromResult(failure.GetType(), failure);
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var diagnostics = CreateConfiguredProxy(diagnosticsType, (method, _) =>
+            method?.Name == "GetLatestSnapshot" ? snapshot : GetDefaultReturnValue(method));
+        var dispatcher = CreateAutomationCommandDispatcher(
+            viewModel, diagnostics, CreateThrowingProxy(windowControlType), authToken: null);
+        var payload = new Dictionary<string, object?>
+        {
+            ["seconds"] = 12.5,
+            ["outputPath"] = outputPath,
+            ["useSelectionRange"] = true
+        };
+        if (forceJson != null)
+        {
+            payload["force"] = JsonSerializer.Deserialize<JsonElement>(forceJson);
+        }
+
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher,
+            CreateAutomationCommandRequest("FlashbackExport", authToken: null, payloadJson: JsonSerializer.Serialize(payload)))
+            .ConfigureAwait(false);
+
+        AssertEqual(1, exportCalls, "legacy force payload dispatches exactly one export");
+        AssertAutomationResponse(response, success: false, errorCode: failureCode, status: "error", "legacy force preserves export failure");
+        AssertEqual(message, GetPublicProperty(response, "Message"), "legacy force preserves export message");
+        var data = GetPublicProperty(response, "Data")!;
+        AssertEqual("InvalidOutputPath", GetPublicProperty(data, "FailureKind"), "legacy force preserves failure category");
+        AssertEqual(outputPath, GetPublicProperty(data, "OutputPath"), "legacy force preserves output path");
+        AssertEqual(snapshot, GetPublicProperty(response, "Snapshot"), "legacy force preserves response snapshot");
+    }
+
     internal static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
     {
         var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
@@ -1654,7 +1726,7 @@ static partial class Program
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackBufferMinutesCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackGpuDecodeCommandAsync(");
         AssertContains(flashbackCommandsText, "_flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken)");
-        AssertContains(flashbackCommandsText, "_flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.GetFlashbackSegmentsAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.RestartFlashbackAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken)");
@@ -5935,8 +6007,8 @@ static partial class Program
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
-        AssertContains(dispatcherText, "var force = GetBool(payload, \"force\") ?? false;");
-        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
+        AssertContains(dispatcherText, "_ = GetBool(payload, \"force\") ?? false;");
+        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
         AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
@@ -6977,10 +7049,15 @@ static partial class Program
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
         AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
         AssertContains(rawDisposalText, "private void CancelActiveFlashbackExportForDispose()");
-        AssertContains(disposalControllerText, "_context.CancelActiveFlashbackExport();");
-        AssertContains(disposalControllerText, "_context.StopRuntimeForDispose();");
-        AssertOccursBefore(disposalControllerText, "_context.CancelActiveFlashbackExport();", "_context.StopRuntimeForDispose();");
-        AssertOccursBefore(disposalControllerText, "_context.StopRuntimeForDispose();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
+        var disposalCoreText = ExtractTextBetween(
+            disposalControllerText,
+            "private async Task DisposeCoreAsync()",
+            "private static int GetDisposeTimeoutMs()");
+        AssertOccursBefore(disposalCoreText, "_context.CancelActiveFlashbackExport();", "_context.StopRuntimeForDispose();");
+        AssertOccursBefore(disposalCoreText, "_context.StopRuntimeForDispose();", "_context.CleanupSessionCoordinatorAsync,");
+        AssertOccursBefore(disposalCoreText, "_context.CleanupSessionCoordinatorAsync,", "_context.DisposeSessionCoordinatorAsync,");
+        AssertOccursBefore(disposalCoreText, "_context.DisposeSessionCoordinatorAsync,", "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);");
+        AssertOccursBefore(disposalCoreText, "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);", "_context.CompleteRuntimeDispose();");
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
         AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");

@@ -2028,6 +2028,16 @@ internal static class HdrValidationRunner
             TimeoutMs = ValidationTimeoutMs
         }, cancellationToken).ConfigureAwait(false);
 
+        return ReadValidationResult(result);
+    }
+
+    internal static (bool Success, string Detail) ReadValidationResult(ProcessRunResult result)
+    {
+        if (result.GetOutputReadFailure() is { } readFailure)
+        {
+            return (false, $"validator-output-read-failed: {readFailure.Message}");
+        }
+
         if (!result.Started)
         {
             return (false, "validator-process-start-failed");

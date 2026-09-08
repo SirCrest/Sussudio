@@ -548,9 +548,8 @@ internal static class RuntimeContractSource
 }
 
 
-// xUnit slice for capture/telemetry policy types. Each test resolves the
-// production type from the staged Sussudio.dll so the test_coverage detector
-// recognizes the file as exercised.
+// Exercise capture and telemetry policies from the production assembly.
+[Collection(RecoveryEnvironmentCollection.Name)]
 public class CapturePoliciesTests
 {
     private const string DisabledTelemetryProviderType = "Sussudio.Services.Telemetry.DisabledSourceSignalTelemetryProvider";

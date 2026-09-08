@@ -26,6 +26,13 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   fence capture, retirement and wait methods through normal-constructor fixtures.
 - `tests/Sussudio.Tests/XUnit.PreviewRendererLifecycleTests.cs` owns stop/reset,
   generation, native latency-handle, and exceptional cache cleanup regressions.
+- `tests/Sussudio.Tests/XUnit.CaptureCleanupBarrierTests.cs` owns renderer
+  acknowledgement before capture release, retained ownership, disposal retry,
+  and close-failure propagation with controlled tasks and inert graphics objects.
+- `tests/Sussudio.Tests/ProcessFailureEvidenceTests.cs` owns redirected-output and
+  file-stat error propagation; `AtomicCounterTests.cs` covers saturating subtraction.
+- `tests/Sussudio.Tests/FlashbackRotationBehaviorTests.cs` executes native rotation
+  failure, original-error retention, and normal audio/microphone finalization.
 - `tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` owns bounded
   texture/subresource cache reuse, eviction, and allocation checks.
 - `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` owns shared fanout, cadence,

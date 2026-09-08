@@ -127,7 +127,15 @@ public class DeviceService
         return discovery.CaptureDevices;
     }
 
+    // Native delegates can block before returning a task. Keep the entire scan,
+    // including XU lookup and cache hydration, on an MTA thread-pool worker.
     public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(bool waitForFormatProbes = true)
+        => await Task.Run(() => EnumerateCaptureDeviceDiscoveryOnWorkerAsync(waitForFormatProbes)).ConfigureAwait(false);
+
+    public Task<List<AudioInputDevice>> EnumerateAudioCaptureEndpointsAsync()
+        => Task.Run(_enumerateAudioCaptureEndpointsAsync);
+
+    private async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryOnWorkerAsync(bool waitForFormatProbes)
     {
         var discoveryStopwatch = Stopwatch.StartNew();
         var discovered = new ObservableCollection<CaptureDevice>();
@@ -171,7 +179,7 @@ public class DeviceService
             {
                 try
                 {
-                    hasEnumeratedFormats = await QuerySupportedFormatsAsync(captureDevice);
+                    hasEnumeratedFormats = await QuerySupportedFormatsAsync(captureDevice).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -575,12 +583,14 @@ public class DeviceService
     public void BeginBackgroundFormatProbe(CaptureDevice device, long requestId = 0)
     {
         ArgumentNullException.ThrowIfNull(device);
-        if (string.IsNullOrWhiteSpace(device.Id) || string.IsNullOrWhiteSpace(device.Name))
+        var deviceId = device.Id;
+        var deviceName = device.Name;
+        if (string.IsNullOrWhiteSpace(deviceId) || string.IsNullOrWhiteSpace(deviceName))
         {
             return;
         }
 
-        _ = RunBackgroundFormatProbeAsync(device.Id, device.Name, requestId);
+        _ = Task.Run(() => RunBackgroundFormatProbeAsync(deviceId, deviceName, requestId));
     }
 
     private async Task RunBackgroundFormatProbeAsync(string deviceId, string deviceName, long requestId)

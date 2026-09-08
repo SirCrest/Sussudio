@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,443 @@ namespace Sussudio.Tests;
 
 public sealed class DeviceDiscoveryTests
 {
+    private static readonly TimeSpan WorkerTestTimeout = TimeSpan.FromSeconds(5);
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task DiscoveryEntryPointsReturnBeforeSynchronousEnumerationFinishes(bool collectionOnly, bool audioBlocks)
+    {
+        var nativeCall = new BlockingNativeCall();
+        var service = CreateService((audio, taskType) =>
+        {
+            if (audio == audioBlocks) nativeCall.Block();
+            return EmptyListTask(taskType);
+        });
+        var entryPoint = collectionOnly ? "EnumerateVideoCaptureDevicesAsync" : "EnumerateCaptureDeviceDiscoveryAsync";
+
+        var result = await AssertWorkerHandoffAsync(nativeCall, () => InvokeResultAsync(service, entryPoint, false));
+
+        Assert.Empty(collectionOnly ? (IEnumerable)result : Get<IEnumerable>(result, "CaptureDevices"));
+        if (!collectionOnly) Assert.True(Get<bool>(result, "Succeeded"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DiscoveryEntryPointsReturnBeforeSynchronousInlineProbeFinishes(bool collectionOnly)
+    {
+        var nativeCall = new BlockingNativeCall();
+        var service = CreateProbeService(taskType =>
+        {
+            nativeCall.Block();
+            return EmptyListTask(taskType);
+        });
+        var entryPoint = collectionOnly ? "EnumerateVideoCaptureDevicesAsync" : "EnumerateCaptureDeviceDiscoveryAsync";
+
+        var result = await AssertWorkerHandoffAsync(nativeCall, () => InvokeResultAsync(service, entryPoint, true));
+
+        var devices = collectionOnly ? (IEnumerable)result : Get<IEnumerable>(result, "CaptureDevices");
+        Assert.Single(devices.Cast<object>());
+        if (!collectionOnly) Assert.True(Get<bool>(result, "Succeeded"));
+    }
+
+    [Fact]
+    public async Task AudioOnlyEnumerationReturnsBeforeNativeWorkWithoutEnumeratingVideo()
+    {
+        var nativeCall = new BlockingNativeCall();
+        var videoCalls = 0;
+        var service = CreateService((audio, taskType) =>
+        {
+            if (audio) nativeCall.Block();
+            else Interlocked.Increment(ref videoCalls);
+            return EmptyListTask(taskType);
+        });
+
+        var result = await AssertWorkerHandoffAsync(nativeCall,
+            () => InvokeResultAsync(service, "EnumerateAudioCaptureEndpointsAsync"));
+
+        Assert.Empty((IEnumerable)result);
+        Assert.Equal(0, videoCalls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AudioOnlyEnumerationPreservesNativeFailure(bool synchronousFailure)
+    {
+        var service = CreateService((_, taskType) =>
+        {
+            var failure = new IOException("audio endpoints unavailable");
+            if (synchronousFailure) throw failure;
+            return FailedTask(taskType, failure);
+        });
+
+        var observedFailure = await Assert.ThrowsAsync<IOException>(
+            () => InvokeResultAsync(service, "EnumerateAudioCaptureEndpointsAsync"));
+
+        Assert.Equal("audio endpoints unavailable", observedFailure.Message);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AudioRefreshKeepsSelectionMadeWhileEnumerationIsPending(bool microphoneSelection)
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var enumeration = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var fixture = new AudioRefreshFixture(() =>
+        {
+            entered.TrySetResult();
+            return enumeration.Task;
+        });
+        var chosenDevice = CreateAudioEndpoint("chosen-during-scan");
+        var endpoints = new[] { fixture.OriginalAudio, fixture.OriginalMicrophone, chosenDevice };
+        var refresh = fixture.RefreshAsync();
+        try
+        {
+            await entered.Task.WaitAsync(WorkerTestTimeout);
+            fixture.SelectDevice(microphoneSelection, chosenDevice);
+            enumeration.SetResult(CreateAudioEndpointList(endpoints));
+            await refresh.WaitAsync(WorkerTestTimeout);
+
+            fixture.AssertState(
+                microphoneSelection ? fixture.OriginalAudio : chosenDevice,
+                microphoneSelection ? chosenDevice : fixture.OriginalMicrophone,
+                endpoints);
+        }
+        finally
+        {
+            enumeration.TrySetResult(CreateAudioEndpointList(endpoints));
+            await refresh.WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AudioRefreshIgnoresOlderCompletionAfterNewerRefresh(bool newerFails)
+    {
+        var olderEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var newerEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var olderEnumeration = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var newerEnumeration = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        using var fixture = new AudioRefreshFixture(() =>
+        {
+            if (Interlocked.Increment(ref calls) == 1)
+            {
+                olderEntered.TrySetResult();
+                return olderEnumeration.Task;
+            }
+
+            newerEntered.TrySetResult();
+            return newerEnumeration.Task;
+        });
+        var olderAudio = CreateAudioEndpoint("older-audio");
+        var newerAudio = CreateAudioEndpoint("newer-audio");
+        var expectedAudio = newerFails ? fixture.OriginalAudio : newerAudio;
+        var expectedEndpoints = new[] { expectedAudio, fixture.OriginalMicrophone };
+        var olderRefresh = fixture.RefreshAsync();
+        Task? newerRefresh = null;
+        try
+        {
+            await olderEntered.Task.WaitAsync(WorkerTestTimeout);
+            newerRefresh = fixture.RefreshAsync();
+            await newerEntered.Task.WaitAsync(WorkerTestTimeout);
+            if (newerFails) newerEnumeration.SetException(new IOException("newer audio scan failed"));
+            else newerEnumeration.SetResult(CreateAudioEndpointList(newerAudio, fixture.OriginalMicrophone));
+            await newerRefresh.WaitAsync(WorkerTestTimeout);
+            fixture.AssertState(expectedAudio, fixture.OriginalMicrophone, expectedEndpoints);
+
+            olderEnumeration.SetResult(CreateAudioEndpointList(olderAudio, fixture.OriginalMicrophone));
+            await olderRefresh.WaitAsync(WorkerTestTimeout);
+
+            fixture.AssertState(expectedAudio, fixture.OriginalMicrophone, expectedEndpoints);
+            Assert.Equal(2, fixture.EnumerationCalls);
+        }
+        finally
+        {
+            olderEnumeration.TrySetResult(CreateAudioEndpointList(expectedEndpoints));
+            newerEnumeration.TrySetResult(CreateAudioEndpointList(expectedEndpoints));
+            await Task.WhenAll(olderRefresh, newerRefresh ?? Task.CompletedTask).WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AudioRefreshDoesNotCommitAfterDisposalBegins(bool disposeBeforeInvocation)
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var enumeration = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var fixture = new AudioRefreshFixture(() =>
+        {
+            entered.TrySetResult();
+            return enumeration.Task;
+        });
+        if (disposeBeforeInvocation) fixture.BeginDispose();
+        var refresh = fixture.RefreshAsync();
+        try
+        {
+            if (!disposeBeforeInvocation)
+            {
+                await entered.Task.WaitAsync(WorkerTestTimeout);
+                fixture.BeginDispose();
+                enumeration.SetResult(CreateAudioEndpointList(CreateAudioEndpoint("after-dispose"), fixture.OriginalMicrophone));
+            }
+
+            await refresh.WaitAsync(WorkerTestTimeout);
+
+            fixture.AssertState(fixture.OriginalAudio, fixture.OriginalMicrophone,
+                fixture.OriginalAudio, fixture.OriginalMicrophone);
+            Assert.Equal(disposeBeforeInvocation ? 0 : 1, fixture.EnumerationCalls);
+        }
+        finally
+        {
+            enumeration.TrySetResult(CreateAudioEndpointList(fixture.OriginalAudio, fixture.OriginalMicrophone));
+            await refresh.WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task AudioRefreshIgnoresCompletionAfterStartupAudioScan()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var enumeration = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var fixture = new AudioRefreshFixture(() =>
+        {
+            entered.TrySetResult();
+            return enumeration.Task;
+        });
+        var newerAudio = CreateAudioEndpoint("startup-audio");
+        var endpoints = new[] { newerAudio, fixture.OriginalMicrophone };
+        var refresh = fixture.RefreshAsync();
+        try
+        {
+            await entered.Task.WaitAsync(WorkerTestTimeout);
+            fixture.ApplyStartupScan(endpoints);
+            fixture.AssertState(newerAudio, fixture.OriginalMicrophone, endpoints);
+            enumeration.SetResult(CreateAudioEndpointList(fixture.OriginalAudio, fixture.OriginalMicrophone));
+            await refresh.WaitAsync(WorkerTestTimeout);
+
+            fixture.AssertState(newerAudio, fixture.OriginalMicrophone, endpoints);
+        }
+        finally
+        {
+            enumeration.TrySetResult(CreateAudioEndpointList(endpoints));
+            await refresh.WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task BackgroundProbeReturnsBeforeSynchronousNativeWorkFinishes()
+    {
+        var nativeCall = new BlockingNativeCall();
+        var service = CreateProbeService(taskType =>
+        {
+            nativeCall.Block();
+            return EmptyListTask(taskType);
+        });
+
+        var result = await AssertWorkerHandoffAsync(nativeCall,
+            () => BackgroundProbeAsync(service, CreateDevice("background-worker"), 41));
+
+        Assert.True(Get<bool>(result, "Succeeded"));
+        Assert.Empty(Get<IEnumerable>(result, "Formats"));
+        Assert.Equal(41L, Get<long>(result, "RequestId"));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task BackgroundProbesKeepConcurrencyBoundAndCapturedIdentityAfterFailure(bool synchronousFailure)
+    {
+        var firstCall = new BlockingNativeCall();
+        var secondCall = new BlockingNativeCall();
+        var queuedEntered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var concurrencySync = new object();
+        var active = 0;
+        var maximumActive = 0;
+        var service = CreateProbeService((deviceId, taskType) =>
+        {
+            lock (concurrencySync)
+            {
+                active++;
+                maximumActive = Math.Max(maximumActive, active);
+            }
+
+            try
+            {
+                if (deviceId == "first-worker")
+                {
+                    firstCall.Block();
+                    var failure = new IOException("first probe failed");
+                    if (synchronousFailure) throw failure;
+                    return FailedTask(taskType, failure);
+                }
+
+                if (deviceId == "second-worker") secondCall.Block();
+                else queuedEntered.TrySetResult(deviceId);
+                return EmptyListTask(taskType);
+            }
+            finally
+            {
+                lock (concurrencySync) active--;
+            }
+        });
+        var first = BackgroundProbeAsync(service, CreateDevice("first-worker"), 41);
+        var second = BackgroundProbeAsync(service, CreateDevice("second-worker"), 41);
+        Task<object>? queued = null;
+        try
+        {
+            await Task.WhenAll(firstCall.Entered, secondCall.Entered).WaitAsync(WorkerTestTimeout);
+            var device = CreateDevice("queued-worker");
+            queued = BackgroundProbeAsync(service, device, 42);
+            Set(device, "Id", "changed-after-scheduling");
+            Set(device, "Name", "changed after scheduling");
+
+            await Assert.ThrowsAsync<TimeoutException>(
+                () => queuedEntered.Task.WaitAsync(TimeSpan.FromMilliseconds(100)));
+            firstCall.Release();
+            var failedResult = await first.WaitAsync(WorkerTestTimeout);
+            var queuedResult = await queued.WaitAsync(WorkerTestTimeout);
+
+            Assert.False(Get<bool>(failedResult, "Succeeded"));
+            Assert.Contains("first probe failed", Get<string>(failedResult, "Error"));
+            Assert.True(Get<bool>(queuedResult, "Succeeded"));
+            Assert.Equal("queued-worker", await queuedEntered.Task.WaitAsync(WorkerTestTimeout));
+            Assert.Equal("queued-worker", Get<string>(queuedResult, "DeviceId"));
+            Assert.Equal("queued-worker", Get<string>(queuedResult, "DeviceName"));
+            Assert.Equal(42L, Get<long>(queuedResult, "RequestId"));
+            Assert.False(second.IsCompleted);
+
+            secondCall.Release();
+            Assert.True(Get<bool>(await second.WaitAsync(WorkerTestTimeout), "Succeeded"));
+            Assert.Equal(2, maximumActive);
+            Assert.Equal(0, active);
+        }
+        finally
+        {
+            firstCall.Release();
+            secondCall.Release();
+            await Task.WhenAll(first, second).WaitAsync(WorkerTestTimeout);
+            if (queued != null) await queued.WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task CancellationDuringScheduledNativeDiscoveryPreservesRefreshState()
+    {
+        var nativeCall = new BlockingNativeCall();
+        var service = CreateService((audio, taskType) =>
+        {
+            if (!audio) nativeCall.Block();
+            return EmptyListTask(taskType);
+        });
+        var fixture = new RefreshFixture
+        {
+            Discover = () => InvokeResultAsync(service, "EnumerateCaptureDeviceDiscoveryAsync", false)
+        };
+        using var cancellation = new CancellationTokenSource();
+        var invocation = InvokeOnStaThreadAsync(() => fixture.RefreshAsync(cancellation.Token));
+        try
+        {
+            await nativeCall.Entered.WaitAsync(WorkerTestTimeout);
+            var caller = await invocation.WaitAsync(WorkerTestTimeout);
+            cancellation.Cancel();
+            fixture.AssertOriginalState();
+            nativeCall.Release();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => caller.Operation);
+
+            fixture.AssertOriginalState();
+            Assert.Equal("Device scan canceled", fixture.Status);
+        }
+        finally
+        {
+            nativeCall.Release();
+            var caller = await invocation.WaitAsync(WorkerTestTimeout);
+            try { await caller.Operation.WaitAsync(WorkerTestTimeout); }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OlderScheduledNativeDiscoveryCannotReplaceNewerRefreshOutcome(bool newerFails)
+    {
+        var nativeCall = new BlockingNativeCall();
+        var videoCalls = 0;
+        var service = CreateService((audio, taskType) =>
+        {
+            if (audio) return EmptyListTask(taskType);
+            if (Interlocked.Increment(ref videoCalls) == 1)
+            {
+                nativeCall.Block();
+                return EmptyListTask(taskType);
+            }
+
+            return newerFails ? FailedTask(taskType, new IOException("newer scan failed")) : EmptyListTask(taskType);
+        });
+        var fixture = new RefreshFixture
+        {
+            Discover = () => InvokeResultAsync(service, "EnumerateCaptureDeviceDiscoveryAsync", false)
+        };
+        var invocation = InvokeOnStaThreadAsync(() => fixture.RefreshAsync());
+        try
+        {
+            await nativeCall.Entered.WaitAsync(WorkerTestTimeout);
+            var caller = await invocation.WaitAsync(WorkerTestTimeout);
+            await fixture.RefreshAsync();
+            var newerStatus = fixture.Status;
+            nativeCall.Release();
+            await caller.Operation.WaitAsync(WorkerTestTimeout);
+
+            if (newerFails) fixture.AssertOriginalState();
+            else
+            {
+                Assert.Empty(fixture.Devices);
+                Assert.Equal(42, fixture.ProbeGeneration);
+                Assert.Equal(1, fixture.DeviceReplacements);
+                Assert.Equal(1, fixture.AudioReplacements);
+            }
+
+            Assert.Equal(newerStatus, fixture.Status);
+            Assert.Equal(2, fixture.DiscoveryCalls);
+        }
+        finally
+        {
+            nativeCall.Release();
+            var caller = await invocation.WaitAsync(WorkerTestTimeout);
+            await caller.Operation.WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StaleBackgroundProbePreservesCachedCapabilitiesAndPendingSelection(bool fails)
+    {
+        var fixture = new FormatProbeFixture();
+        var service = CreateProbeService(taskType => fails
+            ? FailedTask(taskType, new IOException("stale probe failed"))
+            : EmptyListTask(taskType));
+
+        fixture.Apply(await BackgroundProbeAsync(service, fixture.Device, 40));
+
+        Assert.Same(fixture.CachedFormat, Assert.Single(Get<IEnumerable>(fixture.Device, "SupportedFormats").Cast<object>()));
+        Assert.True(Get<bool>(fixture.Device, "IsHdrCapable"));
+        Assert.Same(fixture.Device, fixture.SelectedDevice);
+        Assert.Same(fixture.CachedFormat, fixture.SelectedFormat);
+        Assert.True(fixture.PendingAutoSelection);
+        Assert.Equal(60, fixture.PendingFrameRateBucket);
+        Assert.Equal(0, fixture.CapabilityRebuilds);
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -387,6 +825,97 @@ public sealed class DeviceDiscoveryTests
         Assert.Equal("Error scanning devices: newer scan failed", fixture.Status);
     }
 
+    private sealed class AudioRefreshFixture : IDisposable
+    {
+        private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        private readonly Type _type = RequireType("Sussudio.ViewModels.MainViewModel");
+        private readonly object _viewModel;
+        private readonly Func<Task> _refresh;
+        private readonly PropertyChangingEventHandler _microphoneSelectionGuard;
+        private int _enumerationCalls;
+        private int _unexpectedMicrophoneAssignments;
+
+        public AudioRefreshFixture(Func<Task<object>> enumerate)
+        {
+            _viewModel = RuntimeHelpers.GetUninitializedObject(_type);
+            SetField("_deviceService", CreateService((audio, taskType) =>
+            {
+                Assert.True(audio, "The audio refresh must not enumerate capture devices.");
+                Interlocked.Increment(ref _enumerationCalls);
+                return TypedTask(taskType.GetGenericArguments()[0], enumerate());
+            }));
+            SetField("_isLoadingSettings", true);
+            var collectionType = typeof(ObservableCollection<>).MakeGenericType(RequireType("Sussudio.Models.AudioInputDevice"));
+            SetBackingField("AudioInputDevices", NewList(collectionType, OriginalAudio, OriginalMicrophone));
+            SetBackingField("MicrophoneDevices", NewList(collectionType, OriginalAudio, OriginalMicrophone));
+            SetBackingField("SelectedAudioInputDevice", OriginalAudio);
+            SetBackingField("SelectedMicrophoneDevice", OriginalMicrophone);
+
+            // Correct refreshes retain the selected microphone instance. Stop an
+            // unexpected assignment before its callback can read a native endpoint.
+            _microphoneSelectionGuard = (_, args) =>
+            {
+                if (args.PropertyName != "SelectedMicrophoneDevice") return;
+                Interlocked.Increment(ref _unexpectedMicrophoneAssignments);
+                throw new InvalidOperationException("Unexpected microphone selection during isolated audio refresh.");
+            };
+            ((INotifyPropertyChanging)_viewModel).PropertyChanging += _microphoneSelectionGuard;
+            _refresh = _type.GetMethod("RefreshAudioDeviceListAsync", PrivateInstance)!
+                .CreateDelegate<Func<Task>>(_viewModel);
+        }
+
+        public object OriginalAudio { get; } = CreateAudioEndpoint("original-audio");
+        public object OriginalMicrophone { get; } = CreateAudioEndpoint("original-microphone");
+        public int EnumerationCalls => Volatile.Read(ref _enumerationCalls);
+
+        public Task RefreshAsync() => _refresh();
+
+        public void SelectDevice(bool microphone, object device)
+            // Supply the UI selection without running unrelated endpoint-volume callbacks.
+            => SetBackingField(microphone ? "SelectedMicrophoneDevice" : "SelectedAudioInputDevice", device);
+
+        public void BeginDispose() => SetField("_disposeState", 1);
+
+        public void ApplyStartupScan(params object[] endpoints)
+            => _type.GetMethod("ApplyStartupAudioDeviceScan", PrivateInstance)!.Invoke(_viewModel,
+            [
+                CreateAudioEndpointList(endpoints),
+                Array.CreateInstance(CaptureDeviceType, 0),
+                null,
+                Get<string>(Get<object>(_viewModel, "SelectedAudioInputDevice"), "Id"),
+                Get<string>(Get<object>(_viewModel, "SelectedMicrophoneDevice"), "Id")
+            ]);
+
+        public void AssertState(object selectedAudio, object selectedMicrophone, params object[] endpoints)
+        {
+            Assert.Equal(endpoints, Get<IEnumerable>(_viewModel, "AudioInputDevices").Cast<object>().ToArray());
+            Assert.Equal(endpoints, Get<IEnumerable>(_viewModel, "MicrophoneDevices").Cast<object>().ToArray());
+            Assert.Same(selectedAudio, Get<object>(_viewModel, "SelectedAudioInputDevice"));
+            Assert.Same(selectedMicrophone, Get<object>(_viewModel, "SelectedMicrophoneDevice"));
+            Assert.Equal(0, Volatile.Read(ref _unexpectedMicrophoneAssignments));
+        }
+
+        public void Dispose()
+            => ((INotifyPropertyChanging)_viewModel).PropertyChanging -= _microphoneSelectionGuard;
+
+        private void SetField(string name, object value)
+            => _type.GetField(name, PrivateInstance)!.SetValue(_viewModel, value);
+
+        private void SetBackingField(string property, object value)
+            => SetField($"<{property}>k__BackingField", value);
+    }
+
+    private static object CreateAudioEndpoint(string id)
+    {
+        var endpoint = Activator.CreateInstance(RequireType("Sussudio.Models.AudioInputDevice"))!;
+        Set(endpoint, "Id", id);
+        Set(endpoint, "Name", id);
+        return endpoint;
+    }
+
+    private static object CreateAudioEndpointList(params object[] endpoints)
+        => NewList(typeof(List<>).MakeGenericType(RequireType("Sussudio.Models.AudioInputDevice")), endpoints);
+
     private sealed class RefreshFixture
     {
         private readonly object _controller;
@@ -573,6 +1102,69 @@ public sealed class DeviceDiscoveryTests
         return list;
     }
 
+    private sealed class BlockingNativeCall
+    {
+        private readonly TaskCompletionSource<(int ThreadId, ApartmentState Apartment)> _entered =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<(int ThreadId, ApartmentState Apartment)> Entered => _entered.Task;
+
+        public void Block()
+        {
+            _entered.TrySetResult((Environment.CurrentManagedThreadId, Thread.CurrentThread.GetApartmentState()));
+            _release.Task.WaitAsync(TimeSpan.FromSeconds(15)).GetAwaiter().GetResult();
+        }
+
+        public void Release() => _release.TrySetResult();
+    }
+
+    private static async Task<object> AssertWorkerHandoffAsync(BlockingNativeCall nativeCall, Func<Task<object>> invoke)
+    {
+        // Observe the immediate return separately from the operation's completion.
+        // A Task.Run around the whole test invocation would hide caller-side blocking.
+        var invocation = InvokeOnStaThreadAsync(invoke);
+        try
+        {
+            var worker = await nativeCall.Entered.WaitAsync(WorkerTestTimeout);
+            var caller = await invocation.WaitAsync(WorkerTestTimeout);
+            Assert.Equal(ApartmentState.STA, caller.Apartment);
+            Assert.Equal(ApartmentState.MTA, worker.Apartment);
+            Assert.NotEqual(caller.ThreadId, worker.ThreadId);
+            Assert.False(caller.Operation.IsCompleted);
+            nativeCall.Release();
+            return await caller.Operation.WaitAsync(WorkerTestTimeout);
+        }
+        finally
+        {
+            nativeCall.Release();
+            var caller = await invocation.WaitAsync(WorkerTestTimeout);
+            await caller.Operation.WaitAsync(WorkerTestTimeout);
+        }
+    }
+
+    private static Task<(T Operation, int ThreadId, ApartmentState Apartment)> InvokeOnStaThreadAsync<T>(Func<T> invoke)
+        where T : Task
+    {
+        var completion = new TaskCompletionSource<(T Operation, int ThreadId, ApartmentState Apartment)>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var caller = new Thread(() =>
+        {
+            try
+            {
+                var operation = invoke();
+                completion.SetResult((operation, Environment.CurrentManagedThreadId, Thread.CurrentThread.GetApartmentState()));
+            }
+            catch (Exception ex)
+            {
+                completion.SetException(ex);
+            }
+        }) { IsBackground = true };
+        if (OperatingSystem.IsWindows()) caller.SetApartmentState(ApartmentState.STA);
+        caller.Start();
+        return completion.Task;
+    }
+
     private static object CreateService(Func<bool, Type, object> enumerate)
     {
         var serviceType = RequireType("Sussudio.Services.Capture.DeviceService");
@@ -585,15 +1177,18 @@ public sealed class DeviceDiscoveryTests
     }
 
     private static object CreateProbeService(Func<Type, object> probe)
+        => CreateProbeService((_, taskType) => probe(taskType));
+
+    private static object CreateProbeService(Func<string, Type, object> probe)
     {
         var serviceType = RequireType("Sussudio.Services.Capture.DeviceService");
         var constructor = serviceType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
             .Single(ctor => ctor.GetParameters().Length == 3);
         return constructor.Invoke(constructor.GetParameters().Select((parameter, index) =>
-            (object)MakeDelegate(parameter.ParameterType, _ =>
+            (object)MakeDelegate(parameter.ParameterType, args =>
             {
                 var taskType = parameter.ParameterType.GetMethod("Invoke")!.ReturnType;
-                if (index == 2) return probe(taskType);
+                if (index == 2) return probe((string)args[0]!, taskType);
                 if (index == 1) return EmptyListTask(taskType);
                 var listType = taskType.GetGenericArguments()[0];
                 var videoDevice = Activator.CreateInstance(listType.GetGenericArguments()[0], "Test capture", "format-probe-device")!;
@@ -608,11 +1203,17 @@ public sealed class DeviceDiscoveryTests
 
     private static async Task<object> BackgroundProbeAsync(object service, object device, long requestId)
     {
+        var deviceId = Get<string>(device, "Id");
         var completion = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
         var probeEvent = service.GetType().GetEvent("FormatProbeCompleted")!;
         var handler = MakeDelegate(probeEvent.EventHandlerType!, args =>
         {
-            completion.TrySetResult(args[1]!);
+            var result = args[1]!;
+            if (Get<string>(result, "DeviceId") == deviceId && Get<long>(result, "RequestId") == requestId)
+            {
+                completion.TrySetResult(result);
+            }
+
             return null;
         });
         probeEvent.AddEventHandler(service, handler);

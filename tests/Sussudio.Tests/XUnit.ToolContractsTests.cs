@@ -1131,13 +1131,29 @@ public sealed class McpDiagnosticSessionCommandRunContextContractsTests
         var channelType = assembly.GetType("Sussudio.Tools.DiagnosticSessionCommandChannel", true)!;
         using var channel = (IDisposable)Activator.CreateInstance(channelType, BindingFlags.Instance | BindingFlags.NonPublic, null,
             new object[] { send, CancellationToken.None, new List<string>() }, null)!;
+        var scenarioPhaseType = assembly.GetType("Sussudio.Tools.DiagnosticSessionScenarioPhaseResult", true)!;
+        var presetStateType = assembly.GetType("Sussudio.Tools.FlashbackRecordingSettingsDeferredPresetState", true)!;
+        var scenarioPhase = Activator.CreateInstance(scenarioPhaseType, new object?[]
+        {
+            false, false, false, false, true, null, Activator.CreateInstance(presetStateType)
+        })!;
+        var contextType = assembly.GetType("Sussudio.Tools.DiagnosticSessionCleanupContext", true)!;
+        var context = Activator.CreateInstance(contextType)!;
+        const BindingFlags contextProperties = BindingFlags.Instance | BindingFlags.NonPublic;
+        contextType.GetProperty("Options", contextProperties)!.SetValue(context,
+            Activator.CreateInstance(assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions", true)!));
+        contextType.GetProperty("InitialSnapshot", contextProperties)!.SetValue(context, JsonSerializer.SerializeToElement(new { }));
+        contextType.GetProperty("ScenarioPhase", contextProperties)!.SetValue(context, scenarioPhase);
+        contextType.GetProperty("Actions", contextProperties)!.SetValue(context, actions);
+        contextType.GetProperty("CommandChannel", contextProperties)!.SetValue(context, channel);
+        contextType.GetProperty("TryWaitWithTokenAsync", contextProperties)!.SetValue(context,
+            new Func<string, int, CancellationToken, Task>((_, _, _) => Task.CompletedTask));
+        contextType.GetProperty("SetStage", contextProperties)!.SetValue(context, new Action<string>(_ => { }));
+        contextType.GetProperty("RecordTerminalException", contextProperties)!.SetValue(context,
+            new Action<Exception, string>((error, _) => failures.Add(error)));
         var cleanupType = assembly.GetType("Sussudio.Tools.DiagnosticSessionCleanupActions", true)!;
         var method = cleanupType.GetMethod("RestoreLiveFlashbackPlaybackAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
-        var task = (Task)method.Invoke(null, new object[]
-        {
-            true, actions, channel, new Action<string>(_ => { }),
-            new Action<Exception, string>((error, _) => failures.Add(error))
-        })!;
+        var task = (Task)method.Invoke(null, new object[] { context })!;
         await task.WaitAsync(TimeSpan.FromSeconds(5));
         if (failSnapshot)
         {
@@ -6391,7 +6407,7 @@ static partial class Program
         AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-off\")");
         AssertContains(cleanupActionsText, "setStage(\"cleanup-restore-flashback-on\")");
         AssertContains(cleanupActionsText, "using Sussudio.Models;");
-        AssertContains(cleanupActionsText, "DiagnosticSessionCommandChannel commandChannel,");
+        AssertContains(cleanupActionsText, "var commandChannel = context.CommandChannel;");
         AssertContains(cleanupActionsText, "commandChannel.SendWithTokenAsync(");
         AssertContains(cleanupActionsText, "AutomationCommandKind.SetRecordingEnabled,");
         AssertContains(cleanupActionsText, "AutomationCommandKind.FlashbackAction,");

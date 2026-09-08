@@ -715,55 +715,14 @@ internal static class DiagnosticSessionCleanupActions
     internal static async Task<DiagnosticSessionCleanupResult> RunAsync(
         DiagnosticSessionCleanupContext context)
     {
-        var options = context.Options;
-        var initialSnapshot = context.InitialSnapshot;
-        var startedRecording = context.ScenarioPhase.StartedRecording;
-        var startedPreview = context.ScenarioPhase.StartedPreview;
-        var enabledFlashback = context.ScenarioPhase.EnabledFlashback;
-        var disabledFlashback = context.ScenarioPhase.DisabledFlashback;
-        var startedFlashbackPlayback = context.ScenarioPhase.StartedFlashbackPlayback;
-        var actions = context.Actions;
-        var commandChannel = context.CommandChannel;
-        var tryWaitWithTokenAsync = context.TryWaitWithTokenAsync;
-        var setStage = context.SetStage;
-        var recordTerminalException = context.RecordTerminalException;
-
-        var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(
-                options,
-                startedRecording,
-                actions,
-                commandChannel,
-                tryWaitWithTokenAsync,
-                setStage,
-                recordTerminalException)
+        var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(context)
             .ConfigureAwait(false);
 
-        if (!options.LeaveRunning)
+        if (!context.Options.LeaveRunning)
         {
-            await RestoreLiveFlashbackPlaybackAsync(
-                    startedFlashbackPlayback,
-                    actions,
-                    commandChannel,
-                    setStage,
-                    recordTerminalException)
-                .ConfigureAwait(false);
-            await StopPreviewIfStartedAsync(
-                    startedPreview,
-                    initialSnapshot,
-                    actions,
-                    commandChannel,
-                    setStage,
-                    recordTerminalException)
-                .ConfigureAwait(false);
-            await RestoreFlashbackEnabledStateAsync(
-                    enabledFlashback,
-                    disabledFlashback,
-                    initialSnapshot,
-                    actions,
-                    commandChannel,
-                    setStage,
-                    recordTerminalException)
-                .ConfigureAwait(false);
+            await RestoreLiveFlashbackPlaybackAsync(context).ConfigureAwait(false);
+            await StopPreviewIfStartedAsync(context).ConfigureAwait(false);
+            await RestoreFlashbackEnabledStateAsync(context).ConfigureAwait(false);
         }
 
         return new DiagnosticSessionCleanupResult(stoppedRecordingForVerification);
@@ -773,14 +732,16 @@ internal static class DiagnosticSessionCleanupActions
         => new(timeout);
 
     private static async Task<bool> StopRecordingForCleanupAsync(
-        DiagnosticSessionOptions options,
-        bool startedRecording,
-        List<string> actions,
-        DiagnosticSessionCommandChannel commandChannel,
-        Func<string, int, CancellationToken, Task> tryWaitWithTokenAsync,
-        Action<string> setStage,
-        Action<Exception, string> recordTerminalException)
+        DiagnosticSessionCleanupContext context)
     {
+        var options = context.Options;
+        var startedRecording = context.ScenarioPhase.StartedRecording;
+        var actions = context.Actions;
+        var commandChannel = context.CommandChannel;
+        var tryWaitWithTokenAsync = context.TryWaitWithTokenAsync;
+        var setStage = context.SetStage;
+        var recordTerminalException = context.RecordTerminalException;
+
         var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;
         if (!startedRecording || (!shouldStopRecordingForVerification && options.LeaveRunning))
         {
@@ -820,12 +781,14 @@ internal static class DiagnosticSessionCleanupActions
     }
 
     private static async Task RestoreLiveFlashbackPlaybackAsync(
-        bool startedFlashbackPlayback,
-        List<string> actions,
-        DiagnosticSessionCommandChannel commandChannel,
-        Action<string> setStage,
-        Action<Exception, string> recordTerminalException)
+        DiagnosticSessionCleanupContext context)
     {
+        var startedFlashbackPlayback = context.ScenarioPhase.StartedFlashbackPlayback;
+        var actions = context.Actions;
+        var commandChannel = context.CommandChannel;
+        var setStage = context.SetStage;
+        var recordTerminalException = context.RecordTerminalException;
+
         if (!startedFlashbackPlayback)
         {
             return;
@@ -866,13 +829,15 @@ internal static class DiagnosticSessionCleanupActions
     }
 
     private static async Task StopPreviewIfStartedAsync(
-        bool startedPreview,
-        JsonElement initialSnapshot,
-        List<string> actions,
-        DiagnosticSessionCommandChannel commandChannel,
-        Action<string> setStage,
-        Action<Exception, string> recordTerminalException)
+        DiagnosticSessionCleanupContext context)
     {
+        var startedPreview = context.ScenarioPhase.StartedPreview;
+        var initialSnapshot = context.InitialSnapshot;
+        var actions = context.Actions;
+        var commandChannel = context.CommandChannel;
+        var setStage = context.SetStage;
+        var recordTerminalException = context.RecordTerminalException;
+
         if (!startedPreview || GetBool(initialSnapshot, "IsPreviewing"))
         {
             return;
@@ -898,14 +863,16 @@ internal static class DiagnosticSessionCleanupActions
     }
 
     private static async Task RestoreFlashbackEnabledStateAsync(
-        bool enabledFlashback,
-        bool disabledFlashback,
-        JsonElement initialSnapshot,
-        List<string> actions,
-        DiagnosticSessionCommandChannel commandChannel,
-        Action<string> setStage,
-        Action<Exception, string> recordTerminalException)
+        DiagnosticSessionCleanupContext context)
     {
+        var enabledFlashback = context.ScenarioPhase.EnabledFlashback;
+        var disabledFlashback = context.ScenarioPhase.DisabledFlashback;
+        var initialSnapshot = context.InitialSnapshot;
+        var actions = context.Actions;
+        var commandChannel = context.CommandChannel;
+        var setStage = context.SetStage;
+        var recordTerminalException = context.RecordTerminalException;
+
         if (enabledFlashback && !GetBool(initialSnapshot, "FlashbackActive"))
         {
             try

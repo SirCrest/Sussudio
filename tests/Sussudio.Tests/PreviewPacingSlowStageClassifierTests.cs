@@ -1,4 +1,3 @@
-using System;
 using Sussudio.Services.Automation;
 using Xunit;
 

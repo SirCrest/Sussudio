@@ -81,6 +81,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly Func<CancellationToken, Task> _rebuildRecordingSettingsBackendAsync;
 
     private int _isDisposed;
+    private int _disposeRequested;
+    private int _cleanupRequired;
+    private readonly object _disposalLock = new();
+    private Task? _disposalTask;
     private bool _isInitialized;
     // REVIEWED 2026-04-07: writes serialized by _sessionTransitionLock;
     // unsync reads from UI thread produce at-worst one-frame-stale value (no crash/corruption).
@@ -174,7 +178,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
-    public event Action? PreCleanupRequested;
+    public event Func<CancellationToken, Task>? PreCleanupRequested;
     public event EventHandler<ulong>? FrameCaptured;
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
     public event EventHandler<AudioLevelEventArgs>? MicrophoneAudioLevelUpdated;
@@ -265,13 +269,28 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private async Task RunTransitionAsync(
         CaptureSessionState transitionState,
         Func<CancellationToken, Task> action,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool cleanupRetainedResources = false)
     {
         ThrowIfDisposed();
         await _sessionTransitionLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            ThrowIfDisposed();
             cancellationToken.ThrowIfCancellationRequested();
+            if (Volatile.Read(ref _cleanupRequired) != 0 && transitionState != CaptureSessionState.CleaningUp)
+            {
+                if (!cleanupRetainedResources)
+                {
+                    throw new InvalidOperationException("Capture cleanup must complete before starting another session transition.");
+                }
+
+                EnterCleanupState();
+                await CleanupCoreAsync(cancellationToken).ConfigureAwait(false);
+                ResolveSessionSteadyState();
+                return;
+            }
+
             EnterTransitionState(transitionState);
             await action(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
@@ -279,7 +298,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            ResolveSessionSteadyState();
+            if (Volatile.Read(ref _cleanupRequired) != 0) EnterFaultedState();
+            else ResolveSessionSteadyState();
             throw;
         }
         catch (Exception ex)
@@ -330,7 +350,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private void ThrowIfDisposed()
     {
-        if (_isDisposed != 0)
+        if (Volatile.Read(ref _disposeRequested) != 0 || Volatile.Read(ref _isDisposed) != 0)
         {
             throw new ObjectDisposedException(nameof(CaptureService));
         }
@@ -399,46 +419,53 @@ private readonly object _recordingFailureTelemetryLock = new();
             EnterCleanupState();
             await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);
         }
+        catch
+        {
+            EnterFaultedState();
+            throw;
+        }
         finally
         {
             ReleaseSemaphoreBestEffort(_sessionTransitionLock, "dispose_cleanup");
         }
+
+        Volatile.Write(ref _isDisposed, 1);
+        DisposeCoordinationLocksBestEffort();
+        EnterDisposedState();
     }
 
     public void Dispose()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
-        try
-        {
-            Task.Run(CleanupForDisposalAsync).GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"CaptureService.Dispose cleanup warning: {ex.Message}");
-        }
-
-        DisposeCoordinationLocksBestEffort();
-        EnterDisposedState();
+        var timeoutMs = EnvironmentHelpers.GetIntFromEnv(
+            "SUSSUDIO_CAPTURE_SERVICE_DISPOSE_TIMEOUT_MS", 30000, 1000, 300000);
+        GetOrStartDisposalTask().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)).GetAwaiter().GetResult();
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
-        try
-        {
-            await CleanupForDisposalAsync().ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"CaptureService.DisposeAsync cleanup warning: {ex.Message}");
-        }
+    public ValueTask DisposeAsync()
+        => new(GetOrStartDisposalTask());
 
-        DisposeCoordinationLocksBestEffort();
-        EnterDisposedState();
+    private Task GetOrStartDisposalTask()
+    {
+        lock (_disposalLock)
+        {
+            Volatile.Write(ref _disposeRequested, 1);
+            // A caller timeout does not finish cleanup. Keep that attempt owned;
+            // only a completed failure permits another disposal attempt.
+            if (_disposalTask == null || _disposalTask.IsFaulted || _disposalTask.IsCanceled)
+            {
+                _disposalTask = Task.Run(CleanupForDisposalAsync);
+            }
+
+            return _disposalTask;
+        }
     }
 
     private async Task CleanupCoreAsync(CancellationToken transitionToken)
     {
+        Volatile.Write(ref _cleanupRequired, 1);
+        // Recording finalization can release capture too, so the renderer must
+        // acknowledge its stop before any cleanup helper receives ownership.
+        await StopPreviewRendererBeforeCaptureCleanupAsync(transitionToken).ConfigureAwait(false);
         var cancellationRequested = false;
         var preserveFlashbackSegmentsAfterFailedRecordingFinalize = false;
         if (_isRecording || _recordingBackend.HasActiveBackend)
@@ -494,7 +521,7 @@ private readonly object _recordingFailureTelemetryLock = new();
         }
 
         var pendingLibAvDrainTask = _recordingBackend.PendingLibAvDrainTask;
-        var unifiedVideoCapture = _videoPipeline.TakeCapture();
+        var unifiedVideoCapture = _videoPipeline.Capture;
         if (unifiedVideoCapture != null)
         {
             try
@@ -513,16 +540,19 @@ private readonly object _recordingFailureTelemetryLock = new();
                     SetPendingLibAvCleanupTask(
                         Task.WhenAll(pendingLibAvDrainTask, captureCleanupTask),
                         "LibAv+CaptureServiceCleanup");
+                    _videoPipeline.ClearCapture();
                 }
                 else
                 {
                     await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
                     await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
+                    _videoPipeline.ClearCapture();
                 }
             }
             catch (Exception ex)
             {
                 Logger.Log($"FLASHBACK_CLEANUP_UNIFIED_VIDEO_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+                throw;
             }
         }
 
@@ -556,10 +586,45 @@ private readonly object _recordingFailureTelemetryLock = new();
         _recordingBackend.ClearContextAndSettings();
         ResetAvSyncDriftBaseline();
         ResetSessionStateAfterCleanup();
+        Volatile.Write(ref _cleanupRequired, 0);
 
         if (cancellationRequested || transitionToken.IsCancellationRequested)
         {
             transitionToken.ThrowIfCancellationRequested();
+        }
+    }
+
+    private async Task StopPreviewRendererBeforeCaptureCleanupAsync(CancellationToken cancellationToken)
+    {
+        if (_videoPipeline.Capture == null && _videoPipeline.PreviewFrameSink is not D3D11PreviewRenderer)
+        {
+            return;
+        }
+
+        try
+        {
+            // The deadline only cancels admission to the UI queue. Once the UI
+            // starts stopping the renderer, await the actual native fence/join.
+            using var admission = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            admission.CancelAfter(TimeSpan.FromSeconds(2));
+            var handlers = PreCleanupRequested;
+            if (handlers != null)
+            {
+                foreach (Func<CancellationToken, Task> handler in handlers.GetInvocationList())
+                {
+                    await handler(admission.Token).ConfigureAwait(false);
+                }
+            }
+
+            if (_videoPipeline.PreviewFrameSink is D3D11PreviewRenderer)
+            {
+                throw new InvalidOperationException("The preview renderer must stop and detach before capture cleanup.");
+            }
+        }
+        catch
+        {
+            Volatile.Write(ref _cleanupRequired, 1);
+            throw;
         }
     }
 
@@ -709,17 +774,17 @@ private readonly object _recordingFailureTelemetryLock = new();
 
                     EnterCleanupState();
 
-                    // Stop the preview renderer before disposing the shared D3D11
-                    // device. Same race as the reinit crash: the renderer may be
-                    // calling VideoProcessorBlt/Present on the shared device when
-                    // cleanup disposes it.
-                    try { PreCleanupRequested?.Invoke(); }
-                    catch (Exception preEx) { Logger.Log($"PreCleanupRequested handler warning: {preEx.Message}"); }
-
-                    await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);
-                    EnterFaultedState();
-                    StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
-                    ErrorOccurred?.Invoke(this, ex);
+                    try
+                    {
+                        await CleanupCoreAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        EnterFaultedState();
+                        try { StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}"); }
+                        catch (Exception observerEx) { Logger.Log($"Fatal capture status notification warning: {observerEx.Message}"); }
+                        ErrorOccurred?.Invoke(this, ex);
+                    }
                 }
                 finally
                 {

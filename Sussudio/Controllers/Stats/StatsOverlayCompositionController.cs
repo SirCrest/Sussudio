@@ -475,7 +475,7 @@ internal sealed class StatsDockControllerGraphContext
     /// </summary>
     public StackPanel DiagnosticsContent => DockTargets.DiagnosticsContent;
 
-    public required Func<StatsSnapshot> GetStatsSnapshot { get; init; }
+    public required Func<StatsSnapshot> RefreshStatsIfDueAndGetSnapshot { get; init; }
     public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }
     public required Func<int?> GetPendingPreviewFrameCount { get; init; }
     public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }
@@ -487,7 +487,7 @@ internal sealed class StatsDockControllerGraph
 
     public StatsDockControllerGraph(StatsDockControllerGraphContext context)
     {
-        var statsDockPresentationController = CreatePresentationController(context);
+        var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);
         var statsDockRowChromeController = CreateRowChromeController(context);
         var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);
         var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);
@@ -508,56 +508,6 @@ internal sealed class StatsDockControllerGraph
 
     public void RefreshDiagnosticsSection()
         => _refreshController.RefreshDiagnosticsSection();
-
-    private static StatsDockPresentationController CreatePresentationController(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsDockPresentationController(new StatsDockPresentationControllerContext
-        {
-            SessionStateValue = context.DockTargets.SessionStateValue,
-            SummaryCaptureValue = context.DockTargets.SummaryCaptureValue,
-            SummaryPreviewValue = context.DockTargets.SummaryPreviewValue,
-            SummaryRecordingValue = context.DockTargets.SummaryRecordingValue,
-            SummaryRendererFpsValue = context.DockTargets.SummaryRendererFpsValue,
-            SummaryVisualFpsValue = context.DockTargets.SummaryVisualFpsValue,
-            SummaryLatencyValue = context.DockTargets.SummaryLatencyValue,
-            SourceResolutionValue = context.DockTargets.SourceResolutionValue,
-            SourceFrameRateValue = context.DockTargets.SourceFrameRateValue,
-            SourceHdrValue = context.DockTargets.SourceHdrValue,
-            SourceFormatValue = context.DockTargets.SourceFormatValue,
-            TelemetryOriginValue = context.DockTargets.TelemetryOriginValue,
-            AdcOnOffValue = context.DockTargets.AdcOnOffValue,
-            AdcGainValue = context.DockTargets.AdcGainValue,
-            SourceFpsValue = context.DockTargets.SourceFpsValue,
-            SourceExpectedFpsValue = context.DockTargets.SourceExpectedFpsValue,
-            SourceAvgValue = context.DockTargets.SourceAvgValue,
-            SourceP95Value = context.DockTargets.SourceP95Value,
-            SourceJitterValue = context.DockTargets.SourceJitterValue,
-            SourceGapsValue = context.DockTargets.SourceGapsValue,
-            SourceDropsValue = context.DockTargets.SourceDropsValue,
-            PreviewFpsValue = context.DockTargets.PreviewFpsValue,
-            PreviewAvgValue = context.DockTargets.PreviewAvgValue,
-            PreviewP95Value = context.DockTargets.PreviewP95Value,
-            PreviewSlowValue = context.DockTargets.PreviewSlowValue,
-            VisualFpsValue = context.DockTargets.VisualFpsValue,
-            VisualMotionValue = context.DockTargets.VisualMotionValue,
-            PipelineLatencyValue = context.DockTargets.PipelineLatencyValue,
-            SourceDeliveredValue = context.DockTargets.SourceDeliveredValue,
-            SourceDroppedValue = context.DockTargets.SourceDroppedValue,
-            RendererRenderedValue = context.DockTargets.RendererRenderedValue,
-            RendererDroppedValue = context.DockTargets.RendererDroppedValue,
-            PerformanceScoreValue = context.DockTargets.PerformanceScoreValue,
-            AvSyncDriftValue = context.DockTargets.AvSyncDriftValue,
-            AvSyncDriftRateValue = context.DockTargets.AvSyncDriftRateValue,
-            AvSyncEncoderRow = context.DockTargets.AvSyncEncoderRow,
-            AvSyncEncoderValue = context.DockTargets.AvSyncEncoderValue,
-            EncoderSection = context.DockTargets.EncoderSection,
-            EncoderCodecValue = context.DockTargets.EncoderCodecValue,
-            EncoderResolutionValue = context.DockTargets.EncoderResolutionValue,
-            EncoderFrameRateValue = context.DockTargets.EncoderFrameRateValue,
-            EncoderBitrateValue = context.DockTargets.EncoderBitrateValue
-        });
-    }
 
     private static StatsDockRowChromeController CreateRowChromeController(
         StatsDockControllerGraphContext context)
@@ -615,7 +565,7 @@ internal sealed class StatsDockControllerGraph
             IsWindowClosing = context.IsWindowClosing,
             IsStatsDockVisible = () => context.StatsDockPanel.Visibility == Visibility.Visible,
             IsDiagnosticsSectionVisible = () => context.DiagnosticsContent.Visibility == Visibility.Visible,
-            GetStatsSnapshot = context.GetStatsSnapshot,
+            RefreshStatsIfDueAndGetSnapshot = context.RefreshStatsIfDueAndGetSnapshot,
             DockPresentationController = statsDockPresentationController,
             DiagnosticRowsController = statsDiagnosticRowsController,
             HardwareRowsController = statsHardwareRowsController
@@ -713,8 +663,8 @@ internal sealed class StatsOverlayCompositionController : IDisposable
     public void HideDockPanel(bool immediate = false)
         => _statsOverlayController.HideDockPanel(immediate);
 
-    public StatsSnapshot GetStatsSnapshot()
-        => _sampler.GetSnapshot();
+    public StatsSnapshot RefreshStatsIfDueAndGetSnapshot()
+        => _sampler.RefreshIfDueAndGetSnapshot();
 
     public IDisposable SubscribeToStats(Action<StatsSnapshot> receiveSnapshot)
         => _sampler.Subscribe(sample => receiveSnapshot(sample.Snapshot));
@@ -785,7 +735,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
             IsWindowClosing = context.Shell.IsWindowClosing,
             StatsDockPanel = context.Shell.StatsDockPanel,
             DockTargets = context.DockTargets,
-            GetStatsSnapshot = GetStatsSnapshot,
+            RefreshStatsIfDueAndGetSnapshot = RefreshStatsIfDueAndGetSnapshot,
             GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,
             GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot
@@ -847,52 +797,6 @@ internal enum StatsDockSimpleRowPool
     Gpu
 }
 
-internal sealed class StatsDockPresentationControllerContext
-{
-    public required TextBlock SessionStateValue { get; init; }
-    public required TextBlock SummaryCaptureValue { get; init; }
-    public required TextBlock SummaryPreviewValue { get; init; }
-    public required TextBlock SummaryRecordingValue { get; init; }
-    public required TextBlock SummaryRendererFpsValue { get; init; }
-    public required TextBlock SummaryVisualFpsValue { get; init; }
-    public required TextBlock SummaryLatencyValue { get; init; }
-    public required TextBlock SourceResolutionValue { get; init; }
-    public required TextBlock SourceFrameRateValue { get; init; }
-    public required TextBlock SourceHdrValue { get; init; }
-    public required TextBlock SourceFormatValue { get; init; }
-    public required TextBlock TelemetryOriginValue { get; init; }
-    public required TextBlock AdcOnOffValue { get; init; }
-    public required TextBlock AdcGainValue { get; init; }
-    public required TextBlock SourceFpsValue { get; init; }
-    public required TextBlock SourceExpectedFpsValue { get; init; }
-    public required TextBlock SourceAvgValue { get; init; }
-    public required TextBlock SourceP95Value { get; init; }
-    public required TextBlock SourceJitterValue { get; init; }
-    public required TextBlock SourceGapsValue { get; init; }
-    public required TextBlock SourceDropsValue { get; init; }
-    public required TextBlock PreviewFpsValue { get; init; }
-    public required TextBlock PreviewAvgValue { get; init; }
-    public required TextBlock PreviewP95Value { get; init; }
-    public required TextBlock PreviewSlowValue { get; init; }
-    public required TextBlock VisualFpsValue { get; init; }
-    public required TextBlock VisualMotionValue { get; init; }
-    public required TextBlock PipelineLatencyValue { get; init; }
-    public required TextBlock SourceDeliveredValue { get; init; }
-    public required TextBlock SourceDroppedValue { get; init; }
-    public required TextBlock RendererRenderedValue { get; init; }
-    public required TextBlock RendererDroppedValue { get; init; }
-    public required TextBlock PerformanceScoreValue { get; init; }
-    public required TextBlock AvSyncDriftValue { get; init; }
-    public required TextBlock AvSyncDriftRateValue { get; init; }
-    public required UIElement AvSyncEncoderRow { get; init; }
-    public required TextBlock AvSyncEncoderValue { get; init; }
-    public required UIElement EncoderSection { get; init; }
-    public required TextBlock EncoderCodecValue { get; init; }
-    public required TextBlock EncoderResolutionValue { get; init; }
-    public required TextBlock EncoderFrameRateValue { get; init; }
-    public required TextBlock EncoderBitrateValue { get; init; }
-}
-
 internal sealed class StatsDockPresentationController
 {
     private static readonly SolidColorBrush MetricNeutralBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xF1, 0xF1, 0xF1));
@@ -901,9 +805,9 @@ internal sealed class StatsDockPresentationController
     private static readonly SolidColorBrush MetricWarningBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0xC8, 0x57));
     private static readonly SolidColorBrush MetricBadBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0x6B, 0x6B));
 
-    private readonly StatsDockPresentationControllerContext _context;
+    private readonly StatsOverlayDockTargetsContext _context;
 
-    public StatsDockPresentationController(StatsDockPresentationControllerContext context)
+    public StatsDockPresentationController(StatsOverlayDockTargetsContext context)
     {
         _context = context;
     }
@@ -1264,7 +1168,7 @@ internal sealed class StatsDockRefreshControllerContext
     public required Func<bool> IsWindowClosing { get; init; }
     public required Func<bool> IsStatsDockVisible { get; init; }
     public required Func<bool> IsDiagnosticsSectionVisible { get; init; }
-    public required Func<StatsSnapshot> GetStatsSnapshot { get; init; }
+    public required Func<StatsSnapshot> RefreshStatsIfDueAndGetSnapshot { get; init; }
     public required StatsDockPresentationController DockPresentationController { get; init; }
     public required StatsDiagnosticRowsController DiagnosticRowsController { get; init; }
     public required StatsHardwareRowsController HardwareRowsController { get; init; }
@@ -1300,7 +1204,7 @@ internal sealed class StatsDockRefreshController
 
     public void RefreshDiagnosticsSection()
     {
-        var snapshot = _context.GetStatsSnapshot();
+        var snapshot = _context.RefreshStatsIfDueAndGetSnapshot();
         UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
     }
 

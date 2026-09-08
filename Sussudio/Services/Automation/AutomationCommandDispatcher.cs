@@ -974,8 +974,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             "outputPath",
             RequireString(payload, "outputPath"));
         var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
-        var force = GetBool(payload, "force") ?? false;
-        var exportResult = await _flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken).ConfigureAwait(false);
+        // Older clients may send force; export always refuses existing destinations.
+        _ = GetBool(payload, "force") ?? false;
+        var exportResult = await _flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
         var failureKind = FlashbackExportFailureCodes.Classify(exportResult);
         return CreateResponse(
             correlationId,

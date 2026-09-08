@@ -2744,8 +2744,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     UpdateFlashbackHealthStatus = viewModel.UpdateFlashbackHealthStatus,
                     AttachCapturePreCleanupRequested = handler => viewModel._captureService.PreCleanupRequested += handler,
                     DetachCapturePreCleanupRequested = handler => viewModel._captureService.PreCleanupRequested -= handler,
-                    AttachFrameCaptured = handler => viewModel._captureService.FrameCaptured += handler,
-                    DetachFrameCaptured = handler => viewModel._captureService.FrameCaptured -= handler,
                     AttachAudioLevelUpdated = handler => viewModel._captureService.AudioLevelUpdated += handler,
                     DetachAudioLevelUpdated = handler => viewModel._captureService.AudioLevelUpdated -= handler,
                     OnAudioLevelUpdated = viewModel.OnAudioLevelUpdated,
@@ -2773,13 +2771,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     IsCaptureRecording = () => viewModel._captureService.IsRecording,
                     IsRecording = () => viewModel.IsRecording,
                     ResetAudioMeter = viewModel.ResetAudioMeter,
-                    GetPreviewRendererStopHandlers = () =>
-                    {
-                        var handlers = viewModel.PreviewRendererStopRequested;
-                        return handlers != null
-                            ? Array.ConvertAll(handlers.GetInvocationList(), handler => (Func<Task>)handler)
-                            : Array.Empty<Func<Task>>();
-                    },
+                    NotifyRendererStopAsync = viewModel.NotifyRendererStopAsync,
+                    InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
                     ReinitializeDeviceAsync = previewLifecycleController.ReinitializeDeviceAsync,
                     EnqueueUiOperation = (operation, operationName) => viewModel.EnqueueUiOperation(operation, operationName),
                 });
@@ -3019,7 +3012,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),
                     DisposeSessionCoordinatorAsync = () => viewModel._sessionCoordinator.DisposeAsync().AsTask(),
                     DisposeCaptureServiceAsync = () => viewModel._captureService.DisposeAsync().AsTask(),
-                    DisposeCaptureService = viewModel._captureService.Dispose,
+                    CompleteRuntimeDispose = () =>
+                    {
+                        runtimeLifecycleController.CompleteDispose();
+                        viewModel.PreviewRendererStopRequested = null;
+                    },
                     AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,
                 });
         }

@@ -2086,6 +2086,7 @@ public partial class CaptureService
             return new LibAvFinalizeStepResult(result, cancellationException);
         }
 
+        await StopPreviewRendererBeforeCaptureCleanupAsync(CancellationToken.None).ConfigureAwait(false);
         var unifiedVideoCapture = _videoPipeline.TakeCapture();
         if (unifiedVideoCapture != null)
         {

@@ -2292,7 +2292,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachCaptureStatusChanged(OnCaptureStatusChanged);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachCaptureErrorOccurred(OnCaptureError);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachFrameCaptured(OnFrameCaptured);");
+        AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "OnFrameCaptured");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);");
@@ -2303,7 +2303,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachCaptureStatusChanged(OnCaptureStatusChanged);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachCaptureErrorOccurred(OnCaptureError);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachFrameCaptured(OnFrameCaptured);");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "public void DetachCleanupHandoff()");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.DetachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);");
@@ -2329,7 +2329,9 @@ static partial class Program
         AssertDoesNotContain(mainViewModelDisposalControllerText, "_viewModel.");
         AssertContains(mainViewModelDisposalControllerText, "_context.CancelActiveFlashbackExport();");
         AssertContains(mainViewModelDisposalControllerText, "_context.StopRuntimeForDispose();");
-        AssertContains(mainViewModelDisposalControllerText, "_context.DisposeCaptureService();");
+        AssertContains(mainViewModelDisposalControllerText, "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);");
+        AssertContains(mainViewModelDisposalControllerText, "_context.CompleteRuntimeDispose();");
+        AssertDoesNotContain(mainViewModelDisposalControllerText, "_context.DisposeCaptureService();");
         AssertDoesNotContain(mainViewModelDisposalText, "PowerModeChanged -=");
         AssertDoesNotContain(mainViewModelDisposalText, "AudioLevelUpdated -=");
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "OnSystemPowerModeChanged");
@@ -2338,7 +2340,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Trace.TraceWarning(");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureStatusChanged(object? sender, string status)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureError(object? sender, Exception ex)");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCapturePreCleanupRequested()");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "private Task OnCapturePreCleanupRequested(CancellationToken admissionToken)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         AssertDoesNotContain(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
@@ -2486,11 +2488,24 @@ static partial class Program
             + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Resources.cs"))
             + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.cs")),
             "D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
-        AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.RenderPasses.cs"))
-            + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Resources.cs"))
-            + "\n" + File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.cs")),
-            "D3D11_PREVIEW_SWAPCHAIN_UNBIND_ENQUEUE_FAILED");
+        var previewRendererText = File.ReadAllText(
+            Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.cs"));
+        var swapChainUnbindText = ExtractTextBetween(
+            previewRendererText,
+            "private void UnbindSwapChainFromPanel()",
+            "private void ExecuteSwapChainUnbindOnUiThread(");
+        AssertContains(swapChainUnbindText, "!_dispatcherQueue.TryEnqueue(() => ExecuteSwapChainUnbindOnUiThread(request))");
+        AssertContains(swapChainUnbindText, "request.Completion.TrySetException(new InvalidOperationException(\"Failed to enqueue swap chain unbind to the UI thread.\"));");
+        AssertOccursBefore(swapChainUnbindText, "request.Completion.TrySetException(", "request.Completion.Task.WaitAsync(");
+        AssertContains(swapChainUnbindText, "request.Completion.Task.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();");
+        var retainedCleanupText = ExtractTextBetween(
+            previewRendererText,
+            "private void CleanupRenderThreadExit()",
+            "public void StopRenderThread()");
+        AssertContains(retainedCleanupText, "CleanupD3DResources();");
+        AssertContains(retainedCleanupText, "catch (Exception ex)");
+        AssertContains(retainedCleanupText, "Volatile.Write(ref _renderThreadCleanupPending, 1);");
+        AssertContains(retainedCleanupText, "D3D11_PREVIEW_RENDER_THREAD_CLEANUP_RETAINED");
     }
 
     private static string RemoveMainViewModelControllerGraphSource(string source)
@@ -2683,6 +2698,7 @@ static partial class Program
     internal static Task CaptureDiscoverySourceOwnership_LivesInFocusedPartials()
     {
         var deviceRootText = ReadRepoFile("Sussudio/Services/Capture/DeviceService.cs").Replace("\r\n", "\n");
+        var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var sourceReaderRootText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs").Replace("\r\n", "\n");
         var sourceReaderNegotiationText = sourceReaderRootText;
         var sourceReaderDeviceEnumerationText = sourceReaderNegotiationText;
@@ -2694,6 +2710,11 @@ static partial class Program
         AssertContains(deviceRootText, "return discovery.CaptureDevices;");
         AssertContains(deviceRootText, ": this(MfDeviceEnumerator.EnumerateVideoDevicesAsync, MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync)");
         AssertContains(deviceRootText, "var audioTask = _enumerateAudioCaptureEndpointsAsync();");
+        AssertContains(deviceRootText, "Task.Run(() => EnumerateCaptureDeviceDiscoveryOnWorkerAsync(waitForFormatProbes))");
+        AssertContains(deviceRootText, "Task.Run(_enumerateAudioCaptureEndpointsAsync)");
+        AssertContains(deviceRootText, "Task.Run(() => RunBackgroundFormatProbeAsync(deviceId, deviceName, requestId))");
+        AssertContains(audioStateText, "await _deviceService.EnumerateAudioCaptureEndpointsAsync()");
+        AssertDoesNotContain(audioStateText, "MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync");
         AssertContains(deviceRootText, "return new DeviceDiscoveryResult(discovered, audioDevices);");
         AssertContains(deviceRootText, "foreach (var candidate in selected.OrderByDescending(GetDevicePriority))");
         AssertContains(deviceRootText, "private static int GetDevicePriority(DeviceCandidate candidate)");

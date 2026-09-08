@@ -278,6 +278,10 @@ namespace Sussudio.Tests
             => global::Program.ParallelMjpegDecodePipeline_ForceDropRegistersKnownMissing();
 
         [Fact]
+        public Task ParallelMjpegDecodePipelineNonHeadForceDropPreservesEmissionOrder()
+            => global::Program.ParallelMjpegDecodePipeline_NonHeadForceDropPreservesEmissionOrder();
+
+        [Fact]
         public Task FrameFingerprintCadenceTrackerCurrentDuplicateRunLowersUniqueFps()
             => global::Program.FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps();
 
@@ -1308,8 +1312,6 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_ForceDropRegistersKnownMissing()
     {
-        // ForceDropOldestReorderFrameUnderLock must add the dropped seqNo to _knownMissingSequences
-        // so the emitter never waits forever on a frame that was destroyed by the ring-full eviction.
         var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
         var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
         var reorderLock = new object();
@@ -1324,26 +1326,130 @@ static partial class Program
         SetPrivateField(pipeline, "_nextEmitSeq", 0L);
         SetPrivateField(pipeline, "_reorderBufferDepth", 0);
 
-        // Insert a decoded frame at seq=0 (which is also _nextEmitSeq).
         var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
         var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
         var nv12 = Enum.Parse(formatType, "Nv12");
-        var pool = new TrackingArrayPool();
-        var frame = CreatePooledVideoFrame(frameType, nv12, 0L, 100L, 200L, 16, 16, 384, pool);
-        InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, seqNo: 0L, frame);
 
-        lock (reorderLock)
+        for (var sequence = 0L; sequence < 16; sequence++)
         {
-            InvokeNonPublicInstanceMethod(pipeline, "ForceDropOldestReorderFrameUnderLock", Array.Empty<object?>());
+            var pool = new TrackingArrayPool();
+            var frame = CreatePooledVideoFrame(frameType, nv12, sequence, 100L, 200L, 16, 16, 384, pool);
+            using var frameOwner = (IDisposable)frame;
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, sequence, frame);
+
+            lock (reorderLock)
+            {
+                InvokeNonPublicInstanceMethod(pipeline, "ForceDropOldestReorderFrameUnderLock", Array.Empty<object?>());
+            }
+
+            AssertEqual(sequence, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "head eviction leaves cursor advancement to emitter");
+            AssertEqual(true, knownMissing.SetEquals(new[] { sequence }), "head eviction registers exactly its missing sequence");
+            AssertEqual(0, (int)GetPrivateField(pipeline, "_reorderBufferDepth")!, "head eviction empties reorder buffer");
+            AssertEqual(sequence + 1, (long)GetPrivateField(pipeline, "_reorderForceDrops")!, "head eviction force-drop count");
+            AssertEqual(sequence + 1, (long)GetPrivateField(pipeline, "_totalFramesDropped")!, "head eviction total-drop count");
+            AssertEqual(sequence, (long)GetPrivateField(pipeline, "_reorderSkips")!, "head eviction does not count an unconsumed gap");
+            AssertEqual(1, pool.ReturnCount, "head eviction returns its frame exactly once");
+
+            var consumed = (bool)InvokeNonPublicInstanceMethod(pipeline, "ConsumeKnownMissingFrames", Array.Empty<object?>())!;
+            AssertEqual(true, consumed, "head eviction gap was consumed");
+            AssertEqual(sequence + 1, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "head eviction advances the cursor once");
+            AssertEqual(sequence + 1, (long)GetPrivateField(pipeline, "_reorderSkips")!, "head eviction counts one reorder skip");
+            AssertEqual(0, knownMissing.Count, "repeated head eviction leaves no stale missing sequences");
+
+            var consumedAgain = (bool)InvokeNonPublicInstanceMethod(pipeline, "ConsumeKnownMissingFrames", Array.Empty<object?>())!;
+            AssertEqual(false, consumedAgain, "head eviction gap is not consumed twice");
+            AssertEqual(sequence + 1, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "repeated consumption preserves cursor");
+            AssertEqual(sequence + 1, (long)GetPrivateField(pipeline, "_reorderSkips")!, "repeated consumption preserves skip count");
+            AssertEqual(0, knownMissing.Count, "repeated consumption preserves empty gap set");
+            AssertEqual(1, pool.ReturnCount, "gap consumption does not return the evicted frame again");
         }
 
-        // After the force-drop, seq=0 must be in _knownMissingSequences or _nextEmitSeq must have advanced.
-        var nextEmitSeqAfter = (long)(GetPrivateField(pipeline, "_nextEmitSeq") ?? 0L);
-        var knownMissingAfter = (SortedSet<long>)(GetPrivateField(pipeline, "_knownMissingSequences")
-            ?? throw new InvalidOperationException("_knownMissingSequences missing."));
+        return Task.CompletedTask;
+    }
 
-        AssertEqual(true, nextEmitSeqAfter == 1L || knownMissingAfter.Contains(0L),
-            "force-drop of seq==_nextEmitSeq must register gap (either advance or add to known-missing)");
+    internal static Task ParallelMjpegDecodePipeline_NonHeadForceDropPreservesEmissionOrder()
+    {
+        var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
+        var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
+        var reorderLock = new object();
+        var reorderFrames = CreateSortedDictionary(pipelineType);
+        var knownMissing = new SortedSet<long>();
+        var emitted = new List<long>();
+        Action<object> collectFrame = frame => emitted.Add((long)GetPropertyValue(frame, "SequenceNumber")!);
+        var callbackType = pipelineType.GetNestedType("EmitFrameCallback", BindingFlags.Public)
+            ?? throw new InvalidOperationException("EmitFrameCallback not found.");
+
+        SetPrivateField(pipeline, "_reorderLock", reorderLock);
+        SetPrivateField(pipeline, "_reorderFrames", reorderFrames);
+        SetPrivateField(pipeline, "_knownMissingSequences", knownMissing);
+        SetPrivateField(pipeline, "_timingLock", new object());
+        SetPrivateField(pipeline, "_reorderLatencyMs", new double[8]);
+        SetPrivateField(pipeline, "_pipelineLatencyMs", new double[8]);
+        SetPrivateField(pipeline, "_emitCallback", Delegate.CreateDelegate(callbackType, collectFrame.Target, collectFrame.Method));
+
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
+        var nv12 = Enum.Parse(formatType, "Nv12");
+        var pools = Enumerable.Range(0, 4).Select(_ => new TrackingArrayPool()).ToArray();
+        var frames = new List<object>();
+        try
+        {
+            for (var sequence = 0; sequence < pools.Length; sequence++)
+            {
+                var timestamp = Stopwatch.GetTimestamp();
+                frames.Add(CreatePooledVideoFrame(frameType, nv12, sequence, timestamp, timestamp, 16, 16, 384, pools[sequence]));
+            }
+
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, 2L, frames[2]);
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, 3L, frames[3]);
+            lock (reorderLock)
+            {
+                InvokeNonPublicInstanceMethod(pipeline, "ForceDropOldestReorderFrameUnderLock", Array.Empty<object?>());
+            }
+
+            AssertEqual(0L, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "non-head eviction preserves earlier pending sequence");
+            AssertEqual(true, knownMissing.SetEquals(new[] { 2L }), "non-head eviction registers its later gap");
+            AssertEqual(1, (int)GetPrivateField(pipeline, "_reorderBufferDepth")!, "non-head eviction retains the surviving frame");
+            AssertEqual(1, pools[2].ReturnCount, "non-head eviction returns its frame exactly once");
+            AssertEqual(0, pools[3].ReturnCount, "non-head eviction retains ownership of the surviving frame");
+
+            var consumedEarly = (bool)InvokeNonPublicInstanceMethod(pipeline, "ConsumeKnownMissingFrames", Array.Empty<object?>())!;
+            AssertEqual(false, consumedEarly, "later gap cannot overtake earlier pending frames");
+            AssertEqual(0L, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "early gap consumption preserves cursor");
+            AssertEqual(0L, (long)GetPrivateField(pipeline, "_reorderSkips")!, "early gap consumption does not count a skip");
+            AssertEqual(true, knownMissing.SetEquals(new[] { 2L }), "later gap remains pending until earlier frames arrive");
+
+            // Deliver earlier work out of order, then exercise the actual emitter drain.
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, 1L, frames[1]);
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, 0L, frames[0]);
+            var drained = (bool)InvokeNonPublicInstanceMethod(pipeline, "DrainReadyFrames", Array.Empty<object?>())!;
+            AssertEqual(true, drained, "drain emits surviving frames and consumes the gap");
+            AssertEqual("0,1,3", string.Join(",", emitted), "non-head eviction preserves emission order");
+            AssertEqual(4L, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "drain advances past exactly the emitted frames and gap");
+            AssertEqual(1L, (long)GetPrivateField(pipeline, "_reorderSkips")!, "non-head eviction counts one consumed skip");
+            AssertEqual(3L, (long)GetPrivateField(pipeline, "_totalFramesEmitted")!, "non-head eviction emits all surviving frames");
+            AssertEqual(1L, (long)GetPrivateField(pipeline, "_totalFramesDropped")!, "non-head eviction counts one dropped frame");
+            AssertEqual(1L, (long)GetPrivateField(pipeline, "_reorderForceDrops")!, "non-head eviction counts one forced drop");
+            AssertEqual(0, knownMissing.Count, "drain removes the consumed non-head gap");
+            AssertEqual(0, (int)GetPrivateField(pipeline, "_reorderBufferDepth")!, "drain empties the reorder buffer");
+
+            var drainedAgain = (bool)InvokeNonPublicInstanceMethod(pipeline, "DrainReadyFrames", Array.Empty<object?>())!;
+            AssertEqual(false, drainedAgain, "empty drain does no further work");
+            AssertEqual("0,1,3", string.Join(",", emitted), "empty drain does not emit frames twice");
+            AssertEqual(4L, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "empty drain preserves cursor");
+            AssertEqual(1L, (long)GetPrivateField(pipeline, "_reorderSkips")!, "empty drain preserves skip count");
+            foreach (var pool in pools)
+            {
+                AssertEqual(1, pool.ReturnCount, "eviction and ordered drain return each frame exactly once");
+            }
+        }
+        finally
+        {
+            foreach (var frame in frames)
+            {
+                ((IDisposable)frame).Dispose();
+            }
+        }
 
         return Task.CompletedTask;
     }
@@ -1373,9 +1479,8 @@ static partial class Program
         lock (reorderLock)
         {
             addMethod.Invoke(reorderFrames, new object[] { seqNo, decodedFrame });
+            SetPrivateField(pipeline, "_reorderBufferDepth", ((IDictionary)reorderFrames).Count);
         }
-
-        SetPrivateField(pipeline, "_reorderBufferDepth", 1);
     }
 
     internal static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()

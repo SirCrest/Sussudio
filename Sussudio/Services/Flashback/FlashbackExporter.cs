@@ -692,12 +692,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
             return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
-                request.OutputPath, request.FastStart, request.Force, progress, ct);
+                request.OutputPath, request.FastStart, progress, ct);
         }
 
         SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
         return ExportSingleAsync(request.InputPath!, request.InPoint, request.OutPoint,
-            request.OutputPath, request.FastStart, request.Force, progress, ct);
+            request.OutputPath, request.FastStart, progress, ct);
     }
 
     /// <summary>
@@ -711,7 +711,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
-        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
@@ -731,7 +730,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return RunWithBackgroundPriority(
                 () => RunWithAdaptiveThrottle(
                     adaptiveThrottleDelayMsProvider,
-                    () => ExportCore(inputPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),
+                    () => ExportCore(inputPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "single_export"));
         });
     }
@@ -742,12 +741,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
-        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        _ = allowOverwrite; // Compatibility-only. Export publication never replaces a destination.
-
         if (ct.IsCancellationRequested)
         {
             return CreateCancelledExportResult(outputPath);
@@ -1229,7 +1225,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
-        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
@@ -1250,7 +1245,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return RunWithBackgroundPriority(
                 () => RunWithAdaptiveThrottle(
                     adaptiveThrottleDelayMsProvider,
-                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),
+                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "segment_export"));
         });
     }
@@ -1445,7 +1440,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         out string normalizedOutputPath,
-        out FinalizeResult? failure)
+        [NotNullWhen(false)] out FinalizeResult? failure)
     {
         normalizedOutputPath = outputPath;
         failure = null;
@@ -1525,7 +1520,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IReadOnlyList<FlashbackExportSegment> segments,
         string outputPath,
         out long totalEstimatedBytes,
-        out FinalizeResult? failure)
+        [NotNullWhen(false)] out FinalizeResult? failure)
     {
         totalEstimatedBytes = 0;
         failure = null;
@@ -1692,12 +1687,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         TimeSpan outPoint,
         string outputPath,
         bool fastStart,
-        bool allowOverwrite,
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        _ = allowOverwrite; // Compatibility-only. Export publication never replaces a destination.
-
         if (ct.IsCancellationRequested)
         {
             return CreateCancelledExportResult(outputPath);
@@ -1711,7 +1703,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 out var normalizedOutputPath,
                 out var validationFailure))
         {
-            return validationFailure!;
+            return validationFailure;
         }
         outputPath = normalizedOutputPath;
 
@@ -1721,7 +1713,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 out var totalEstimatedBytes,
                 out var estimateFailure))
         {
-            return estimateFailure!;
+            return estimateFailure;
         }
 
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))

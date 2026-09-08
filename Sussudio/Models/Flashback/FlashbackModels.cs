@@ -1,0 +1,147 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace Sussudio.Models;
+
+internal sealed record FlashbackBufferOptions
+{
+    // 350 Mbps worst case (4K120 MJPEG) = 43.75 MB/s. 30% headroom -> 57 MB/s.
+    private const long SafetyBytesPerSecond = 57L * 1024 * 1024;
+
+    public TimeSpan BufferDuration { get; init; } = TimeSpan.FromMinutes(5);
+    public string TempDirectory { get; init; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Sussudio",
+        "Flashback");
+    public TimeSpan SegmentDuration { get; init; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// Test seam for the free-disk-space probe. When null (the production
+    /// default), FlashbackBufferManager falls back to
+    /// FlashbackStartupCacheCleanup.TryGetTempDriveAvailableFreeBytes against
+    /// <see cref="TempDirectory"/>.
+    /// </summary>
+    public Func<long>? FreeDiskBytesProvider { get; init; }
+
+    /// <summary>
+    /// Safety cap derived from BufferDuration. Not user-configurable - just a guardrail
+    /// against bugs in PTS-based eviction.
+    /// </summary>
+    public long MaxDiskBytes
+    {
+        get
+        {
+            if (BufferDuration <= TimeSpan.Zero)
+                return 0;
+
+            var maxSeconds = long.MaxValue / (double)SafetyBytesPerSecond;
+            if (BufferDuration.TotalSeconds >= maxSeconds)
+                return long.MaxValue;
+
+            return (long)(BufferDuration.TotalSeconds * SafetyBytesPerSecond);
+        }
+    }
+}
+
+internal sealed record FlashbackSessionContext
+{
+    public required int Width { get; init; }
+    public required int Height { get; init; }
+    public required double FrameRate { get; init; }
+    public int? FrameRateNumerator { get; init; }
+    public int? FrameRateDenominator { get; init; }
+    public required uint BitRate { get; init; }
+    public required bool IsP010 { get; init; }
+    public required string CodecName { get; init; }
+    public NvencPreset NvencPreset { get; init; } = NvencPreset.Auto;
+    public SplitEncodeMode SplitEncodeMode { get; init; } = SplitEncodeMode.Auto;
+    public bool HdrEnabled { get; init; }
+    public bool IsFullRangeInput { get; init; }
+    public string? HdrMasterDisplayMetadata { get; init; }
+    public int HdrMaxCll { get; init; }
+    public int HdrMaxFall { get; init; }
+    public IntPtr D3D11DevicePtr { get; init; }
+    public IntPtr D3D11DeviceContextPtr { get; init; }
+    public bool AudioEnabled { get; init; }
+    public bool MicrophoneEnabled { get; init; }
+}
+
+public enum FlashbackPlaybackState
+{
+    Disabled,
+    Buffering,
+    Live,
+    Scrubbing,
+    Playing,
+    Paused
+}
+
+internal sealed record ExportProgress(int SegmentsProcessed, int TotalSegments, double Percent);
+
+internal sealed record FlashbackExportSegment
+{
+    public required string Path { get; init; }
+    public TimeSpan? StartPts { get; init; }
+    public TimeSpan? EndPts { get; init; }
+}
+
+internal enum FlashbackForceRotateStatus
+{
+    Completed,
+    CanceledBeforeCommit,
+    CommittedPending,
+    Failed
+}
+
+internal sealed record FlashbackForceRotateResult
+{
+    public required FlashbackForceRotateStatus Status { get; init; }
+    public required IReadOnlyList<string> SegmentPaths { get; init; }
+
+    public static FlashbackForceRotateResult Completed(IReadOnlyList<string> segmentPaths)
+        => new()
+        {
+            Status = FlashbackForceRotateStatus.Completed,
+            SegmentPaths = segmentPaths
+        };
+
+    public static FlashbackForceRotateResult CanceledBeforeCommit()
+        => Empty(FlashbackForceRotateStatus.CanceledBeforeCommit);
+
+    public static FlashbackForceRotateResult CommittedPending()
+        => Empty(FlashbackForceRotateStatus.CommittedPending);
+
+    public static FlashbackForceRotateResult Failed()
+        => Empty(FlashbackForceRotateStatus.Failed);
+
+    private static FlashbackForceRotateResult Empty(FlashbackForceRotateStatus status)
+        => new()
+        {
+            Status = status,
+            SegmentPaths = Array.Empty<string>()
+        };
+}
+
+/// <summary>
+/// Groups the parameters for a flashback export operation (single-file or multi-segment).
+/// </summary>
+internal sealed record FlashbackExportRequest
+{
+    /// <summary>Segment files with buffer timeline metadata for multi-segment export.</summary>
+    public IReadOnlyList<FlashbackExportSegment>? Segments { get; init; }
+
+    /// <summary>Single input file. Ignored when Segments contains entries.</summary>
+    public string? InputPath { get; init; }
+
+    public required TimeSpan InPoint { get; init; }
+    public required TimeSpan OutPoint { get; init; }
+    public required string OutputPath { get; init; }
+    public bool FastStart { get; init; } = true;
+
+    /// <summary>
+    /// Optional live-recorder pressure signal. Returns the number of milliseconds
+    /// the exporter should sleep before continuing packet copy.
+    /// </summary>
+    public Func<int>? AdaptiveThrottleDelayMsProvider { get; init; }
+}

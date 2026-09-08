@@ -171,6 +171,7 @@ internal static class AtomicCounter
 {
     public static bool TryDecrement(ref int target) => TrySubtract(ref target, 1);
 
+    // Callers supply a positive amount; false means the full amount was unavailable.
     public static bool TrySubtract(ref int target, int amount)
     {
         while (true)
@@ -184,7 +185,7 @@ internal static class AtomicCounter
             var next = Math.Max(0, current - amount);
             if (Interlocked.CompareExchange(ref target, next, current) == current)
             {
-                return true;
+                return current >= amount;
             }
         }
     }
@@ -489,6 +490,23 @@ public sealed class ProcessRunResult
     public string StdOut { get; init; } = string.Empty;
     public string StdErr { get; init; } = string.Empty;
     public Exception? StartException { get; init; }
+    public Exception? StdOutReadException { get; init; }
+    public Exception? StdErrReadException { get; init; }
+
+    internal Exception? GetOutputReadFailure()
+    {
+        static IOException Describe(string stream, Exception cause)
+            => new($"{stream} read failed ({cause.GetType().Name}: {cause.Message})", cause);
+
+        var stdoutFailure = StdOutReadException is { } stdout ? Describe("stdout", stdout) : null;
+        var stderrFailure = StdErrReadException is { } stderr ? Describe("stderr", stderr) : null;
+        if (stdoutFailure != null && stderrFailure != null)
+        {
+            return new AggregateException("Process output reads failed.", stdoutFailure, stderrFailure);
+        }
+
+        return stdoutFailure ?? stderrFailure;
+    }
 }
 
 public interface IProcessSupervisor
@@ -594,10 +612,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             var canReadOutputs = process.HasExited;
             var stdout = canReadOutputs
                 ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs)
-                : string.Empty;
+                : (Output: string.Empty, ReadException: (Exception?)null);
             var stderr = canReadOutputs
                 ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs)
-                : string.Empty;
+                : (Output: string.Empty, ReadException: (Exception?)null);
 
             if (!canReadOutputs)
             {
@@ -613,8 +631,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
                 ExitConfirmed = process.HasExited,
                 ProcessId = processId,
                 ExitCode = process.HasExited ? process.ExitCode : null,
-                StdOut = stdout,
-                StdErr = stderr
+                StdOut = stdout.Output,
+                StdErr = stderr.Output,
+                StdOutReadException = stdout.ReadException,
+                StdErrReadException = stderr.ReadException
             };
         }
     }
@@ -685,15 +705,15 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         }
     }
 
-    private static async Task<string> TryReadWithTimeoutAsync(Task<string> readTask, int timeoutMs)
+    private static async Task<(string Output, Exception? ReadException)> TryReadWithTimeoutAsync(Task<string> readTask, int timeoutMs)
     {
         try
         {
-            return await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+            return (await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)), null);
         }
-        catch
+        catch (Exception ex)
         {
-            return string.Empty;
+            return (string.Empty, ex);
         }
     }
 }

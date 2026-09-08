@@ -279,7 +279,6 @@ public sealed class FlashbackModelsTests
                 RequiredProperty("OutPoint", typeof(TimeSpan), SetterExpectation.InitOnly),
                 RequiredString("OutputPath", SetterExpectation.InitOnly),
                 Property("FastStart", typeof(bool), SetterExpectation.InitOnly),
-                Property("Force", typeof(bool), SetterExpectation.InitOnly),
                 Property("AdaptiveThrottleDelayMsProvider", typeof(Func<int>), SetterExpectation.InitOnly, NullabilityExpectation.Nullable)
             });
 
@@ -330,7 +329,6 @@ public sealed class FlashbackModelsTests
 
         var exportRequest = CreateInstance(exportRequestType);
         Assert.True(Get<bool>(exportRequest, "FastStart"));
-        Assert.False(Get<bool>(exportRequest, "Force"));
         var exportSegments = Array.CreateInstance(exportSegmentType, 1);
         exportSegments.SetValue(exportSegment, 0);
         Set(exportRequest, "Segments", exportSegments);
@@ -344,6 +342,31 @@ public sealed class FlashbackModelsTests
         Assert.Equal(TimeSpan.FromSeconds(12), Get<TimeSpan>(exportRequest, "OutPoint"));
         Assert.False(Get<bool>(exportRequest, "FastStart"));
         Assert.Null(Get(exportRequest, "AdaptiveThrottleDelayMsProvider"));
+    }
+
+    [Fact]
+    public void FlashbackModels_OwnTheirSourceWhileKeepingTheSharedNamespace()
+    {
+        var flashbackModels = RuntimeContractSource.ReadRepoFile("Sussudio/Models/Flashback/FlashbackModels.cs");
+        var recordingModels = RuntimeContractSource.ReadRepoFile("Sussudio/Models/Recording/RecordingModels.cs");
+        var declarations = new[]
+        {
+            "internal sealed record FlashbackBufferOptions",
+            "internal sealed record FlashbackSessionContext",
+            "public enum FlashbackPlaybackState",
+            "internal sealed record ExportProgress(",
+            "internal sealed record FlashbackExportSegment",
+            "internal enum FlashbackForceRotateStatus",
+            "internal sealed record FlashbackForceRotateResult",
+            "internal sealed record FlashbackExportRequest"
+        };
+
+        Assert.Contains("namespace Sussudio.Models;", flashbackModels);
+        foreach (var declaration in declarations)
+        {
+            Assert.Contains(declaration, flashbackModels);
+            Assert.DoesNotContain(declaration, recordingModels);
+        }
     }
 
     [Fact]
@@ -733,12 +756,12 @@ public sealed class FlashbackExporterContractsTests
         => global::Program.FlashbackOutputTransaction_EmptyTempDoesNotReplaceExistingOutput();
 
     [Fact]
-    public Task FlashbackExporterRefusesToOverwriteExistingDestinationWhenForceIsFalse()
-        => global::Program.FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse();
+    public Task FlashbackExporterRefusesToOverwriteExistingDestinationForSingleFile()
+        => global::Program.FlashbackExporter_RefusesOverwriteForSingleFile();
 
     [Fact]
-    public Task FlashbackExporterRefusesToOverwriteExistingDestinationWhenForceIsTrue()
-        => global::Program.FlashbackExporter_RefusesOverwriteWhenForceTrue();
+    public Task FlashbackExporterRefusesToOverwriteExistingDestinationForSegments()
+        => global::Program.FlashbackExporter_RefusesOverwriteForSegments();
 
     [Fact]
     public Task FlashbackOutputTransactionPreservesOutputAfterPostMoveValidationFailure()
@@ -872,121 +895,6 @@ public sealed class FlashbackPlaybackContractsTests
 
 static partial class Program
 {
-    internal static void FlashbackEncoderSink_ExerciseRotationFailures(bool scriptedSuccess)
-    {
-        EnsureTargetAssemblyLoadedForXUnit();
-        var directory = Path.Combine(Path.GetTempPath(), $"fb_rotation_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(directory);
-        object? sink = null;
-        IDisposable? managerLifetime = null;
-        try
-        {
-            managerLifetime = (IDisposable)CreateInitializedBufferManager(directory);
-            var manager = (object)managerLifetime;
-            var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
-            var activePath = (string)GetPrivateField(manager, "_activeSegmentPath")!;
-            var originalPath = activePath;
-            File.WriteAllBytes(activePath, new byte[64]);
-            var attempt = 0;
-            string? attemptedPath = null;
-            if (scriptedSuccess)
-            {
-                var resultType = RequireType("Sussudio.Services.Recording.RotateOutputResult");
-                Func<string, object> rotate = path =>
-                {
-                    attemptedPath = path;
-                    File.WriteAllBytes(path, new byte[16]);
-                    if (attempt != 3) throw new IOException("Scripted rotation failure");
-                    return Activator.CreateInstance(resultType, activePath, 2L, 64L)!;
-                };
-                var pathParameter = Expression.Parameter(typeof(string), "path");
-                var delegateType = typeof(Func<,>).MakeGenericType(typeof(string), resultType);
-                var operation = Expression.Lambda(delegateType,
-                    Expression.Convert(Expression.Invoke(Expression.Constant(rotate), pathParameter), resultType),
-                    pathParameter).Compile();
-                sink = sinkType.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null,
-                    new[] { manager.GetType(), delegateType }, null)!.Invoke(new object[] { manager, operation });
-            }
-            else
-            {
-                sink = Activator.CreateInstance(sinkType, new[] { manager })!;
-            }
-
-            SetPrivateField(sink, "_tsFilePath", activePath);
-            SetPrivateField(sink, "_started", true);
-            var completions = new List<Task>();
-            foreach (var field in new[] { "_videoQueue", "_audioQueue", "_microphoneQueue", "_gpuQueue" })
-            {
-                var channel = CreateUnboundedChannelFieldValue(sinkType, field);
-                SetPrivateField(sink, field, channel);
-                var reader = channel.GetType().GetProperty("Reader")!.GetValue(channel)!;
-                completions.Add((Task)reader.GetType().GetProperty("Completion")!.GetValue(reader)!);
-            }
-            var notifications = new List<Exception>();
-            sinkType.GetMethod("SetFatalErrorCallback")!.Invoke(sink, new object[] { (Action<Exception>)notifications.Add });
-            var consecutive = 0;
-            var totalFailures = 0L;
-            var nextIndex = (int)GetPrivateField(manager, "_nextSegmentIndex")!;
-            var rotateMethod = sinkType.GetMethod("RotateSegment", BindingFlags.Instance | BindingFlags.NonPublic)!;
-            for (attempt = 1; attempt <= (scriptedSuccess ? 7 : 4); attempt++)
-            {
-                var succeeds = scriptedSuccess && attempt == 3;
-                var pts = TimeSpan.FromSeconds(attempt);
-                Assert.Equal(succeeds, (bool)rotateMethod.Invoke(sink, new object?[] { pts, null })!);
-                if (succeeds)
-                {
-                    activePath = attemptedPath!;
-                    nextIndex++;
-                    consecutive = 0;
-                    Assert.Equal(pts.Ticks, GetPrivateField(manager, "_activeSegmentStartPtsTicks"));
-                    var completed = Assert.Single(((IEnumerable)GetPrivateField(manager, "_completedSegments")!).Cast<object>());
-                    Assert.Equal(originalPath, completed.GetType().GetProperty("Path")!.GetValue(completed));
-                    Assert.Equal(TimeSpan.FromSeconds(2), completed.GetType().GetProperty("StartPts")!.GetValue(completed));
-                    Assert.Equal(pts, completed.GetType().GetProperty("EndPts")!.GetValue(completed));
-                    Assert.Equal(64L, completed.GetType().GetProperty("SizeBytes")!.GetValue(completed));
-                    Assert.Equal(64L, GetPrivateField(manager, "_completedSegmentBytes"));
-                    Assert.Equal(0L, GetPrivateField(sink, "_segmentStartBytes"));
-                }
-                else
-                {
-                    consecutive++;
-                    totalFailures++;
-                    if (attemptedPath != null) Assert.False(File.Exists(attemptedPath));
-                }
-                Assert.Equal(activePath, GetPrivateField(sink, "_tsFilePath"));
-                Assert.Equal(activePath, GetPrivateField(manager, "_activeSegmentPath"));
-                Assert.True(File.Exists(activePath));
-                Assert.Equal(scriptedSuccess && attempt >= 3 ? 1 : 0,
-                    ((ICollection)GetPrivateField(manager, "_completedSegments")!).Count);
-                Assert.Equal(nextIndex, GetPrivateField(manager, "_nextSegmentIndex"));
-                Assert.Equal(pts, GetPrivateField(sink, "_segmentStartPts"));
-                Assert.Equal(totalFailures, GetPrivateField(sink, "_segmentRotationFailures"));
-                Assert.Equal(consecutive, GetPrivateField(sink, "_consecutiveRotationFailures"));
-                var fatal = consecutive >= 3;
-                Assert.Equal(fatal ? 1 : 0, notifications.Count);
-                Assert.Equal(!fatal, GetPrivateField(sink, "_started"));
-                Assert.All(completions, completion => Assert.Equal(fatal, completion.IsCompletedSuccessfully));
-                if (fatal)
-                {
-                    Assert.IsType<IOException>(notifications[0]);
-                    Assert.Same(notifications[0], GetPrivateField(sink, "_encodingFailure"));
-                    Assert.NotNull(notifications[0].InnerException);
-                }
-                else Assert.Null(GetPrivateField(sink, "_encodingFailure"));
-            }
-        }
-        finally
-        {
-            if (sink != null)
-            {
-                SetPrivateField(sink, "_started", false);
-                ((IDisposable)sink).Dispose();
-            }
-            managerLifetime?.Dispose();
-            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
-        }
-    }
-
     internal static Task CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure()
     {
         var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
@@ -1130,7 +1038,6 @@ static partial class Program
             TimeSpan.FromSeconds(10),
             outputPath,
             true,
-            false,
             null,
             CancellationToken.None
         }) as Task ?? throw new InvalidOperationException("ExportSegmentsAsync did not return Task.");
@@ -1187,7 +1094,6 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 outputPath,
                 true,
-                false,
                 null,
                 cts.Token
             }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1229,7 +1135,6 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 singleOutputPath,
                 true,
-                false,
                 null,
                 cts.Token
             }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -1250,7 +1155,6 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 segmentOutputPath,
                 true,
-                false,
                 null,
                 cts.Token
             }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -1315,7 +1219,6 @@ static partial class Program
                     TimeSpan.FromSeconds(5),
                     singleOutputPath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -1339,7 +1242,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     segmentOutputPath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -2071,8 +1973,8 @@ static partial class Program
         AssertContains(executionText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputPath, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, allowOverwrite, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
         AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
         AssertContains(sourceText, "thread.Priority = previousPriority;");
         AssertContains(sourceText, "Func<int>? adaptiveThrottleDelayMsProvider");
@@ -2206,7 +2108,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -2225,7 +2126,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     nullSegmentOutputPath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null for null segment.");
@@ -2291,7 +2191,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -2345,7 +2244,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     outputPath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -2432,7 +2330,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     sourcePath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportCore returned null.");
@@ -2455,7 +2352,6 @@ static partial class Program
                     TimeSpan.FromSeconds(1),
                     sourcePath,
                     true,
-                    false,
                     null,
                     CancellationToken.None
                 }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
@@ -2641,17 +2537,17 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackExporter_RefusesOverwriteWhenDestinationExistsAndForceFalse()
-        => VerifyExporterRefusesExistingDestinationAsync(force: false);
+    internal static Task FlashbackExporter_RefusesOverwriteForSingleFile()
+        => VerifyExporterRefusesExistingDestinationAsync(useSegments: false);
 
-    internal static Task FlashbackExporter_RefusesOverwriteWhenForceTrue()
-        => VerifyExporterRefusesExistingDestinationAsync(force: true);
+    internal static Task FlashbackExporter_RefusesOverwriteForSegments()
+        => VerifyExporterRefusesExistingDestinationAsync(useSegments: true);
 
-    private static async Task VerifyExporterRefusesExistingDestinationAsync(bool force)
+    private static async Task VerifyExporterRefusesExistingDestinationAsync(bool useSegments)
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
-        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_force_{force}_{Guid.NewGuid():N}");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_existing_{useSegments}_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
         object? exporter = null;
 
@@ -2665,12 +2561,26 @@ static partial class Program
 
             exporter = Activator.CreateInstance(exporterType)!;
             var request = Activator.CreateInstance(requestType)!;
-            SetPropertyBackingField(request, "InputPath", inputPath);
+            if (useSegments)
+            {
+                var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
+                var segment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(segment, "Path", inputPath);
+                SetPropertyBackingField(segment, "StartPts", TimeSpan.Zero);
+                SetPropertyBackingField(segment, "EndPts", TimeSpan.FromSeconds(1));
+                var segments = Array.CreateInstance(segmentType, 1);
+                segments.SetValue(segment, 0);
+                SetPropertyBackingField(request, "Segments", segments);
+            }
+            else
+            {
+                SetPropertyBackingField(request, "InputPath", inputPath);
+            }
+
             SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
             SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(1));
             SetPropertyBackingField(request, "OutputPath", outputPath);
             SetPropertyBackingField(request, "FastStart", true);
-            SetPropertyBackingField(request, "Force", force);
 
             var export = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)
                 ?? throw new InvalidOperationException("FlashbackExporter.ExportAsync not found.");
@@ -2679,14 +2589,14 @@ static partial class Program
             await task.ConfigureAwait(false);
             var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
 
-            AssertEqual(false, GetBoolProperty(result, "Succeeded"), $"Force={force} refuses an existing destination");
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), $"Segments={useSegments} refuses an existing destination");
             AssertContains(GetStringProperty(result, "StatusMessage"), "Flashback export does not overwrite existing files");
             AssertEqual("flashback-export-invalid-output-path", GetStringProperty(result, "FailureCode"), "Existing destination carries InvalidOutputPath");
             AssertEqual(
                 true,
                 existingBytes.AsSpan().SequenceEqual(File.ReadAllBytes(outputPath)),
-                $"Force={force} preserves destination bytes");
-            AssertEqual(0, Directory.EnumerateFiles(tempDir, "*.mp4.tmp").Count(), $"Force={force} creates no temporary output");
+                $"Segments={useSegments} preserves destination bytes");
+            AssertEqual(0, Directory.EnumerateFiles(tempDir, "*.mp4.tmp").Count(), $"Segments={useSegments} creates no temporary output");
         }
         finally
         {
@@ -4453,7 +4363,21 @@ static partial class Program
         AssertContains(sourceText, "return (bufferManager.RecordingStartPts, bufferManager.RecordingEndPts);");
         AssertContains(sourceText, "var finalSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
         AssertContains(sourceText, "var crashSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
-        AssertContains(sourceText, "var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));");
+        var rotateBlock = ExtractDeclaredMemberCode(
+            sourceText,
+            "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)");
+        // Preserve the completed segment's baseline before native rotation resets
+        // byte counters or the sink advances its active segment's PTS and baseline.
+        AssertOccursBefore(rotateBlock, "var completedStartPts = _segmentStartPts;", "_encoder.RotateOutput(newPath)");
+        AssertOccursBefore(rotateBlock, "var completedStartBytes = Interlocked.Read(ref _segmentStartBytes);", "_encoder.RotateOutput(newPath)");
+        AssertOccursBefore(rotateBlock, "_encoder.RotateOutput(newPath)", "completedSegmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, completedStartBytes);");
+        AssertOccursBefore(rotateBlock, "completedSegmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, completedStartBytes);", "Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);");
+        AssertContains(rotateBlock, "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, completedSegmentBytes);");
+        AssertContains(rotateBlock, "var failPts = encoderRotated ? currentPts : ResolveEncoderPts();");
+        AssertContains(rotateBlock, "var failSegmentBytes = encoderRotated\n                            ? completedSegmentBytes\n                            : NonNegativeByteDelta(_encoder.TotalBytesWritten, completedStartBytes);");
+        AssertContains(rotateBlock, "_bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);");
+        AssertDoesNotContain(rotateBlock, "result.PreviousTotalBytes - completedStartBytes");
+        AssertDoesNotContain(rotateBlock, "_encoder.TotalBytesWritten - completedStartBytes");
         AssertDoesNotContain(sourceText, "_encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes)");
         AssertDoesNotContain(sourceText, "result.PreviousTotalBytes - Interlocked.Read(ref _segmentStartBytes)");
         AssertDoesNotContain(sourceText, "LastRecordingEndPts - LastRecordingStartPts");
@@ -4661,15 +4585,14 @@ static partial class Program
             sinkText,
             "private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)",
             "    public FlashbackForceRotateResult ForceRotateForExport");
-        AssertContains(rotateBlock, "string? completedPath = null;");
+        AssertContains(rotateBlock, "var completedPath = _tsFilePath;");
         AssertContains(rotateBlock, "string? newPath = null;");
         AssertContains(rotateBlock, "var encoderRotated = false;");
-        AssertContains(rotateBlock, "completedPath = _tsFilePath;");
         AssertContains(rotateBlock, "var completedStartPts = _segmentStartPts;");
         AssertContains(rotateBlock, "newPath = preparedPath ?? _bufferManager.GenerateSegmentPath();");
         AssertContains(rotateBlock, "encoderRotated = true;");
         AssertOccursBefore(rotateBlock, "encoderRotated = true;", "_tsFilePath = newPath;");
-        AssertOccursBefore(rotateBlock, "_tsFilePath = newPath;", "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);");
+        AssertOccursBefore(rotateBlock, "_tsFilePath = newPath;", "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, completedSegmentBytes);");
         AssertContains(rotateBlock, "if (newPath != null && !encoderRotated)");
         AssertContains(rotateBlock, "_bufferManager.AbandonReservedSegmentPath(newPath);");
         AssertContains(rotateBlock, "_bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);");
@@ -4708,17 +4631,17 @@ static partial class Program
 
         var rotateFailureBlock = ExtractTextBetween(
             sourceText,
-            "catch (Exception ex)\n        {\n            if (newPath != null && !encoderRotated)",
+            "catch (Exception ex)\n        {\n            var terminalFailure = encoderRotated || !_encoder.IsEncoding;",
             "    public FlashbackForceRotateResult ForceRotateForExport");
         AssertContains(rotateFailureBlock, "Interlocked.Increment(ref _segmentRotationFailures);");
-        AssertContains(rotateFailureBlock, "var failPts = ResolveEncoderPts();");
-        AssertContains(rotateFailureBlock, "if (failPts > _segmentStartPts)");
-        AssertContains(rotateFailureBlock, "var failSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
-        AssertContains(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);");
+        AssertContains(rotateFailureBlock, "var failPts = encoderRotated ? currentPts : ResolveEncoderPts();");
+        AssertContains(rotateFailureBlock, "if (failPts > completedStartPts)");
+        AssertContains(rotateFailureBlock, "NonNegativeByteDelta(_encoder.TotalBytesWritten, completedStartBytes);");
+        AssertContains(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);");
         AssertContains(rotateFailureBlock, "FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTERED");
         AssertContains(rotateFailureBlock, "FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTER_FAIL");
         AssertContains(rotateFailureBlock, "_segmentStartPts = currentPts;");
-        AssertOccursBefore(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);", "_segmentStartPts = currentPts;");
+        AssertOccursBefore(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);", "_segmentStartPts = currentPts;");
 
         return Task.CompletedTask;
     }

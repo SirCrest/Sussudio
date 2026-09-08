@@ -887,8 +887,8 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Returns the active .ts segment path, generating a new one on first call
-    /// after <see cref="StartCaptureAsync"/> or after segment rotation. The
+    /// Returns the active segment path using the configured extension, generating
+    /// a new one on first call after <see cref="Initialize"/> or after segment rotation. The
     /// "Acquire" prefix flags the side effect (segment-index increment and
     /// active-path assignment); callers that just want to peek at the current
     /// path without creating one should add a peek API rather than reuse this.

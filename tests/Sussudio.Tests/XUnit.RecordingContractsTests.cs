@@ -2367,7 +2367,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public sealed class RecordingVerifier : IRecordingVerifier");
-        AssertContains(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
         AssertContains(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
         AssertContains(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
         AssertContains(rootText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
@@ -2390,7 +2390,7 @@ static partial class Program
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
         AssertContains(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
-        AssertContains(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
         AssertContains(rootText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
         AssertContains(rootText, "private static double? TryParseRational(string? value)");
         AssertContains(rootText, "private ProcessSpec CreateFfprobeProcessSpec(");

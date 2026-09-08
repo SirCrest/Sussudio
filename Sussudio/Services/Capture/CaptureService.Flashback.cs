@@ -1649,7 +1649,6 @@ public partial class CaptureService
         bool requireCompleteLiveEdge = false,
         bool exportOperationLockAlreadyHeld = false,
         bool throttleHighResolutionBaseline = true,
-        bool force = false,
         FlashbackExportRangeResolver? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackBackend.Sink;
@@ -1717,7 +1716,6 @@ public partial class CaptureService
                 outPoint,
                 outputPath,
                 requireCompleteLiveEdge,
-                force,
                 throttleHighResolutionBaseline,
                 ct);
             if (preparedExport.FailureResult is { } preparationFailure)
@@ -1784,7 +1782,6 @@ public partial class CaptureService
         TimeSpan outPoint,
         string outputPath,
         bool requireCompleteLiveEdge,
-        bool force,
         bool throttleHighResolutionBaseline,
         CancellationToken ct)
     {
@@ -1841,7 +1838,6 @@ public partial class CaptureService
             inPoint,
             outPoint,
             outputPath,
-            force,
             normalizedSegmentPaths,
             segmentMetadata,
             selectedSegmentPaths is { Count: > 0 } ? null : bufferManager.ActiveFilePath);
@@ -2390,8 +2386,7 @@ public partial class CaptureService
         IProgress<ExportProgress>? progress,
         CancellationToken ct,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null,
-        bool force = false)
+        TimeSpan? outPointFilePts = null)
     {
         var snapshotResult = await SnapshotFlashbackExportBackendAsync(
                 outputPath,
@@ -2415,7 +2410,6 @@ public partial class CaptureService
                 snapshotBufferManager: snapshot.BufferManager,
                 snapshotExporter: snapshot.Exporter,
                 exportOperationLockAlreadyHeld: true,
-                force: force,
                 resolveRangeAfterEvictionPaused: CreateFlashbackExportRangeResolver(
                     inPoint,
                     outPoint,
@@ -2426,8 +2420,7 @@ public partial class CaptureService
 
     internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
         double seconds, string outputPath,
-        IProgress<ExportProgress>? progress, CancellationToken ct,
-        bool force = false)
+        IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         if (ct.IsCancellationRequested)
         {
@@ -2461,7 +2454,6 @@ public partial class CaptureService
                 snapshotBufferManager: snapshot.BufferManager,
                 snapshotExporter: snapshot.Exporter,
                 exportOperationLockAlreadyHeld: true,
-                force: force,
                 resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds))
             .ConfigureAwait(false);
     }

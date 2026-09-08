@@ -175,6 +175,9 @@ internal sealed class MainViewModelRuntimeLifecycleController
         _context.DisposeAudioDeviceWatcher();
     }
 
+    public void CompleteDispose()
+        => _eventIngressController.DetachCleanupHandoff();
+
     private void SetupTimer()
     {
         _timer = _context.CreateTimer();
@@ -221,18 +224,20 @@ internal sealed class MainViewModelDisposalControllerContext
     public required Func<Task> CleanupSessionCoordinatorAsync { get; init; }
     public required Func<Task> DisposeSessionCoordinatorAsync { get; init; }
     public required Func<Task> DisposeCaptureServiceAsync { get; init; }
-    public required Action DisposeCaptureService { get; init; }
+    public required Action CompleteRuntimeDispose { get; init; }
     public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }
 }
 
 /// <summary>
-/// Coordinates timed shutdown and disposal of MainViewModel services.
+/// Owns service disposal while callers use a bounded wait for shutdown.
 /// </summary>
 internal sealed class MainViewModelDisposalController
 {
     private const int DefaultDisposeTimeoutMs = 30000;
 
     private readonly MainViewModelDisposalControllerContext _context;
+    private readonly object _disposalLock = new();
+    private Task? _disposalTask;
 
     public MainViewModelDisposalController(MainViewModelDisposalControllerContext context)
     {
@@ -240,87 +245,46 @@ internal sealed class MainViewModelDisposalController
     }
 
     public void Dispose()
-    {
-        var disposeTimeoutMs = GetDisposeTimeoutMs();
-        var disposeTask = Task.Run(DisposeCoreAsync);
-        var completed = Task.WhenAny(disposeTask, Task.Delay(disposeTimeoutMs)).GetAwaiter().GetResult();
-        if (completed != disposeTask)
-        {
-            Logger.Log($"ViewModel dispose timed out after {disposeTimeoutMs} ms.");
-            return;
-        }
-
-        try
-        {
-            disposeTask.GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"ViewModel dispose failed: {ex.Message}");
-        }
-    }
+        => _context.AwaitWithTimeoutAsync(
+            GetOrStartDisposalTask(), GetDisposeTimeoutMs(), "ViewModel disposal").GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
-    {
-        var disposeTimeoutMs = GetDisposeTimeoutMs();
-        var disposeTask = DisposeCoreAsync();
-        var completed = await Task.WhenAny(disposeTask, Task.Delay(disposeTimeoutMs)).ConfigureAwait(false);
-        if (completed != disposeTask)
-        {
-            Logger.Log($"ViewModel async dispose timed out after {disposeTimeoutMs} ms.");
-            return;
-        }
+        => await _context.AwaitWithTimeoutAsync(
+            GetOrStartDisposalTask(), GetDisposeTimeoutMs(), "ViewModel disposal").ConfigureAwait(false);
 
-        try
+    private Task GetOrStartDisposalTask()
+    {
+        lock (_disposalLock)
         {
-            await disposeTask.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"ViewModel async dispose failed: {ex.Message}");
+            // A timed-out caller leaves the actual operation owned here. A later
+            // caller joins it; only a completed failure can start a retry.
+            if (_disposalTask == null || _disposalTask.IsFaulted || _disposalTask.IsCanceled)
+            {
+                _disposalTask = Task.Run(DisposeCoreAsync);
+            }
+
+            return _disposalTask;
         }
     }
 
     private async Task DisposeCoreAsync()
     {
-        if (!_context.TryBeginDispose())
+        if (_context.TryBeginDispose())
         {
-            return;
+            _context.CancelActiveFlashbackExport();
+            _context.CancelPendingAudioControlWork();
+            _context.StopRuntimeForDispose();
         }
 
-        _context.CancelActiveFlashbackExport();
-        _context.CancelPendingAudioControlWork();
-        _context.StopRuntimeForDispose();
-
-        var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-            "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
-            DefaultDisposeTimeoutMs,
-            1000,
-            300000);
-
         await RunDisposeStepAsync(
-            _context.CleanupSessionCoordinatorAsync(),
-            stepTimeoutMs,
-            "Coordinator cleanup",
+            _context.CleanupSessionCoordinatorAsync,
             "ViewModel cleanup during dispose failed").ConfigureAwait(false);
         await RunDisposeStepAsync(
-            _context.DisposeSessionCoordinatorAsync(),
-            stepTimeoutMs,
-            "Coordinator dispose",
+            _context.DisposeSessionCoordinatorAsync,
             "Coordinator dispose failed").ConfigureAwait(false);
 
-        try
-        {
-            await _context.AwaitWithTimeoutAsync(
-                _context.DisposeCaptureServiceAsync(),
-                stepTimeoutMs,
-                "Capture service dispose").ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Capture service async dispose failed: {ex.Message}");
-            _context.DisposeCaptureService();
-        }
+        await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);
+        _context.CompleteRuntimeDispose();
     }
 
     private static int GetDisposeTimeoutMs()
@@ -330,15 +294,11 @@ internal sealed class MainViewModelDisposalController
             1000,
             300000);
 
-    private async Task RunDisposeStepAsync(
-        Task task,
-        int timeoutMs,
-        string operationName,
-        string failureLogPrefix)
+    private static async Task RunDisposeStepAsync(Func<Task> operation, string failureLogPrefix)
     {
         try
         {
-            await _context.AwaitWithTimeoutAsync(task, timeoutMs, operationName).ConfigureAwait(false);
+            await operation().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -360,10 +320,8 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required Action<Action<FlashbackPlaybackStateChange>> DetachFlashbackPlaybackStateChanged { get; init; }
     public required Action<FlashbackPlaybackStateChange> OnFlashbackPlaybackStateChanged { get; init; }
     public required Action UpdateFlashbackHealthStatus { get; init; }
-    public required Action<Action> AttachCapturePreCleanupRequested { get; init; }
-    public required Action<Action> DetachCapturePreCleanupRequested { get; init; }
-    public required Action<EventHandler<ulong>> AttachFrameCaptured { get; init; }
-    public required Action<EventHandler<ulong>> DetachFrameCaptured { get; init; }
+    public required Action<Func<CancellationToken, Task>> AttachCapturePreCleanupRequested { get; init; }
+    public required Action<Func<CancellationToken, Task>> DetachCapturePreCleanupRequested { get; init; }
     public required Action<EventHandler<AudioLevelEventArgs>> AttachAudioLevelUpdated { get; init; }
     public required Action<EventHandler<AudioLevelEventArgs>> DetachAudioLevelUpdated { get; init; }
     public required EventHandler<AudioLevelEventArgs> OnAudioLevelUpdated { get; init; }
@@ -391,7 +349,8 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required Func<bool> IsCaptureRecording { get; init; }
     public required Func<bool> IsRecording { get; init; }
     public required Action ResetAudioMeter { get; init; }
-    public required Func<Func<Task>[]> GetPreviewRendererStopHandlers { get; init; }
+    public required Func<Task> NotifyRendererStopAsync { get; init; }
+    public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
     public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
     public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
 }
@@ -416,7 +375,6 @@ internal sealed class MainViewModelRuntimeEventIngressController
         _context.AttachCaptureErrorOccurred(OnCaptureError);
         _context.AttachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);
         _context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
-        _context.AttachFrameCaptured(OnFrameCaptured);
         _context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);
         _context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
         _context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
@@ -437,14 +395,15 @@ internal sealed class MainViewModelRuntimeEventIngressController
         _context.DetachCaptureStatusChanged(OnCaptureStatusChanged);
         _context.DetachCaptureErrorOccurred(OnCaptureError);
         _context.DetachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);
-        _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
-        _context.DetachFrameCaptured(OnFrameCaptured);
         _context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);
         _context.DetachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
         _context.DetachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
 
         _context.DetachAudioDevicesChanged(_context.OnAudioDevicesChanged);
     }
+
+    public void DetachCleanupHandoff()
+        => _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
 
     private void OnCaptureStatusChanged(object? sender, string status)
     {
@@ -502,23 +461,8 @@ internal sealed class MainViewModelRuntimeEventIngressController
         }
     }
 
-    private void OnCapturePreCleanupRequested()
-    {
-        // Fires on a background thread before CaptureService.CleanupAsync disposes
-        // the shared D3D11 device. Stop the renderer first so it cannot submit work
-        // against a device being disposed.
-        var handlers = _context.GetPreviewRendererStopHandlers();
-        foreach (var handler in handlers)
-        {
-            try { handler().GetAwaiter().GetResult(); }
-            catch (Exception ex) { Logger.Log($"PreCleanup renderer stop warning: {ex.Message}"); }
-        }
-    }
-
-    private void OnFrameCaptured(object? sender, ulong frameCount)
-    {
-        // Could update frame count display if needed.
-    }
+    private Task OnCapturePreCleanupRequested(CancellationToken admissionToken)
+        => _context.InvokeOnUiThreadAsync(_context.NotifyRendererStopAsync, admissionToken);
 
     // PowerModeChanged fires on the system thread pool - must not touch UI properties
     // directly. We act only on PowerModes.Resume; Suspend/StatusChange are ignored

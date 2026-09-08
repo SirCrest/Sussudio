@@ -781,16 +781,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             CloseCurrentOutputIo();
             FreeCurrentOutputContext();
             closeIoMs = Stopwatch.GetElapsedTime(phaseStartedAt).TotalMilliseconds;
-            try
-            {
-                ReinitializeOutputContext(newPath, out openOutputMs, out headerMs);
-            }
-            catch (Exception ex)
-            {
-                _isOpen = false;
-                Logger.Log($"LIBAV_ENCODER_ROTATE_FAILED path='{newPath}' error={ex.Message}");
-                throw;
-            }
+            ReinitializeOutputContext(newPath, out openOutputMs, out headerMs);
 
             ResetSegmentRuntimeState();
             _options = options with { OutputPath = newPath };
@@ -798,6 +789,14 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             Logger.Log(
                 $"LIBAV_ENCODER_ROTATE old_output='{previousPath}' new_output='{newPath}' frames={previousEncodedFrames} bytes={previousTotalBytes}");
             return new RotateOutputResult(previousPath, previousEncodedFrames, previousTotalBytes);
+        }
+        catch (Exception ex)
+        {
+            // Validation above leaves the current output usable. Once native
+            // draining starts, a failed write or close cannot safely be retried.
+            _isOpen = false;
+            Logger.Log($"LIBAV_ENCODER_ROTATE_FAILED path='{newPath}' error={ex.Message}");
+            throw;
         }
         finally
         {
@@ -996,6 +995,15 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
     {
         if (!_isOpen && _formatCtx == null && _videoCodecCtx == null && _audio.CodecCtx == null && _mic.CodecCtx == null)
         {
+            return;
+        }
+
+        if (!_isOpen)
+        {
+            // A failed native rotation can leave codec buffers alive after its
+            // output streams or I/O have closed. Release them without draining
+            // more packets or attempting another trailer on that invalid output.
+            CleanupResources(writeTrailer: false);
             return;
         }
 

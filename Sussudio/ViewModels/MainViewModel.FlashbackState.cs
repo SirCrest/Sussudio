@@ -793,8 +793,7 @@ public partial class MainViewModel
                 progress,
                 ct,
                 playback.InPointFilePts,
-                playback.OutPointFilePts,
-                force: false));
+                playback.OutPointFilePts));
         switch (outcome)
         {
             case ExportFlashbackOutcome.Stale:
@@ -822,7 +821,7 @@ public partial class MainViewModel
 
         var exportPath = ResolveUnusedFlashbackExportPath(file.Path);
         var outcome = await ExportFlashbackCoreAsync(async (progress, ct) =>
-            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, exportPath, progress, ct, force: false));
+            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, exportPath, progress, ct));
         switch (outcome)
         {
             case ExportFlashbackOutcome.Stale:
@@ -898,7 +897,7 @@ public partial class MainViewModel
     }
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
-        double seconds, string outputPath, bool useSelectionRange, bool force, CancellationToken cancellationToken = default)
+        double seconds, string outputPath, bool useSelectionRange, CancellationToken cancellationToken = default)
     {
         // Queue exports independently of capture lifecycle commands. Replacing
         // the active cancellation source here used to cancel a concurrent client.
@@ -956,12 +955,11 @@ public partial class MainViewModel
                     progress,
                     exportCts.Token,
                     playback.InPointFilePts,
-                    playback.OutPointFilePts,
-                    force);
+                    playback.OutPointFilePts);
             }
 
             return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(
-                seconds, outputPath, progress, exportCts.Token, force);
+                seconds, outputPath, progress, exportCts.Token);
         }
         finally
         {

@@ -638,6 +638,7 @@ internal sealed class WindowAppClosingControllerContext
     public required Func<bool> IsRecording { get; init; }
     public required Func<bool> IsRecordingTransitioning { get; init; }
     public required Func<string> GetStatusText { get; init; }
+    public required Action<string> SetStatusText { get; init; }
     public required Func<Task<bool>> StopRecordingBeforeCloseAsync { get; init; }
     public required Func<ValueTask> PrepareForCloseAsync { get; init; }
     public required Func<bool> IsEmergencyClosePending { get; init; }
@@ -653,7 +654,10 @@ internal sealed class WindowAppClosingController
         _context = context;
     }
 
-    public async Task HandleClosingAsync(AppWindowClosingEventArgs args)
+    public Task HandleClosingAsync(AppWindowClosingEventArgs args)
+        => HandleClosingCoreAsync(() => args.Cancel = true);
+
+    private async Task HandleClosingCoreAsync(Action cancelClose)
     {
         LogWindowClosingTrigger();
 
@@ -664,7 +668,7 @@ internal sealed class WindowAppClosingController
             return;
         }
 
-        args.Cancel = true;
+        cancelClose();
         _context.LifecycleController.ClearRequested();
 
         if (!_context.LifecycleController.TryBeginRecordingStop())
@@ -699,6 +703,13 @@ internal sealed class WindowAppClosingController
             _context.LifecycleController.AllowAfterRecordingStop();
             _context.LifecycleController.CompleteRequest();
             _context.RequestWindowClose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WINDOW_CLOSE_PREPARE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+            _context.LifecycleController.ResetRequestedAfterFailure();
+            _context.LifecycleController.CompleteRequest(ex);
+            _context.SetStatusText($"Close paused: {ex.Message} Close again to retry.");
         }
         finally
         {

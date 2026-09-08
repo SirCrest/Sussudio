@@ -309,13 +309,14 @@ owner, fold it back into that owner and update the source-shape tests and
    failure/cancellation state repair, and direct use of the preview lifecycle
    owner for recording startup initialization.
    Recording option selections, output path, counters, and transition flags also
-   live in `MainViewModel.cs`. Bounded teardown, dispose timeout policy,
-   watcher disposal, coordinator cleanup/dispose, and capture-service
-   async-dispose fallback through graph-built context ports now live in
+   live in `MainViewModel.cs`. Bounded teardown and caller waits, watcher
+   disposal, coordinator cleanup/dispose, and capture-service disposal through
+   graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`.
-   The disposal graph-port contract for one-shot disposal entry, teardown
-   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
-   async/sync disposal fallback lives with that controller.
+   That controller owns one shared disposal task. Caller timeouts retain the
+   active operation, and a completed failure can be retried. The capture cleanup
+   callback stays registered until capture disposal succeeds, preserving the
+   renderer acknowledgement required before shared resources are released.
    `MainViewModel.cs` remains the public refresh/dispose adapter and active
    Flashback export cancellation owner. Automation-facing command entry points,
    capture runtime, health, recording snapshot projection, source/preview
@@ -1349,11 +1350,12 @@ owns final preview runtime snapshot DTO flattening from sampled input and D3D
 projection, direct surface/startup/GPU playback mapping, the health input factory,
 preview startup elapsed timing, and blank/stall suspicion policy.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs` owns the
-renderer projection data contract, D3D policy records, policy evaluation order,
-and assignment from evaluated policy records. It keeps the named policy classes
-for D3D-vs-CPU frame counters, renderer state, display cadence, render CPU
-timing, pipeline latency, frame ownership, DXGI frame statistics, and
-frame-latency wait defaults in one cohesive projection owner.
+renderer projection data contract, independent frame-counter and renderer-state
+policies, renderer metric sampling order, and direct projection of sampled
+renderer metric groups.
+Display cadence, render CPU timing, pipeline latency, frame ownership, DXGI
+frame statistics, and frame-latency wait defaults stay in private Apply methods;
+each renderer metric group is sampled once.
 Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
@@ -1466,7 +1468,9 @@ Device discovery ownership lives in `DeviceService.cs`. Keep capture/audio
 enumeration orchestration, the combined discovery result, device
 priority/capability scoring, audio endpoint association, native XU interface
 path resolution, format cache serialization, and inline/background format
-probing together there.
+probing together there. The service owns MTA worker scheduling for the complete
+discovery scan and audio-only refresh. Background format probes capture device
+identity before scheduling and retain the two-probe concurrency limit.
 
 Native XU Kernel Streaming calls are grouped under
 `Sussudio/Services/NativeXu/`. Keep KS category constants, DTOs,
@@ -2429,7 +2433,10 @@ composition context contracts and presentation-controller graph composition live
 in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` keeps the stats dock
-projection refresh adapter.
+projection refresh adapter. Its presentation controller consumes the existing
+`StatsOverlayDockTargetsContext` directly. The shell's
+`RefreshStatsIfDueAndGetSnapshot` forwards to `StatsUiSampler.RefreshIfDueAndGetSnapshot`,
+which collects and publishes a due sample before returning the UI cache.
 Decode and GPU hardware stats row refresh/application over presentation inputs
 now lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 live MJPEG/NVML sampling and decode availability policy live in the local
@@ -3198,7 +3205,8 @@ mutations should use `DiagnosticSessionCommandChannel` typed
 
 Diagnostic-session post-run actions now live in
 `tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the completion phase that
-orders them. The runner owns the public cleanup flow and ordering, recording
+orders them. The runner passes the existing cleanup context directly to the
+stop/restore helpers. It owns the public cleanup flow and ordering, recording
 stop for verification, Flashback playback go-live restore, preview stop,
 Flashback enable-state restore, typed automation command sends, cleanup result
 record, deferred Flashback recording-settings restore, last-recording or

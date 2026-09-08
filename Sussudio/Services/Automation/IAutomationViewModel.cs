@@ -118,7 +118,6 @@ public interface IAutomationFlashbackPort
         double seconds,
         string outputPath,
         bool useSelectionRange,
-        bool force,
         CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default);
 }

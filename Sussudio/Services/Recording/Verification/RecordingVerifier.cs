@@ -20,15 +20,22 @@ public sealed class RecordingVerifier : IRecordingVerifier
     private static readonly Lazy<string> CachedFfprobePath = new(FindFfprobePath);
     private readonly IProcessSupervisor _processSupervisor;
     private readonly string _ffprobePath;
+    private readonly Func<string, long> _readFileLength;
 
     public RecordingVerifier() : this(new ProcessSupervisor(), CachedFfprobePath.Value)
     {
     }
 
     internal RecordingVerifier(IProcessSupervisor processSupervisor, string ffprobePath)
+        : this(processSupervisor, ffprobePath, static path => new FileInfo(path).Length)
+    {
+    }
+
+    internal RecordingVerifier(IProcessSupervisor processSupervisor, string ffprobePath, Func<string, long> readFileLength)
     {
         _processSupervisor = processSupervisor ?? throw new ArgumentNullException(nameof(processSupervisor));
         _ffprobePath = string.IsNullOrWhiteSpace(ffprobePath) ? "ffprobe.exe" : ffprobePath;
+        _readFileLength = readFileLength ?? throw new ArgumentNullException(nameof(readFileLength));
     }
 
     public async Task<RecordingVerificationResult> VerifyAsync(
@@ -46,13 +53,30 @@ public sealed class RecordingVerifier : IRecordingVerifier
             return CreateEarlyFailure(outputPath, $"Output file does not exist: {outputPath}", "output-not-found");
         }
 
-        var fileSize = new FileInfo(outputPath).Length;
+        long fileSize;
+        try
+        {
+            fileSize = _readFileLength(outputPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return CreateEarlyFailure(outputPath,
+                $"Output file length is unavailable ({ex.GetType().Name}: {ex.Message}): {outputPath}",
+                "output-stat-failed", fileExists: true);
+        }
+
         if (fileSize <= 0)
         {
             return CreateEarlyFailure(outputPath, $"Output file is empty: {outputPath}", "output-empty", fileExists: true, fileSizeBytes: fileSize);
         }
 
-        if (!await CanRunFfprobeAsync(cancellationToken).ConfigureAwait(false))
+        var availability = await ProbeFfprobeAvailabilityAsync(cancellationToken).ConfigureAwait(false);
+        if (availability.GetOutputReadFailure() is { } availabilityReadFailure)
+        {
+            return CreateFfprobeFailure(outputPath, fileSize, $"ffprobe availability output capture failed: {availabilityReadFailure.Message}");
+        }
+
+        if (!availability.Started || availability.TimedOut || availability.ExitCode != 0)
         {
             return CreateEarlyFailure(outputPath, "Strict verification failed: ffprobe is not accessible.", "ffprobe-unavailable", fileExists: true, fileSizeBytes: fileSize);
         }
@@ -69,25 +93,23 @@ public sealed class RecordingVerifier : IRecordingVerifier
             CreateFfprobeProcessSpec(outputPath, ffprobeArgs, timeoutMs: 10000),
             cancellationToken).ConfigureAwait(false);
 
-        if (!probe.Started || probe.TimedOut || probe.ExitCode != 0)
+        var metadataReadFailure = probe.GetOutputReadFailure();
+        if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || metadataReadFailure != null)
         {
             var startError = probe.StartException?.Message ?? "unknown";
             var reason = !probe.Started
                 ? $"ffprobe could not start ({startError})"
                 : probe.TimedOut
                     ? "ffprobe timed out"
-                    : $"ffprobe exit code {probe.ExitCode}";
-            return new RecordingVerificationResult
+                    : probe.ExitCode != 0
+                        ? $"ffprobe exit code {probe.ExitCode}"
+                        : "ffprobe metadata output capture failed";
+            if (metadataReadFailure != null)
             {
-                Succeeded = false,
-                Message = $"Strict verification failed: {reason}",
-                OutputPath = outputPath,
-                FileExists = true,
-                FileSizeBytes = fileSize,
-                VerificationMode = "ffprobe",
-                PrimaryMismatchCode = "ffprobe-failed",
-                Mismatches = new[] { "ffprobe-failed" }
-            };
+                reason += $": {metadataReadFailure.Message}";
+            }
+
+            return CreateFfprobeFailure(outputPath, fileSize, reason);
         }
 
         var keyValues = ParseKeyValueOutput(probe.StdOut + Environment.NewLine + probe.StdErr);
@@ -115,7 +137,24 @@ public sealed class RecordingVerifier : IRecordingVerifier
             cancellationToken);
         await Task.WhenAll(hdrSideDataTask, cadenceTask).ConfigureAwait(false);
         var hdrSideDataProbe = await hdrSideDataTask.ConfigureAwait(false);
-        var cadenceMetrics = await cadenceTask.ConfigureAwait(false);
+        var cadenceProbe = await cadenceTask.ConfigureAwait(false);
+        if (hdrSideDataProbe.OutputReadFailure != null || cadenceProbe.OutputReadFailure != null)
+        {
+            var failures = new List<string>(capacity: 2);
+            if (hdrSideDataProbe.OutputReadFailure is { } hdrReadFailure)
+            {
+                failures.Add($"ffprobe HDR side-data output capture failed: {hdrReadFailure.Message}");
+            }
+
+            if (cadenceProbe.OutputReadFailure is { } cadenceReadFailure)
+            {
+                failures.Add($"ffprobe cadence output capture failed: {cadenceReadFailure.Message}");
+            }
+
+            return CreateFfprobeFailure(outputPath, fileSize, string.Join("; ", failures));
+        }
+
+        var cadenceMetrics = cadenceProbe.Metrics;
         if ((!detectedFrameRate.HasValue || detectedFrameRate.Value <= 0) &&
             cadenceMetrics.HasValue &&
             cadenceMetrics.Value.ObservedFps > 0)
@@ -647,6 +686,19 @@ public sealed class RecordingVerifier : IRecordingVerifier
             Mismatches = new[] { mismatchCode }
         };
 
+    private static RecordingVerificationResult CreateFfprobeFailure(string outputPath, long fileSize, string reason)
+        => new()
+        {
+            Succeeded = false,
+            Message = $"Strict verification failed: {reason}",
+            OutputPath = outputPath,
+            FileExists = true,
+            FileSizeBytes = fileSize,
+            VerificationMode = "ffprobe",
+            PrimaryMismatchCode = "ffprobe-failed",
+            Mismatches = new[] { "ffprobe-failed" }
+        };
+
     private readonly record struct CadenceMetrics(
         int SampleCount,
         double ObservedFps,
@@ -662,9 +714,14 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
     private readonly record struct HdrSideDataProbeResult(
         bool? MetadataPresent,
-        IReadOnlyList<string> SideDataTypes);
+        IReadOnlyList<string> SideDataTypes,
+        Exception? OutputReadFailure = null);
 
-    private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(
+    private readonly record struct CadenceProbeResult(
+        CadenceMetrics? Metrics,
+        Exception? OutputReadFailure = null);
+
+    private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(
         string outputPath,
         double? expectedFrameRate,
         CancellationToken cancellationToken)
@@ -681,9 +738,14 @@ public sealed class RecordingVerifier : IRecordingVerifier
             CreateFfprobeProcessSpec(outputPath, cadenceArgs, timeoutMs: 20000),
             cancellationToken).ConfigureAwait(false);
 
+        if (probe.GetOutputReadFailure() is { } readFailure)
+        {
+            return new CadenceProbeResult(null, readFailure);
+        }
+
         if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.StdOut))
         {
-            return null;
+            return default;
         }
 
         try
@@ -692,7 +754,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
             if (!document.RootElement.TryGetProperty("frames", out var framesElement) ||
                 framesElement.ValueKind != JsonValueKind.Array)
             {
-                return null;
+                return default;
             }
 
             var intervalsMs = new List<double>(capacity: 4096);
@@ -719,15 +781,15 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
             if (intervalsMs.Count < 1)
             {
-                return null;
+                return default;
             }
 
-            return ComputeCadenceMetrics(intervalsMs, expectedFrameRate);
+            return new CadenceProbeResult(ComputeCadenceMetrics(intervalsMs, expectedFrameRate));
         }
         catch (Exception ex)
         {
             Logger.Log($"AnalyzeCadenceMetricsAsync ffprobe JSON parse failed: {ex.Message}");
-            return null;
+            return default;
         }
     }
 
@@ -839,6 +901,11 @@ public sealed class RecordingVerifier : IRecordingVerifier
             CreateFfprobeProcessSpec(outputPath, args, timeoutMs: 10000),
             cancellationToken).ConfigureAwait(false);
 
+        if (probe.GetOutputReadFailure() is { } readFailure)
+        {
+            return new HdrSideDataProbeResult(null, Array.Empty<string>(), readFailure);
+        }
+
         if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.StdOut))
         {
             return new HdrSideDataProbeResult(null, Array.Empty<string>());
@@ -892,14 +959,10 @@ public sealed class RecordingVerifier : IRecordingVerifier
         }
     }
 
-    private async Task<bool> CanRunFfprobeAsync(CancellationToken cancellationToken)
-    {
-        var result = await _processSupervisor.RunAsync(
+    private Task<ProcessRunResult> ProbeFfprobeAvailabilityAsync(CancellationToken cancellationToken)
+        => _processSupervisor.RunAsync(
             CreateFfprobeProcessSpec(outputPath: null, arguments: "-version", timeoutMs: 4000),
-            cancellationToken).ConfigureAwait(false);
-
-        return result.Started && !result.TimedOut && result.ExitCode == 0;
-    }
+            cancellationToken);
 
     private static Dictionary<string, string> ParseKeyValueOutput(string output)
     {

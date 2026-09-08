@@ -1150,14 +1150,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _reorderFrames.Remove(seqNo);
         Volatile.Write(ref _reorderBufferDepth, _reorderFrames.Count);
 
-        // Force-drop must register the gap so the emitter never waits on a destroyed frame.
+        // The emitter consumes this gap, advances the cursor, and counts the skip together.
         if (seqNo >= _nextEmitSeq)
         {
             _knownMissingSequences.Add(seqNo);
-            if (seqNo == _nextEmitSeq)
-            {
-                _nextEmitSeq++;
-            }
         }
 
         Monitor.PulseAll(_reorderLock);

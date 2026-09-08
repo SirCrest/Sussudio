@@ -41,6 +41,7 @@ public partial class MainViewModel
     private int _audioEnabledChangeGeneration;
     private readonly SemaphoreSlim _audioMonitoringTransitionGate = new(1, 1);
     private int _audioInputSwitchGeneration;
+    private long _audioDeviceRefreshGeneration;
     private bool _suppressAudioPreviewEnabledChangeOperation;
     private bool _suppressMicrophoneMonitorUpdate;
 
@@ -120,6 +121,7 @@ public partial class MainViewModel
             previousMicrophoneId,
             savedMicrophoneId);
 
+        Interlocked.Increment(ref _audioDeviceRefreshGeneration);
         ReplaceCollection(AudioInputDevices, selection.AvailableDevices);
         ReplaceCollection(MicrophoneDevices, selection.AvailableDevices);
         SelectedAudioInputDevice = selection.SelectedAudioInputDevice;
@@ -138,11 +140,23 @@ public partial class MainViewModel
 
     private async Task RefreshAudioDeviceListAsync()
     {
+        if (Volatile.Read(ref _disposeState) != 0)
+        {
+            return;
+        }
+
+        var refreshGeneration = Interlocked.Increment(ref _audioDeviceRefreshGeneration);
         try
         {
+            var audioDevices = (await _deviceService.EnumerateAudioCaptureEndpointsAsync()).ToList();
+            if (Volatile.Read(ref _disposeState) != 0 ||
+                refreshGeneration != Volatile.Read(ref _audioDeviceRefreshGeneration))
+            {
+                return;
+            }
+
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
-            var audioDevices = (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList();
             var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
             var selection = AudioDeviceSelectionPolicy.SelectRefresh(
                 audioDevices,

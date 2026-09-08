@@ -137,6 +137,11 @@ internal static class NativeFfmpegCapabilityProbe
         string runtimeVersions,
         int mode)
     {
+        if (process.GetOutputReadFailure() is { } readFailure)
+        {
+            throw new InvalidOperationException($"Native split probe output capture failed: {readFailure.Message}", readFailure);
+        }
+
         if (!process.Started || process.TimedOut || !process.ExitConfirmed)
         {
             throw new InvalidOperationException(

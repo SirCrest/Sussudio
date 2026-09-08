@@ -126,7 +126,6 @@ internal static class FlashbackExportPlanner
         TimeSpan inPoint,
         TimeSpan outPoint,
         string outputPath,
-        bool force,
         IReadOnlyList<FlashbackExportPathSnapshot>? segmentPaths,
         IReadOnlyList<FlashbackExportSegmentMetadata> completedSegments,
         string? activeFilePath)
@@ -145,8 +144,7 @@ internal static class FlashbackExportPlanner
                     InPoint = inPoint,
                     OutPoint = outPoint,
                     OutputPath = outputPath,
-                    FastStart = false,
-                    Force = force
+                    FastStart = false
                 },
                 usesActiveFileFallback: true);
         }
@@ -158,8 +156,7 @@ internal static class FlashbackExportPlanner
                 InPoint = inPoint,
                 OutPoint = outPoint,
                 OutputPath = outputPath,
-                FastStart = false,
-                Force = force
+                FastStart = false
             },
             usesActiveFileFallback: false);
     }
