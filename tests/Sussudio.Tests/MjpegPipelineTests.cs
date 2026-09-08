@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -453,6 +453,15 @@ namespace Sussudio.Tests
             Assert.False(
                 File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "SoftwareMjpegDecoder.cs")),
                 "Software MJPEG decoder folded into the pipeline worker owner");
+
+            // The policy in Sussudio-Defragmentation-Goal.md requires a written rationale
+            // for any file left above 1200 lines; keep the pipeline's entry honest.
+            var cleanupPlanText = RuntimeContractSource.ReadRepoFile("docs/architecture/cleanup-plan.md");
+            AssertContains(cleanupPlanText, "## Retained Large Files");
+            AssertContains(
+                cleanupPlanText,
+                "`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` holds one hot-path");
+            AssertContains(cleanupPlanText, "SoftwareMjpegDecoderLivesWithPipelineWorker");
 
             var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
             var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);

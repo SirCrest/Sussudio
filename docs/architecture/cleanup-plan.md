@@ -1,4 +1,4 @@
-# Architecture Cleanup Plan
+﻿# Architecture Cleanup Plan
 
 Navigation reviewed: 2026-09-05. Pending proposals retain their original scope and require live-source verification.
 
@@ -605,6 +605,30 @@ owner, fold it back into that owner and update the source-shape tests and
 - Run the console harness when source ownership, automation, capture, recording,
   or Flashback contracts move.
 
+## Retained Large Files
+
+The file-size policy in
+[Sussudio-Defragmentation-Goal.md](Sussudio-Defragmentation-Goal.md) requires an
+explicit locality or testability rationale for any file left above 1200 lines.
+This section records those rationales. Every other production file is inside the
+policy bands, where 300-800 lines is normally acceptable and 800-1200 is a review
+smell rather than an automatic split trigger.
+
+- `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` holds one hot-path
+  lifetime, not several concerns that happen to share a file. The decode workers
+  (`_workers`/`_decoders`), the reorder buffer, and the emit loop are a single
+  sequencing invariant: `_reorderLock` guards `_reorderFrames`, `_nextEmitSeq`,
+  `_knownMissingSequences` and `_reorderBufferDepth` together, and the workers, the
+  emitter and disposal all take that lock in a fixed order to keep frame ownership
+  and drop accounting correct under a fatal stop. A partial split would scatter that
+  invariant across files without producing a new test seam, so
+  `MjpegPipelineTests` forbids each candidate partial by name
+  (`.Workers.cs`, `.Reorder.cs`, `.ReorderEmission.cs`, `.CompressedQueue.cs`,
+  `.Metrics.cs`, `.Lifecycle.cs`, `.ResourceCleanup.cs`).
+  `SoftwareMjpegDecoder` stays in the same file as the per-worker leaf the pipeline
+  constructs, initializes and disposes; `SoftwareMjpegDecoderLivesWithPipelineWorker`
+  pins that placement, and the decoder already has its own reflection-driven tests,
+  so moving it would buy no additional testability.
 ## Completed Slices
 
 Historical checkpoint descriptions, retained for context. Consult
