@@ -478,6 +478,12 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
     private readonly CancellationToken _defaultCancellationToken;
     private readonly List<string> _warnings;
     private readonly SemaphoreSlim _sendGate = new(1, 1);
+    private readonly object _lifetimeLock = new();
+    private readonly CancellationTokenSource _pendingSendsCancellation = new();
+    private int _ownedSends;
+    private bool _disposeRequested;
+    private bool _waiterCancellationComplete;
+    private bool _resourcesDisposed;
     private int _failureCount;
 
     internal DiagnosticSessionCommandChannel(
@@ -551,10 +557,34 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
         bool allowFailure,
         CancellationToken commandCancellationToken)
     {
-        await _sendGate.WaitAsync(commandCancellationToken).ConfigureAwait(false);
+        BeginOwnedSend();
+        var gateAcquired = false;
         try
         {
-            var response = await SendRawWithConnectRetryWithTokenAsync(command, payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
+            // Disposal wakes queued sends without canceling an admitted transport.
+            using (var waitCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                       commandCancellationToken, _pendingSendsCancellation.Token))
+            {
+                try
+                {
+                    await _sendGate.WaitAsync(waitCancellation.Token).ConfigureAwait(false);
+                    gateAcquired = true;
+                }
+                catch (OperationCanceledException)
+                {
+                    commandCancellationToken.ThrowIfCancellationRequested();
+                    throw new ObjectDisposedException(nameof(DiagnosticSessionCommandChannel));
+                }
+            }
+
+            lock (_lifetimeLock)
+            {
+                // Winning the semaphore and closing admission can race. Once this
+                // check succeeds, the send owns completion even if Dispose follows.
+                ObjectDisposedException.ThrowIf(_disposeRequested, this);
+            }
+
+            var response = await SendRawCoreAsync(command, payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
             if (!IsSuccess(response) && !allowFailure)
             {
                 RecordFailure($"{command}: {Get(response, "Message", "command failed")}");
@@ -564,7 +594,11 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
         }
         finally
         {
-            _sendGate.Release();
+            if (gateAcquired)
+            {
+                _sendGate.Release();
+            }
+            CompleteOwnedSend();
         }
     }
 
@@ -588,6 +622,24 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
         => await SendRawWithConnectRetryWithTokenAsync(CommandName(kind), payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
 
     internal async Task<JsonElement> SendRawWithConnectRetryWithTokenAsync(
+        string command,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs,
+        CancellationToken commandCancellationToken)
+    {
+        // Raw sends intentionally bypass serialization, but still own their lifetime.
+        BeginOwnedSend();
+        try
+        {
+            return await SendRawCoreAsync(command, payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            CompleteOwnedSend();
+        }
+    }
+
+    private async Task<JsonElement> SendRawCoreAsync(
         string command,
         Dictionary<string, object?>? payload,
         int? responseTimeoutMs,
@@ -627,9 +679,62 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
         }
     }
 
+    private void BeginOwnedSend()
+    {
+        lock (_lifetimeLock)
+        {
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
+            _ownedSends++;
+        }
+    }
+
+    private void CompleteOwnedSend()
+    {
+        lock (_lifetimeLock)
+        {
+            _ownedSends--;
+            DisposeResourcesIfIdle();
+        }
+    }
+
+    // Called under _lifetimeLock, after every gate release and linked-token cleanup.
+    private void DisposeResourcesIfIdle()
+    {
+        if (!_waiterCancellationComplete || _ownedSends != 0 || _resourcesDisposed)
+        {
+            return;
+        }
+
+        _resourcesDisposed = true;
+        _sendGate.Dispose();
+        _pendingSendsCancellation.Dispose();
+    }
+
     public void Dispose()
     {
-        _sendGate.Dispose();
+        lock (_lifetimeLock)
+        {
+            if (_disposeRequested)
+            {
+                return;
+            }
+            _disposeRequested = true;
+        }
+
+        // Cancellation can complete waiters. Do not hold the lifetime lock or
+        // dispose the cancellation source until its callbacks have returned.
+        try
+        {
+            _pendingSendsCancellation.Cancel();
+        }
+        finally
+        {
+            lock (_lifetimeLock)
+            {
+                _waiterCancellationComplete = true;
+                DisposeResourcesIfIdle();
+            }
+        }
     }
 }
 

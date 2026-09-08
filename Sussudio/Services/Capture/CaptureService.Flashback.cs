@@ -920,7 +920,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 staleProgramCapture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log($"FLASHBACK_AUDIO_CAPTURE_REPLACED reason='{reason}' terminal_worker=true");
@@ -935,7 +934,7 @@ public partial class CaptureService
                 {
                     await wasapiCapture.InitializeAsync(audioDeviceId, cancellationToken).ConfigureAwait(false);
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    _previewAudioGraph.AttachCaptureFailure(wasapiCapture, "program", OnWasapiCaptureFailed);
                     _previewAudioGraph.ProgramCapture = wasapiCapture;
                     await wasapiCapture.StartAndWaitForRecordingReadyAsync(cancellationToken).ConfigureAwait(false);
                     wasapiCapture = null;
@@ -952,7 +951,7 @@ public partial class CaptureService
                             _previewAudioGraph.ProgramCapture = null;
                         }
                         wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(wasapiCapture);
                         try { await wasapiCapture.DisposeAsync().ConfigureAwait(false); }
                         catch (Exception disposeEx) { Logger.Log($"FLASHBACK_AUDIO_CAPTURE_RESTORE_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
                     }
@@ -988,7 +987,7 @@ public partial class CaptureService
             {
                 await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
                 micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-                micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                _previewAudioGraph.AttachCaptureFailure(micCapture, "microphone", OnWasapiCaptureFailed);
                 _previewAudioGraph.MicrophoneCapture = micCapture;
                 await micCapture.StartAndWaitForRecordingReadyAsync(cancellationToken).ConfigureAwait(false);
                 micCapture = null;
@@ -1018,7 +1017,7 @@ public partial class CaptureService
                         _previewAudioGraph.MicrophoneCapture = null;
                     }
                     micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                    micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                    _previewAudioGraph.DetachCaptureFailure(micCapture);
                     try { await micCapture.DisposeAsync().ConfigureAwait(false); }
                     catch (Exception disposeEx) { Logger.Log($"MIC_MONITOR_RESTORE_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
                 }

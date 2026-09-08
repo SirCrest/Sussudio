@@ -314,8 +314,10 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required EventHandler<DeviceService.DeviceFormatProbeCompletedEventArgs> OnDeviceFormatProbeCompleted { get; init; }
     public required Action<EventHandler<string>> AttachCaptureStatusChanged { get; init; }
     public required Action<EventHandler<string>> DetachCaptureStatusChanged { get; init; }
-    public required Action<EventHandler<Exception>> AttachCaptureErrorOccurred { get; init; }
-    public required Action<EventHandler<Exception>> DetachCaptureErrorOccurred { get; init; }
+    public required Action<EventHandler<CaptureErrorEventArgs>> AttachCaptureErrorOccurred { get; init; }
+    public required Action<EventHandler<CaptureErrorEventArgs>> DetachCaptureErrorOccurred { get; init; }
+    public required Func<CaptureErrorOrigin, bool> IsCaptureErrorCurrent { get; init; }
+    public required Func<CaptureErrorOrigin, Task> RecoverCaptureErrorAsync { get; init; }
     public required Action<Action<FlashbackPlaybackStateChange>> AttachFlashbackPlaybackStateChanged { get; init; }
     public required Action<Action<FlashbackPlaybackStateChange>> DetachFlashbackPlaybackStateChanged { get; init; }
     public required Action<FlashbackPlaybackStateChange> OnFlashbackPlaybackStateChanged { get; init; }
@@ -420,10 +422,16 @@ internal sealed class MainViewModelRuntimeEventIngressController
         }
     }
 
-    private void OnCaptureError(object? sender, Exception ex)
+    private void OnCaptureError(object? sender, CaptureErrorEventArgs error)
     {
+        var ex = error.Exception;
         if (!_context.TryEnqueueOnUiThread(() =>
         {
+            if (!_context.IsCaptureErrorCurrent(error.Origin))
+            {
+                return;
+            }
+
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
             _context.SetStatusText($"Error: {ex.Message}");
             _context.UpdateFlashbackHealthStatus();
@@ -440,7 +448,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
             // An audio device can be invalidated without a system resume event.
             // Reopen capture automatically while preview is active and recording
-            // is stopped. The UI operation queue serializes this with resume recovery.
+            // is stopped. Recovery checks the same origin after its asynchronous waits.
             unchecked
             {
                 const int AudclntDeviceInvalidated = (int)0x88890004;
@@ -451,7 +459,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
                 {
                     Logger.Log("AUDCLNT_E_DEVICE_INVALIDATED received \u2014 scheduling audio rebind.");
                     _context.EnqueueUiOperation(
-                        () => _context.ReinitializeDeviceAsync("audio device invalidated"),
+                        () => _context.RecoverCaptureErrorAsync(error.Origin),
                         "audio device invalidated reinit");
                 }
             }
@@ -761,6 +769,9 @@ internal sealed class MainViewModelPreviewLifecycleController
 
     public Task<bool> ReinitializeDeviceWithResultAsync(string reason)
         => _previewReinitializeController.ReinitializeDeviceWithResultAsync(reason);
+
+    public Task RecoverCaptureErrorAsync(CaptureErrorOrigin origin)
+        => _previewReinitializeController.RecoverCaptureErrorAsync(origin);
 }
 
 /// <summary>
@@ -768,6 +779,7 @@ internal sealed class MainViewModelPreviewLifecycleController
 /// </summary>
 internal sealed class MainViewModelPreviewReinitializeControllerContext
 {
+    public required Func<CaptureErrorOrigin, bool> IsCaptureErrorCurrent { get; init; }
     public required Func<CaptureDevice?> SelectedDevice { get; init; }
     public required Func<MediaFormat?> SelectedFormat { get; init; }
     public required Func<bool> IsRecording { get; init; }
@@ -832,8 +844,23 @@ internal sealed class MainViewModelPreviewReinitializeController
     public async Task<bool> ReinitializeDeviceWithResultAsync(string reason)
         => await ReinitializeDeviceCoreAsync(reason, treatCoalescedAsSuccess: false).ConfigureAwait(true);
 
-    private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)
+    public async Task RecoverCaptureErrorAsync(CaptureErrorOrigin origin)
+        => await ReinitializeDeviceCoreAsync("audio device invalidated", treatCoalescedAsSuccess: true, origin).ConfigureAwait(true);
+
+    private bool IsCaptureErrorCurrent(CaptureErrorOrigin? origin)
+        => origin is null || _context.IsCaptureErrorCurrent(origin.Value);
+
+    private async Task<bool> ReinitializeDeviceCoreAsync(
+        string reason,
+        bool treatCoalescedAsSuccess,
+        CaptureErrorOrigin? errorOrigin = null)
     {
+        // An obsolete recovery must not supersede an unrelated settings request.
+        if (!IsCaptureErrorCurrent(errorOrigin))
+        {
+            return false;
+        }
+
         if (_context.SelectedDevice() == null || _context.SelectedFormat() == null)
         {
             return false;
@@ -848,6 +875,11 @@ internal sealed class MainViewModelPreviewReinitializeController
 
         var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);
         await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);
+        if (!IsCaptureErrorCurrent(errorOrigin))
+        {
+            return false;
+        }
+
         if (Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration)
         {
             Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
@@ -866,6 +898,11 @@ internal sealed class MainViewModelPreviewReinitializeController
             }
             catch (TimeoutException ex)
             {
+                if (!IsCaptureErrorCurrent(errorOrigin))
+                {
+                    return false;
+                }
+
                 Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
                 _context.SetStatusText($"Failed to apply format: {ex.Message}");
                 return false;
@@ -875,12 +912,22 @@ internal sealed class MainViewModelPreviewReinitializeController
                 Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_FAULT reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
             }
 
+            if (!IsCaptureErrorCurrent(errorOrigin))
+            {
+                return false;
+            }
+
             _context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);
         }
 
         await _previewReinitializeGate.WaitAsync().ConfigureAwait(true);
         try
         {
+            if (!IsCaptureErrorCurrent(errorOrigin))
+            {
+                return false;
+            }
+
             // A newer request can arrive while the Flashback cycle or another restart owns the gate.
             if (Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration)
             {

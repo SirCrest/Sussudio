@@ -275,7 +275,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
     }
 
     private bool TryOpenVerifiedHandle(
-        out SafeFileHandle? handle,
+        [NotNullWhen(true)] out SafeFileHandle? handle,
         out string failureMessage,
         out int lastError)
     {
@@ -335,7 +335,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
             try
             {
                 Marshal.WriteByte(disposition, 1);
-                if (SetFileInformationByHandle(handle!, FileInformationClass.FileDispositionInfo, disposition, 1))
+                if (SetFileInformationByHandle(handle, FileInformationClass.FileDispositionInfo, disposition, 1))
                 {
                     failureMessage = string.Empty;
                     lastError = 0;
@@ -383,7 +383,7 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
                 return false;
             }
 
-            if (TryRenameTempHandle(handle!, outputPath, out var renameFailure, out lastError))
+            if (TryRenameTempHandle(handle, outputPath, out var renameFailure, out lastError))
             {
                 failureMessage = string.Empty;
                 failureCode = string.Empty;

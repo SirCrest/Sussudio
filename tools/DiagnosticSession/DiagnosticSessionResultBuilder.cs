@@ -22,8 +22,8 @@ internal static class DiagnosticSessionResultBuilder
         var warnings = request.Warnings;
 
         var artifactPaths = await WritePreSummaryAsync(
-                request.OutputDirectory,
-                request.SessionId,
+                request.RunBootstrap.OutputDirectory,
+                request.RunBootstrap.SessionId,
                 samples,
                 request.Timeline,
                 runState)
@@ -103,19 +103,19 @@ internal static class DiagnosticSessionResultBuilder
 
         return new DiagnosticSessionResult
         {
-            SessionId = request.SessionId,
-            Scenario = request.Scenario,
+            SessionId = request.RunBootstrap.SessionId,
+            Scenario = request.RunBootstrap.Scenario,
             Success = DetermineDiagnosticSessionSuccess(request, runState, analysis, verificationSucceeded),
-            StartedUtc = request.StartedUtc,
+            StartedUtc = request.RunBootstrap.StartedUtc,
             CompletedUtc = completedUtc,
             TerminalState = terminalState,
             LastStage = runState.GetResultLastStage(),
             UnhandledException = runState.TerminalException is null ? null : DiagnosticSessionRunState.FormatTerminalException(runState.TerminalException),
-            RunnerProcessId = request.RunnerProcessId,
-            DurationSeconds = request.DurationSeconds,
-            SampleIntervalMs = request.SampleIntervalMs,
+            RunnerProcessId = request.RunBootstrap.RunnerProcessId,
+            DurationSeconds = request.RunBootstrap.DurationSeconds,
+            SampleIntervalMs = request.RunBootstrap.SampleIntervalMs,
             SampleCount = request.Samples.Count,
-            OutputDirectory = request.OutputDirectory,
+            OutputDirectory = request.RunBootstrap.OutputDirectory,
             LivePath = request.LivePath,
             SummaryPath = artifactPaths.SummaryPath,
             SamplesPath = artifactPaths.SamplesPath,
@@ -430,13 +430,13 @@ internal static class DiagnosticSessionResultBuilder
         DiagnosticSessionPreviewSchedulerAnalysis previewScheduler)
     {
         var warnings = request.Warnings;
-        if (request.ScenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPlayback)
+        if (request.RunBootstrap.ScenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPlayback)
         {
             ValidateFlashbackPlaybackSession(
                 playbackSessionMetrics.Observed ? playbackResultMetrics.EndSnapshot : lastSnapshot,
                 playbackSessionMetrics,
                 visualCadenceMetrics,
-                request.DurationSeconds,
+                request.RunBootstrap.DurationSeconds,
                 warnings);
         }
 
@@ -449,9 +449,9 @@ internal static class DiagnosticSessionResultBuilder
             healthSnapshot,
             warnings);
         ValidateFlashbackPreviewSchedulerAnalysis(
-            request.ScenarioPlan,
+            request.RunBootstrap.ScenarioPlan,
             lastSnapshot,
-            request.DurationSeconds,
+            request.RunBootstrap.DurationSeconds,
             previewScheduler,
             previewCadenceMetrics,
             visualCadenceMetrics,
@@ -463,9 +463,9 @@ internal static class DiagnosticSessionResultBuilder
             initialSnapshot,
             lastSnapshot,
             diagnosticHealthSnapshot,
-            request.ScenarioPlan,
+            request.RunBootstrap.ScenarioPlan,
             sourceCadenceMetrics,
-            request.DurationSeconds,
+            request.RunBootstrap.DurationSeconds,
             previewScheduler,
             visualCadenceMetrics,
             GetDouble(lastSnapshot, "ExpectedCaptureFrameRate"),
@@ -473,7 +473,7 @@ internal static class DiagnosticSessionResultBuilder
 
         return new DiagnosticSessionAnalysisValidationOutcome(
             DiagnosticHealthSucceeded: diagnosticHealthSucceeded,
-            FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings));
+            FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings));
     }
 
     private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(
@@ -820,7 +820,7 @@ internal static class DiagnosticSessionResultBuilder
         DiagnosticSessionResultBuildRequest request,
         DiagnosticSessionResultAnalysis analysis,
         bool? verificationSucceeded) =>
-        IsStrictArtifactVerificationScenario(request.Scenario) &&
+        IsStrictArtifactVerificationScenario(request.RunBootstrap.Scenario) &&
         verificationSucceeded == true &&
         string.Equals(analysis.HealthSummary.HealthStatus, "Warning", StringComparison.OrdinalIgnoreCase);
 
@@ -845,8 +845,8 @@ internal static class DiagnosticSessionResultBuilder
         DiagnosticSessionResultBuildRequest request,
         DiagnosticSessionResultAnalysis analysis)
     {
-        if (!string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.PreviewOnly, StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.Observe, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(request.RunBootstrap.Scenario, DiagnosticSessionScenarioCatalog.PreviewOnly, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(request.RunBootstrap.Scenario, DiagnosticSessionScenarioCatalog.Observe, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -1064,15 +1064,8 @@ internal static class DiagnosticSessionResultBuilder
 
 internal sealed record DiagnosticSessionResultBuildRequest(
     DiagnosticSessionOptions Options,
-    DiagnosticSessionScenarioPlan ScenarioPlan,
-    string SessionId,
-    string Scenario,
-    int DurationSeconds,
-    int SampleIntervalMs,
-    string OutputDirectory,
+    DiagnosticSessionRunBootstrap RunBootstrap,
     string LivePath,
-    DateTimeOffset StartedUtc,
-    int RunnerProcessId,
     int CommandFailureCount,
     IReadOnlyList<DiagnosticSessionSample> Samples,
     JsonElement InitialSnapshot,

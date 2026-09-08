@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -1694,7 +1694,9 @@ static partial class Program
         AssertContains(transactionText, "private bool TryOpenVerifiedHandle(");
         AssertContains(transactionText, "replaceIfExists: false");
         AssertContains(transactionText, "SetFileInformationByHandle(handle, FileInformationClass.FileRenameInfo");
-        AssertContains(transactionText, "SetFileInformationByHandle(handle!, FileInformationClass.FileDispositionInfo");
+        AssertContains(transactionText, "SetFileInformationByHandle(handle, FileInformationClass.FileDispositionInfo");
+        AssertContains(transactionText, "[NotNullWhen(true)] out SafeFileHandle? handle");
+        AssertDoesNotContain(transactionText, "handle!");
         AssertContains(transactionText, "internal static void CleanupOrphanedTempFiles(string directory)");
         AssertDoesNotContain(transactionText, "AVFormatContext");
         AssertDoesNotContain(transactionText, "av_write_trailer");
@@ -3139,14 +3141,14 @@ static partial class Program
         AssertContains(segmentSwitchText, "if (nextFile == null || IsSamePlaybackPath(nextFile, currentOpenFilePath))");
         AssertContains(segmentSwitchText, "_currentOpenFilePath = nextFile;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";");
         AssertContains(sourceText, "ReopenDecoderPlaybackFile(\n                decoder,\n                currentOpenFilePath,\n                ref fileOpen,\n                updateCurrentOpenPath: false,\n                closeOnlyWhenOpen: false);");
-        AssertContains(sourceText, "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)");
+        AssertContains(sourceText, "SnapToLiveIfNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)");
         AssertOccursBefore(
             sourceText,
-            "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)",
+            "SnapToLiveIfNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)",
             "if (gapFromLive > 2000)");
         AssertOccursBefore(
             sourceText,
-            "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)",
+            "SnapToLiveIfNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)",
             "FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT");
 
         return Task.CompletedTask;
@@ -3169,11 +3171,11 @@ static partial class Program
         AssertContains(playbackTimingText, "private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;");
         AssertContains(playbackTimingText, "private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);");
         AssertContains(playbackLoopText, "private static readonly TimeSpan RecoveryNearLiveSnapThreshold = TimeSpan.FromMilliseconds(2000);");
-        AssertContains(playbackLoopText, "private bool CheckNearLiveEdge(");
+        AssertContains(playbackLoopText, "private bool SnapToLiveIfNearLiveEdge(");
         AssertContains(playbackSoftwareBudgetText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
         AssertDoesNotContain(rootText, "private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;");
         AssertDoesNotContain(rootText, "private static readonly TimeSpan RecoveryNearLiveSnapThreshold = TimeSpan.FromMilliseconds(2000);");
-        AssertContains(sourceText, "CheckNearLiveEdge(decoder, videoFrame.Pts, newPosition, ref fileOpen)");
+        AssertContains(sourceText, "SnapToLiveIfNearLiveEdge(decoder, videoFrame.Pts, newPosition, ref fileOpen)");
         AssertContains(sourceText, "var snapThreshold = requireFrameWarmup\n            ? ResolveContinuousPlaybackNearLiveSnapThreshold()\n            : RecoveryNearLiveSnapThreshold;");
         AssertContains(sourceText, "gapFromLive <= snapThreshold");
         AssertContains(sourceText, "private TimeSpan ResolveContinuousPlaybackNearLiveSnapThreshold()");
@@ -3199,7 +3201,7 @@ static partial class Program
         var decodeErrorBlock = ExtractTextBetween(
             sourceText,
             "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK",
-            "    private bool CheckNearLiveEdge(");
+            "    private bool SnapToLiveIfNearLiveEdge(");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(sourceText, "SetLastCommandFailure($\"decode_error:{ex.GetType().Name}{FormatCommandDetail(position: pos)}\");");
         AssertContains(playbackFramesText, "private void SnapToLiveOnError(");

@@ -639,18 +639,27 @@ static class NativeXuProbeI2cCommands
 
     private static bool TryExtractI2cValue(byte[]? response, out byte value)
     {
-        var payload = TryUnwrapAtEnvelopePayload(response, out var unwrapped)
-            ? unwrapped
-            : response;
-
-        if (payload is { Length: > 0 })
+        value = 0;
+        if (response is not { Length: > 0 })
         {
+            return false;
+        }
+
+        // A one-byte raw value can itself be A1. A longer marked reply must
+        // unwrap successfully so its envelope header never becomes a restore value.
+        if (response.Length > 1 && response[0] == 0xA1)
+        {
+            if (!TryUnwrapAtEnvelopePayload(response, out var payload))
+            {
+                return false;
+            }
+
             value = payload[0];
             return true;
         }
 
-        value = 0;
-        return false;
+        value = response[0];
+        return true;
     }
 
 }

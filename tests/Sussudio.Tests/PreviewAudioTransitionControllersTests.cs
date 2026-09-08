@@ -516,6 +516,192 @@ public sealed class PreviewAudioTransitionControllersTests
         await Task.Delay(50);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void Recorder_TraceFaultRetiresSamplerAndAllowsRestart(int failingRead)
+    {
+        var reads = 0;
+        var failure = new InvalidOperationException("runtime snapshot failed");
+        var logs = new List<string>();
+        using var recorder = CreateRecorder(
+            () => Interlocked.Increment(ref reads) == failingRead ? throw failure : new CaptureRuntimeSnapshot(),
+            logs);
+
+        // Session-start and the first sample both run before BeginSession returns.
+        if (failingRead == 1)
+        {
+            Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => recorder.BeginSession("failed", 0.5)));
+        }
+        else
+        {
+            recorder.BeginSession("failed", 0.5);
+            Assert.Contains(logs, message => message.Contains("AUDIO_RAMP_TRACE_SAMPLER_FAIL"));
+        }
+
+        var failedSnapshot = recorder.GetSnapshot();
+        Assert.False(failedSnapshot.IsSamplingActive);
+        var replacement = recorder.BeginSession("replacement", 0.7);
+        Assert.True(replacement > failedSnapshot.ActiveSessionId);
+        Assert.True(recorder.GetSnapshot().IsSamplingActive);
+        Assert.Equal(replacement, recorder.GetSnapshot().ActiveSessionId);
+
+        recorder.Dispose();
+        recorder.Dispose();
+        Assert.False(recorder.GetSnapshot().IsSamplingActive);
+        Assert.Equal(0, recorder.BeginSession("after-dispose", 0.5));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task Recorder_ObsoleteTraceFaultCannotRetireReplacement(int failingRead)
+    {
+        var reads = 0;
+        var entered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim(false);
+        var failure = new InvalidOperationException("obsolete snapshot failed");
+        using var recorder = CreateRecorder(() =>
+        {
+            if (Interlocked.Increment(ref reads) == failingRead)
+            {
+                entered.TrySetResult(true);
+                if (!release.Wait(TimeSpan.FromSeconds(5)))
+                {
+                    throw new TimeoutException("The obsolete snapshot was not released.");
+                }
+                throw failure;
+            }
+            return new CaptureRuntimeSnapshot();
+        });
+
+        var olderBegin = Task.Run(() => recorder.BeginSession("older", 0.2));
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            var olderSession = recorder.GetSnapshot().ActiveSessionId;
+            var replacement = recorder.BeginSession("replacement", 0.8);
+            Assert.True(replacement > olderSession);
+            release.Set();
+
+            if (failingRead == 1)
+            {
+                var observed = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                {
+                    await olderBegin.WaitAsync(TimeSpan.FromSeconds(5));
+                });
+                Assert.Same(failure, observed);
+            }
+            else
+            {
+                Assert.Equal(olderSession, await olderBegin.WaitAsync(TimeSpan.FromSeconds(5)));
+            }
+
+            var snapshot = recorder.GetSnapshot();
+            Assert.True(snapshot.IsSamplingActive);
+            Assert.Equal(replacement, snapshot.ActiveSessionId);
+            Assert.Equal("replacement", snapshot.ActiveReason);
+        }
+        finally
+        {
+            release.Set();
+            try { await olderBegin.WaitAsync(TimeSpan.FromSeconds(5)); }
+            catch (InvalidOperationException) when (failingRead == 1) { }
+        }
+    }
+
+    [Fact]
+    public async Task Recorder_CompletionTraceFailureStillStopsSampler()
+    {
+        var failSynchronousSnapshot = new AsyncLocal<bool>();
+        var failure = new InvalidOperationException("completion snapshot failed");
+        using var recorder = CreateRecorder(
+            () => failSynchronousSnapshot.Value ? throw failure : new CaptureRuntimeSnapshot());
+        var session = recorder.BeginSession("completing", 0.6);
+
+        // The sampler captured the normal context; only the synchronous completion fails.
+        failSynchronousSnapshot.Value = true;
+        try
+        {
+            Assert.Same(failure, Assert.Throws<InvalidOperationException>(() => recorder.CompleteSession(session, "completing")));
+        }
+        finally
+        {
+            failSynchronousSnapshot.Value = false;
+        }
+
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (recorder.GetSnapshot().IsSamplingActive)
+        {
+            await Task.Delay(10, deadline.Token);
+        }
+
+        Assert.Equal(session, recorder.GetSnapshot().ActiveSessionId);
+        var replacement = recorder.BeginSession("replacement", 0.8);
+        Assert.True(replacement > session);
+        Assert.True(recorder.GetSnapshot().IsSamplingActive);
+    }
+
+    [Fact]
+    public async Task Recorder_ObsoleteDelayedCompletionCannotStopReplacement()
+    {
+        using var recorder = CreateRecorder();
+        var olderSession = recorder.BeginSession("older", 0.2);
+        var replacement = recorder.BeginSession("replacement", 0.8);
+        var stopAfterDelay = typeof(AudioRampTraceRecorder).GetMethod(
+            "StopSamplerAfterDelayAsync",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Sampler completion method was not found.");
+
+        // Use the existing delay parameter to exercise an obsolete timer after replacement.
+        await (Task)stopAfterDelay.Invoke(recorder, new object[] { olderSession, 0 })!;
+        var snapshot = recorder.GetSnapshot();
+        Assert.True(snapshot.IsSamplingActive);
+        Assert.Equal(replacement, snapshot.ActiveSessionId);
+
+        await (Task)stopAfterDelay.Invoke(recorder, new object[] { replacement, 0 })!;
+        Assert.False(recorder.GetSnapshot().IsSamplingActive);
+    }
+
+    [Fact]
+    public async Task Recorder_DisposeDuringSamplerFaultRemainsSafe()
+    {
+        var reads = 0;
+        var entered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim(false);
+        using var recorder = CreateRecorder(() =>
+        {
+            if (Interlocked.Increment(ref reads) == 2)
+            {
+                entered.TrySetResult(true);
+                if (!release.Wait(TimeSpan.FromSeconds(5)))
+                {
+                    throw new TimeoutException("The disposed sampler snapshot was not released.");
+                }
+                throw new InvalidOperationException("snapshot failed after disposal");
+            }
+            return new CaptureRuntimeSnapshot();
+        });
+
+        var begin = Task.Run(() => recorder.BeginSession("disposing", 0.6));
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            recorder.Dispose();
+            recorder.Dispose();
+            Assert.False(recorder.GetSnapshot().IsSamplingActive);
+            Assert.Equal(0, recorder.BeginSession("after-dispose", 0.5));
+            release.Set();
+            await begin.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.False(recorder.GetSnapshot().IsSamplingActive);
+        }
+        finally
+        {
+            release.Set();
+            await begin.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+    }
+
     [Fact]
     public void Recorder_IgnoresACompletionForANonSession()
     {

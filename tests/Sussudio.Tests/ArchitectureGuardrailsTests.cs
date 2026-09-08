@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -48,14 +48,8 @@ static partial class Program
         var repoRoot = GetRepoRoot();
         var agentMapPath = Path.Combine(repoRoot, "docs", "architecture", "AGENT_MAP.md");
         var agentMapText = File.ReadAllText(agentMapPath);
-        var files = Directory.EnumerateFiles(repoRoot, "*", SearchOption.AllDirectories)
-            .Where(file => !HasIgnoredPathSegment(repoRoot, file))
-            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
-            .ToArray();
-        var directories = Directory.EnumerateDirectories(repoRoot, "*", SearchOption.AllDirectories)
-            .Where(directory => !HasIgnoredPathSegment(repoRoot, directory))
-            .Select(directory => NormalizeRepoRelativePath(repoRoot, directory))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var files = EnumerateRepoFilePaths(repoRoot);
+        var directories = EnumerateRepoDirectoryPaths(repoRoot);
 
         var failures = new List<string>();
         foreach (var token in EnumerateAgentMapPathTokens(agentMapText).Distinct(StringComparer.Ordinal))
@@ -437,14 +431,8 @@ static partial class Program
         var repoRoot = GetRepoRoot();
         var cleanupPlanPath = Path.Combine(repoRoot, "docs", "architecture", "cleanup-plan.md");
         var cleanupPlanText = File.ReadAllText(cleanupPlanPath);
-        var files = Directory.EnumerateFiles(repoRoot, "*", SearchOption.AllDirectories)
-            .Where(file => !HasIgnoredPathSegment(repoRoot, file))
-            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
-            .ToArray();
-        var directories = Directory.EnumerateDirectories(repoRoot, "*", SearchOption.AllDirectories)
-            .Where(directory => !HasIgnoredPathSegment(repoRoot, directory))
-            .Select(directory => NormalizeRepoRelativePath(repoRoot, directory))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var files = EnumerateRepoFilePaths(repoRoot);
+        var directories = EnumerateRepoDirectoryPaths(repoRoot);
 
         var failures = new List<string>();
         foreach (var token in EnumerateCleanupPlanPathTokens(cleanupPlanText).Distinct(StringComparer.Ordinal))
@@ -552,14 +540,8 @@ static partial class Program
         var repoRoot = GetRepoRoot();
         var migrationPath = Path.Combine(repoRoot, "tests", "Sussudio.Tests", "MIGRATION.md");
         var migrationText = File.ReadAllText(migrationPath);
-        var files = Directory.EnumerateFiles(repoRoot, "*", SearchOption.AllDirectories)
-            .Where(file => !HasIgnoredPathSegment(repoRoot, file))
-            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
-            .ToArray();
-        var directories = Directory.EnumerateDirectories(repoRoot, "*", SearchOption.AllDirectories)
-            .Where(directory => !HasIgnoredPathSegment(repoRoot, directory))
-            .Select(directory => NormalizeRepoRelativePath(repoRoot, directory))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var files = EnumerateRepoFilePaths(repoRoot);
+        var directories = EnumerateRepoDirectoryPaths(repoRoot);
         var failures = new List<string>();
 
         foreach (var token in EnumerateMigrationPlanPathTokens(migrationText).Distinct(StringComparer.Ordinal))
@@ -1358,11 +1340,82 @@ static partial class Program
             new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
             StringSplitOptions.RemoveEmptyEntries);
 
-        return segments.Any(segment =>
-            string.Equals(segment, "bin", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(segment, "obj", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(segment, "Generated Files", StringComparison.OrdinalIgnoreCase));
+        return segments.Any(IsIgnoredPathSegment);
     }
+
+    // Build output and tool-local state are not part of the documented source tree.
+    // Dot-directories (.git, .desloppify, .claude, .vscode, ...) hold local state that
+    // no architecture document references, and walking them is both slow and prone to
+    // access-denied entries that would abort the whole enumeration.
+    private static bool IsIgnoredPathSegment(string segment)
+        => segment.StartsWith('.') ||
+           string.Equals(segment, "bin", StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(segment, "obj", StringComparison.OrdinalIgnoreCase) ||
+           string.Equals(segment, "Generated Files", StringComparison.OrdinalIgnoreCase);
+
+    // Skips ignored directories during the walk rather than after it, so an unreadable
+    // directory under one of them never reaches the enumerator. Scratch directories
+    // under temp/ are created and deleted by other tests while this walk runs, so a
+    // directory that disappears between listing and descent is skipped, not fatal.
+    private static IEnumerable<string> EnumerateRepoEntries(string root, bool files)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+            foreach (var child in ListDirectoryOrEmpty(directory, Directory.EnumerateDirectories))
+            {
+                if (IsIgnoredPathSegment(Path.GetFileName(child)))
+                {
+                    continue;
+                }
+
+                pending.Push(child);
+                if (!files)
+                {
+                    yield return child;
+                }
+            }
+
+            if (files)
+            {
+                foreach (var file in ListDirectoryOrEmpty(directory, Directory.EnumerateFiles))
+                {
+                    yield return file;
+                }
+            }
+        }
+    }
+
+    private static string[] ListDirectoryOrEmpty(
+        string directory,
+        Func<string, string, EnumerationOptions, IEnumerable<string>> list)
+    {
+        try
+        {
+            return list(directory, "*", new EnumerationOptions { IgnoreInaccessible = true }).ToArray();
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return Array.Empty<string>();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    private static string[] EnumerateRepoFilePaths(string repoRoot)
+        => EnumerateRepoEntries(repoRoot, files: true)
+            .Select(file => NormalizeRepoRelativePath(repoRoot, file))
+            .ToArray();
+
+    private static HashSet<string> EnumerateRepoDirectoryPaths(string repoRoot)
+        => EnumerateRepoEntries(repoRoot, files: false)
+            .Select(directory => NormalizeRepoRelativePath(repoRoot, directory))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     private static string StripCSharpCommentsAndLiterals(string text)
     {
@@ -2259,7 +2312,7 @@ static partial class Program
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnSystemPowerModeChanged");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "e.Mode != PowerModes.Resume");
         AssertContains(mainViewModelRuntimeLifecycleControllerText, "_eventIngressController = _context.CreateEventIngressController();");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.RecoverCaptureErrorAsync(error.Origin)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
         AssertDoesNotContain(mainViewModelRuntimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(mainViewModelCapturePresentationText, "partial void OnIsPreviewingChanged(bool value)");
@@ -2339,7 +2392,7 @@ static partial class Program
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Path.GetPathRoot(");
         AssertDoesNotContain(mainViewModelRecordingRuntimeText, "Trace.TraceWarning(");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureStatusChanged(object? sender, string status)");
-        AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureError(object? sender, Exception ex)");
+        AssertContains(mainViewModelRuntimeEventIngressControllerText, "private void OnCaptureError(object? sender, CaptureErrorEventArgs error)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "private Task OnCapturePreCleanupRequested(CancellationToken admissionToken)");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         AssertContains(mainViewModelRuntimeEventIngressControllerText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");

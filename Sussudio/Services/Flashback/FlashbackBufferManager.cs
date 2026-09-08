@@ -12,7 +12,7 @@ using Sussudio.Services.Recording;
 namespace Sussudio.Services.Flashback;
 
 /// <summary>
-/// Manages a single MPEG-TS flashback buffer file.
+/// Manages the active Flashback buffer segment and retained completed segments.
 /// Tracks buffered duration via PTS updates from the encoder.
 /// Owns disk retention and recovery markers; it does not control live capture.
 /// </summary>
@@ -1183,7 +1183,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// For compatibility: single file means 1 "segment" when active, 0 otherwise.
+    /// Counts existing completed segment files plus the existing active segment file.
     /// </summary>
     public int SegmentCount
     {

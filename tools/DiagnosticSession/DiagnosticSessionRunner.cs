@@ -96,18 +96,10 @@ public static class DiagnosticSessionRunner
         DiagnosticSessionPostRunSnapshotResult postRunSnapshots,
         JsonElement? verification)
     {
-        var runBootstrap = context.RunBootstrap;
         return new DiagnosticSessionResultBuildRequest(
             context.Options,
-            runBootstrap.ScenarioPlan,
-            runBootstrap.SessionId,
-            runBootstrap.Scenario,
-            runBootstrap.DurationSeconds,
-            runBootstrap.SampleIntervalMs,
-            runBootstrap.OutputDirectory,
+            context.RunBootstrap,
             context.LivePath,
-            runBootstrap.StartedUtc,
-            runBootstrap.RunnerProcessId,
             context.CommandChannel.FailureCount,
             context.Samples,
             context.InitialSnapshot,
@@ -186,7 +178,8 @@ public static class DiagnosticSessionRunner
                 bufferSize: 1,
                 FileOptions.DeleteOnClose);
         }
-        catch (IOException ex)
+        // Only sharing and lock violations establish another open owner.
+        catch (IOException ex) when (ex.HResult is unchecked((int)0x80070020) or unchecked((int)0x80070021))
         {
             throw new InvalidOperationException(
                 $"Another diagnostic session is already running in '{outputDirectory}'. " +

@@ -256,7 +256,7 @@ static partial class Program
         AssertContains(composition, "_context.StatsToggle.Checked -= StatsToggle_Checked;");
         AssertContains(composition, "_context.FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;");
         AssertContains(composition, "_context.FrameTimeOverlayToggle.Checked -= FrameTimeOverlayToggle_Checked;");
-        AssertContains(composition, "UpdateStatsDock = _statsDockControllerGraph.RefreshDock,");
+        AssertContains(composition, "UpdateStatsDock = _statsDockRefreshController.RefreshDock,");
         AssertContains(composition, "SetGraphActive = _frameTimeGraph.SetActive");
         AssertContains(composition, "public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)");
         AssertContains(composition, "public IDisposable SubscribeToStats(Action<StatsSnapshot> receiveSnapshot)");
@@ -300,7 +300,7 @@ static partial class Program
         AssertContains(controllerText, "_context.RefreshDiagnosticsSection();");
         AssertContains(mainWindowText, "ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;");
         AssertContains(mainWindowText, "InitializeStatsOverlayCompositionController();");
-        AssertContains(statsOverlayCompositionText, "RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection");
+        AssertContains(statsOverlayCompositionText, "RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsSectionChromeController.cs")),

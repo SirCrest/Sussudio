@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
@@ -471,9 +472,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             capture = _capture;
         }
 
-        readCts?.Cancel();
         try
         {
+            readCts?.Cancel();
             if (capture != null)
             {
                 await capture.StopAsync().ConfigureAwait(false);
@@ -571,7 +572,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (stopException != null)
         {
-            throw stopException;
+            ExceptionDispatchInfo.Capture(stopException).Throw();
         }
     }
 

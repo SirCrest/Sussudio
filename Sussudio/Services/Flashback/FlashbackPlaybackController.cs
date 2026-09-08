@@ -141,9 +141,9 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     public string DecoderHwAccel => _decoderHwAccel;
 
     /// <summary>
-    /// Returns true (and logs a skip) when the controller is not ready to accept commands.
+    /// Rejects the command and returns true when the controller is not ready.
     /// </summary>
-    private bool IsNotReady(CommandKind kind, TimeSpan? position = null)
+    private bool RejectCommandIfNotReady(CommandKind kind, TimeSpan? position = null)
     {
         if (IsReady) return false;
         return RejectCommand(
@@ -302,7 +302,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
     public bool BeginScrub(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.BeginScrub, position)) return false;
+        if (RejectCommandIfNotReady(CommandKind.BeginScrub, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.BeginScrub)) return false;
         _commandMailbox.SetLatestScrubUpdate(position);
         return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
@@ -310,14 +310,14 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
     public bool Seek(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.Seek, position)) return false;
+        if (RejectCommandIfNotReady(CommandKind.Seek, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.Seek)) return false;
         return SendSeekCommand(position);
     }
 
     public bool UpdateScrub(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.UpdateScrub, position)) return false;
+        if (RejectCommandIfNotReady(CommandKind.UpdateScrub, position)) return false;
         if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", false, position);
         return SendUpdateScrubCommand(position);
     }
@@ -328,7 +328,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
     private bool EndScrubAt(TimeSpan? position)
     {
-        if (IsNotReady(CommandKind.EndScrub, position)) return false;
+        if (RejectCommandIfNotReady(CommandKind.EndScrub, position)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
         {
             MarkCommandNoOp(CommandKind.EndScrub, "live_thread_not_running", position);
@@ -340,21 +340,21 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
     public bool Play()
     {
-        if (IsNotReady(CommandKind.Play)) return false;
+        if (RejectCommandIfNotReady(CommandKind.Play)) return false;
         if (!EnsurePlaybackThread(CommandKind.Play)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Play });
     }
 
     public bool Pause()
     {
-        if (IsNotReady(CommandKind.Pause)) return false;
+        if (RejectCommandIfNotReady(CommandKind.Pause)) return false;
         if (!EnsurePlaybackThread(CommandKind.Pause)) return false; // Thread must be running to handle Live->Paused
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });
     }
 
     public bool GoLive()
     {
-        if (IsNotReady(CommandKind.GoLive)) return false;
+        if (RejectCommandIfNotReady(CommandKind.GoLive)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
         {
             MarkCommandNoOp(CommandKind.GoLive, "live_thread_not_running");
@@ -366,7 +366,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
 
     public bool NudgePosition(TimeSpan delta)
     {
-        if (IsNotReady(CommandKind.Nudge)) return false;
+        if (RejectCommandIfNotReady(CommandKind.Nudge)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
         {
             MarkCommandNoOp(CommandKind.Nudge, "live_thread_not_running", delta: delta);
@@ -1549,7 +1549,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private bool CheckOutPoint(TimeSpan position, Stopwatch pacingStopwatch)
+    private bool PauseIfOutPointReached(TimeSpan position, Stopwatch pacingStopwatch)
     {
         var outTicks = Interlocked.Read(ref _outPointTicks);
         if (outTicks != long.MinValue && position >= TimeSpan.FromTicks(outTicks))

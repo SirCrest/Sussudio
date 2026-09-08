@@ -3899,28 +3899,27 @@ public class StatsPresentationTests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ExtractTextBetween(
             statsOverlayCompositionText,
-            "internal sealed class StatsDockControllerGraphContext",
-            "internal sealed class StatsDockRefreshControllerContext");
+            "internal sealed class StatsOverlayCompositionController : IDisposable",
+            "internal enum StatsDockSimpleRowPool");
         var refreshControllerText = statsOverlayCompositionText;
         var controllerText = refreshControllerText;
 
-        AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
-        AssertContains(statsOverlayCompositionText, "private StatsDockControllerGraph CreateDockControllerGraph(");
-        AssertContains(statsDockCompositionText, "internal sealed class StatsDockControllerGraphContext");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsDockRefreshController _statsDockRefreshController;");
+        AssertContains(statsOverlayCompositionText, "private StatsDockRefreshController CreateDockRefreshController(");
+        AssertDoesNotContain(statsOverlayCompositionText, "StatsDockControllerGraph");
         AssertContains(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);");
-        AssertContains(statsDockCompositionText, "_refreshController = CreateRefreshController(");
+        AssertContains(statsDockCompositionText, "return CreateRefreshController(");
         AssertDoesNotContain(statsDockCompositionText, "CreatePresentationController(");
-        AssertContains(statsDockCompositionText, "private static StatsDockRefreshController CreateRefreshController(");
-        AssertContains(statsDockCompositionText, "internal sealed class StatsDockControllerGraph");
-        AssertContains(statsDockCompositionText, "public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)");
-        AssertContains(statsDockCompositionText, "public void RefreshDiagnosticsSection()");
-        AssertOccursBefore(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);", "_statsDockControllerGraph = CreateDockControllerGraph(context);");
-        AssertOccursBefore(statsOverlayCompositionText, "_statsDockControllerGraph = CreateDockControllerGraph(context);", "_statsOverlayController = CreateOverlayController(context);");
+        AssertContains(statsDockCompositionText, "private StatsDockRefreshController CreateRefreshController(");
+        AssertDoesNotContain(statsDockCompositionText, "public void RefreshDock(");
+        AssertDoesNotContain(statsDockCompositionText, "public void RefreshDiagnosticsSection()");
+        AssertOccursBefore(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);", "_statsDockRefreshController = CreateDockRefreshController(context);");
+        AssertOccursBefore(statsOverlayCompositionText, "_statsDockRefreshController = CreateDockRefreshController(context);", "_statsOverlayController = CreateOverlayController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);", "var statsDockRowChromeController = CreateRowChromeController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockRowChromeController = CreateRowChromeController(context);", "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);", "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
-        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = CreateHardwareRowsController(", "_refreshController = CreateRefreshController(");
+        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = CreateHardwareRowsController(", "return CreateRefreshController(");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
         AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
@@ -3959,10 +3958,10 @@ public class StatsPresentationTests
         AssertDoesNotContain(statsOverlayText, "private void UpdateDiagnosticsSection(");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.Contexts.cs")),
-            "stats dock graph context folded into StatsOverlayCompositionController.cs");
+            "stats dock factories use the existing overlay composition context");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.cs")),
-            "stats dock graph folded into StatsOverlayCompositionController.cs");
+            "stats dock refresh has no runtime graph wrapper");
     }
 
     [Fact]
@@ -3972,8 +3971,8 @@ public class StatsPresentationTests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ExtractTextBetween(
             statsOverlayCompositionText,
-            "internal sealed class StatsDockControllerGraphContext",
-            "internal sealed class StatsDockRefreshControllerContext");
+            "internal sealed class StatsOverlayCompositionController : IDisposable",
+            "internal enum StatsDockSimpleRowPool");
         var mainWindowText = MainWindowCompositionSource.Read();
         var statsDockRowsText = statsOverlayCompositionText;
         var controllerText = statsDockRowsText;
@@ -3998,13 +3997,13 @@ public class StatsPresentationTests
         AssertContains(statsDockCompositionText, "private static StatsDiagnosticRowsController CreateDiagnosticRowsController(");
         AssertContains(statsDockCompositionText, "private static StatsDockRowChromeController CreateRowChromeController(");
         AssertContains(statsDockCompositionText, "private static StatsHardwareRowsController CreateHardwareRowsController(");
-        AssertContains(statsDockCompositionText, "ResourceOwner = context.StatsDockPanel");
-        AssertContains(statsDockCompositionText, "DiagnosticsContent = context.DiagnosticsContent");
+        AssertContains(statsDockCompositionText, "ResourceOwner = context.Shell.StatsDockPanel");
+        AssertContains(statsDockCompositionText, "DiagnosticsContent = context.DockTargets.DiagnosticsContent");
         AssertContains(statsDockCompositionText, "RowChromeController = statsDockRowChromeController");
         AssertContains(statsDockCompositionText, "private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(");
-        AssertContains(statsDockCompositionText, "GetMjpegPipelineTimingDetails = context.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsDockCompositionText, "GetPendingPreviewFrameCount = context.GetPendingPreviewFrameCount,");
-        AssertContains(statsDockCompositionText, "GetNvmlSnapshot = context.GetNvmlSnapshot");
+        AssertContains(statsDockCompositionText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
+        AssertContains(statsDockCompositionText, "GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,");
+        AssertContains(statsDockCompositionText, "GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot");
         AssertContains(statsDockCompositionText, "InputProvider = statsHardwareRowsInputProvider");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
         AssertDoesNotContain(statsDockCompositionText, "GetDecodeRowsInput = () =>");

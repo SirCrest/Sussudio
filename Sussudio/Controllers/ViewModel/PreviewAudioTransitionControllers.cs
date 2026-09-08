@@ -84,18 +84,17 @@ internal sealed class AudioRampTraceRecorder : IDisposable
 
     public long BeginSession(string reason, double targetVolume)
     {
-        var cts = new CancellationTokenSource();
+        CancellationTokenSource cts;
         long sessionId;
-        CancellationTokenSource? previousCts;
         lock (_lock)
         {
             if (_disposed)
             {
-                cts.Dispose();
                 return 0;
             }
-            previousCts = _samplerCts;
-            previousCts?.Cancel();
+
+            var previousCts = _samplerCts;
+            cts = new CancellationTokenSource();
             _samplerCts = cts;
             sessionId = _activeSessionId + 1;
             _activeSessionId = sessionId;
@@ -103,9 +102,19 @@ internal sealed class AudioRampTraceRecorder : IDisposable
             _activeReason = reason;
             _targetVolume = Math.Clamp(targetVolume, 0.0, 1.0);
             _samplingActive = true;
+            previousCts?.Cancel();
         }
 
-        RecordPoint("session-start", reason, targetVolume);
+        try
+        {
+            RecordPoint("session-start", reason, targetVolume);
+        }
+        catch
+        {
+            RetireSampler(cts);
+            throw;
+        }
+
         _ = RunSamplerAsync(sessionId, cts);
         return sessionId;
     }
@@ -117,8 +126,14 @@ internal sealed class AudioRampTraceRecorder : IDisposable
             return;
         }
 
-        RecordPoint("session-complete", reason, sessionId: sessionId);
-        _ = StopSamplerAfterDelayAsync(sessionId, AudioRampTracePostCompleteSampleMs);
+        try
+        {
+            RecordPoint("session-complete", reason, sessionId: sessionId);
+        }
+        finally
+        {
+            _ = StopSamplerAfterDelayAsync(sessionId, AudioRampTracePostCompleteSampleMs);
+        }
     }
 
     public void RecordPoint(
@@ -217,6 +232,21 @@ internal sealed class AudioRampTraceRecorder : IDisposable
         }
         finally
         {
+            RetireSampler(cts);
+        }
+    }
+
+    private void RetireSampler(CancellationTokenSource cts)
+    {
+        lock (_lock)
+        {
+            if (ReferenceEquals(_samplerCts, cts))
+            {
+                _samplerCts = null;
+                _samplingActive = false;
+            }
+
+            // Cancellation shares this lock, so no caller can cancel a disposed source.
             cts.Dispose();
         }
     }
@@ -232,34 +262,31 @@ internal sealed class AudioRampTraceRecorder : IDisposable
             return;
         }
 
-        CancellationTokenSource? cts;
         lock (_lock)
         {
-            if (_activeSessionId != sessionId)
+            if (_disposed || _activeSessionId != sessionId)
             {
                 return;
             }
 
-            cts = _samplerCts;
+            var cts = _samplerCts;
             _samplerCts = null;
             _samplingActive = false;
+            cts?.Cancel();
         }
-
-        cts?.Cancel();
     }
 
     public void Dispose()
     {
-        CancellationTokenSource? cts;
         lock (_lock)
         {
             if (_disposed) return;
             _disposed = true;
             _samplingActive = false;
-            cts = _samplerCts;
+            var cts = _samplerCts;
             _samplerCts = null;
+            cts?.Cancel();
         }
-        cts?.Cancel();
     }
 
     private readonly record struct TraceState(

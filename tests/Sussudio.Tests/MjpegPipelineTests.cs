@@ -281,6 +281,16 @@ namespace Sussudio.Tests
         public Task ParallelMjpegDecodePipelineNonHeadForceDropPreservesEmissionOrder()
             => global::Program.ParallelMjpegDecodePipeline_NonHeadForceDropPreservesEmissionOrder();
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task ParallelMjpegDecodePipelineCompletionPreservesFrameOwnership(bool fatal)
+            => global::Program.ParallelMjpegDecodePipeline_CompletionPreservesFrameOwnership(fatal);
+
+        [Fact]
+        public Task ParallelMjpegDecodePipelineNormalCompletionConsumesFinalMissingSequences()
+            => global::Program.ParallelMjpegDecodePipeline_NormalCompletionConsumesFinalMissingSequences();
+
         [Fact]
         public Task FrameFingerprintCadenceTrackerCurrentDuplicateRunLowersUniqueFps()
             => global::Program.FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps();
@@ -451,6 +461,62 @@ namespace Sussudio.Tests
             Assert.NotNull(widthProp);
             Assert.NotNull(heightProp);
             Assert.NotNull(nv12SizeProp);
+        }
+
+        [Theory]
+        [InlineData(0, 16, typeof(ArgumentOutOfRangeException))]
+        [InlineData(16, 0, typeof(ArgumentOutOfRangeException))]
+        [InlineData(-1, 16, typeof(ArgumentOutOfRangeException))]
+        [InlineData(16, -1, typeof(ArgumentOutOfRangeException))]
+        [InlineData(int.MaxValue, 2, typeof(OverflowException))]
+        [InlineData(32768, 32768, typeof(OverflowException))]
+        public void SoftwareMjpegDecoderRejectsInvalidDimensionsBeforeNativeAllocation(
+            int width, int height, Type expectedException)
+        {
+            var decoderType = RequireType("Sussudio.Services.Capture.Mjpeg.SoftwareMjpegDecoder");
+            var decoder = Activator.CreateInstance(decoderType, nonPublic: true)!;
+            using var owner = (IDisposable)decoder;
+            var initialize = decoderType.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Instance)!;
+
+            var error = Assert.Throws<TargetInvocationException>(() =>
+                initialize.Invoke(decoder, new object[] { width, height }));
+
+            Assert.IsType(expectedException, error.InnerException);
+            AssertSoftwareMjpegDecoderHasNoNativeResources(decoder);
+            Assert.False((bool)decoderType.GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(decoder)!);
+            Assert.Equal(0, decoderType.GetProperty("Width")!.GetValue(decoder));
+            Assert.Equal(0, decoderType.GetProperty("Height")!.GetValue(decoder));
+            Assert.Equal(0, decoderType.GetProperty("Nv12Size")!.GetValue(decoder));
+        }
+
+        [Fact]
+        public void SoftwareMjpegDecoderRejectsInitializationAfterDispose()
+        {
+            var decoderType = RequireType("Sussudio.Services.Capture.Mjpeg.SoftwareMjpegDecoder");
+            var decoder = Activator.CreateInstance(decoderType, nonPublic: true)!;
+            using var owner = (IDisposable)decoder;
+            owner.Dispose();
+
+            var initialize = decoderType.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Instance)!;
+            var error = Assert.Throws<TargetInvocationException>(() =>
+                initialize.Invoke(decoder, new object[] { 16, 16 }));
+
+            Assert.IsType<ObjectDisposedException>(error.InnerException);
+            AssertSoftwareMjpegDecoderHasNoNativeResources(decoder);
+            owner.Dispose();
+            AssertSoftwareMjpegDecoderHasNoNativeResources(decoder);
+        }
+
+        private static unsafe void AssertSoftwareMjpegDecoderHasNoNativeResources(object decoder)
+        {
+            var decoderType = decoder.GetType();
+            foreach (var fieldName in new[] { "_decoderCtx", "_decodedFrame", "_drainFrame", "_packet" })
+            {
+                var field = decoderType.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)!;
+                Assert.Equal(IntPtr.Zero, (IntPtr)Pointer.Unbox(field.GetValue(decoder)!));
+            }
+
+            Assert.False((bool)decoderType.GetField("_initialized", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(decoder)!);
         }
 
         private static MethodInfo RequirePipelineMethod(string methodName)
@@ -1208,7 +1274,7 @@ static partial class Program
         AssertContains(reorderText, "private void EmitLoop()");
         AssertContains(reorderText, "private bool DrainReadyFrames()");
         AssertContains(reorderText, "private void NotifyPreviewFrameDecoded(PooledVideoFrame frame)");
-        AssertContains(reorderText, "private void DrainRemainingFramesInOrder()");
+        AssertDoesNotContain(reorderText, "DrainRemainingFramesInOrder");
         AssertContains(reorderText, "RecordTimingSample(_reorderLatencyMs");
         AssertContains(reorderText, "_emitCallback(frame.Frame);");
         AssertEqual(
@@ -1451,6 +1517,96 @@ static partial class Program
             }
         }
 
+        return Task.CompletedTask;
+    }
+
+    internal static Task ParallelMjpegDecodePipeline_CompletionPreservesFrameOwnership(bool fatal)
+    {
+        var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
+        var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
+        var reorderLock = new object();
+        var reorderFrames = CreateSortedDictionary(pipelineType);
+        var knownMissing = fatal ? new SortedSet<long> { 5 } : new SortedSet<long> { 0, 3, 5 };
+        var emitted = new List<long>();
+        using var emitSignal = new AutoResetEvent(true);
+        Action<object> collectFrame = frame => emitted.Add((long)GetPropertyValue(frame, "SequenceNumber")!);
+        var callbackType = pipelineType.GetNestedType("EmitFrameCallback", BindingFlags.Public)!;
+
+        SetPrivateField(pipeline, "_stopped", true);
+        SetPrivateField(pipeline, "_workers", Array.Empty<Thread>());
+        SetPrivateField(pipeline, "_reorderLock", reorderLock);
+        SetPrivateField(pipeline, "_reorderFrames", reorderFrames);
+        SetPrivateField(pipeline, "_knownMissingSequences", knownMissing);
+        SetPrivateField(pipeline, "_emitSignal", emitSignal);
+        SetPrivateField(pipeline, "_fatalErrorSignaled", fatal ? 1 : 0);
+        SetPrivateField(pipeline, "_timingLock", new object());
+        SetPrivateField(pipeline, "_reorderLatencyMs", new double[8]);
+        SetPrivateField(pipeline, "_pipelineLatencyMs", new double[8]);
+        SetPrivateField(pipeline, "_emitCallback", Delegate.CreateDelegate(callbackType, collectFrame.Target, collectFrame.Method));
+
+        var frameType = RequireType("Sussudio.Services.Contracts.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Contracts.PooledVideoPixelFormat");
+        var nv12 = Enum.Parse(formatType, "Nv12");
+        var pools = new[] { new TrackingArrayPool(), new TrackingArrayPool() };
+        var frames = new List<object>();
+        try
+        {
+            for (var index = 0; index < pools.Length; index++)
+            {
+                var timestamp = Stopwatch.GetTimestamp();
+                frames.Add(CreatePooledVideoFrame(frameType, nv12, index + 1, timestamp, timestamp, 16, 16, 384, pools[index]));
+            }
+
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, 2L, frames[1]);
+            InsertDecodedFrame(pipeline, pipelineType, reorderLock, reorderFrames, 1L, frames[0]);
+            InvokeNonPublicInstanceMethod(pipeline, "EmitLoop", Array.Empty<object?>());
+
+            AssertEqual(fatal ? string.Empty : "1,2", string.Join(",", emitted), "completion emits only the surviving ordered frames");
+            AssertEqual(fatal ? 0L : 4L, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "completion advances past emitted frames and contiguous gaps only");
+            AssertEqual(fatal ? 0L : 2L, (long)GetPrivateField(pipeline, "_reorderSkips")!, "fatal discard does not consume missing sequences");
+            AssertEqual(fatal ? 0L : 2L, (long)GetPrivateField(pipeline, "_totalFramesEmitted")!, "completion emission count");
+            AssertEqual(fatal ? 2L : 0L, (long)GetPrivateField(pipeline, "_totalFramesDropped")!, "completion discard count");
+            AssertEqual(0L, (long)GetPrivateField(pipeline, "_emitFailures")!, "completion callback did not fail");
+            AssertEqual(0, (int)GetPrivateField(pipeline, "_reorderBufferDepth")!, "completion resets reorder depth");
+            AssertEqual(0, ((IDictionary)reorderFrames).Count, "completion retains no frames");
+            AssertEqual(0, knownMissing.Count, "completion clears residual missing-sequence metadata");
+            foreach (var pool in pools)
+            {
+                AssertEqual(1, pool.ReturnCount, "completion returns every frame exactly once");
+            }
+        }
+        finally
+        {
+            foreach (var frame in frames)
+            {
+                ((IDisposable)frame).Dispose();
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task ParallelMjpegDecodePipeline_NormalCompletionConsumesFinalMissingSequences()
+    {
+        var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
+        var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
+        var knownMissing = new SortedSet<long> { 10, 11, 14 };
+        SetPrivateField(pipeline, "_stopped", true);
+        SetPrivateField(pipeline, "_workers", Array.Empty<Thread>());
+        SetPrivateField(pipeline, "_reorderLock", new object());
+        SetPrivateField(pipeline, "_reorderFrames", CreateSortedDictionary(pipelineType));
+        SetPrivateField(pipeline, "_knownMissingSequences", knownMissing);
+        SetPrivateField(pipeline, "_nextEmitSeq", 10L);
+        SetPrivateField(pipeline, "_missingSeqSinceTickMs", 100L);
+
+        InvokeNonPublicInstanceMethod(pipeline, "EmitLoop", Array.Empty<object?>());
+
+        AssertEqual(12L, (long)GetPrivateField(pipeline, "_nextEmitSeq")!, "empty normal completion consumes its contiguous missing tail");
+        AssertEqual(2L, (long)GetPrivateField(pipeline, "_reorderSkips")!, "empty normal completion counts each consumed gap once");
+        AssertEqual(0, knownMissing.Count, "empty normal completion clears later residual metadata");
+        AssertEqual(-1L, (long)GetPrivateField(pipeline, "_missingSeqSinceTickMs")!, "consumed terminal gaps clear the pending stall timer");
+        AssertEqual(0L, (long)GetPrivateField(pipeline, "_totalFramesEmitted")!, "empty normal completion does not emit");
+        AssertEqual(0L, (long)GetPrivateField(pipeline, "_totalFramesDropped")!, "empty normal completion does not discard frames");
         return Task.CompletedTask;
     }
 

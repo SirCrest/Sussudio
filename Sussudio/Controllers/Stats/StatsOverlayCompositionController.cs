@@ -463,121 +463,12 @@ internal sealed class FrameTimeOverlayPresentationController
         }
     }
 }
-internal sealed class StatsDockControllerGraphContext
-{
-    public required Func<bool> IsWindowClosing { get; init; }
-    public required FrameworkElement StatsDockPanel { get; init; }
-    public required StatsOverlayDockTargetsContext DockTargets { get; init; }
-
-    /// <summary>
-    /// Derived rather than restated: the diagnostics panel is one of the dock targets, and the
-    /// row-chrome controllers read it often enough to be worth naming directly.
-    /// </summary>
-    public StackPanel DiagnosticsContent => DockTargets.DiagnosticsContent;
-
-    public required Func<StatsSnapshot> RefreshStatsIfDueAndGetSnapshot { get; init; }
-    public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }
-    public required Func<int?> GetPendingPreviewFrameCount { get; init; }
-    public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }
-}
-
-internal sealed class StatsDockControllerGraph
-{
-    private readonly StatsDockRefreshController _refreshController;
-
-    public StatsDockControllerGraph(StatsDockControllerGraphContext context)
-    {
-        var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);
-        var statsDockRowChromeController = CreateRowChromeController(context);
-        var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);
-        var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);
-        var statsHardwareRowsController = CreateHardwareRowsController(
-            context,
-            statsDockRowChromeController,
-            statsHardwareRowsInputProvider);
-
-        _refreshController = CreateRefreshController(
-            context,
-            statsDockPresentationController,
-            statsDiagnosticRowsController,
-            statsHardwareRowsController);
-    }
-
-    public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)
-        => _refreshController.RefreshDock(snapshot, refreshDetails);
-
-    public void RefreshDiagnosticsSection()
-        => _refreshController.RefreshDiagnosticsSection();
-
-    private static StatsDockRowChromeController CreateRowChromeController(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
-        {
-            ResourceOwner = context.StatsDockPanel
-        });
-    }
-
-    private static StatsDiagnosticRowsController CreateDiagnosticRowsController(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
-        {
-            ResourceOwner = context.StatsDockPanel,
-            DiagnosticsContent = context.DiagnosticsContent
-        });
-    }
-
-    private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
-        {
-            GetMjpegPipelineTimingDetails = context.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = context.GetPendingPreviewFrameCount,
-            GetNvmlSnapshot = context.GetNvmlSnapshot
-        });
-    }
-
-    private static StatsHardwareRowsController CreateHardwareRowsController(
-        StatsDockControllerGraphContext context,
-        StatsDockRowChromeController statsDockRowChromeController,
-        StatsHardwareRowsInputProvider statsHardwareRowsInputProvider)
-    {
-        return new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
-        {
-            DecodeSection = context.DockTargets.DecodeSection,
-            DecodeContent = context.DockTargets.DecodeContent,
-            GpuContent = context.DockTargets.GpuContent,
-            RowChromeController = statsDockRowChromeController,
-            InputProvider = statsHardwareRowsInputProvider
-        });
-    }
-
-    private static StatsDockRefreshController CreateRefreshController(
-        StatsDockControllerGraphContext context,
-        StatsDockPresentationController statsDockPresentationController,
-        StatsDiagnosticRowsController statsDiagnosticRowsController,
-        StatsHardwareRowsController statsHardwareRowsController)
-    {
-        return new StatsDockRefreshController(new StatsDockRefreshControllerContext
-        {
-            IsWindowClosing = context.IsWindowClosing,
-            IsStatsDockVisible = () => context.StatsDockPanel.Visibility == Visibility.Visible,
-            IsDiagnosticsSectionVisible = () => context.DiagnosticsContent.Visibility == Visibility.Visible,
-            RefreshStatsIfDueAndGetSnapshot = context.RefreshStatsIfDueAndGetSnapshot,
-            DockPresentationController = statsDockPresentationController,
-            DiagnosticRowsController = statsDiagnosticRowsController,
-            HardwareRowsController = statsHardwareRowsController
-        });
-    }
-}
 
 internal sealed class StatsOverlayCompositionController : IDisposable
 {
     private readonly StatsOverlayCompositionControllerContext _context;
     private readonly StatsOverlayController _statsOverlayController;
-    private readonly StatsDockControllerGraph _statsDockControllerGraph;
+    private readonly StatsDockRefreshController _statsDockRefreshController;
     private readonly StatsSnapshotProvider _statsSnapshotProvider;
     private readonly StatsUiSampler _sampler;
     private readonly DispatcherQueueTimer _statsPollTimer;
@@ -615,7 +506,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
             Log = context.Shell.Log
         });
         _frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);
-        _statsDockControllerGraph = CreateDockControllerGraph(context);
+        _statsDockRefreshController = CreateDockRefreshController(context);
         _statsOverlayController = CreateOverlayController(context);
         _statsSectionChromeController = CreateSectionChromeController(context);
     }
@@ -712,7 +603,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
             IsPreviewing = context.SnapshotSources.IsPreviewing,
             SetStatsVisible = context.Shell.SetStatsVisible,
             Sampler = _sampler,
-            UpdateStatsDock = _statsDockControllerGraph.RefreshDock,
+            UpdateStatsDock = _statsDockRefreshController.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
             SetGraphActive = _frameTimeGraph.SetActive
         });
@@ -724,21 +615,88 @@ internal sealed class StatsOverlayCompositionController : IDisposable
         {
             StatsDockPanel = context.Shell.StatsDockPanel,
             DiagnosticsContent = context.DockTargets.DiagnosticsContent,
-            RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection
+            RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection
         });
     }
 
-    private StatsDockControllerGraph CreateDockControllerGraph(StatsOverlayCompositionControllerContext context)
+    private StatsDockRefreshController CreateDockRefreshController(StatsOverlayCompositionControllerContext context)
     {
-        return new StatsDockControllerGraph(new StatsDockControllerGraphContext
+        var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);
+        var statsDockRowChromeController = CreateRowChromeController(context);
+        var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);
+        var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);
+        var statsHardwareRowsController = CreateHardwareRowsController(
+            context,
+            statsDockRowChromeController,
+            statsHardwareRowsInputProvider);
+
+        return CreateRefreshController(
+            context,
+            statsDockPresentationController,
+            statsDiagnosticRowsController,
+            statsHardwareRowsController);
+    }
+
+    private static StatsDockRowChromeController CreateRowChromeController(
+        StatsOverlayCompositionControllerContext context)
+    {
+        return new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
         {
-            IsWindowClosing = context.Shell.IsWindowClosing,
-            StatsDockPanel = context.Shell.StatsDockPanel,
-            DockTargets = context.DockTargets,
-            RefreshStatsIfDueAndGetSnapshot = RefreshStatsIfDueAndGetSnapshot,
+            ResourceOwner = context.Shell.StatsDockPanel
+        });
+    }
+
+    private static StatsDiagnosticRowsController CreateDiagnosticRowsController(
+        StatsOverlayCompositionControllerContext context)
+    {
+        return new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
+        {
+            ResourceOwner = context.Shell.StatsDockPanel,
+            DiagnosticsContent = context.DockTargets.DiagnosticsContent
+        });
+    }
+
+    private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(
+        StatsOverlayCompositionControllerContext context)
+    {
+        return new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
+        {
             GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,
             GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot
+        });
+    }
+
+    private static StatsHardwareRowsController CreateHardwareRowsController(
+        StatsOverlayCompositionControllerContext context,
+        StatsDockRowChromeController statsDockRowChromeController,
+        StatsHardwareRowsInputProvider statsHardwareRowsInputProvider)
+    {
+        return new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
+        {
+            DecodeSection = context.DockTargets.DecodeSection,
+            DecodeContent = context.DockTargets.DecodeContent,
+            GpuContent = context.DockTargets.GpuContent,
+            RowChromeController = statsDockRowChromeController,
+            InputProvider = statsHardwareRowsInputProvider
+        });
+    }
+
+    private StatsDockRefreshController CreateRefreshController(
+        StatsOverlayCompositionControllerContext context,
+        StatsDockPresentationController statsDockPresentationController,
+        StatsDiagnosticRowsController statsDiagnosticRowsController,
+        StatsHardwareRowsController statsHardwareRowsController)
+    {
+        return new StatsDockRefreshController(new StatsDockRefreshControllerContext
+        {
+            IsWindowClosing = context.Shell.IsWindowClosing,
+            IsStatsDockVisible = () => context.Shell.StatsDockPanel.Visibility == Visibility.Visible,
+            IsDiagnosticsSectionVisible = () => context.DockTargets.DiagnosticsContent.Visibility == Visibility.Visible,
+            RefreshStatsIfDueAndGetSnapshot = RefreshStatsIfDueAndGetSnapshot,
+            DockPresentationController = statsDockPresentationController,
+            DiagnosticRowsController = statsDiagnosticRowsController,
+            HardwareRowsController = statsHardwareRowsController
         });
     }
 

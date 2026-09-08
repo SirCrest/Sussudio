@@ -1219,8 +1219,17 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
         if (Volatile.Read(ref _fatalErrorSignaled) == 0)
         {
-            DrainReadyFrames();
-            DrainRemainingFramesInOrder();
+            // Normal completion already drained every frame and stopped the workers.
+            if (ConsumeKnownMissingFrames())
+            {
+                Interlocked.Exchange(ref _missingSeqSinceTickMs, -1);
+            }
+
+            lock (_reorderLock)
+            {
+                _knownMissingSequences.Clear();
+                Monitor.PulseAll(_reorderLock);
+            }
         }
         else
         {
@@ -1305,45 +1314,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         finally
         {
             lease?.Dispose();
-        }
-    }
-
-    private void DrainRemainingFramesInOrder()
-    {
-        List<DecodedFrame> remaining;
-        lock (_reorderLock)
-        {
-            remaining = _reorderFrames.Values.ToList();
-            _reorderFrames.Clear();
-            _knownMissingSequences.Clear();
-            Volatile.Write(ref _reorderBufferDepth, 0);
-            Monitor.PulseAll(_reorderLock);
-        }
-
-        remaining.Sort((a, b) => a.SeqNo.CompareTo(b.SeqNo));
-
-        foreach (var frame in remaining)
-        {
-            try
-            {
-                if (!_earlyPreviewForkEnabled)
-                {
-                    NotifyPreviewFrameDecoded(frame.Frame);
-                }
-
-                _emitCallback(frame.Frame);
-                Interlocked.Increment(ref _totalFramesEmitted);
-            }
-            catch (Exception ex)
-            {
-                Interlocked.Increment(ref _emitFailures);
-                Interlocked.Increment(ref _totalFramesDropped);
-                Logger.Log($"MJPEG_EMIT_FAIL seq={frame.SeqNo} type={ex.GetType().Name} msg={ex.Message}");
-            }
-            finally
-            {
-                frame.Frame.Dispose();
-            }
         }
     }
 
@@ -1536,6 +1506,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
 
     public void Initialize(int width, int height)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_initialized)
         {
             throw new InvalidOperationException("SoftwareMjpegDecoder is already initialized.");
@@ -1546,6 +1517,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             throw new ArgumentOutOfRangeException(nameof(width), "Width and height must be positive.");
         }
 
+        var nv12Size = checked(width * height * 3 / 2);
         FfmpegRuntimeInit.EnsureInitialized(requireNativeRuntime: true);
 
         var codec = ffmpeg.avcodec_find_decoder_by_name("mjpeg");
@@ -1592,12 +1564,11 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             }
 
             _decoderCtx = decoderCtx;
+            decoderCtx = null;
             _width = width;
             _height = height;
-            _nv12Size = checked(width * height * 3 / 2);
+            _nv12Size = nv12Size;
             _initialized = true;
-
-            decoderCtx = null;
 
             Logger.Log($"SW_MJPEG_DECODER_INIT width={width} height={height} codec=mjpeg");
         }

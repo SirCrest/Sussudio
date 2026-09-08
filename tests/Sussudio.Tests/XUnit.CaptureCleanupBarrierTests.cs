@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -46,8 +46,7 @@ public sealed class CaptureCleanupBarrierTests
             : Task.CompletedTask);
         fixture.Service.GetType().GetEvent("StatusChanged")!.AddEventHandler(fixture.Service,
             (EventHandler<string>)((_, _) => throw new InvalidOperationException("Synthetic status observer failure.")));
-        fixture.Service.GetType().GetEvent("ErrorOccurred")!.AddEventHandler(fixture.Service,
-            (EventHandler<Exception>)((_, error) => observed.TrySetResult(error)));
+        global::Program.ObserveCaptureErrors(fixture.Service, error => observed.TrySetResult(error));
 
         Invoke(fixture.Service, "OnUnifiedVideoCaptureFatalError", null, original);
 

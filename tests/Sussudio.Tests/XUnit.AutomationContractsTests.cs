@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6722,9 +6722,12 @@ static partial class Program
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
         AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;");
-        AssertContains(captureServiceText, "ClassifyCaptureFailureSource(object? sender)");
-        AssertContains(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
-        AssertContains(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");
+        AssertContains(captureServiceText, "public void AttachCaptureFailure(");
+        AssertContains(captureServiceText, "new CaptureErrorOrigin(CaptureErrorOriginKind.AudioCaptureRegistration, ++_captureErrorGeneration)");
+        AssertContains(captureServiceText, "private void OnWasapiCaptureFailed(Exception ex, CaptureErrorOrigin origin, string source)");
+        AssertContains(captureServiceText, "if (!IsCaptureErrorCurrent(origin))");
+        AssertDoesNotContain(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
+        AssertDoesNotContain(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");
         AssertContains(captureServiceText, "WASAPI_CAPTURE_FAILED source={source}");
         AssertContains(captureServiceText, "_previewAudioGraph.RecordCaptureFault(source, ex);");
         AssertContains(coordinatorText, "if (Volatile.Read(ref _isDisposed))");
@@ -7529,7 +7532,8 @@ static partial class Program
         AssertContains(captureSettingsAutomationControllerText, "var restored = await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);");
         AssertContains(captureSettingsAutomationControllerText, "a newer capture selection superseded this request");
         AssertContains(captureSettingsAutomationControllerText, "_captureModeGate.Release();");
-        AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)");
+        AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(\n        string reason,\n        bool treatCoalescedAsSuccess,\n        CaptureErrorOrigin? errorOrigin = null)");
+        AssertContains(previewLifecycleControllerText, "if (!IsCaptureErrorCurrent(errorOrigin))");
         AssertContains(previewLifecycleControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
         AssertEqual(
             4,
@@ -8712,7 +8716,12 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(");
         AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = shouldStopRecordingForVerification &&");
         AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = request.StoppedRecordingForVerification");
-        AssertContains(diagnosticSessionText, "await _sendGate.WaitAsync(commandCancellationToken).ConfigureAwait(false);");
+        AssertContains(diagnosticSessionText, "CancellationTokenSource.CreateLinkedTokenSource(\n                       commandCancellationToken, _pendingSendsCancellation.Token)");
+        AssertContains(diagnosticSessionText, "await _sendGate.WaitAsync(waitCancellation.Token).ConfigureAwait(false);");
+        AssertContains(diagnosticSessionText, "commandCancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(diagnosticSessionText, "ObjectDisposedException.ThrowIf(_disposeRequested, this);");
+        AssertContains(diagnosticSessionText, "private void DisposeResourcesIfIdle()");
+        AssertContains(diagnosticSessionText, "if (!_waiterCancellationComplete || _ownedSends != 0 || _resourcesDisposed)");
         AssertContains(diagnosticSessionText, "await sendCommandAsync(command, payload, responseTimeoutMs, cancellationToken)");
         AssertContains(diagnosticSessionText, "sendCommandAsync(command, payload, timeout).WaitAsync(token)");
         AssertContains(diagnosticSessionText, "context.ScenarioCancellationSource.Cancel();");
@@ -9846,10 +9855,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");
         AssertContains(diagnosticSessionText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario");
-        AssertContains(diagnosticSessionText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(diagnosticSessionText, "EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings)");
         AssertContains(diagnosticSessionText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
-        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings)");
         AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
         AssertDoesNotContain(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");

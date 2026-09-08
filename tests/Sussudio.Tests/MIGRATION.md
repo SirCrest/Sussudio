@@ -1,4 +1,4 @@
-# Sussudio.Tests Migration Plan
+﻿# Sussudio.Tests Migration Plan
 
 The test project runs regression coverage through xUnit. `Program.Main` in
 `HarnessCore.cs` only performs the offline assembly-load smoke check; it no longer
@@ -56,6 +56,13 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   fields and scenario contracts with fixtures captured before the refactor.
 - `tests/Sussudio.Tests/XUnit.DiagnosticCancellationTests.cs` covers startup
   ownership, uncertain transport outcomes, reconciliation, and bounded cleanup.
+- `tests/Sussudio.Tests/XUnit.DiagnosticInfrastructureTests.cs` owns the command
+  channel's send serialization and disposal lifetime, artifact write-failure
+  policy, connect-retry failure evidence, and output-lock contention against a
+  really locked directory.
+- `tests/Sussudio.Tests/XUnit.NativeXuProbePayloadContractsTests.cs` owns I2C
+  frame construction, envelope payload extraction, and experiment payload
+  encode/decode and restore-target contracts.
 - `tests/Sussudio.Tests/XUnit.McpCancellationTests.cs` and
   `tests/Sussudio.Tests/XUnit.McpPresentMonResultTests.cs` execute MCP cancellation
   and raw/formatted errors through actual host protocol traffic.

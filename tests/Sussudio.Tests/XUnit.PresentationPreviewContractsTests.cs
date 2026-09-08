@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -7106,7 +7106,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
-        AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertContains(runtimeEventIngressControllerText, "_context.RecoverCaptureErrorAsync(error.Origin)");
+        AssertContains(runtimeEventIngressControllerText, "if (!_context.IsCaptureErrorCurrent(error.Origin))");
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(controllerGraphText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
         AssertContains(controllerGraphText, "new MainViewModelRuntimeEventIngressControllerContext");
@@ -7116,7 +7117,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             "runtime event ingress controller folded into MainViewModelLifecycleController.cs");
         AssertContains(runtimeEventIngressControllerText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
         AssertContains(runtimeEventIngressControllerText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
-        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.RecoverCaptureErrorAsync(");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertEqual(
             true,

@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -177,7 +178,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private const int TelemetryPollStopDrainTimeoutMs = 750;
 
     public event EventHandler<string>? StatusChanged;
-    public event EventHandler<Exception>? ErrorOccurred;
+    public event EventHandler<CaptureErrorEventArgs>? ErrorOccurred;
     public event Func<CancellationToken, Task>? PreCleanupRequested;
     public event EventHandler<ulong>? FrameCaptured;
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
@@ -197,6 +198,22 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private long CurrentSessionGeneration
         => _sessionStateMachine.Generation;
+
+    internal bool IsCaptureErrorCurrent(CaptureErrorOrigin origin)
+        => Volatile.Read(ref _isDisposed) == 0 && (origin.Kind switch
+        {
+            CaptureErrorOriginKind.SessionTransition => CurrentSessionGeneration == origin.Generation,
+            CaptureErrorOriginKind.AudioCaptureRegistration => _previewAudioGraph.IsCaptureErrorCurrent(origin),
+            _ => false
+        });
+
+    private void PublishCaptureError(Exception exception, CaptureErrorOrigin origin)
+    {
+        if (IsCaptureErrorCurrent(origin))
+        {
+            ErrorOccurred?.Invoke(this, new CaptureErrorEventArgs(exception, origin));
+        }
+    }
 
     private long CaptureSnapshotProducerEpoch()
     {
@@ -305,7 +322,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             EnterFaultedState();
-            ErrorOccurred?.Invoke(this, ex);
+            PublishCaptureError(ex, new CaptureErrorOrigin(CaptureErrorOriginKind.SessionTransition, CurrentSessionGeneration));
             throw;
         }
         finally
@@ -561,7 +578,6 @@ private readonly object _recordingFailureTelemetryLock = new();
         _previewAudioGraph.DetachCapture(
             wasapiCapture,
             OnWasapiAudioLevelUpdated,
-            OnWasapiCaptureFailed,
             _flashbackBackend.PlaybackController);
         if (wasapiCapture != null)
         {
@@ -781,9 +797,7 @@ private readonly object _recordingFailureTelemetryLock = new();
                     finally
                     {
                         EnterFaultedState();
-                        try { StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}"); }
-                        catch (Exception observerEx) { Logger.Log($"Fatal capture status notification warning: {observerEx.Message}"); }
-                        ErrorOccurred?.Invoke(this, ex);
+                        PublishCaptureError(ex, new CaptureErrorOrigin(CaptureErrorOriginKind.SessionTransition, generationAtFault));
                     }
                 }
                 finally
@@ -972,6 +986,11 @@ private readonly object _recordingFailureTelemetryLock = new();
 internal sealed class PreviewAudioGraphResources
 {
     private PreviewAudioCaptureFaultSnapshot? _captureFault;
+    private readonly object _captureErrorSync = new();
+    private readonly Dictionary<WasapiAudioCapture, CaptureErrorRegistration> _captureErrorRegistrations = new();
+    private long _captureErrorGeneration;
+
+    private sealed record CaptureErrorRegistration(CaptureErrorOrigin Origin, EventHandler<Exception> Handler);
 
     public WasapiAudioCapture? ProgramCapture;
     public WasapiAudioCapture? MicrophoneCapture;
@@ -994,13 +1013,46 @@ internal sealed class PreviewAudioGraphResources
         Playback?.SetVolume(muted ? 0f : PreviewVolume);
     }
 
-    public string ClassifyCaptureFailureSource(object? sender)
+    public void AttachCaptureFailure(
+        WasapiAudioCapture capture,
+        string source,
+        Action<Exception, CaptureErrorOrigin, string> onCaptureFailed)
     {
-        return ReferenceEquals(sender, ProgramCapture)
-            ? "program"
-            : ReferenceEquals(sender, MicrophoneCapture)
-                ? "microphone"
-                : "unknown";
+        lock (_captureErrorSync)
+        {
+            var origin = new CaptureErrorOrigin(CaptureErrorOriginKind.AudioCaptureRegistration, ++_captureErrorGeneration);
+            EventHandler<Exception> handler = (_, exception) => onCaptureFailed(exception, origin, source);
+            _captureErrorRegistrations.Add(capture, new CaptureErrorRegistration(origin, handler));
+            capture.CaptureFailed += handler;
+        }
+    }
+
+    public void DetachCaptureFailure(WasapiAudioCapture capture)
+    {
+        lock (_captureErrorSync)
+        {
+            // Invalidate before unsubscribe: a worker may already have copied the delegate.
+            if (_captureErrorRegistrations.Remove(capture, out var registration))
+            {
+                capture.CaptureFailed -= registration.Handler;
+            }
+        }
+    }
+
+    public bool IsCaptureErrorCurrent(CaptureErrorOrigin origin)
+    {
+        lock (_captureErrorSync)
+        {
+            foreach (var registration in _captureErrorRegistrations.Values)
+            {
+                if (registration.Origin == origin)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     public void RecordCaptureFault(string source, Exception ex)
@@ -1091,7 +1143,6 @@ internal sealed class PreviewAudioGraphResources
     public void DetachCapture(
         WasapiAudioCapture? capture,
         EventHandler<AudioLevelEventArgs> audioLevelUpdated,
-        EventHandler<Exception> captureFailed,
         FlashbackPlaybackController? flashbackPlaybackController)
     {
         if (capture == null)
@@ -1100,8 +1151,8 @@ internal sealed class PreviewAudioGraphResources
             return;
         }
 
+        DetachCaptureFailure(capture);
         capture.AudioLevelUpdated -= audioLevelUpdated;
-        capture.CaptureFailed -= captureFailed;
         SafeClearCapturePlayback(capture, "detach_capture");
         StopPlayback(flashbackPlaybackController);
     }

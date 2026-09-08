@@ -2738,6 +2738,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     DetachCaptureStatusChanged = handler => viewModel._captureService.StatusChanged -= handler,
                     AttachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred += handler,
                     DetachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred -= handler,
+                    IsCaptureErrorCurrent = viewModel._captureService.IsCaptureErrorCurrent,
+                    RecoverCaptureErrorAsync = previewLifecycleController.RecoverCaptureErrorAsync,
                     AttachFlashbackPlaybackStateChanged = handler => viewModel._sessionCoordinator.FlashbackPlaybackStateChanged += handler,
                     DetachFlashbackPlaybackStateChanged = handler => viewModel._sessionCoordinator.FlashbackPlaybackStateChanged -= handler,
                     OnFlashbackPlaybackStateChanged = viewModel.OnFlashbackPlaybackStateChanged,
@@ -2910,6 +2912,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(
                         new MainViewModelPreviewReinitializeControllerContext
                         {
+                            IsCaptureErrorCurrent = viewModel._captureService.IsCaptureErrorCurrent,
                             SelectedDevice = () => viewModel.SelectedDevice,
                             SelectedFormat = () => viewModel.SelectedFormat,
                             IsRecording = () => viewModel.IsRecording,

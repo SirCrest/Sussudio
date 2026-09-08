@@ -484,7 +484,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 staleProgramCapture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log("RECORDING_AUDIO_CAPTURE_REPLACED reason=terminal_preview_worker");
@@ -497,7 +496,7 @@ public partial class CaptureService
             rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();
             await rollback.OwnedWasapiAudioCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
             rollback.OwnedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-            rollback.OwnedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.AttachCaptureFailure(rollback.OwnedWasapiAudioCapture, "program", OnWasapiCaptureFailed);
             _previewAudioGraph.ProgramCapture = rollback.OwnedWasapiAudioCapture;
             await rollback.OwnedWasapiAudioCapture.StartAndWaitForRecordingReadyAsync(transitionToken).ConfigureAwait(false);
         }
@@ -520,7 +519,7 @@ public partial class CaptureService
             var micCapture = new WasapiAudioCapture();
             await micCapture.InitializeAsync(microphoneDeviceId, transitionToken).ConfigureAwait(false);
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.AttachCaptureFailure(micCapture, "microphone", OnWasapiCaptureFailed);
             _previewAudioGraph.MicrophoneCapture = micCapture;
             await micCapture.StartAndWaitForRecordingReadyAsync(transitionToken).ConfigureAwait(false);
             Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
@@ -2153,7 +2152,6 @@ public partial class CaptureService
         _previewAudioGraph.DetachCapture(
             capture,
             OnWasapiAudioLevelUpdated,
-            OnWasapiCaptureFailed,
             _flashbackBackend.PlaybackController);
         if (capture != null)
         {
@@ -2381,7 +2379,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 rollback.OwnedWasapiAudioCapture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             _previewAudioGraph.ProgramCapture = null;
         }

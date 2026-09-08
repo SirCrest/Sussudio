@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -2975,7 +2975,7 @@ static partial class Program
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
         AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
         AssertContains(analysisText, "private static void AddFlashbackExportAnalysisWarnings(");
-        AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings)");
         AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(analysisText, "scenarioPlan.UsesFlashbackScenarioWarningPolicy");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
@@ -3049,7 +3049,7 @@ static partial class Program
         var builderText = ReadDiagnosticSessionResultBuilderSource();
 
         AssertContains(builderText, "private static bool IsFunctionallyVerifiedRecordingWarning(");
-        AssertContains(builderText, "IsStrictArtifactVerificationScenario(request.Scenario)");
+        AssertContains(builderText, "IsStrictArtifactVerificationScenario(request.RunBootstrap.Scenario)");
         AssertContains(builderText, "private static bool IsStrictArtifactVerificationScenario(string scenario)");
         AssertContains(builderText, "DiagnosticSessionScenarioCatalog.RecordingOnly");
         AssertContains(builderText, "DiagnosticSessionScenarioCatalog.FlashbackRangeExport");
@@ -3064,8 +3064,8 @@ static partial class Program
         AssertContains(builderText, "verificationSucceeded == true");
         AssertContains(builderText, "string.Equals(analysis.HealthSummary.HealthStatus, \"Warning\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(builderText, "private static bool IsVisuallyVerifiedPreviewWarning(");
-        AssertContains(builderText, "string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.PreviewOnly, StringComparison.OrdinalIgnoreCase)");
-        AssertContains(builderText, "string.Equals(request.Scenario, DiagnosticSessionScenarioCatalog.Observe, StringComparison.OrdinalIgnoreCase)");
+        AssertContains(builderText, "string.Equals(request.RunBootstrap.Scenario, DiagnosticSessionScenarioCatalog.PreviewOnly, StringComparison.OrdinalIgnoreCase)");
+        AssertContains(builderText, "string.Equals(request.RunBootstrap.Scenario, DiagnosticSessionScenarioCatalog.Observe, StringComparison.OrdinalIgnoreCase)");
         AssertContains(builderText, "string.Equals(analysis.HealthSummary.LikelyStage, \"present_display\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(builderText, "return IsVisualCadenceSessionHealthy(analysis.VisualCadenceMetrics, targetFps);");
         AssertContains(builderText, "(request.PresentMon is null || request.PresentMon.Success) &&");
@@ -3097,7 +3097,7 @@ static partial class Program
         AssertContains(runExecutionText, "new DiagnosticSessionResultBuildRequest(");
         AssertContains(completionText, "private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(");
         AssertContains(completionText, "return new DiagnosticSessionResultBuildRequest(");
-        AssertContains(completionText, "runBootstrap.ScenarioPlan");
+        AssertContains(ExtractMemberCode(completionText, "CreateResultBuildRequest"), "context.RunBootstrap,");
         AssertContains(completionText, "postRunSnapshots.HealthSnapshot");
         AssertDoesNotContain(runnerText, "SetStage(\"result-analysis\")");
         AssertDoesNotContain(runnerText, "var result = new DiagnosticSessionResult");
@@ -3122,6 +3122,7 @@ static partial class Program
         AssertContains(analysisText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
         AssertContains(analysisText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
         AssertContains(resultBuildRequestText, "internal sealed record DiagnosticSessionResultBuildRequest(");
+        AssertContains(resultBuildRequestText, "DiagnosticSessionRunBootstrap RunBootstrap,");
         AssertContains(analysisText, "private sealed record DiagnosticSessionResultAnalysis(");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
         AssertContains(resultText, "return new DiagnosticSessionResult\n        {");
@@ -3148,7 +3149,7 @@ static partial class Program
         AssertContains(analysisText, "ValidateCleanupLifecycleRestored(");
         AssertContains(analysisText, "ValidateFlashbackPreviewSchedulerAnalysis(");
         AssertContains(analysisText, "AnalyzeDiagnosticHealth(");
-        AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(analysisText, "EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings)");
         AssertContains(analysisText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(analysisText, "IsToleratedFlashbackScenarioWarning(");
         AssertContains(analysisText, "scenarioPlan.ToleratesSparsePreviewSchedulerStressTransitions));");
@@ -6637,6 +6638,10 @@ static partial class Program
         AssertContains(channelText, "internal sealed class DiagnosticSessionCommandChannel : IDisposable");
         AssertContains(channelText, "using Sussudio.Models;");
         AssertContains(channelText, "private readonly SemaphoreSlim _sendGate = new(1, 1);");
+        AssertContains(channelText, "private void BeginOwnedSend()");
+        AssertContains(channelText, "private void CompleteOwnedSend()");
+        AssertContains(channelText, "private void DisposeResourcesIfIdle()");
+        AssertContains(channelText, "private async Task<JsonElement> SendRawCoreAsync(");
         AssertContains(channelText, "internal int FailureCount => _failureCount;");
         AssertContains(channelText, "internal void RecordFailure(string warning)");
         AssertContains(channelText, "private static string CommandName(AutomationCommandKind kind)");
@@ -6787,7 +6792,8 @@ static partial class Program
         AssertContains(completionRootText, "await context.WriteLiveStateBestEffortAsync(result.CompletedUtc, result.TerminalState).ConfigureAwait(false);");
         AssertContains(completionRootText, "postRunSnapshots.HealthSnapshot");
         AssertContains(completionRootText, "postRunSnapshots.Timeline");
-        AssertContains(completionRootText, "runBootstrap.RunnerProcessId");
+        AssertContains(completionRootText, "context.RunBootstrap,");
+        AssertContains(resultBuilderText, "RunnerProcessId = request.RunBootstrap.RunnerProcessId,");
         AssertContains(contextText, "new DiagnosticSessionCompletionContext");
         AssertContains(executionText, "return await RunCompletionPhaseAsync(");
         AssertContains(executionText, "runContext.CreateCompletionContext(options, scenarioPhase, stoppedRecordingForVerification, cancellationToken)");

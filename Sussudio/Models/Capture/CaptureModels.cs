@@ -520,6 +520,26 @@ public enum CaptureSessionState
     Disposed
 }
 
+internal enum CaptureErrorOriginKind
+{
+    SessionTransition,
+    AudioCaptureRegistration
+}
+
+internal readonly record struct CaptureErrorOrigin(CaptureErrorOriginKind Kind, long Generation);
+
+public sealed class CaptureErrorEventArgs : EventArgs
+{
+    internal CaptureErrorEventArgs(Exception exception, CaptureErrorOrigin origin)
+    {
+        Exception = exception;
+        Origin = origin;
+    }
+
+    public Exception Exception { get; }
+    internal CaptureErrorOrigin Origin { get; }
+}
+
 /// <summary>
 /// Pure lifecycle rules for capture session state transitions. Resource
 /// acquisition and release still belong to CaptureService; this type only

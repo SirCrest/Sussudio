@@ -1,6 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
@@ -283,11 +284,33 @@ static partial class Program
 
     private static void AssertNearlyEqual(double expected, double actual, double tolerance, string fieldName)
     {
-        if (Math.Abs(expected - actual) > tolerance)
+        if (!(Math.Abs(expected - actual) <= tolerance))
         {
             throw new InvalidOperationException(
                 $"Assertion failed for {fieldName}: expected '{expected}', actual '{actual}', tolerance '{tolerance}'.");
         }
+    }
+
+    // The app assembly is loaded reflectively, so the ErrorOccurred argument type
+    // cannot be named here. Bind the observer to whichever event-args type the
+    // loaded assembly declares and hand back the raw exception it carries.
+    internal static Delegate ObserveCaptureErrors(object owner, Action<Exception> observe)
+    {
+        var errorEvent = owner.GetType().GetEvent("ErrorOccurred")
+            ?? throw new InvalidOperationException(
+                $"{owner.GetType().FullName} does not declare an ErrorOccurred event.");
+        var handlerType = errorEvent.EventHandlerType!;
+        var argument = Expression.Parameter(handlerType.GetGenericArguments()[0], "error");
+        var handler = Expression.Lambda(
+                handlerType,
+                Expression.Invoke(
+                    Expression.Constant(observe),
+                    Expression.Property(argument, "Exception")),
+                Expression.Parameter(typeof(object), "sender"),
+                argument)
+            .Compile();
+        errorEvent.AddEventHandler(owner, handler);
+        return handler;
     }
 
     private static void AssertContains(string value, string token)

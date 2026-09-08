@@ -50,18 +50,22 @@ internal static class DiagnosticCompositionFixture
             samples.SetValue(sample, i);
         }
 
+        var runBootstrap = Construct(RequireType(assembly, "DiagnosticSessionRunBootstrap"), new Dictionary<string, object?>
+        {
+            ["Scenario"] = "observe",
+            ["ScenarioPlan"] = plan,
+            ["DurationSeconds"] = 10,
+            ["SampleIntervalMs"] = 1000,
+            ["SessionId"] = "composition-fixture",
+            ["OutputDirectory"] = "fixture-output",
+            ["StartedUtc"] = DateTimeOffset.Parse("2026-09-07T00:00:00+00:00"),
+            ["RunnerProcessId"] = 1234
+        });
         var request = Construct(RequireType(assembly, "DiagnosticSessionResultBuildRequest"), new Dictionary<string, object?>
         {
             ["Options"] = Activator.CreateInstance(RequireType(assembly, "DiagnosticSessionOptions")),
-            ["ScenarioPlan"] = plan,
-            ["SessionId"] = "composition-fixture",
-            ["Scenario"] = "observe",
-            ["DurationSeconds"] = 10,
-            ["SampleIntervalMs"] = 1000,
-            ["OutputDirectory"] = "fixture-output",
+            ["RunBootstrap"] = runBootstrap,
             ["LivePath"] = "fixture-live.json",
-            ["StartedUtc"] = DateTimeOffset.Parse("2026-09-07T00:00:00+00:00"),
-            ["RunnerProcessId"] = 1234,
             ["CommandFailureCount"] = 0,
             ["Samples"] = samples,
             ["InitialSnapshot"] = snapshot,

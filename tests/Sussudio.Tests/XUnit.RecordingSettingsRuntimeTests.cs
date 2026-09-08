@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -72,8 +72,7 @@ static partial class Program
         });
         backend = GetPrivateField(service, "_flashbackBackend")!;
         var errors = new List<Exception>();
-        EventHandler<Exception> onError = (_, error) => errors.Add(error);
-        service.GetType().GetEvent("ErrorOccurred")!.AddEventHandler(service, onError);
+        ObserveCaptureErrors(service, errors.Add);
         try
         {
             // Desired settings already match the selection, but the backend does

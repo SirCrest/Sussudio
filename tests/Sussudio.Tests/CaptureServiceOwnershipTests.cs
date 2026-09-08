@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -1614,7 +1614,7 @@ static partial class Program
         AssertContains(microphoneRootText, "private async Task RestartMicrophoneMonitorAfterRecordingAsync(");
         AssertContains(microphoneRootText, "new WasapiAudioCapture()");
         AssertContains(microphoneRootText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
-        AssertContains(microphoneRootText, "micCapture.CaptureFailed += OnWasapiCaptureFailed;");
+        AssertContains(microphoneRootText, "_previewAudioGraph.AttachCaptureFailure(micCapture, \"microphone\", OnWasapiCaptureFailed);");
         AssertContains(microphoneRootText, "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));");
         AssertContains(microphoneRootText, "FLASHBACK_MIC_ATTACH_OK reason='{options.FlashbackAttachReason}'");
         AssertContains(microphoneRootText, "Logger.Log($\"{options.RestartLogEvent} device='\" + (_micMonitorDeviceName ?? \"?\") + \"'\");");
@@ -1633,7 +1633,7 @@ static partial class Program
         AssertContains(finalizationText, "DisposeWarningEvent: \"MIC_MONITOR_RESTART_DISPOSE_WARN\"");
         AssertDoesNotContain(finalizationText, "WasapiAudioCapture? micCapture = null;");
         AssertDoesNotContain(finalizationText, "micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;");
-        AssertDoesNotContain(finalizationText, "micCapture.CaptureFailed += OnWasapiCaptureFailed;");
+        AssertDoesNotContain(finalizationText, "_previewAudioGraph.AttachCaptureFailure(micCapture,");
 
         return Task.CompletedTask;
     }

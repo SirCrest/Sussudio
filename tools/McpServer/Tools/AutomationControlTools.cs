@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -621,7 +622,7 @@ public static class VerificationTools
         cancellationToken.ThrowIfCancellationRequested();
         if (!TryParseAssertionArray(assertions, out var parsedAssertions, out var parseError))
         {
-            return McpToolResultFactory.FromText(parseError!, isError: true);
+            return McpToolResultFactory.FromText(parseError, isError: true);
         }
 
         var payload = new Dictionary<string, object?>
@@ -658,7 +659,7 @@ public static class VerificationTools
         return McpToolResultFactory.FromResponse(response, BuildFileVerificationText(filePath, response, verification, message));
     }
 
-    private static bool TryParseAssertionArray(string assertions, out JsonElement parsedAssertions, out string? error)
+    private static bool TryParseAssertionArray(string assertions, out JsonElement parsedAssertions, [NotNullWhen(false)] out string? error)
     {
         parsedAssertions = default;
         error = null;
