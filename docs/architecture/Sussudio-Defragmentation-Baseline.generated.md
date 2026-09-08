@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-08T22:27:07Z
+Generated UTC: 2026-09-08T22:37:08Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,9 +10,9 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 147 |
 | Test .cs files | 86 |
 | Core app .cs files (Sussudio/) | 113 |
-| Core app nonblank LoC (Sussudio/) | 96321 |
+| Core app nonblank LoC (Sussudio/) | 96305 |
 | Sussudio.Tests .cs files | 85 |
-| Sussudio.Tests nonblank LoC | 73910 |
+| Sussudio.Tests nonblank LoC | 73911 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.8%) |
 
@@ -40,7 +40,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 3157 | Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs |
 | 3121 | Sussudio/ViewModels/MainViewModel.cs |
 | 2974 | Sussudio/Services/Flashback/FlashbackExporter.cs |
-| 2922 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
+| 2913 | Sussudio/Services/Flashback/FlashbackEncoderSink.cs |
 | 2618 | Sussudio/Services/Preview/D3D11PreviewRenderer.cs |
 | 2541 | Sussudio/MainWindow.xaml.cs |
 | 2533 | Sussudio/Services/Capture/CaptureService.Flashback.cs |
@@ -49,7 +49,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2380 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2149 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 2101 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
-| 2086 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
+| 2077 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 2033 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
 | 1934 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1813 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |

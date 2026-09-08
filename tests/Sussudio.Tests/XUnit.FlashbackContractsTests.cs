@@ -4497,9 +4497,10 @@ static partial class Program
         AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
         AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
         AssertContains(sourceText, "private static void DecrementQueueDepth(ref int target, string queueName)");
-        AssertContains(sourceText, "var current = Volatile.Read(ref target);");
-        AssertContains(sourceText, "if (current <= 0)");
-        AssertContains(sourceText, "if (Interlocked.CompareExchange(ref target, current - 1, current) == current)");
+        // The clamped CAS loop now lives in AtomicCounter (behaviorally covered by
+        // AtomicCounterTests); this sink keeps only its own underflow diagnostic.
+        AssertContains(sourceText, "if (!AtomicCounter.TryDecrement(ref target))");
+        AssertDoesNotContain(sourceText, "Interlocked.CompareExchange(ref target, current - 1, current)");
         AssertContains(sourceText, "FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertContains(sourceText, "DecrementQueueDepth(ref _videoQueueDepth, \"video\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu\");");

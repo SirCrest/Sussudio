@@ -1590,21 +1590,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
     }
 
+    // AtomicCounter owns the clamped CAS loop; this sink keeps its own underflow tag.
     private static void DecrementQueueDepth(ref int target, string queueName)
     {
-        while (true)
+        if (!AtomicCounter.TryDecrement(ref target))
         {
-            var current = Volatile.Read(ref target);
-            if (current <= 0)
-            {
-                Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
-            {
-                return;
-            }
+            Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
         }
     }
 
