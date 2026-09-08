@@ -17,7 +17,7 @@ internal sealed class DiagnosticSessionRunContext : IDisposable
 
     internal DiagnosticSessionRunContext(
         DiagnosticSessionOptions options,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCommandAsync,
         CancellationToken runCancellationToken)
     {
         RunBootstrap = DiagnosticSessionRunBootstrap.Create(options);
@@ -431,6 +431,11 @@ internal readonly record struct DiagnosticSessionRunBootstrap(
 
 internal static class DiagnosticSessionAutomationResponseJson
 {
+    internal static bool HasUnconfirmedCommandOutcome(JsonElement response)
+        => !IsSuccess(response) && GetString(response, "ErrorCode") is
+            "pipe-response-timeout" or "pipe-protocol-error" or "pipe-invalid-json" or
+            "pipe-io-error" or "pipe-canceled";
+
     internal static bool TryGetSnapshot(JsonElement response, out JsonElement snapshot)
     {
         if (response.ValueKind == JsonValueKind.Object &&
@@ -469,7 +474,7 @@ internal static class DiagnosticSessionAutomationResponseJson
 
 internal sealed class DiagnosticSessionCommandChannel : IDisposable
 {
-    private readonly Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> _sendCommandAsync;
+    private readonly Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> _sendCommandAsync;
     private readonly CancellationToken _defaultCancellationToken;
     private readonly List<string> _warnings;
     private readonly SemaphoreSlim _sendGate = new(1, 1);
@@ -477,6 +482,15 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
 
     internal DiagnosticSessionCommandChannel(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken defaultCancellationToken,
+        List<string> warnings)
+        : this((command, payload, timeout, token) => sendCommandAsync(command, payload, timeout).WaitAsync(token),
+            defaultCancellationToken, warnings)
+    {
+    }
+
+    internal DiagnosticSessionCommandChannel(
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCommandAsync,
         CancellationToken defaultCancellationToken,
         List<string> warnings)
     {
@@ -621,8 +635,19 @@ internal sealed class DiagnosticSessionCommandChannel : IDisposable
 
 internal static class DiagnosticSessionPipeRetryPolicy
 {
-    internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(
+    internal static Task<JsonElement?> SendCommandWithConnectRetryAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        string command,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+        => SendCommandWithConnectRetryAsync(
+            (name, commandPayload, responseTimeout, token) => sendCommandAsync(name, commandPayload, responseTimeout).WaitAsync(token),
+            command, payload, responseTimeoutMs, timeout, cancellationToken);
+
+    internal static async Task<JsonElement?> SendCommandWithConnectRetryAsync(
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCommandAsync,
         string command,
         Dictionary<string, object?>? payload,
         int? responseTimeoutMs,
@@ -637,8 +662,7 @@ internal static class DiagnosticSessionPipeRetryPolicy
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                var response = (await sendCommandAsync(command, payload, responseTimeoutMs)
-                        .WaitAsync(cancellationToken)
+                var response = (await sendCommandAsync(command, payload, responseTimeoutMs, cancellationToken)
                         .ConfigureAwait(false))
                     .Clone();
                 if (IsSyntheticPipeConnectFailure(response))
@@ -662,11 +686,12 @@ internal static class DiagnosticSessionPipeRetryPolicy
             }
             catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)
             {
-                return BuildLocalFailureResponse(command, ex.Message);
+                return BuildLocalFailureResponse(command, ex.Message,
+                    ex is AutomationPipeResponseTimeoutException ? "pipe-response-timeout" : "pipe-protocol-error");
             }
             catch (JsonException ex)
             {
-                return BuildLocalFailureResponse(command, ex.Message);
+                return BuildLocalFailureResponse(command, ex.Message, "pipe-invalid-json");
             }
         }
 
@@ -683,16 +708,19 @@ internal static class DiagnosticSessionPipeRetryPolicy
         return BuildLocalFailureResponse(command, "command was not attempted before retry timeout elapsed");
     }
 
-    internal static JsonElement BuildLocalFailureResponse(string command, string message)
+    internal static JsonElement BuildLocalFailureResponse(string command, string message, string? errorCode = null)
     {
-        using var document = JsonDocument.Parse(
-            JsonSerializer.Serialize(new Dictionary<string, object?>
-            {
-                ["Success"] = false,
-                ["Status"] = "error",
-                ["CommandLifecycle"] = "failed",
-                ["Message"] = $"{command}: {message}"
-            }));
+        var response = new Dictionary<string, object?>
+        {
+            ["Success"] = false,
+            ["Status"] = "error",
+            ["CommandLifecycle"] = "failed",
+            ["Message"] = $"{command}: {message}"
+        };
+        if (errorCode is not null)
+            response["ErrorCode"] = errorCode;
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(response));
         return document.RootElement.Clone();
     }
 

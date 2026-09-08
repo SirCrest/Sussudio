@@ -287,6 +287,22 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             propagateCancellationToOperation: true);
     }
 
+    internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(
+        RecordingSettingsSelection selection,
+        RecordingSettingsChangeKind kind,
+        CancellationToken cancellationToken = default)
+    {
+        var disposition = RecordingSettingsApplyDisposition.Superseded;
+        await EnqueueAsync(
+            kind == RecordingSettingsChangeKind.RecordingFormat
+                ? CaptureCommandKind.UpdateFlashbackRecordingFormat
+                : CaptureCommandKind.CycleFlashbackEncoderSettings,
+            async ct => disposition = await _captureService.ApplyRecordingSettingsAsync(selection, kind, ct).ConfigureAwait(false),
+            cancellationToken,
+            coalesceLatest: kind == RecordingSettingsChangeKind.EncoderParameters).ConfigureAwait(false);
+        return disposition;
+    }
+
     public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
         => EnqueueAsync(
             CaptureCommandKind.UpdateFlashbackRecordingFormat,
@@ -302,8 +318,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         => EnqueueAsync(
             CaptureCommandKind.CycleFlashbackEncoderSettings,
             ct => _captureService.CycleFlashbackEncoderSettingsAsync(quality, customBitrateMbps, nvencPreset, splitEncodeMode, ct),
-            cancellationToken,
-            coalesceLatest: true);
+            cancellationToken);
 
     public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
         => EnqueueAsync(

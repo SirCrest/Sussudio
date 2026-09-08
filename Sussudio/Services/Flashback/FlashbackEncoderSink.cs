@@ -157,8 +157,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             BitRate = context.Settings.GetTargetBitrate(),
             IsP010 = context.HdrPipelineActive,
             CodecName = MapCodecName(context.Settings.Format),
-            NvencPreset = context.Settings.NvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
+            NvencPreset = context.Settings.NvencPreset,
+            SplitEncodeMode = context.Settings.SplitEncodeMode,
             HdrEnabled = context.HdrPipelineActive,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
@@ -2672,101 +2672,27 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, "before_drain", inFlightCount);
             if (!forceRotateDrainAborted)
             {
-                // Snapshot the depth queued when this phase started. Below the
-                // guard ratio, producers may keep trickling packets in during the
-                // drain (see GetVideoEnqueueRejectReason) — bound by the snapshot
-                // so a sustained trickle can't extend the drain indefinitely.
-                // Anything enqueued after this point lands in the post-rotation
-                // segment, which is harmless (exports cut by PTS range).
-                var audioDrainBudget = Volatile.Read(ref _audioQueueDepth);
-                var audioRounds = 0;
-                while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    audioRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (audioRounds * AudioDrainBatchLimit >= audioDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _audioQueueDepth), AudioDrainBatchLimit, "audio",
+                    () => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit), ref inFlightCount);
             }
             if (!forceRotateDrainAborted && _microphoneEnabled && microphoneQueue != null)
             {
-                var microphoneDrainBudget = Volatile.Read(ref _microphoneQueueDepth);
-                var microphoneRounds = 0;
-                while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    microphoneRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (microphoneRounds * AudioDrainBatchLimit >= microphoneDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _microphoneQueueDepth), AudioDrainBatchLimit, "microphone",
+                    () => DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit), ref inFlightCount);
             }
             if (!forceRotateDrainAborted && gpuQueue != null)
             {
-                var gpuDrainBudget = Volatile.Read(ref _gpuQueueDepth);
-                var gpuRounds = 0;
-                while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    gpuRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (gpuRounds * GpuDrainBatchLimit >= gpuDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _gpuQueueDepth), GpuDrainBatchLimit, "gpu",
+                    () => DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit), ref inFlightCount);
             }
             if (!forceRotateDrainAborted)
             {
-                var videoDrainBudget = Volatile.Read(ref _videoQueueDepth);
-                var videoRounds = 0;
-                while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    videoRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (videoRounds * VideoDrainBatchLimit >= videoDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _videoQueueDepth), VideoDrainBatchLimit, "video",
+                    () => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit), ref inFlightCount);
             }
 
             if (inFlightCount > 0)
@@ -2809,7 +2735,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 _bufferManager.AbandonReservedSegmentPath(localRequest.PreparedPath);
             }
-            localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));
+            localRequest.Complete(_bufferManager.GetExistingCompletedSegmentPathsInRange(localIn, localOut));
             return false;
         }
         catch (Exception ex)
@@ -2825,6 +2751,35 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 Volatile.Write(ref _forceRotateDraining, false);
             }
         }
+    }
+
+    private static bool TryDrainForceRotatePhase(
+        ForceRotateRequest request,
+        int queuedAtStart,
+        int batchLimit,
+        string phase,
+        Func<bool> drainBatch,
+        ref int inFlightRounds)
+    {
+        // Bound each phase by its starting depth so producer trickle cannot extend
+        // it indefinitely. Preserve the initial drain attempt even for a zero snapshot.
+        var rounds = 0;
+        while (drainBatch())
+        {
+            inFlightRounds++;
+            rounds++;
+            if (ShouldAbortForceRotateDrain(request, phase, inFlightRounds))
+            {
+                return false;
+            }
+
+            if (rounds * batchLimit >= queuedAtStart)
+            {
+                break;
+            }
+        }
+
+        return !ShouldAbortForceRotateDrain(request, phase, inFlightRounds);
     }
 
     private bool TryCancelForceRotate(ForceRotateRequest request)

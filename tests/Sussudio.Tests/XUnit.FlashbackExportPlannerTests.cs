@@ -206,7 +206,6 @@ public sealed class FlashbackExportPlannerTests
         var request = Get<object>(requestPlan, "Request");
         Assert.Equal(activePath, Get<string>(request, "InputPath"));
         Assert.Null(GetNullable(request, "Segments"));
-        Assert.Null(GetNullable(request, "SegmentPaths"));
 
         var segment = New(PathSnapshotType, "one.ts", "C:\\segments\\one.ts");
         var segmentedPlan = CreateRequest(new[] { segment }, Array.Empty<object>(), activePath);

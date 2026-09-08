@@ -649,7 +649,7 @@ static class NativeXuProbeI2cSwitch
         })
         {
             var frame = new byte[] { 0x00, 0x4A, 0x02, 0x00, (byte)op, (byte)param };
-            var resp = await NativeXuProbeI2cTransport.SendI2cAtGetAsync(dev, frame);
+            var resp = NativeXuProbeI2cTransport.SendI2cAtGet(dev, frame);
             Console.WriteLine($"  {label}: {(resp != null ? BitConverter.ToString(resp) : "(null)")}");
         }
 
@@ -670,20 +670,20 @@ static class NativeXuProbeI2cSwitch
 
         Console.WriteLine($"\n--- Sending audio switch sequence ({target}) ---");
 
-        var dacState = await NativeXuProbeI2cTransport.SendI2cAtGetAsync(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x09, 0x42 });
+        var dacState = NativeXuProbeI2cTransport.SendI2cAtGet(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x09, 0x42 });
         Console.WriteLine($"  1. I2C GET 0x09/42 = {(dacState != null ? BitConverter.ToString(dacState) : "(null)")}");
 
         var audioSourceValue = (byte)(target == "analog" ? 0x01 : 0x00);
-        var set04 = await NativeXuProbeI2cTransport.SendI2cAtSetAsync(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, audioSourceValue });
+        var set04 = NativeXuProbeI2cTransport.SendI2cAtSet(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x04, audioSourceValue });
         Console.WriteLine($"  2. I2C SET 0x04 = 0x{audioSourceValue:X2}: {(set04 ? "OK" : "failed")}");
 
-        var state03 = await NativeXuProbeI2cTransport.SendI2cAtGetAsync(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x03, 0xA0 });
+        var state03 = NativeXuProbeI2cTransport.SendI2cAtGet(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x03, 0xA0 });
         Console.WriteLine($"  3. I2C GET 0x03/A0 = {(state03 != null ? BitConverter.ToString(state03) : "(null)")}");
 
-        var set0E = await NativeXuProbeI2cTransport.SendI2cAtSetAsync(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x0E, 0x01 });
+        var set0E = NativeXuProbeI2cTransport.SendI2cAtSet(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x0E, 0x01 });
         Console.WriteLine($"  4. I2C SET 0x0E = 01: {(set0E ? "OK" : "failed")}");
 
-        var set10 = await NativeXuProbeI2cTransport.SendI2cAtSetAsync(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x10, 0x01 });
+        var set10 = NativeXuProbeI2cTransport.SendI2cAtSet(dev, new byte[] { 0x00, 0x4A, 0x01, 0x00, 0x10, 0x01 });
         Console.WriteLine($"  5. I2C SET 0x10 = 01: {(set10 ? "OK" : "failed")}");
 
         var set5B = await NativeXuAtCommandProvider.SendNamedSetCommandPublicAsync(
@@ -701,7 +701,7 @@ static class NativeXuProbeI2cSwitch
         })
         {
             var frame = new byte[] { 0x00, 0x4A, 0x02, 0x00, (byte)op, (byte)param };
-            var resp = await NativeXuProbeI2cTransport.SendI2cAtGetAsync(dev, frame);
+            var resp = NativeXuProbeI2cTransport.SendI2cAtGet(dev, frame);
             Console.WriteLine($"  {label}: {(resp != null ? BitConverter.ToString(resp) : "(null)")}");
         }
 

@@ -40,6 +40,7 @@ function Get-InputFingerprint {
 function Test-ExcludedPath {
     param([string]$Path)
     $parts = $Path -split '[\\/]'
+    if (@($parts | Where-Object { $_ -like '.desloppify.bak.*' }).Count -gt 0) { return $true }
     foreach ($dir in $excludeDirs) {
         if ($parts -contains $dir) { return $true }
     }

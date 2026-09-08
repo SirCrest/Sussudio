@@ -359,7 +359,7 @@ internal static class DiagnosticSessionFlashbackSegmentPlaybackScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        if (!scenarioPlan.RunFlashbackSegmentPlayback)
+        if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackSegmentPlayback)
         {
             return;
         }

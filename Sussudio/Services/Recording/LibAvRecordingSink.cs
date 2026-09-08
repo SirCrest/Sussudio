@@ -335,8 +335,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             FrameRateDenominator = frameRateDenominator,
             BitRate = context.Settings.GetTargetBitrate(),
             IsP010 = context.HdrPipelineActive,
-            NvencPreset = context.Settings.NvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
+            NvencPreset = context.Settings.NvencPreset,
+            SplitEncodeMode = context.Settings.SplitEncodeMode,
             HdrEnabled = context.HdrPipelineActive,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
@@ -1096,10 +1096,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 {
                     Logger.Log($"LIBAV_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"LIBAV_SINK_CUDA_DRAIN_FAIL type={ex.GetType().Name} msg={ex.Message}");
             }
             finally
             {

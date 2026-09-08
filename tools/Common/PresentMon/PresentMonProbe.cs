@@ -71,6 +71,7 @@ public static class PresentMonProbe
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (!OperatingSystem.IsWindows())
         {
@@ -78,7 +79,7 @@ public static class PresentMonProbe
         }
 
         var durationSeconds = Math.Clamp(options.DurationSeconds, 1, 300);
-        var targetProcess = ResolveTargetProcess(options);
+        using var targetProcess = ResolveTargetProcess(options);
         if (targetProcess == null)
         {
             return Error($"No running process matched pid={options.ProcessId?.ToString(CultureInfo.InvariantCulture) ?? "(none)"} name='{options.ProcessName}'.");
@@ -97,50 +98,57 @@ public static class PresentMonProbe
 
         var arguments = BuildArguments(targetProcess.Id, durationSeconds, outputPath, options.TrackGpuVideo);
         var captureStartUtcUnixMs = options.CaptureStartUtcUnixMs ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var run = await RunProcessAsync(
+        try
+        {
+            var run = await RunProcessAsync(
                 presentMonPath,
                 arguments,
                 timeoutMs: Math.Max((durationSeconds + 15) * 1000, 30_000),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        PresentMonCaptureSummary? summary = null;
-        var parseMessage = string.Empty;
-        if (File.Exists(outputPath))
-        {
-            try
+            cancellationToken.ThrowIfCancellationRequested();
+            PresentMonCaptureSummary? summary = null;
+            var parseMessage = string.Empty;
+            if (File.Exists(outputPath))
             {
-                summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);
+                try
+                {
+                    summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);
+                }
+                catch (Exception ex)
+                {
+                    parseMessage = $" CSV parse failed: {ex.Message}";
+                }
             }
-            catch (Exception ex)
+
+            cancellationToken.ThrowIfCancellationRequested();
+            var success = run.ExitCode == 0 && summary is { SampleCount: > 0 };
+            var message = BuildResultMessage(run, summary, targetProcess, parseMessage, success);
+
+            return new PresentMonProbeResult
             {
-                parseMessage = $" CSV parse failed: {ex.Message}";
+                Success = success,
+                Message = message,
+                PresentMonPath = presentMonPath,
+                TargetProcessId = targetProcess.Id,
+                TargetProcessName = targetProcess.ProcessName,
+                CsvPath = options.KeepCsv ? outputPath : null,
+                ExitCode = run.ExitCode,
+                TimedOut = run.TimedOut,
+                CommandLine = $"{QuoteArgument(presentMonPath)} {arguments}",
+                StdOut = run.StdOut,
+                StdErr = run.StdErr,
+                Summary = summary
+            };
+        }
+        finally
+        {
+            if (!options.KeepCsv && File.Exists(outputPath))
+            {
+                TryDelete(outputPath);
             }
         }
-
-        if (!options.KeepCsv && File.Exists(outputPath))
-        {
-            TryDelete(outputPath);
-        }
-
-        var success = run.ExitCode == 0 && summary is { SampleCount: > 0 };
-        var message = BuildResultMessage(run, summary, targetProcess, parseMessage, success);
-
-        return new PresentMonProbeResult
-        {
-            Success = success,
-            Message = message,
-            PresentMonPath = presentMonPath,
-            TargetProcessId = targetProcess.Id,
-            TargetProcessName = targetProcess.ProcessName,
-            CsvPath = options.KeepCsv ? outputPath : null,
-            ExitCode = run.ExitCode,
-            TimedOut = run.TimedOut,
-            CommandLine = $"{QuoteArgument(presentMonPath)} {arguments}",
-            StdOut = run.StdOut,
-            StdErr = run.StdErr,
-            Summary = summary
-        };
     }
 
     private static string BuildArguments(int processId, int durationSeconds, string outputPath, bool trackGpuVideo)
@@ -292,6 +300,7 @@ public static class PresentMonProbe
         int timeoutMs,
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var process = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -305,10 +314,16 @@ public static class PresentMonProbe
             }
         };
 
+        cancellationToken.ThrowIfCancellationRequested();
         process.Start();
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        // Output drains outlive caller cancellation so the owned child can exit
+        // and close both redirected streams before this process is disposed.
+        using var outputCancellation = new CancellationTokenSource();
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(outputCancellation.Token);
+        var stderrTask = process.StandardError.ReadToEndAsync(outputCancellation.Token);
         var timedOut = false;
+        var stdout = string.Empty;
+        var stderr = string.Empty;
 
         try
         {
@@ -319,11 +334,20 @@ public static class PresentMonProbe
         catch (TimeoutException)
         {
             timedOut = true;
-            TryKill(process);
+            await StopOwnedProcessAsync(process).ConfigureAwait(false);
         }
-
-        var stdout = await TryReadAsync(stdoutTask).ConfigureAwait(false);
-        var stderr = await TryReadAsync(stderrTask).ConfigureAwait(false);
+        catch
+        {
+            await StopOwnedProcessAsync(process).ConfigureAwait(false);
+            throw;
+        }
+        finally
+        {
+            var output = await Task.WhenAll(TryReadAsync(stdoutTask), TryReadAsync(stderrTask)).ConfigureAwait(false);
+            stdout = output[0];
+            stderr = output[1];
+            outputCancellation.Cancel();
+        }
 
         return new ProcessRun
         {
@@ -342,8 +366,29 @@ public static class PresentMonProbe
         }
         catch (Exception ex)
         {
+            // A timed-out read can fault after cancellation closes its pipe.
+            // Observe that completion even when its output is no longer usable.
+            _ = task.ContinueWith(
+                static completed => _ = completed.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
             Trace.TraceWarning($"PresentMonProbe.TryReadAsync swallowed: {ex.GetType().Name}: {ex.Message}");
             return string.Empty;
+        }
+    }
+
+    private static async Task StopOwnedProcessAsync(Process process)
+    {
+        TryKill(process);
+        using var cleanupCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+        try
+        {
+            await process.WaitForExitAsync(cleanupCancellation.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceWarning($"PresentMonProbe child cleanup failed: {ex.GetType().Name}: {ex.Message}");
         }
     }
 

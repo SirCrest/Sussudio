@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.ExceptionServices;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -447,52 +448,96 @@ public partial class CaptureService
     /// uses the new codec. No-op if not previewing or if a recording is active.
     /// </summary>
     public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
-        {
-            if (_currentSettings == null || format == _currentSettings.Format)
-                return;
+        => ApplyRecordingSettingsUpdateAsync(
+            current => RecordingSettingsSelection.From(current) with { RequestedFormat = format },
+            RecordingSettingsChangeKind.RecordingFormat,
+            cancellationToken);
 
+    internal Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(
+        RecordingSettingsSelection selection,
+        RecordingSettingsChangeKind kind,
+        CancellationToken cancellationToken = default)
+        => ApplyRecordingSettingsUpdateAsync(_ => selection, kind, cancellationToken);
+
+    private async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsUpdateAsync(
+        Func<CaptureSettings, RecordingSettingsSelection> select,
+        RecordingSettingsChangeKind kind,
+        CancellationToken cancellationToken)
+    {
+        var disposition = RecordingSettingsApplyDisposition.Accepted;
+        Exception? applicationFailure = null;
+        await RunTransitionAsync(CurrentSessionState, async transitionToken =>
+        {
+            if (_currentSettings == null)
+            {
+                return;
+            }
+
+            var selection = select(_currentSettings);
             var previousSettings = CloneCaptureSettings(_currentSettings);
+            var changed = !selection.Matches(_currentSettings);
+            selection.ApplyTo(_currentSettings);
+            var logPrefix = kind == RecordingSettingsChangeKind.RecordingFormat
+                ? "FLASHBACK_FORMAT_CHANGE"
+                : "FLASHBACK_ENCODER_SETTINGS_CHANGE";
+
             if (_isRecording)
             {
-                Logger.Log($"FLASHBACK_FORMAT_CHANGE_BLOCKED reason=recording_active format={format}");
-                _currentSettings.Format = format;
-                if (IsFlashbackRecordingBackendActive())
+                if (changed && IsFlashbackRecordingBackendActive())
+                {
                     _pendingFlashbackSettingsChange = true;
+                }
+                Logger.Log($"{logPrefix}_BLOCKED reason=recording_active format={selection.RequestedFormat}");
+                disposition = RecordingSettingsApplyDisposition.Deferred;
                 return;
             }
 
-            _currentSettings.Format = format;
-
-            var cycleFailed = false;
-            if (_flashbackBackend.Sink != null)
+            if (_flashbackBackend.Sink == null)
             {
-                try
-                {
-                    await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
-                {
-                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED format={format} type={ex.GetType().Name} error='{ex.Message}'");
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    cycleFailed = true;
-                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
-                }
+                disposition = RecordingSettingsApplyDisposition.Deferred;
+                return;
             }
 
-            if (!cycleFailed)
+            if (selection.Matches(_flashbackBackend.SettingsSnapshot))
             {
-                Logger.Log($"FLASHBACK_FORMAT_CHANGE_OK format={format}");
+                disposition = RecordingSettingsApplyDisposition.Applied;
+                return;
             }
-            else
+
+            try
+            {
+                await _rebuildRecordingSettingsBackendAsync(transitionToken).ConfigureAwait(false);
+                if (_flashbackBackend.Sink != null && !selection.Matches(_flashbackBackend.SettingsSnapshot))
+                {
+                    throw new InvalidOperationException("Flashback encoder settings did not match the requested selection after rebuild.");
+                }
+                disposition = _flashbackBackend.Sink != null
+                    ? RecordingSettingsApplyDisposition.Applied
+                    : RecordingSettingsApplyDisposition.Deferred;
+                Logger.Log($"{logPrefix}_OK format={selection.RequestedFormat} quality={selection.Quality} bitrate={selection.CustomBitrateMbps} preset={selection.NvencPreset} split={selection.SplitEncodeMode} disposition={disposition}");
+            }
+            catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
+            {
+                Logger.Log($"{logPrefix}_CYCLE_CANCELLED format={selection.RequestedFormat} type={ex.GetType().Name} error='{ex.Message}'");
+                throw;
+            }
+            catch (Exception ex)
             {
                 _currentSettings = previousSettings;
-                Logger.Log($"FLASHBACK_FORMAT_CHANGE_ROLLBACK format={format} restored={_currentSettings.Format}");
+                applicationFailure = ex;
+                Logger.Log($"{logPrefix}_CYCLE_FAIL format={selection.RequestedFormat} quality={selection.Quality} bitrate={selection.CustomBitrateMbps} preset={selection.NvencPreset} split={selection.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
+                Logger.Log($"{logPrefix}_ROLLBACK format={_currentSettings.Format} quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode}");
             }
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
+
+        // Keep the existing transition/recovery policy after a rejected rebuild,
+        // but let awaitable callers observe that the requested settings failed.
+        if (applicationFailure != null)
+        {
+            ExceptionDispatchInfo.Capture(applicationFailure).Throw();
+        }
+        return disposition;
+    }
 
     /// <summary>
     /// Updates encoding-related fields in the active capture settings so that
@@ -510,10 +555,7 @@ public partial class CaptureService
     private void UpdateEncodingSettings(CaptureSettings source)
     {
         if (_currentSettings == null) return;
-        _currentSettings.Format = source.Format;
-        _currentSettings.Quality = source.Quality;
-        _currentSettings.NvencPreset = source.NvencPreset;
-        _currentSettings.CustomBitrateMbps = source.CustomBitrateMbps;
+        RecordingSettingsSelection.From(source).ApplyTo(_currentSettings);
         _currentSettings.AudioEnabled = source.AudioEnabled;
         _currentSettings.MicrophoneEnabled = source.MicrophoneEnabled;
         _currentSettings.MicrophoneDeviceId = source.MicrophoneDeviceId;
@@ -526,93 +568,23 @@ public partial class CaptureService
             _pendingFlashbackSettingsChange = true;
     }
 
-    /// <summary>
-    /// Cycles the flashback encoder when encoder-affecting settings change
-    /// (bitrate, quality, preset, split encode). Updates <see cref="_currentSettings"/> and
-    /// restarts the flashback buffer so new recordings use the updated params.
-    /// No-op if not previewing or recording is active.
-    /// </summary>
+    // Compatibility adapter for callers updating individual backend fields.
+    // UI and automation use complete selections through ApplyRecordingSettingsAsync.
     public Task CycleFlashbackEncoderSettingsAsync(
         VideoQuality? quality = null,
         double? customBitrateMbps = null,
         string? nvencPreset = null,
         string? splitEncodeMode = null,
         CancellationToken cancellationToken = default)
-        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
-        {
-            if (_currentSettings == null) return;
-
-            var previousSettings = CloneCaptureSettings(_currentSettings);
-            var changed = false;
-            if (quality.HasValue && quality.Value != _currentSettings.Quality)
-            {
-                _currentSettings.Quality = quality.Value;
-                changed = true;
-            }
-            if (customBitrateMbps.HasValue && Math.Abs(customBitrateMbps.Value - _currentSettings.CustomBitrateMbps) > 0.01)
-            {
-                _currentSettings.CustomBitrateMbps = customBitrateMbps.Value;
-                changed = true;
-            }
-            if (nvencPreset != null)
-            {
-                var parsedPreset = NvencPresetParser.Parse(nvencPreset);
-                if (parsedPreset != _currentSettings.NvencPreset)
-                {
-                    _currentSettings.NvencPreset = parsedPreset;
-                    changed = true;
-                }
-            }
-            if (splitEncodeMode != null)
-            {
-                var parsedSplitMode = SplitEncodeModeParser.Parse(splitEncodeMode);
-                if (parsedSplitMode != _currentSettings.SplitEncodeMode)
-                {
-                    _currentSettings.SplitEncodeMode = parsedSplitMode;
-                    changed = true;
-                }
-            }
-
-            if (!changed) return;
-
-            if (_isRecording)
-            {
-                Logger.Log("FLASHBACK_ENCODER_SETTINGS_CHANGE_BLOCKED reason=recording_active");
-                if (IsFlashbackRecordingBackendActive())
-                    _pendingFlashbackSettingsChange = true;
-                return;
-            }
-
-            var cycledBuffer = _flashbackBackend.Sink != null;
-            var cycleFailed = false;
-            if (_flashbackBackend.Sink != null)
-            {
-                try
-                {
-                    await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
-                {
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    cycleFailed = true;
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
-                }
-            }
-
-            if (!cycleFailed)
-            {
-                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_OK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} cycled={cycledBuffer}");
-            }
-            else
-            {
-                _currentSettings = previousSettings;
-                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode}");
-            }
-        }, cancellationToken);
+        => ApplyRecordingSettingsUpdateAsync(
+            current => new RecordingSettingsSelection(
+                current.Format,
+                quality ?? current.Quality,
+                customBitrateMbps ?? current.CustomBitrateMbps,
+                nvencPreset != null ? NvencPresetParser.Parse(nvencPreset) : current.NvencPreset,
+                splitEncodeMode != null ? SplitEncodeModeParser.Parse(splitEncodeMode) : current.SplitEncodeMode),
+            RecordingSettingsChangeKind.EncoderParameters,
+            cancellationToken);
 
     /// <summary>
     /// Retires the current Flashback history for bounded startup cleanup and
@@ -906,6 +878,7 @@ public partial class CaptureService
             ThrowIfRecordingStartupFailed();
             _recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);
             _isRecording = true;
+            EnsureCaptureTelemetrySampling();
             _flashbackRecordingStartBytes = _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
             PublishRecordingStartedOutcome(fbRecordingContext);
             _recordingStopwatch.Restart();
@@ -1191,8 +1164,8 @@ public partial class CaptureService
             FrameRateNumerator = fpsNum,
             FrameRateDenominator = fpsDen,
             CodecName = codecName,
-            NvencPreset = flashbackNvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(settings.SplitEncodeMode),
+            NvencPreset = flashbackNvencPreset,
+            SplitEncodeMode = settings.SplitEncodeMode,
             IsP010 = isP010,
             BitRate = settings.GetTargetBitrate(),
             HdrEnabled = hdrRequested,
@@ -1452,7 +1425,7 @@ public partial class CaptureService
 
         _recordingStopwatch.Stop();
         _isRecording = false;
-        if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
+        if (!_isVideoPreviewActive) await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
         _recordingBackend.ClearContextAndSettings();
         PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);
 
@@ -1840,7 +1813,7 @@ public partial class CaptureService
     {
         var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);
         var stableSegmentPaths = FlashbackExportPlanner.NeedsStableSegmentPaths(forceRotateResult)
-            ? bufferManager.GetValidSegmentPaths(inPoint, outPoint)
+            ? bufferManager.GetExistingCompletedSegmentPathsInRange(inPoint, outPoint)
             : null;
         var liveEdgePlan = FlashbackExportPlanner.PlanLiveEdge(
             forceRotateResult,

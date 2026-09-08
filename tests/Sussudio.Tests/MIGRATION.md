@@ -34,6 +34,29 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   linked history/geometry sources, including timestamp gaps and warmed allocations.
 - `tests/Sussudio.Tests/StatsPresentationPolishTests.cs` owns motion state and
   human-readable presentation contracts.
+- `tests/Sussudio.Tests/XUnit.CaptureObservationTests.cs` owns published AV
+  sampling, reset, worker retirement, and source-observed format evidence.
+- `tests/Sussudio.Tests/XUnit.DeviceDiscoveryTests.cs` owns failed, canceled,
+  superseded, and successful-empty discovery outcomes.
+- `tests/Sussudio.Tests/XUnit.RecordingSettingsApplicationTests.cs` and
+  `tests/Sussudio.Tests/XUnit.RecordingSettingsRuntimeTests.cs` cover the shared
+  settings owner and complete selection application through the capture coordinator.
+- `tests/Sussudio.Tests/XUnit.LibAvCudaFailureTests.cs` executes sink failure and
+  native frame cleanup. `InProcessRecordingStructureVerifierTests.cs` verifies
+  committed media fixtures, and `LibAvRecordingDrainBehaviorTests.cs` exercises
+  actual queued video and audio encoding into a verified file.
+- `tests/Sussudio.Tests/XUnit.DiagnosticCompositionTests.cs` compares diagnostic
+  fields and scenario contracts with fixtures captured before the refactor.
+- `tests/Sussudio.Tests/XUnit.DiagnosticCancellationTests.cs` covers startup
+  ownership, uncertain transport outcomes, reconciliation, and bounded cleanup.
+- `tests/Sussudio.Tests/XUnit.McpCancellationTests.cs` and
+  `tests/Sussudio.Tests/XUnit.McpPresentMonResultTests.cs` execute MCP cancellation
+  and raw/formatted errors through actual host protocol traffic.
+- `tests/Sussudio.Tests/XUnit.PresentMonCancellationTests.cs` owns probe-child
+  termination, CSV retention, and diagnostic background-process cleanup.
+- `AppProcessStartupTests.cs` checks admission and compiled startup ordering,
+  including a private apphost launch. `NativeFfmpegCapabilitiesTests.cs` covers
+  runtime selection, private probe validation, and bounded child supervision.
 
 - xUnit 2.9 + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` referenced
   in `Sussudio.Tests.csproj`. `OutputType=Exe` stays for the assembly-load smoke

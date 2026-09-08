@@ -257,8 +257,6 @@ internal sealed class FlashbackExportOutputTransaction : IDisposable
                 $"win32={lastError} msg='{failureMessage}'");
             return;
         }
-
-        Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed_sharing_violation' path='{TemporaryPath}'");
     }
 
     public void Dispose()

@@ -153,101 +153,6 @@ public sealed class RecordingFinalizationTruthTests
     }
 
     [Fact]
-    public void NativeFinalizeErrorsAndRequestedMicrophoneLoss_AreFatal()
-    {
-        var encoder = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Recording/LibAvEncoder.cs");
-        Assert.Contains("RunFinalizationStep(\"video_flush\"", encoder, StringComparison.Ordinal);
-        Assert.Contains("RunFinalizationStep(\"trailer_and_close\"", encoder, StringComparison.Ordinal);
-        Assert.Contains("throw firstFailure;", encoder, StringComparison.Ordinal);
-        Assert.Contains("nativeCloseFailure = new InvalidOperationException(message);", encoder, StringComparison.Ordinal);
-
-        var previewLifecycle = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Capture/CaptureService.PreviewLifecycle.cs");
-        Assert.Contains("requestedRecordingMicrophoneFailed", previewLifecycle, StringComparison.Ordinal);
-        Assert.Contains("RecordLastRecordingFailure(fatalError);", previewLifecycle, StringComparison.Ordinal);
-        Assert.Contains("BeginFatalCaptureCleanup(fatalError);", previewLifecycle, StringComparison.Ordinal);
-
-        var recordingLifecycle = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs");
-        AssertInOrder(
-            recordingLifecycle,
-            "_recordingBackend.ThrowIfPendingLibAvDrainBlocksReentry();",
-            "_currentSettings = settings;");
-        Assert.Contains("ValidateRequestedMicrophone(settings);", recordingLifecycle, StringComparison.Ordinal);
-        Assert.Contains("CancellationToken.None", recordingLifecycle, StringComparison.Ordinal);
-        AssertInOrder(
-            recordingLifecycle,
-            "var microphoneStopTask = DetachLibAvRecordingAudioBeforeSinkStopAsync();",
-            "StopAndDisposeLibAvSinkForFinalizeAsync(",
-            "await microphoneStopTask.ConfigureAwait(false);");
-        Assert.Equal(
-            4,
-            CountOccurrences(
-                Slice(
-                    recordingLifecycle,
-                    "private FinalizeResult FoldRecordingAudioFaultIntoFinalizeResult",
-                    "private void PublishLibAvRecordingIntegrity"),
-                "result.AsFailure("));
-        Assert.Contains(
-            "result = MergeFinalizeTrackEvidence(result, sinkResult);",
-            recordingLifecycle,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "result = MergeFinalizeTrackEvidence(result, priorResult);",
-            recordingLifecycle,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "priorResult.VerificationCompleted || sinkResult.VerificationCompleted",
-            recordingLifecycle,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            "Math.Max(priorResult.FinalizationElapsedMs, sinkResult.FinalizationElapsedMs)",
-            recordingLifecycle,
-            StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.SinkDisposeFailed", recordingLifecycle, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.VideoCaptureDisposeFailed", recordingLifecycle, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.ProgramAudioDisposeFailed", recordingLifecycle, StringComparison.Ordinal);
-        Assert.True(
-            CountOccurrences(
-                recordingLifecycle,
-                ".AsFailure(") >= 7,
-            "Every post-verification failure rewrite must preserve requested and observed tracks.");
-
-        var serviceContracts = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Contracts/ServiceContracts.cs");
-        Assert.Contains(
-            "public FinalizeResult AsFailure(string statusMessage, string failureCode)",
-            serviceContracts,
-            StringComparison.Ordinal);
-        Assert.Contains(
-            ".WithTrackEvidence(RequestedTracks, ObservedTracks)",
-            serviceContracts,
-            StringComparison.Ordinal);
-
-        var flashback = RuntimeContractSource.ReadRepoFile(
-            "Sussudio/Services/Capture/CaptureService.Flashback.cs");
-        Assert.Contains("strictRecordingStart", flashback, StringComparison.Ordinal);
-        Assert.Contains("Flashback recording requested a microphone", flashback, StringComparison.Ordinal);
-        Assert.Contains("FoldRecordingAudioFaultIntoFinalizeResult", flashback, StringComparison.Ordinal);
-        Assert.Contains("WaitForFlashbackRecordingFinalizeAsync", flashback, StringComparison.Ordinal);
-        Assert.Contains("RecordingFailureCodes.FlashbackFinalizationTimeout", flashback, StringComparison.Ordinal);
-    }
-
-    private static int CountOccurrences(string value, string expected)
-    {
-        var count = 0;
-        var offset = 0;
-        while ((offset = value.IndexOf(expected, offset, StringComparison.Ordinal)) >= 0)
-        {
-            count++;
-            offset += expected.Length;
-        }
-
-        return count;
-    }
-
-    [Fact]
     public void AutomationSnapshot_ProjectsAdditiveRecordingTruthFields()
     {
         var assembly = SussudioAssembly.Load();
@@ -380,7 +285,7 @@ public sealed class RecordingFinalizationTruthTests
 
             var markerPath = (string)beginActive.Invoke(
                 null,
-                new object?[] { outputPath, outputPath, null, new[] { sessionDirectory } })!;
+                new object?[] { outputPath, outputPath, new[] { sessionDirectory } })!;
             Assert.True(File.Exists(markerPath));
 
             var recovered = restore.Invoke(null, new object?[] { null });

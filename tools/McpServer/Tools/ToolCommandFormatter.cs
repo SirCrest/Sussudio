@@ -40,9 +40,10 @@ internal static class ToolCommandFormatter
         AutomationCommandKind kind,
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null,
-        string? detail = null)
+        string? detail = null,
+        CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs, cancellationToken).ConfigureAwait(false);
         return FormatCommandResponse(response, kind, detail);
     }
 
@@ -51,26 +52,36 @@ internal static class ToolCommandFormatter
         AutomationCommandKind kind,
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null,
-        string? detail = null)
+        string? detail = null,
+        CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(kind, payload, responseTimeoutMs, cancellationToken).ConfigureAwait(false);
         return McpToolResultFactory.FromResponse(response, FormatCommandResponse(response, kind, detail));
     }
+
+    internal static Task<string> ExecuteBatchAsync(
+        PipeClient pipeClient,
+        string emptyMessage,
+        params PendingCommand[] commands)
+        => ExecuteBatchAsync(pipeClient, emptyMessage, CancellationToken.None, commands);
 
     internal static async Task<string> ExecuteBatchAsync(
         PipeClient pipeClient,
         string emptyMessage,
+        CancellationToken cancellationToken,
         params PendingCommand[] commands)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var results = new List<string>();
         foreach (var command in commands)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!command.HasValue)
             {
                 continue;
             }
 
-            var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload).ConfigureAwait(false);
+            var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload, cancellationToken: cancellationToken).ConfigureAwait(false);
             results.Add(FormatCommandResponse(response, command.Kind, command.Detail));
             if (!AutomationSnapshotFormatter.IsSuccess(response))
             {
@@ -83,21 +94,30 @@ internal static class ToolCommandFormatter
             : string.Join(Environment.NewLine, results);
     }
 
-    internal static async Task<CallToolResult> ExecuteBatchResultAsync(
+    internal static Task<CallToolResult> ExecuteBatchResultAsync(
         PipeClient pipeClient,
         string emptyMessage,
         params PendingCommand[] commands)
+        => ExecuteBatchResultAsync(pipeClient, emptyMessage, CancellationToken.None, commands);
+
+    internal static async Task<CallToolResult> ExecuteBatchResultAsync(
+        PipeClient pipeClient,
+        string emptyMessage,
+        CancellationToken cancellationToken,
+        params PendingCommand[] commands)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var results = new List<string>();
         var isError = false;
         foreach (var command in commands)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!command.HasValue)
             {
                 continue;
             }
 
-            var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload).ConfigureAwait(false);
+            var response = await pipeClient.SendCommandAsync(command.Kind, command.Payload, cancellationToken: cancellationToken).ConfigureAwait(false);
             results.Add(FormatCommandResponse(response, command.Kind, command.Detail));
             if (!AutomationSnapshotFormatter.IsSuccess(response))
             {

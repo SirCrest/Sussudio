@@ -542,6 +542,7 @@ static partial class Program
         AssertContains(baselineText, $"| Sussudio.Tests nonblank LoC | {sussudioTestNonBlankLines} |");
         AssertDoesNotContain(baselineText, ".claude/worktrees");
         AssertDoesNotContain(baselineText, ".desloppify/");
+        AssertDoesNotContain(baselineText, ".desloppify.bak.");
 
         return Task.CompletedTask;
     }
@@ -1015,7 +1016,10 @@ static partial class Program
                 throw new InvalidOperationException($"Service file must live in a domain folder: {relative}");
             }
 
-            var expectedNamespace = $"namespace Sussudio.Services.{parts[0]}";
+            var namespaceFolder = parts.Length > 2 && parts[0] == "Capture" && parts[1] == "Mjpeg"
+                ? "Capture.Mjpeg"
+                : parts[0];
+            var expectedNamespace = $"namespace Sussudio.Services.{namespaceFolder}";
             var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
             if (!ContainsNamespaceDeclaration(code, expectedNamespace))
             {
@@ -1790,7 +1794,7 @@ static partial class Program
         AssertDoesNotContain(probeProgramText, "Tests whether rtk_sendI2CATCommand uses the same XU path");
         AssertDoesNotContain(probeProgramText, "I2C SET/verify via AT envelope");
         AssertDoesNotContain(probeProgramText, "static IEnumerable<SetExperiment> BuildShortExperiments");
-        AssertDoesNotContain(probeProgramText, "static async Task<byte[]?> SendI2cAtGetAsync");
+        AssertDoesNotContain(probeProgramText, "static byte[]? SendI2cAtGet");
         AssertDoesNotContain(probeProgramText, "static byte[] BuildAtFrameWithPayload");
         AssertDoesNotContain(probeProgramText, "using static NativeXuProbeI2cTransport;");
         AssertContains(probeProgramText, "NativeXuProbeI2cCommands.RunAsync(args)");
@@ -1904,9 +1908,9 @@ static partial class Program
         AssertContains(probeI2cCommandsText, "Testing with own GUID as property set");
         AssertContains(probeI2cCommandsText, "RunSelectorProbeAsync(dev)");
         AssertContains(probeI2cCommandsText, "Full Selector 3 dump");
-        AssertContains(probeI2cCommandsText, "RunHighSelectorProbeAsync(dev)");
+        AssertContains(probeI2cCommandsText, "RunHighSelectorProbe(dev)");
         AssertContains(probeI2cCommandsText, "Probing selectors 18-40");
-        AssertContains(probeI2cCommandsText, "public static async Task<int> RunHighSelectorProbeAsync");
+        AssertContains(probeI2cCommandsText, "public static int RunHighSelectorProbe");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunSelectorProbeAsync");
         AssertContains(probeI2cCommandsText, "public static int RunTopologyProbe");
         AssertContains(probeI2cCommandsText, "public static async Task<int> RunVerifyAsync");
@@ -1932,7 +1936,7 @@ static partial class Program
         AssertContains(probeI2cLegacyProbeText, "ProbeRawI2cFrames");
         AssertContains(probeI2cLegacyProbeText, "ProbeAlternateSelectors");
         AssertContains(probeI2cLegacyProbeText, "ProbeAtWrappedI2cFrames");
-        AssertContains(probeI2cCommandsText, "public static async Task<byte[]?> SendI2cAtGetAsync");
+        AssertContains(probeI2cCommandsText, "public static byte[]? SendI2cAtGet");
         AssertContains(probeI2cCommandsText, "public static byte[] BuildAtFrameWithPayload");
         AssertEqual(
             false,
@@ -2688,7 +2692,8 @@ static partial class Program
         AssertContains(deviceRootText, "public async Task<DeviceDiscoveryResult> EnumerateCaptureDeviceDiscoveryAsync(");
         AssertContains(deviceRootText, "public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync(");
         AssertContains(deviceRootText, "return discovery.CaptureDevices;");
-        AssertContains(deviceRootText, "var audioTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();");
+        AssertContains(deviceRootText, ": this(MfDeviceEnumerator.EnumerateVideoDevicesAsync, MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync)");
+        AssertContains(deviceRootText, "var audioTask = _enumerateAudioCaptureEndpointsAsync();");
         AssertContains(deviceRootText, "return new DeviceDiscoveryResult(discovered, audioDevices);");
         AssertContains(deviceRootText, "foreach (var candidate in selected.OrderByDescending(GetDevicePriority))");
         AssertContains(deviceRootText, "private static int GetDevicePriority(DeviceCandidate candidate)");

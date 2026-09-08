@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Sussudio.Models;
@@ -32,23 +33,17 @@ internal sealed class AudioControlBindingControllerContext
     public required Action EnsureAudioMeterTimerRunning { get; init; }
     public required Action<bool> SetAudioMeterMonitoringState { get; init; }
     public required Action PrimePreviewAudioFadeIn { get; init; }
-    public required Func<bool> IsPreviewAudioFadeInActive { get; init; }
-    public required Func<bool> IsPreviewAudioFadeAnimationActive { get; init; }
-    public required Action CancelPreviewAudioFadeInForUser { get; init; }
     public required Action SetupMicrophoneVolumeBindings { get; init; }
     public required Action ApplyInitialMicrophoneControlsVisibility { get; init; }
     public required Action ApplyDeviceAudioControlState { get; init; }
-    public required Action ResetAudioMeterVisuals { get; init; }
-    public required Action<double> SetAudioMeterTargetLevel { get; init; }
-    public required Action EnsureAudioInputSelection { get; init; }
-    public required Action EnsureMicrophoneSelection { get; init; }
-    public required Action EnsureDeviceAudioModeSelection { get; init; }
     public required Action AnimateAudioMeterTick { get; init; }
 }
 
 internal sealed class AudioControlBindingController
 {
     private readonly AudioControlBindingControllerContext _context;
+    private bool _syncingPreviewVolume;
+    private bool _previewVolumePointerInteraction;
 
     public AudioControlBindingController(AudioControlBindingControllerContext context)
     {
@@ -70,21 +65,21 @@ internal sealed class AudioControlBindingController
         _context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);
         // Save the user's preferred volume, start at 0 for hidden audio priming.
         _context.PrimePreviewAudioFadeIn();
-        _context.PreviewVolumeSlider.ValueChanged += (s, e) =>
+        _context.PreviewVolumeSlider.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, _) =>
         {
-            _context.ViewModel.PreviewVolume = e.NewValue / 100.0;
+            _previewVolumePointerInteraction = true;
+            _context.ViewModel.SetPreviewVolumeFromUser(_context.PreviewVolumeSlider.Value / 100.0);
+        }), handledEventsToo: true);
+        _context.PreviewVolumeSlider.ValueChanged += (_, e) =>
+        {
+            if (_syncingPreviewVolume) return;
+            _context.ViewModel.SetPreviewVolumeFromUser(e.NewValue / 100.0);
             _context.PreviewVolumeLabel.Text = $"{(int)e.NewValue}%";
+            if (!_previewVolumePointerInteraction) _context.ViewModel.SavePreviewVolume();
         };
-        _context.PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
+        _context.PreviewVolumeSlider.PointerCaptureLost += (_, _) =>
         {
-            if (_context.IsPreviewAudioFadeInActive() || _context.IsPreviewAudioFadeAnimationActive())
-            {
-                // User explicitly grabbed the slider during a preview volume fade.
-                // Pause the volume animation so it doesn't overwrite their choice
-                // (Stop() would snap properties back to base values).
-                _context.CancelPreviewAudioFadeInForUser();
-            }
-
+            _previewVolumePointerInteraction = false;
             _context.ViewModel.SavePreviewVolume();
         };
         _context.SetupMicrophoneVolumeBindings();
@@ -100,17 +95,19 @@ internal sealed class AudioControlBindingController
         _context.ApplyDeviceAudioControlState();
     }
 
-    public void ApplyInitialAudioMeterPresentation()
+    public void ApplyPreviewVolumePresentation(double volume)
     {
-        _context.ResetAudioMeterVisuals();
-        _context.SetAudioMeterTargetLevel(_context.ViewModel.AudioMeterTarget);
-    }
-
-    public void EnsureAudioControlSelections()
-    {
-        _context.EnsureAudioInputSelection();
-        _context.EnsureMicrophoneSelection();
-        _context.EnsureDeviceAudioModeSelection();
+        _syncingPreviewVolume = true;
+        try
+        {
+            var percent = volume * 100.0;
+            if (_context.PreviewVolumeSlider.Value != percent) _context.PreviewVolumeSlider.Value = percent;
+            _context.PreviewVolumeLabel.Text = $"{(int)percent}%";
+        }
+        finally
+        {
+            _syncingPreviewVolume = false;
+        }
     }
 
     public void AttachAudioSelectionBindings()
@@ -491,7 +488,7 @@ internal sealed class AudioControlPresentationControllerContext
     public required ToggleButton AudioPreviewToggle { get; init; }
     public required Slider PreviewVolumeSlider { get; init; }
     public required TextBlock PreviewVolumeLabel { get; init; }
-    public required Func<bool> IsPreviewAudioFadeInActive { get; init; }
+    public required Action<double> ApplyPreviewVolumePresentation { get; init; }
     public required Action<bool> SetAudioMeterMonitoringState { get; init; }
     public required Action<bool> AnimateAudioMeterDisabled { get; init; }
     public required Action UpdateMicrophoneControlsVisibility { get; init; }
@@ -595,20 +592,7 @@ internal sealed class AudioControlPresentationController
     }
 
     public void HandlePreviewVolumeChanged()
-    {
-        if (_context.IsPreviewAudioFadeInActive())
-        {
-            return;
-        }
-
-        var volumePct = _context.ViewModel.PreviewVolume * 100;
-        if (_context.PreviewVolumeSlider.Value != volumePct)
-        {
-            _context.PreviewVolumeSlider.Value = volumePct;
-        }
-
-        _context.PreviewVolumeLabel.Text = $"{(int)volumePct}%";
-    }
+        => _context.ApplyPreviewVolumePresentation(_context.ViewModel.PreviewVolume);
 
     public void HandleMicrophoneVolumeChanged()
     {

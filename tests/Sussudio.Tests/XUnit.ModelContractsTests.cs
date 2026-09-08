@@ -2951,7 +2951,6 @@ public sealed class CaptureConfigurationModelsTests
         var videoQualityType = RequireType(asm, "Sussudio.Models.VideoQuality");
         var hdrOutputModeType = RequireType(asm, "Sussudio.Models.HdrOutputMode");
         var previewModeType = RequireType(asm, "Sussudio.Models.PreviewMode");
-        var audioPathModeType = RequireType(asm, "Sussudio.Models.AudioPathMode");
         var splitEncodeSupportType = RequireType(asm, "Sussudio.Models.SplitEncodeSupport");
         var nvencPresetType = RequireType(asm, "Sussudio.Models.NvencPreset");
         var splitEncodeModeType = RequireType(asm, "Sussudio.Models.SplitEncodeMode");
@@ -2994,7 +2993,6 @@ public sealed class CaptureConfigurationModelsTests
                 Property("MicrophoneEnabled", typeof(bool), SetterExpectation.Set),
                 String("MicrophoneDeviceId", SetterExpectation.Set, NullabilityExpectation.Nullable),
                 String("MicrophoneDeviceName", SetterExpectation.Set, NullabilityExpectation.Nullable),
-                Property("AudioPathMode", audioPathModeType, SetterExpectation.Set),
                 Property("ForceMjpegDecode", typeof(bool), SetterExpectation.Set),
                 Property("FlashbackGpuDecode", typeof(bool), SetterExpectation.Set),
                 Property("FlashbackBufferMinutes", typeof(int), SetterExpectation.Set),
@@ -3027,7 +3025,6 @@ public sealed class CaptureConfigurationModelsTests
         Assert.True(Get<bool>(settings, "AudioEnabled"));
         Assert.False(Get<bool>(settings, "UseCustomAudioInput"));
         Assert.False(Get<bool>(settings, "MicrophoneEnabled"));
-        Assert.Equal(ParseEnum(asm, "Sussudio.Models.AudioPathMode", "PostMuxDefault"), Get(settings, "AudioPathMode"));
         Assert.False(Get<bool>(settings, "ForceMjpegDecode"));
         Assert.True(Get<bool>(settings, "FlashbackGpuDecode"));
         Assert.Equal(5, Get<int>(settings, "FlashbackBufferMinutes"));
@@ -4385,8 +4382,8 @@ public class StatsHardwareRowsTests
 
     private static object CreateStatsHardwarePipelineTimingMetrics(int decoderCount = 2)
     {
-        var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
-        var perDecoderType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
+        var metricsType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var perDecoderType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PerDecoderMetrics");
         var perDecoder = Array.CreateInstance(perDecoderType, decoderCount);
         if (decoderCount > 0)
         {

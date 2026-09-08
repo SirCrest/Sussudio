@@ -14,9 +14,20 @@ public static class DiagnosticSessionRunner
     // Scenario names and broad requirements live in DiagnosticSessionScenarioCatalog.
     // RunAsync reads like a phase plan: scenario execution, cleanup,
     // verification, post-run snapshots, then summary.
-    public static async Task<DiagnosticSessionResult> RunAsync(
+    public static Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(sendCommandAsync);
+        return RunAsync(options,
+            (command, payload, timeout, token) => sendCommandAsync(command, payload, timeout).WaitAsync(token),
+            cancellationToken);
+    }
+
+    public static async Task<DiagnosticSessionResult> RunAsync(
+        DiagnosticSessionOptions options,
+        Func<string, Dictionary<string, object?>?, int?, CancellationToken, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -61,10 +72,12 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         var verification = recordingCheckResult.Verification;
 
+        using var snapshotCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         var postRunSnapshots = await CapturePostRunSnapshotsAsync(
                 context.Samples,
                 context.InitialSnapshot,
-                context.CommandChannel.SendAsync,
+                (command, payload, timeout) => context.CommandChannel.SendWithTokenAsync(
+                    command, payload, timeout, false, snapshotCancellation.Token),
                 context.SetStage,
                 context.RecordTerminalException)
             .ConfigureAwait(false);
@@ -270,7 +283,10 @@ internal static class DiagnosticSessionScenarioPhaseRunner
     internal static async Task<DiagnosticSessionScenarioPhaseResult> RunAsync(DiagnosticSessionScenarioPhaseContext context)
     {
         var backgroundTasks = new DiagnosticSessionBackgroundTasks();
-        var scenarioPhase = new DiagnosticSessionScenarioPhaseState();
+        var scenarioPhase = new DiagnosticSessionScenarioPhaseState
+        {
+            InitialFlashbackPlaybackActive = IsPlaybackAwayFromLive(context.InitialSnapshot)
+        };
 
         try
         {
@@ -281,7 +297,7 @@ internal static class DiagnosticSessionScenarioPhaseRunner
             }
             else
             {
-                var setupResult = await DiagnosticSessionScenarioSetup.RunAsync(
+                await DiagnosticSessionScenarioSetup.RunAsync(
                         context.Scenario,
                         context.ScenarioPlan,
                         context.InitialSnapshot,
@@ -289,14 +305,11 @@ internal static class DiagnosticSessionScenarioPhaseRunner
                         context.Warnings,
                         context.CommandChannel,
                         context.CommandChannel.TryWaitAsync,
+                        scenarioPhase,
                         context.ScenarioCancellationToken)
                     .ConfigureAwait(false);
-                scenarioPhase.StartedPreview = setupResult.StartedPreview;
-                scenarioPhase.StartedRecording = setupResult.StartedRecording;
-                scenarioPhase.EnabledFlashback = setupResult.EnabledFlashback;
-                scenarioPhase.DisabledFlashback = setupResult.DisabledFlashback;
 
-                var scenarioStartup = await DiagnosticSessionScenarioStartup.StartAsync(
+                await DiagnosticSessionScenarioStartup.StartAsync(
                         context.Options,
                         context.ScenarioPlan,
                         context.DurationSeconds,
@@ -307,9 +320,9 @@ internal static class DiagnosticSessionScenarioPhaseRunner
                         context.CommandChannel.SendAsync,
                         context.CommandChannel.SendRawWithConnectRetryAsync,
                         context.CommandChannel.SendAsync,
+                        scenarioPhase,
                         context.ScenarioCancellationToken)
                     .ConfigureAwait(false);
-                scenarioPhase.StartedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;
 
                 await RunSamplingAndCompleteAsync(context, backgroundTasks, scenarioPhase).ConfigureAwait(false);
             }
@@ -322,7 +335,82 @@ internal static class DiagnosticSessionScenarioPhaseRunner
             await context.WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
 
+        await ReconcileUnconfirmedStartupAsync(context, scenarioPhase).ConfigureAwait(false);
         return scenarioPhase.ToResult();
+    }
+
+    private static bool IsPlaybackAwayFromLive(JsonElement snapshot)
+        => GetString(snapshot, "FlashbackPlaybackState") is "Playing" or "Paused" or "Scrubbing";
+
+    private static async Task ReconcileUnconfirmedStartupAsync(
+        DiagnosticSessionScenarioPhaseContext context,
+        DiagnosticSessionScenarioPhaseState scenarioPhase)
+    {
+        if (!scenarioPhase.HasUnconfirmedStartup)
+        {
+            return;
+        }
+
+        // Losing a pipe reply does not retract an admitted app command. Observe
+        // its effect with a fresh bounded token before claiming cleanup owns it.
+        context.SetStage("cleanup-reconcile-startup");
+        using var reconciliation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        try
+        {
+            while (scenarioPhase.HasUnconfirmedStartup)
+            {
+                var response = await context.CommandChannel.SendWithTokenAsync(
+                    AutomationCommandKind.GetSnapshot, null, 5_000, false, reconciliation.Token).ConfigureAwait(false);
+                if (!IsSuccess(response) || !TryGetSnapshot(response, out var snapshot))
+                {
+                    throw new InvalidOperationException("A snapshot was unavailable during startup reconciliation.");
+                }
+
+                if (scenarioPhase.PreviewStartUnconfirmed && GetBool(snapshot, "IsPreviewing"))
+                {
+                    scenarioPhase.StartedPreview = true;
+                    scenarioPhase.PreviewStartUnconfirmed = false;
+                }
+                if (scenarioPhase.RecordingStartUnconfirmed && GetBool(snapshot, "IsRecording"))
+                {
+                    scenarioPhase.StartedRecording = true;
+                    scenarioPhase.RecordingStartUnconfirmed = false;
+                }
+                if (scenarioPhase.FlashbackEnableUnconfirmed && GetBool(snapshot, "FlashbackActive"))
+                {
+                    scenarioPhase.EnabledFlashback = true;
+                    scenarioPhase.FlashbackEnableUnconfirmed = false;
+                }
+                if (scenarioPhase.FlashbackDisableUnconfirmed && !GetBool(snapshot, "FlashbackActive"))
+                {
+                    scenarioPhase.DisabledFlashback = true;
+                    scenarioPhase.FlashbackDisableUnconfirmed = false;
+                }
+                if (scenarioPhase.PlaybackStartUnconfirmed && IsPlaybackAwayFromLive(snapshot))
+                {
+                    scenarioPhase.StartedFlashbackPlayback = !scenarioPhase.InitialFlashbackPlaybackActive;
+                    scenarioPhase.PlaybackStartUnconfirmed = false;
+                }
+
+                if (scenarioPhase.HasUnconfirmedStartup)
+                {
+                    await Task.Delay(100, reconciliation.Token).ConfigureAwait(false);
+                }
+            }
+            context.Actions.Add("unconfirmed startup effects reconciled from app snapshot");
+        }
+        catch (Exception ex)
+        {
+            var pending = new List<string>();
+            if (scenarioPhase.PreviewStartUnconfirmed) pending.Add("preview start");
+            if (scenarioPhase.RecordingStartUnconfirmed) pending.Add("recording start");
+            if (scenarioPhase.FlashbackEnableUnconfirmed) pending.Add("Flashback enable");
+            if (scenarioPhase.FlashbackDisableUnconfirmed) pending.Add("Flashback disable");
+            if (scenarioPhase.PlaybackStartUnconfirmed) pending.Add("playback start");
+            context.CommandChannel.RecordFailure(
+                $"cleanup-reconcile-startup: {string.Join(", ", pending)} may still complete; " +
+                $"restoration could not be confirmed. {ex.Message}");
+        }
     }
 
     private static async Task RunSamplingAndCompleteAsync(
@@ -914,17 +1002,19 @@ internal static class DiagnosticSessionRecordingChecks
 
         var verification = default(JsonElement?);
 
-        if (scenarioPlan.RunFlashbackRecordingSettingsDeferred)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred)
         {
             try
             {
                 setStage("settings-deferred-restore");
+                using var restorationCancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
                 await VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(
                         actions,
                         warnings,
                         flashbackRecordingSettingsDeferredPresetState,
-                        sendAsync,
-                        cancellationToken)
+                        (command, payload, timeout) => context.CommandChannel.SendWithTokenAsync(
+                            command, payload, timeout, false, restorationCancellation.Token),
+                        restorationCancellation.Token)
                     .ConfigureAwait(false);
             }
             catch (Exception ex)

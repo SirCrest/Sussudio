@@ -145,7 +145,6 @@ namespace Sussudio.Services.Contracts
     public sealed class RecordingContextRequest
     {
         public required CaptureSettings Settings { get; init; }
-        public bool UsePostMuxAudio { get; init; }
         public string? AudioDeviceName { get; init; }
         public string? MicrophoneDeviceName { get; init; }
         public double EffectiveFrameRate { get; init; }
@@ -165,7 +164,6 @@ namespace Sussudio.Services.Contracts
     public sealed record RecordingContext
     {
         public required CaptureSettings Settings { get; init; }
-        public bool UsePostMuxAudio { get; init; }
         public string? AudioDeviceName { get; init; }
         public string? MicrophoneDeviceName { get; init; }
         public double EffectiveFrameRate { get; init; }
@@ -179,7 +177,6 @@ namespace Sussudio.Services.Contracts
 
         public required string VideoOutputPath { get; init; }
         public required string FinalOutputPath { get; init; }
-        public string? AudioTempPath { get; init; }
         public bool HdrPipelineActive { get; init; }
 
         // Expected output topology follows the user's selected recording

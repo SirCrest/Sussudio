@@ -9,9 +9,8 @@ using Sussudio.Models;
 
 namespace Sussudio.Services.Runtime;
 
-// Locates FFmpeg/ffprobe and caches capability probes. UI option lists and
-// recording verification depend on these probes, so failures return explicit
-// "unsupported" snapshots rather than throwing during normal startup.
+// Selects the native runtime, discovers optional verification tools, and caches
+// native capability evidence. Hardware trials run in supervised app children.
 internal static class FfmpegRuntimeLocator
 {
     // Match the binding ABI for every library used by capture, recording and
@@ -27,14 +26,7 @@ internal static class FfmpegRuntimeLocator
     private static readonly object EncoderProbeLock = new();
     private static Task<SplitEncodeSupport>? _splitEncodeSupportTask;
     private static readonly object SplitEncodeSupportLock = new();
-    private static readonly Lazy<string> CachedFfmpegPath = new(() => FindToolPath("ffmpeg.exe"));
     private const int ProbeTimeoutMs = 10_000;
-
-    private readonly record struct ProbeCommandResult(
-        string Output,
-        int ExitCode,
-        bool Started,
-        bool TimedOut);
 
     internal static string GetAssemblyBaseDirectory()
     {
@@ -97,7 +89,7 @@ internal static class FfmpegRuntimeLocator
     {
         lock (EncoderProbeLock)
         {
-            _encoderProbeTask ??= ProbeEncoderSupportAsync();
+            _encoderProbeTask ??= Task.Run(ReadNativeEncoderSupport);
             return _encoderProbeTask;
         }
     }
@@ -138,7 +130,7 @@ internal static class FfmpegRuntimeLocator
         }
     }
 
-    private static bool ContainsRequiredNativeLibraries(string directory)
+    internal static bool ContainsRequiredNativeLibraries(string directory)
     {
         if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
         {
@@ -156,91 +148,76 @@ internal static class FfmpegRuntimeLocator
         return true;
     }
 
-    private static async Task<EncoderSupport> ProbeEncoderSupportAsync()
+    internal static unsafe EncoderSupport ReadNativeEncoderSupport()
     {
-        var ffmpegPath = CachedFfmpegPath.Value;
-        try
+        var runtimeRoot = FfmpegRuntimeInit.GetInitializedRuntimeRoot();
+        var support = new EncoderSupport
         {
-            var result = await RunProbeCommandAsync(ffmpegPath, "-hide_banner -encoders");
-            if (!result.Started || result.TimedOut || result.ExitCode != 0)
-            {
-                Logger.Log(
-                    "FFmpeg encoder probe did not complete successfully: " +
-                    $"started={result.Started} timedOut={result.TimedOut} exitCode={result.ExitCode}");
-                return EncoderSupport.Empty;
-            }
-
-            var output = result.Output;
-            var support = new EncoderSupport
-            {
-                HasH264Nvenc = output.Contains("h264_nvenc"),
-                HasHevcNvenc = output.Contains("hevc_nvenc"),
-                HasAv1Nvenc = output.Contains("av1_nvenc"),
-                HasLibX264 = output.Contains("libx264"),
-                HasLibX265 = output.Contains("libx265"),
-                HasLibSvtAv1 = output.Contains("libsvtav1"),
-                HasLibAomAv1 = output.Contains("libaom-av1")
-            };
-            Logger.Log(
-                $"Encoder support: H.264={support.HasH264} (nvenc={support.HasH264Nvenc}, x264={support.HasLibX264}), " +
-                $"HEVC={support.HasHevc} (nvenc={support.HasHevcNvenc}, x265={support.HasLibX265}), " +
-                $"AV1={support.HasAv1} (nvenc={support.HasAv1Nvenc}, svt={support.HasLibSvtAv1}, aom={support.HasLibAomAv1})");
-            return support;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FFmpeg encoder probe failed: {ex.Message}");
-            return EncoderSupport.Empty;
-        }
+            HasH264Nvenc = ffmpeg.avcodec_find_encoder_by_name("h264_nvenc") != null,
+            HasHevcNvenc = ffmpeg.avcodec_find_encoder_by_name("hevc_nvenc") != null,
+            HasAv1Nvenc = ffmpeg.avcodec_find_encoder_by_name("av1_nvenc") != null,
+            HasLibX264 = ffmpeg.avcodec_find_encoder_by_name("libx264") != null,
+            HasLibX265 = ffmpeg.avcodec_find_encoder_by_name("libx265") != null,
+            HasLibSvtAv1 = ffmpeg.avcodec_find_encoder_by_name("libsvtav1") != null,
+            HasLibAomAv1 = ffmpeg.avcodec_find_encoder_by_name("libaom-av1") != null
+        };
+        Logger.Log(
+            $"LIBAV_ENCODER_SUPPORT root='{runtimeRoot}' h264_nvenc={support.HasH264Nvenc} " +
+            $"hevc_nvenc={support.HasHevcNvenc} av1_nvenc={support.HasAv1Nvenc}");
+        return support;
     }
 
     private static async Task<SplitEncodeSupport> ProbeSplitEncodeSupportAsync()
     {
-        var ffmpegPath = CachedFfmpegPath.Value;
-        try
+        var runtimeRoot = FfmpegRuntimeInit.GetInitializedRuntimeRoot();
+        var runtimeVersions = FfmpegRuntimeInit.GetInitializedRuntimeVersions();
+        var executable = Path.ChangeExtension(typeof(FfmpegRuntimeLocator).Assembly.Location, ".exe");
+        if (string.IsNullOrWhiteSpace(executable) || !File.Exists(executable))
         {
-            var twoWayTask = TestSplitEncodeModeAsync(ffmpegPath, 2);
-            var threeWayTask = TestSplitEncodeModeAsync(ffmpegPath, 3);
-            await Task.WhenAll(twoWayTask, threeWayTask).ConfigureAwait(false);
-            var support = new SplitEncodeSupport(twoWayTask.Result, threeWayTask.Result);
-            Logger.Log($"Split encode support: 2-way={support.Supports2Way}, 3-way={support.Supports3Way}");
-            return support;
+            throw new InvalidOperationException($"The Sussudio app executable is unavailable for native capability probing: '{executable}'.");
         }
-        catch (Exception ex)
-        {
-            Logger.Log($"Split encode probe failed: {ex.Message}");
-            return SplitEncodeSupport.NvencUnavailable;
-        }
+
+        return await ProbeSplitEncodeSupportAsync(
+            runtimeRoot,
+            runtimeVersions,
+            executable,
+            Path.Combine(Path.GetTempPath(), "Sussudio", "NativeCapabilities"),
+            new ProcessSupervisor()).ConfigureAwait(false);
     }
 
-    private static async Task<bool> TestSplitEncodeModeAsync(string ffmpegPath, int mode)
+    internal static async Task<SplitEncodeSupport> ProbeSplitEncodeSupportAsync(
+        string runtimeRoot,
+        string runtimeVersions,
+        string executable,
+        string probeLogRoot,
+        IProcessSupervisor supervisor)
     {
-        var probeArgs =
-            "-hide_banner -loglevel error " +
-            "-f lavfi -i color=size=16x16:rate=1:color=black:duration=1 " +
-            "-c:v hevc_nvenc " +
-            $"-split_encode_mode {mode} " +
-            "-frames:v 1 -an -f null NUL";
-        var result = await RunProbeCommandAsync(ffmpegPath, probeArgs).ConfigureAwait(false);
-        return result.Started && !result.TimedOut && result.ExitCode == 0;
-    }
+        // Serialize the trials. A failed/unconfirmed child aborts the sequence so
+        // a driver stall cannot accumulate additional GPU workers.
+        var twoWay = await TestModeAsync(2).ConfigureAwait(false);
+        var threeWay = await TestModeAsync(3).ConfigureAwait(false);
+        Logger.Log($"LIBAV_SPLIT_PROBE_COMPLETE root='{runtimeRoot}' two_way={twoWay} three_way={threeWay} fixture=hevc_nvenc_nv12_3840x2160");
+        return new SplitEncodeSupport(twoWay, threeWay);
 
-    private static async Task<ProbeCommandResult> RunProbeCommandAsync(string fileName, string arguments)
-    {
-        var result = await new ProcessSupervisor().RunAsync(new ProcessSpec
+        async Task<bool> TestModeAsync(int mode)
         {
-            FileName = fileName,
-            Arguments = arguments,
-            TimeoutMs = ProbeTimeoutMs
-        }).ConfigureAwait(false);
-
-        if (!result.Started)
-        {
-            return new ProbeCommandResult(string.Empty, -1, Started: false, TimedOut: false);
+            var logDirectory = Path.Combine(probeLogRoot, Guid.NewGuid().ToString("N"));
+            var process = await supervisor.RunAsync(new ProcessSpec
+            {
+                FileName = executable,
+                Arguments = NativeFfmpegCapabilityProbe.CreateArguments(runtimeRoot, mode, logDirectory),
+                TimeoutMs = ProbeTimeoutMs
+            }).ConfigureAwait(false);
+            try
+            {
+                return NativeFfmpegCapabilityProbe.ReadAcceptedResult(process, runtimeRoot, runtimeVersions, mode);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"LIBAV_SPLIT_PROBE_FAILED mode={mode} log_root='{logDirectory}' error='{ex.Message}'");
+                throw;
+            }
         }
-
-        var output = result.StdOut + Environment.NewLine + result.StdErr;
-        return new ProbeCommandResult(output, result.ExitCode ?? -1, Started: true, TimedOut: result.TimedOut);
     }
 
     private static bool TryResolvePathTool(string toolFileName, out string resolvedPath)
@@ -303,6 +280,8 @@ internal static unsafe class FfmpegRuntimeInit
 {
     private static readonly object InitSync = new();
     private static bool _initialized;
+    private static string? _selectedRuntimeRoot;
+    private static string? _initializedRuntimeVersions;
     // Must be a static field to prevent GC collection while FFmpeg holds the delegate pointer.
     private static av_log_set_callback_callback? _logCallback;
 
@@ -363,22 +342,9 @@ internal static unsafe class FfmpegRuntimeInit
                 return;
             }
 
-            ffmpeg.RootPath = runtimeRoot;
-
             try
             {
-                Logger.Log($"LIBAV_INIT root_path='{ffmpeg.RootPath}' avcodec_version={ffmpeg.avcodec_version()}");
-
-                // Route FFmpeg internal logs (especially D3D11VA errors) to our logger.
-                // Keep a static reference to prevent GC collection of the delegate.
-                _logCallback = FfmpegLogCallbackImpl;
-                unsafe
-                {
-                    ffmpeg.av_log_set_level(ffmpeg.AV_LOG_VERBOSE);
-                    ffmpeg.av_log_set_callback(_logCallback);
-                }
-
-                _initialized = true;
+                EnsureInitializedAtRoot(runtimeRoot);
             }
             catch (Exception ex)
             {
@@ -390,6 +356,75 @@ internal static unsafe class FfmpegRuntimeInit
                         ex);
                 }
             }
+        }
+    }
+
+    internal static string GetInitializedRuntimeRoot()
+    {
+        EnsureInitialized(requireNativeRuntime: true);
+        lock (InitSync)
+        {
+            return _selectedRuntimeRoot!;
+        }
+    }
+
+    internal static string GetInitializedRuntimeVersions()
+    {
+        EnsureInitialized(requireNativeRuntime: true);
+        lock (InitSync)
+        {
+            return _initializedRuntimeVersions!;
+        }
+    }
+
+    internal static void EnsureInitializedAtRoot(string runtimeRoot)
+    {
+        if (!Path.IsPathFullyQualified(runtimeRoot))
+        {
+            throw new ArgumentException("An absolute native runtime root is required.", nameof(runtimeRoot));
+        }
+
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(runtimeRoot));
+        lock (InitSync)
+        {
+            // Even a partially loaded binding can retain delegates to the first
+            // library. Never retarget it after a failed initialization attempt.
+            if (_selectedRuntimeRoot != null &&
+                !string.Equals(_selectedRuntimeRoot, root, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"FFmpeg is already bound to '{_selectedRuntimeRoot}', not '{root}'.");
+            }
+
+            if (_initialized)
+            {
+                return;
+            }
+
+            if (!FfmpegRuntimeLocator.ContainsRequiredNativeLibraries(root))
+            {
+                throw new InvalidOperationException($"FFmpeg native runtime is incomplete or has the wrong ABI: '{root}'.");
+            }
+
+            _selectedRuntimeRoot = root;
+            ffmpeg.RootPath = root;
+            var avcodecVersion = ffmpeg.avcodec_version();
+            var avformatVersion = ffmpeg.avformat_version();
+            var avutilVersion = ffmpeg.avutil_version();
+            var swresampleVersion = ffmpeg.swresample_version();
+            if (avcodecVersion >> 16 != ffmpeg.LIBAVCODEC_VERSION_MAJOR ||
+                avformatVersion >> 16 != ffmpeg.LIBAVFORMAT_VERSION_MAJOR ||
+                avutilVersion >> 16 != ffmpeg.LIBAVUTIL_VERSION_MAJOR ||
+                swresampleVersion >> 16 != ffmpeg.LIBSWRESAMPLE_VERSION_MAJOR)
+            {
+                throw new InvalidOperationException($"FFmpeg native library versions do not match the managed binding ABI at '{root}'.");
+            }
+
+            _initializedRuntimeVersions = $"{avcodecVersion}/{avformatVersion}/{avutilVersion}/{swresampleVersion}";
+            _logCallback = FfmpegLogCallbackImpl;
+            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_VERBOSE);
+            ffmpeg.av_log_set_callback(_logCallback);
+            _initialized = true;
+            Logger.Log($"LIBAV_INIT root_path='{root}' versions='{_initializedRuntimeVersions}'");
         }
     }
 }

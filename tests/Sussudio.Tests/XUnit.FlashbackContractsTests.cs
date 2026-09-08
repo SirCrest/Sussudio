@@ -206,6 +206,8 @@ public sealed class FlashbackModelsTests
         var asm = SussudioAssembly.Load();
         var bufferOptionsType = RequireType(asm, "Sussudio.Models.FlashbackBufferOptions");
         var sessionContextType = RequireType(asm, "Sussudio.Models.FlashbackSessionContext");
+        var presetType = RequireType(asm, "Sussudio.Models.NvencPreset");
+        var splitEncodeModeType = RequireType(asm, "Sussudio.Models.SplitEncodeMode");
         var playbackStateType = RequireType(asm, "Sussudio.Models.FlashbackPlaybackState");
         var exportProgressType = RequireType(asm, "Sussudio.Models.ExportProgress");
         var exportSegmentType = RequireType(asm, "Sussudio.Models.FlashbackExportSegment");
@@ -234,8 +236,8 @@ public sealed class FlashbackModelsTests
                 RequiredProperty("BitRate", typeof(uint), SetterExpectation.InitOnly),
                 RequiredProperty("IsP010", typeof(bool), SetterExpectation.InitOnly),
                 RequiredString("CodecName", SetterExpectation.InitOnly),
-                String("NvencPreset", SetterExpectation.InitOnly, NullabilityExpectation.Nullable),
-                String("SplitEncodeMode", SetterExpectation.InitOnly, NullabilityExpectation.NotNull),
+                Property("NvencPreset", presetType, SetterExpectation.InitOnly),
+                Property("SplitEncodeMode", splitEncodeModeType, SetterExpectation.InitOnly),
                 Property("HdrEnabled", typeof(bool), SetterExpectation.InitOnly),
                 Property("IsFullRangeInput", typeof(bool), SetterExpectation.InitOnly),
                 String("HdrMasterDisplayMetadata", SetterExpectation.InitOnly, NullabilityExpectation.Nullable),
@@ -272,12 +274,6 @@ public sealed class FlashbackModelsTests
                     SetterExpectation.InitOnly,
                     NullabilityExpectation.Nullable,
                     NullabilityExpectation.NotNull),
-                Property(
-                    "SegmentPaths",
-                    typeof(IReadOnlyList<string>),
-                    SetterExpectation.InitOnly,
-                    NullabilityExpectation.Nullable,
-                    NullabilityExpectation.NotNull),
                 String("InputPath", SetterExpectation.InitOnly, NullabilityExpectation.Nullable),
                 RequiredProperty("InPoint", typeof(TimeSpan), SetterExpectation.InitOnly),
                 RequiredProperty("OutPoint", typeof(TimeSpan), SetterExpectation.InitOnly),
@@ -303,8 +299,8 @@ public sealed class FlashbackModelsTests
         Set(sessionContext, "BitRate", 150_000_000u);
         Set(sessionContext, "IsP010", true);
         Set(sessionContext, "CodecName", "hevc_nvenc");
-        Set(sessionContext, "NvencPreset", "P5");
-        Set(sessionContext, "SplitEncodeMode", "2-way");
+        Set(sessionContext, "NvencPreset", Enum.Parse(presetType, "P5"));
+        Set(sessionContext, "SplitEncodeMode", Enum.Parse(splitEncodeModeType, "TwoWay"));
         Set(sessionContext, "HdrEnabled", true);
         Set(sessionContext, "IsFullRangeInput", true);
         Set(sessionContext, "HdrMasterDisplayMetadata", "G(13250,34500)");
@@ -316,7 +312,7 @@ public sealed class FlashbackModelsTests
         Set(sessionContext, "MicrophoneEnabled", true);
         Assert.Equal(3840, Get<int>(sessionContext, "Width"));
         Assert.Equal("hevc_nvenc", Get<string>(sessionContext, "CodecName"));
-        Assert.Equal("2-way", Get<string>(sessionContext, "SplitEncodeMode"));
+        Assert.Equal(Enum.Parse(splitEncodeModeType, "TwoWay"), Get<object>(sessionContext, "SplitEncodeMode"));
         Assert.Equal(new IntPtr(456), Get<IntPtr>(sessionContext, "D3D11DeviceContextPtr"));
 
         var progress = Activator.CreateInstance(exportProgressType, 3, 10, 30d)!;
@@ -338,14 +334,12 @@ public sealed class FlashbackModelsTests
         var exportSegments = Array.CreateInstance(exportSegmentType, 1);
         exportSegments.SetValue(exportSegment, 0);
         Set(exportRequest, "Segments", exportSegments);
-        Set(exportRequest, "SegmentPaths", new[] { "a.ts", "b.ts" });
         Set(exportRequest, "InputPath", "single.ts");
         Set(exportRequest, "InPoint", TimeSpan.FromSeconds(2));
         Set(exportRequest, "OutPoint", TimeSpan.FromSeconds(12));
         Set(exportRequest, "OutputPath", "clip.mp4");
         Set(exportRequest, "FastStart", false);
         Assert.Equal(1, Count(Get(exportRequest, "Segments")!));
-        Assert.Equal(2, Count(Get(exportRequest, "SegmentPaths")!));
         Assert.Equal("single.ts", Get<string>(exportRequest, "InputPath"));
         Assert.Equal(TimeSpan.FromSeconds(12), Get<TimeSpan>(exportRequest, "OutPoint"));
         Assert.False(Get<bool>(exportRequest, "FastStart"));
@@ -1844,7 +1838,7 @@ static partial class Program
         AssertContains(lifecycleText, "internal sealed unsafe class FlashbackExporter : IDisposable");
         AssertDoesNotContain(lifecycleText, "partial class FlashbackExporter");
         AssertContains(requestsText, "public Task<FinalizeResult> ExportAsync(");
-        AssertContains(requestsText, "request.SegmentPaths.Select(path => new FlashbackExportSegment");
+        AssertContains(requestsText, "ExportSegmentsAsync(request.Segments,");
         AssertContains(lifecycleText, "private const int MaxSupportedInputStreams = 64;");
         AssertContains(lifecycleText, "private readonly SemaphoreSlim _exportLock = new(1, 1);");
         AssertContains(lifecycleText, "private AVFormatContext* _activeInputContext;");
@@ -4808,25 +4802,25 @@ static partial class Program
         AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
         AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
         AssertContains(executionBlock, "if (localRequest == null)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                return true;\n            }");
-        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "() => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit)");
         AssertContains(executionBlock, "if (localRequest.IsCompleted)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed\");\n                return true;\n            }");
-        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed", "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
+        AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed", "() => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit)");
         AssertContains(executionBlock, "var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, \"before_drain\", inFlightCount);");
         AssertContains(sourceText, "private const int AudioDrainBatchLimit = 128;");
-        AssertContains(executionBlock, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(executionBlock, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(executionBlock, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
-        AssertContains(executionBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
+        AssertContains(executionBlock, "private static bool TryDrainForceRotatePhase(");
+        AssertContains(executionBlock, "() => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit)");
+        AssertContains(executionBlock, "() => DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit)");
+        AssertContains(executionBlock, "() => DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
+        AssertContains(executionBlock, "() => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
+        AssertOccursBefore(executionBlock, "() => DrainAudioPackets", "() => DrainMicrophonePackets");
+        AssertOccursBefore(executionBlock, "() => DrainMicrophonePackets", "() => DrainGpuPackets");
+        AssertOccursBefore(executionBlock, "() => DrainGpuPackets", "() => DrainVideoPackets");
         AssertDoesNotContain(executionBlock, "while (DrainGpuPackets(gpuQueue.Reader))");
         AssertDoesNotContain(executionBlock, "while (DrainVideoPackets(videoQueue.Reader))");
-        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"audio\", inFlightCount))");
-        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"microphone\", inFlightCount))");
-        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"gpu\", inFlightCount))");
-        AssertContains(executionBlock, "if (ShouldAbortForceRotateDrain(localRequest, \"video\", inFlightCount))");
         AssertContains(executionBlock, "if (forceRotateDrainAborted)\n            {\n                return true;\n            }");
         AssertOccursBefore(executionBlock, "if (forceRotateDrainAborted)\n            {\n                return true;\n            }", "var currentPts = ResolveEncoderPts();");
         AssertContains(executionBlock, "if (localRequest.IsCompleted)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain\");\n                return true;\n            }");
-        AssertOccursBefore(executionBlock, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))", "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
+        AssertOccursBefore(executionBlock, "() => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)", "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
         AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain", "var currentPts = ResolveEncoderPts();");
         AssertContains(executionBlock, "if (!localRequest.TryBeginCommit())\n                {\n                    Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate\");\n                    return true;\n                }");
         AssertOccursBefore(executionBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_before_rotate", "if (!RotateSegment(currentPts, localRequest.PreparedPath))");
@@ -5137,13 +5131,14 @@ static partial class Program
         AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
         AssertContains(forceRotateText, "private bool ProcessPendingForceRotate(");
         AssertContains(forceRotateText, "Volatile.Write(ref _forceRotateDraining, true);");
-        AssertContains(forceRotateText, "while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(forceRotateText, "while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))");
-        AssertContains(forceRotateText, "while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))");
-        AssertContains(forceRotateText, "while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))");
+        AssertContains(forceRotateText, "private static bool TryDrainForceRotatePhase(");
+        AssertContains(forceRotateText, "() => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit)");
+        AssertContains(forceRotateText, "() => DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit)");
+        AssertContains(forceRotateText, "() => DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
+        AssertContains(forceRotateText, "() => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
         AssertContains(forceRotateText, "if (!localRequest.TryBeginCommit())");
         AssertContains(forceRotateText, "if (!RotateSegment(currentPts, localRequest.PreparedPath))");
-        AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));");
+        AssertContains(forceRotateText, "localRequest.Complete(_bufferManager.GetExistingCompletedSegmentPathsInRange(localIn, localOut));");
         AssertContains(rootText, "public FlashbackForceRotateResult ForceRotateForExport(");
         AssertContains(rootText, "public bool IsForceRotateActive =>");
         AssertContains(rootText, "public bool WaitForForceRotateIdle(TimeSpan timeout)");
@@ -5371,7 +5366,7 @@ static partial class Program
         AssertContains(sessionContextText, "private static FlashbackSessionContext CreateSessionContext(RecordingContext context)");
         AssertContains(sessionContextText, "private static (int? Numerator, int? Denominator) ResolveFrameRateParts(string frameRateArg)");
         AssertContains(sessionContextText, "private static string MapCodecName(RecordingFormat format)");
-        AssertContains(sessionContextText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
+        AssertContains(sessionContextText, "SplitEncodeMode = context.Settings.SplitEncodeMode");
 
         AssertContains(startupText, "private static string CreateSessionId()");
         AssertContains(startupText, "DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()");

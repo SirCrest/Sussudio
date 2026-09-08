@@ -19,7 +19,7 @@ internal sealed class AudioRampTraceRecorderContext
 /// <summary>
 /// Bounded recorder for preview-audio ramp diagnostics.
 /// </summary>
-internal sealed class AudioRampTraceRecorder
+internal sealed class AudioRampTraceRecorder : IDisposable
 {
     private const int AudioRampTraceCapacity = 2048;
     private const int AudioRampTraceSampleIntervalMs = 10;
@@ -40,6 +40,7 @@ internal sealed class AudioRampTraceRecorder
     private string _activeReason = string.Empty;
     private double _targetVolume = double.NaN;
     private bool _samplingActive;
+    private bool _disposed;
 
     public AudioRampTraceRecorder(AudioRampTraceRecorderContext context)
     {
@@ -88,6 +89,11 @@ internal sealed class AudioRampTraceRecorder
         CancellationTokenSource? previousCts;
         lock (_lock)
         {
+            if (_disposed)
+            {
+                cts.Dispose();
+                return 0;
+            }
             previousCts = _samplerCts;
             previousCts?.Cancel();
             _samplerCts = cts;
@@ -111,7 +117,7 @@ internal sealed class AudioRampTraceRecorder
             return;
         }
 
-        RecordPoint("session-complete", reason);
+        RecordPoint("session-complete", reason, sessionId: sessionId);
         _ = StopSamplerAfterDelayAsync(sessionId, AudioRampTracePostCompleteSampleMs);
     }
 
@@ -125,6 +131,7 @@ internal sealed class AudioRampTraceRecorder
         TraceState state;
         lock (_lock)
         {
+            if (_disposed) return;
             state = new TraceState(
                 sessionId ?? _activeSessionId,
                 _sessionStartTimestamp,
@@ -180,6 +187,7 @@ internal sealed class AudioRampTraceRecorder
 
         lock (_lock)
         {
+            if (_disposed) return;
             _buffer[_head] = entry;
             _head = (_head + 1) % AudioRampTraceCapacity;
             if (_count < AudioRampTraceCapacity)
@@ -240,6 +248,20 @@ internal sealed class AudioRampTraceRecorder
         cts?.Cancel();
     }
 
+    public void Dispose()
+    {
+        CancellationTokenSource? cts;
+        lock (_lock)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _samplingActive = false;
+            cts = _samplerCts;
+            _samplerCts = null;
+        }
+        cts?.Cancel();
+    }
+
     private readonly record struct TraceState(
         long SessionId,
         long SessionStartTimestamp,
@@ -257,9 +279,23 @@ internal sealed class PreviewAudioVolumeTransitionControllerContext
     public required Action<long, string> CompleteTraceSession { get; init; }
     public required Action<string, string?, double?, string?, long?> RecordTracePoint { get; init; }
     public required Action<string, string> Log { get; init; }
+    public Func<int, CancellationToken, Task> DelayAsync { get; init; } = Task.Delay;
 }
 
-internal sealed class PreviewAudioVolumeTransitionController
+// The operation spans prime, backend startup/reconfiguration, and restoration.
+// Individual interpolation writers are revoked when the user chooses a level.
+internal readonly record struct PreviewAudioVolumeOperation(long Generation);
+
+internal readonly record struct PreviewAudioVolumeWriter(
+    long OperationGeneration,
+    long WriterGeneration,
+    long UserRevision,
+    double StartingVolume,
+    double TargetVolume,
+    bool MutesOutput,
+    CancellationToken CancellationToken);
+
+internal sealed class PreviewAudioVolumeTransitionController : IDisposable
 {
     private const int RampDownSteps = 18;
     private const int RampDownDelayMs = 25;
@@ -267,82 +303,317 @@ internal sealed class PreviewAudioVolumeTransitionController
     private const int RampUpDelayMs = 30;
 
     private readonly PreviewAudioVolumeTransitionControllerContext _context;
+    // Normal mutations are UI-affine. This short boundary also prevents the
+    // background disposal fallback from overtaking an admitted session write.
+    private readonly object _sync = new();
+    private CancellationTokenSource? _operationCancellation;
+    private CancellationTokenSource? _writerCancellation;
+    private long _operationGeneration;
+    private long _writerGeneration;
+    private long _userRevision;
+    private double _requestedVolume;
+    private double _effectiveVolume;
+    private bool _holdingMuted;
+    private bool _publishingEffectiveVolume;
+    private bool _disposed;
 
     public PreviewAudioVolumeTransitionController(PreviewAudioVolumeTransitionControllerContext context)
     {
         _context = context;
+        _requestedVolume = _effectiveVolume = Math.Clamp(context.GetPreviewVolume(), 0.0, 1.0);
     }
 
-    public bool SuppressVolumeSave { get; set; }
+    public double RequestedVolume
+    {
+        get { lock (_sync) { return _requestedVolume; } }
+    }
 
-    public double? VolumeSaveOverride { get; set; }
+    public double EffectiveVolume
+    {
+        get { lock (_sync) { return _effectiveVolume; } }
+    }
 
-    public double PersistedVolumeTarget => Math.Clamp(VolumeSaveOverride ?? _context.GetPreviewVolume(), 0.0, 1.0);
-
+    // Settings loading still assigns the observable property directly. Internal
+    // publication is guarded only for its synchronous property notification.
     public void HandlePreviewVolumeChanged(double value)
     {
-        if (!SuppressVolumeSave)
+        lock (_sync)
         {
-            VolumeSaveOverride = null;
+            if (_publishingEffectiveVolume || _disposed) return;
         }
+        SetUserVolume(value);
+    }
 
-        _context.SetSessionPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));
+    public void SetUserVolume(double value)
+    {
+        CancellationTokenSource? previousWriter;
+        lock (_sync)
+        {
+            if (_disposed) return;
+            _requestedVolume = Math.Clamp(value, 0.0, 1.0);
+            _userRevision++;
+            previousWriter = RevokeWriterCore();
+            PublishEffectiveVolumeCore(_holdingMuted ? 0 : _requestedVolume);
+        }
+        CancelAndDispose(previousWriter);
+        RecordTracePoint("volume-set", targetVolume: RequestedVolume, note: "user-request");
+    }
+
+    public PreviewAudioVolumeOperation BeginTransition(string reason, bool primeMuted = false)
+    {
+        CancellationTokenSource? previousOperation;
+        CancellationTokenSource? previousWriter;
+        PreviewAudioVolumeOperation operation;
+        lock (_sync)
+        {
+            if (_disposed) return default;
+            previousOperation = _operationCancellation;
+            previousWriter = RevokeWriterCore();
+            _operationCancellation = new CancellationTokenSource();
+            operation = new PreviewAudioVolumeOperation(++_operationGeneration);
+            _holdingMuted = primeMuted;
+            if (primeMuted) PublishEffectiveVolumeCore(0);
+        }
+        CancelAndDispose(previousWriter);
+        CancelAndDispose(previousOperation);
+        if (primeMuted)
+        {
+            _context.Log(
+                $"PREVIEW_AUDIO_MONITOR_PRIMED reason={reason} targetPct={RequestedVolume * 100:0}",
+                "PrimePreviewVolumeForAudioTransition");
+            RecordTracePoint("primed", reason, RequestedVolume);
+        }
+        return operation;
+    }
+
+    public PreviewAudioVolumeOperation PrimeForAudioTransition(string reason)
+        => BeginTransition(reason, primeMuted: true);
+
+    public PreviewAudioVolumeWriter? BeginWriter(
+        PreviewAudioVolumeOperation operation,
+        bool muteOutput,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        CancellationTokenSource? previousWriter;
+        PreviewAudioVolumeWriter writer;
+        lock (_sync)
+        {
+            if (!IsCurrentOperationCore(operation)) return null;
+            previousWriter = RevokeWriterCore();
+            _holdingMuted = muteOutput;
+            _writerCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                _operationCancellation!.Token, cancellationToken);
+            writer = new PreviewAudioVolumeWriter(
+                operation.Generation, _writerGeneration, _userRevision,
+                _effectiveVolume, muteOutput ? 0 : _requestedVolume,
+                muteOutput, _writerCancellation.Token);
+        }
+        CancelAndDispose(previousWriter);
+        return writer;
+    }
+
+    public bool TryApplyTransient(PreviewAudioVolumeWriter writer, double value)
+    {
+        lock (_sync)
+        {
+            if (!IsCurrentWriterCore(writer)) return false;
+            PublishEffectiveVolumeCore(value);
+            return true;
+        }
+    }
+
+    public bool TryCompleteWriter(PreviewAudioVolumeWriter writer)
+    {
+        CancellationTokenSource? completedWriter;
+        lock (_sync)
+        {
+            if (!IsCurrentWriterCore(writer)) return false;
+            PublishEffectiveVolumeCore(writer.TargetVolume);
+            completedWriter = RevokeWriterCore();
+        }
+        // Completion invalidates late frames but need not signal cancellation.
+        completedWriter?.Dispose();
+        return true;
+    }
+
+    public void EndWriter(PreviewAudioVolumeWriter writer)
+    {
+        CancellationTokenSource? previousWriter;
+        lock (_sync)
+        {
+            if (writer.OperationGeneration != _operationGeneration ||
+                writer.WriterGeneration != _writerGeneration) return;
+            previousWriter = RevokeWriterCore();
+        }
+        CancelAndDispose(previousWriter);
+    }
+
+    public void RestoreAfterUnavailableAudio(PreviewAudioVolumeOperation operation, string reason)
+    {
+        CancellationTokenSource? previousWriter;
+        lock (_sync)
+        {
+            if (!IsCurrentOperationCore(operation)) return;
+            previousWriter = RevokeWriterCore();
+            _holdingMuted = false;
+            PublishEffectiveVolumeCore(_requestedVolume);
+        }
+        CancelAndDispose(previousWriter);
+        _context.Log(
+            $"PREVIEW_AUDIO_MONITOR_RESTORE reason={reason} targetPct={RequestedVolume * 100:0}",
+            "RestorePreviewVolumeAfterUnavailableAudio");
+        RecordTracePoint("restore", reason, RequestedVolume, "audio-preview-unavailable");
+    }
+
+    public async Task<PreviewAudioVolumeOperation> RampDownForStopAsync(CancellationToken cancellationToken)
+    {
+        var operation = BeginTransition("preview_stop");
+        try
+        {
+            await RampDownForAudioTransitionAsync(operation, "preview_stop", cancellationToken);
+            return operation;
+        }
+        catch
+        {
+            RestoreAfterUnavailableAudio(operation, "preview_stop_failed");
+            throw;
+        }
+    }
+
+    public Task RampDownForAudioTransitionAsync(
+        PreviewAudioVolumeOperation operation,
+        string reason,
+        CancellationToken cancellationToken = default,
+        bool traceSession = true)
+        => RunRampAsync(operation, reason, muteOutput: true, cancellationToken, traceSession);
+
+    public Task RampUpForAudioTransitionAsync(
+        PreviewAudioVolumeOperation operation,
+        string reason,
+        CancellationToken cancellationToken = default,
+        bool traceSession = true)
+        => RunRampAsync(operation, reason, muteOutput: false, cancellationToken, traceSession);
+
+    private async Task RunRampAsync(
+        PreviewAudioVolumeOperation operation,
+        string reason,
+        bool muteOutput,
+        CancellationToken cancellationToken,
+        bool traceSession)
+    {
+        var candidate = BeginWriter(operation, muteOutput, cancellationToken);
+        if (candidate is not { } writer) return;
+        var direction = muteOutput ? "down" : "up";
+        var traceSessionId = traceSession ? _context.BeginTraceSession(reason, writer.TargetVolume) : 0;
+        try
+        {
+            if (Math.Abs(writer.StartingVolume - writer.TargetVolume) <= 0.001)
+            {
+                TryCompleteWriter(writer);
+                RecordTracePoint($"ramp-{direction}-skipped", reason, writer.TargetVolume,
+                    muteOutput ? "already-zero" : "target-zero");
+                return;
+            }
+
+            _context.Log(
+                muteOutput && reason == "preview_stop"
+                    ? $"PREVIEW_AUDIO_STOP_RAMP_STARTED fromPct={writer.StartingVolume * 100:0}"
+                    : $"PREVIEW_AUDIO_RAMP_{direction.ToUpperInvariant()}_STARTED reason={reason} targetPct={writer.TargetVolume * 100:0}",
+                "RunPreviewAudioVolumeRampAsync");
+            RecordTracePoint($"ramp-{direction}-start", reason, writer.TargetVolume);
+            var steps = muteOutput ? RampDownSteps : RampUpSteps;
+            var delayMs = muteOutput ? RampDownDelayMs : RampUpDelayMs;
+            for (var step = 1; step <= steps; step++)
+            {
+                writer.CancellationToken.ThrowIfCancellationRequested();
+                var t = step / (double)steps;
+                var value = muteOutput
+                    ? writer.StartingVolume * Math.Pow(1.0 - t, 2.0)
+                    : writer.StartingVolume + (writer.TargetVolume - writer.StartingVolume) * (1.0 - Math.Pow(1.0 - t, 3.0));
+                if (!TryApplyTransient(writer, value)) return;
+                await _context.DelayAsync(delayMs, writer.CancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (TryCompleteWriter(writer))
+            {
+                RecordTracePoint($"ramp-{direction}-complete", reason, writer.TargetVolume);
+                _context.Log(
+                    muteOutput && reason == "preview_stop"
+                        ? "PREVIEW_AUDIO_STOP_RAMP_COMPLETED"
+                        : $"PREVIEW_AUDIO_RAMP_{direction.ToUpperInvariant()}_COMPLETED reason={reason}",
+                    "RunPreviewAudioVolumeRampAsync");
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && writer.CancellationToken.IsCancellationRequested)
+        {
+            // User supersession ends interpolation; the requested backend mute,
+            // stop or input switch must still be allowed to finish.
+        }
+        finally
+        {
+            EndWriter(writer);
+            if (traceSession) _context.CompleteTraceSession(traceSessionId, reason);
+        }
+    }
+
+    public void Dispose()
+    {
+        CancellationTokenSource? operation;
+        CancellationTokenSource? writer;
+        lock (_sync)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _operationGeneration++;
+            operation = _operationCancellation;
+            _operationCancellation = null;
+            writer = RevokeWriterCore();
+        }
+        CancelAndDispose(writer);
+        CancelAndDispose(operation);
+    }
+
+    private bool IsCurrentOperationCore(PreviewAudioVolumeOperation operation)
+        => !_disposed && operation.Generation != 0 && operation.Generation == _operationGeneration;
+
+    private bool IsCurrentWriterCore(PreviewAudioVolumeWriter writer)
+        => !_disposed && _writerCancellation != null &&
+           writer.OperationGeneration == _operationGeneration &&
+           writer.WriterGeneration == _writerGeneration &&
+           writer.UserRevision == _userRevision && !writer.CancellationToken.IsCancellationRequested;
+
+    private CancellationTokenSource? RevokeWriterCore()
+    {
+        var previous = _writerCancellation;
+        _writerCancellation = null;
+        _writerGeneration++;
+        return previous;
+    }
+
+    private void PublishEffectiveVolumeCore(double value)
+    {
+        _effectiveVolume = Math.Clamp(value, 0.0, 1.0);
+        _publishingEffectiveVolume = true;
+        try
+        {
+            _context.SetPreviewVolume(_effectiveVolume);
+            _context.SetSessionPreviewVolume((float)_effectiveVolume);
+        }
+        finally
+        {
+            _publishingEffectiveVolume = false;
+        }
         RecordTracePoint("volume-set");
     }
 
-    public double PrimeForAudioTransition(string reason)
+    private static void CancelAndDispose(CancellationTokenSource? cancellation)
     {
-        var volumeTarget = PersistedVolumeTarget;
-        if (volumeTarget <= 0.001)
-        {
-            _context.SetPreviewVolume(0);
-            VolumeSaveOverride = null;
-            return 0;
-        }
-
-        VolumeSaveOverride = volumeTarget;
-        SuppressVolumeSave = true;
-        try
-        {
-            _context.SetPreviewVolume(0);
-        }
-        finally
-        {
-            SuppressVolumeSave = false;
-        }
-
-        _context.Log(
-            $"PREVIEW_AUDIO_MONITOR_PRIMED reason={reason} targetPct={volumeTarget * 100:0}",
-            "PrimePreviewVolumeForAudioTransition");
-        RecordTracePoint("primed", reason, volumeTarget);
-        return volumeTarget;
+        if (cancellation == null) return;
+        try { cancellation.Cancel(); }
+        finally { cancellation.Dispose(); }
     }
-
-    public void RestoreAfterUnavailableAudio(double volumeTarget, string reason)
-    {
-        volumeTarget = Math.Clamp(volumeTarget, 0.0, 1.0);
-        SuppressVolumeSave = true;
-        try
-        {
-            _context.SetPreviewVolume(volumeTarget);
-        }
-        finally
-        {
-            SuppressVolumeSave = false;
-            VolumeSaveOverride = null;
-        }
-
-        _context.Log(
-            $"PREVIEW_AUDIO_MONITOR_RESTORE reason={reason} targetPct={volumeTarget * 100:0}",
-            "RestorePreviewVolumeAfterUnavailableAudio");
-        RecordTracePoint("restore", reason, volumeTarget, "audio-preview-unavailable");
-    }
-
-    private long BeginTraceSession(string reason, double targetVolume)
-        => _context.BeginTraceSession(reason, targetVolume);
-
-    private void CompleteTraceSession(long sessionId, string reason)
-        => _context.CompleteTraceSession(sessionId, reason);
 
     private void RecordTracePoint(
         string kind,
@@ -351,138 +622,4 @@ internal sealed class PreviewAudioVolumeTransitionController
         string? note = null,
         long? sessionId = null)
         => _context.RecordTracePoint(kind, reason, targetVolume, note, sessionId);
-
-    public Task RampDownForStopAsync(CancellationToken cancellationToken)
-        => RampDownForAudioTransitionAsync("preview_stop", cancellationToken);
-
-    public async Task RampDownForAudioTransitionAsync(
-        string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
-    {
-        var persistedVolume = PersistedVolumeTarget;
-        var startingVolume = Math.Clamp(_context.GetPreviewVolume(), 0.0, 1.0);
-        var traceSessionId = traceSession ? BeginTraceSession(reason, targetVolume: 0) : 0;
-        if (persistedVolume > 0.001)
-        {
-            VolumeSaveOverride = persistedVolume;
-        }
-
-        try
-        {
-            if (startingVolume <= 0.001)
-            {
-                SuppressVolumeSave = true;
-                try
-                {
-                    _context.SetPreviewVolume(0);
-                }
-                finally
-                {
-                    SuppressVolumeSave = false;
-                }
-
-                RecordTracePoint("ramp-down-skipped", reason, targetVolume: 0, note: "already-zero");
-                return;
-            }
-
-            SuppressVolumeSave = true;
-            var startLog = string.Equals(reason, "preview_stop", StringComparison.Ordinal)
-                ? $"PREVIEW_AUDIO_STOP_RAMP_STARTED fromPct={startingVolume * 100:0}"
-                : $"PREVIEW_AUDIO_RAMP_DOWN_STARTED reason={reason} fromPct={startingVolume * 100:0}";
-            _context.Log(startLog, "RampPreviewVolumeDownForAudioTransitionAsync");
-            RecordTracePoint("ramp-down-start", reason, targetVolume: 0);
-            try
-            {
-                for (var step = 1; step <= RampDownSteps; step++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var t = step / (double)RampDownSteps;
-                    var eased = Math.Pow(1.0 - t, 2.0);
-                    _context.SetPreviewVolume(startingVolume * eased);
-                    await Task.Delay(RampDownDelayMs, cancellationToken);
-                }
-
-                _context.SetPreviewVolume(0);
-                RecordTracePoint("ramp-down-complete", reason, targetVolume: 0);
-                _context.Log(
-                    string.Equals(reason, "preview_stop", StringComparison.Ordinal)
-                        ? "PREVIEW_AUDIO_STOP_RAMP_COMPLETED"
-                        : $"PREVIEW_AUDIO_RAMP_DOWN_COMPLETED reason={reason}",
-                    "RampPreviewVolumeDownForAudioTransitionAsync");
-            }
-            finally
-            {
-                SuppressVolumeSave = false;
-            }
-        }
-        finally
-        {
-            if (traceSession)
-            {
-                CompleteTraceSession(traceSessionId, reason);
-            }
-        }
-    }
-
-    public async Task RampUpForAudioTransitionAsync(
-        double volumeTarget,
-        string reason,
-        CancellationToken cancellationToken = default,
-        bool traceSession = true)
-    {
-        volumeTarget = Math.Clamp(volumeTarget, 0.0, 1.0);
-        var traceSessionId = traceSession ? BeginTraceSession(reason, volumeTarget) : 0;
-        if (volumeTarget <= 0.001)
-        {
-            try
-            {
-                _context.SetPreviewVolume(0);
-                VolumeSaveOverride = null;
-                RecordTracePoint("ramp-up-skipped", reason, volumeTarget, "target-zero");
-            }
-            finally
-            {
-                if (traceSession)
-                {
-                    CompleteTraceSession(traceSessionId, reason);
-                }
-            }
-
-            return;
-        }
-
-        VolumeSaveOverride = volumeTarget;
-        SuppressVolumeSave = true;
-        _context.Log(
-            $"PREVIEW_AUDIO_RAMP_UP_STARTED reason={reason} targetPct={volumeTarget * 100:0}",
-            "RampPreviewVolumeUpForAudioTransitionAsync");
-        RecordTracePoint("ramp-up-start", reason, volumeTarget);
-        try
-        {
-            for (var step = 1; step <= RampUpSteps; step++)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var t = step / (double)RampUpSteps;
-                var eased = 1.0 - Math.Pow(1.0 - t, 3.0);
-                _context.SetPreviewVolume(volumeTarget * eased);
-                await Task.Delay(RampUpDelayMs, cancellationToken);
-            }
-
-            _context.SetPreviewVolume(volumeTarget);
-            RecordTracePoint("ramp-up-complete", reason, volumeTarget);
-            _context.Log(
-                $"PREVIEW_AUDIO_RAMP_UP_COMPLETED reason={reason}",
-                "RampPreviewVolumeUpForAudioTransitionAsync");
-        }
-        finally
-        {
-            SuppressVolumeSave = false;
-            VolumeSaveOverride = null;
-            if (traceSession)
-            {
-                CompleteTraceSession(traceSessionId, reason);
-            }
-        }
-    }
 }

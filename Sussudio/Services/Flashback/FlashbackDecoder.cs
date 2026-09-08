@@ -130,6 +130,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     public int VideoHeight => _videoHeight;
     public bool IsHdr => _isHdr;
     public double FrameRate => _frameRate;
+    /// <summary>The decoded position achieved, including an earlier fallback selected by <see cref="SeekTo"/>.</summary>
     public TimeSpan CurrentPosition => _currentPosition;
     public bool IsD3D11HwAccelerated => _isD3D11HwAccelerated;
 
@@ -142,7 +143,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// <summary>
     /// True if the most recent SeekTo() call hit the forward-decode cap and the
     /// returned frame's PTS was more than one frame interval behind the target.
-    /// Reset to false on each SeekTo() entry.
+    /// Reset to false on each SeekTo() entry. An earlier fallback at EOF does not set this flag.
     /// </summary>
     public bool LastSeekHitForwardDecodeCap => _lastSeekHitForwardDecodeCap;
 
@@ -835,9 +836,14 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     }
 
     /// <summary>
-    /// Seeks to the exact frame at <paramref name="target"/> by first seeking to the
-    /// nearest preceding keyframe, then decoding forward until the target PTS is reached.
+    /// Seeks from a preceding keyframe and decodes toward a frame at or after <paramref name="target"/>.
+    /// At EOF or the forward-decode limit, keeps the best earlier frame when one was decoded.
     /// </summary>
+    /// <returns>True when a usable frame was selected for the next decode call; false when seeking failed or no frame was obtained.</returns>
+    /// <remarks>
+    /// <see cref="CurrentPosition"/> reports the achieved PTS. Success does not require reaching the requested PTS.
+    /// <see cref="LastSeekHitForwardDecodeCap"/> identifies a cap-limited result more than one frame interval behind the target.
+    /// </remarks>
     public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)
     {
         ThrowIfNotOpen();

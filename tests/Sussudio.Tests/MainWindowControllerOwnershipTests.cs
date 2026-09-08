@@ -1667,78 +1667,43 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
 
     internal static Task PreviewAudioFadeState_LivesInController()
     {
-        var mainWindowText = ReadMainWindowCompositionSource();
-        var bindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var audioBindingsText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var audioPropertyChangedText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
-        var previewPropertyChangedText = ReadMainWindowPropertyChangedPreviewAdapterSource();
-        var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
-        var adapterText = ReadMainWindowPreviewTransitionsAdapterSource();
-        var controllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
-        var audioControlBindingControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
-        var audioControlBindingFamilyText = audioControlBindingControllerText;
-        var audioControlPresentationControllerText = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
+        var window = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var fade = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs").Replace("\r\n", "\n");
+        var binding = ReadRepoFile("Sussudio/Controllers/Audio/AudioControlBindingController.cs").Replace("\r\n", "\n");
+        var owner = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs").Replace("\r\n", "\n");
+        var setup = ExtractMemberCode(window, "SetupBindings");
 
-        AssertContains(audioBindingsText, "private AudioControlBindingController _audioControlBindingController = null!;");
-        AssertContains(audioBindingsText, "private void InitializeAudioControlBindingController()");
-        AssertContains(audioBindingsText, "PreviewVolumeSlider = PreviewVolumeSlider,");
-        AssertContains(audioBindingsText, "IsPreviewAudioFadeInActive = () => IsPreviewAudioFadeInActive,");
-        AssertContains(audioBindingsText, "CancelPreviewAudioFadeInForUser = CancelPreviewAudioFadeInForUser,");
-        AssertContains(adapterText, "private PreviewAudioFadeController _previewAudioFadeController = null!;");
-        AssertContains(adapterText, "private bool IsPreviewAudioFadeInActive => _previewAudioFadeController.IsFadingIn;");
-        AssertContains(adapterText, "private bool IsPreviewAudioFadeAnimationActive => _previewAudioFadeController.IsAnimationActive;");
-        AssertContains(adapterText, "private void InitializePreviewAudioFadeController()");
-        AssertContains(adapterText, "=> _previewAudioFadeController.PrimeFadeIn();");
-        AssertContains(adapterText, "=> _previewAudioFadeController.StartFadeIn(durationMs);");
-        AssertContains(adapterText, "=> _previewAudioFadeController.StartFadeOutAsync(durationMs);");
-        AssertContains(adapterText, "=> _previewAudioFadeController.CancelFadeInForUser();");
-        AssertContains(mainWindowText, "InitializePreviewAudioFadeController();");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "MainWindow.Composition.cs")),
-            "preview audio fade adapter folded into MainWindow.xaml.cs");
-        AssertContains(mainWindowText, "InitializeAudioControlBindingController();");
-        AssertContains(bindingsText, "ApplyInitialAudioControlBindings();");
-        AssertContains(audioControlBindingControllerText, "internal sealed class AudioControlBindingControllerContext");
-        AssertContains(audioControlBindingControllerText, "internal sealed class AudioControlBindingController");
-        AssertContains(audioControlBindingControllerText, "public void AttachAudioMeterActivationBindings()");
-        AssertContains(audioControlBindingControllerText, "public void ApplyInitialAudioControlBindings()");
-        AssertContains(audioControlBindingControllerText, "_context.IsPreviewAudioFadeInActive() || _context.IsPreviewAudioFadeAnimationActive()");
-        AssertContains(audioControlBindingControllerText, "_context.PreviewVolumeSlider.ValueChanged +=");
-        AssertContains(audioControlBindingControllerText, "_context.CancelPreviewAudioFadeInForUser();");
-        AssertContains(audioControlBindingControllerText, "public void ApplyInitialAudioMeterPresentation()");
-        AssertContains(audioControlBindingControllerText, "public void EnsureAudioControlSelections()");
-        AssertContains(audioControlBindingControllerText, "public void AttachAudioSelectionBindings()");
-        AssertContains(audioControlBindingControllerText, "public void AttachAudioRecordPreviewToggleBindings()");
-        AssertContains(audioControlBindingControllerText, "public void AttachAudioInputToggleBindings()");
-        AssertContains(audioControlBindingControllerText, "public void AttachDeviceAudioGainAndMeterBindings()");
-        AssertContains(audioControlBindingFamilyText, "_context.PrimePreviewAudioFadeIn();");
-        AssertContains(propertyChangedText, "TryHandlePreviewAsync = TryHandlePreviewPropertyChangedAsync,");
-        AssertContains(propertyChangedText, "TryHandleAudio = TryHandleAudioPropertyChanged,");
-        AssertContains(previewPropertyChangedText, "_previewLifecycleEventController.TryHandlePropertyChangedAsync(propertyName);");
-        AssertContains(previewLifecycleControllerText, "await HandlePreviewingChangedAsync();");
-        AssertContains(audioPropertyChangedText, "=> _audioControlPresentationController.TryHandlePropertyChanged(propertyName);");
-        AssertContains(audioControlPresentationControllerText, "case nameof(MainViewModel.PreviewVolume):");
-        AssertContains(audioControlPresentationControllerText, "HandlePreviewVolumeChanged();");
-        AssertContains(audioControlPresentationControllerText, "if (_context.IsPreviewAudioFadeInActive())");
-        AssertContains(previewLifecycleControllerText, "_context.PrimePreviewAudioFadeIn();");
-        AssertContains(controllerText, "internal sealed class PreviewAudioFadeController");
-        AssertContains(controllerText, "private double _savedPreviewVolume;");
-        AssertContains(controllerText, "private Storyboard? _volumeFadeStoryboard;");
-        AssertContains(controllerText, "public void PrimeFadeIn()");
-        AssertContains(controllerText, "public async Task StartFadeOutAsync(int durationMs = 450)");
-        AssertContains(controllerText, "Sussudio.Logger.Log(\"PREVIEW_AUDIO_FADE_OUT_COMPLETED\");");
-        AssertEqual(
-            false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "PreviewAudioFadeController.cs")),
-            "preview audio fade folded into PreviewLifecycleControllers.cs");
-        AssertDoesNotContain(mainWindowText, "private double _savedPreviewVolume;");
-        AssertDoesNotContain(mainWindowText, "private bool _isVolumeFadingIn;");
-        AssertDoesNotContain(mainWindowText, "private Storyboard? _previewVolumeFadeStoryboard;");
-        AssertDoesNotContain(bindingsText, "PreviewVolumeSlider.ValueChanged +=");
-        AssertDoesNotContain(audioBindingsText, "PreviewVolumeSlider.ValueChanged +=");
-
+        AssertContains(window, "VolumeController = ViewModel.PreviewVolumeController,");
+        AssertContains(window, "ApplyPreviewVolumePresentation = _audioControlBindingController.ApplyPreviewVolumePresentation,");
+        AssertContains(window, "=> _previewAudioFadeController.PrimeFadeIn();");
+        AssertContains(window, "=> _previewAudioFadeController.StartFadeIn(durationMs);");
+        AssertContains(window, "=> _previewAudioFadeController.StartFadeOutAsync(durationMs);");
+        AssertContains(fade, "private FadeRun? _activeFade;");
+        AssertContains(fade, "_context.VolumeController.BeginWriter(operation, muteOutput)");
+        AssertContains(fade, "_context.VolumeController.TryApplyTransient(writer, value)");
+        AssertContains(fade, "run.Completion.TrySetResult(true);");
+        AssertContains(fade, "ReferenceEquals(_activeFade, run)");
+        AssertDoesNotContain(fade, "_savedPreviewVolume");
+        AssertDoesNotContain(fade, "VolumeSaveOverride");
+        AssertContains(owner, "public double RequestedVolume");
+        AssertContains(owner, "public double EffectiveVolume");
+        AssertContains(binding, "_context.ViewModel.SetPreviewVolumeFromUser(e.NewValue / 100.0);");
+        AssertContains(binding, "if (_syncingPreviewVolume) return;");
+        AssertDoesNotContain(binding, "IsPreviewAudioFadeInActive");
+        AssertDoesNotContain(binding, "public void ApplyInitialAudioMeterPresentation()");
+        AssertDoesNotContain(binding, "public void EnsureAudioControlSelections()");
+        AssertContains(setup, "_audioMeterController.ResetVisuals();");
+        AssertContains(setup, "_audioMeterController.SetAudioMeterTargetLevel(ViewModel.AudioMeterTarget);");
+        AssertOccursBefore(setup, "AttachAudioMeterActivationBindings();", "_audioMeterController.ResetVisuals();");
+        AssertOccursBefore(setup, "ApplyInitialCaptureOptionSelections();", "_audioMeterController.ResetVisuals();");
+        AssertOccursBefore(setup, "_audioMeterController.ResetVisuals();", "_audioMeterController.SetAudioMeterTargetLevel(ViewModel.AudioMeterTarget);");
+        AssertOccursBefore(setup, "_audioMeterController.SetAudioMeterTargetLevel(ViewModel.AudioMeterTarget);", "ApplyAudioClipVisibility();");
+        AssertOccursBefore(setup, "EnsureDeviceSelection();", "_captureSelectionBindingController.EnsureAudioInputSelection();");
+        AssertOccursBefore(setup, "_captureSelectionBindingController.EnsureAudioInputSelection();", "_captureSelectionBindingController.EnsureMicrophoneSelection();");
+        AssertOccursBefore(setup, "_captureSelectionBindingController.EnsureMicrophoneSelection();", "_captureSelectionBindingController.EnsureDeviceAudioModeSelection();");
+        AssertOccursBefore(setup, "_captureSelectionBindingController.EnsureDeviceAudioModeSelection();", "EnsureInitialCaptureOptionSelections();");
+        AssertDoesNotContain(window, "PreviewVolumeSlider.ValueChanged +=");
+        AssertDoesNotContain(window, "private double _savedPreviewVolume;");
         return Task.CompletedTask;
     }
 
@@ -1799,6 +1764,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(actionControllerText, "await viewModel.StopPreviewAsync(userInitiated: true);");
         AssertContains(actionControllerText, "_context.ClearPreviewReinitAnimation(operationName);");
         AssertContains(actionControllerText, "await viewModel.StartPreviewAsync(userInitiated: true);");
+        AssertContains(actionControllerText, "finally\n        {\n            if (!viewModel.IsPreviewing)\n            {\n                _context.RevealPreviewUnavailablePlaceholder();");
         AssertDoesNotContain(previewActionsText, "var audioFadeOutTask = StartPreviewAudioFadeOutAsync();");
         AssertDoesNotContain(previewActionsText, "await ViewModel.StopPreviewAsync(userInitiated: true);");
         AssertDoesNotContain(propertyChangedPreviewText, "PreviewButtonIcon.Glyph = \"\\uE71A\";");
@@ -1829,7 +1795,7 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(audioPropertyChangedText, "AudioPreviewToggle = AudioPreviewToggle,");
         AssertContains(audioPropertyChangedText, "PreviewVolumeSlider = PreviewVolumeSlider,");
         AssertContains(audioPropertyChangedText, "PreviewVolumeLabel = PreviewVolumeLabel,");
-        AssertContains(audioPropertyChangedText, "IsPreviewAudioFadeInActive = () => IsPreviewAudioFadeInActive,");
+        AssertContains(audioPropertyChangedText, "ApplyPreviewVolumePresentation = _audioControlBindingController.ApplyPreviewVolumePresentation,");
         AssertContains(audioPropertyChangedText, "SetAudioMeterMonitoringState = SetAudioMeterMonitoringState,");
         AssertContains(audioPropertyChangedText, "AnimateAudioMeterDisabled = AnimateAudioMeterDisabled,");
         AssertContains(audioPropertyChangedText, "UpdateMicrophoneControlsVisibility = UpdateMicrophoneControlsVisibility,");
@@ -1862,8 +1828,8 @@ internal static Task PreviewScreenshotButtonWorkflow_LivesInController()
         AssertContains(controllerText, "public void HandleAudioPreviewActiveChanged()");
         AssertContains(controllerText, "_context.SetAudioMeterMonitoringState(_context.ViewModel.IsAudioPreviewActive);");
         AssertContains(controllerText, "public void HandlePreviewVolumeChanged()");
-        AssertContains(controllerText, "if (_context.IsPreviewAudioFadeInActive())");
-        AssertContains(controllerText, "_context.PreviewVolumeLabel.Text = $\"{(int)volumePct}%\";");
+        AssertContains(controllerText, "_context.ApplyPreviewVolumePresentation(_context.ViewModel.PreviewVolume);");
+        AssertContains(controllerText, "_context.PreviewVolumeLabel.Text = $\"{(int)percent}%\";");
         AssertContains(controllerText, "public void HandleMicrophoneVolumeChanged()");
         AssertContains(controllerText, "_context.SyncMicrophoneVolumeControls(_context.ViewModel.MicrophoneVolume);");
 

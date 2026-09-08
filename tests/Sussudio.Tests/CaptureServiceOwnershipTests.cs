@@ -136,7 +136,7 @@ public sealed class CaptureServiceHealthSnapshotOwnershipTests
             "Capture",
             "CaptureService.SnapshotAvSync.cs")));
         AssertContains(avSyncSnapshotText, "private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()");
-        AssertContains(avSyncSnapshotText, "var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();");
+        AssertContains(avSyncSnapshotText, "var (captureDriftMs, captureDriftRateMsPerSec) = GetAvSyncDrift();");
         AssertContains(avSyncSnapshotText, "var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();");
         AssertContains(avSyncSnapshotText, "private readonly record struct AvSyncHealthSnapshotFields");
         AssertContains(avSyncSnapshotText, "private double _avSyncBaselineDriftMs = double.NaN;");
@@ -818,9 +818,9 @@ static partial class Program
         long peakCompressedQueueBytes = 0,
         long reorderRingForceDrops = 0)
     {
-        var type = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var type = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
         var perDecoderArray = Array.CreateInstance(
-            RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics"),
+            RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PerDecoderMetrics"),
             perDecoder.Length);
         for (var i = 0; i < perDecoder.Length; i++)
         {
@@ -873,7 +873,7 @@ static partial class Program
         double p95Ms,
         double maxMs)
     {
-        var type = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
+        var type = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PerDecoderMetrics");
         return Activator.CreateInstance(type, workerIndex, sampleCount, avgMs, p95Ms, maxMs)
                ?? throw new InvalidOperationException("Failed to create per-decoder MJPEG metrics.");
     }
@@ -890,7 +890,7 @@ static partial class Program
         AssertContains(rootText, "=> RunTransitionAsync(CaptureSessionState.Initializing, async transitionToken =>");
         AssertContains(rootText, "_audioDeviceId = settings.UseCustomAudioInput ? settings.AudioDeviceId : device.AudioDeviceId;");
         AssertContains(rootText, "_actualPixelFormat = settings.RequestedPixelFormat ?? (settings.HdrEnabled ? \"P010\" : \"NV12\");");
-        AssertContains(rootText, "ResetObservedPixelTelemetry();");
+        AssertDoesNotContain(rootText, "ResetObservedPixelTelemetry();");
         AssertContains(rootText, "ResetCachedMjpegTimingMetrics();");
         AssertContains(rootText, "_latestSourceTelemetry = BuildFallbackTelemetry();");
         AssertContains(rootText, "await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);");

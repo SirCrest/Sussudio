@@ -12,373 +12,301 @@ namespace Sussudio.Tests;
 /// <summary>
 /// Executes the linked production <see cref="PreviewAudioVolumeTransitionController"/> and
 /// <see cref="AudioRampTraceRecorder"/> sources directly against passive model shapes in
-/// PreviewAudioTransitionTestBoundaries.cs. Every ramp, clamp, suppression and trace
+/// PreviewAudioTransitionTestBoundaries.cs. Every ramp, clamp, writer admission and trace
 /// decision under test lives in the production file.
 /// </summary>
 public sealed class PreviewAudioTransitionControllersTests
 {
-    private sealed record TracePoint(string Kind, string? Reason, double? TargetVolume, string? Note, long? SessionId);
-
-    private sealed class ControllerHarness
+    private sealed class ControllerHarness : IDisposable
     {
         public double Volume { get; private set; }
-
         public List<double> VolumeWrites { get; } = new();
-
         public List<float> SessionVolumeWrites { get; } = new();
-
-        public List<TracePoint> TracePoints { get; } = new();
-
+        public List<string> TraceKinds { get; } = new();
         public List<string> Logs { get; } = new();
-
         public List<(long SessionId, string Reason)> CompletedSessions { get; } = new();
-
-        public List<(string Reason, double Target)> BegunSessions { get; } = new();
-
-        public long NextSessionId { get; set; } = 7;
-
         public PreviewAudioVolumeTransitionController Controller { get; }
 
-        public ControllerHarness(double initialVolume)
+        public ControllerHarness(double initialVolume, Func<int, CancellationToken, Task>? delay = null)
         {
             Volume = initialVolume;
-            Controller = new PreviewAudioVolumeTransitionController(
-                new PreviewAudioVolumeTransitionControllerContext
+            PreviewAudioVolumeTransitionController? controller = null;
+            Controller = new(new PreviewAudioVolumeTransitionControllerContext
+            {
+                GetPreviewVolume = () => Volume,
+                SetPreviewVolume = value =>
                 {
-                    GetPreviewVolume = () => Volume,
-                    SetPreviewVolume = value =>
-                    {
-                        Volume = value;
-                        VolumeWrites.Add(value);
-                    },
-                    SetSessionPreviewVolume = value => SessionVolumeWrites.Add(value),
-                    BeginTraceSession = (reason, target) =>
-                    {
-                        BegunSessions.Add((reason, target));
-                        return NextSessionId;
-                    },
-                    CompleteTraceSession = (id, reason) => CompletedSessions.Add((id, reason)),
-                    RecordTracePoint = (kind, reason, target, note, sessionId) =>
-                        TracePoints.Add(new TracePoint(kind, reason, target, note, sessionId)),
-                    Log = (message, _) => Logs.Add(message)
-                });
+                    Volume = value;
+                    VolumeWrites.Add(value);
+                    // Exercise the same reentrant observable hook as MainViewModel.
+                    controller?.HandlePreviewVolumeChanged(value);
+                },
+                SetSessionPreviewVolume = value => SessionVolumeWrites.Add(value),
+                BeginTraceSession = (_, _) => 7,
+                CompleteTraceSession = (id, reason) => CompletedSessions.Add((id, reason)),
+                RecordTracePoint = (kind, _, _, _, _) => TraceKinds.Add(kind),
+                Log = (message, _) => Logs.Add(message),
+                DelayAsync = delay ?? ((_, token) => { token.ThrowIfCancellationRequested(); return Task.CompletedTask; })
+            });
+            controller = Controller;
         }
 
-        public bool HasTrace(string kind) => TracePoints.Exists(point => point.Kind == kind);
+        public void Dispose() => Controller.Dispose();
     }
 
-    // ---- PersistedVolumeTarget ----------------------------------------------
-
-    [Fact]
-    public void PersistedVolumeTarget_UsesTheLiveVolumeWhenNoOverrideIsHeld()
+    private sealed class PausedRampDelay
     {
-        var harness = new ControllerHarness(0.42);
+        private int _calls;
+        public TaskCompletionSource<bool> Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource<bool> Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        Assert.Equal(0.42, harness.Controller.PersistedVolumeTarget, 6);
-    }
-
-    [Fact]
-    public void PersistedVolumeTarget_PrefersTheOverrideSoAMidRampReadDoesNotPersistZero()
-    {
-        // During a ramp the live volume is being driven to zero; persisting that
-        // would silently reset the user's monitoring level.
-        var harness = new ControllerHarness(0.0) { };
-        harness.Controller.VolumeSaveOverride = 0.8;
-
-        Assert.Equal(0.8, harness.Controller.PersistedVolumeTarget, 6);
+        public Task DelayAsync(int milliseconds, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _calls) != 1) return Task.CompletedTask;
+            Entered.TrySetResult(true);
+            return Resume.Task.WaitAsync(cancellationToken);
+        }
     }
 
     [Theory]
     [InlineData(-1.0, 0.0)]
+    [InlineData(0.42, 0.42)]
     [InlineData(2.5, 1.0)]
-    public void PersistedVolumeTarget_ClampsIntoTheUnitRange(double stored, double expected)
+    public void ExplicitUserVolumeOwnsTheClampedPersistedTarget(double requested, double expected)
     {
-        var harness = new ControllerHarness(0.5);
-        harness.Controller.VolumeSaveOverride = stored;
-
-        Assert.Equal(expected, harness.Controller.PersistedVolumeTarget, 6);
-    }
-
-    // ---- HandlePreviewVolumeChanged -----------------------------------------
-
-    [Fact]
-    public void HandlePreviewVolumeChanged_ClearsTheOverrideWhenTheUserMovesTheSlider()
-    {
-        var harness = new ControllerHarness(0.5);
-        harness.Controller.VolumeSaveOverride = 0.9;
-
-        harness.Controller.HandlePreviewVolumeChanged(0.3);
-
-        Assert.Null(harness.Controller.VolumeSaveOverride);
-        Assert.Equal(0.3f, Assert.Single(harness.SessionVolumeWrites), 5);
-        Assert.True(harness.HasTrace("volume-set"));
+        using var h = new ControllerHarness(0.8);
+        h.Controller.SetUserVolume(requested);
+        Assert.Equal(expected, h.Controller.RequestedVolume, 6);
+        Assert.Equal(expected, h.Volume, 6);
+        Assert.Equal((float)expected, h.SessionVolumeWrites[^1], 5);
     }
 
     [Fact]
-    public void HandlePreviewVolumeChanged_KeepsTheOverrideWhileSavesAreSuppressed()
+    public void PrimePublishesSilenceThroughTheRealPropertyHookWithoutChangingTheRequestedTarget()
     {
-        // A ramp writes the volume many times; those writes must not be mistaken
-        // for the user choosing a new level.
-        var harness = new ControllerHarness(0.5);
-        harness.Controller.VolumeSaveOverride = 0.9;
-        harness.Controller.SuppressVolumeSave = true;
-
-        harness.Controller.HandlePreviewVolumeChanged(0.0);
-
-        Assert.Equal(0.9, harness.Controller.VolumeSaveOverride);
+        using var h = new ControllerHarness(0.8);
+        h.Controller.PrimeForAudioTransition("start");
+        Assert.Equal(0.8, h.Controller.RequestedVolume, 6);
+        Assert.Equal(0, h.Volume);
+        Assert.Equal(0f, h.SessionVolumeWrites[^1]);
     }
 
     [Theory]
-    [InlineData(-0.5, 0f)]
-    [InlineData(1.7, 1f)]
-    public void HandlePreviewVolumeChanged_ClampsWhatItPushesToTheAudioSession(double value, float expected)
+    [InlineData(0.3)]
+    [InlineData(0.0)]
+    public async Task UserInputAfterPrimeAndBeforeStartupResumesUsesTheLatestTarget(double requested)
     {
-        var harness = new ControllerHarness(0.5);
-
-        harness.Controller.HandlePreviewVolumeChanged(value);
-
-        Assert.Equal(expected, Assert.Single(harness.SessionVolumeWrites));
-    }
-
-    // ---- PrimeForAudioTransition --------------------------------------------
-
-    [Fact]
-    public void PrimeForAudioTransition_MutesAndRemembersTheTargetSoItCanBeRestored()
-    {
-        var harness = new ControllerHarness(0.6);
-
-        var target = harness.Controller.PrimeForAudioTransition("device_change");
-
-        Assert.Equal(0.6, target, 6);
-        Assert.Equal(0, harness.Volume);
-        Assert.Equal(0.6, harness.Controller.VolumeSaveOverride);
-        Assert.False(harness.Controller.SuppressVolumeSave, "suppression must not leak past the prime");
-        Assert.True(harness.HasTrace("primed"));
-        Assert.Contains(harness.Logs, log => log.Contains("PREVIEW_AUDIO_MONITOR_PRIMED"));
+        using var h = new ControllerHarness(0.8);
+        var operation = h.Controller.PrimeForAudioTransition("start");
+        // Represents a request while the caller awaits backend startup/readiness.
+        h.Controller.SetUserVolume(requested);
+        Assert.Equal(requested, h.Controller.RequestedVolume, 6);
+        Assert.Equal(0, h.Volume);
+        await h.Controller.RampUpForAudioTransitionAsync(operation, "start");
+        Assert.Equal(requested, h.Volume, 6);
+        Assert.Equal(requested, h.Controller.RequestedVolume, 6);
+        Assert.All(h.VolumeWrites, value => Assert.InRange(value, 0, requested));
     }
 
     [Fact]
-    public void PrimeForAudioTransition_HoldsNoOverrideWhenMonitoringWasAlreadySilent()
+    public async Task UserInputDuringRampUpSupersedesAllRemainingWritesAndCompletion()
     {
-        // Nothing was audible, so there is nothing to restore; keeping an override
-        // would un-mute audio the user had deliberately turned off.
-        var harness = new ControllerHarness(0.0);
-
-        var target = harness.Controller.PrimeForAudioTransition("device_change");
-
-        Assert.Equal(0, target);
-        Assert.Null(harness.Controller.VolumeSaveOverride);
-        Assert.False(harness.HasTrace("primed"));
-    }
-
-    // ---- RestoreAfterUnavailableAudio ---------------------------------------
-
-    [Fact]
-    public void RestoreAfterUnavailableAudio_RestoresTheLevelAndDropsTheOverride()
-    {
-        var harness = new ControllerHarness(0.0);
-        harness.Controller.VolumeSaveOverride = 0.7;
-
-        harness.Controller.RestoreAfterUnavailableAudio(0.7, "no_audio");
-
-        Assert.Equal(0.7, harness.Volume, 6);
-        Assert.Null(harness.Controller.VolumeSaveOverride);
-        Assert.False(harness.Controller.SuppressVolumeSave);
-        Assert.Contains(harness.TracePoints, point => point.Kind == "restore" && point.Note == "audio-preview-unavailable");
-    }
-
-    [Theory]
-    [InlineData(-1.0, 0.0)]
-    [InlineData(3.0, 1.0)]
-    public void RestoreAfterUnavailableAudio_ClampsTheRestoredLevel(double requested, double expected)
-    {
-        var harness = new ControllerHarness(0.0);
-
-        harness.Controller.RestoreAfterUnavailableAudio(requested, "no_audio");
-
-        Assert.Equal(expected, harness.Volume, 6);
-    }
-
-    // ---- RampDownForAudioTransitionAsync ------------------------------------
-
-    [Fact]
-    public async Task RampDown_EndsAtSilenceAndNeverRaisesTheVolumeOnTheWayDown()
-    {
-        var harness = new ControllerHarness(0.8);
-
-        await harness.Controller.RampDownForAudioTransitionAsync("device_change");
-
-        Assert.Equal(0, harness.Volume);
-        Assert.Equal(0, harness.VolumeWrites[^1]);
-        for (var i = 1; i < harness.VolumeWrites.Count; i++)
-        {
-            Assert.True(
-                harness.VolumeWrites[i] <= harness.VolumeWrites[i - 1] + 1e-9,
-                $"volume rose at step {i}: {harness.VolumeWrites[i - 1]} -> {harness.VolumeWrites[i]}");
-        }
+        var pause = new PausedRampDelay();
+        using var h = new ControllerHarness(0.8, pause.DelayAsync);
+        var operation = h.Controller.PrimeForAudioTransition("monitor_on");
+        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "monitor_on");
+        await pause.Entered.Task;
+        h.Controller.SetUserVolume(0.3);
+        var writeCount = h.VolumeWrites.Count;
+        Assert.Equal(0.3, h.Controller.RequestedVolume, 6);
+        pause.Resume.TrySetResult(true);
+        await ramp;
+        Assert.Equal(0.3, h.Volume, 6);
+        Assert.Equal(0.3f, h.SessionVolumeWrites[^1], 5);
+        Assert.Equal(writeCount, h.VolumeWrites.Count);
+        Assert.Contains(h.CompletedSessions, item => item.Reason == "monitor_on");
     }
 
     [Fact]
-    public async Task RampDown_NeverLeavesTheUnitRange()
+    public void SameValueUserRequestStillRevokesAnActiveWriter()
     {
-        var harness = new ControllerHarness(1.0);
-
-        await harness.Controller.RampDownForAudioTransitionAsync("device_change");
-
-        Assert.All(harness.VolumeWrites, value => Assert.InRange(value, 0.0, 1.0));
+        using var h = new ControllerHarness(0.8);
+        var operation = h.Controller.PrimeForAudioTransition("start");
+        var writer = h.Controller.BeginWriter(operation, muteOutput: false)!.Value;
+        h.Controller.SetUserVolume(0);
+        Assert.True(writer.CancellationToken.IsCancellationRequested);
+        Assert.False(h.Controller.TryApplyTransient(writer, 0.8));
+        Assert.False(h.Controller.TryCompleteWriter(writer));
+        Assert.Equal(0, h.Controller.RequestedVolume);
+        Assert.Equal(0, h.Volume);
     }
 
     [Fact]
-    public async Task RampDown_PreservesThePersistedTargetSoRampUpCanRestoreIt()
+    public async Task UserInputDuringRampDownPreservesTheRequestedLevelAndLetsTheBackendSequenceContinue()
     {
-        var harness = new ControllerHarness(0.65);
-
-        await harness.Controller.RampDownForAudioTransitionAsync("device_change");
-
-        Assert.Equal(0.65, harness.Controller.VolumeSaveOverride);
-        Assert.False(harness.Controller.SuppressVolumeSave, "suppression must be released even though the ramp completed");
+        var pause = new PausedRampDelay();
+        using var h = new ControllerHarness(0.8, pause.DelayAsync);
+        var operation = h.Controller.BeginTransition("input_change");
+        var ramp = h.Controller.RampDownForAudioTransitionAsync(operation, "input_change");
+        await pause.Entered.Task;
+        h.Controller.SetUserVolume(0.3);
+        pause.Resume.TrySetResult(true);
+        await ramp;
+        Assert.Equal(0, h.Volume);
+        Assert.Equal(0.3, h.Controller.RequestedVolume, 6);
+        // The input replacement finishes under the original operation identity.
+        await h.Controller.RampUpForAudioTransitionAsync(operation, "input_change");
+        Assert.Equal(0.3, h.Volume, 6);
     }
 
     [Fact]
-    public async Task RampDown_SkipsTheRampWhenAudioIsAlreadySilent()
+    public void UnavailableAudioRestoresLatestRequestAndRejectsAnOlderOperation()
     {
-        var harness = new ControllerHarness(0.0);
-
-        await harness.Controller.RampDownForAudioTransitionAsync("device_change");
-
-        Assert.Contains(harness.TracePoints, point => point.Kind == "ramp-down-skipped" && point.Note == "already-zero");
-        Assert.False(harness.HasTrace("ramp-down-start"));
-        Assert.Equal(0, harness.Volume);
+        using var h = new ControllerHarness(0.8);
+        var obsolete = h.Controller.PrimeForAudioTransition("old");
+        var current = h.Controller.PrimeForAudioTransition("new");
+        h.Controller.SetUserVolume(0.3);
+        h.Controller.RestoreAfterUnavailableAudio(obsolete, "old");
+        Assert.Equal(0, h.Volume);
+        h.Controller.RestoreAfterUnavailableAudio(current, "new");
+        Assert.Equal(0.3, h.Volume, 6);
+        Assert.Equal(0.3, h.Controller.RequestedVolume, 6);
     }
 
     [Fact]
-    public async Task RampDown_CompletesTheTraceSessionEvenWhenCancelledMidRamp()
+    public void ObsoleteWriterCompletionAndFinallyCannotClearANewerWriter()
     {
-        var harness = new ControllerHarness(0.9);
-        using var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromMilliseconds(30));
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => harness.Controller.RampDownForAudioTransitionAsync("device_change", cts.Token));
-
-        Assert.Contains(harness.CompletedSessions, session => session.Reason == "device_change");
-        Assert.False(harness.Controller.SuppressVolumeSave, "a cancelled ramp must not strand save suppression");
+        using var h = new ControllerHarness(0.8);
+        var oldOperation = h.Controller.BeginTransition("old");
+        var oldWriter = h.Controller.BeginWriter(oldOperation, muteOutput: true)!.Value;
+        var currentOperation = h.Controller.PrimeForAudioTransition("new");
+        var currentWriter = h.Controller.BeginWriter(currentOperation, muteOutput: false)!.Value;
+        Assert.True(h.Controller.TryApplyTransient(currentWriter, 0.2));
+        h.Controller.EndWriter(oldWriter);
+        Assert.False(h.Controller.TryCompleteWriter(oldWriter));
+        Assert.True(h.Controller.TryApplyTransient(currentWriter, 0.4));
+        Assert.True(h.Controller.TryCompleteWriter(currentWriter));
+        Assert.Equal(0.8, h.Volume, 6);
     }
 
     [Fact]
-    public async Task RampDown_ForStopUsesTheStopSpecificLogIdentity()
+    public async Task StoryboardStyleWriterCanSupersedeATaskRampWithoutOldFinallyPublishing()
     {
-        var harness = new ControllerHarness(0.5);
-
-        await harness.Controller.RampDownForStopAsync(CancellationToken.None);
-
-        Assert.Contains(harness.Logs, log => log.Contains("PREVIEW_AUDIO_STOP_RAMP_STARTED"));
-        Assert.Contains(harness.Logs, log => log.Contains("PREVIEW_AUDIO_STOP_RAMP_COMPLETED"));
+        var pause = new PausedRampDelay();
+        using var h = new ControllerHarness(0.8, pause.DelayAsync);
+        var first = h.Controller.PrimeForAudioTransition("task");
+        var ramp = h.Controller.RampUpForAudioTransitionAsync(first, "task");
+        await pause.Entered.Task;
+        var second = h.Controller.BeginTransition("storyboard");
+        var writer = h.Controller.BeginWriter(second, muteOutput: false)!.Value;
+        Assert.True(h.Controller.TryApplyTransient(writer, 0.4));
+        pause.Resume.TrySetResult(true);
+        await ramp;
+        Assert.Equal(0.4, h.Volume, 6);
+        Assert.True(h.Controller.TryCompleteWriter(writer));
+        Assert.Equal(0.8, h.Volume, 6);
     }
 
     [Fact]
-    public async Task RampDown_OpensNoTraceSessionWhenTracingIsDisabled()
+    public async Task CallerCancellationStillPropagatesWithoutReplacingTheRequestedVolume()
     {
-        var harness = new ControllerHarness(0.5);
-
-        await harness.Controller.RampDownForAudioTransitionAsync("device_change", traceSession: false);
-
-        Assert.Empty(harness.BegunSessions);
-        Assert.Empty(harness.CompletedSessions);
-    }
-
-    // ---- RampUpForAudioTransitionAsync --------------------------------------
-
-    [Fact]
-    public async Task RampUp_ReachesTheTargetAndNeverLowersTheVolumeOnTheWayUp()
-    {
-        var harness = new ControllerHarness(0.0);
-
-        await harness.Controller.RampUpForAudioTransitionAsync(0.75, "device_change");
-
-        Assert.Equal(0.75, harness.Volume, 6);
-        Assert.Equal(0.75, harness.VolumeWrites[^1], 6);
-        for (var i = 1; i < harness.VolumeWrites.Count; i++)
-        {
-            Assert.True(
-                harness.VolumeWrites[i] >= harness.VolumeWrites[i - 1] - 1e-9,
-                $"volume fell at step {i}: {harness.VolumeWrites[i - 1]} -> {harness.VolumeWrites[i]}");
-        }
+        var pause = new PausedRampDelay();
+        using var h = new ControllerHarness(0.8, pause.DelayAsync);
+        using var cancellation = new CancellationTokenSource();
+        var operation = h.Controller.PrimeForAudioTransition("start");
+        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "start", cancellation.Token);
+        await pause.Entered.Task;
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ramp);
+        Assert.Equal(0.8, h.Controller.RequestedVolume, 6);
     }
 
     [Fact]
-    public async Task RampUp_NeverOvershootsTheTarget()
+    public async Task CanceledStopRestoresLatestRequestAndReleasesTheMuteHold()
     {
-        var harness = new ControllerHarness(0.0);
-
-        await harness.Controller.RampUpForAudioTransitionAsync(0.4, "device_change");
-
-        Assert.All(harness.VolumeWrites, value => Assert.InRange(value, 0.0, 0.4 + 1e-9));
+        var pause = new PausedRampDelay();
+        using var h = new ControllerHarness(0.8, pause.DelayAsync);
+        using var cancellation = new CancellationTokenSource();
+        var stop = h.Controller.RampDownForStopAsync(cancellation.Token);
+        await pause.Entered.Task;
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => stop);
+        Assert.Equal(0.8, h.Volume, 6);
+        h.Controller.SetUserVolume(0.3);
+        Assert.Equal(0.3, h.Volume, 6);
     }
 
     [Fact]
-    public async Task RampUp_ClearsSuppressionAndTheOverrideOnceTheTargetIsReached()
+    public async Task FailedStopRampRestoresTheRequestedLevel()
     {
-        var harness = new ControllerHarness(0.0);
-
-        await harness.Controller.RampUpForAudioTransitionAsync(0.5, "device_change");
-
-        Assert.False(harness.Controller.SuppressVolumeSave);
-        Assert.Null(harness.Controller.VolumeSaveOverride);
+        using var h = new ControllerHarness(0.8, (_, _) => Task.FromException(new InvalidOperationException("delay failure")));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => h.Controller.RampDownForStopAsync(CancellationToken.None));
+        Assert.Equal(0.8, h.Volume, 6);
+        Assert.Equal(0.8, h.Controller.RequestedVolume, 6);
+        h.Controller.SetUserVolume(0.2);
+        Assert.Equal(0.2, h.Volume, 6);
     }
 
     [Fact]
-    public async Task RampUp_SkipsTheRampForASilentTarget()
+    public async Task DisposingDuringARampRejectsEveryLaterPublication()
     {
-        var harness = new ControllerHarness(0.3);
-
-        await harness.Controller.RampUpForAudioTransitionAsync(0, "device_change");
-
-        Assert.Contains(harness.TracePoints, point => point.Kind == "ramp-up-skipped" && point.Note == "target-zero");
-        Assert.Equal(0, harness.Volume);
-        Assert.Null(harness.Controller.VolumeSaveOverride);
-        Assert.Contains(harness.CompletedSessions, session => session.SessionId == harness.NextSessionId);
-    }
-
-    [Theory]
-    [InlineData(-1.0)]
-    [InlineData(1.9)]
-    public async Task RampUp_ClampsTheRequestedTargetIntoTheUnitRange(double requested)
-    {
-        var harness = new ControllerHarness(0.0);
-
-        await harness.Controller.RampUpForAudioTransitionAsync(requested, "device_change");
-
-        Assert.All(harness.VolumeWrites, value => Assert.InRange(value, 0.0, 1.0));
-        Assert.InRange(harness.Volume, 0.0, 1.0);
+        var pause = new PausedRampDelay();
+        using var h = new ControllerHarness(0.8, pause.DelayAsync);
+        var operation = h.Controller.PrimeForAudioTransition("start");
+        var ramp = h.Controller.RampUpForAudioTransitionAsync(operation, "start");
+        await pause.Entered.Task;
+        h.Controller.Dispose();
+        var writeCount = h.VolumeWrites.Count;
+        var sessionWriteCount = h.SessionVolumeWrites.Count;
+        h.Controller.SetUserVolume(0.3);
+        h.Controller.RestoreAfterUnavailableAudio(operation, "late");
+        pause.Resume.TrySetResult(true);
+        await ramp;
+        Assert.Equal(writeCount, h.VolumeWrites.Count);
+        Assert.Equal(sessionWriteCount, h.SessionVolumeWrites.Count);
+        Assert.Null(h.Controller.BeginWriter(operation, muteOutput: false));
     }
 
     [Fact]
-    public async Task RampUp_CompletesTheTraceSessionEvenWhenCancelledMidRamp()
+    public void DisposingBetweenPrimeAndResumeRejectsTheContinuation()
     {
-        var harness = new ControllerHarness(0.0);
-        using var cts = new CancellationTokenSource();
-        cts.CancelAfter(TimeSpan.FromMilliseconds(30));
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(
-            () => harness.Controller.RampUpForAudioTransitionAsync(0.9, "device_change", cts.Token));
-
-        Assert.Contains(harness.CompletedSessions, session => session.Reason == "device_change");
-        Assert.False(harness.Controller.SuppressVolumeSave);
-        Assert.Null(harness.Controller.VolumeSaveOverride);
+        using var h = new ControllerHarness(0.8);
+        var operation = h.Controller.PrimeForAudioTransition("start");
+        h.Controller.Dispose();
+        Assert.Null(h.Controller.BeginWriter(operation, muteOutput: false));
+        Assert.Equal(0.8, h.Controller.RequestedVolume, 6);
+        Assert.Equal(0, h.Volume);
     }
 
     [Fact]
-    public async Task RampDownThenRampUp_RestoresTheOriginalMonitoringLevel()
+    public async Task UninterruptedRampsKeepTheirEndpointsStepCountsAndTiming()
     {
-        // The round trip is the contract users actually feel across a device change.
-        var harness = new ControllerHarness(0.62);
+        var delays = new List<int>();
+        using var h = new ControllerHarness(0.62, (ms, _) => { delays.Add(ms); return Task.CompletedTask; });
+        var operation = h.Controller.BeginTransition("input_change");
+        await h.Controller.RampDownForAudioTransitionAsync(operation, "input_change");
+        Assert.Equal(18, delays.Count);
+        Assert.All(delays, delay => Assert.Equal(25, delay));
+        Assert.Equal(0, h.Volume);
+        Assert.Equal(0.62, h.Controller.RequestedVolume, 6);
+        for (var i = 1; i < h.VolumeWrites.Count; i++) Assert.True(h.VolumeWrites[i] <= h.VolumeWrites[i - 1]);
+        h.VolumeWrites.Clear();
+        delays.Clear();
+        await h.Controller.RampUpForAudioTransitionAsync(operation, "input_change");
+        Assert.Equal(30, delays.Count);
+        Assert.All(delays, delay => Assert.Equal(30, delay));
+        Assert.Equal(0.62, h.Volume, 6);
+        for (var i = 1; i < h.VolumeWrites.Count; i++) Assert.True(h.VolumeWrites[i] >= h.VolumeWrites[i - 1]);
+    }
 
-        await harness.Controller.RampDownForAudioTransitionAsync("device_change");
-        var restoreTarget = harness.Controller.PersistedVolumeTarget;
-        await harness.Controller.RampUpForAudioTransitionAsync(restoreTarget, "device_change");
-
-        Assert.Equal(0.62, harness.Volume, 6);
+    [Fact]
+    public async Task StopRampRetainsItsDiagnosticIdentity()
+    {
+        using var h = new ControllerHarness(0.5);
+        await h.Controller.RampDownForStopAsync(CancellationToken.None);
+        Assert.Contains(h.Logs, log => log.Contains("PREVIEW_AUDIO_STOP_RAMP_STARTED"));
+        Assert.Contains(h.Logs, log => log.Contains("PREVIEW_AUDIO_STOP_RAMP_COMPLETED"));
+        Assert.Equal(0.5, h.Controller.RequestedVolume, 6);
     }
 
     // ---- AudioRampTraceRecorder ---------------------------------------------

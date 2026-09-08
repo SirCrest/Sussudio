@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 
@@ -130,7 +131,7 @@ public partial class CaptureService
                     {
                         try
                         {
-                            await StopTelemetryPollAsync().ConfigureAwait(false);
+                            await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
                         }
                         catch (Exception ex) when (stopFailure != null)
                         {
@@ -213,8 +214,8 @@ public partial class CaptureService
         }
         await EnsureFlashbackAudioInputsAsync(settings, transitionToken, "preview_fast_path").ConfigureAwait(false);
         _isVideoPreviewActive = true;
-        // Telemetry may have been stopped via a recording-stop path while preview
-        // was off; StartTelemetryPoll is idempotent (stops any prior timer first).
+        // Native source polling may have stopped while this capture kept running.
+        // Enabling it again reuses the capture-owned telemetry worker.
         StartTelemetryPoll();
         StatusChanged?.Invoke(this, "Preview started");
         return true;
@@ -430,7 +431,6 @@ public partial class CaptureService
     private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)
     {
         unifiedVideoCapture.FatalErrorOccurred += OnUnifiedVideoCaptureFatalError;
-        unifiedVideoCapture.SetPixelFormatDetectedCallback(fmt => RecordObservedPixelFormat(fmt));
     }
 
     private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)
@@ -441,7 +441,6 @@ public partial class CaptureService
         }
 
         unifiedVideoCapture.FatalErrorOccurred -= OnUnifiedVideoCaptureFatalError;
-        unifiedVideoCapture.SetPixelFormatDetectedCallback(null);
     }
 
     private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)
@@ -541,7 +540,6 @@ public partial class CaptureService
             MicrophoneEnabled = source.MicrophoneEnabled,
             MicrophoneDeviceId = source.MicrophoneDeviceId,
             MicrophoneDeviceName = source.MicrophoneDeviceName,
-            AudioPathMode = source.AudioPathMode,
             ForceMjpegDecode = source.ForceMjpegDecode,
             FlashbackGpuDecode = source.FlashbackGpuDecode,
             FlashbackBufferMinutes = source.FlashbackBufferMinutes,

@@ -349,8 +349,8 @@ internal sealed record FlashbackSessionContext
     public required uint BitRate { get; init; }
     public required bool IsP010 { get; init; }
     public required string CodecName { get; init; }
-    public string? NvencPreset { get; init; }
-    public string SplitEncodeMode { get; init; } = "Auto";
+    public NvencPreset NvencPreset { get; init; } = NvencPreset.Auto;
+    public SplitEncodeMode SplitEncodeMode { get; init; } = SplitEncodeMode.Auto;
     public bool HdrEnabled { get; init; }
     public bool IsFullRangeInput { get; init; }
     public string? HdrMasterDisplayMetadata { get; init; }
@@ -426,10 +426,7 @@ internal sealed record FlashbackExportRequest
     /// <summary>Segment files with buffer timeline metadata for multi-segment export.</summary>
     public IReadOnlyList<FlashbackExportSegment>? Segments { get; init; }
 
-    /// <summary>Segment file paths for multi-segment export, or null for single-file export.</summary>
-    public IReadOnlyList<string>? SegmentPaths { get; init; }
-
-    /// <summary>Single input file. Ignored when Segments or SegmentPaths contains entries.</summary>
+    /// <summary>Single input file. Ignored when Segments contains entries.</summary>
     public string? InputPath { get; init; }
 
     public required TimeSpan InPoint { get; init; }

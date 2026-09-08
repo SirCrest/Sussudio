@@ -664,8 +664,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     /// <summary>
     /// Exports a flashback range to .mp4 based on the request parameters.
-    /// Uses multi-segment export when <see cref="FlashbackExportRequest.Segments"/> or
-    /// <see cref="FlashbackExportRequest.SegmentPaths"/> is set,
+    /// Uses multi-segment export when <see cref="FlashbackExportRequest.Segments"/> is set,
     /// otherwise falls back to single-file export from <see cref="FlashbackExportRequest.InputPath"/>.
     /// </summary>
     public Task<FinalizeResult> ExportAsync(
@@ -694,20 +693,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
             return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
                 request.OutputPath, request.FastStart, request.Force, progress, ct);
-        }
-
-        if (request.SegmentPaths is { Count: > 0 })
-        {
-            SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
-            return ExportSegmentsAsync(
-                request.SegmentPaths.Select(path => new FlashbackExportSegment { Path = path }).ToArray(),
-                request.InPoint,
-                request.OutPoint,
-                request.OutputPath,
-                request.FastStart,
-                request.Force,
-                progress,
-                ct);
         }
 
         SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);

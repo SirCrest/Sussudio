@@ -19,14 +19,16 @@ public static class PerformanceTimelineTools
     public static async Task<CallToolResult> get_performance_timeline(
         PipeClient pipeClient,
         [Description("Maximum number of timeline entries to return (default: 240, which is ~2 minutes)")] int maxEntries = 240,
-        [Description("Target 1% low FPS for preview/playback budget diagnostics (default: 118).")] double targetOnePercentLowFps = 118)
+        [Description("Target 1% low FPS for preview/playback budget diagnostics (default: 118).")] double targetOnePercentLowFps = 118,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
             ["maxEntries"] = maxEntries
         };
 
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -779,9 +781,11 @@ public static class PresentMonTools
         [Description("Optional path to PresentMon.exe / PresentMon-*-x64.exe. Env vars SUSSUDIO_PRESENTMON_PATH or PRESENTMON_PATH also work.")] string? presentMonPath = null,
         [Description("Optional CSV output path. The CSV is deleted unless keepCsv is true.")] string? outputPath = null,
         [Description("Keep the raw PresentMon CSV and return its path.")] bool keepCsv = false,
-        [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true)
+        [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true,
+        CancellationToken cancellationToken = default)
     {
-        var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient, cancellationToken).ConfigureAwait(false);
         var result = await PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
             seconds,
             processId,
@@ -794,14 +798,14 @@ public static class PresentMonTools
             outputFile: outputPath,
             keepCsv: keepCsv,
             trackGpuVideo: trackGpuVideo,
-            correlation: resolved))
+            correlation: resolved), cancellationToken)
             .ConfigureAwait(false);
 
-        return McpToolResultFactory.FromText(PresentMonProbe.Format(result));
+        return McpToolResultFactory.FromText(PresentMonProbe.Format(result), isError: !result.Success);
     }
 
     [McpServerTool(UseStructuredContent = true), Description("Capture raw structured PresentMon frame pacing summary for Sussudio.")]
-    public static async Task<object> capture_presentmon_raw(
+    public static async Task<CallToolResult> capture_presentmon_raw(
         PipeClient pipeClient,
         [Description("Capture duration in seconds. Defaults to 10; clamped to 1-300.")] int seconds = 10,
         [Description("Optional target process id. Defaults to the newest Sussudio process.")] int? processId = null,
@@ -813,10 +817,12 @@ public static class PresentMonTools
         [Description("Optional path to PresentMon.exe / PresentMon-*-x64.exe. Env vars SUSSUDIO_PRESENTMON_PATH or PRESENTMON_PATH also work.")] string? presentMonPath = null,
         [Description("Optional CSV output path. The CSV is deleted unless keepCsv is true.")] string? outputPath = null,
         [Description("Keep the raw PresentMon CSV and return its path.")] bool keepCsv = false,
-        [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true)
+        [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true,
+        CancellationToken cancellationToken = default)
     {
-        var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient).ConfigureAwait(false);
-        return await PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
+        cancellationToken.ThrowIfCancellationRequested();
+        var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient, cancellationToken).ConfigureAwait(false);
+        var result = await PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(
             seconds,
             processId,
             processName,
@@ -828,15 +834,22 @@ public static class PresentMonTools
             outputFile: outputPath,
             keepCsv: keepCsv,
             trackGpuVideo: trackGpuVideo,
-            correlation: resolved))
+            correlation: resolved), cancellationToken)
             .ConfigureAwait(false);
+
+        var payload = JsonSerializer.SerializeToElement(result, ModelContextProtocol.McpJsonUtilities.DefaultOptions);
+        var toolResult = McpToolResultFactory.FromText(payload.GetRawText(), isError: !result.Success);
+        toolResult.StructuredContent = payload;
+        return toolResult;
     }
 
-    private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(PipeClient pipeClient)
+    private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(
+        PipeClient pipeClient,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+            var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(response) ||
                 !response.TryGetProperty("Snapshot", out var snapshot))
             {

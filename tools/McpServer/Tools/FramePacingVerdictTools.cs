@@ -20,9 +20,11 @@ public static class FramePacingVerdictTools
         PipeClient pipeClient,
         [Description("Maximum performance timeline entries to inspect for counter deltas. Default 240 is roughly two minutes at 500ms samples.")] int maxTimelineEntries = 240,
         [Description("Minimum per-channel cadence sample duration in seconds before lows are considered trustworthy. Default 30 seconds.")] double minSampleSeconds = 30,
-        [Description("Optional target high-frame-rate FPS. Use 0 to infer from snapshot source/capture/playback fields.")] double targetFpsOverride = 0)
+        [Description("Optional target high-frame-rate FPS. Use 0 to infer from snapshot source/capture/playback fields.")] double targetFpsOverride = 0,
+        CancellationToken cancellationToken = default)
     {
-        var snapshotResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var snapshotResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(snapshotResponse))
         {
             return McpToolResultFactory.FromResponse(snapshotResponse, GetMessage(snapshotResponse));
@@ -38,7 +40,7 @@ public static class FramePacingVerdictTools
         {
             ["maxEntries"] = maxTimelineEntries
         };
-        var timelineResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload).ConfigureAwait(false);
+        var timelineResponse = await pipeClient.SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(timelineResponse))
         {
             return McpToolResultFactory.FromResponse(timelineResponse, GetMessage(timelineResponse));

@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Sussudio.Models;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 using Sussudio.ViewModels;

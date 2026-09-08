@@ -1472,18 +1472,18 @@ static partial class Program
         var waitToolsText = previewToolsText;
 
         AssertContains(formatterText, "AutomationCommandKind Kind,");
-        AssertContains(formatterText, "pipeClient.SendCommandAsync(command.Kind, command.Payload)");
+        AssertContains(formatterText, "pipeClient.SendCommandAsync(command.Kind, command.Payload, cancellationToken: cancellationToken)");
         AssertContains(formatterText, "if (!AutomationSnapshotFormatter.IsSuccess(response))");
         AssertContains(formatterText, "isError = true;\n                break;");
         AssertDoesNotContain(formatterText, "string CommandName");
         AssertDoesNotContain(formatterText, "SendCommandAsync(command.CommandName");
         AssertDoesNotContain(formatterText, "pipeClient.SendCommandAsync(commandName");
 
-        AssertContains(appStateToolText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(appStateToolText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
         AssertDoesNotContain(appStateToolText, "SendCommandAsync(\"GetSnapshot\"");
-        AssertContains(captureOptionsToolText, "SendCommandAsync(AutomationCommandKind.GetCaptureOptions)");
+        AssertContains(captureOptionsToolText, "SendCommandAsync(AutomationCommandKind.GetCaptureOptions, cancellationToken: cancellationToken)");
         AssertDoesNotContain(captureOptionsToolText, "SendCommandAsync(\"GetCaptureOptions\"");
-        AssertContains(diagnosticsToolsText, "SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload)");
+        AssertContains(diagnosticsToolsText, "SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(diagnosticsToolsText, "SendCommandAsync(\"GetDiagnostics\"");
 
         foreach (var commandName in new[]
@@ -1551,46 +1551,46 @@ static partial class Program
         AssertDoesNotContain(flashbackToolsText, "commandName: \"RestartFlashback\"");
         AssertContains(flashbackActionsText, "AutomationCommandKind.FlashbackAction");
         AssertDoesNotContain(flashbackActionsText, "commandName: \"FlashbackAction\"");
-        AssertContains(flashbackExportText, "SendCommandAsync(AutomationCommandKind.FlashbackExport, payload)");
+        AssertContains(flashbackExportText, "SendCommandAsync(AutomationCommandKind.FlashbackExport, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(flashbackExportText, "SendCommandAsync(\"FlashbackExport\"");
-        AssertContains(flashbackToolsText, "SendCommandAsync(AutomationCommandKind.FlashbackGetSegments)");
+        AssertContains(flashbackToolsText, "SendCommandAsync(AutomationCommandKind.FlashbackGetSegments, cancellationToken: cancellationToken)");
         AssertDoesNotContain(flashbackToolsText, "SendCommandAsync(\"FlashbackGetSegments\"");
-        AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
-        AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload)");
+        AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
+        AssertContains(framePacingVerdictToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(framePacingVerdictToolsText, "SendCommandAsync(\"GetSnapshot\"");
         AssertDoesNotContain(framePacingVerdictToolsText, "SendCommandAsync(\"GetPerformanceTimeline\"");
-        AssertContains(memoryDiagnosticsToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(memoryDiagnosticsToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
         AssertDoesNotContain(memoryDiagnosticsToolsText, "SendCommandAsync(\"GetSnapshot\"");
-        AssertContains(performanceTimelineToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload)");
+        AssertContains(performanceTimelineToolsText, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(performanceTimelineToolsText, "SendCommandAsync(\"GetPerformanceTimeline\"");
-        AssertContains(previewColorProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbePreviewColor)");
+        AssertContains(previewColorProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbePreviewColor, cancellationToken: cancellationToken)");
         AssertDoesNotContain(previewColorProbeToolsText, "SendCommandAsync(\"ProbePreviewColor\"");
-        AssertContains(previewFrameCaptureToolsText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload)");
+        AssertContains(previewFrameCaptureToolsText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(previewFrameCaptureToolsText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
-        AssertContains(presentMonToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(presentMonToolsText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
         AssertDoesNotContain(presentMonToolsText, "SendCommandAsync(\"GetSnapshot\"");
-        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording)");
-        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload)");
-        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload)");
+        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording, cancellationToken: cancellationToken)");
+        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload, cancellationToken: cancellationToken)");
+        AssertContains(verificationToolsText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(verificationToolsText, "SendCommandAsync(\"VerifyLastRecording\"");
         AssertDoesNotContain(verificationToolsText, "SendCommandAsync(\"AssertSnapshot\"");
         AssertDoesNotContain(verificationToolsText, "SendCommandAsync(\"VerifyFile\"");
-        AssertContains(videoSourceProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbeVideoSource)");
+        AssertContains(videoSourceProbeToolsText, "SendCommandAsync(AutomationCommandKind.ProbeVideoSource, cancellationToken: cancellationToken)");
         AssertDoesNotContain(videoSourceProbeToolsText, "SendCommandAsync(\"ProbeVideoSource\"");
-        AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.ArmClose, armPayload)");
+        AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.ArmClose, armPayload, cancellationToken: cancellationToken)");
         AssertContains(windowToolsText, "var actionId = Guid.NewGuid().ToString(\"N\");");
         AssertContains(windowToolsText, "[\"actionId\"] = actionId");
         AssertContains(windowToolsText, "actionPayload[\"actionId\"] = actionId;");
-        AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload)");
+        AssertContains(windowToolsText, "SendCommandAsync(AutomationCommandKind.WindowAction, actionPayload, cancellationToken: cancellationToken)");
         AssertContains(windowToolsText, "AutomationCommandKind.SetFullScreenEnabled");
         AssertContains(windowToolsText, "AutomationCommandKind.OpenRecordingsFolder");
         AssertDoesNotContain(windowToolsText, "SendCommandAsync(\"ArmClose\"");
         AssertDoesNotContain(windowToolsText, "SendCommandAsync(\"WindowAction\"");
         AssertDoesNotContain(windowToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"SetFullScreenEnabled\"");
         AssertDoesNotContain(windowToolsText, "ExecuteAndFormatResultAsync(\n                pipeClient,\n                \"OpenRecordingsFolder\"");
-        AssertContains(windowScreenshotToolsText, "SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload)");
+        AssertContains(windowScreenshotToolsText, "SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(windowScreenshotToolsText, "SendCommandAsync(\"CaptureWindowScreenshot\", payload)");
-        AssertContains(waitToolsText, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
+        AssertContains(waitToolsText, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs, cancellationToken: cancellationToken)");
         AssertContains(waitToolsText, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
         AssertDoesNotContain(waitToolsText, "WaitForConditionCommandName");
         AssertDoesNotContain(waitToolsText, "SendCommandAsync(\"WaitForCondition\"");
@@ -2483,9 +2483,9 @@ static partial class Program
         AssertContains(verificationRootText, "public static async Task<CallToolResult> verify_recording");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> assert_snapshot");
         AssertContains(verificationRootText, "public static async Task<CallToolResult> verify_file");
-        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording)");
-        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload)");
-        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload)");
+        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.VerifyLastRecording, cancellationToken: cancellationToken)");
+        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.AssertSnapshot, payload, cancellationToken: cancellationToken)");
+        AssertContains(verificationRootText, "SendCommandAsync(AutomationCommandKind.VerifyFile, payload, cancellationToken: cancellationToken)");
         AssertContains(verificationRootText, "TryParseAssertionArray(assertions, out var parsedAssertions, out var parseError)");
         AssertContains(verificationRootText, "BuildRecordingVerificationText(response, verification, message)");
         AssertContains(verificationRootText, "BuildSnapshotAssertionText(response)");
@@ -2525,7 +2525,7 @@ static partial class Program
         return ExtractTextBetween(
             builderText,
             "private sealed record DiagnosticSessionResultAnalysis(",
-            "private readonly record struct DiagnosticSessionOverviewResultProjection(");
+            "private static double GetProcessCpuMaxPercentObserved(");
     }
 
     internal static Task DiagnosticSessionModels_AreSplitFromRunnerBehavior()
@@ -2780,9 +2780,9 @@ static partial class Program
     {
         AssertDiagnosticSessionResultBuilderCoreOwnership();
         AssertDiagnosticSessionResultBuilderPreviewSchedulerOwnership();
-        AssertDiagnosticSessionResultBuilderOverviewAndCaptureProjectionOwnership();
-        AssertDiagnosticSessionResultBuilderFlashbackProjectionOwnership();
-        AssertDiagnosticSessionResultBuilderPreviewProjectionOwnership();
+        AssertDiagnosticSessionResultBuilderOverviewAndCaptureCompositionOwnership();
+        AssertDiagnosticSessionResultBuilderFlashbackCompositionOwnership();
+        AssertDiagnosticSessionResultBuilderPreviewCompositionOwnership();
         AssertDiagnosticSessionResultBuilderAnalysisWarningsOwnership();
         AssertDiagnosticSessionResultBuilderSummaryArtifactHandoffOwnership();
 
@@ -2925,54 +2925,20 @@ static partial class Program
             => GetPropertyValue(classification, "Evidence") as string ?? string.Empty;
     }
 
-    private static void AssertDiagnosticSessionResultBuilderPreviewProjectionOwnership()
+    private static void AssertDiagnosticSessionResultBuilderPreviewCompositionOwnership()
     {
         var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var previewResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var previewD3DResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
+        var resultText = ExtractMemberCode(builderText, "CreateResult");
 
-        AssertContains(builderText, "return FlattenResultProjectionSet(");
-        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(projectionSetText, "Preview: BuildPreviewResultProjection(analysis)");
-        AssertContains(projectionSetText, "PreviewScheduler: BuildPreviewSchedulerResultProjection(analysis)");
-        AssertContains(projectionSetText, "PreviewD3D: BuildPreviewD3DResultProjection(analysis)");
-        AssertContains(projectionSetText, "PreviewVisualCadence: BuildPreviewVisualCadenceResultProjection(analysis)");
-        AssertContains(flatteningText, "var previewResult = resultProjections.Preview;");
-        AssertContains(flatteningText, "var previewSchedulerResult = resultProjections.PreviewScheduler;");
-        AssertContains(flatteningText, "var previewD3DResult = resultProjections.PreviewD3D;");
-        AssertContains(flatteningText, "var previewVisualCadenceResult = resultProjections.PreviewVisualCadence;");
-        AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewResultProjection(");
-        AssertContains(previewResultText, "private static DiagnosticSessionPreviewResultProjection BuildPreviewResultProjection(");
-        AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
-        AssertContains(previewResultText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
-        AssertContains(previewD3DResultText, "private readonly record struct DiagnosticSessionPreviewD3DResultProjection(");
-        AssertContains(previewD3DResultText, "private static DiagnosticSessionPreviewD3DResultProjection BuildPreviewD3DResultProjection(");
-        AssertContains(previewD3DResultText, "var previewD3DMetrics = analysis.PreviewD3DMetrics;");
-        AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewVisualCadenceResultProjection(");
-        AssertContains(previewResultText, "private static DiagnosticSessionPreviewVisualCadenceResultProjection BuildPreviewVisualCadenceResultProjection(");
-        AssertContains(previewResultText, "var visualCadenceMetrics = analysis.VisualCadenceMetrics;");
-        AssertContains(previewResultText, "PreviewSchedulerLastDropReasonAtEnd: previewScheduler.LastDropReasonAtEnd");
-        AssertContains(previewD3DResultText, "PreviewD3DInputUploadCpuP99MsAtEnd: previewD3DMetrics.InputUploadCpuP99MsAtEnd");
-        AssertContains(previewD3DResultText, "PreviewD3DTotalFrameCpuMaxMsObserved: previewD3DMetrics.TotalFrameCpuMaxMsObserved");
-        AssertContains(previewResultText, "VisualCadenceOutputFpsAtEnd: visualCadenceMetrics.OutputFpsAtEnd");
-        AssertContains(previewResultText, "VisualCadenceLongestRepeatRunAtEnd: visualCadenceMetrics.LongestRepeatRunAtEnd");
-        AssertContains(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DResult.PreviewD3DInputUploadCpuP99MsAtEnd,");
-        AssertContains(flatteningText, "PreviewSchedulerDroppedAtEnd = previewSchedulerResult.PreviewSchedulerDroppedAtEnd,");
-        AssertContains(flatteningText, "VisualCadenceOutputFpsAtEnd = previewVisualCadenceResult.VisualCadenceOutputFpsAtEnd,");
-        AssertDoesNotContain(flatteningText, "GetString(lastSnapshot, \"MjpegPreviewJitterLastDropReason\")");
-        AssertDoesNotContain(analysisText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
-        AssertDoesNotContain(analysisText, "PreviewD3DInputUploadCpuP99MsAtEnd");
-        AssertDoesNotContain(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewResult");
-        AssertDoesNotContain(flatteningText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics");
-        AssertDoesNotContain(flatteningText, "VisualCadenceOutputFpsAtEnd = previewResult");
-        AssertDoesNotContain(flatteningText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics");
+        AssertContains(resultText, "var previewCadenceMetrics = analysis.PreviewCadenceMetrics;");
+        AssertContains(resultText, "var previewScheduler = analysis.PreviewScheduler;");
+        AssertContains(resultText, "var previewD3DMetrics = analysis.PreviewD3DMetrics;");
+        AssertContains(resultText, "var visualCadenceMetrics = analysis.VisualCadenceMetrics;");
+        AssertContains(resultText, "PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics.InputUploadCpuP99MsAtEnd,");
+        AssertContains(resultText, "PreviewSchedulerDroppedAtEnd = previewScheduler.DroppedAtEnd,");
+        AssertContains(resultText, "VisualCadenceOutputFpsAtEnd = visualCadenceMetrics.OutputFpsAtEnd,");
+        AssertDoesNotContain(builderText, "ResultProjection");
     }
 
     private static void AssertDiagnosticSessionResultBuilderAnalysisWarningsOwnership()
@@ -2988,7 +2954,7 @@ static partial class Program
         AssertContains(analysisText, "var toleratesPreviewCycleSchedulerSettling =");
         AssertContains(analysisText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(analysisText, "var toleratesSparseScrubSchedulerTransitions =");
-        AssertContains(ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs"), "RunFlashbackEncoderCycle");
+        AssertContains(ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs"), "DiagnosticSessionScenarioKind.FlashbackEncoderCycle");
         AssertDoesNotContain(analysisText, "var flashbackExportForceRotateFallbacksAtEnd =");
         AssertDoesNotContain(analysisText, "FlashbackExportForceRotateFallbacksAtEnd =");
         AssertContains(analysisText, "private static void AddFlashbackPlaybackAnalysisWarnings(");
@@ -3127,30 +3093,22 @@ static partial class Program
     {
         var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var resultText = ExtractMemberCode(builderText, "CreateResult");
         var resultBuildRequestText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
         var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
         var diagnosticHealthText = analysisText;
 
+        AssertDoesNotContain(builderText, "ResultProjection");
         AssertContains(builderText, "internal static class DiagnosticSessionResultBuilder");
         AssertContains(builderText, "internal static async Task<DiagnosticSessionResult> BuildAndWriteAsync(");
         AssertContains(builderText, "private static DiagnosticSessionResult CreateResult(");
-        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(projectionSetText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertContains(projectionSetText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertContains(analysisText, "private static DiagnosticSessionPreviewSchedulerAnalysis BuildPreviewSchedulerAnalysis(");
         AssertContains(analysisText, "private readonly record struct DiagnosticSessionPreviewSchedulerAnalysis(");
         AssertContains(resultBuildRequestText, "internal sealed record DiagnosticSessionResultBuildRequest(");
         AssertContains(analysisText, "private sealed record DiagnosticSessionResultAnalysis(");
-        AssertContains(projectionSetText, "DiagnosticSessionOverviewResultProjection Overview,");
-        AssertContains(projectionSetText, "DiagnosticSessionPreviewVisualCadenceResultProjection PreviewVisualCadence");
         AssertContains(builderText, "runState.SetStage(\"result-analysis\")");
-        AssertContains(builderText, "return FlattenResultProjectionSet(");
-        AssertContains(flatteningText, "return new DiagnosticSessionResult\n        {");
-        AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
+        AssertContains(resultText, "return new DiagnosticSessionResult\n        {");
         AssertContains(analysisText, "var healthSummary = BuildDiagnosticHealthSummary(request, lastSnapshot);");
         AssertContains(analysisText, "healthSummary.Snapshot,");
         AssertContains(analysisText, "healthSummary,");
@@ -3200,9 +3158,6 @@ static partial class Program
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Flattening.cs")),
             "final result DTO flattening folded into DiagnosticSessionResultBuilder.cs");
-        AssertDoesNotContain(flatteningText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertContains(builderText, "private static DiagnosticSessionResultProjectionSet BuildResultProjectionSet(");
-        AssertContains(builderText, "private readonly record struct DiagnosticSessionResultProjectionSet(");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.Projections.cs")),
@@ -3239,15 +3194,13 @@ static partial class Program
         AssertContains(analysisText, "IsSparsePreviewSchedulerStressRun(");
         AssertContains(analysisText, "ValidateFlashbackPreviewScheduler(");
         AssertContains(analysisText, "DiagnosticSessionPreviewSchedulerAnalysis PreviewScheduler,");
-        AssertContains(previewResultText, "private readonly record struct DiagnosticSessionPreviewSchedulerResultProjection(");
-        AssertContains(previewResultText, "private static DiagnosticSessionPreviewSchedulerResultProjection BuildPreviewSchedulerResultProjection(");
         AssertContains(previewResultText, "var previewScheduler = analysis.PreviewScheduler;");
-        AssertContains(previewResultText, "PreviewSchedulerDroppedAtEnd: previewScheduler.DroppedAtEnd");
-        AssertContains(previewResultText, "PreviewSchedulerScheduleLateDelta: previewScheduler.ScheduleLateDelta");
-        AssertContains(previewResultText, "PreviewSchedulerLastDropReasonAtEnd: previewScheduler.LastDropReasonAtEnd");
-        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowReasonAtEnd: previewScheduler.LastUnderflowReasonAtEnd");
-        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowInputAgeMsAtEnd: previewScheduler.LastUnderflowInputAgeMsAtEnd");
-        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowOutputAgeMsAtEnd: previewScheduler.LastUnderflowOutputAgeMsAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerDroppedAtEnd = previewScheduler.DroppedAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerScheduleLateDelta = previewScheduler.ScheduleLateDelta");
+        AssertContains(previewResultText, "PreviewSchedulerLastDropReasonAtEnd = previewScheduler.LastDropReasonAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowReasonAtEnd = previewScheduler.LastUnderflowReasonAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowInputAgeMsAtEnd = previewScheduler.LastUnderflowInputAgeMsAtEnd");
+        AssertContains(previewResultText, "PreviewSchedulerLastUnderflowOutputAgeMsAtEnd = previewScheduler.LastUnderflowOutputAgeMsAtEnd");
         AssertDoesNotContain(analysisText, "long PreviewSchedulerDroppedAtEnd");
         AssertDoesNotContain(analysisText, "double PreviewSchedulerMaxScheduleLateMsObserved");
         AssertDoesNotContain(analysisText, "var previewSchedulerDroppedAtEnd =");
@@ -3258,179 +3211,46 @@ static partial class Program
             "preview scheduler analysis folded into DiagnosticSessionResultBuilder.cs");
     }
 
-    private static void AssertDiagnosticSessionResultBuilderOverviewAndCaptureProjectionOwnership()
+    private static void AssertDiagnosticSessionResultBuilderOverviewAndCaptureCompositionOwnership()
     {
         var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var analysisText = ReadDiagnosticSessionResultBuilderAnalysisSource();
-        var overviewResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var captureResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var resultText = ExtractMemberCode(builderText, "CreateResult");
 
-        AssertContains(builderText, "var resultProjections = BuildResultProjectionSet(request, runState, analysis);");
-        AssertContains(builderText, "return FlattenResultProjectionSet(");
-        AssertContains(builderText, "return new DiagnosticSessionResult\n        {");
-        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(projectionSetText, "Overview: BuildOverviewResultProjection(request, runState, analysis)");
-        AssertContains(flatteningText, "var overviewResult = resultProjections.Overview;");
-        AssertContains(flatteningText, "Success = overviewResult.Success,");
-        AssertContains(overviewResultText, "private readonly record struct DiagnosticSessionOverviewResultProjection(");
-        AssertContains(overviewResultText, "private static DiagnosticSessionOverviewResultProjection BuildOverviewResultProjection(");
-        AssertContains(overviewResultText, "var verificationSucceeded = request.Verification.HasValue");
-        AssertContains(overviewResultText, "Success: DetermineDiagnosticSessionSuccess(request, runState, analysis, verificationSucceeded)");
-        AssertContains(overviewResultText, "ProcessCpuPercentAtEnd: GetDouble(lastSnapshot, \"ProcessCpuPercent\")");
-        AssertContains(overviewResultText, "var processCpuMaxPercentObserved = GetProcessCpuMaxPercentObserved(request.Samples, lastSnapshot);");
-        AssertContains(overviewResultText, "ProcessCpuMaxPercentObserved: processCpuMaxPercentObserved");
-        AssertContains(overviewResultText, "private static double GetProcessCpuMaxPercentObserved(");
-        AssertContains(overviewResultText, ".Select(sample => GetDouble(sample.Snapshot, \"ProcessCpuPercent\"))");
-        AssertContains(overviewResultText, ".Append(GetDouble(lastSnapshot, \"ProcessCpuPercent\"))");
-        AssertContains(overviewResultText, "RecordingVerificationMessage: request.Verification.HasValue");
-        AssertContains(overviewResultText, "PresentMon: request.PresentMon");
-        AssertContains(overviewResultText, "private static bool DetermineDiagnosticSessionSuccess(");
-        AssertContains(overviewResultText, "request.CommandFailureCount == 0 &&");
-        AssertContains(overviewResultText, "runState.TerminalException is null &&");
-        AssertContains(overviewResultText, "(analysis.DiagnosticHealthSucceeded ||");
-        AssertContains(overviewResultText, "IsFunctionallyVerifiedRecordingWarning(request, analysis, verificationSucceeded) ||");
-        AssertContains(overviewResultText, "IsVisuallyVerifiedPreviewWarning(request, analysis)) &&");
-        AssertContains(overviewResultText, "(request.PresentMon is null || request.PresentMon.Success) &&");
-        AssertContains(overviewResultText, "(!verificationSucceeded.HasValue || verificationSucceeded.Value) &&");
-        AssertContains(overviewResultText, "analysis.FlashbackWarningsSucceeded");
-        AssertDoesNotContain(flatteningText, "request.CommandFailureCount == 0 &&");
-        AssertDoesNotContain(flatteningText, "ProcessCpuPercentAtEnd = GetDouble(lastSnapshot");
-        AssertDoesNotContain(flatteningText, "RecordingVerificationMessage = request.Verification.HasValue");
-        AssertDoesNotContain(analysisText, "ProcessCpuMaxPercentObserved");
-        AssertDoesNotContain(overviewResultText, "analysis.ProcessCpuMaxPercentObserved");
-        AssertContains(projectionSetText, "Capture: BuildCaptureResultProjection(analysis)");
-        AssertContains(flatteningText, "var captureResult = resultProjections.Capture;");
-        AssertContains(captureResultText, "private readonly record struct DiagnosticSessionCaptureResultProjection(");
-        AssertContains(captureResultText, "private static DiagnosticSessionCaptureResultProjection BuildCaptureResultProjection(");
-        AssertContains(captureResultText, "SelectedResolutionAtEnd: GetString(lastSnapshot, \"SelectedResolution\") ?? string.Empty");
-        AssertContains(captureResultText, "SourceWidthAtEnd: (int)(GetNullableLong(lastSnapshot, \"SourceWidth\") ?? 0)");
-        AssertContains(captureResultText, "SourceTelemetrySummaryAtEnd: GetString(lastSnapshot, \"SourceTelemetrySummaryText\") ?? string.Empty");
-        AssertDoesNotContain(flatteningText, "SelectedResolutionAtEnd = GetString(lastSnapshot");
-        AssertDoesNotContain(flatteningText, "SourceWidthAtEnd = (int)(GetNullableLong");
-        AssertDoesNotContain(flatteningText, "SourceTelemetrySummaryAtEnd = GetString(lastSnapshot");
+        AssertContains(resultText, "Success = DetermineDiagnosticSessionSuccess(request, runState, analysis, verificationSucceeded),");
+        AssertContains(resultText, "ProcessCpuMaxPercentObserved = GetProcessCpuMaxPercentObserved(request.Samples, lastSnapshot),");
+        AssertContains(resultText, "RecordingVerificationMessage = request.Verification.HasValue");
+        AssertContains(resultText, "PresentMon = request.PresentMon,");
+        AssertContains(resultText, "SelectedResolutionAtEnd = GetString(lastSnapshot, \"SelectedResolution\") ?? string.Empty,");
+        AssertContains(resultText, "SourceWidthAtEnd = (int)(GetNullableLong(lastSnapshot, \"SourceWidth\") ?? 0),");
+        AssertContains(builderText, "request.CommandFailureCount == 0 &&");
+        AssertContains(builderText, "runState.TerminalException is null &&");
+        AssertContains(builderText, "IsFunctionallyVerifiedRecordingWarning(request, analysis, verificationSucceeded) ||");
+        AssertContains(builderText, "IsVisuallyVerifiedPreviewWarning(request, analysis)) &&");
+        AssertContains(builderText, "(request.PresentMon is null || request.PresentMon.Success) &&");
+        AssertContains(builderText, "(!verificationSucceeded.HasValue || verificationSucceeded.Value) &&");
+        AssertContains(builderText, "analysis.FlashbackWarningsSucceeded");
+        AssertDoesNotContain(ReadDiagnosticSessionResultBuilderAnalysisSource(), "ProcessCpuMaxPercentObserved");
     }
 
-    private static void AssertDiagnosticSessionResultBuilderFlashbackProjectionOwnership()
+    private static void AssertDiagnosticSessionResultBuilderFlashbackCompositionOwnership()
     {
         var builderText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
             .Replace("\r\n", "\n");
-        var flatteningText = ExtractMemberCode(builderText, "FlattenResultProjectionSet");
-        var projectionSetText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var flashbackPlaybackResultText = projectionSetText;
-        var flashbackRecordingResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
-        var flashbackExportResultText = ReadRepoFile("tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs")
-            .Replace("\r\n", "\n");
+        var resultText = ExtractMemberCode(builderText, "CreateResult");
 
-        AssertContains(builderText, "return FlattenResultProjectionSet(");
-        AssertContains(flatteningText, "private static DiagnosticSessionResult FlattenResultProjectionSet(");
-        AssertContains(projectionSetText, "FlashbackPlayback: BuildFlashbackPlaybackResultProjection(analysis)");
-        AssertContains(flatteningText, "var flashbackPlaybackResult = resultProjections.FlashbackPlayback;");
-        AssertContains(flatteningText, "var flashbackPlaybackCommandsResult = flashbackPlaybackResult.CommandsResult;");
-        AssertContains(flatteningText, "var flashbackPlaybackCadenceResult = flashbackPlaybackResult.CadenceResult;");
-        AssertContains(flatteningText, "var flashbackPlaybackOnePercentLowResult = flashbackPlaybackResult.OnePercentLowResult;");
-        AssertContains(flatteningText, "var flashbackPlaybackDecodeResult = flashbackPlaybackResult.DecodeResult;");
-        AssertContains(flatteningText, "var flashbackPlaybackAudioMasterResult = flashbackPlaybackResult.AudioMasterResult;");
-        AssertContains(flatteningText, "var flashbackPlaybackStagesResult = flashbackPlaybackResult.StagesResult;");
-        AssertContains(flatteningText, "var flashbackPlaybackStutterResult = flashbackPlaybackResult.StutterResult;");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackResultProjection BuildFlashbackPlaybackResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "CommandsResult: commandsResult");
-        AssertContains(flashbackPlaybackResultText, "CadenceResult: cadenceResult");
-        AssertContains(flashbackPlaybackResultText, "OnePercentLowResult: onePercentLowResult");
-        AssertContains(flashbackPlaybackResultText, "DecodeResult: decodeResult");
-        AssertContains(flashbackPlaybackResultText, "AudioMasterResult: audioMasterResult");
-        AssertContains(flashbackPlaybackResultText, "StagesResult: stagesResult");
-        AssertContains(flashbackPlaybackResultText, "StutterResult: stutterResult");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackStutterResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackStutterResultProjection BuildFlashbackPlaybackStutterResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "internal static FlashbackPlaybackStutterClassification ClassifyFlashbackPlaybackStutterCause(");
-        AssertContains(flashbackPlaybackResultText, "\"render_underrun\"");
-        AssertContains(flashbackPlaybackResultText, "\"audio_master_stale_clock\"");
-        AssertContains(flashbackPlaybackResultText, "\"audio_master_drift_outlier_clock\"");
-        AssertContains(flashbackPlaybackResultText, "\"command_backlog\"");
-        AssertContains(flashbackPlaybackResultText, "\"segment_reopen_stall\"");
-        AssertContains(flashbackPlaybackResultText, "\"capture_callback_gap\"");
-        AssertContains(flashbackPlaybackResultText, "\"decode_stall\"");
-        AssertContains(flashbackPlaybackResultText, "\"unknown\"");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackCommandsResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackCommandsResultProjection BuildFlashbackPlaybackCommandsResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMaxCommandQueueLatencyCommandObserved: playbackResultMetrics.MaxCommandQueueLatencyCommandObserved");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackLastCommandFailureAtEnd: playbackResultMetrics.LastCommandFailureAtEnd");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd: playbackResultMetrics.LastCommandFailureUtcUnixMsAtEnd");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackCadenceResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackCadenceResultProjection BuildFlashbackPlaybackCadenceResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackDroppedFramesDelta: playbackSessionMetrics.DroppedFramesDelta");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackOnePercentLowResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackOnePercentLowResultProjection BuildFlashbackPlaybackOnePercentLowResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMinOnePercentLowFpsObserved: playbackSessionMetrics.MinOnePercentLowFpsObserved");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMinOnePercentLowDecodeP99Ms: playbackSessionMetrics.MinOnePercentLowDecodeP99Ms");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackDecodeResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackDecodeResultProjection BuildFlashbackPlaybackDecodeResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMaxDecodePhaseAtEnd: playbackResultMetrics.MaxDecodePhaseAtEnd");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMaxDecodeP99MsObserved: playbackSessionMetrics.MaxDecodeP99MsObserved");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMaxDecodePositionMsObserved: playbackSessionMetrics.MaxDecodePositionMsObserved");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackAudioMasterResultProjection BuildFlashbackPlaybackAudioMasterResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackAudioMasterFallbacksAtEnd: playbackResultMetrics.AudioMasterFallbacksAtEnd");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMaxAudioMasterFallbacksObserved: playbackSessionMetrics.MaxAudioMasterFallbacksObserved");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackMaxAbsAvDriftMsObserved: playbackSessionMetrics.MaxAbsAvDriftMsObserved");
-        AssertContains(flashbackPlaybackResultText, "private readonly record struct DiagnosticSessionFlashbackPlaybackStagesResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "private static DiagnosticSessionFlashbackPlaybackStagesResultProjection BuildFlashbackPlaybackStagesResultProjection(");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackSubmitFailuresDelta: playbackSessionMetrics.SubmitFailuresDelta");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
-        AssertContains(flashbackPlaybackResultText, "FlashbackPlaybackLastSeekHitForwardDecodeCapAtEnd: playbackResultMetrics.LastSeekHitForwardDecodeCapAtEnd");
-        AssertContains(builderText, "private readonly record struct DiagnosticSessionFlashbackPlaybackResultProjection(");
-        AssertContains(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = flashbackPlaybackCommandsResult.FlashbackPlaybackPendingCommandsAtEnd,");
-        AssertContains(flatteningText, "FlashbackPlaybackDroppedFramesDelta = flashbackPlaybackCadenceResult.FlashbackPlaybackDroppedFramesDelta,");
-        AssertContains(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = flashbackPlaybackOnePercentLowResult.FlashbackPlaybackMinOnePercentLowFpsObserved,");
-        AssertContains(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = flashbackPlaybackDecodeResult.FlashbackPlaybackMaxDecodePhaseAtEnd,");
-        AssertContains(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = flashbackPlaybackAudioMasterResult.FlashbackPlaybackAudioMasterFallbacksAtEnd,");
-        AssertContains(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = flashbackPlaybackStagesResult.FlashbackPlaybackSeekForwardDecodeCapHitsDelta,");
-        AssertContains(flatteningText, "FlashbackPlaybackLikelyStutterCause = flashbackPlaybackStutterResult.FlashbackPlaybackLikelyStutterCause,");
-        AssertContains(flatteningText, "FlashbackPlaybackLikelyStutterEvidence = flashbackPlaybackStutterResult.FlashbackPlaybackLikelyStutterEvidence,");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd: playbackResultMetrics.PendingCommandsAtEnd");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved: playbackSessionMetrics.MinOnePercentLowFpsObserved");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd: playbackResultMetrics.MaxDecodePhaseAtEnd");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd: playbackResultMetrics.AudioMasterFallbacksAtEnd");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta: playbackResultMetrics.SeekForwardDecodeCapHitsDelta");
-        AssertEqual(
-            false,
-            System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs")),
-            "Flashback playback result projection folded into DiagnosticSessionResultBuilder.cs");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMinOnePercentLowFpsObserved = flashbackPlaybackCadenceResult");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackMaxDecodePhaseAtEnd = playbackResultMetrics");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackResultMetrics");
-        AssertDoesNotContain(flatteningText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics");
-        AssertContains(projectionSetText, "FlashbackRecording: BuildFlashbackRecordingResultProjection(analysis)");
-        AssertContains(flatteningText, "var flashbackRecordingResult = resultProjections.FlashbackRecording;");
-        AssertContains(flashbackRecordingResultText, "private readonly record struct DiagnosticSessionFlashbackRecordingResultProjection(");
-        AssertContains(flashbackRecordingResultText, "private static DiagnosticSessionFlashbackRecordingResultProjection BuildFlashbackRecordingResultProjection(");
-        AssertContains(flashbackRecordingResultText, "FlashbackRecordingBackendObserved: recordingMetrics.BackendObserved");
-        AssertContains(flashbackRecordingResultText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta: recordingMetrics.IntegrityQueueDroppedFramesDelta");
-        AssertDoesNotContain(flatteningText, "FlashbackRecordingBackendObserved = recordingMetrics");
-        AssertDoesNotContain(flatteningText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics");
-        AssertContains(projectionSetText, "FlashbackExport: BuildFlashbackExportResultProjection(analysis)");
-        AssertContains(flatteningText, "var flashbackExportResult = resultProjections.FlashbackExport;");
-        AssertContains(flashbackExportResultText, "private readonly record struct DiagnosticSessionFlashbackExportResultProjection(");
-        AssertContains(flashbackExportResultText, "private static DiagnosticSessionFlashbackExportResultProjection BuildFlashbackExportResultProjection(");
-        AssertContains(flashbackExportResultText, "FlashbackExportObserved: exportMetrics.Observed");
-        AssertContains(flashbackExportResultText, "FlashbackExportForceRotateFallbacksDelta: exportMetrics.ForceRotateFallbacksDelta");
-        AssertContains(flashbackExportResultText, "LastExportSuccessAtEnd: exportMetrics.LastSuccessAtEnd");
-        AssertContains(flashbackExportResultText, "FlashbackExportMaxThroughputBytesPerSecObserved: exportMetrics.MaxThroughputBytesPerSecObserved");
-        AssertDoesNotContain(flatteningText, "FlashbackExportObserved = exportMetrics");
-        AssertDoesNotContain(flatteningText, "FlashbackExportForceRotateFallbacksAtEnd = flashbackExportForceRotateFallbacksAtEnd");
-        AssertDoesNotContain(flatteningText, "LastExportSuccessAtEnd = exportMetrics");
+        AssertContains(resultText, "var playbackSessionMetrics = analysis.PlaybackSessionMetrics;");
+        AssertContains(resultText, "var playbackResultMetrics = analysis.PlaybackResultMetrics;");
+        AssertContains(resultText, "var stutterClassification = ClassifyFlashbackPlaybackStutter(playbackSessionMetrics, playbackResultMetrics);");
+        AssertContains(resultText, "FlashbackPlaybackPendingCommandsAtEnd = playbackResultMetrics.PendingCommandsAtEnd,");
+        AssertContains(resultText, "FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics.MinOnePercentLowFpsObserved,");
+        AssertContains(resultText, "FlashbackPlaybackSeekForwardDecodeCapHitsDelta = playbackResultMetrics.SeekForwardDecodeCapHitsDelta,");
+        AssertContains(resultText, "FlashbackPlaybackLikelyStutterCause = stutterClassification.Cause,");
+        AssertContains(resultText, "FlashbackPlaybackLikelyStutterEvidence = stutterClassification.Evidence,");
+        AssertContains(resultText, "FlashbackRecordingBackendObserved = recordingMetrics.BackendObserved,");
+        AssertContains(resultText, "LastExportSuccessAtEnd = exportMetrics.LastSuccessAtEnd,");
+        AssertContains(builderText, "internal static FlashbackPlaybackStutterClassification ClassifyFlashbackPlaybackStutterCause(");
+        AssertDoesNotContain(builderText, "ResultProjection");
     }
 
 
@@ -3872,8 +3692,12 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertCommandRequest(rawRequests[0], "GetSnapshot");
-        AssertEqual(false, GetBoolProperty(rawResult!, "Success"), "capture_presentmon_raw missing process success");
-        AssertEqual("No running process matched pid=-1 name='AnotherMissingProcess'.", GetStringProperty(rawResult!, "Message"), "capture_presentmon_raw no-process message");
+        AssertEqual(true, GetBoolProperty(rawResult!, "IsError"), "capture_presentmon_raw missing process is an MCP tool error");
+        using var rawDocument = JsonDocument.Parse(GetPropertyValue(rawResult!, "StructuredContent")!.ToString()!);
+        var rawPayload = rawDocument.RootElement;
+        AssertEqual(false, rawPayload.GetProperty("success").GetBoolean(), "capture_presentmon_raw missing process success");
+        AssertEqual("No running process matched pid=-1 name='AnotherMissingProcess'.", rawPayload.GetProperty("message").GetString(), "capture_presentmon_raw no-process message");
+        AssertContains(GetMcpToolResultText(rawResult!), "\"success\":false");
 
         AssertPresentMonOptionsFallbackAndPrecedence();
 
@@ -3886,13 +3710,13 @@ static partial class Program
         AssertContains(rootText, "public static class PresentMonTools");
         AssertDoesNotContain(rootText, "public static partial class PresentMonTools");
         AssertContains(rootText, "public static async Task<CallToolResult> capture_presentmon");
-        AssertContains(rootText, "public static async Task<object> capture_presentmon_raw");
+        AssertContains(rootText, "public static async Task<CallToolResult> capture_presentmon_raw");
         AssertContains(rootText, "[McpServerTool(UseStructuredContent = true)");
         AssertContains(rootText, "PresentMonProbe.Format(result)");
         AssertContains(rootText, "PresentMonProbe.RunAsync(PresentMonProbe.CreateOptions(");
         AssertContains(rootText, "correlation: resolved");
         AssertContains(rootText, "private static async Task<PresentMonProbeCorrelation> TryResolvePreviewPresentCorrelationAsync(");
-        AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
+        AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
         AssertContains(rootText, "return PresentMonProbe.ReadPreviewCorrelation(snapshot);");
         AssertContains(rootText, "catch (JsonException ex)");
         AssertContains(rootText, "catch (IOException ex)");
@@ -4015,8 +3839,8 @@ static partial class Program
         AssertContains(rootSource, "[McpServerToolType]");
         AssertContains(rootSource, "[McpServerTool, Description(\"Get a compact frame pacing verdict");
         AssertContains(rootSource, "public static async Task<CallToolResult> get_frame_pacing_verdict");
-        AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetSnapshot)");
-        AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload)");
+        AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken)");
+        AssertContains(rootSource, "SendCommandAsync(AutomationCommandKind.GetPerformanceTimeline, timelinePayload, cancellationToken: cancellationToken)");
         AssertContains(rootSource, "BuildFramePacingVerdictText(");
         AssertContains(rootSource, "private static IReadOnlyList<TimelineRow> ReadTimeline");
         AssertContains(rootSource, "private sealed record TimelineRow");
@@ -4482,7 +4306,7 @@ static partial class Program
     {
         var waitToolsSource = ReadRepoFile("tools/McpServer/Tools/AutomationControlTools.cs");
         AssertContains(waitToolsSource, "AutomationPipeProtocol.GetDefaultResponseTimeout(AutomationCommandKind.WaitForCondition)");
-        AssertContains(waitToolsSource, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs)");
+        AssertContains(waitToolsSource, "SendCommandAsync(AutomationCommandKind.WaitForCondition, payload, responseTimeoutMs, cancellationToken: cancellationToken)");
         AssertDoesNotContain(waitToolsSource, "WaitForConditionCommandName");
         AssertDoesNotContain(waitToolsSource, "SendCommandAsync(\"WaitForCondition\"");
         AssertDoesNotContain(waitToolsSource, "AutomationPipeProtocol.DefaultResponseTimeoutMs");
@@ -5121,7 +4945,7 @@ static partial class Program
         AssertContains(rootText, "public static class PreviewFrameCaptureTools");
         AssertContains(rootText, "public static async Task<CallToolResult> capture_preview_frame");
         AssertContains(rootText, "Path.Combine(Environment.CurrentDirectory, \"temp\", \"preview_capture.bmp\")");
-        AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload)");
+        AssertContains(rootText, "SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload, cancellationToken: cancellationToken)");
         AssertDoesNotContain(rootText, "SendCommandAsync(\"CapturePreviewFrame\", payload)");
         AssertContains(rootText, "BuildPreviewFrameCaptureText(data)");
 
@@ -6303,26 +6127,26 @@ static partial class Program
         AssertContains(catalogText, "CreateCombinedScenarioEntry()");
         AssertContains(catalogText, "internal readonly record struct DiagnosticSessionScenarioCatalogEntry(");
         AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateCoreScenarioEntries()");
-        AssertContains(catalogText, "new(Observe)");
+        AssertContains(catalogText, "new(Observe, DiagnosticSessionScenarioKind.Observe)");
         AssertContains(catalogText, "FlashbackExportVerificationFileName: \"flashback-stress-export.mp4\"");
         AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackPlaybackScenarioEntries()");
         AssertContains(catalogText, "FlashbackPlayback,");
-        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlayback: true)");
-        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackSegmentPlayback: true)");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackPlayback");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackSegmentPlayback");
         AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackExportScenarioEntries()");
         AssertContains(catalogText, "FlashbackExportVerificationFileName: \"flashback-range-export.mp4\"");
-        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackPlaybackPreviewCycle: true)");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle");
         AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry[] CreateFlashbackRecordingScenarioEntries()");
         AssertContains(catalogText, "RequiresRecording: true");
-        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runFlashbackExportRejected: true)");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackExportRejected");
         AssertContains(catalogText, "private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()");
-        AssertContains(catalogText, "DiagnosticSessionScenarioPlan.Create(runCombined: true)");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.Combined");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioCatalog.Entries.cs")),
             "Diagnostic session scenario entries folded into the catalog owner");
         AssertContains(catalogText, "internal readonly record struct DiagnosticSessionScenarioPlan(");
-        AssertContains(catalogText, "internal static DiagnosticSessionScenarioPlan Create(");
+        AssertContains(catalogText, "internal enum DiagnosticSessionScenarioKind");
         AssertContains(catalogText, "internal static DiagnosticSessionScenarioPlan From(string scenario)");
         AssertContains(catalogText, "DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)");
         AssertContains(catalogText, "? entry.Plan");
@@ -6334,11 +6158,11 @@ static partial class Program
         AssertContains(catalogText, "internal bool ToleratesSparsePreviewSchedulerStressTransitions");
         AssertContains(catalogText, "internal bool ToleratesStrictArtifactDiagnosticHealthWarning");
         AssertContains(catalogText, "internal bool ToleratesControlOnlyDiagnosticHealthWarning");
-        AssertContains(catalogText, "RunFlashbackLifecycle ||");
-        AssertContains(catalogText, "RunFlashbackExportRejected;");
-        AssertContains(catalogText, "RunFlashbackPreviewCycle ||");
-        AssertContains(catalogText, "RunFlashbackPlaybackPreviewCycle ||");
-        AssertContains(catalogText, "RunFlashbackSegmentPlayback");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackLifecycle or");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackExportRejected;");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackPreviewCycle or");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle or");
+        AssertContains(catalogText, "DiagnosticSessionScenarioKind.FlashbackSegmentPlayback");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "tools", "DiagnosticSession", "DiagnosticSessionScenarioPlan.cs")),
@@ -6357,15 +6181,15 @@ static partial class Program
         var runnerText = ReadDiagnosticSessionRunnerSource();
         var setupText = ReadDiagnosticSessionScenarioSetupSource();
         AssertContains(setupText, "internal static class DiagnosticSessionScenarioSetup");
-        AssertContains(setupText, "internal static async Task<DiagnosticSessionScenarioSetupResult> RunAsync(");
+        AssertContains(setupText, "internal static async Task RunAsync(");
         AssertContains(setupText, "SetupFlashbackStateAsync(");
         AssertContains(setupText, "StartPreviewIfNeededAsync(");
         AssertContains(setupText, "StartRecordingIfNeededAsync(");
-        AssertContains(setupText, "internal readonly record struct DiagnosticSessionScenarioSetupResult(");
-        AssertContains(setupText, "private readonly record struct DiagnosticSessionFlashbackSetupResult(");
+        AssertContains(setupText, "DiagnosticSessionScenarioPhaseState phaseState");
+        AssertDoesNotContain(setupText, "DiagnosticSessionScenarioSetupResult");
         AssertContains(setupText, "DiagnosticSessionCommandChannel commandChannel,");
         AssertContains(setupText, "DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario)");
-        AssertContains(setupText, "scenarioPlan.RunFlashbackExportRejected");
+        AssertContains(setupText, "scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportRejected");
         AssertContains(setupText, "AutomationCommandKind.SetFlashbackEnabled,");
         AssertContains(setupText, "actions.Add(\"flashback enabled\")");
         AssertContains(setupText, "actions.Add(\"flashback disabled for rejected export\")");
@@ -6380,10 +6204,13 @@ static partial class Program
         AssertContains(setupText, "await tryWaitAsync(\"RecordingFileGrowing\", 20_000)");
         AssertContains(runnerText, "DiagnosticSessionScenarioSetup.RunAsync(");
         AssertContains(runnerText, "context.CommandChannel,");
-        AssertContains(runnerText, "startedPreview = setupResult.StartedPreview;");
-        AssertContains(runnerText, "startedRecording = setupResult.StartedRecording;");
-        AssertContains(runnerText, "enabledFlashback = setupResult.EnabledFlashback;");
-        AssertContains(runnerText, "disabledFlashback = setupResult.DisabledFlashback;");
+        AssertContains(setupText, "phaseState.StartedPreview = true;");
+        AssertContains(setupText, "phaseState.StartedRecording = true;");
+        AssertContains(setupText, "phaseState.EnabledFlashback = true;");
+        AssertContains(setupText, "phaseState.DisabledFlashback = true;");
+        AssertOccursBefore(setupText, "phaseState.StartedPreview = true;", "await tryWaitAsync(\"VideoFramesFlowing\"");
+        AssertOccursBefore(setupText, "phaseState.StartedRecording = true;", "await tryWaitAsync(\"RecordingFileGrowing\"");
+        AssertContains(runnerText, "ReconcileUnconfirmedStartupAsync(context, scenarioPhase)");
         AssertDoesNotContain(runnerText, "actions.Add(\"flashback enabled\")");
         AssertDoesNotContain(runnerText, "actions.Add(\"preview started\")");
         AssertDoesNotContain(runnerText, "actions.Add(\"recording started\")");
@@ -6413,8 +6240,8 @@ static partial class Program
 
         AssertContains(startupText, "internal static class DiagnosticSessionScenarioStartup");
         AssertDoesNotContain(startupText, "internal static partial class DiagnosticSessionScenarioStartup");
-        AssertContains(startupText, "internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(");
-        AssertContains(startupText, "internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback)");
+        AssertContains(startupText, "internal static async Task StartAsync(");
+        AssertContains(startupText, "DiagnosticSessionScenarioPhaseState phaseState");
         AssertContains(tasksText, "internal sealed class DiagnosticSessionBackgroundTasks");
         AssertDoesNotContain(tasksText, "internal sealed partial class DiagnosticSessionBackgroundTasks");
         AssertContains(tasksText, "internal readonly record struct DiagnosticSessionBackgroundTaskRegistration(");
@@ -6442,7 +6269,7 @@ static partial class Program
         AssertContains(runnerText, "var backgroundTasks = new DiagnosticSessionBackgroundTasks();");
         AssertContains(startupText, "private static void RegisterFlashbackScenarioTasks(");
         AssertContains(startupText, "private static void RegisterDeferredFlashbackRecordingSettingsTask(");
-        AssertContains(startupText, "private static async Task<bool> TryStartFlashbackPlaybackAsync(");
+        AssertContains(startupText, "private static async Task TryStartFlashbackPlaybackAsync(");
         AssertDoesNotContain(startupText, "backgroundTasks.AddScenario(");
         AssertContains(startupText, "StartPresentMonAsync(");
         AssertContains(presentMonStartupText, "backgroundTasks.SetPresentMon(");
@@ -6483,7 +6310,7 @@ static partial class Program
         AssertDoesNotContain(startupText, "RunFlashbackRangeExportAsync(");
         AssertDoesNotContain(startupText, "RunFlashbackExportConcurrentAsync(");
         AssertContains(runnerText, "DiagnosticSessionScenarioStartup.StartAsync(");
-        AssertContains(runnerText, "startedFlashbackPlayback = scenarioStartup.StartedFlashbackPlayback;");
+        AssertContains(startupText, "phaseState.StartedFlashbackPlayback = true;");
         AssertContains(runnerText, ".CompleteRegisteredScenarioWorkAsync(");
         AssertContains(runnerText, "backgroundTasks.CompletePresentMonAsync(");
         AssertContains(runnerText, "backgroundTasks.ObserveAfterFaultAsync(");
@@ -7102,7 +6929,7 @@ static partial class Program
         AssertDoesNotContain(executionText, "Math.Clamp(options.SampleIntervalMs");
         AssertDoesNotContain(executionText, "DateTimeOffset.UtcNow.ToString(\"yyyyMMdd_HHmmss\"");
         AssertDoesNotContain(executionText, "Directory.CreateDirectory(outputDirectory);");
-        AssertDoesNotContain(executionText, "var runFlashbackPlayback = scenarioPlan.RunFlashbackPlayback;");
+        AssertDoesNotContain(executionText, "var runFlashbackPlayback = scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPlayback;");
 
         return Task.CompletedTask;
     }
@@ -7124,7 +6951,7 @@ static partial class Program
 
     private static Assembly LoadDiagnosticSessionRunnerAssembly()
     {
-        return LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
+        return RequireSharedToolType("Sussudio.Tools.DiagnosticSessionRunner").Assembly;
     }
 
     private static object CreateDiagnosticSessionOptions(
@@ -7155,7 +6982,8 @@ static partial class Program
         var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
             ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
         var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
+            .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3 &&
+                method.GetParameters()[1].ParameterType == typeof(Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>>))
             ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
         var task = runAsync.Invoke(null, new object?[] { options, sendCommand, cancellationToken }) as Task
             ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync did not return a Task.");
@@ -7474,7 +7302,8 @@ static partial class Program
                     """));
 
             var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
+                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3 &&
+                    method.GetParameters()[1].ParameterType == typeof(Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>>))
                 ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
 
             Exception? captured = null;
@@ -8640,8 +8469,8 @@ static partial class Program
         AssertContains(rejectedExportsText, "UnavailableDuringRecording");
         AssertContains(rejectedExportsText, "recording backend changed after rejected export");
         var dispatchText = ExtractMemberCode(rejectedExportsText, "RunSelectedRejectedExportScenariosAsync");
-        AssertContains(dispatchText, "scenarioPlan.RunFlashbackExportRejected");
-        AssertContains(dispatchText, "scenarioPlan.RunFlashbackRecordingExportRejected");
+        AssertContains(dispatchText, "scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportRejected");
+        AssertContains(dispatchText, "scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected");
         AssertOccursBefore(dispatchText, "RunFlashbackExportRejectedAsync(", "RunFlashbackRecordingExportRejectedAsync(");
         AssertContains(runnerText, "DiagnosticSessionFlashbackExportScenarios.RunSelectedRejectedExportScenariosAsync(");
         AssertEqual(
@@ -8683,7 +8512,7 @@ static partial class Program
         AssertContains(segmentPlaybackText, "recording-assisted rotation started");
         AssertContains(segmentPlaybackText, "private static async Task TryStopRecordingAsync(");
         AssertContains(segmentPlaybackText, "internal static void RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
-        AssertContains(segmentPlaybackText, "scenarioPlan.RunFlashbackSegmentPlayback");
+        AssertContains(segmentPlaybackText, "scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackSegmentPlayback");
         AssertContains(segmentPlaybackText, "7,\n            \"flashback-segment-playback-task\",");
         AssertContains(segmentPlaybackText, "actions.Add(\"flashback segment playback started\")");
         AssertContains(startupText, "DiagnosticSessionFlashbackSegmentPlaybackScenarios.RegisterSelectedFlashbackSegmentPlaybackScenarioTask(");
@@ -8746,7 +8575,7 @@ static partial class Program
 
         AssertContains(lifecycleText, "internal static class DiagnosticSessionFlashbackLifecycleScenarios");
         AssertContains(lifecycleText, "internal static void RegisterSelectedFlashbackLifecycleScenarioTask(");
-        AssertContains(lifecycleText, "scenarioPlan.RunFlashbackLifecycle");
+        AssertContains(lifecycleText, "scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackLifecycle");
         AssertContains(lifecycleText, "backgroundTasks.AddScenario(");
         AssertContains(lifecycleText, "2,\n            \"flashback-lifecycle-task\",");
         AssertContains(lifecycleText, "actions.Add(\"flashback lifecycle started\")");
@@ -8823,26 +8652,15 @@ static partial class Program
         AssertContains(playbackObservationText, "private static void ObservePlaybackAudioMasterMetrics(");
         AssertContains(playbackObservationText, "GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
         AssertContains(playbackResultText, "internal static FlashbackPlaybackResultMetrics BuildFlashbackPlaybackResultMetrics(");
-        AssertContains(playbackResultText, "var commands = BuildFlashbackPlaybackResultCommandMetrics(observed, endSnapshot, metrics);");
-        AssertContains(playbackResultText, "PendingCommandsAtEnd = commands.PendingCommandsAtEnd,");
+        AssertDoesNotContain(playbackResultText, "FlashbackPlaybackResultCommandMetrics");
         AssertContains(playbackResultText, "private static long GetObservedLong(bool observed, JsonElement snapshot, string propertyName)");
         AssertContains(playbackResultText, "private static double GetObservedDouble(bool observed, JsonElement snapshot, string propertyName)");
-        AssertContains(playbackResultText, "private static FlashbackPlaybackResultCommandMetrics BuildFlashbackPlaybackResultCommandMetrics(");
-        AssertContains(playbackResultText, "PendingCommandsAtEnd: observed ? GetInt(endSnapshot, \"FlashbackPlaybackPendingCommands\") : 0");
-        AssertContains(playbackResultText, "LastCommandFailureAtEnd: observed ? GetString(endSnapshot, \"FlashbackPlaybackLastCommandFailure\") ?? string.Empty : string.Empty");
-        AssertContains(playbackResultText, "private static FlashbackPlaybackResultCadenceMetrics BuildFlashbackPlaybackResultCadenceMetrics(");
-        AssertContains(playbackResultText, "DroppedFramesAtEnd: GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackDroppedFrames\")");
-        AssertContains(playbackResultText, "private static FlashbackPlaybackResultDecodeMetrics BuildFlashbackPlaybackResultDecodeMetrics(");
-        AssertContains(playbackResultText, "MaxDecodePhaseAtEnd: observed ? GetString(endSnapshot, \"FlashbackPlaybackMaxDecodePhase\") ?? string.Empty : string.Empty");
-        AssertContains(playbackResultText, "private static FlashbackPlaybackResultAudioMasterMetrics BuildFlashbackPlaybackResultAudioMasterMetrics(");
-        AssertContains(playbackResultText, "AudioMasterFallbacksAtEnd: GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
-        AssertContains(playbackResultText, "private static FlashbackPlaybackResultStageMetrics BuildFlashbackPlaybackResultStageMetrics(");
+        AssertContains(playbackResultText, "PendingCommandsAtEnd = observed ? GetInt(endSnapshot, \"FlashbackPlaybackPendingCommands\") : 0");
+        AssertContains(playbackResultText, "LastCommandFailureAtEnd = observed ? GetString(endSnapshot, \"FlashbackPlaybackLastCommandFailure\") ?? string.Empty : string.Empty");
+        AssertContains(playbackResultText, "DroppedFramesAtEnd = GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackDroppedFrames\")");
+        AssertContains(playbackResultText, "MaxDecodePhaseAtEnd = observed ? GetString(endSnapshot, \"FlashbackPlaybackMaxDecodePhase\") ?? string.Empty : string.Empty");
+        AssertContains(playbackResultText, "AudioMasterFallbacksAtEnd = GetObservedLong(observed, endSnapshot, \"FlashbackPlaybackAudioMasterFallbacks\")");
         AssertContains(playbackResultText, "GetCounterDelta(endSnapshot, metrics.BaselineSnapshot, \"FlashbackPlaybackSeekForwardDecodeCapHits\")");
-        AssertContains(playbackResultText, "private readonly record struct FlashbackPlaybackResultCommandMetrics(");
-        AssertContains(playbackResultText, "private readonly record struct FlashbackPlaybackResultCadenceMetrics(");
-        AssertContains(playbackResultText, "private readonly record struct FlashbackPlaybackResultDecodeMetrics(");
-        AssertContains(playbackResultText, "private readonly record struct FlashbackPlaybackResultAudioMasterMetrics(");
-        AssertContains(playbackResultText, "private readonly record struct FlashbackPlaybackResultStageMetrics(");
         AssertContains(metricsText, "internal static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksAtEnd = GetNullableLong(lastSnapshot, \"FlashbackExportForceRotateFallbacks\") ?? 0;");
         AssertContains(metricsText, "metrics.ForceRotateFallbacksDelta = GetCounterDelta(");
@@ -10826,7 +10644,7 @@ static partial class Program
             {
                 var parameters = method.GetParameters();
                 return method.Name == "SendCommandAsync" &&
-                       parameters.Length == 3 &&
+                       parameters.Length == 4 &&
                        parameters[0].ParameterType.FullName == "Sussudio.Models.AutomationCommandKind";
             })
             ?? throw new InvalidOperationException("MCP PipeClient typed SendCommandAsync overload not found.");
@@ -10842,7 +10660,8 @@ static partial class Program
                             {
                                 commandKind,
                                 new Dictionary<string, object?> { ["enabled"] = true },
-                                null
+                                null,
+                                CancellationToken.None
                             }) as Task
                         ?? throw new InvalidOperationException("MCP PipeClient typed SendCommandAsync did not return a Task.");
                     await task.ConfigureAwait(false);
@@ -10952,11 +10771,13 @@ public sealed class AutomationToolContractsProtocolXunitTests
         var typedSend = global::Program.ExtractDeclaredMemberCode(
             RuntimeContractSource.ReadRepoFile("tools/McpServer/Program.cs")
                 .Replace("\r\n", "\n", StringComparison.Ordinal),
-            "public Task<JsonElement> SendCommandAsync(\n            AutomationCommandKind kind,");
+            "public async Task<JsonElement> SendCommandAsync(\n            AutomationCommandKind kind,");
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
         Assert.Contains("responseTimeoutMs: responseTimeoutMs", typedSend);
         Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", typedSend);
+        Assert.Contains("cancellationToken: cancellationToken", typedSend);
+        Assert.Equal(2, typedSend.Split("cancellationToken.ThrowIfCancellationRequested();").Length - 1);
     }
 
     [Fact]
@@ -11295,8 +11116,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
     private static string ReadDiagnosticSessionRunnerSource()
         => string.Join(
             "\n",
-            Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "Common"), "DiagnosticSessionRunner*.cs")
-                .Concat(Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "Common"), "DiagnosticSessionRun*.cs"))
+            Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "DiagnosticSession"), "DiagnosticSessionRunner*.cs")
+                .Concat(Directory.GetFiles(Path.Combine(FindRepoRoot(), "tools", "DiagnosticSession"), "DiagnosticSessionRun*.cs"))
                 .OrderBy(path => path, StringComparer.Ordinal)
                 .Select(path => File.ReadAllText(path).Replace("\r\n", "\n", StringComparison.Ordinal)));
 

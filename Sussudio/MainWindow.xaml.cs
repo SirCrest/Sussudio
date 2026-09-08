@@ -731,17 +731,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             EnsureAudioMeterTimerRunning = EnsureAudioMeterTimerRunning,
             SetAudioMeterMonitoringState = SetAudioMeterMonitoringState,
             PrimePreviewAudioFadeIn = PrimePreviewAudioFadeIn,
-            IsPreviewAudioFadeInActive = () => IsPreviewAudioFadeInActive,
-            IsPreviewAudioFadeAnimationActive = () => IsPreviewAudioFadeAnimationActive,
-            CancelPreviewAudioFadeInForUser = CancelPreviewAudioFadeInForUser,
             SetupMicrophoneVolumeBindings = SetupMicrophoneVolumeBindings,
             ApplyInitialMicrophoneControlsVisibility = ApplyInitialMicrophoneControlsVisibility,
             ApplyDeviceAudioControlState = ApplyDeviceAudioControlState,
-            ResetAudioMeterVisuals = ResetAudioMeterVisuals,
-            SetAudioMeterTargetLevel = SetAudioMeterTargetLevel,
-            EnsureAudioInputSelection = EnsureAudioInputSelection,
-            EnsureMicrophoneSelection = EnsureMicrophoneSelection,
-            EnsureDeviceAudioModeSelection = EnsureDeviceAudioModeSelection,
             AnimateAudioMeterTick = AnimateAudioMeterTick
         });
     }
@@ -753,12 +745,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void ApplyInitialAudioControlBindings()
         => _audioControlBindingController.ApplyInitialAudioControlBindings();
-
-    private void ApplyInitialAudioMeterPresentation()
-        => _audioControlBindingController.ApplyInitialAudioMeterPresentation();
-
-    private void EnsureAudioControlSelections()
-        => _audioControlBindingController.EnsureAudioControlSelections();
 
     private void AttachAudioSelectionBindings()
         => _audioControlBindingController.AttachAudioSelectionBindings();
@@ -788,7 +774,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             AudioPreviewToggle = AudioPreviewToggle,
             PreviewVolumeSlider = PreviewVolumeSlider,
             PreviewVolumeLabel = PreviewVolumeLabel,
-            IsPreviewAudioFadeInActive = () => IsPreviewAudioFadeInActive,
+            ApplyPreviewVolumePresentation = _audioControlBindingController.ApplyPreviewVolumePresentation,
             SetAudioMeterMonitoringState = SetAudioMeterMonitoringState,
             AnimateAudioMeterDisabled = AnimateAudioMeterDisabled,
             UpdateMicrophoneControlsVisibility = UpdateMicrophoneControlsVisibility,
@@ -1232,13 +1218,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         UpdateLiveSignalInfoVisibility();
         ApplyInitialAudioControlBindings();
         ApplyInitialCaptureOptionSelections();
-        ApplyInitialAudioMeterPresentation();
+        _audioMeterController.ResetVisuals();
+        _audioMeterController.SetAudioMeterTargetLevel(ViewModel.AudioMeterTarget);
         ApplyAudioClipVisibility();
         ApplyInitialRecordingStatePresentation();
         RefreshHdrHintText();
         UpdateFpsTelemetryTooltip();
         EnsureDeviceSelection();
-        EnsureAudioControlSelections();
+        _captureSelectionBindingController.EnsureAudioInputSelection();
+        _captureSelectionBindingController.EnsureMicrophoneSelection();
+        _captureSelectionBindingController.EnsureDeviceAudioModeSelection();
         EnsureInitialCaptureOptionSelections();
 
         AttachDeviceSelectionChangedBinding();
@@ -2087,7 +2076,10 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     }
 
     private void StopPreviewForShutdown()
-        => _previewRendererHostController.StopForShutdown();
+    {
+        ViewModel.DisposePreviewAudioVolume();
+        _previewRendererHostController.StopForShutdown();
+    }
 
     public long RendererReinitUnsafeWindows
         => _previewRendererHostController.RendererReinitUnsafeWindows;
@@ -2158,15 +2150,10 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
     {
         _previewAudioFadeController = new PreviewAudioFadeController(new PreviewAudioFadeControllerContext
         {
-            ViewModel = ViewModel,
-            PreviewVolumeSlider = PreviewVolumeSlider,
-            PreviewVolumeLabel = PreviewVolumeLabel,
+            DispatcherQueue = _dispatcherQueue,
+            VolumeController = ViewModel.PreviewVolumeController,
         });
     }
-
-    private bool IsPreviewAudioFadeInActive => _previewAudioFadeController.IsFadingIn;
-
-    private bool IsPreviewAudioFadeAnimationActive => _previewAudioFadeController.IsAnimationActive;
 
     private void PrimePreviewAudioFadeIn()
         => _previewAudioFadeController.PrimeFadeIn();
@@ -2176,9 +2163,6 @@ private PreviewAudioFadeController _previewAudioFadeController = null!;
 
     private Task StartPreviewAudioFadeOutAsync(int durationMs = 450)
         => _previewAudioFadeController.StartFadeOutAsync(durationMs);
-
-    private void CancelPreviewAudioFadeInForUser()
-        => _previewAudioFadeController.CancelFadeInForUser();
 
     private void InitializePreviewButtonActionController()
     {

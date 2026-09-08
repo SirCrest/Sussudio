@@ -27,6 +27,21 @@ static partial class Program
 
     private static int Main(string[] args)
     {
+        if (Sussudio.Tests.AppProcessStartupTests.TryRunChildProcess(args, out var startupExitCode))
+        {
+            return startupExitCode;
+        }
+
+        if (Sussudio.Tests.NativeFfmpegCapabilitiesTests.TryRunChildProcess(args, out var nativeExitCode))
+        {
+            return nativeExitCode;
+        }
+
+        if (Sussudio.Tests.PresentMonCancellationTests.TryRunChildProcess(args, out var presentMonExitCode))
+        {
+            return presentMonExitCode;
+        }
+
         var assemblyPath = ResolveAssemblyPath(args);
         if (!File.Exists(assemblyPath))
         {
@@ -826,29 +841,6 @@ static partial class Program
         return source.Substring(startIndex, closeBrace - startIndex + 1);
     }
 
-    private static object BuildRecordingContext(
-        bool usePostMuxAudio,
-        string? videoPath = null,
-        string? audioTempPath = null,
-        string? finalPath = null)
-    {
-        var settings = BuildSettings(hdrEnabled: false);
-        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
-        var context = RuntimeHelpers.GetUninitializedObject(contextType);
-        SetPropertyBackingField(context, "Settings", settings);
-        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
-        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
-        SetPropertyBackingField(context, "FrameRateArg", "60");
-        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
-        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
-        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
-        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
-        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
-        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
-        SetPropertyBackingField(context, "HdrPipelineActive", false);
-        return context;
-    }
-
     private static object BuildDevice(string id = "device-1")
     {
         var device = CreateInstance("Sussudio.Models.CaptureDevice");
@@ -1145,7 +1137,7 @@ static partial class Program
         SetPrivateField(pipeline, "_decoders", CreateEmptyArrayFieldValue(pipelineType, "_decoders"));
         SetPrivateField(pipeline, "_reorderFrames", Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(
             typeof(long),
-            RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+DecodedFrame")))!);
+            RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+DecodedFrame")))!);
         SetPrivateField(pipeline, "_knownMissingSequences", new SortedSet<long>());
         SetPrivateField(pipeline, "_reorderLock", new object());
         SetPrivateField(pipeline, "_emitSignal", new AutoResetEvent(false));
@@ -1757,7 +1749,7 @@ static partial class Program
     private static async Task<string> InvokeMcpToolStringAsync(Type type, string methodName, params object?[] args)
     {
         var method = ResolveMcpToolMethod(type, methodName, args.Length);
-        var task = method.Invoke(null, args) as Task
+        var task = method.Invoke(null, CompleteMcpToolArguments(method, args)) as Task
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
         await task.ConfigureAwait(false);
         var result = task.GetType().GetProperty("Result")?.GetValue(task)
@@ -1770,7 +1762,7 @@ static partial class Program
     private static async Task<object> InvokeMcpToolResultAsync(Type type, string methodName, params object?[] args)
     {
         var method = ResolveMcpToolMethod(type, methodName, args.Length);
-        var task = method.Invoke(null, args) as Task
+        var task = method.Invoke(null, CompleteMcpToolArguments(method, args)) as Task
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
         await task.ConfigureAwait(false);
         return task.GetType().GetProperty("Result")?.GetValue(task)
@@ -1793,11 +1785,37 @@ static partial class Program
             return matchingMethod;
         }
 
+        matchingMethod = methods.SingleOrDefault(method =>
+        {
+            var parameters = method.GetParameters();
+            return parameters.Length == argumentCount + 1 &&
+                   parameters[^1].ParameterType == typeof(CancellationToken) &&
+                   parameters[^1].IsOptional;
+        });
+        if (matchingMethod != null)
+        {
+            return matchingMethod;
+        }
+
         var shapes = string.Join(
             ", ",
             methods.Select(method => $"{method.Name}({string.Join(", ", method.GetParameters().Select(parameter => parameter.ParameterType.Name))})"));
         throw new InvalidOperationException(
             $"{type.FullName}.{methodName} had no overload accepting {argumentCount} argument(s). Available: {shapes}");
+    }
+
+    private static object?[] CompleteMcpToolArguments(MethodInfo method, object?[] args)
+    {
+        if (method.GetParameters().Length == args.Length)
+        {
+            return args;
+        }
+
+        // ResolveMcpToolMethod permits only one omitted optional request token.
+        var completed = new object?[args.Length + 1];
+        Array.Copy(args, completed, args.Length);
+        completed[^1] = CancellationToken.None;
+        return completed;
     }
 
     private static string GetMcpToolResultText(object? result)

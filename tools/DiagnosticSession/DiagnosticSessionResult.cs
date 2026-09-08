@@ -76,6 +76,21 @@ internal sealed class DiagnosticSessionScenarioPhaseContext
 
 internal sealed class DiagnosticSessionScenarioPhaseState
 {
+    internal bool InitialFlashbackPlaybackActive { get; init; }
+
+    internal bool PreviewStartUnconfirmed { get; set; }
+
+    internal bool RecordingStartUnconfirmed { get; set; }
+
+    internal bool FlashbackEnableUnconfirmed { get; set; }
+
+    internal bool FlashbackDisableUnconfirmed { get; set; }
+
+    internal bool PlaybackStartUnconfirmed { get; set; }
+
+    internal bool HasUnconfirmedStartup => PreviewStartUnconfirmed || RecordingStartUnconfirmed ||
+        FlashbackEnableUnconfirmed || FlashbackDisableUnconfirmed || PlaybackStartUnconfirmed;
+
     internal bool StartedPreview { get; set; }
 
     internal bool StartedRecording { get; set; }

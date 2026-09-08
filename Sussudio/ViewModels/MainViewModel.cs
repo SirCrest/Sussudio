@@ -13,6 +13,7 @@ using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Automation;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
@@ -222,7 +223,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly MainViewModelDeviceAudioRequestController _deviceAudioRequestController;
     private readonly MainViewModelRecordingCapabilityController _recordingCapabilityController;
     private readonly MainViewModelCaptureSettingsAutomationController _captureSettingsAutomationController;
-    private readonly MainViewModelRecordingSettingsAutomationController _recordingSettingsAutomationController;
+    private readonly MainViewModelRecordingSettingsController _recordingSettingsController;
     private readonly MainViewModelFrameRateTimingResolver _frameRateTimingResolver;
     private readonly MainViewModelCaptureModeOptionRebuildController _captureModeOptionRebuildController;
     private readonly MainViewModelDisposalController _disposalController;
@@ -251,7 +252,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceAudioRequestController = controllerGraph.DeviceAudioRequestController;
         _recordingCapabilityController = controllerGraph.RecordingCapabilityController;
         _captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;
-        _recordingSettingsAutomationController = controllerGraph.RecordingSettingsAutomationController;
+        _recordingSettingsController = controllerGraph.RecordingSettingsController;
         _captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;
         _deviceFormatProbeController = controllerGraph.DeviceFormatProbeController;
         _sourceTelemetryController = controllerGraph.SourceTelemetryController;
@@ -356,7 +357,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     IsMicrophoneEnabled,
                     SelectedMicrophoneDevice?.Id,
                     MicrophoneVolume,
-                    VolumeSaveOverride ?? PreviewVolume,
+                    _previewAudioVolumeTransitionController.RequestedVolume,
                     IsStatsVisible,
                     SelectedDeviceAudioMode,
                     AnalogAudioGainPercent,
@@ -598,10 +599,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     [ObservableProperty]
     public partial bool IsInitialized { get; set; }
 
-    private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);
-    private int _previewReinitializeGeneration;
-    private bool _cancelPreviewRestartAfterReinitialize;
-
     // Resolution capability matrix keyed by "{width}x{height}".
     private readonly Dictionary<string, List<MediaFormat>> _resolutionToFormats =
         new(StringComparer.OrdinalIgnoreCase);
@@ -720,7 +717,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var previousRebuildingModeOptions = _isRebuildingModeOptions;
         var previousApplyingAutomaticResolutionSelection = _isApplyingAutomaticResolutionSelection;
         var previousApplyingAutomaticFrameRateSelection = _isApplyingAutomaticFrameRateSelection;
-        var previousSuppressFlashbackFormatCycle = _suppressFlashbackFormatCycle;
+        using var recordingSettingsSuppression = _recordingSettingsController.SuppressPropertyReactions();
         _suppressFormatChangeReinitialize = true;
         _suppressHdrToggleReinitialize = true;
         _isRevertingHdrToggle = true;
@@ -728,7 +725,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _isRebuildingModeOptions = true;
         _isApplyingAutomaticResolutionSelection = true;
         _isApplyingAutomaticFrameRateSelection = true;
-        _suppressFlashbackFormatCycle = true;
         try
         {
             if (!ReferenceEquals(SelectedDevice, snapshot.SelectedDevice))
@@ -794,7 +790,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         finally
         {
-            _suppressFlashbackFormatCycle = previousSuppressFlashbackFormatCycle;
             _isApplyingAutomaticFrameRateSelection = previousApplyingAutomaticFrameRateSelection;
             _isApplyingAutomaticResolutionSelection = previousApplyingAutomaticResolutionSelection;
             _isRebuildingModeOptions = previousRebuildingModeOptions;
@@ -1542,7 +1537,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public CaptureSettings BuildCurrentSettings() => BuildCaptureSettings();
 
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);
+        => InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {
@@ -1672,7 +1667,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         return InvokeOnUiThreadAsync(() =>
         {
-            PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);
+            SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0));
             SaveSettingsOrThrow();
             return Task.CompletedTask;
         }, cancellationToken);
@@ -1747,32 +1742,32 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)
         => RunPersistedSettingsAutomationAsync(
-            _recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken),
+            _recordingSettingsController.SetRecordingFormatAsync(format, cancellationToken),
             cancellationToken);
 
     public Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
         => RunPersistedSettingsAutomationAsync(
-            _recordingSettingsAutomationController.SetQualityAsync(quality, cancellationToken),
+            _recordingSettingsController.SetQualityAsync(quality, cancellationToken),
             cancellationToken);
 
     public Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
         => RunPersistedSettingsAutomationAsync(
-            _recordingSettingsAutomationController.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken),
+            _recordingSettingsController.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken),
             cancellationToken);
 
     public Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
         => RunPersistedSettingsAutomationAsync(
-            _recordingSettingsAutomationController.SetCustomBitrateAsync(bitrateMbps, cancellationToken),
+            _recordingSettingsController.SetCustomBitrateAsync(bitrateMbps, cancellationToken),
             cancellationToken);
 
     public Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
         => RunPersistedSettingsAutomationAsync(
-            _recordingSettingsAutomationController.SetPresetAsync(preset, cancellationToken),
+            _recordingSettingsController.SetPresetAsync(preset, cancellationToken),
             cancellationToken);
 
     public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)
         => RunPersistedSettingsAutomationAsync(
-            _recordingSettingsAutomationController.SetOutputPathAsync(outputPath, cancellationToken),
+            _recordingSettingsController.SetOutputPathAsync(outputPath, cancellationToken),
             cancellationToken);
 
     private async Task RunPersistedSettingsAutomationAsync(Task operation, CancellationToken cancellationToken)
@@ -2387,7 +2382,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             MainViewModelDeviceAudioRequestController deviceAudioRequestController,
             MainViewModelRecordingCapabilityController recordingCapabilityController,
             MainViewModelCaptureSettingsAutomationController captureSettingsAutomationController,
-            MainViewModelRecordingSettingsAutomationController recordingSettingsAutomationController,
+            MainViewModelRecordingSettingsController recordingSettingsController,
             MainViewModelCaptureModeOptionRebuildController captureModeOptionRebuildController,
             MainViewModelDeviceFormatProbeController deviceFormatProbeController,
             MainViewModelSourceTelemetryController sourceTelemetryController,
@@ -2401,7 +2396,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             DeviceAudioRequestController = deviceAudioRequestController;
             RecordingCapabilityController = recordingCapabilityController;
             CaptureSettingsAutomationController = captureSettingsAutomationController;
-            RecordingSettingsAutomationController = recordingSettingsAutomationController;
+            RecordingSettingsController = recordingSettingsController;
             CaptureModeOptionRebuildController = captureModeOptionRebuildController;
             DeviceFormatProbeController = deviceFormatProbeController;
             SourceTelemetryController = sourceTelemetryController;
@@ -2416,7 +2411,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         public MainViewModelDeviceAudioRequestController DeviceAudioRequestController { get; }
         public MainViewModelRecordingCapabilityController RecordingCapabilityController { get; }
         public MainViewModelCaptureSettingsAutomationController CaptureSettingsAutomationController { get; }
-        public MainViewModelRecordingSettingsAutomationController RecordingSettingsAutomationController { get; }
+        public MainViewModelRecordingSettingsController RecordingSettingsController { get; }
         public MainViewModelCaptureModeOptionRebuildController CaptureModeOptionRebuildController { get; }
         public MainViewModelDeviceFormatProbeController DeviceFormatProbeController { get; }
         public MainViewModelSourceTelemetryController SourceTelemetryController { get; }
@@ -2434,7 +2429,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);
             var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);
             var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);
-            var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);
+            var recordingSettingsController = CreateRecordingSettingsController(viewModel);
             var captureModeOptionRebuildController = CreateCaptureModeOptionRebuildController(viewModel);
             var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);
             var sourceTelemetryController = CreateSourceTelemetryController(viewModel);
@@ -2453,7 +2448,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 deviceAudioRequestController,
                 recordingCapabilityController,
                 captureSettingsAutomationController,
-                recordingSettingsAutomationController,
+                recordingSettingsController,
                 captureModeOptionRebuildController,
                 deviceFormatProbeController,
                 sourceTelemetryController,
@@ -2642,10 +2637,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     GetAvailableRecordingFormats = () => viewModel.AvailableRecordingFormats,
                     ReplaceAvailableRecordingFormats = formats =>
                     {
-                        viewModel.AvailableRecordingFormats.Clear();
+                        foreach (var existingFormat in viewModel.AvailableRecordingFormats.ToArray())
+                        {
+                            if (!formats.Contains(existingFormat))
+                            {
+                                viewModel.AvailableRecordingFormats.Remove(existingFormat);
+                            }
+                        }
                         foreach (var format in formats)
                         {
-                            viewModel.AvailableRecordingFormats.Add(format);
+                            if (!viewModel.AvailableRecordingFormats.Contains(format))
+                            {
+                                viewModel.AvailableRecordingFormats.Add(format);
+                            }
                         }
                     },
                     GetSelectedRecordingFormat = () => viewModel.SelectedRecordingFormat,
@@ -2660,10 +2664,21 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     GetAvailableSplitEncodeModes = () => viewModel.AvailableSplitEncodeModes,
                     ReplaceAvailableSplitEncodeModes = modes =>
                     {
-                        viewModel.AvailableSplitEncodeModes.Clear();
+                        // Retain selected items throughout collection notifications;
+                        // temporarily clearing the list can trigger ComboBox fallback.
+                        foreach (var existingMode in viewModel.AvailableSplitEncodeModes.ToArray())
+                        {
+                            if (!modes.Contains(existingMode))
+                            {
+                                viewModel.AvailableSplitEncodeModes.Remove(existingMode);
+                            }
+                        }
                         foreach (var mode in modes)
                         {
-                            viewModel.AvailableSplitEncodeModes.Add(mode);
+                            if (!viewModel.AvailableSplitEncodeModes.Contains(mode))
+                            {
+                                viewModel.AvailableSplitEncodeModes.Add(mode);
+                            }
                         }
                     },
                     GetSelectedSplitEncodeMode = () => viewModel.SelectedSplitEncodeMode,
@@ -2672,15 +2687,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 });
         }
 
-        private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)
+        private static MainViewModelRecordingSettingsController CreateRecordingSettingsController(MainViewModel viewModel)
         {
-            return new MainViewModelRecordingSettingsAutomationController(
-                new MainViewModelRecordingSettingsAutomationControllerContext
+            return new MainViewModelRecordingSettingsController(
+                new MainViewModelRecordingSettingsControllerContext
                 {
-                    InvokeRecordingFormatOnUiThreadAsync = (operation, cancellationToken) =>
-                        viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
-                    InvokeEncoderSettingsOnUiThreadAsync = (operation, cancellationToken) =>
-                        viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
                     InvokeOnUiThreadAsync = (operation, cancellationToken) =>
                         viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
                     GetAvailableRecordingFormats = () => viewModel.AvailableRecordingFormats,
@@ -2688,27 +2699,25 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     GetAvailableSplitEncodeModes = () => viewModel.AvailableSplitEncodeModes,
                     GetAvailablePresets = () => viewModel.AvailablePresets,
                     IsHdrEnabled = () => viewModel.IsHdrEnabled,
-                    SetSuppressFlashbackFormatCycle = value => viewModel._suppressFlashbackFormatCycle = value,
-                    SetSuppressFlashbackEncoderSettingsCycle = value => viewModel._suppressFlashbackEncoderSettingsCycle = value,
+                    IsHdrCompatibleFormat = RecordingSettingsSelectionPolicy.IsHdrCompatible,
+                    ClampCustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps,
+                    IsPreviewing = () => viewModel.IsPreviewing,
+                    IsRecording = () => viewModel.IsRecording,
+                    IsLoadingSettings = () => viewModel._isLoadingSettings,
                     SetSelectedRecordingFormat = value => viewModel.SelectedRecordingFormat = value,
-                    GetSelectedQuality = () => viewModel.SelectedQuality,
                     SetSelectedQuality = value => viewModel.SelectedQuality = value,
-                    GetSelectedSplitEncodeMode = () => viewModel.SelectedSplitEncodeMode,
                     SetSelectedSplitEncodeMode = value => viewModel.SelectedSplitEncodeMode = value,
-                    GetSelectedPreset = () => viewModel.SelectedPreset,
                     SetSelectedPreset = value => viewModel.SelectedPreset = value,
-                    GetCustomBitrateMbps = () => viewModel.CustomBitrateMbps,
                     SetCustomBitrateMbps = value => viewModel.CustomBitrateMbps = value,
                     SetOutputPath = value => viewModel.OutputPath = value,
-                    UpdateRecordingFormatAsync = (format, cancellationToken) =>
-                        viewModel._sessionCoordinator.UpdateRecordingFormatAsync(format, cancellationToken),
-                    CycleFlashbackEncoderSettingsAsync = (quality, customBitrateMbps, nvencPreset, splitEncodeMode, cancellationToken) =>
-                        viewModel._sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                            quality,
-                            customBitrateMbps,
-                            nvencPreset,
-                            splitEncodeMode,
-                            cancellationToken),
+                    CaptureSelection = () => new RecordingSettingsSelection(
+                        RecordingSettingsSelectionPolicy.ParseRecordingFormat(viewModel.SelectedRecordingFormat),
+                        RecordingSettingsSelectionPolicy.ParseVideoQuality(viewModel.SelectedQuality),
+                        viewModel.CustomBitrateMbps,
+                        NvencPresetParser.Parse(viewModel.SelectedPreset),
+                        SplitEncodeModeParser.Parse(viewModel.SelectedSplitEncodeMode)),
+                    ApplyAsync = viewModel._sessionCoordinator.ApplyRecordingSettingsAsync,
+                    Log = message => Logger.Log(message),
                 });
         }
 
@@ -2900,12 +2909,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     BuildCaptureSettings = viewModel.BuildCaptureSettings,
                     InvokeOnUiThreadAsync = (operation, cancellationToken) => viewModel.InvokeOnUiThreadAsync(operation, cancellationToken),
                     RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,
+                    RestorePreviewVolumeAfterStopFailed = viewModel.RestorePreviewVolumeAfterStopFailed,
                     CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(
                         new MainViewModelPreviewReinitializeControllerContext
                         {
                             SelectedDevice = () => viewModel.SelectedDevice,
                             SelectedFormat = () => viewModel.SelectedFormat,
                             IsRecording = () => viewModel.IsRecording,
+                            IsRecordingTransitioning = () => viewModel.IsRecordingTransitioning,
                             IsInitialized = () => viewModel.IsInitialized,
                             SetIsInitialized = value => viewModel.IsInitialized = value,
                             IsPreviewing = () => viewModel.IsPreviewing,
@@ -2913,23 +2924,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                             IsPreviewReinitializing = () => viewModel.IsPreviewReinitializing,
                             SetIsPreviewReinitializing = value => viewModel.IsPreviewReinitializing = value,
                             SetStatusText = value => viewModel.StatusText = value,
-                            CancelPreviewRestartAfterReinitialize = () => viewModel._cancelPreviewRestartAfterReinitialize,
-                            SetCancelPreviewRestartAfterReinitialize = value => viewModel._cancelPreviewRestartAfterReinitialize = value,
-                            IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),
-                            ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),
                             PreviewReinitializeDebounceMs = PreviewReinitializeDebounceMs,
-                            PendingFlashbackCycleTask = () => viewModel._pendingFlashbackCycleTask,
+                            PendingFlashbackCycleTask = () => viewModel._recordingSettingsController.PendingApplication,
                             FlashbackCycleBeforeReinitializeTimeoutMs = FlashbackCycleBeforeReinitializeTimeoutMs,
                             AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,
-                            ClearPendingFlashbackCycleIfSameAndCompleted = task =>
-                            {
-                                if (ReferenceEquals(viewModel._pendingFlashbackCycleTask, task) && task.IsCompleted)
-                                {
-                                    viewModel._pendingFlashbackCycleTask = null;
-                                }
-                            },
-                            WaitReinitializeGateAsync = viewModel._previewReinitializeGate.WaitAsync,
-                            ReleaseReinitializeGate = () => viewModel._previewReinitializeGate.Release(),
+                            ClearPendingFlashbackCycleIfSameAndCompleted = task => viewModel._recordingSettingsController.ClearPendingIfSameAndCompleted(task),
                             NotifyPreviewReinitRequestedAsync = viewModel.NotifyPreviewReinitRequestedAsync,
                             NotifyRendererStopAsync = viewModel.NotifyRendererStopAsync,
                             PendingDeferredCaptureCleanupTask = () => viewModel._captureService.GetPendingDeferredCaptureCleanupTask(),
@@ -3005,7 +3004,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 {
                     TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,
                     CancelActiveFlashbackExport = viewModel.CancelActiveFlashbackExportForDispose,
-                    CancelPendingAudioControlWork = deviceAudioRequestController.CancelPendingAudioControlWork,
+                    CancelPendingAudioControlWork = () =>
+                    {
+                        viewModel.DisposePreviewAudioVolume();
+                        deviceAudioRequestController.CancelPendingAudioControlWork();
+                    },
                     StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,
                     CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),
                     DisposeSessionCoordinatorAsync = () => viewModel._sessionCoordinator.DisposeAsync().AsTask(),

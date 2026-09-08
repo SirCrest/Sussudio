@@ -10,9 +10,8 @@ using Windows.Storage;
 
 namespace Sussudio.Services.Recording;
 
-// Creates the file paths for a recording attempt. It keeps temp video/audio
-// artifacts, final output naming, and HDR-active state in one place so sinks
-// only write bytes.
+// Reserves a recording attempt's output and resolves its execution context.
+// Sinks own encoding and finalization; this owner rolls back failed starts.
 public sealed class RecordingArtifactManager
 {
     public async Task<RecordingContext> CreateContextAsync(
@@ -37,23 +36,7 @@ public sealed class RecordingArtifactManager
 
         var hdrPipelineActive = string.Equals(request.VideoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
 
-        if (!request.UsePostMuxAudio)
-        {
-            return BuildContext(request, finalOutputPath, finalOutputPath, null, hdrPipelineActive);
-        }
-
-        var baseName = Path.GetFileNameWithoutExtension(finalOutputPath);
-        var extension = Path.GetExtension(finalOutputPath);
-
-        var tempVideoFile = await outputFolder.CreateFileAsync(
-            $"{baseName}_video{extension}",
-            CreationCollisionOption.GenerateUniqueName);
-
-        var tempAudioFile = await outputFolder.CreateFileAsync(
-            $"{baseName}_audio.m4a",
-            CreationCollisionOption.GenerateUniqueName);
-
-        return BuildContext(request, tempVideoFile.Path, finalOutputPath, tempAudioFile.Path, hdrPipelineActive);
+        return BuildContext(request, finalOutputPath, hdrPipelineActive);
     }
 
     private static string ResolveUniqueOutputPath(StorageFolder outputFolder, string outputFileName)
@@ -79,15 +62,12 @@ public sealed class RecordingArtifactManager
 
     private static RecordingContext BuildContext(
         RecordingContextRequest request,
-        string videoOutputPath,
         string finalOutputPath,
-        string? audioTempPath,
         bool hdrPipelineActive)
     {
         return new RecordingContext
         {
             Settings = request.Settings,
-            UsePostMuxAudio = request.UsePostMuxAudio,
             AudioDeviceName = request.AudioDeviceName,
             MicrophoneDeviceName = request.MicrophoneDeviceName,
             EffectiveFrameRate = request.EffectiveFrameRate,
@@ -98,70 +78,10 @@ public sealed class RecordingArtifactManager
             IsFullRangeInput = request.IsFullRangeInput,
             GpuHandles = request.GpuHandles,
             FileNameFormatOverride = request.FileNameFormatOverride,
-            VideoOutputPath = videoOutputPath,
+            VideoOutputPath = finalOutputPath,
             FinalOutputPath = finalOutputPath,
-            AudioTempPath = audioTempPath,
             HdrPipelineActive = hdrPipelineActive,
         };
-    }
-
-    public FinalizeResult FinalizeContext(
-        RecordingContext context,
-        bool muxSucceeded,
-        string? muxFailureReason = null)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-
-        if (!context.UsePostMuxAudio)
-        {
-            if (!TryValidateFinalOutput(context.FinalOutputPath, out var directOutputFailure))
-            {
-                return FinalizeResult.Failure(
-                    context.FinalOutputPath,
-                    $"Stopped (final output invalid: {directOutputFailure})",
-                    null,
-                    RecordingFailureCodes.FinalOutputInvalid);
-            }
-
-            return FinalizeResult.Success(context.FinalOutputPath, "Stopped");
-        }
-
-        if (muxSucceeded)
-        {
-            if (!TryValidateFinalOutput(context.FinalOutputPath, out var muxedOutputFailure))
-            {
-                return FinalizeResult.Failure(
-                    context.FinalOutputPath,
-                    $"Stopped (final output invalid: {muxedOutputFailure})",
-                    GetExistingTempArtifacts(context),
-                    RecordingFailureCodes.FinalOutputInvalid);
-            }
-
-            TryDelete(context.VideoOutputPath);
-            TryDelete(context.AudioTempPath);
-            return FinalizeResult.Success(context.FinalOutputPath, "Stopped");
-        }
-
-        // When mux fails we preserve the temp artifacts for recovery and remove any
-        // empty final placeholder file to avoid surfacing a misleading output.
-        TryDeleteIfEmpty(context.FinalOutputPath);
-
-        var preserved = new List<string>();
-        if (File.Exists(context.VideoOutputPath))
-        {
-            preserved.Add(context.VideoOutputPath);
-        }
-        if (!string.IsNullOrWhiteSpace(context.AudioTempPath) && File.Exists(context.AudioTempPath))
-        {
-            preserved.Add(context.AudioTempPath);
-        }
-
-        var reason = string.IsNullOrWhiteSpace(muxFailureReason) ? "mux failed" : muxFailureReason;
-        return FinalizeResult.Failure(
-            context.FinalOutputPath,
-            $"Stopped (mux failed: {reason})",
-            preserved,
-            RecordingFailureCodes.MuxFailed);
     }
 
     public Task RollbackAsync(RecordingContext? context, CancellationToken cancellationToken = default)
@@ -174,12 +94,6 @@ public sealed class RecordingArtifactManager
         }
 
         TryDelete(context.VideoOutputPath);
-
-        if (context.UsePostMuxAudio)
-        {
-            TryDelete(context.AudioTempPath);
-            TryDelete(context.FinalOutputPath);
-        }
 
         return Task.CompletedTask;
     }
@@ -202,76 +116,6 @@ public sealed class RecordingArtifactManager
         {
             Logger.Log($"Failed to delete file '{path}': {ex.Message}");
         }
-    }
-
-    private static void TryDeleteIfEmpty(string path)
-    {
-        try
-        {
-            if (!File.Exists(path))
-            {
-                return;
-            }
-
-            var info = new FileInfo(path);
-            if (info.Length == 0)
-            {
-                File.Delete(path);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Failed to cleanup empty final output '{path}': {ex.Message}");
-        }
-    }
-
-    private static bool TryValidateFinalOutput(string path, out string failureMessage)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            failureMessage = "output path is empty";
-            return false;
-        }
-
-        try
-        {
-            if (!File.Exists(path))
-            {
-                failureMessage = "output file is missing";
-                return false;
-            }
-
-            var info = new FileInfo(path);
-            if (info.Length <= 0)
-            {
-                failureMessage = "output file is empty";
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            failureMessage = $"output file length unavailable: {ex.Message}";
-            Logger.Log($"Recording final output validation failed for '{path}': {ex.Message}");
-            return false;
-        }
-
-        failureMessage = string.Empty;
-        return true;
-    }
-
-    private static IReadOnlyList<string> GetExistingTempArtifacts(RecordingContext context)
-    {
-        var preserved = new List<string>();
-        if (File.Exists(context.VideoOutputPath))
-        {
-            preserved.Add(context.VideoOutputPath);
-        }
-        if (!string.IsNullOrWhiteSpace(context.AudioTempPath) && File.Exists(context.AudioTempPath))
-        {
-            preserved.Add(context.AudioTempPath);
-        }
-
-        return preserved;
     }
 }
 
@@ -357,7 +201,6 @@ internal static class RecordingFinalizationRecoveryArtifacts
     internal static string BeginActive(
         string outputPath,
         string? videoOutputPath,
-        string? audioTempPath,
         IEnumerable<string> artifactDirectories)
     {
         var fileName = Path.GetFileName(string.IsNullOrWhiteSpace(outputPath) ? videoOutputPath : outputPath);
@@ -373,7 +216,7 @@ internal static class RecordingFinalizationRecoveryArtifacts
             "reason=Recording was interrupted before finalization.",
             "final_output=" + outputPath,
             "video_output=" + (videoOutputPath ?? string.Empty),
-            "audio_temp=" + (audioTempPath ?? string.Empty),
+            "audio_temp=",
         };
         foreach (var directory in artifactDirectories)
         {
@@ -433,7 +276,6 @@ internal static class RecordingFinalizationRecoveryArtifacts
         AddExistingFile(preserved, outputPath);
         AddExistingFile(preserved, context?.VideoOutputPath);
         AddExistingFile(preserved, context?.FinalOutputPath);
-        AddExistingFile(preserved, context?.AudioTempPath);
         foreach (var artifactPath in additionalArtifacts)
         {
             AddExistingFile(preserved, artifactPath);
@@ -502,7 +344,7 @@ internal static class RecordingFinalizationRecoveryArtifacts
             "reason_b64=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(reason)),
             "final_output=" + (context?.FinalOutputPath ?? outputPath),
             "video_output=" + (context?.VideoOutputPath ?? string.Empty),
-            "audio_temp=" + (context?.AudioTempPath ?? string.Empty),
+            "audio_temp=",
         };
         foreach (var artifactPath in preservedArtifacts)
         {
@@ -640,6 +482,7 @@ internal static class RecordingFinalizationRecoveryArtifacts
 
         values.TryGetValue("final_output", out var finalOutput);
         values.TryGetValue("video_output", out var videoOutput);
+        // Older recordings wrote audio separately; retain those recovery files.
         values.TryGetValue("audio_temp", out var audioOutput);
 
         var preserved = new List<string>();

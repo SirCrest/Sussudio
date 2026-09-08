@@ -155,7 +155,6 @@ internal static class FlashbackExportPlanner
             new FlashbackExportRequest
             {
                 Segments = BuildSegments(completedSegments, segmentPaths),
-                SegmentPaths = segmentPaths.Select(path => path.Path).ToArray(),
                 InPoint = inPoint,
                 OutPoint = outPoint,
                 OutputPath = outputPath,

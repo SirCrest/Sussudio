@@ -1296,18 +1296,19 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Returns an existing segment file path containing the given absolute PTS, or the active segment
-    /// as fallback when it exists.
+    /// Resolves an existing playback segment using the fallback policy of
+    /// <see cref="ResolvePlaybackSegmentPathWithFallback"/>.
     /// </summary>
     public string? GetSegmentFileForPosition(TimeSpan absolutePts)
-        => GetValidSegmentFileForPosition(absolutePts);
+        => ResolvePlaybackSegmentPathWithFallback(absolutePts);
 
     /// <summary>
-    /// Returns a validated segment file path for the given position.
-    /// This checks that the file still exists (hasn't been evicted between lookup and open).
-    /// If the target segment was evicted, falls back to the oldest available segment.
+    /// Returns an existing completed segment containing the requested PTS when available.
+    /// Before the completed range, prefers the oldest existing completed segment, then the active file.
+    /// For other missing positions, prefers the active file, then the oldest existing completed segment.
+    /// The returned fallback may not contain the requested PTS; existence is checked at lookup time.
     /// </summary>
-    public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)
+    public string? ResolvePlaybackSegmentPathWithFallback(TimeSpan absolutePts)
     {
         string? targetPath = null;
         var beforeFirstCompletedSegment = false;
@@ -1429,7 +1430,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             : null;
     }
 
-    public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)
+    /// <summary>
+    /// Returns existing completed segment paths overlapping the requested range for export.
+    /// The active segment is excluded until rotation completes it.
+    /// </summary>
+    public IReadOnlyList<string> GetExistingCompletedSegmentPathsInRange(TimeSpan inPoint, TimeSpan outPoint)
     {
         List<string> paths;
         lock (_indexLock)

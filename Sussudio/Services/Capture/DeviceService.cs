@@ -53,6 +53,21 @@ public class DeviceService
     private const int FormatProbeConcurrency = 2;
     private const string PreferredNativeXuInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
     private readonly SemaphoreSlim _formatProbeGate = new(FormatProbeConcurrency, FormatProbeConcurrency);
+    private readonly Func<Task<List<MfDeviceEnumerator.MfVideoDeviceInfo>>> _enumerateVideoDevicesAsync;
+    private readonly Func<Task<List<AudioInputDevice>>> _enumerateAudioCaptureEndpointsAsync;
+
+    public DeviceService()
+        : this(MfDeviceEnumerator.EnumerateVideoDevicesAsync, MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync)
+    {
+    }
+
+    internal DeviceService(
+        Func<Task<List<MfDeviceEnumerator.MfVideoDeviceInfo>>> enumerateVideoDevicesAsync,
+        Func<Task<List<AudioInputDevice>>> enumerateAudioCaptureEndpointsAsync)
+    {
+        _enumerateVideoDevicesAsync = enumerateVideoDevicesAsync ?? throw new ArgumentNullException(nameof(enumerateVideoDevicesAsync));
+        _enumerateAudioCaptureEndpointsAsync = enumerateAudioCaptureEndpointsAsync ?? throw new ArgumentNullException(nameof(enumerateAudioCaptureEndpointsAsync));
+    }
 
     private static readonly string[] PreferredDeviceNames =
     {
@@ -90,9 +105,15 @@ public class DeviceService
     public string LastDiscoverySummary { get; private set; } = "No discovery run yet";
     public event EventHandler<DeviceFormatProbeCompletedEventArgs>? FormatProbeCompleted;
 
+    /// <exception cref="InvalidOperationException">Device enumeration failed; an empty collection represents only a successful scan.</exception>
     public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync(bool waitForFormatProbes = true)
     {
         var discovery = await EnumerateCaptureDeviceDiscoveryAsync(waitForFormatProbes).ConfigureAwait(false);
+        if (!discovery.Succeeded)
+        {
+            throw new InvalidOperationException(discovery.Error);
+        }
+
         return discovery.CaptureDevices;
     }
 
@@ -106,17 +127,18 @@ public class DeviceService
         List<AudioInputDevice> audioDevices;
         try
         {
-            var videoTask = MfDeviceEnumerator.EnumerateVideoDevicesAsync();
-            var audioTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();
+            var videoTask = _enumerateVideoDevicesAsync();
+            var audioTask = _enumerateAudioCaptureEndpointsAsync();
             await Task.WhenAll(videoTask, audioTask).ConfigureAwait(false);
             videoDevices = videoTask.Result;
             audioDevices = audioTask.Result;
         }
         catch (Exception ex)
         {
-            LastDiscoverySummary = $"Video devices: enumeration failed ({ex.GetType().Name}: {ex.Message})";
+            var error = $"Device enumeration failed ({ex.GetType().Name}: {ex.Message})";
+            LastDiscoverySummary = error;
             Logger.Log($"Device discovery failed while querying MF/WASAPI enumerators: {ex}");
-            return new DeviceDiscoveryResult(discovered, noAudioDevices);
+            return new DeviceDiscoveryResult(discovered, noAudioDevices, Error: error);
         }
 
         if (videoDevices.Count == 0)
@@ -362,7 +384,11 @@ public class DeviceService
 
     public sealed record DeviceDiscoveryResult(
         ObservableCollection<CaptureDevice> CaptureDevices,
-        IReadOnlyList<AudioInputDevice> AudioInputDevices);
+        IReadOnlyList<AudioInputDevice> AudioInputDevices,
+        string? Error = null)
+    {
+        public bool Succeeded => string.IsNullOrWhiteSpace(Error);
+    }
 
     public sealed record DeviceFormatProbeCompletedEventArgs(
         string DeviceId,

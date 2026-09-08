@@ -23,8 +23,19 @@ namespace Windows.UI
 
 namespace Microsoft.UI.Xaml
 {
+    public sealed class RoutedEvent { }
+
     public class UIElement
     {
+        public static RoutedEvent PointerPressedEvent { get; } = new();
+        private Input.PointerEventHandler? _handledPointerPressed;
+        public void AddHandler(RoutedEvent routedEvent, object handler, bool handledEventsToo)
+        {
+            if (routedEvent == PointerPressedEvent && handledEventsToo)
+                _handledPointerPressed += (Input.PointerEventHandler)handler;
+        }
+        protected void RaiseHandledPointerPressed()
+            => _handledPointerPressed?.Invoke(this, new Input.PointerRoutedEventArgs());
         public double Opacity { get; set; } = 1;
         public Visibility Visibility { get; set; } = Visibility.Visible;
     }
@@ -54,6 +65,12 @@ namespace Microsoft.UI.Xaml
     {
         public static implicit operator Duration(TimeSpan value) => new(value);
     }
+}
+
+namespace Microsoft.UI.Xaml.Input
+{
+    public sealed class PointerRoutedEventArgs : EventArgs { }
+    public delegate void PointerEventHandler(object sender, PointerRoutedEventArgs args);
 }
 
 namespace Microsoft.UI.Xaml.Controls.Primitives
@@ -105,6 +122,7 @@ namespace Microsoft.UI.Xaml.Controls
         }
 
         public event EventHandler<ValueChangedEventArgs>? ValueChanged;
+        public void RaisePointerPressed() => RaiseHandledPointerPressed();
         public event EventHandler? PointerCaptureLost;
         public void RaisePointerCaptureLost() => PointerCaptureLost?.Invoke(this, EventArgs.Empty);
     }
@@ -320,6 +338,12 @@ namespace Sussudio.ViewModels
         public int SaveMicrophoneVolumeCount { get; private set; }
         public int ResetAudioMeterTimerFlagCount { get; private set; }
         public Action? OnSavePreviewVolume { get; set; }
+        public Action<double>? OnUserPreviewVolume { get; set; }
+        public void SetPreviewVolumeFromUser(double value)
+        {
+            PreviewVolume = value;
+            OnUserPreviewVolume?.Invoke(value);
+        }
         public void SavePreviewVolume() { SavePreviewVolumeCount++; OnSavePreviewVolume?.Invoke(); }
         public void SaveMicrophoneVolume() => SaveMicrophoneVolumeCount++;
         public void ResetAudioMeterTimerFlag() => ResetAudioMeterTimerFlagCount++;

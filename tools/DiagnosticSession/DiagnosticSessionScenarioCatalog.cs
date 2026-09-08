@@ -52,15 +52,18 @@ internal static class DiagnosticSessionScenarioCatalog
 
     private static DiagnosticSessionScenarioCatalogEntry[] CreateCoreScenarioEntries()
         => [
-        new(Observe),
+        new(Observe, DiagnosticSessionScenarioKind.Observe),
         new(
             PreviewOnly,
+            DiagnosticSessionScenarioKind.PreviewOnly,
             RequiresPreview: true),
         new(
             RecordingOnly,
+            DiagnosticSessionScenarioKind.RecordingOnly,
             RequiresRecording: true),
         new(
             Flashback,
+            DiagnosticSessionScenarioKind.Flashback,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-stress-export.mp4")
@@ -70,41 +73,41 @@ internal static class DiagnosticSessionScenarioCatalog
         => [
         new(
             FlashbackPlayback,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackPlayback: true),
+            DiagnosticSessionScenarioKind.FlashbackPlayback,
             RequiresPreview: true,
             RequiresFlashback: true),
         new(
             FlashbackStress,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackStress: true),
+            DiagnosticSessionScenarioKind.FlashbackStress,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-stress-export.mp4"),
         new(
             FlashbackScrubStress,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackScrubStress: true),
+            DiagnosticSessionScenarioKind.FlashbackScrubStress,
             RequiresPreview: true,
             RequiresFlashback: true),
         new(
             FlashbackRestartCycle,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRestartCycle: true),
+            DiagnosticSessionScenarioKind.FlashbackRestartCycle,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-restart-cycle-export.mp4"),
         new(
             FlashbackEncoderCycle,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackEncoderCycle: true),
+            DiagnosticSessionScenarioKind.FlashbackEncoderCycle,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-encoder-cycle-export.mp4"),
         new(
             FlashbackExportPlayback,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackExportPlayback: true),
+            DiagnosticSessionScenarioKind.FlashbackExportPlayback,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-export-playback.mp4"),
         new(
             FlashbackSegmentPlayback,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackSegmentPlayback: true),
+            DiagnosticSessionScenarioKind.FlashbackSegmentPlayback,
             RequiresPreview: true,
             RequiresFlashback: true)
     ];
@@ -113,48 +116,48 @@ internal static class DiagnosticSessionScenarioCatalog
         => [
         new(
             FlashbackRangeExport,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRangeExport: true),
+            DiagnosticSessionScenarioKind.FlashbackRangeExport,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-range-export.mp4"),
         new(
             FlashbackRangeExportAudioSwitch,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRangeExportAudioSwitch: true),
+            DiagnosticSessionScenarioKind.FlashbackRangeExportAudioSwitch,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-range-export-audio-switch.mp4"),
         new(
             FlashbackLifecycle,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackLifecycle: true),
+            DiagnosticSessionScenarioKind.FlashbackLifecycle,
             RequiresPreview: true,
             RequiresFlashback: true),
         new(
             FlashbackExportConcurrent,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackExportConcurrent: true),
+            DiagnosticSessionScenarioKind.FlashbackExportConcurrent,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-concurrent-a.mp4"),
         new(
             FlashbackDisableDuringExport,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackDisableDuringExport: true),
+            DiagnosticSessionScenarioKind.FlashbackDisableDuringExport,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-disable-during-export.mp4"),
         new(
             FlashbackRotatedExport,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRotatedExport: true),
+            DiagnosticSessionScenarioKind.FlashbackRotatedExport,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-rotated-export.mp4"),
         new(
             FlashbackPreviewCycle,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackPreviewCycle: true),
+            DiagnosticSessionScenarioKind.FlashbackPreviewCycle,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-preview-off-export.mp4"),
         new(
             FlashbackPlaybackPreviewCycle,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackPlaybackPreviewCycle: true),
+            DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle,
             RequiresPreview: true,
             RequiresFlashback: true,
             FlashbackExportVerificationFileName: "flashback-playback-preview-cycle.mp4")
@@ -164,37 +167,37 @@ internal static class DiagnosticSessionScenarioCatalog
         => [
         new(
             FlashbackRecording,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRecording: true),
+            DiagnosticSessionScenarioKind.FlashbackRecording,
             RequiresPreview: true,
             RequiresRecording: true,
             RequiresFlashback: true),
         new(
             FlashbackRecordingPreviewCycle,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRecordingPreviewCycle: true),
+            DiagnosticSessionScenarioKind.FlashbackRecordingPreviewCycle,
             RequiresPreview: true,
             RequiresRecording: true,
             RequiresFlashback: true),
         new(
             FlashbackRecordingSettingsDeferred,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRecordingSettingsDeferred: true),
+            DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred,
             RequiresPreview: true,
             RequiresRecording: true,
             RequiresFlashback: true),
         new(
             FlashbackRecordingExportRejected,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackRecordingExportRejected: true),
+            DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected,
             RequiresPreview: true,
             RequiresRecording: true,
             RequiresFlashback: true),
         new(
             FlashbackExportRejected,
-            DiagnosticSessionScenarioPlan.Create(runFlashbackExportRejected: true))
+            DiagnosticSessionScenarioKind.FlashbackExportRejected)
     ];
 
     private static DiagnosticSessionScenarioCatalogEntry CreateCombinedScenarioEntry()
         => new(
             Combined,
-            DiagnosticSessionScenarioPlan.Create(runCombined: true),
+            DiagnosticSessionScenarioKind.Combined,
             RequiresPreview: true,
             RequiresRecording: true,
             RequiresFlashback: true);
@@ -253,170 +256,136 @@ internal static class DiagnosticSessionScenarioCatalog
 
 internal readonly record struct DiagnosticSessionScenarioCatalogEntry(
     string Name,
-    DiagnosticSessionScenarioPlan Plan = default,
+    DiagnosticSessionScenarioKind Kind,
     bool RequiresPreview = false,
     bool RequiresRecording = false,
     bool RequiresFlashback = false,
-    string? FlashbackExportVerificationFileName = null);
-
-internal readonly record struct DiagnosticSessionScenarioPlan(
-    bool RunFlashbackPlayback,
-    bool RunFlashbackStress,
-    bool RunFlashbackScrubStress,
-    bool RunFlashbackRestartCycle,
-    bool RunFlashbackEncoderCycle,
-    bool RunFlashbackExportPlayback,
-    bool RunFlashbackSegmentPlayback,
-    bool RunFlashbackRangeExport,
-    bool RunFlashbackRangeExportAudioSwitch,
-    bool RunFlashbackLifecycle,
-    bool RunFlashbackExportConcurrent,
-    bool RunFlashbackDisableDuringExport,
-    bool RunFlashbackRotatedExport,
-    bool RunFlashbackPreviewCycle,
-    bool RunFlashbackPlaybackPreviewCycle,
-    bool RunFlashbackRecording,
-    bool RunFlashbackRecordingPreviewCycle,
-    bool RunFlashbackRecordingSettingsDeferred,
-    bool RunFlashbackRecordingExportRejected,
-    bool RunFlashbackExportRejected,
-    bool RunCombined)
+    string? FlashbackExportVerificationFileName = null)
 {
-    internal static DiagnosticSessionScenarioPlan Create(
-        bool runFlashbackPlayback = false,
-        bool runFlashbackStress = false,
-        bool runFlashbackScrubStress = false,
-        bool runFlashbackRestartCycle = false,
-        bool runFlashbackEncoderCycle = false,
-        bool runFlashbackExportPlayback = false,
-        bool runFlashbackSegmentPlayback = false,
-        bool runFlashbackRangeExport = false,
-        bool runFlashbackRangeExportAudioSwitch = false,
-        bool runFlashbackLifecycle = false,
-        bool runFlashbackExportConcurrent = false,
-        bool runFlashbackDisableDuringExport = false,
-        bool runFlashbackRotatedExport = false,
-        bool runFlashbackPreviewCycle = false,
-        bool runFlashbackPlaybackPreviewCycle = false,
-        bool runFlashbackRecording = false,
-        bool runFlashbackRecordingPreviewCycle = false,
-        bool runFlashbackRecordingSettingsDeferred = false,
-        bool runFlashbackRecordingExportRejected = false,
-        bool runFlashbackExportRejected = false,
-        bool runCombined = false)
-        => new(
-            runFlashbackPlayback,
-            runFlashbackStress,
-            runFlashbackScrubStress,
-            runFlashbackRestartCycle,
-            runFlashbackEncoderCycle,
-            runFlashbackExportPlayback,
-            runFlashbackSegmentPlayback,
-            runFlashbackRangeExport,
-            runFlashbackRangeExportAudioSwitch,
-            runFlashbackLifecycle,
-            runFlashbackExportConcurrent,
-            runFlashbackDisableDuringExport,
-            runFlashbackRotatedExport,
-            runFlashbackPreviewCycle,
-            runFlashbackPlaybackPreviewCycle,
-            runFlashbackRecording,
-            runFlashbackRecordingPreviewCycle,
-            runFlashbackRecordingSettingsDeferred,
-            runFlashbackRecordingExportRejected,
-            runFlashbackExportRejected,
-            runCombined);
+    internal DiagnosticSessionScenarioPlan Plan => new(Kind);
+}
 
+internal enum DiagnosticSessionScenarioKind
+{
+    Observe,
+    PreviewOnly,
+    RecordingOnly,
+    Flashback,
+    FlashbackPlayback,
+    FlashbackStress,
+    FlashbackScrubStress,
+    FlashbackRestartCycle,
+    FlashbackEncoderCycle,
+    FlashbackExportPlayback,
+    FlashbackSegmentPlayback,
+    FlashbackRangeExport,
+    FlashbackRangeExportAudioSwitch,
+    FlashbackLifecycle,
+    FlashbackExportConcurrent,
+    FlashbackDisableDuringExport,
+    FlashbackRotatedExport,
+    FlashbackPreviewCycle,
+    FlashbackPlaybackPreviewCycle,
+    FlashbackRecording,
+    FlashbackRecordingPreviewCycle,
+    FlashbackRecordingSettingsDeferred,
+    FlashbackRecordingExportRejected,
+    FlashbackExportRejected,
+    Combined
+}
+
+internal readonly record struct DiagnosticSessionScenarioPlan(DiagnosticSessionScenarioKind Kind)
+{
     internal static DiagnosticSessionScenarioPlan From(string scenario)
         => DiagnosticSessionScenarioCatalog.TryGetEntry(scenario, out var entry)
             ? entry.Plan
             : default;
 
     internal bool RequiresFlashbackRecordingReadiness
-        => RunFlashbackRecording ||
-           RunFlashbackRecordingPreviewCycle ||
-           RunFlashbackRecordingSettingsDeferred ||
-           RunFlashbackRecordingExportRejected;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackRecording or
+           DiagnosticSessionScenarioKind.FlashbackRecordingPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred or
+           DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected;
 
     internal bool RequiresFlashbackRecordingValidation
         => RequiresFlashbackRecordingReadiness;
 
     internal bool UsesFlashbackScenarioWarningPolicy
-        => RunFlashbackPlayback ||
-           RunFlashbackStress ||
-           RunFlashbackScrubStress ||
-           RunFlashbackRestartCycle ||
-           RunFlashbackEncoderCycle ||
-           RunFlashbackExportPlayback ||
-           RunFlashbackSegmentPlayback ||
-           RunFlashbackRangeExport ||
-           RunFlashbackRangeExportAudioSwitch ||
-           RunFlashbackLifecycle ||
-           RunFlashbackExportConcurrent ||
-           RunFlashbackDisableDuringExport ||
-           RunFlashbackRotatedExport ||
-           RunFlashbackPreviewCycle ||
-           RunFlashbackPlaybackPreviewCycle ||
-           RunFlashbackRecording ||
-           RunFlashbackRecordingPreviewCycle ||
-           RunFlashbackRecordingSettingsDeferred ||
-           RunFlashbackRecordingExportRejected ||
-           RunFlashbackExportRejected ||
-           RunCombined;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackPlayback or
+           DiagnosticSessionScenarioKind.FlashbackStress or
+           DiagnosticSessionScenarioKind.FlashbackScrubStress or
+           DiagnosticSessionScenarioKind.FlashbackRestartCycle or
+           DiagnosticSessionScenarioKind.FlashbackEncoderCycle or
+           DiagnosticSessionScenarioKind.FlashbackExportPlayback or
+           DiagnosticSessionScenarioKind.FlashbackSegmentPlayback or
+           DiagnosticSessionScenarioKind.FlashbackRangeExport or
+           DiagnosticSessionScenarioKind.FlashbackRangeExportAudioSwitch or
+           DiagnosticSessionScenarioKind.FlashbackLifecycle or
+           DiagnosticSessionScenarioKind.FlashbackExportConcurrent or
+           DiagnosticSessionScenarioKind.FlashbackDisableDuringExport or
+           DiagnosticSessionScenarioKind.FlashbackRotatedExport or
+           DiagnosticSessionScenarioKind.FlashbackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackRecording or
+           DiagnosticSessionScenarioKind.FlashbackRecordingPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred or
+           DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected or
+           DiagnosticSessionScenarioKind.FlashbackExportRejected or
+           DiagnosticSessionScenarioKind.Combined;
 
     internal bool ToleratesSourceSignalHealthWarning
-        => RunFlashbackRangeExport ||
-           RunFlashbackRangeExportAudioSwitch ||
-           RunFlashbackExportConcurrent ||
-           RunFlashbackDisableDuringExport ||
-           RunFlashbackRotatedExport ||
-           RunFlashbackPreviewCycle ||
-           RunFlashbackPlaybackPreviewCycle;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackRangeExport or
+           DiagnosticSessionScenarioKind.FlashbackRangeExportAudioSwitch or
+           DiagnosticSessionScenarioKind.FlashbackExportConcurrent or
+           DiagnosticSessionScenarioKind.FlashbackDisableDuringExport or
+           DiagnosticSessionScenarioKind.FlashbackRotatedExport or
+           DiagnosticSessionScenarioKind.FlashbackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle;
 
     internal bool ToleratesFlashbackForceRotateDrainWarning
-        => RunFlashbackExportPlayback ||
-           RunFlashbackScrubStress ||
-           RunFlashbackRangeExport ||
-           RunFlashbackRangeExportAudioSwitch ||
-           RunFlashbackExportConcurrent ||
-           RunFlashbackDisableDuringExport ||
-           RunFlashbackRotatedExport;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackExportPlayback or
+           DiagnosticSessionScenarioKind.FlashbackScrubStress or
+           DiagnosticSessionScenarioKind.FlashbackRangeExport or
+           DiagnosticSessionScenarioKind.FlashbackRangeExportAudioSwitch or
+           DiagnosticSessionScenarioKind.FlashbackExportConcurrent or
+           DiagnosticSessionScenarioKind.FlashbackDisableDuringExport or
+           DiagnosticSessionScenarioKind.FlashbackRotatedExport;
 
     internal bool ToleratesStrictArtifactDiagnosticHealthWarning
-        => RunFlashbackRangeExport ||
-           RunFlashbackRangeExportAudioSwitch ||
-           RunFlashbackExportPlayback ||
-           RunFlashbackRestartCycle ||
-           RunFlashbackEncoderCycle ||
-           RunFlashbackExportConcurrent ||
-           RunFlashbackDisableDuringExport ||
-           RunFlashbackRotatedExport ||
-           RunFlashbackPreviewCycle ||
-           RunFlashbackPlaybackPreviewCycle ||
-           RunFlashbackRecording ||
-           RunFlashbackRecordingPreviewCycle ||
-           RunFlashbackRecordingSettingsDeferred ||
-           RunFlashbackRecordingExportRejected;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackRangeExport or
+           DiagnosticSessionScenarioKind.FlashbackRangeExportAudioSwitch or
+           DiagnosticSessionScenarioKind.FlashbackExportPlayback or
+           DiagnosticSessionScenarioKind.FlashbackRestartCycle or
+           DiagnosticSessionScenarioKind.FlashbackEncoderCycle or
+           DiagnosticSessionScenarioKind.FlashbackExportConcurrent or
+           DiagnosticSessionScenarioKind.FlashbackDisableDuringExport or
+           DiagnosticSessionScenarioKind.FlashbackRotatedExport or
+           DiagnosticSessionScenarioKind.FlashbackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackRecording or
+           DiagnosticSessionScenarioKind.FlashbackRecordingPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred or
+           DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected;
 
     internal bool ToleratesControlOnlyDiagnosticHealthWarning
-        => RunFlashbackLifecycle ||
-           RunFlashbackExportRejected;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackLifecycle or
+           DiagnosticSessionScenarioKind.FlashbackExportRejected;
 
     internal bool IsPreviewCycleScenario
-        => RunFlashbackPreviewCycle ||
-           RunFlashbackPlaybackPreviewCycle ||
-           RunFlashbackRecordingPreviewCycle;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle or
+           DiagnosticSessionScenarioKind.FlashbackRecordingPreviewCycle;
 
     internal bool ToleratesSparsePreviewSchedulerStressTransitions
-        => RunFlashbackScrubStress ||
-           RunFlashbackSegmentPlayback ||
-           RunFlashbackRestartCycle ||
-           RunFlashbackEncoderCycle;
+        => Kind is DiagnosticSessionScenarioKind.FlashbackScrubStress or
+           DiagnosticSessionScenarioKind.FlashbackSegmentPlayback or
+           DiagnosticSessionScenarioKind.FlashbackRestartCycle or
+           DiagnosticSessionScenarioKind.FlashbackEncoderCycle;
 }
 
 internal static class DiagnosticSessionScenarioStartup
 {
-    internal static async Task<DiagnosticSessionScenarioStartupResult> StartAsync(
+    internal static async Task StartAsync(
         DiagnosticSessionOptions options,
         DiagnosticSessionScenarioPlan scenarioPlan,
         int durationSeconds,
@@ -427,6 +396,7 @@ internal static class DiagnosticSessionScenarioStartup
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendAsyncWithFailurePolicy,
+        DiagnosticSessionScenarioPhaseState phaseState,
         CancellationToken cancellationToken)
     {
         await StartPresentMonAsync(
@@ -435,7 +405,8 @@ internal static class DiagnosticSessionScenarioStartup
                 outputDirectory,
                 backgroundTasks,
                 actions,
-                sendAsync)
+                sendAsync,
+                cancellationToken)
             .ConfigureAwait(false);
 
         RegisterFlashbackScenarioTasks(
@@ -456,16 +427,15 @@ internal static class DiagnosticSessionScenarioStartup
             sendAsyncWithFailurePolicy,
             cancellationToken);
 
-        var startedFlashbackPlayback = await TryStartFlashbackPlaybackAsync(
+        await TryStartFlashbackPlaybackAsync(
                 scenarioPlan,
                 outputDirectory,
                 actions,
                 warnings,
                 sendAsync,
+                phaseState,
                 cancellationToken)
             .ConfigureAwait(false);
-
-        return new DiagnosticSessionScenarioStartupResult(startedFlashbackPlayback);
     }
 
     private static async Task StartPresentMonAsync(
@@ -474,7 +444,8 @@ internal static class DiagnosticSessionScenarioStartup
         string outputDirectory,
         DiagnosticSessionBackgroundTasks backgroundTasks,
         List<string> actions,
-        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync)
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        CancellationToken cancellationToken)
     {
         if (!options.IncludePresentMon)
         {
@@ -489,7 +460,7 @@ internal static class DiagnosticSessionScenarioStartup
             presentMonPath: options.PresentMonPath,
             outputFile: Path.Combine(outputDirectory, "presentmon.csv"),
             keepCsv: true,
-            correlation: PresentMonProbe.ReadPreviewCorrelation(correlationSnapshot))));
+            correlation: PresentMonProbe.ReadPreviewCorrelation(correlationSnapshot)), cancellationToken));
         actions.Add("presentmon capture started");
     }
 
@@ -566,7 +537,7 @@ internal static class DiagnosticSessionScenarioStartup
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendAsyncWithFailurePolicy,
         CancellationToken cancellationToken)
     {
-        if (!scenarioPlan.RunFlashbackRecordingSettingsDeferred)
+        if (!(scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingSettingsDeferred))
         {
             return;
         }
@@ -579,23 +550,30 @@ internal static class DiagnosticSessionScenarioStartup
         actions.Add("flashback recording settings deferred started");
     }
 
-    private static async Task<bool> TryStartFlashbackPlaybackAsync(
+    private static async Task TryStartFlashbackPlaybackAsync(
         DiagnosticSessionScenarioPlan scenarioPlan,
         string outputDirectory,
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
+        DiagnosticSessionScenarioPhaseState phaseState,
         CancellationToken cancellationToken)
     {
-        if (!scenarioPlan.RunFlashbackPlayback)
+        if (!(scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPlayback))
         {
-            return false;
+            return;
+        }
+
+        if (phaseState.InitialFlashbackPlaybackActive)
+        {
+            actions.Add("existing flashback playback retained");
+            return;
         }
 
         if (!await WaitForFlashbackStressBufferReadyAsync(sendAsync, cancellationToken).ConfigureAwait(false))
         {
             warnings.Add("flashback playback: Flashback buffer did not become export-ready within 30s");
-            return false;
+            return;
         }
 
         var prerollExportPath = Path.Combine(outputDirectory, "flashback-playback-preroll.mp4");
@@ -607,7 +585,7 @@ internal static class DiagnosticSessionScenarioStartup
         if (!IsSuccess(prerollExportResponse))
         {
             warnings.Add($"flashback playback: preroll export failed - {Get(prerollExportResponse, "Message", "unknown error")}");
-            return false;
+            return;
         }
 
         actions.Add("flashback playback preroll export completed");
@@ -620,22 +598,25 @@ internal static class DiagnosticSessionScenarioStartup
         if (playbackTarget is null)
         {
             warnings.Add("flashback playback: Flashback buffer did not produce a playable completed segment within 45s");
-            return false;
+            return;
         }
 
         var target = playbackTarget.Value;
         var playPositionMs = Math.Max(0, target.BoundaryPositionMs - 500);
+        phaseState.PlaybackStartUnconfirmed = true;
         var playResponse = await sendAsync(
                 "FlashbackAction",
                 new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = playPositionMs },
                 null)
             .ConfigureAwait(false);
+        phaseState.PlaybackStartUnconfirmed = HasUnconfirmedCommandOutcome(playResponse);
         if (!IsSuccess(playResponse))
         {
             warnings.Add($"flashback playback: play command failed - {Get(playResponse, "Message", "unknown error")}");
-            return false;
+            return;
         }
 
+        phaseState.StartedFlashbackPlayback = true;
         actions.Add(
             "flashback playback started at completed segment " +
             $"segment={target.Segment.SequenceNumber} positionMs={playPositionMs}");
@@ -648,18 +629,13 @@ internal static class DiagnosticSessionScenarioStartup
         if (playingSnapshot is null)
         {
             warnings.Add("flashback playback: playback did not report Playing within 5s");
-            return false;
         }
-
-        return true;
     }
 }
 
-internal readonly record struct DiagnosticSessionScenarioStartupResult(bool StartedFlashbackPlayback);
-
 internal static class DiagnosticSessionScenarioSetup
 {
-    internal static async Task<DiagnosticSessionScenarioSetupResult> RunAsync(
+    internal static async Task RunAsync(
         string scenario,
         DiagnosticSessionScenarioPlan scenarioPlan,
         JsonElement initialSnapshot,
@@ -667,23 +643,26 @@ internal static class DiagnosticSessionScenarioSetup
         List<string> warnings,
         DiagnosticSessionCommandChannel commandChannel,
         Func<string, int, Task> tryWaitAsync,
+        DiagnosticSessionScenarioPhaseState phaseState,
         CancellationToken cancellationToken)
     {
-        var flashbackSetup = await SetupFlashbackStateAsync(
+        await SetupFlashbackStateAsync(
                 scenario,
                 scenarioPlan,
                 initialSnapshot,
                 actions,
-                commandChannel)
+                commandChannel,
+                phaseState)
             .ConfigureAwait(false);
-        var startedPreview = await StartPreviewIfNeededAsync(
+        await StartPreviewIfNeededAsync(
                 scenario,
                 initialSnapshot,
                 actions,
                 commandChannel,
-                tryWaitAsync)
+                tryWaitAsync,
+                phaseState)
             .ConfigureAwait(false);
-        var startedRecording = await StartRecordingIfNeededAsync(
+        await StartRecordingIfNeededAsync(
                 scenario,
                 scenarioPlan,
                 initialSnapshot,
@@ -691,75 +670,81 @@ internal static class DiagnosticSessionScenarioSetup
                 warnings,
                 commandChannel,
                 tryWaitAsync,
+                phaseState,
                 cancellationToken)
             .ConfigureAwait(false);
-
-        return new DiagnosticSessionScenarioSetupResult(
-            startedPreview,
-            startedRecording,
-            flashbackSetup.EnabledFlashback,
-            flashbackSetup.DisabledFlashback);
     }
 
-    private static async Task<DiagnosticSessionFlashbackSetupResult> SetupFlashbackStateAsync(
+    private static async Task SetupFlashbackStateAsync(
         string scenario,
         DiagnosticSessionScenarioPlan scenarioPlan,
         JsonElement initialSnapshot,
         List<string> actions,
-        DiagnosticSessionCommandChannel commandChannel)
+        DiagnosticSessionCommandChannel commandChannel,
+        DiagnosticSessionScenarioPhaseState phaseState)
     {
-        var enabledFlashback = false;
-        var disabledFlashback = false;
-
         if (DiagnosticSessionScenarioCatalog.NeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
         {
-            await commandChannel.SendAsync(
+            phaseState.FlashbackEnableUnconfirmed = true;
+            var response = await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
                     new Dictionary<string, object?> { ["enabled"] = true },
                     null)
                 .ConfigureAwait(false);
-            enabledFlashback = true;
-            actions.Add("flashback enabled");
+            phaseState.FlashbackEnableUnconfirmed = HasUnconfirmedCommandOutcome(response);
+            if (IsSuccess(response))
+            {
+                phaseState.EnabledFlashback = true;
+                actions.Add("flashback enabled");
+            }
         }
 
-        if (scenarioPlan.RunFlashbackExportRejected && GetBool(initialSnapshot, "FlashbackActive"))
+        if ((scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportRejected) && GetBool(initialSnapshot, "FlashbackActive"))
         {
-            await commandChannel.SendAsync(
+            phaseState.FlashbackDisableUnconfirmed = true;
+            var response = await commandChannel.SendAsync(
                     AutomationCommandKind.SetFlashbackEnabled,
                     new Dictionary<string, object?> { ["enabled"] = false },
                     null)
                 .ConfigureAwait(false);
-            disabledFlashback = true;
-            actions.Add("flashback disabled for rejected export");
+            phaseState.FlashbackDisableUnconfirmed = HasUnconfirmedCommandOutcome(response);
+            if (IsSuccess(response))
+            {
+                phaseState.DisabledFlashback = true;
+                actions.Add("flashback disabled for rejected export");
+            }
         }
-
-        return new DiagnosticSessionFlashbackSetupResult(enabledFlashback, disabledFlashback);
     }
 
-    private static async Task<bool> StartPreviewIfNeededAsync(
+    private static async Task StartPreviewIfNeededAsync(
         string scenario,
         JsonElement initialSnapshot,
         List<string> actions,
         DiagnosticSessionCommandChannel commandChannel,
-        Func<string, int, Task> tryWaitAsync)
+        Func<string, int, Task> tryWaitAsync,
+        DiagnosticSessionScenarioPhaseState phaseState)
     {
         if (!DiagnosticSessionScenarioCatalog.NeedsPreview(scenario) || GetBool(initialSnapshot, "IsPreviewing"))
         {
-            return false;
+            return;
         }
 
-        await commandChannel.SendAsync(
+        phaseState.PreviewStartUnconfirmed = true;
+        var response = await commandChannel.SendAsync(
                 AutomationCommandKind.SetPreviewEnabled,
                 new Dictionary<string, object?> { ["enabled"] = true },
                 null)
             .ConfigureAwait(false);
+        phaseState.PreviewStartUnconfirmed = HasUnconfirmedCommandOutcome(response);
+        if (!IsSuccess(response))
+            return;
+
+        phaseState.StartedPreview = true;
         actions.Add("preview started");
         await tryWaitAsync("VideoFramesFlowing", 15_000).ConfigureAwait(false);
-
-        return true;
     }
 
-    private static async Task<bool> StartRecordingIfNeededAsync(
+    private static async Task StartRecordingIfNeededAsync(
         string scenario,
         DiagnosticSessionScenarioPlan scenarioPlan,
         JsonElement initialSnapshot,
@@ -767,11 +752,12 @@ internal static class DiagnosticSessionScenarioSetup
         List<string> warnings,
         DiagnosticSessionCommandChannel commandChannel,
         Func<string, int, Task> tryWaitAsync,
+        DiagnosticSessionScenarioPhaseState phaseState,
         CancellationToken cancellationToken)
     {
         if (!DiagnosticSessionScenarioCatalog.NeedsRecording(scenario) || GetBool(initialSnapshot, "IsRecording"))
         {
-            return false;
+            return;
         }
 
         Task<JsonElement> SendByNameAsync(string command, Dictionary<string, object?>? payload, int? timeoutMs)
@@ -783,24 +769,18 @@ internal static class DiagnosticSessionScenarioSetup
             warnings.Add("flashback recording: Flashback buffer did not become recording-ready within 30s");
         }
 
-        await commandChannel.SendAsync(
+        phaseState.RecordingStartUnconfirmed = true;
+        var response = await commandChannel.SendAsync(
                 AutomationCommandKind.SetRecordingEnabled,
                 new Dictionary<string, object?> { ["enabled"] = true },
                 null)
             .ConfigureAwait(false);
+        phaseState.RecordingStartUnconfirmed = HasUnconfirmedCommandOutcome(response);
+        if (!IsSuccess(response))
+            return;
+
+        phaseState.StartedRecording = true;
         actions.Add("recording started");
         await tryWaitAsync("RecordingFileGrowing", 20_000).ConfigureAwait(false);
-
-        return true;
     }
-
-    private readonly record struct DiagnosticSessionFlashbackSetupResult(
-        bool EnabledFlashback,
-        bool DisabledFlashback);
 }
-
-internal readonly record struct DiagnosticSessionScenarioSetupResult(
-    bool StartedPreview,
-    bool StartedRecording,
-    bool EnabledFlashback,
-    bool DisabledFlashback);

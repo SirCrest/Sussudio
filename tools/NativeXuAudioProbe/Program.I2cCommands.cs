@@ -30,7 +30,7 @@ static class NativeXuProbeI2cCommands
             {
                 // I2C GET: [00 4A 02 00 opcode 00]
                 var i2cFrame = new byte[] { 0x00, 0x4A, 0x02, 0x00, (byte)op, 0x00 };
-                var resp = await SendI2cAtGetAsync(dev, i2cFrame);
+                var resp = SendI2cAtGet(dev, i2cFrame);
                 if (resp != null)
                 {
                     Console.WriteLine($"  I2C 0x{op:X2}: {BitConverter.ToString(resp)} ({resp.Length} bytes) int32={BitConverter.ToInt32(resp.Length >= 4 ? resp[..4] : resp.Concat(new byte[4 - resp.Length]).ToArray(), 0)}");
@@ -49,7 +49,7 @@ static class NativeXuProbeI2cCommands
             byte param = byte.Parse(args[3].Replace("0x", "").Replace("0X", ""), NumberStyles.HexNumber);
             var i2cFrame = new byte[] { 0x00, 0x4A, 0x02, 0x00, (byte)i2cOp, param };
             Console.WriteLine($"I2C GET opcode=0x{i2cOp:X2} param=0x{param:X2}");
-            var resp = await SendI2cAtGetAsync(dev, i2cFrame);
+            var resp = SendI2cAtGet(dev, i2cFrame);
             Console.WriteLine(resp != null
                 ? $"  Response: {BitConverter.ToString(resp)} ({resp.Length} bytes)"
                 : "  No response");
@@ -62,7 +62,7 @@ static class NativeXuProbeI2cCommands
             byte value = byte.Parse(args[3].Replace("0x", "").Replace("0X", ""), NumberStyles.HexNumber);
             var i2cFrame = new byte[] { 0x00, 0x4A, 0x01, 0x00, (byte)i2cOp, value };
             Console.WriteLine($"I2C SET opcode=0x{i2cOp:X2} value=0x{value:X2}");
-            var ok = await SendI2cAtSetAsync(dev, i2cFrame);
+            var ok = SendI2cAtSet(dev, i2cFrame);
             Console.WriteLine($"  Result: {(ok ? "OK" : "failed")}");
             return ok ? 0 : 1;
         }
@@ -79,7 +79,7 @@ static class NativeXuProbeI2cCommands
 
         if (subCmd == "high-sel")
         {
-            return await RunHighSelectorProbeAsync(dev);
+            return RunHighSelectorProbe(dev);
         }
 
         if (subCmd == "topology")
@@ -217,7 +217,7 @@ static class NativeXuProbeI2cCommands
 
             // Try I2C SET: opcode 0x04, value 0x01 (audio source = analog)
             Console.WriteLine("\n  --- I2C SET test: opcode 0x04 = 0x01 ---");
-            var originalAudioSource = await SendI2cAtGetAsync(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 });
+            var originalAudioSource = SendI2cAtGet(dev, new byte[] { 0x00, 0x4A, 0x02, 0x00, 0x04, 0x00 });
             if (!TryExtractI2cValue(originalAudioSource, out var originalAudioSourceValue))
             {
                 Console.WriteLine("    Skipping mutating I2C SET test: original opcode 0x04 value was not readable.");
@@ -352,7 +352,7 @@ static class NativeXuProbeI2cCommands
         return 0;
     }
 
-    public static async Task<int> RunHighSelectorProbeAsync(CaptureDevice dev)
+    public static int RunHighSelectorProbe(CaptureDevice dev)
     {
         // Probe XU selectors 18-35, focusing on 0x1B(27) and 0x1C(28)
         // which are the a1 values in rtk_sendI2CATCommand
@@ -657,18 +657,18 @@ static class NativeXuProbeI2cCommands
 
 static class NativeXuProbeI2cTransport
 {
-    public static async Task<byte[]?> SendI2cAtGetAsync(CaptureDevice device, byte[] i2cFrame)
+    public static byte[]? SendI2cAtGet(CaptureDevice device, byte[] i2cFrame)
     {
-        return await SendI2cViaAtAsync(device, 0x1C, i2cFrame);
+        return SendI2cViaAt(device, 0x1C, i2cFrame);
     }
 
-    public static async Task<bool> SendI2cAtSetAsync(CaptureDevice device, byte[] i2cFrame)
+    public static bool SendI2cAtSet(CaptureDevice device, byte[] i2cFrame)
     {
-        var resp = await SendI2cViaAtAsync(device, 0x1B, i2cFrame);
+        var resp = SendI2cViaAt(device, 0x1B, i2cFrame);
         return resp != null;
     }
 
-    public static async Task<byte[]?> SendI2cViaAtAsync(CaptureDevice device, int atOpcode, byte[] i2cPayload)
+    public static byte[]? SendI2cViaAt(CaptureDevice device, int atOpcode, byte[] i2cPayload)
     {
         if (!NativeXuDeviceSupport.TryGetSupported4kXIds(device, out _, out _))
         {

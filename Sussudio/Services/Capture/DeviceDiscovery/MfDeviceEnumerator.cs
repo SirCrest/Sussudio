@@ -124,7 +124,7 @@ internal static class MfDeviceEnumerator
         catch (Exception ex)
         {
             Logger.Log($"MF video device enumeration failed: {ex.Message}");
-            devices.Clear();
+            throw;
         }
         finally
         {
@@ -146,10 +146,10 @@ internal static class MfDeviceEnumerator
                 EDataFlow.eCapture,
                 WasapiComInterop.DEVICE_STATE_ACTIVE,
                 out collection);
-            if (hrEnum < 0 || collection == null)
+            WasapiComInterop.ThrowIfFailed(hrEnum, "IMMDeviceEnumerator.EnumAudioEndpoints(audio_capture)");
+            if (collection == null)
             {
-                Logger.Log($"WASAPI capture endpoint enumeration failed (hr=0x{hrEnum:X8}).");
-                return Task.FromResult(devices);
+                throw new InvalidOperationException("WASAPI capture endpoint enumeration returned no collection.");
             }
 
             WasapiComInterop.ThrowIfFailed(
@@ -189,7 +189,7 @@ internal static class MfDeviceEnumerator
         catch (Exception ex)
         {
             Logger.Log($"WASAPI capture endpoint enumeration threw: {ex.Message}");
-            devices.Clear();
+            throw;
         }
         finally
         {

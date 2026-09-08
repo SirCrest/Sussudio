@@ -3688,26 +3688,25 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await viewModel.StopPreviewAsync(userInitiated: true);");
 
         var uiFadeOut = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeOutAsync");
-        AssertContains(uiFadeOut, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
-        AssertContains(uiFadeOut, "To = 0,");
-        AssertContains(uiFadeOut, "_context.ViewModel.PreviewVolume = 0;");
-        AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
+        AssertContains(uiFadeOut, "_context.VolumeController.BeginTransition(\"preview_stop\")");
+        AssertContains(uiFadeOut, "StartStoryboardAsync(_operation, muteOutput: true, durationMs)");
+        AssertContains(previewAudioFadeControllerText, "PREVIEW_AUDIO_FADE_OUT_STARTED");
 
         var vmStopRamp = ExtractMemberCode(previewVolumeTransitionText, "RampPreviewVolumeDownForStopAsync");
         AssertContains(vmStopRamp, "_previewAudioVolumeTransitionController.RampDownForStopAsync(cancellationToken)");
 
-        var vmRampDown = ExtractMemberCode(audioVolumeTransitionText, "RampDownForAudioTransitionAsync");
-        AssertContains(vmRampDown, "VolumeSaveOverride = persistedVolume;");
-        AssertContains(vmRampDown, "_context.SetPreviewVolume(startingVolume * eased);");
-        AssertContains(vmRampDown, "_context.SetPreviewVolume(0);");
+        var vmRampDown = ExtractMemberCode(audioVolumeTransitionText, "RunRampAsync");
+        AssertContains(vmRampDown, "BeginWriter(operation, muteOutput, cancellationToken)");
+        AssertContains(vmRampDown, "writer.StartingVolume * Math.Pow(1.0 - t, 2.0)");
+        AssertContains(vmRampDown, "TryApplyTransient(writer, value)");
 
         var stopPreview = ExtractTextBetween(
             previewLifecycleControllerText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
             "\n}\n");
-        AssertContains(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);");
-        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "_context.RaisePreviewStopRequested();");
-        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
+        AssertContains(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)");
+        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)", "_context.RaisePreviewStopRequested();");
+        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
 
         AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
         var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
@@ -3752,11 +3751,13 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(recordingFormatRefresh, "support.HasAv1)");
 
         var splitEncodeRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshSplitEncodeCapabilitiesAsync");
-        AssertContains(splitEncodeRefresh, "if (!support.Supports2Way)");
-        AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
-        AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");
-        AssertContains(splitEncodeRefresh, "modes.Remove(\"3-way\");");
-        AssertContains(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(\"Auto\");");
+        AssertContains(splitEncodeRefresh, "await _context.GetSplitEncodeSupportAsync()");
+        AssertContains(splitEncodeRefresh, "if (support.Supports2Way) modes.Add(\"2-way\");");
+        AssertContains(splitEncodeRefresh, "if (support.Supports3Way) modes.Add(\"3-way\");");
+        AssertContains(splitEncodeRefresh, "var selectedMode = _context.GetSelectedSplitEncodeMode();");
+        AssertContains(splitEncodeRefresh, "modes.Add(selectedMode);");
+        AssertContains(splitEncodeRefresh, "SPLIT_ENCODE_PROBE_INCONCLUSIVE");
+        AssertDoesNotContain(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(");
 
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
@@ -3848,16 +3849,14 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(primeAudioAdapter, "_previewAudioFadeController.PrimeFadeIn();");
 
         var primeAudio = ExtractMemberCode(previewAudioFadeControllerText, "PrimeFadeIn");
-        AssertContains(primeAudio, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
-        AssertContains(primeAudio, "_context.ViewModel.PreviewVolume = 0;");
-        AssertContains(primeAudio, "_context.PreviewVolumeSlider.Value = 0;");
+        AssertContains(primeAudio, "_context.VolumeController.PrimeForAudioTransition(\"preview_start\")");
 
         var startAudioFadeAdapter = ExtractMemberCode(previewAudioFadeText, "StartPreviewAudioFadeIn");
         AssertContains(startAudioFadeAdapter, "_previewAudioFadeController.StartFadeIn(durationMs);");
 
         var startAudioFade = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeIn");
-        AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnimation, _context.PreviewVolumeSlider);");
-        AssertContains(startAudioFade, "CompleteFadeIn(applyTarget: true)");
+        AssertContains(startAudioFade, "StartStoryboardAsync(_operation, muteOutput: false, durationMs)");
+        AssertContains(previewAudioFadeControllerText, "Storyboard.SetTarget(volumeAnimation, animationValue);");
 
         AssertContains(previewFadeInText, "=> _previewFadeInController.Schedule();");
         var schedulePreviewFadeIn = ExtractMemberCode(previewFadeInControllerText, "Schedule");
@@ -3872,7 +3871,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         var initialAudioBindings = ExtractMemberCode(audioControlBindingControllerText, "ApplyInitialAudioControlBindings");
         AssertContains(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();");
-        AssertContains(initialAudioBindings, "_context.CancelPreviewAudioFadeInForUser();");
+        AssertContains(initialAudioBindings, "_context.ViewModel.SetPreviewVolumeFromUser(e.NewValue / 100.0);");
         AssertOccursBefore(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();", "_context.PreviewVolumeSlider.ValueChanged +=");
 
         var previewButtonClick = ExtractMemberCode(previewActionsText, "PreviewButton_Click");
@@ -3880,7 +3879,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var togglePreviewAsync = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
-        AssertContains(togglePreviewAsync, "if (!viewModel.IsPreviewing)\n        {\n            _context.RevealPreviewUnavailablePlaceholder();\n        }");
+        AssertContains(togglePreviewAsync, "finally\n        {\n            if (!viewModel.IsPreviewing)\n            {\n                _context.RevealPreviewUnavailablePlaceholder();\n            }\n        }");
 
         var mainWindowLoaded = ExtractMemberCode(startupText, "MainWindow_Loaded");
         AssertContains(mainWindowLoaded, "=> _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));");
@@ -4164,16 +4163,16 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
-        AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
+        AssertDoesNotContain(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(rawPreviewReinitializeControllerText, "private int _previewReinitializeGeneration;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
         AssertContains(rawPreviewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
-        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
+        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
         AssertContains(rawPreviewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(rawPreviewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
+        AssertContains(rawPreviewReinitializeControllerText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
         AssertContains(rawPreviewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
-        AssertContains(rawPreviewReinitializeControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
+        AssertContains(rawPreviewReinitializeControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(true);");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
         AssertContains(rawPreviewReinitializeControllerText, "_context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);");
@@ -4373,12 +4372,12 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewReinitializeControllerText, "private readonly MainViewModelPreviewReinitializeControllerContext _context;");
         AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");
-        AssertContains(previewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
+        AssertContains(previewReinitializeControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
         AssertContains(previewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(previewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
+        AssertContains(previewReinitializeControllerText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
         AssertContains(previewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
         AssertContains(previewReinitializeControllerText, "FlashbackCycleBeforeReinitializeTimeoutMs");
-        AssertContains(previewReinitializeControllerText, "await _context.WaitReinitializeGateAsync();");
+        AssertContains(previewReinitializeControllerText, "await _previewReinitializeGate.WaitAsync().ConfigureAwait(true);");
         AssertContains(previewReinitializeControllerText, "await _context.NotifyPreviewReinitRequestedAsync(reason);");
         AssertContains(previewReinitializeControllerText, "await _context.NotifyRendererStopAsync();");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);");
@@ -4393,7 +4392,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewReinitializeControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);");
-        AssertContains(previewReinitializeControllerText, "_context.ReleaseReinitializeGate();");
+        AssertContains(previewReinitializeControllerText, "_previewReinitializeGate.Release();");
         AssertDoesNotContain(previewStateText, "private async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
@@ -4725,7 +4724,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(previewRendererText, "private Task StopPreviewRendererAsync()");
         AssertContains(previewRendererText, "StopPreviewRendererAsync = _previewRendererHostController.StopAsync");
         AssertContains(previewRendererText, "private void StopPreviewForShutdown()");
-        AssertContains(previewRendererText, "=> _previewRendererHostController.StopForShutdown();");
+        var stopPreviewForShutdown = ExtractMemberCode(previewRendererText, "StopPreviewForShutdown");
+        AssertContains(stopPreviewForShutdown, "ViewModel.DisposePreviewAudioVolume();");
+        AssertOccursBefore(stopPreviewForShutdown, "ViewModel.DisposePreviewAudioVolume();", "_previewRendererHostController.StopForShutdown();");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
         AssertContains(mainWindowText, "InitializePreviewRendererHostController();");
         AssertContains(previewRendererHostControllerText, "internal sealed class PreviewRendererHostControllerContext");
@@ -4886,8 +4887,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.ShouldRefreshMissingSignalsForSnapshot");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupMissingSignals = startupSignals.BuildMissingSignals();");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "var signature = new PreviewRuntimeSnapshotSignature(");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var previewRuntimeEpoch = PreviewRuntimeSnapshotEpoch(signature);");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private long PreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var previewRuntimeEpoch = GetOrAdvancePreviewRuntimeSnapshotEpoch(signature);");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private long GetOrAdvancePreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "lock (_previewRuntimeSnapshotEpochLock)");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "Interlocked.Increment(ref _previewRuntimeSnapshotEpoch);");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "return Interlocked.Read(ref _previewRuntimeSnapshotEpoch);");
@@ -5037,8 +5038,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
                       ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingControllerContext.");
         var sampler = Activator.CreateInstance(samplerType, context)
                       ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingController.");
-        var epochMethod = samplerType.GetMethod("PreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
-                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotEpoch method not found.");
+        var epochMethod = samplerType.GetMethod("GetOrAdvancePreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
+                          ?? throw new InvalidOperationException("GetOrAdvancePreviewRuntimeSnapshotEpoch method not found.");
         var signatureConstructor = signatureType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Single(constructor => constructor.GetParameters().Length == 26);
         var requestedUtc = DateTimeOffset.UtcNow.AddMilliseconds(-250);
@@ -5698,89 +5699,55 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     internal static Task MainViewModelAudioMonitoring_PreservesVolumePersistenceAndRampedRouting()
     {
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
-        AssertNotNull(viewModelType.GetProperty("SuppressVolumeSave", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SuppressVolumeSave");
-        AssertNotNull(viewModelType.GetProperty("VolumeSaveOverride", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.VolumeSaveOverride");
+        AssertNotNull(viewModelType.GetMethod("SetPreviewVolumeFromUser", BindingFlags.Instance | BindingFlags.NonPublic), "explicit preview-volume input");
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
+        var viewModel = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.cs");
+        var audio = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
+        var owner = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs");
+        var request = ExtractMemberCode(owner, "SetUserVolume");
+        var publish = ExtractMemberCode(owner, "PublishEffectiveVolumeCore");
+        var writer = ExtractMemberCode(owner, "BeginWriter");
+        var current = ExtractMemberCode(owner, "IsCurrentWriterCore");
+        var restore = ExtractMemberCode(owner, "RestoreAfterUnavailableAudio");
+        var monitor = ExtractMemberCode(audio, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
+        var input = ExtractMemberCode(audio, "ApplyAudioInputSelectionAsync");
 
-        var audioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
-        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs");
-        var previewChanged = ExtractMemberCode(audioStateCode, "OnPreviewVolumeChanged");
-        var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
-        var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
-        var rampUp = ExtractMemberCode(transitionCode, "RampUpForAudioTransitionAsync");
-        var primeTransition = ExtractMemberCode(transitionCode, "PrimeForAudioTransition");
-        var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
-        var monitoringTransition = ExtractMemberCode(audioStateCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
-        var audioPreviewChanged = ExtractMemberCode(audioStateCode, "OnIsAudioPreviewEnabledChanged");
-        var applyAudioInputSelection = ExtractMemberCode(audioStateCode, "ApplyAudioInputSelectionAsync");
-
-        AssertContains(audioStateCode, "get => _previewAudioVolumeTransitionController.SuppressVolumeSave;");
-        AssertContains(audioStateCode, "set => _previewAudioVolumeTransitionController.SuppressVolumeSave = value;");
-        AssertContains(audioStateCode, "get => _previewAudioVolumeTransitionController.VolumeSaveOverride;");
-        AssertContains(audioStateCode, "set => _previewAudioVolumeTransitionController.VolumeSaveOverride = value;");
-        AssertContains(previewChanged, "_previewAudioVolumeTransitionController.HandlePreviewVolumeChanged(value);");
-        AssertContains(audioStateCode, "internal void SavePreviewVolume() => SaveSettings();");
-        AssertContains(audioStateCode, "private async Task RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewVolumeTransitions.cs")), "MainViewModel.PreviewVolumeTransitions.cs folded into audio state");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")), "MainViewModel.AudioMonitoring.cs folded into audio state");
-        AssertDoesNotContain(audioStateCode, "private const int PreviewAudioRampDownSteps");
-        AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.Ramps.cs")), "PreviewAudioVolumeTransitionController.Ramps.cs folded into PreviewAudioTransitionControllers.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.cs")), "preview audio volume transition controller folded into PreviewAudioTransitionControllers.cs");
-        AssertContains(transitionCode, "private const int RampDownSteps = 18;");
-        AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
-        AssertContains(transitionCode, "private const int RampUpSteps = 30;");
-        AssertContains(transitionCode, "private const int RampUpDelayMs = 30;");
-
-        AssertContains(handlePreviewChanged, "if (!SuppressVolumeSave)");
-        AssertContains(handlePreviewChanged, "VolumeSaveOverride = null;");
-        AssertContains(handlePreviewChanged, "_context.SetSessionPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));");
-        AssertOccursBefore(handlePreviewChanged, "VolumeSaveOverride = null;", "_context.SetSessionPreviewVolume");
-
-        AssertContains(rampDown, "var persistedVolume = PersistedVolumeTarget;");
-        AssertContains(rampDown, "VolumeSaveOverride = persistedVolume;");
-        AssertContains(rampDown, "_context.SetPreviewVolume(startingVolume * eased);");
-        AssertContains(rampDown, "_context.SetPreviewVolume(0);");
-        AssertContains(rampUp, "VolumeSaveOverride = volumeTarget;");
-        AssertContains(rampUp, "_context.SetPreviewVolume(volumeTarget * eased);");
-        AssertContains(rampUp, "VolumeSaveOverride = null;");
-        AssertContains(primeTransition, "var volumeTarget = PersistedVolumeTarget;");
-        AssertContains(primeTransition, "_context.SetPreviewVolume(0);");
-        AssertContains(restoreTransition, "_context.SetPreviewVolume(volumeTarget);");
-
-        AssertContains(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);");
-        AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
-        AssertContains(monitoringTransition, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);");
-        AssertContains(monitoringTransition, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);");
-        AssertContains(monitoringTransition, "await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);");
-        AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
-        AssertOccursBefore(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
-        AssertOccursBefore(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);");
-        AssertOccursBefore(monitoringTransition, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
-
-        AssertContains(audioPreviewChanged, "if (value && !IsAudioEnabled)");
-        AssertContains(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)");
-        AssertContains(audioPreviewChanged, "if (!value && !IsRecording)");
-        AssertContains(audioPreviewChanged, "if (IsPreviewing && IsInitialized)");
-        AssertContains(audioPreviewChanged, "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
-        AssertContains(audioStateCode, "private async Task ApplyAudioInputSelectionAsync");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs")), "MainViewModel.AudioInputSelection.cs folded into audio state");
-        AssertOccursBefore(audioPreviewChanged, "if (value && !IsAudioEnabled)", "IsAudioPreviewEnabled = false;");
-        AssertOccursBefore(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)", "if (!value && !IsRecording)");
-        AssertOccursBefore(audioPreviewChanged, "if (!value && !IsRecording)", "ResetAudioMeter();");
-        AssertOccursBefore(audioPreviewChanged, "if (IsPreviewing && IsInitialized)", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
-
-        AssertContains(applyAudioInputSelection, "if (IsCustomAudioInputEnabled)");
-        AssertContains(applyAudioInputSelection, "audioDeviceId = SelectedAudioInputDevice?.Id;");
-        AssertContains(applyAudioInputSelection, "audioDeviceId = SelectedDevice?.AudioDeviceId;");
-        AssertContains(applyAudioInputSelection, "var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;");
-        AssertContains(applyAudioInputSelection, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);");
-        AssertContains(applyAudioInputSelection, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
-        AssertContains(applyAudioInputSelection, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);");
-        AssertOccursBefore(applyAudioInputSelection, "if (IsCustomAudioInputEnabled)", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
-        AssertOccursBefore(applyAudioInputSelection, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
-        AssertOccursBefore(applyAudioInputSelection, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);");
-
+        AssertContains(viewModel, "_previewAudioVolumeTransitionController.RequestedVolume");
+        AssertContains(ExtractMemberCode(viewModel, "SetPreviewVolumeAsync"), "SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0))");
+        AssertContains(audio, "internal void SavePreviewVolume() => SaveSettings();");
+        AssertContains(audio, "_previewAudioVolumeTransitionController.HandlePreviewVolumeChanged(value);");
+        AssertDoesNotContain(audio, "SuppressVolumeSave");
+        AssertDoesNotContain(audio, "VolumeSaveOverride");
+        AssertContains(request, "_requestedVolume = Math.Clamp(value, 0.0, 1.0);");
+        AssertContains(request, "_userRevision++;");
+        AssertContains(request, "RevokeWriterCore()");
+        AssertContains(request, "PublishEffectiveVolumeCore(_holdingMuted ? 0 : _requestedVolume)");
+        AssertContains(publish, "_context.SetSessionPreviewVolume((float)_effectiveVolume);");
+        AssertContains(writer, "muteOutput ? 0 : _requestedVolume");
+        AssertContains(current, "writer.OperationGeneration == _operationGeneration");
+        AssertContains(current, "writer.WriterGeneration == _writerGeneration");
+        AssertContains(current, "writer.UserRevision == _userRevision");
+        AssertContains(restore, "IsCurrentOperationCore(operation)");
+        AssertContains(restore, "PublishEffectiveVolumeCore(_requestedVolume)");
+        AssertContains(owner, "private const int RampDownSteps = 18;");
+        AssertContains(owner, "private const int RampDownDelayMs = 25;");
+        AssertContains(owner, "private const int RampUpSteps = 30;");
+        AssertContains(owner, "private const int RampUpDelayMs = 30;");
+        AssertContains(monitor, "PrimePreviewVolumeForAudioTransition(reason)");
+        AssertContains(monitor, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);");
+        AssertOccursBefore(monitor, "PrimePreviewVolumeForAudioTransition(reason)", "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
+        AssertOccursBefore(monitor, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);");
+        AssertOccursBefore(monitor, "await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
+        AssertContains(monitor, "await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);");
+        AssertContains(monitor, "RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);");
+        AssertContains(input, "var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;");
+        AssertContains(input, "audioDeviceId = SelectedAudioInputDevice?.Id;");
+        AssertContains(input, "audioDeviceId = SelectedDevice?.AudioDeviceId;");
+        AssertOccursBefore(input, "await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, traceSession: false);", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
+        AssertOccursBefore(input, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false);");
+        AssertContains(input, "RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);");
+        AssertContains(audio, "_previewAudioVolumeTransitionController.Dispose();");
+        AssertContains(audio, "_audioRampTraceRecorder.Dispose();");
         return Task.CompletedTask;
     }
 
@@ -5949,7 +5916,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(audioVolumeTransitionText, "BeginTraceSession(");
         AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"volume-set\")");
         AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"primed\"");
-        AssertContains(audioVolumeTransitionText, "public Task RampDownForStopAsync(CancellationToken cancellationToken)");
+        AssertContains(audioVolumeTransitionText, "public async Task<PreviewAudioVolumeOperation> RampDownForStopAsync(CancellationToken cancellationToken)");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
@@ -6510,7 +6477,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(compositionText, "_deviceAudioRequestController = controllerGraph.DeviceAudioRequestController;");
         AssertContains(compositionText, "_recordingCapabilityController = controllerGraph.RecordingCapabilityController;");
         AssertContains(compositionText, "_captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;");
-        AssertContains(compositionText, "_recordingSettingsAutomationController = controllerGraph.RecordingSettingsAutomationController;");
+        AssertContains(compositionText, "_recordingSettingsController = controllerGraph.RecordingSettingsController;");
         AssertContains(compositionText, "_captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;");
         AssertDoesNotContain(rootText, "_resolutionOptionRebuildController");
         AssertDoesNotContain(compositionText, "_resolutionOptionRebuildController");
@@ -6707,10 +6674,11 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(controllerGraphText, "RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,");
         AssertContains(controllerGraphText, "CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(");
         AssertContains(controllerGraphText, "new MainViewModelPreviewReinitializeControllerContext");
-        AssertContains(controllerGraphText, "IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),");
-        AssertContains(controllerGraphText, "ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),");
+        AssertDoesNotContain(controllerGraphText, "IncrementReinitializeGeneration =");
+        AssertDoesNotContain(controllerGraphText, "ReadReinitializeGeneration =");
         AssertContains(controllerGraphText, "PreviewReinitializeDebounceMs = PreviewReinitializeDebounceMs,");
-        AssertContains(controllerGraphText, "ClearPendingFlashbackCycleIfSameAndCompleted = task =>");
+        AssertContains(controllerGraphText, "PendingFlashbackCycleTask = () => viewModel._recordingSettingsController.PendingApplication,");
+        AssertContains(controllerGraphText, "ClearPendingFlashbackCycleIfSameAndCompleted = task => viewModel._recordingSettingsController.ClearPendingIfSameAndCompleted(task),");
         AssertContains(controllerGraphText, "FlashbackCycleBeforeReinitializeTimeoutMs = FlashbackCycleBeforeReinitializeTimeoutMs,");
         AssertContains(controllerGraphText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
         AssertContains(controllerGraphText, "SelectedDevice = () => viewModel.SelectedDevice,");
@@ -6738,9 +6706,12 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewStateText, "public partial bool IsPreviewing");
         AssertContains(previewStateText, "public partial bool IsPreviewReinitializing");
         AssertContains(previewStateText, "public partial bool IsInitialized");
-        AssertContains(previewStateText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
-        AssertContains(previewStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(previewStateText, "private bool _cancelPreviewRestartAfterReinitialize;");
+        AssertDoesNotContain(previewStateText, "private readonly SemaphoreSlim _previewReinitializeGate");
+        AssertDoesNotContain(previewStateText, "private int _previewReinitializeGeneration;");
+        AssertDoesNotContain(previewStateText, "private bool _cancelPreviewRestartAfterReinitialize;");
+        AssertContains(previewReinitializeControllerText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
+        AssertContains(previewReinitializeControllerText, "private int _previewReinitializeGeneration;");
+        AssertContains(previewReinitializeControllerText, "private bool _cancelPreviewRestartAfterReinitialize;");
         AssertContains(previewStateText, "public event EventHandler? PreviewStartRequested;");
         AssertContains(previewStateText, "public event EventHandler? PreviewStopRequested;");
         AssertContains(previewStateText, "public event Func<string, Task>? PreviewReinitRequested;");
@@ -6852,7 +6823,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
-        var recordingSettingsAutomationControllerText = captureSettingsAutomationControllerText;
+        var recordingSettingsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var frameRateTimingResolverText = captureModeOptionRebuildControllerText;
@@ -6871,7 +6842,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(controllerGraphText, "var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);");
-        AssertContains(controllerGraphText, "var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);");
+        AssertContains(controllerGraphText, "var recordingSettingsController = CreateRecordingSettingsController(viewModel);");
         AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
         AssertOccursBefore(
@@ -6942,16 +6913,18 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(controllerGraphText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
         AssertContains(controllerGraphText, "ReinitializeDeviceWithResultAsync = viewModel.ReinitializeDeviceWithResultAsync,");
 
-        AssertContains(recordingSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
-        AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
-        AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
-        AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
-        AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
-        AssertContains(recordingSettingsAutomationControllerText, "_context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertContains(controllerGraphText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(recordingSettingsControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsController");
+        AssertContains(recordingSettingsControllerText, "public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsControllerContext");
+        AssertContains(recordingSettingsControllerText, "private readonly MainViewModelRecordingSettingsControllerContext _context;");
+        AssertDoesNotContain(recordingSettingsControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingSettingsControllerText, "_viewModel.");
+        AssertContains(recordingSettingsControllerText, "_context.ApplyAsync(_context.CaptureSelection(), kind, cancellationToken)");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingSettingsController CreateRecordingSettingsController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsControllerContext");
+        AssertMemberContains(controllerGraphText, "CreateRecordingSettingsController", "ApplyAsync = viewModel._sessionCoordinator.ApplyRecordingSettingsAsync,");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "class MainViewModelRecordingSettingsController");
 
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityController");
@@ -7152,7 +7125,16 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(controllerGraphText, "MainViewModelRuntimeLifecycleController runtimeLifecycleController)");
         AssertContains(controllerGraphText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
         AssertContains(controllerGraphText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
-        AssertContains(controllerGraphText, "CancelPendingAudioControlWork = deviceAudioRequestController.CancelPendingAudioControlWork,");
+        var cancelPendingAudioControlWork = ExtractTextBetween(
+            controllerGraphText,
+            "CancelPendingAudioControlWork = () =>",
+            "StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,");
+        AssertContains(cancelPendingAudioControlWork, "viewModel.DisposePreviewAudioVolume();");
+        AssertContains(cancelPendingAudioControlWork, "deviceAudioRequestController.CancelPendingAudioControlWork();");
+        AssertOccursBefore(
+            cancelPendingAudioControlWork,
+            "viewModel.DisposePreviewAudioVolume();",
+            "deviceAudioRequestController.CancelPendingAudioControlWork();");
         AssertContains(controllerGraphText, "StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,");
         AssertContains(controllerGraphText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
         AssertContains(controllerGraphText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
@@ -8880,7 +8862,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
+        var recordingSettingsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingRuntimeText, "private void RebuildRecordingFormatOptions()");
@@ -8900,18 +8882,26 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureModeTransactionsText, "RebuildRecordingFormatOptions();");
         AssertDoesNotContain(captureModeTransactionsText, "RecordingSettingsSelectionPolicy.Select(");
         AssertContains(automationSettingsText, "=> RunPersistedSettingsAutomationAsync(");
-        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_context.GetSelectedQuality())");
-        AssertContains(automationRecordingControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(automationRecordingControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
-        AssertContains(automationRecordingControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
-        AssertContains(automationRecordingControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
-        AssertDoesNotContain(automationRecordingControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(automationRecordingControllerText, "_viewModel.");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps)");
-        AssertContains(automationRecordingControllerText, "public async Task SetRecordingFormatAsync");
+        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsController.SetRecordingFormatAsync(format, cancellationToken)");
+        AssertContains(recordingSettingsControllerText, "_context.IsHdrCompatibleFormat(matched)");
+        AssertContains(recordingSettingsControllerText, "_context.ClampCustomBitrateMbps(bitrateMbps)");
+        AssertContains(recordingSettingsControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsController");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsControllerContext");
+        AssertContains(recordingSettingsControllerText, "private readonly MainViewModelRecordingSettingsControllerContext _context;");
+        AssertDoesNotContain(recordingSettingsControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingSettingsControllerText, "_viewModel.");
+        AssertContains(recordingSettingsControllerText, "public Task SetRecordingFormatAsync");
+        AssertContains(recordingSettingsControllerText, "using (SuppressPropertyReactions())");
+        AssertContains(recordingSettingsControllerText, "_context.ApplyAsync(_context.CaptureSelection(), kind, cancellationToken)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "IsHdrCompatibleFormat = RecordingSettingsSelectionPolicy.IsHdrCompatible,");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "ClampCustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps,");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "CaptureSelection = () => new RecordingSettingsSelection(");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "RecordingSettingsSelectionPolicy.ParseRecordingFormat(viewModel.SelectedRecordingFormat)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "RecordingSettingsSelectionPolicy.ParseVideoQuality(viewModel.SelectedQuality)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "viewModel.CustomBitrateMbps,");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "NvencPresetParser.Parse(viewModel.SelectedPreset)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "SplitEncodeModeParser.Parse(viewModel.SelectedSplitEncodeMode)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingFormat.cs")),

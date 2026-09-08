@@ -1,6 +1,6 @@
 # Sussudio Agent Map
 
-Last reviewed: 2026-09-06.
+Last reviewed: 2026-09-07.
 
 This file maps the current repo shape to named owners, entry points, invariants,
 and fast checks. It is intentionally mechanical so future agents can find the
@@ -47,10 +47,10 @@ mentions the moved files.
 | Diagnostic sessions | `tools/DiagnosticSession/DiagnosticSessionRunner.cs`, `tools/DiagnosticSession/DiagnosticSessionRunContext.cs`, `tools/DiagnosticSession/DiagnosticSessionResult.cs` | Run phases, mutable session context, and result handoffs. See [tooling](#tooling-and-diagnostics) for scenario owners. |
 | Offline regression harness | `tests/Sussudio.Tests/HarnessCore.cs`, focused `tests/Sussudio.Tests/XUnit.*.cs` slices | Assembly-load smoke entry point and shared test helpers; xUnit slices and focused contract tests own regression execution. |
 | Capture runtime | `Sussudio/Services/Capture/CaptureService.cs`, `CaptureService.PreviewLifecycle.cs`, `CaptureService.Flashback.cs`, `CaptureService.HealthSnapshots.cs`, `CaptureService.RecordingLifecycle.cs`, `CaptureService.RuntimeSnapshots.cs` | Lifecycle transitions, resource ownership, recording/Flashback orchestration, and snapshots. See [capture](#capture-runtime) for the responsibility split. |
-| App shell | `Sussudio/App.xaml.cs` | Startup, single-instance activation, and recoverable/fatal exception policy. |
+| App shell | `Sussudio/Program.cs`, `Sussudio/Services/Runtime/AppProcessStartup.cs`, `Sussudio/App.xaml.cs` | Private native probe routing, single-instance admission before shared logging, WinUI startup, and recoverable/fatal exception policy. |
 | App surface helpers | `Sussudio/AppSurface.cs` | Display formatters and XAML converters; preserve public binding type names. |
 | App runtime | `Sussudio/AppRuntime.cs` | Repository/log paths, bounded asynchronous logging, rotation, and fatal breadcrumbs. |
-| App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy in imported targets. |
+| App project build workflow | `Sussudio/Sussudio.csproj`, `Sussudio/Sussudio.Build.targets` | Project identity and dependencies in the project; publish/staging policy and deferred Windows App SDK initialization in imported targets. The SDK initializer body is retained in an obj copy, with its module hook removed so `Program` invokes it only after normal process admission. |
 | Device discovery | `Sussudio/Services/Capture/DeviceService.cs`, `Sussudio/Services/Capture/MfInterop.cs`, `Sussudio/Services/Capture/DeviceDiscovery/MfDeviceEnumerator.cs` | Enumeration, capability/format probing, endpoint association, and shared Media Foundation helpers. |
 | Native XU KS bridge | `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` | KS interface discovery, topology parsing, native transfers, and transport gates. |
 | Device audio control | `Sussudio/Services/Audio/NativeXuAudioControlService.cs` | Native XU audio mode/gain mutation and readback; preserve unrelated payload bytes. |
@@ -63,7 +63,7 @@ mentions the moved files.
 | WASAPI interop | `Sussudio/Services/Audio/WasapiComInterop.cs` | Core Audio COM contracts, native formats, endpoint helpers, and device-change notification. |
 | WASAPI worker quarantine | `Sussudio/Services/Audio/WasapiWorkerQuarantine.cs` | Retain native resources for late-exiting workers and block unsafe restart until they exit. |
 | MJPEG preview pacing | `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs` | Paced frame emission anchored to capture cadence, optional display-clock alignment, adaptive depth, and lease ownership. |
-| MJPEG decode pipeline | `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Gpu/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
+| MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | Optional NVML sampling and graceful unavailable telemetry. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationSnapshotFlashbackProjectionBuilder.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/projection boundaries. |
@@ -463,7 +463,8 @@ Important entry points:
   snapshot DTO surface used by runtime, automation, stats, recording, Flashback,
   cleanup, disposal, and fatal cleanup paths.
 - `DeviceService.cs` owns capture/audio device enumeration orchestration, the
-  combined discovery result used by startup refresh, discovery summary state,
+  combined discovery result with a per-call error outcome used by startup
+  refresh, discovery summary state,
   device priority/capability scoring, audio endpoint association, native XU
   interface path resolution for supported devices, inline/background Media
   Foundation format probing, persisted format-cache DTOs and load/save/delete
@@ -668,18 +669,22 @@ Important entry points:
   compatibility, read-only automation probes, preview-frame capture waits,
   shared tick-age snapshot helper policy, recording byte-count projection,
   recording-format labels, observed frame-format telemetry projection, A/V sync
-  drift state/health fields, source telemetry backend/suppression/circuit policy
+  published drift/health fields, source telemetry backend/suppression/circuit policy
   shared by runtime and health projections, source telemetry polling, provider
   reads, fallback snapshot construction, merge policy, capture-format runtime
   telemetry, observed pixel-format normalization/reset/counters, NTSC frame-rate
-  correction, and frame-rate argument formatting.
+  correction, and frame-rate argument formatting. Its capture-owned worker samples
+  managed A/V counters before source-provider polling and publishes one immutable
+  drift/rate pair; snapshot reads never select the baseline or advance the rate window.
+  Sampling follows retained capture ownership independently of native polling demand.
 - `UnifiedVideoCapture.cs` owns public control/configuration surface, capture
   fields, counters, recording/Flashback attachment state, source-reader/D3D/MJPEG
   initialization, committed runtime state reset, read-loop start/stop,
   preview-reinit disposal, CPU MJPEG pipeline construction, stop/retention
   semantics, preview jitter buffer setup/disposal, capture/MJPEG fatal-error
   callbacks, source-reader frame arrival routing, MJPEG decoded-frame emission
-  fan-out, capture-arrival ledger records, pixel-format observer dispatch,
+  fan-out, capture-arrival ledger records, source-lifetime observed pixel-format
+  evidence and observer dispatch (notification samples, not full frame counts),
   preview sink assignment, live-preview suppression drains, MJPEG decoded
   preview-frame routing, raw preview submission, visual-cadence reset/recording
   helpers, fatal-error dedupe/signaling, recording and Flashback sink enqueue
@@ -689,8 +694,8 @@ Important entry points:
   the `FrameLedger` ring-buffer helper, source-reader cadence forwarding, MJPEG
   pipeline/jitter/hash metrics, preview visual cadence metrics, and frame-ledger
   summary projection over the root capture fan-out state.
-- `Services/Gpu/FrameFingerprintCadenceTracker.cs` owns source-packet hash cadence ingestion
-  beside its MJPEG decoder consumer, removing the decoder's dependency on Capture:
+- `Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` owns source-packet hash cadence ingestion
+  beside its CPU MJPEG decoder consumer in the capture MJPEG area:
   duplicate-run counters, fast packet hashing, duplicate-pattern metrics DTO
   construction, interval statistics, unique-interval projection, and pattern
   labels.
@@ -768,20 +773,30 @@ Entry points:
   trailer writing, close-result logging, final output telemetry, native
   frame/context/buffer release, hardware texture pool release, and encoder
   state reset. MPEG-TS outputs preserve the encoder clock across segments,
-  including the negative AAC priming timestamps at startup.
+  including the negative AAC priming timestamps at startup. Presets and split modes
+  remain enum values through internal options and are serialized at the native boundary.
 - `Sussudio/Services/Recording/RecordingArtifactManager.cs` owns recording
   context creation, temp/final output file naming, HDR-active context fields,
-  mux success/failure finalization, final-output validation, rollback,
+  final-output validation, sink-failure preservation, rollback,
   preserved temp-artifact discovery, unresolved-finalization marker writing and
   restart restoration, the stable LocalApplicationData recovery mirror, the
   write-ahead active-recording journal and Flashback artifact-root recovery,
-  newest-first recoverable-media selection, journal retirement, and best-effort
+  legacy `audio_temp` journal compatibility, newest-first recoverable-media
+  selection, journal retirement, and best-effort
   artifact deletion.
 - `CaptureService.RecordingLifecycle.cs` owns the atomic operation/outcome
   snapshot, the shared recording epoch for video/program-audio/microphone
   boundaries, requested-track integrity folding, runtime-failure attribution,
   requested-versus-observed track publication, structural-verification
   publication, and cleanup-completion re-entry gate.
+- `tests/Sussudio.Tests/InProcessRecordingStructureVerifierTests.cs` executes saved-file
+  verification against the committed `Fixtures/RecordingStructure` media corpus;
+  `RecordingFailureEvidenceTests.cs` and `LibAvRecordingDrainBehaviorTests.cs`
+  cover failure evidence and actual queued audio/video drain behavior.
+- `tests/Sussudio.Tests/NativeFfmpegCapabilitiesTests.cs` covers private probe protocol,
+  process lifetime, native bundle selection and capability selection preservation.
+  `AppProcessStartupTests.cs` covers process admission before shared startup work,
+  compiled SDK initialization ordering, and private apphost rejection with an empty PATH.
 - `Sussudio/Services/Recording/Verification/RecordingVerifier.cs` owns strict verification orchestration, early
   failure results, dimensions/frame-rate/cadence/container/codec/HDR validation policy, Flashback export
   format resolution, primary mismatch parsing, HDR parity, mismatch taxonomy, ffprobe path resolution, process specs,
@@ -821,7 +836,8 @@ Entry points:
   purge, full session purge, guarded purge file deletion, disk-byte accounting
   updates, active segment path generation, active segment start, generated-path
   abandonment, completion registration, duplicate-path rejection, same-path
-  segment extension, segment path lookup, range selection, start-PTS lookup,
+  segment extension, playback path lookup with fallback, completed-segment export
+  range selection, start-PTS lookup,
   session-directory path safety checks, read-only segment counts, active-path
   projection, active segment start PTS calculation, segment-info projection,
   eviction-pause state, recording PTS range capture, pause-driven disk warning
@@ -1580,8 +1596,10 @@ Primary current owners:
   runtime xUnit surface.
   `FfmpegRuntimeLocator.cs` owns app-local/PATH runtime and tool resolution,
   required native-library filename checks against the binding ABI, and
-  cached FFmpeg encoder/split-encode capability probes through bounded
-  `ProcessSupervisor` calls, one-time native initialization, FFmpeg log callback
+  encoder discovery from the selected native runtime and cached split-encode capability
+  trials through bounded `NativeFfmpegCapabilityProbe` app children. The private child
+  uses the same runtime, isolated logs, explicit result validation and supervised process
+  lifetime. The locator also owns one-time native initialization, FFmpeg log callback
   routing, and recoverable seek-log suppression.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns app-surface
   legacy `Program` helpers, named-pipe automation server framing/security/app
@@ -2207,16 +2225,21 @@ Primary current owners:
   `Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`
   owns audio ramp diagnostic state, bounded ring-buffer storage, snapshot
   projection, trace session start/complete, trace-point capture, sampler loop,
-  delayed sampler shutdown, preview-volume save suppression/override state,
-  priming, restoring, trace adapters, property-to-session volume forwarding,
+  delayed sampler shutdown, requested/effective preview volume, operation and
+  writer generations, cancellation, teardown, priming, restoring, trace adapters,
   preview-audio ramp constants, easing, and async ramp-down/ramp-up execution.
+  `PreviewAudioFadeController` in `PreviewLifecycleControllers.cs` drives WinUI
+  animation through a private dependency property and a writer lease.
+  `AudioControlBindingController` owns explicit user input and guards synchronous
+  projection updates so animation readback cannot become a user request.
+  `SetupBindings` initializes meters and the three audio selections directly.
   `MainViewModel.AudioState.cs` keeps the automation-facing audio-ramp trace
   adapter methods plus trace recorder and preview-volume transition controller
   wiring.
   `MainViewModel.AudioState.cs` owns
   audio capture enablement and Flashback restart/teardown routing.
   `MainViewModel.AudioState.cs` owns audio-preview monitoring toggle routing,
-  preview-volume save suppression/override properties, change notification,
+  requested-volume persistence and effective-volume change notification,
   ramp adapter methods, persisted preview-volume save routing, preview
   monitoring coordinator sequencing, custom audio-input property handlers,
   retargeting, preview-monitoring ramp handoff, microphone observable state,
@@ -2299,7 +2322,8 @@ Primary current owners:
   preview reinitialization. `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for the underlying preview
   lifecycle operations: device initialization, preview start/stop,
-  selected-device apply, and the reinitialize facade.
+  selected-device apply, and the reinitialize facade. Failed initialization repairs
+  visible state and faults the caller so automation publishes command failure.
   It also owns the preview lifecycle graph-port contract for preview
   state/events, capture/session operations, source telemetry refresh, UI
   dispatch, audio-preview activity, and preview-volume ramp-down.
@@ -2308,12 +2332,21 @@ Primary current owners:
   calls back through the root facade.
   `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`
   is a top-level `Sussudio.Controllers` owner for debounced reinitialization,
-  restart-cancellation state, Flashback-cycle wait-before-reinit,
-  renderer-stop handoff, teardown restart, and reinit gate release.
+  its own generation, semaphore and restart-cancellation state, Flashback-cycle
+  wait-before-reinit, stale-request rejection after gate acquisition, renderer-stop
+  handoff, teardown restart, and reinit gate release.
   It also owns the graph-built reinitialization port contract for selected
-  device/format state, generation coalescing, pending Flashback-cycle waits,
-  debounce/timeout policy, renderer notifications, restart cancellation, and
-  reinit gate access.
+  device/format state, pending Flashback-cycle waits, debounce/timeout policy,
+  and renderer notifications. Coordination state stays inside the controller.
+  Admitted reinitialization and recording starts exclude one another, with recording
+  and transition state checked after waits; recording stops remain available.
+  Failed preview stops restore only their own audio transition operation.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs` owns
+  recording-selection validation and application for both UI property reactions and
+  awaitable automation, including suppression during grouped selection writes and
+  tracking the pending application. `RecordingSettingsSelection.cs` carries the
+  complete desired encoder selection through coordinator coalescing; the coordinator
+  retains transition serialization and explicit application dispositions.
   `MainViewModel.cs` owns the stable recording facade:
   toggle, desired-state, graceful-stop, the direct emergency-stop coordinator
   bridge, recording option selections, output path, counters, and observable
@@ -2511,15 +2544,12 @@ Primary current owners:
   `MainViewModel.cs` owns capture-mode/HDR
   property-change side effects outside the capture-settings automation
   controller.
-  `Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs`
-  is a top-level `Sussudio.Controllers` owner for UI-thread setting mutations,
-  HDR compatibility enforcement, Flashback cycle suppression, coordinator side
-  effects, bitrate clamp policy, encoder preset, and output-path directory
-  creation.
-  It also owns the recording-settings automation graph-port contract for UI
-  dispatch, option collections, suppression flags, selected encoder/output
-  state, recording-format coordinator updates, and Flashback encoder setting
-  cycles.
+  `Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs`
+  owns the shared recording-settings application path for UI changes and automation:
+  UI dispatch, option validation, HDR compatibility, grouped selection suppression,
+  complete selection capture, pending application tracking, bitrate clamping,
+  encoder preset and output-directory creation. Faulted or canceled applications
+  remain observable until consumed or superseded.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for startup FFmpeg capability
   probes for recording formats and split-encode modes plus observable
@@ -2719,7 +2749,10 @@ Primary owners:
   projection, recent-interval parsing, readiness and verdict policy, private
   row/channel records, and the operator-facing verdict text.
 - Shared PresentMon option precedence and preview-present field extraction live
-  in `tools/Common/PresentMon/PresentMonProbe.cs`.
+  in `tools/Common/PresentMon/PresentMonProbe.cs`. Request cancellation terminates
+  only the child owned by that probe. MCP handlers propagate SDK request tokens
+  through pipe waits, batch commands and diagnostic sessions; failed PresentMon
+  results preserve structured evidence and set the MCP error flag.
 - `tools/DiagnosticSession/DiagnosticSessionResult.cs` owns diagnostic session run
   options, sampled snapshot DTOs, shared tool invocation defaults, the ssctl
   usage string, explicit scenario phase input handoff, mutable in-flight phase
@@ -2740,8 +2773,8 @@ Primary owners:
   constant, the `Names` projection, normalization, entry lookup, requirement
   queries, export-verification lookup, scenario ordering, and core, Flashback
   playback, Flashback export/lifecycle, Flashback recording/rejection, and
-  combined scenario metadata. It also owns the scenario plan DTO, creation
-  factory, catalog lookup handoff, and grouped warning/validation policies,
+  combined scenario metadata. Its plan stores one `DiagnosticSessionScenarioKind`
+  identity, with catalog lookup and grouped warning/validation policies,
   including the preview-cycle grouped predicate, used by the runner. It also
   owns diagnostic-session initial setup and optional background startup
   orchestration: Flashback enable/disable for scenario requirements, preview
@@ -2750,12 +2783,15 @@ Primary owners:
   registration delegation, deferred Flashback recording-settings task
   registration, direct Flashback playback start command, optional PresentMon
   launch, correlation snapshot capture, and `presentmon.csv` output selection.
+  Startup records acknowledged mutation ownership before cancellable readiness waits.
+  The runner reconciles lost responses and restores confirmed owned changes using
+  an independent bounded cleanup token, reporting uncertainty as a failure warning.
 - `tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` owns diagnostic-session
   result phase orchestration, artifact-write handoff, summary-write handoff,
   final summary emission, summary-write failure repair, and final-result
-  orchestration from analysis and artifact paths into the named projection set,
-  the private projection-set handoff record, projection-set assembly, result
-  projection records/builders, and final `DiagnosticSessionResult` DTO assignment.
+  orchestration from retained analysis and artifact paths directly into the final
+  `DiagnosticSessionResult` DTO. The initializer owns serialized field mapping;
+  intermediate records are retained only when they compute analysis.
   It also owns result artifact path construction, pre-summary sample,
   frame-ledger, and timeline artifact writes, frame-ledger trace shaping,
   shared JSON object creation / artifact serialization helpers, overview,
@@ -2763,7 +2799,7 @@ Primary owners:
   preview D3D, and visual-cadence projection composition, plus
   the result-build request handoff created by `DiagnosticSessionRunner.cs` and
   consumed by the result builder. It also owns diagnostic-session metric
-  preparation for validation/result projections, analysis warning emission,
+  preparation for validation/results, analysis warning emission,
   Flashback playback/export analysis warning text, Flashback playback
   stutter-cause classification, threshold guards, tolerated
   Flashback scenario warning classification, diagnostic-session validation
@@ -2847,7 +2883,7 @@ Primary owners:
   observation dispatch; active/relevant snapshot gating; session frame-count
   projection; 1% low window capture; frame/decode/audio-master maxima;
   end-of-session playback counter deltas; final result construction; and the
-  grouped command, cadence, decode, audio-master, and stage end-snapshot reads.
+  direct command, cadence, decode, audio-master, and stage end-snapshot reads.
   Export metrics include force-rotate fallback total, delta, and last fallback
   segment count; keep those counters derived outside export-observed relevance
   gating. These helpers remain snapshot-only projections and must not send

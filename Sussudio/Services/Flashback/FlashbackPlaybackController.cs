@@ -1015,7 +1015,7 @@ internal sealed partial class FlashbackPlaybackController : IDisposable
     {
         // Determine which segment file contains the target position.
         var filePath = targetPts.HasValue
-            ? _bufferManager.GetValidSegmentFileForPosition(targetPts.Value)
+            ? _bufferManager.ResolvePlaybackSegmentPathWithFallback(targetPts.Value)
             : _bufferManager.ActiveFilePath;
 
         if (string.IsNullOrWhiteSpace(filePath))

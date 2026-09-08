@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using Sussudio.Services.Runtime;
 
-namespace Sussudio.Services.Gpu;
+namespace Sussudio.Services.Capture.Mjpeg;
 
 // Hashes compressed/source frame bytes to detect duplicate cadence patterns
 // before decode. It is intentionally approximate: the goal is fast evidence of

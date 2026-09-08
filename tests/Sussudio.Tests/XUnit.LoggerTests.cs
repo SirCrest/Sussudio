@@ -108,6 +108,37 @@ public sealed class LoggerTests
         await logger.Shutdown();
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DirectoryResolutionFailureReturnsUnavailablePath(bool accessDenied)
+    {
+        await using var logger = new IsolatedLogger();
+        var resolve = logger.Type.GetMethod("TryResolveLogFilePath", BindingFlags.Static | BindingFlags.NonPublic)!;
+        Exception failure = accessDenied
+            ? new UnauthorizedAccessException("log directory unavailable")
+            : new IOException("log directory unavailable");
+        Func<string> failedResolution = () => throw failure;
+
+        var path = Assert.IsType<string>(resolve.Invoke(null, new object[] { failedResolution }));
+
+        Assert.Empty(path);
+        logger.Call("Log", "producer-remains-usable", "test");
+        logger.Call("LogFatalBreadcrumb", "fatal-remains-usable", null);
+        await logger.Shutdown();
+    }
+
+    [Fact]
+    public void DirectoryResolutionRunsInsideLoggerInitialization()
+    {
+        var source = RuntimeContractSource.ReadRepoFile("Sussudio/AppRuntime.cs");
+        Assert.Contains("private static readonly string LogFilePath;", source, StringComparison.Ordinal);
+        Assert.Contains("LogFilePath = TryResolveLogFilePath(() => RuntimePaths.GetRepoLogFile(", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static readonly string LogFilePath = RuntimePaths.", source, StringComparison.Ordinal);
+        Assert.Contains("var fileIoOk = !string.IsNullOrEmpty(LogFilePath);", source, StringComparison.Ordinal);
+    }
+
+
     private sealed class IsolatedLogger : IAsyncDisposable
     {
         private readonly LoggerLoadContext _context;

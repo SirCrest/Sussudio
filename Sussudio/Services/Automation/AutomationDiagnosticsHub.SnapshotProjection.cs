@@ -1724,15 +1724,15 @@ public sealed partial class AutomationDiagnosticsHub
         var evidence = new List<string>(capacity: 8);
         var observedFormatToken = NormalizeFormatToken(
             captureRuntime.LatestObservedFramePixelFormat ??
-            captureRuntime.FirstObservedFramePixelFormat ??
-            captureRuntime.NegotiatedPixelFormat);
-        var hasP010 = captureRuntime.ObservedP010FrameCount > 0 || string.Equals(observedFormatToken, "P010", StringComparison.OrdinalIgnoreCase);
-        var hasNv12 = captureRuntime.ObservedNv12FrameCount > 0 || string.Equals(observedFormatToken, "NV12", StringComparison.OrdinalIgnoreCase);
+            captureRuntime.FirstObservedFramePixelFormat);
+        var hasP010 = captureRuntime.ObservedP010FrameCount > 0;
+        var hasNv12 = captureRuntime.ObservedNv12FrameCount > 0;
+        var hasObservedFormat = hasP010 || hasNv12 || captureRuntime.ObservedOtherFrameCount > 0;
         var pipelineFormat = hasP010
             ? "P010"
             : hasNv12
                 ? "NV12"
-                : observedFormatToken;
+                : hasObservedFormat ? observedFormatToken : "unknown";
 
         if (hasP010)
         {
@@ -1806,7 +1806,7 @@ public sealed partial class AutomationDiagnosticsHub
             string.Equals(effectiveBitDepth, "10bit", StringComparison.OrdinalIgnoreCase);
         var sourceHdr = captureRuntime.SourceIsHdr;
         string sourceVsCaptureParity;
-        if (!sourceHdr.HasValue)
+        if (!hasObservedFormat || !sourceHdr.HasValue)
         {
             sourceVsCaptureParity = "unknown";
         }

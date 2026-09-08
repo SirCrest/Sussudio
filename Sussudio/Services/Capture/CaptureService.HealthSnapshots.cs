@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Recording;
 using Sussudio.Models;

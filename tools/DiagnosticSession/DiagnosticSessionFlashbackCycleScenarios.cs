@@ -17,7 +17,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackRestartCycle)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRestartCycle)
         {
             backgroundTasks.AddScenario(
                 4,
@@ -31,7 +31,7 @@ internal static class DiagnosticSessionFlashbackCycleScenarios
             actions.Add("flashback restart cycle started");
         }
 
-        if (scenarioPlan.RunFlashbackEncoderCycle)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackEncoderCycle)
         {
             backgroundTasks.AddScenario(
                 5,
@@ -335,7 +335,7 @@ internal static class DiagnosticSessionFlashbackLifecycleScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        if (!scenarioPlan.RunFlashbackLifecycle)
+        if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackLifecycle)
         {
             return;
         }
@@ -473,7 +473,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackPreviewCycle)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPreviewCycle)
         {
             backgroundTasks.AddScenario(
                 13,
@@ -487,7 +487,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             actions.Add("flashback preview cycle started");
         }
 
-        if (scenarioPlan.RunFlashbackPlaybackPreviewCycle)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackPlaybackPreviewCycle)
         {
             backgroundTasks.AddScenario(
                 14,
@@ -501,7 +501,7 @@ internal static class DiagnosticSessionFlashbackPreviewCycleScenarios
             actions.Add("flashback playback preview cycle started");
         }
 
-        if (scenarioPlan.RunFlashbackRecordingPreviewCycle)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingPreviewCycle)
         {
             backgroundTasks.AddScenario(
                 15,

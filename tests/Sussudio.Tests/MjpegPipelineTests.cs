@@ -403,7 +403,7 @@ namespace Sussudio.Tests
         [Fact]
         public void ParallelMjpegDecodePipelineTimingMetricsHasExpectedProperties()
         {
-            var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+            var metricsType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
 
             var expectedProps = new[]
             {
@@ -424,8 +424,8 @@ namespace Sussudio.Tests
         [Fact]
         public void SoftwareMjpegDecoderLivesWithPipelineWorker()
         {
-            var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
-            var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
+            var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
+            var decoderType = RequireType("Sussudio.Services.Capture.Mjpeg.SoftwareMjpegDecoder");
 
             AssertContains(rootText, "internal sealed unsafe class SoftwareMjpegDecoder : IDisposable");
             AssertContains(rootText, "public void Initialize(int width, int height)");
@@ -434,10 +434,10 @@ namespace Sussudio.Tests
             AssertContains(rootText, "SW_MJPEG_DECODE_DIAG");
             AssertContains(rootText, "Buffer.MemoryCopy(");
             Assert.False(
-                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Gpu", "SoftwareMjpegDecoder.Decode.cs")),
+                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "SoftwareMjpegDecoder.Decode.cs")),
                 "Software MJPEG decode path folded into decoder state/lifetime owner");
             Assert.False(
-                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Gpu", "SoftwareMjpegDecoder.cs")),
+                File.Exists(Path.Combine(RuntimeContractSource.GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "SoftwareMjpegDecoder.cs")),
                 "Software MJPEG decoder folded into the pipeline worker owner");
 
             var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
@@ -451,7 +451,7 @@ namespace Sussudio.Tests
 
         private static MethodInfo RequirePipelineMethod(string methodName)
         {
-            var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
+            var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
             return pipelineType.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException($"{methodName} not found.");
         }
@@ -853,7 +853,7 @@ static partial class Program
         AssertNotNull(leaseAdmission, "lease Try admission contract");
         AssertEqual(typeof(bool), leaseAdmission!.ReturnType, "lease admission returns acceptance");
         AssertEqual(null, leaseEncoderType.Assembly.GetType("Sussudio.Services.Contracts.IRawVideoFrameLeaseEncoder"), "obsolete void lease contract removed");
-        var pipelineEmitCallbackType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+EmitFrameCallback");
+        var pipelineEmitCallbackType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+EmitFrameCallback");
         var previewSinkType = RequireType("Sussudio.Services.Contracts.IPreviewFrameSink");
         var jitterBufferType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
@@ -973,7 +973,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
-        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var source = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
@@ -1014,14 +1014,14 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_CompressedQueueLivesWithRoot()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(rootText, "partial class ParallelMjpegDecodePipeline");
         AssertContains(rootText, "private const int WorkQueueItemCapacityPerDecoder = 8;");
         AssertContains(rootText, "private readonly Channel<MjpegWorkItem> _workQueue;");
         AssertContains(rootText, "private readonly FrameFingerprintCadenceTracker _packetHashTracker = new();");
-        AssertDoesNotContain(rootText, "using Sussudio.Services.Capture;");
+        AssertContains(rootText, "namespace Sussudio.Services.Capture.Mjpeg;");
         AssertContains(rootText, "private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;");
         AssertContains(rootText, "private readonly record struct MjpegWorkItem(");
         AssertContains(rootText, "public bool EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)");
@@ -1034,11 +1034,11 @@ static partial class Program
         AssertContains(rootText, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.CompressedQueue.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.CompressedQueue.cs")),
             "MJPEG compressed queue admission stays folded into pipeline root/channel owner");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Metrics.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Metrics.cs")),
             "MJPEG pipeline metrics folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
@@ -1046,8 +1046,8 @@ static partial class Program
 
     internal static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
     {
-        var trackerSource = ReadRepoFile("Sussudio/Services/Gpu/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
-        var tracker = CreateInstance("Sussudio.Services.Gpu.FrameFingerprintCadenceTracker");
+        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
+        var tracker = CreateInstance("Sussudio.Services.Capture.Mjpeg.FrameFingerprintCadenceTracker");
         var trackerType = tracker.GetType();
         var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.RecordFrame not found.");
@@ -1099,8 +1099,8 @@ static partial class Program
         AssertContains(trackerSource, "private static string ResolvePattern(");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "FrameFingerprintCadenceTracker.cs")),
-            "packet hash cadence tracker belongs to the GPU decode pipeline");
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "FrameFingerprintCadenceTracker.cs")),
+            "packet hash cadence tracker moves with the CPU MJPEG pipeline under capture");
 
         return Task.CompletedTask;
     }
@@ -1166,7 +1166,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_WorkersLiveWithRoot()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private readonly SoftwareMjpegDecoder[] _decoders;");
@@ -1179,7 +1179,7 @@ static partial class Program
         AssertContains(rootText, "DecrementCompressedQueueDepth(\"dequeue\");");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Workers.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Workers.cs")),
             "MJPEG worker execution stays folded into pipeline root/channel owner");
 
         return Task.CompletedTask;
@@ -1187,7 +1187,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_ReorderLivesWithRoot()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
         var reorderText = rootText;
 
@@ -1209,11 +1209,11 @@ static partial class Program
         AssertContains(reorderText, "_emitCallback(frame.Frame);");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.ReorderEmission.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.ReorderEmission.cs")),
             "MJPEG reorder emission stays folded into decoded-frame ordering owner");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Reorder.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Reorder.cs")),
             "MJPEG decoded-frame ordering folded into the pipeline root");
         AssertContains(rootText, "private void EmitLoop()");
         AssertContains(rootText, "private bool DrainReadyFrames()");
@@ -1225,7 +1225,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_LifecycleLivesWithRoot()
     {
-        var rootText = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs")
+        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public void Dispose()");
@@ -1246,11 +1246,11 @@ static partial class Program
         AssertContains(rootText, "_emitSignal.Dispose();");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.ResourceCleanup.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.ResourceCleanup.cs")),
             "MJPEG pipeline resource cleanup folded into ParallelMjpegDecodePipeline root");
         AssertEqual(
             false,
-            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Gpu", "ParallelMjpegDecodePipeline.Lifecycle.cs")),
+            File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Capture", "Mjpeg", "ParallelMjpegDecodePipeline.Lifecycle.cs")),
             "MJPEG pipeline lifecycle folded into the root pipeline owner");
 
         return Task.CompletedTask;
@@ -1258,7 +1258,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
     {
-        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var source = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
         var guardIndex = source.IndexOf("!HasJpegStartOfImage(jpegData)", StringComparison.Ordinal);
         var sequenceIndex = source.IndexOf("Interlocked.Increment(ref _nextDispatchSeq)", StringComparison.Ordinal);
 
@@ -1273,7 +1273,7 @@ static partial class Program
 
     internal static Task ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal()
     {
-        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
         var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
         using var fatalSignaled = new ManualResetEventSlim(false);
         using var emitSignal = new AutoResetEvent(false);
@@ -1310,7 +1310,7 @@ static partial class Program
     {
         // ForceDropOldestReorderFrameUnderLock must add the dropped seqNo to _knownMissingSequences
         // so the emitter never waits forever on a frame that was destroyed by the ring-full eviction.
-        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
         var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
         var reorderLock = new object();
         var reorderFrames = CreateSortedDictionary(pipelineType);
@@ -1381,7 +1381,7 @@ static partial class Program
     internal static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
     {
         var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs");
-        var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var pipelineSource = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
         var captureSource = ReadUnifiedVideoCaptureSource();
         AssertContains(source, "DropDeadlineExpiredFrames");
         AssertContains(source, "DropLatencyOverflowFrames");

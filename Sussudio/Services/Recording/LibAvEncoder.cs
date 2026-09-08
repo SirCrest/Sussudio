@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using FFmpeg.AutoGen;
+using Sussudio.Models;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
@@ -321,61 +322,43 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
            (options.CodecName.Contains("h264", StringComparison.OrdinalIgnoreCase) ||
             options.CodecName.Contains("hevc", StringComparison.OrdinalIgnoreCase));
 
-    private static string MapNvencPreset(string? preset)
+    private static string MapNvencPreset(NvencPreset preset) => preset switch
     {
-        if (string.IsNullOrWhiteSpace(preset) || preset.Equals("Auto", StringComparison.OrdinalIgnoreCase))
-        {
-            return "p4";
-        }
-
-        if (preset.Equals("Fast", StringComparison.OrdinalIgnoreCase))
-        {
-            return "p1";
-        }
-
-        if (preset.Equals("Slow", StringComparison.OrdinalIgnoreCase))
-        {
-            return "p7";
-        }
-
-        return preset.ToLowerInvariant();
-    }
+        NvencPreset.Auto or NvencPreset.P4 => "p4",
+        NvencPreset.Fast or NvencPreset.P1 => "p1",
+        NvencPreset.P2 => "p2",
+        NvencPreset.P3 => "p3",
+        NvencPreset.P5 => "p5",
+        NvencPreset.P6 => "p6",
+        NvencPreset.Slow or NvencPreset.P7 => "p7",
+        _ => throw new ArgumentOutOfRangeException(nameof(preset), preset, "Unknown NVENC preset.")
+    };
 
     private static bool SupportsSplitEncodeMode(string codecName)
         => codecName.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
            codecName.Contains("265", StringComparison.OrdinalIgnoreCase) ||
            codecName.Contains("av1", StringComparison.OrdinalIgnoreCase);
 
-    private static bool TryMapSplitEncodeMode(string? splitEncodeMode, out long value)
+    private static bool TryMapSplitEncodeMode(SplitEncodeMode splitEncodeMode, out long value)
     {
-        value = 0;
-        if (string.IsNullOrWhiteSpace(splitEncodeMode) ||
-            splitEncodeMode.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+        switch (splitEncodeMode)
         {
-            return true;
+            case SplitEncodeMode.Auto:
+                value = 0;
+                return true;
+            case SplitEncodeMode.Disabled:
+                value = 15;
+                return true;
+            case SplitEncodeMode.TwoWay:
+                value = 2;
+                return true;
+            case SplitEncodeMode.ThreeWay:
+                value = 3;
+                return true;
+            default:
+                value = 0;
+                return false;
         }
-
-        if (splitEncodeMode.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
-        {
-            value = 15;
-            return true;
-        }
-
-        if (splitEncodeMode.Equals("2-way", StringComparison.OrdinalIgnoreCase) ||
-            splitEncodeMode.Equals("2", StringComparison.OrdinalIgnoreCase))
-        {
-            value = 2;
-            return true;
-        }
-
-        if (splitEncodeMode.Equals("3-way", StringComparison.OrdinalIgnoreCase) ||
-            splitEncodeMode.Equals("3", StringComparison.OrdinalIgnoreCase))
-        {
-            value = 3;
-            return true;
-        }
-
-        return false;
     }
 
     private static bool IsSampleFormatSupported(AVCodec* codec, AVSampleFormat sampleFormat)
@@ -627,7 +610,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
             Logger.Log(
                 $"LIBAV_ENCODER_OPEN codec='{options.CodecName}' output='{options.OutputPath}' " +
                 $"width={options.Width} height={options.Height} fps={options.FrameRate.ToString("0.###", CultureInfo.InvariantCulture)} " +
-                $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled} split_encode='{options.SplitEncodeMode}' " +
+                $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled} split_encode='{SplitEncodeModeParser.ToWireString(options.SplitEncodeMode)}' " +
                 $"audio={options.AudioEnabled} audio_rate={options.AudioSampleRate} audio_channels={options.AudioChannels} audio_bitrate={options.AudioBitRate} " +
                 $"microphone={options.MicrophoneEnabled} mic_rate={options.MicrophoneSampleRate} mic_channels={options.MicrophoneChannels} mic_bitrate={options.MicrophoneBitRate} " +
                 $"hw_frames={_useHardwareFrames}");
@@ -690,7 +673,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
 
         if (!TryMapSplitEncodeMode(options.SplitEncodeMode, out var splitEncodeMode))
         {
-            throw new InvalidOperationException($"Unknown split encode mode '{options.SplitEncodeMode}'.");
+            throw new InvalidOperationException($"Unknown split encode mode '{SplitEncodeModeParser.ToWireString(options.SplitEncodeMode)}'.");
         }
 
         if (SupportsSplitEncodeMode(options.CodecName))
@@ -702,7 +685,7 @@ internal sealed unsafe partial class LibAvEncoder : IDisposable
         else if (splitEncodeMode is 2 or 3)
         {
             throw new InvalidOperationException(
-                $"Split encode mode '{options.SplitEncodeMode}' is not supported by codec '{options.CodecName}'.");
+                $"Split encode mode '{SplitEncodeModeParser.ToWireString(options.SplitEncodeMode)}' is not supported by codec '{options.CodecName}'.");
         }
 
         if (IsMpegTsParameterSetFilterCandidate(options))
@@ -1385,8 +1368,8 @@ internal sealed record LibAvEncoderOptions
     public int? FrameRateDenominator { get; init; }
     public required uint BitRate { get; init; }
     public required bool IsP010 { get; init; }
-    public string? NvencPreset { get; init; }
-    public string SplitEncodeMode { get; init; } = "Auto";
+    public NvencPreset NvencPreset { get; init; } = NvencPreset.Auto;
+    public SplitEncodeMode SplitEncodeMode { get; init; } = SplitEncodeMode.Auto;
     public int GopSize { get; init; } = -1;
     /// <summary>
     /// Use frag_keyframe+empty_moov instead of the normal moov-at-end MP4 layout.

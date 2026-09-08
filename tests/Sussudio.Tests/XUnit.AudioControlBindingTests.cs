@@ -129,25 +129,38 @@ public sealed class AudioControlBindingTests : IDisposable
         Assert.Equal(modeSets + 1, f.Vm.SelectedDeviceAudioModeSetCount);
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public void PreviewVolumeSavesAfterCancelingAnyUserInterruptedFade(bool fadeIn, bool animation)
+    [Fact]
+    public void PreviewVolumeUserInputSupersedesBeforeSavingOnPointerRelease()
     {
-        var f = new BindingFixture { FadeIn = fadeIn, FadeAnimation = animation };
+        var f = new BindingFixture();
         f.Binding.ApplyInitialAudioControlBindings();
         f.Events.Clear();
+        f.Vm.OnUserPreviewVolume = _ => f.Events.Add("request");
         f.Vm.OnSavePreviewVolume = () => f.Events.Add("save");
-
+        f.Volume.RaisePointerPressed();
         f.Volume.Value = 42.9;
         Assert.Equal(0.429, f.Vm.PreviewVolume, 8);
         Assert.Equal("42%", f.VolumeLabel.Text);
         Assert.Equal(0, f.Vm.SavePreviewVolumeCount);
         f.Volume.RaisePointerCaptureLost();
+        Assert.Equal(new[] { "request", "request", "save" }, f.Events);
+    }
 
-        Assert.Equal(1, f.Vm.SavePreviewVolumeCount);
-        Assert.Equal(fadeIn || animation ? new[] { "cancel", "save" } : new[] { "save" }, f.Events);
+    [Fact]
+    public void PreviewVolumeNonPointerInputCommitsAndPresentationDoesNotBecomeUserInput()
+    {
+        var f = new BindingFixture();
+        f.Binding.ApplyInitialAudioControlBindings();
+        f.Events.Clear();
+        f.Vm.OnUserPreviewVolume = _ => f.Events.Add("request");
+        f.Vm.OnSavePreviewVolume = () => f.Events.Add("save");
+        f.Volume.Value = 30;
+        Assert.Equal(new[] { "request", "save" }, f.Events);
+        f.Events.Clear();
+        f.Binding.ApplyPreviewVolumePresentation(0.7);
+        Assert.Equal(70, f.Volume.Value);
+        Assert.Equal("70%", f.VolumeLabel.Text);
+        Assert.Empty(f.Events);
     }
 
     [Fact]
@@ -164,17 +177,14 @@ public sealed class AudioControlBindingTests : IDisposable
     }
 
     [Fact]
-    public void ActivationAndInitialMeterCallbacksKeepTheirOrder()
+    public void ActivationBindingsKeepOwnedEventCallbacks()
     {
         var f = new BindingFixture();
         f.Vm.AudioMeterTarget = 0.4;
         f.Binding.AttachAudioMeterActivationBindings();
         f.Vm.RaiseAudioMeterActivated();
         f.Vm.RaiseMicrophoneMeterActivated();
-        f.Binding.ApplyInitialAudioMeterPresentation();
-        f.Binding.EnsureAudioControlSelections();
-        Assert.Equal(new[] { "brushes", "timer", "timer", "reset", "target", "audio-selection", "mic-selection", "mode-selection" }, f.Events);
-        Assert.Equal(0.4, f.LastTarget);
+        Assert.Equal(new[] { "brushes", "timer", "timer" }, f.Events);
     }
 
     [Fact]
@@ -201,11 +211,7 @@ public sealed class AudioControlBindingTests : IDisposable
         f.Volume.Value = 10;
         f.VolumeLabel.Text = "unchanged";
         f.Vm.PreviewVolume = 0.8;
-        f.FadeIn = true;
         Assert.True(f.Presentation.TryHandlePropertyChanged(nameof(MainViewModel.PreviewVolume)));
-        Assert.Equal(10, f.Volume.Value);
-        Assert.Equal("unchanged", f.VolumeLabel.Text);
-        f.FadeIn = false;
         f.Presentation.HandlePreviewVolumeChanged();
         Assert.Equal(80, f.Volume.Value);
         Assert.Equal("80%", f.VolumeLabel.Text);
@@ -372,9 +378,6 @@ public sealed class AudioControlBindingTests : IDisposable
         internal FrameworkElement AudioTrack { get; } = new();
         internal FrameworkElement MicTrack { get; } = new();
         internal List<string> Events { get; } = new();
-        internal bool FadeIn;
-        internal bool FadeAnimation;
-        internal double LastTarget;
         internal double LastMicVolume;
         internal AudioControlBindingController Binding { get; }
         internal AudioControlPresentationController Presentation { get; }
@@ -390,19 +393,17 @@ public sealed class AudioControlBindingTests : IDisposable
                 AudioMeterTrack = AudioTrack, MicMeterTrack = MicTrack,
                 InitializeAudioMeterBrushes = () => Events.Add("brushes"), EnsureAudioMeterTimerRunning = () => Events.Add("timer"),
                 SetAudioMeterMonitoringState = value => Events.Add($"monitor:{value}"), PrimePreviewAudioFadeIn = () => Events.Add("prime"),
-                IsPreviewAudioFadeInActive = () => FadeIn, IsPreviewAudioFadeAnimationActive = () => FadeAnimation,
-                CancelPreviewAudioFadeInForUser = () => Events.Add("cancel"), SetupMicrophoneVolumeBindings = () => Events.Add("mic-bindings"),
+                SetupMicrophoneVolumeBindings = () => Events.Add("mic-bindings"),
                 ApplyInitialMicrophoneControlsVisibility = () => Events.Add("mic-visibility"), ApplyDeviceAudioControlState = () => Events.Add("device-state"),
-                ResetAudioMeterVisuals = () => Events.Add("reset"), SetAudioMeterTargetLevel = value => { LastTarget = value; Events.Add("target"); },
-                EnsureAudioInputSelection = () => Events.Add("audio-selection"), EnsureMicrophoneSelection = () => Events.Add("mic-selection"),
-                EnsureDeviceAudioModeSelection = () => Events.Add("mode-selection"), AnimateAudioMeterTick = () => Events.Add("animate")
+                AnimateAudioMeterTick = () => Events.Add("animate")
             });
             Presentation = new(new AudioControlPresentationControllerContext
             {
                 ViewModel = Vm, CustomAudioToggle = Custom, AudioInputComboBox = AudioDevices,
                 MicrophoneToggle = Microphone, MicrophoneComboBox = MicrophoneDevices,
                 AudioRecordToggle = Record, AudioPreviewToggle = Preview, PreviewVolumeSlider = Volume, PreviewVolumeLabel = VolumeLabel,
-                IsPreviewAudioFadeInActive = () => FadeIn, SetAudioMeterMonitoringState = value => Events.Add($"monitor:{value}"),
+                ApplyPreviewVolumePresentation = Binding.ApplyPreviewVolumePresentation,
+                SetAudioMeterMonitoringState = value => Events.Add($"monitor:{value}"),
                 AnimateAudioMeterDisabled = value => Events.Add($"disabled:{value}"), UpdateMicrophoneControlsVisibility = () => Events.Add("mic-visibility"),
                 SyncMicrophoneVolumeControls = value => LastMicVolume = value
             });

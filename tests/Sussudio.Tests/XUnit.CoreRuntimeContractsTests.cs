@@ -142,8 +142,8 @@ public sealed class CoreRuntimeContractsTests
         => global::Program.CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates();
 
     [Fact]
-    public Task CaptureServiceObservedPixelFormatNormalizationIsStable()
-        => global::Program.CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly();
+    public Task CaptureSourceObservedPixelFormatsPreserveCanonicalEvidence()
+        => global::Program.UnifiedVideoCapture_ObservedPixelFormat_PreservesCanonicalEvidence();
 
     [Fact]
     public Task CaptureServiceObservedPixelTelemetryLivesWithSourceTelemetry()
@@ -347,10 +347,14 @@ public sealed class RuntimeContractsTests
         Assert.Contains("internal static class FfmpegLogSuppressionScope", ffmpegText);
         Assert.Contains("internal static string FindToolPath", ffmpegText);
         Assert.Contains("private const int ProbeTimeoutMs = 10_000;", ffmpegText);
-        Assert.Contains("new ProcessSupervisor().RunAsync", ffmpegText);
+        Assert.Contains("new ProcessSupervisor()", ffmpegText);
         Assert.Contains("TimeoutMs = ProbeTimeoutMs", ffmpegText);
-        Assert.Contains("if (!result.Started || result.TimedOut || result.ExitCode != 0)", ffmpegText);
-        Assert.Contains("return result.Started && !result.TimedOut && result.ExitCode == 0;", ffmpegText);
+        Assert.Contains("ffmpeg.avcodec_find_encoder_by_name", ffmpegText);
+        Assert.Contains("FfmpegRuntimeInit.GetInitializedRuntimeRoot()", ffmpegText);
+        Assert.Contains("NativeFfmpegCapabilityProbe.CreateArguments(runtimeRoot, mode, logDirectory)", ffmpegText);
+        Assert.Contains("NativeFfmpegCapabilityProbe.ReadAcceptedResult(process, runtimeRoot, runtimeVersions, mode)", ffmpegText);
+        Assert.DoesNotContain("-hide_banner -encoders", ffmpegText);
+        Assert.DoesNotContain("color=c=black:s=16x16", ffmpegText);
     }
 
     [Fact]
@@ -1661,9 +1665,9 @@ static partial class Program
         AssertContains(snapshotsText, "private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()");
         AssertContains(snapshotsText, "private readonly record struct ObservedFrameSnapshotFields(");
         AssertContains(snapshotsText, "return new ObservedFrameSnapshotFields(");
-        AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedP010FrameCount))");
-        AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount))");
-        AssertContains(snapshotsText, "Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount))");
+        AssertContains(snapshotsText, "ObservedP010FrameCount: isP010 ? 1 : 0");
+        AssertContains(snapshotsText, "ObservedNv12FrameCount: isNv12 ? 1 : 0");
+        AssertContains(snapshotsText, "ObservedOtherFrameCount: observedFormat != null");
         AssertContains(healthSnapshotText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
         AssertContains(flashbackExportText, "private static long ComputeFlashbackExportElapsedMs(");
         AssertContains(flashbackExportText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
@@ -1794,13 +1798,12 @@ static partial class Program
         var telemetryText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(telemetryText, "private void ResetObservedPixelTelemetry()");
-        AssertContains(telemetryText, "private static string? NormalizeObservedPixelFormat(string? pixelFormat)");
-        AssertContains(telemetryText, "private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)");
-        AssertContains(telemetryText, "Interlocked.Exchange(ref _observedP010FrameCount, 0);");
-        AssertContains(telemetryText, "Interlocked.Increment(ref _observedP010FrameCount);");
-        AssertContains(telemetryText, "Interlocked.Increment(ref _observedNv12FrameCount);");
-        AssertContains(telemetryText, "Interlocked.Increment(ref _observedOtherFrameCount);");
+        var sourceText = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
+        AssertContains(telemetryText, "_videoPipeline.Capture?.GetPixelFormatObservation()?.PixelFormat");
+        AssertContains(sourceText, "internal PixelFormatObservation? GetPixelFormatObservation()");
+        AssertContains(sourceText, "Volatile.Write(ref _pixelFormatObservation, new PixelFormatObservation(format));");
+        AssertDoesNotContain(telemetryText, "RecordObservedPixelFormat");
+        AssertDoesNotContain(telemetryText, "expectedFormat");
         AssertContains(telemetryText, "private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)");
         AssertEqual(
             false,
@@ -1818,30 +1821,40 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly()
+    internal static async Task UnifiedVideoCapture_ObservedPixelFormat_PreservesCanonicalEvidence()
     {
-        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
-        var method = serviceType.GetMethod("NormalizeObservedPixelFormat",
-            BindingFlags.Static | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException("NormalizeObservedPixelFormat not found.");
+        foreach (var isP010 in new[] { false, true })
+        {
+            await using var session = new CaptureObservationTestSession();
+            var expectedFormat = isP010 ? "P010" : "NV12";
+            var callbackCount = 0;
+            string? callbackFormat = null;
+            CaptureObservationTestSession.SetField(session.Video, "_isP010", isP010);
+            CaptureObservationTestSession.Invoke(session.Video, "SetPixelFormatDetectedCallback",
+                new Action<string>(format =>
+                {
+                    callbackCount++;
+                    callbackFormat = format;
+                }));
+            var ingressMethod = session.Video.GetType().GetMethod("OnFrameArrived", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("OnFrameArrived not found.");
+            var arrive = ingressMethod.CreateDelegate<CaptureObservationRawFrameCallback>(session.Video);
 
-        var p010Lower = method.Invoke(null, new object?[] { "p010" })?.ToString();
-        AssertEqual("P010", p010Lower, "p010 -> P010");
+            session.AssertObservedFormat(null, 0, 0, 0);
+            arrive(new byte[isP010 ? 12 : 6], 2, 2, 1L);
+            session.AssertObservedFormat(expectedFormat, isP010 ? 1 : 0, isP010 ? 0 : 1, 0);
+            AssertEqual(expectedFormat, callbackFormat, "actual frame callback format");
 
-        var p010Mixed = method.Invoke(null, new object?[] { "P010" })?.ToString();
-        AssertEqual("P010", p010Mixed, "P010 stays P010");
-
-        var nv12Lower = method.Invoke(null, new object?[] { "nv12" })?.ToString();
-        AssertEqual("NV12", nv12Lower, "nv12 -> NV12");
-
-        var bgra = method.Invoke(null, new object?[] { "bgra" })?.ToString();
-        AssertEqual("BGRA", bgra, "bgra -> BGRA");
-
-        var nullResult = method.Invoke(null, new object?[] { null });
-        AssertEqual(true, nullResult == null, "null -> null");
-
-        return Task.CompletedTask;
+            // Evidence is one sample for this source lifetime; later callbacks
+            // cannot replace its first observed format or increment sample counts.
+            CaptureObservationTestSession.SetField(session.Video, "_isP010", !isP010);
+            arrive(new byte[isP010 ? 6 : 12], 2, 2, 2L);
+            session.AssertObservedFormat(expectedFormat, isP010 ? 1 : 0, isP010 ? 0 : 1, 0);
+            AssertEqual(1, callbackCount, "one format callback per source lifetime");
+        }
     }
+
+    private delegate void CaptureObservationRawFrameCallback(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick);
 
     internal static Task CaptureService_ResolveSourceTelemetryBackend_MapsOrigins()
     {
@@ -2169,7 +2182,7 @@ static partial class Program
         AssertContains(snapshotsText, "videoCapture.FlashbackRecordingSequenceGaps");
         AssertContains(serviceText, "CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture)");
         AssertContains(snapshotsText, "if (sink.TryGetEncoderAvSyncDrift(out var driftMs, out var correctionSamples))");
-        AssertContains(snapshotHelpersText, "private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()");
+        AssertContains(snapshotHelpersText, "private (double? DriftMs, double? RateMsPerSec) GetAvSyncDrift()");
         AssertContains(snapshotHelpersText, "private (double? EncoderDriftMs, long? EncoderCorrectionSamples) GetEncoderAvSyncDrift()");
         AssertContains(snapshotsText, "encoderAvSyncDriftMs = driftMs;");
         AssertContains(snapshotsText, "encoderAvSyncCorrectionSamples = correctionSamples;");
@@ -2851,47 +2864,24 @@ static partial class Program
 
     internal static async Task GetRuntimeSnapshot_UsesObservedTelemetryStateInsteadOfInferredCounts()
     {
-        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
-        var device = BuildDevice();
-        var settings = BuildSettings(hdrEnabled: true);
-
-        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
-
-        SetPrivateField(captureService, "_firstObservedFramePixelFormat", "NV12");
-        SetPrivateField(captureService, "_latestObservedFramePixelFormat", "BGRA8");
-        SetPrivateField(captureService, "_latestObservedSurfaceFormat", "BGRA8");
-        SetPrivateField(captureService, "_observedP010FrameCount", 0L);
-        SetPrivateField(captureService, "_observedNv12FrameCount", 2L);
-        SetPrivateField(captureService, "_observedOtherFrameCount", 3L);
-
-        var snapshot = InvokeInstanceMethod(captureService, "GetRuntimeSnapshot");
-        AssertEqual(0L, GetLongProperty(snapshot, "ObservedP010FrameCount"), "ObservedP010FrameCount");
-        AssertEqual(2L, GetLongProperty(snapshot, "ObservedNv12FrameCount"), "ObservedNv12FrameCount");
-        AssertEqual(3L, GetLongProperty(snapshot, "ObservedOtherFrameCount"), "ObservedOtherFrameCount");
-        AssertEqual("NV12", GetStringProperty(snapshot, "FirstObservedFramePixelFormat"), "FirstObservedFramePixelFormat");
-        AssertEqual("BGRA8", GetStringProperty(snapshot, "LatestObservedFramePixelFormat"), "LatestObservedFramePixelFormat");
-
-        await DisposeAsync(captureService).ConfigureAwait(false);
+        await using var session = new CaptureObservationTestSession();
+        SetPrivateField(session.Service, "_actualPixelFormat", "P010");
+        session.AssertObservedFormat(null, 0, 0, 0);
+        CaptureObservationTestSession.EmitMjpegFrame(session.Video);
+        session.AssertObservedFormat("NV12", 0, 1, 0);
+        CaptureObservationTestSession.EmitMjpegFrame(session.Video);
+        session.AssertObservedFormat("NV12", 0, 1, 0);
     }
 
     internal static async Task GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded()
     {
-        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
-        var device = BuildDevice();
-        var settings = BuildSettings(hdrEnabled: false);
-
-        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
-
-        SetPrivateField(captureService, "_actualPixelFormat", "MJPG");
-        SetPrivateField(captureService, "_latestObservedFramePixelFormat", "NV12");
-
-        var snapshot = InvokeInstanceMethod(captureService, "GetRuntimeSnapshot");
+        await using var session = new CaptureObservationTestSession();
+        SetPrivateField(session.Service, "_actualPixelFormat", "MJPG");
+        CaptureObservationTestSession.EmitMjpegFrame(session.Video);
+        var snapshot = session.RuntimeSnapshot();
         AssertEqual("MJPG", GetStringProperty(snapshot, "ReaderSourceSubtype"), "ReaderSourceSubtype");
         AssertEqual("NV12", GetStringProperty(snapshot, "LatestObservedFramePixelFormat"), "LatestObservedFramePixelFormat");
-
-        await DisposeAsync(captureService).ConfigureAwait(false);
     }
-
     internal static async Task GetRuntimeSnapshot_TelemetryAlignment_Mismatch_WhenSourceModeDiffersFromRequest()
     {
         var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");

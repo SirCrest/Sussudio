@@ -86,12 +86,6 @@ public sealed class AudioLevelEventArgs : EventArgs
     public bool Clipped { get; }
 }
 
-// Recording/monitoring audio topology reported in diagnostics.
-public enum AudioPathMode
-{
-    PostMuxDefault
-}
-
 // Bounded audio-transition trace returned through automation for stutter/ramp
 // investigations.
 public sealed class AudioRampTraceSnapshot
@@ -163,7 +157,6 @@ public class CaptureSettings
     public bool MicrophoneEnabled { get; set; }
     public string? MicrophoneDeviceId { get; set; }
     public string? MicrophoneDeviceName { get; set; }
-    public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public bool ForceMjpegDecode { get; set; }
     public bool FlashbackGpuDecode { get; set; } = true;
     public int FlashbackBufferMinutes { get; set; } = 5;
@@ -267,7 +260,9 @@ public static class NvencPresetParser
     {
         if (string.IsNullOrWhiteSpace(value))
             return NvencPreset.Auto;
-        return Enum.TryParse<NvencPreset>(value, ignoreCase: true, out var result) ? result : NvencPreset.Auto;
+        return Enum.TryParse<NvencPreset>(value, ignoreCase: true, out var result) && Enum.IsDefined(result)
+            ? result
+            : NvencPreset.Auto;
     }
 }
 
@@ -284,7 +279,9 @@ public static class SplitEncodeModeParser
         if (string.Equals(value, "3-way", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(value, "3", StringComparison.OrdinalIgnoreCase))
             return SplitEncodeMode.ThreeWay;
-        return Enum.TryParse<SplitEncodeMode>(value, ignoreCase: true, out var result) ? result : SplitEncodeMode.Auto;
+        return Enum.TryParse<SplitEncodeMode>(value, ignoreCase: true, out var result) && Enum.IsDefined(result)
+            ? result
+            : SplitEncodeMode.Auto;
     }
 
     /// <summary>Returns the wire/UI string for a SplitEncodeMode value.</summary>

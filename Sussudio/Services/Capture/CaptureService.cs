@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
 using Windows.Storage;
 using Sussudio.Services.Flashback;
@@ -77,6 +78,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly ISourceSignalTelemetryProvider _sourceTelemetryProvider;
     private readonly IProcessSupervisor _processSupervisor;
     private readonly RecordingArtifactManager _artifactManager = new();
+    private readonly Func<CancellationToken, Task> _rebuildRecordingSettingsBackendAsync;
 
     private int _isDisposed;
     private bool _isInitialized;
@@ -116,7 +118,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private RecordingIntegritySummary _lastRecordingIntegrity = RecordingIntegritySummary.NotStarted;
     private RecordingIntegrityCounterSnapshot? _recordingIntegrityCounterBaseline;
     private RecordingAudioIntegrityCounterSnapshot? _recordingIntegrityAudioBaseline;
-    private bool _lastUsePostMuxAudio;
     private FinalizeResult? _lastExportResult;
     private long _lastFlashbackExportResultId;
     private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);
@@ -153,12 +154,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private string? _actualPixelFormat;
     private string _activeVideoInputPixelFormat = "nv12";
     private long _videoFramesDropped;
-    private string? _firstObservedFramePixelFormat;
-    private string? _latestObservedFramePixelFormat;
-    private string? _latestObservedSurfaceFormat;
-    private long _observedP010FrameCount;
-    private long _observedNv12FrameCount;
-    private long _observedOtherFrameCount;
     private long _lastMfSourceReaderFramesDelivered;
     private long _lastMfSourceReaderFramesDropped;
     private string? _lastMfSourceReaderNegotiatedFormat;
@@ -169,6 +164,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     // stale results from an old device/session cannot overwrite the live state.
     private CancellationTokenSource? _telemetryPollCts;
     private Task? _telemetryPollTask;
+    private bool _sourceTelemetryPollingRequested;
     private long _telemetryPollGeneration;
     private long _sourceTelemetryEpoch;
     private long _captureSnapshotProducerEpoch;
@@ -355,10 +351,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _actualFrameRateArg = settings.RequestedFrameRateArg ?? settings.FrameRate.ToString("0.###");
             _actualPixelFormat = settings.RequestedPixelFormat ?? (settings.HdrEnabled ? "P010" : "NV12");
             _activeVideoInputPixelFormat = settings.HdrEnabled ? "p010le" : "nv12";
-            _lastUsePostMuxAudio = false;
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             ResetAvSyncDriftBaseline();
-            ResetObservedPixelTelemetry();
             ResetCachedMjpegTimingMetrics();
             _latestSourceTelemetry = BuildFallbackTelemetry();
             await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
@@ -371,10 +365,14 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     {
     }
 
-    internal CaptureService(IProcessSupervisor processSupervisor, ISourceSignalTelemetryProvider? sourceSignalTelemetryProvider = null)
+    internal CaptureService(
+        IProcessSupervisor processSupervisor,
+        ISourceSignalTelemetryProvider? sourceSignalTelemetryProvider = null,
+        Func<CancellationToken, Task>? rebuildRecordingSettingsBackendAsync = null)
     {
         _processSupervisor = processSupervisor;
         _sourceTelemetryProvider = sourceSignalTelemetryProvider ?? CreateDefaultTelemetryProvider();
+        _rebuildRecordingSettingsBackendAsync = rebuildRecordingSettingsBackendAsync ?? RebuildFlashbackPreviewBackendForSettingsChangeAsync;
     }
 
     private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()

@@ -512,7 +512,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return AutomationWindowAction.Restore;
         }
 
-        if (Enum.TryParse<AutomationWindowAction>(raw, ignoreCase: true, out var parsed))
+        if (Enum.TryParse<AutomationWindowAction>(raw, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
         {
             return parsed;
         }
@@ -527,7 +527,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             .Replace("_", string.Empty, StringComparison.Ordinal)
             .Trim();
 
-        if (Enum.TryParse<AutomationFlashbackAction>(normalized, ignoreCase: true, out var parsed))
+        if (Enum.TryParse<AutomationFlashbackAction>(normalized, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
         {
             return parsed;
         }
@@ -544,7 +544,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             return AutomationWaitCondition.PreviewFramesActive;
         }
 
-        if (Enum.TryParse<AutomationWaitCondition>(raw, ignoreCase: true, out var parsed))
+        if (Enum.TryParse<AutomationWaitCondition>(raw, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed))
         {
             return parsed;
         }

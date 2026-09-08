@@ -78,7 +78,7 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
             startupSession.LastFailureReason,
             startupSession.FirstVisualConfirmed,
             startupSignals.PositionEventCount);
-        var previewRuntimeEpoch = PreviewRuntimeSnapshotEpoch(signature);
+        var previewRuntimeEpoch = GetOrAdvancePreviewRuntimeSnapshotEpoch(signature);
         return PreviewRuntimeSnapshotController.Build(new PreviewRuntimeSnapshotInput
         {
             PreviewRuntimeEpoch = previewRuntimeEpoch,
@@ -112,7 +112,7 @@ internal sealed class PreviewRuntimeSnapshotSamplingController
         });
     }
 
-    private long PreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)
+    private long GetOrAdvancePreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)
     {
         lock (_previewRuntimeSnapshotEpochLock)
         {

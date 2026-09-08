@@ -10,7 +10,7 @@ using System.Threading.Channels;
 using FFmpeg.AutoGen;
 using Sussudio.Services.Runtime;
 
-namespace Sussudio.Services.Gpu;
+namespace Sussudio.Services.Capture.Mjpeg;
 
 // CPU-side MJPEG decode pipeline used when the source reader delivers
 // compressed MJPG samples. It parallelizes decode, restores source sequence

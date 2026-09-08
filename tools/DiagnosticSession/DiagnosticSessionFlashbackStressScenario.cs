@@ -27,7 +27,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackStress)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackStress)
         {
             backgroundTasks.AddScenario(
                 1,
@@ -41,7 +41,7 @@ internal static class DiagnosticSessionFlashbackStressScenario
             actions.Add("flashback stress started");
         }
 
-        if (scenarioPlan.RunFlashbackScrubStress)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackScrubStress)
         {
             backgroundTasks.AddScenario(
                 3,

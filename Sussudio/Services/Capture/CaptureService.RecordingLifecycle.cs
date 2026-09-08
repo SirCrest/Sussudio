@@ -236,7 +236,6 @@ public partial class CaptureService
             new RecordingContextRequest
             {
                 Settings = settings,
-                UsePostMuxAudio = false,
                 AudioDeviceName = audioDeviceName,
                 MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
                 EffectiveFrameRate = recordingFrameRate,
@@ -262,7 +261,6 @@ public partial class CaptureService
             new RecordingContextRequest
             {
                 Settings = settings,
-                UsePostMuxAudio = false,
                 AudioDeviceName = settings.AudioEnabled
                     ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice?.AudioDeviceName))
                     : null,
@@ -415,11 +413,9 @@ public partial class CaptureService
         _isRecording = true;
         _activeVideoInputPixelFormat = videoInputPixelFormat;
         Interlocked.Exchange(ref _videoFramesDropped, 0);
-        ResetObservedPixelTelemetry();
-        RecordObservedPixelFormat(rollback.RecordingContext.HdrPipelineActive ? "P010" : "NV12", incrementAsFrame: false);
         PublishRecordingStartedOutcome(rollback.RecordingContext);
-        _lastUsePostMuxAudio = rollback.RecordingContext.UsePostMuxAudio;
         _recordingStopwatch.Restart();
+        EnsureCaptureTelemetrySampling();
         StatusChanged?.Invoke(this, "Recording");
         rollback.LibAvSink = null;
         rollback.RecordingSink = null;
@@ -618,7 +614,6 @@ public partial class CaptureService
         _activeRecordingRecoveryJournalPath = RecordingFinalizationRecoveryArtifacts.BeginActive(
             recordingContext.FinalOutputPath,
             recordingContext.VideoOutputPath,
-            recordingContext.AudioTempPath,
             string.IsNullOrWhiteSpace(artifactDirectory)
                 ? Array.Empty<string>()
                 : new[] { artifactDirectory });
@@ -1882,7 +1877,7 @@ public partial class CaptureService
     {
         _recordingStopwatch.Stop();
         _isRecording = false;
-        if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
+        if (!_isVideoPreviewActive) await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
         _recordingBackend.ClearContextAndSettings();
         _mfConvertersDisabled = false;
     }

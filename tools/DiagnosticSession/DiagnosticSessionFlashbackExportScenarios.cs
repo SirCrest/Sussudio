@@ -162,7 +162,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendAsync,
         CancellationToken cancellationToken)
     {
-        if (!scenarioPlan.RunFlashbackExportPlayback)
+        if (scenarioPlan.Kind != DiagnosticSessionScenarioKind.FlashbackExportPlayback)
         {
             return;
         }
@@ -189,7 +189,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackRangeExport)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRangeExport)
         {
             backgroundTasks.AddScenario(
                 8,
@@ -203,7 +203,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             actions.Add("flashback range export started");
         }
 
-        if (scenarioPlan.RunFlashbackRangeExportAudioSwitch)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRangeExportAudioSwitch)
         {
             backgroundTasks.AddScenario(
                 9,
@@ -232,7 +232,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendRawWithConnectRetryAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackExportConcurrent)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportConcurrent)
         {
             backgroundTasks.AddScenario(
                 10,
@@ -246,7 +246,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             actions.Add("flashback concurrent export started");
         }
 
-        if (scenarioPlan.RunFlashbackDisableDuringExport)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackDisableDuringExport)
         {
             backgroundTasks.AddScenario(
                 11,
@@ -260,7 +260,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
             actions.Add("flashback disable during export started");
         }
 
-        if (scenarioPlan.RunFlashbackRotatedExport)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRotatedExport)
         {
             backgroundTasks.AddScenario(
                 12,
@@ -862,7 +862,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        if (scenarioPlan.RunFlashbackExportRejected)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackExportRejected)
         {
             await RunFlashbackExportRejectedAsync(
                     outputDirectory,
@@ -873,7 +873,7 @@ internal static class DiagnosticSessionFlashbackExportScenarios
                 .ConfigureAwait(false);
         }
 
-        if (scenarioPlan.RunFlashbackRecordingExportRejected)
+        if (scenarioPlan.Kind == DiagnosticSessionScenarioKind.FlashbackRecordingExportRejected)
         {
             await RunFlashbackRecordingExportRejectedAsync(
                     outputDirectory,

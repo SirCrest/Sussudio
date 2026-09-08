@@ -233,7 +233,7 @@ public partial class CaptureService
             _lastMfSourceReaderNegotiatedFormat);
         var recordingIntegrity = CaptureRuntimeRecordingIntegritySnapshotFields(
             ResolveRecordingIntegritySummary(unifiedVideoCapture, sink, _flashbackBackend.Sink));
-        var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
+        var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = GetAvSyncDrift();
         var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
         var recordingOutcome = CaptureRecordingOutcomeSnapshot();
 
@@ -1028,7 +1028,9 @@ public partial class CaptureService
                 SourceRxTxHdcpVersion = sourceTelemetry.SourceRxTxHdcpVersion,
                 SourceRawTimingHex = sourceTelemetry.SourceRawTimingHex,
                 RecordingBackend = fields.RecordingBackend,
-                AudioPathMode = requestedSettings?.AudioPathMode.ToString() ?? "None",
+                // Retained wire label; recording backends mux audio in process.
+                // It is no longer a selectable recording mode.
+                AudioPathMode = requestedSettings is null ? "None" : "PostMuxDefault",
                 MuxAttempted = false,
                 MuxSucceeded = null,
                 RecordingIntegrityStatus = recordingIntegrity.Status,
@@ -1339,18 +1341,19 @@ public partial class CaptureService
 
     private ObservedFrameSnapshotFields ResolveObservedFrameTelemetry()
     {
-        var expectedFormat = _recordingBackend.Context?.HdrPipelineActive == true ? "P010" : _recordingBackend.Context != null ? "NV12" : null;
-        var firstObserved = _firstObservedFramePixelFormat ?? expectedFormat;
-        var latestObserved = _latestObservedFramePixelFormat ?? expectedFormat;
-        var latestSurface = _latestObservedSurfaceFormat ?? latestObserved;
+        var observedFormat = _videoPipeline.Capture?.GetPixelFormatObservation()?.PixelFormat;
+        var isP010 = string.Equals(observedFormat, "P010", StringComparison.OrdinalIgnoreCase);
+        var isNv12 = string.Equals(observedFormat, "NV12", StringComparison.OrdinalIgnoreCase);
 
         return new ObservedFrameSnapshotFields(
-            FirstObservedFramePixelFormat: firstObserved,
-            LatestObservedFramePixelFormat: latestObserved,
-            LatestObservedSurfaceFormat: latestSurface,
-            ObservedP010FrameCount: Math.Max(0, Interlocked.Read(ref _observedP010FrameCount)),
-            ObservedNv12FrameCount: Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount)),
-            ObservedOtherFrameCount: Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount)),
+            FirstObservedFramePixelFormat: observedFormat,
+            LatestObservedFramePixelFormat: observedFormat,
+            LatestObservedSurfaceFormat: observedFormat,
+            // These wire counters retain the one-shot format-notification sample
+            // boundary. They do not count all source or decoded video frames.
+            ObservedP010FrameCount: isP010 ? 1 : 0,
+            ObservedNv12FrameCount: isNv12 ? 1 : 0,
+            ObservedOtherFrameCount: observedFormat != null && !isP010 && !isNv12 ? 1 : 0,
             ObservedP010BitDepthSampleCount: 0,
             ObservedP010Low2BitNonZeroPercent: 0,
             ObservedP010Likely8BitUpscaled: null);
@@ -1399,50 +1402,105 @@ public partial class CaptureService
 
     private void ResetAvSyncDriftBaseline()
     {
-        _avSyncBaselineDriftMs = double.NaN;
+        lock (_telemetryPollSync)
+        {
+            ResetAvSyncDriftState();
+        }
     }
 
-    private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()
+    private void ResetAvSyncDriftState()
     {
-        var unifiedVideoCapture = _videoPipeline.Capture;
-        var wasapiCapture = _previewAudioGraph.ProgramCapture;
-        if (unifiedVideoCapture == null || wasapiCapture == null)
+        _avSyncVideoCapture = null;
+        _avSyncAudioCapture = null;
+        _avSyncBaselineDriftMs = double.NaN;
+        _avSyncPrevDriftMs = 0;
+        _avSyncPrevDriftTick = 0;
+        _avSyncDriftRateMsPerSec = 0;
+        _avSyncLastVideoFrames = 0;
+        _avSyncLastAudioFrames = 0;
+        _avSyncFrameRate = 0;
+        Volatile.Write(ref _latestAvSyncDriftSample, null);
+    }
+
+    private (double? DriftMs, double? RateMsPerSec) GetAvSyncDrift()
+    {
+        var sample = Volatile.Read(ref _latestAvSyncDriftSample);
+        if (sample == null ||
+            !ReferenceEquals(sample.VideoCapture, _videoPipeline.Capture) ||
+            !ReferenceEquals(sample.AudioCapture, _previewAudioGraph.ProgramCapture))
         {
             return (null, null);
         }
 
-        var videoFrames = unifiedVideoCapture.VideoFramesArrived;
-        var audioFrames = wasapiCapture.AudioFramesArrived;
-        var negotiatedFps = unifiedVideoCapture.Fps;
+        return (sample.DriftMs, sample.RateMsPerSec);
+    }
 
-        if (videoFrames <= 0 || audioFrames <= 0 || negotiatedFps <= 0)
+    // The capture-owned worker is the only sampler. Snapshot readers never
+    // select the baseline or advance its five-second derivative window.
+    private bool SampleAvSyncDrift(long pollGeneration, long nowTick)
+    {
+        lock (_telemetryPollSync)
         {
-            return (null, null);
+            if (pollGeneration != Volatile.Read(ref _telemetryPollGeneration))
+            {
+                return false;
+            }
+
+            var videoCapture = _videoPipeline.Capture;
+            var audioCapture = _previewAudioGraph.ProgramCapture;
+            var videoFrames = videoCapture?.VideoFramesArrived ?? 0;
+            var audioFrames = audioCapture?.AudioFramesArrived ?? 0;
+            var frameRate = videoCapture?.Fps ?? 0;
+            var samplingNeeded = videoCapture != null || _sourceTelemetryPollingRequested;
+
+            if (videoCapture == null || audioCapture == null ||
+                videoFrames <= 0 || audioFrames <= 0 ||
+                !double.IsFinite(frameRate) || frameRate <= 0)
+            {
+                ResetAvSyncDriftState();
+                if (!samplingNeeded)
+                {
+                    // Retire under the same lock used by starts. A new demand
+                    // must see a canceled worker even before this task exits.
+                    StopTelemetryPollLocked();
+                }
+                return samplingNeeded;
+            }
+
+            if (!ReferenceEquals(_avSyncVideoCapture, videoCapture) ||
+                !ReferenceEquals(_avSyncAudioCapture, audioCapture) ||
+                videoFrames < _avSyncLastVideoFrames || audioFrames < _avSyncLastAudioFrames ||
+                frameRate != _avSyncFrameRate || nowTick < _avSyncPrevDriftTick)
+            {
+                ResetAvSyncDriftState();
+            }
+
+            _avSyncVideoCapture = videoCapture;
+            _avSyncAudioCapture = audioCapture;
+            _avSyncLastVideoFrames = videoFrames;
+            _avSyncLastAudioFrames = audioFrames;
+            _avSyncFrameRate = frameRate;
+
+            var rawDriftMs = (audioFrames / 48000.0 - videoFrames / frameRate) * 1000.0;
+            if (double.IsNaN(_avSyncBaselineDriftMs))
+            {
+                _avSyncBaselineDriftMs = rawDriftMs;
+                _avSyncPrevDriftTick = nowTick;
+            }
+
+            var correctedDrift = rawDriftMs - _avSyncBaselineDriftMs;
+            var elapsedMs = nowTick - _avSyncPrevDriftTick;
+            if (elapsedMs >= 5000)
+            {
+                _avSyncDriftRateMsPerSec = (correctedDrift - _avSyncPrevDriftMs) / (elapsedMs / 1000.0);
+                _avSyncPrevDriftMs = correctedDrift;
+                _avSyncPrevDriftTick = nowTick;
+            }
+
+            Volatile.Write(ref _latestAvSyncDriftSample,
+                new CaptureAvSyncDriftSample(videoCapture, audioCapture, correctedDrift, _avSyncDriftRateMsPerSec));
+            return samplingNeeded;
         }
-
-        var rawDriftMs = (audioFrames / 48000.0 - videoFrames / negotiatedFps) * 1000.0;
-
-        if (double.IsNaN(_avSyncBaselineDriftMs))
-        {
-            _avSyncBaselineDriftMs = rawDriftMs;
-            _avSyncPrevDriftMs = 0.0;
-            _avSyncPrevDriftTick = Environment.TickCount64;
-            return (0.0, 0.0);
-        }
-
-        var correctedDrift = rawDriftMs - _avSyncBaselineDriftMs;
-        var now = Environment.TickCount64;
-        var elapsedMs = now - _avSyncPrevDriftTick;
-
-        if (elapsedMs >= 5000)
-        {
-            var elapsedSec = elapsedMs / 1000.0;
-            _avSyncDriftRateMsPerSec = (correctedDrift - _avSyncPrevDriftMs) / elapsedSec;
-            _avSyncPrevDriftMs = correctedDrift;
-            _avSyncPrevDriftTick = now;
-        }
-
-        return (correctedDrift, _avSyncDriftRateMsPerSec);
     }
 
     private (double? EncoderDriftMs, long? EncoderCorrectionSamples) GetEncoderAvSyncDrift()
@@ -1458,7 +1516,7 @@ public partial class CaptureService
 
     private AvSyncHealthSnapshotFields CaptureAvSyncHealthSnapshotFields()
     {
-        var (captureDriftMs, captureDriftRateMsPerSec) = ComputeAvSyncDrift();
+        var (captureDriftMs, captureDriftRateMsPerSec) = GetAvSyncDrift();
         var (encoderDriftMs, encoderCorrectionSamples) = GetEncoderAvSyncDrift();
 
         return new AvSyncHealthSnapshotFields(
@@ -1472,6 +1530,18 @@ public partial class CaptureService
     private double _avSyncPrevDriftMs;
     private long _avSyncPrevDriftTick;
     private double _avSyncDriftRateMsPerSec;
+    private long _avSyncLastVideoFrames;
+    private long _avSyncLastAudioFrames;
+    private double _avSyncFrameRate;
+    private UnifiedVideoCapture? _avSyncVideoCapture;
+    private WasapiAudioCapture? _avSyncAudioCapture;
+    private CaptureAvSyncDriftSample? _latestAvSyncDriftSample;
+
+    private sealed record CaptureAvSyncDriftSample(
+        UnifiedVideoCapture VideoCapture,
+        WasapiAudioCapture AudioCapture,
+        double DriftMs,
+        double RateMsPerSec);
 
     private readonly record struct ObservedFrameSnapshotFields(
         string? FirstObservedFramePixelFormat,
@@ -1495,9 +1565,16 @@ public partial class CaptureService
     private Task RefreshSourceTelemetryAsync(CancellationToken cancellationToken)
         => RefreshSourceTelemetryAsync(cancellationToken, Volatile.Read(ref _telemetryPollGeneration));
 
-    private async Task RefreshSourceTelemetryAsync(CancellationToken cancellationToken, long pollGeneration)
+    private async Task RefreshSourceTelemetryAsync(
+        CancellationToken cancellationToken,
+        long pollGeneration,
+        bool requirePollingDemand = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (requirePollingDemand && !Volatile.Read(ref _sourceTelemetryPollingRequested))
+        {
+            return;
+        }
 
         var fallback = BuildFallbackTelemetry();
         SourceSignalTelemetrySnapshot telemetry;
@@ -1518,7 +1595,8 @@ public partial class CaptureService
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        if (pollGeneration != Volatile.Read(ref _telemetryPollGeneration))
+        if (pollGeneration != Volatile.Read(ref _telemetryPollGeneration) ||
+            (requirePollingDemand && !Volatile.Read(ref _sourceTelemetryPollingRequested)))
         {
             return;
         }
@@ -1589,71 +1667,6 @@ public partial class CaptureService
                 ? fallback.DiagnosticSummary
                 : telemetry.DiagnosticSummary
         };
-    }
-
-    private void ResetObservedPixelTelemetry()
-    {
-        _firstObservedFramePixelFormat = null;
-        _latestObservedFramePixelFormat = null;
-        _latestObservedSurfaceFormat = null;
-        Interlocked.Exchange(ref _observedP010FrameCount, 0);
-        Interlocked.Exchange(ref _observedNv12FrameCount, 0);
-        Interlocked.Exchange(ref _observedOtherFrameCount, 0);
-    }
-
-    private static string? NormalizeObservedPixelFormat(string? pixelFormat)
-    {
-        if (string.IsNullOrWhiteSpace(pixelFormat))
-        {
-            return null;
-        }
-
-        if (pixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase))
-        {
-            return "P010";
-        }
-
-        if (pixelFormat.Contains("NV12", StringComparison.OrdinalIgnoreCase))
-        {
-            return "NV12";
-        }
-
-        return pixelFormat.Trim().ToUpperInvariant();
-    }
-
-    private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)
-    {
-        var normalizedFormat = NormalizeObservedPixelFormat(pixelFormat);
-        if (string.IsNullOrWhiteSpace(normalizedFormat))
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_firstObservedFramePixelFormat))
-        {
-            _firstObservedFramePixelFormat = normalizedFormat;
-        }
-
-        _latestObservedFramePixelFormat = normalizedFormat;
-        _latestObservedSurfaceFormat = normalizedFormat;
-
-        if (!incrementAsFrame)
-        {
-            return;
-        }
-
-        if (string.Equals(normalizedFormat, "P010", StringComparison.OrdinalIgnoreCase))
-        {
-            Interlocked.Increment(ref _observedP010FrameCount);
-        }
-        else if (string.Equals(normalizedFormat, "NV12", StringComparison.OrdinalIgnoreCase))
-        {
-            Interlocked.Increment(ref _observedNv12FrameCount);
-        }
-        else
-        {
-            Interlocked.Increment(ref _observedOtherFrameCount);
-        }
     }
 
     private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)
@@ -1809,47 +1822,71 @@ public partial class CaptureService
     {
         lock (_telemetryPollSync)
         {
-            var previousTask = _telemetryPollTask;
-            StopTelemetryPollLocked();
-            if (previousTask != null && !previousTask.IsCompleted)
-            {
-                var deferredGeneration = Volatile.Read(ref _telemetryPollGeneration);
-                Logger.Log("Telemetry poll start deferred until canceled poll exits");
-                _telemetryPollTask = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await previousTask.ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Expected while draining a canceled poll.
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"Telemetry poll drain failed before restart: {ex.Message}");
-                    }
-
-                    lock (_telemetryPollSync)
-                    {
-                        if (deferredGeneration == Volatile.Read(ref _telemetryPollGeneration))
-                        {
-                            StartTelemetryPollCoreLocked();
-                        }
-                    }
-                });
-                return;
-            }
-
-            StartTelemetryPollCoreLocked();
+            Volatile.Write(ref _sourceTelemetryPollingRequested, true);
+            EnsureTelemetryPollStartedLocked();
         }
+    }
+
+    private void EnsureCaptureTelemetrySampling()
+    {
+        lock (_telemetryPollSync)
+        {
+            if (_videoPipeline.Capture != null)
+            {
+                EnsureTelemetryPollStartedLocked();
+            }
+        }
+    }
+
+    private void EnsureTelemetryPollStartedLocked()
+    {
+        if (_telemetryPollCts is { IsCancellationRequested: false } &&
+            _telemetryPollTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        var previousTask = _telemetryPollTask;
+        StopTelemetryPollLocked();
+        if (previousTask != null && !previousTask.IsCompleted)
+        {
+            var deferredGeneration = Volatile.Read(ref _telemetryPollGeneration);
+            Logger.Log("Telemetry poll start deferred until canceled poll exits");
+            _telemetryPollTask = Task.Run(async () =>
+            {
+                try
+                {
+                    await previousTask.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected while draining a canceled poll.
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Telemetry poll drain failed before restart: {ex.Message}");
+                }
+
+                lock (_telemetryPollSync)
+                {
+                    if (deferredGeneration == Volatile.Read(ref _telemetryPollGeneration) &&
+                        (_sourceTelemetryPollingRequested || _videoPipeline.Capture != null))
+                    {
+                        StartTelemetryPollCoreLocked();
+                    }
+                }
+            });
+            return;
+        }
+
+        StartTelemetryPollCoreLocked();
     }
 
     private void StartTelemetryPollCore()
     {
         lock (_telemetryPollSync)
         {
-            StartTelemetryPollCoreLocked();
+            EnsureTelemetryPollStartedLocked();
         }
     }
 
@@ -1865,7 +1902,15 @@ public partial class CaptureService
                 try
                 {
                     await Task.Delay(TelemetryPollIntervalMs, cts.Token).ConfigureAwait(false);
-                    await RefreshSourceTelemetryAsync(cts.Token, generation).ConfigureAwait(false);
+                    if (!SampleAvSyncDrift(generation, Environment.TickCount64))
+                    {
+                        break;
+                    }
+
+                    if (Volatile.Read(ref _sourceTelemetryPollingRequested))
+                    {
+                        await RefreshSourceTelemetryAsync(cts.Token, generation, requirePollingDemand: true).ConfigureAwait(false);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -1883,6 +1928,7 @@ public partial class CaptureService
     {
         lock (_telemetryPollSync)
         {
+            Volatile.Write(ref _sourceTelemetryPollingRequested, false);
             StopTelemetryPollLocked();
         }
     }
@@ -1902,14 +1948,38 @@ public partial class CaptureService
         // risking ObjectDisposedException in the poll loop's Task.Delay.
     }
 
-    private async Task StopTelemetryPollAsync()
+    private Task StopSourceTelemetryPollingAsync()
     {
         Task? task;
         lock (_telemetryPollSync)
         {
+            Volatile.Write(ref _sourceTelemetryPollingRequested, false);
+            task = _telemetryPollTask;
+            StopTelemetryPollLocked();
+            if (_videoPipeline.Capture != null)
+            {
+                EnsureTelemetryPollStartedLocked();
+            }
+        }
+
+        return DrainTelemetryPollTaskAsync(task);
+    }
+
+    private Task StopTelemetryPollAsync()
+    {
+        Task? task;
+        lock (_telemetryPollSync)
+        {
+            Volatile.Write(ref _sourceTelemetryPollingRequested, false);
             task = _telemetryPollTask;
             StopTelemetryPollLocked();
         }
+
+        return DrainTelemetryPollTaskAsync(task);
+    }
+
+    private async Task DrainTelemetryPollTaskAsync(Task? task)
+    {
         if (task == null || task.IsCompleted)
         {
             return;
