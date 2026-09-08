@@ -541,7 +541,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 return null;
             }
 
-            var index = GetNextPreviewFrameIndex(Stopwatch.GetTimestamp(), allowDeadlineSkip: true);
+            var index = SelectNextPreviewFrameIndexWithDeadlineRecovery(Stopwatch.GetTimestamp(), allowDeadlineSkip: true);
             if (index < 0)
             {
                 missReason = DequeueMissReason.WaitingForSequence;
@@ -612,7 +612,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         return frame;
     }
 
-    private int GetNextPreviewFrameIndex(long nowTick, bool allowDeadlineSkip)
+    private int SelectNextPreviewFrameIndexWithDeadlineRecovery(long nowTick, bool allowDeadlineSkip)
     {
         if (_frames.Count == 0)
         {

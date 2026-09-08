@@ -30,7 +30,7 @@ internal sealed class MainViewModelCaptureSettingsAutomationControllerContext
     public required Func<MediaFormat?> GetSelectedFormat { get; init; }
     public required Func<MainViewModelCaptureSelectionSnapshot> CaptureSelectionSnapshot { get; init; }
     public required Func<MainViewModelCaptureSelectionSnapshot, MainViewModelCaptureSelectionSnapshot, bool> RestoreCaptureSelectionSnapshotIfUnchanged { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Func<string, Task<bool>> ReinitializeDeviceWithResultAsync { get; init; }
 }
 
@@ -162,15 +162,7 @@ internal sealed class MainViewModelCaptureSettingsAutomationController
             {
                 var wasPreviewing = _context.IsPreviewing() && _context.IsInitialized() && _context.GetSelectedDevice() != null;
                 rollback = _context.CaptureSelectionSnapshot();
-                _context.SetSuppressFormatChangeReinitialize(true);
-                try
-                {
-                    apply();
-                }
-                finally
-                {
-                    _context.SetSuppressFormatChangeReinitialize(false);
-                }
+                _context.ApplyCaptureSelectionWithoutReinitialize(apply);
 
                 attempted = _context.CaptureSelectionSnapshot();
                 return wasPreviewing && _context.GetSelectedFormat() != null;

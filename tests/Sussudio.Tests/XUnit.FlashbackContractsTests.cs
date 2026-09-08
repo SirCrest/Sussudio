@@ -3462,31 +3462,11 @@ static partial class Program
         AssertContains(sourceText, "private void PrimePlaybackAudioBuffer(");
         AssertContains(sourceText, "ChannelReader<PlaybackCommand> commandChannel,");
         AssertContains(sourceText, "TimeSpan resumeTarget,");
-        AssertContains(sourceText, "while (decodedFrames < PlaybackAudioPrebufferDecodeFrameBudget)");
-        AssertContains(sourceText, "if (commandChannel.TryPeek(out var pendingCommand))");
-        AssertContains(sourceText, "command_pending={commandPending} pending_command={pendingCommandKind}");
-        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"audio_prebuffer_{operation}\");");
-        AssertContains(sourceText, "released_frames={prebufferReleasedFrames}");
-        // Borrowed CPU data cannot remain queued across repeated decode calls.
-        // Priming beyond one frame must use the bounded rewind path.
-        AssertContains(sourceText, "private const int PlaybackAudioPrebufferMaxHeldFrames = 1;");
-        AssertContains(sourceText, "prebufferedFrames.Count < PlaybackAudioPrebufferMaxHeldFrames)");
-        AssertContains(sourceText, "prebufferedFrames.Enqueue(frame);");
-        AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"prebuffer_cap_{operation}\");");
-        AssertContains(sourceText, "if (releasedAnyFrame && decodedFrames > 0)");
-        AssertContains(sourceText, "cancellationToken.WaitHandle.WaitOne(waitMs)");
-        AssertContains(sourceText, "bufferedMs > PlaybackAudioPrebufferDiscardThresholdMs");
-        AssertContains(sourceText, "prebufferAudioGateTicks = Interlocked.Read(ref _lastAudioPtsTicks);");
-        AssertContains(sourceText, "prebufferAudioGateTicks = 0;\n            discarded = true;");
-        AssertContains(sourceText, "rewound = TryRewindPlaybackAudioPrebuffer(decoder, ref fileOpen, resumeTarget, operation, prebufferAudioGateTicks, cancellationToken);");
+        // Frame retention/release, rewind, audio limits, and interruption are
+        // exercised against the production controller in FlashbackPrebufferBehaviorTests.
         AssertContains(sourceText, "private bool TryRewindPlaybackAudioPrebuffer(");
         AssertContains(sourceText, "TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, resumeTarget, $\"prebuffer_discard_{operation}\", cancellationToken)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_PREBUFFER_REWIND operation={operation}");
-        AssertContains(sourceText, "audio_gate_ms={(long)TimeSpan.FromTicks(Math.Max(0, prebufferAudioGateTicks)).TotalMilliseconds}");
-        AssertContains(sourceText, "ClearPrebufferedFrames(prebufferedFrames, $\"prebuffer_discard_{operation}\");");
-        AssertContains(sourceText, "eof_retries={eofRetries}");
-        AssertContains(sourceText, "rewound={rewound}");
-        AssertDoesNotContain(sourceText, "if ((reachedEnd && decodedFrames > 0) ||");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_PREBUFFER operation={operation}");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"seek_resume\")");
         AssertContains(sourceText, "SafeResumePlaybackRendering(\"end_scrub_resume\")");

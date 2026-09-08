@@ -1758,7 +1758,7 @@ public readonly record struct PresentCadenceMetrics(
     {
         lock (_presentCadenceLock)
         {
-            return CopyRecentRing(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
+            return RingBufferHelpers.Copy(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
         }
     }
 
@@ -1792,7 +1792,7 @@ public readonly record struct PresentCadenceMetrics(
                 return default;
             }
 
-            var samples = CopyRecentRing(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
+            var samples = RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
             var timing = SummarizeCpuStageTiming(samples);
             return new PipelineLatencyMetrics(
                 timing.SampleCount,
@@ -1807,7 +1807,7 @@ public readonly record struct PresentCadenceMetrics(
     {
         lock (_pipelineLatencyLock)
         {
-            return CopyRecentRing(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, maxSamples);
+            return RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, maxSamples);
         }
     }
 
@@ -1819,10 +1819,10 @@ public readonly record struct PresentCadenceMetrics(
         double[] totalSamples;
         lock (_renderCpuTimingLock)
         {
-            uploadSamples = CopyRecentRing(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            renderSamples = CopyRecentRing(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            presentSamples = CopyRecentRing(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            totalSamples = CopyRecentRing(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            uploadSamples = RingBufferHelpers.Copy(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            renderSamples = RingBufferHelpers.Copy(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            presentSamples = RingBufferHelpers.Copy(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            totalSamples = RingBufferHelpers.Copy(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
         }
 
         return new RenderCpuTimingMetrics(
@@ -1837,7 +1837,7 @@ public readonly record struct PresentCadenceMetrics(
         CpuStageTimingMetrics timing;
         lock (_frameLatencyWaitTimingLock)
         {
-            timing = SummarizeCpuStageTiming(CopyRecentRing(
+            timing = SummarizeCpuStageTiming(RingBufferHelpers.Copy(
                 _frameLatencyWaitTimingWindowMs,
                 _frameLatencyWaitTimingCount,
                 _frameLatencyWaitTimingIndex,
@@ -2563,24 +2563,6 @@ public readonly record struct PresentCadenceMetrics(
         }
 
         reason = reason.Length == 0 ? token : $"{reason}+{token}";
-    }
-
-    private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)
-    {
-        var take = Math.Min(Math.Max(0, maxSamples), count);
-        if (take <= 0)
-        {
-            return Array.Empty<double>();
-        }
-
-        var result = new double[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
-        return result;
     }
 
     private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)

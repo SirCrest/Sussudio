@@ -299,7 +299,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();
 
     private static string MapCodecName(RecordingFormat format)
-        => MediaFormat.MapNvencCodecName(format);
+        => EncoderSupport.MapNvencCodecName(format);
 
     private static (int? Numerator, int? Denominator) ResolveFrameRateParts(RecordingContext context)
     {

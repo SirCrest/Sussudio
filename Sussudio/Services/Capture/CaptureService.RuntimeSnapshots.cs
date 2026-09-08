@@ -1290,7 +1290,7 @@ public partial class CaptureService
     }
 
     private static string? ResolveEncoderCodecName(CaptureSettings? settings)
-        => settings == null ? null : MediaFormat.MapNvencCodecName(settings.Format);
+        => settings == null ? null : EncoderSupport.MapNvencCodecName(settings.Format);
 
     private static string? ResolveEncoderOutputPixelFormat(RecordingContext? context, CaptureSettings? settings)
     {

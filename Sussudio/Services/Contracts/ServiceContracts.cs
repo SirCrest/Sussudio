@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -527,13 +528,13 @@ namespace Sussudio.Services.Contracts
         {
             if (TryAddLease(out var lease))
             {
-                return lease!;
+                return lease;
             }
 
             throw new ObjectDisposedException(nameof(PooledVideoFrame));
         }
 
-        public bool TryAddLease(out PooledVideoFrameLease? lease)
+        public bool TryAddLease([NotNullWhen(true)] out PooledVideoFrameLease? lease)
         {
             lock (_leaseSync)
             {

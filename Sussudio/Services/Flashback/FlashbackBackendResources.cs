@@ -53,6 +53,12 @@ internal readonly record struct FlashbackBufferCyclePlaybackState(
     TimeSpan? InPointFilePts,
     TimeSpan? OutPointFilePts);
 
+internal readonly record struct FlashbackPlaybackStateChange(
+    long BackendGeneration,
+    FlashbackPlaybackState OldState,
+    FlashbackPlaybackState NewState,
+    string Reason);
+
 internal readonly record struct FlashbackPreviewBackendDisposalRequest(
     UnifiedVideoCapture? VideoCapture,
     WasapiAudioCapture? AudioCapture,
@@ -92,13 +98,84 @@ internal readonly record struct FlashbackPreviewBackendStartRequest(
 /// </summary>
 internal sealed class FlashbackBackendResources
 {
+    private FlashbackPlaybackController? _playbackController;
+    private FlashbackPlaybackController? _preWarmedPlaybackController;
+    private Action<FlashbackPlaybackState, FlashbackPlaybackState, string>? _playbackStateChangedHandler;
+    private long _playbackControllerGeneration;
+
     public FlashbackBufferManager? BufferManager { get; set; }
 
     public FlashbackEncoderSink? Sink { get; set; }
 
     public FlashbackExporter? Exporter { get; set; }
 
-    public FlashbackPlaybackController? PlaybackController { get; set; }
+    public FlashbackPlaybackController? PlaybackController
+    {
+        get => Volatile.Read(ref _playbackController);
+        set => ReplacePlaybackController(value);
+    }
+
+    public event Action<FlashbackPlaybackStateChange>? PlaybackStateChanged;
+
+    public bool IsCurrentPlaybackStateChange(FlashbackPlaybackStateChange change)
+        => change.BackendGeneration == Interlocked.Read(ref _playbackControllerGeneration) &&
+           PlaybackController is { IsDisposed: false };
+
+    private void ReplacePlaybackController(FlashbackPlaybackController? controller)
+    {
+        var previous = PlaybackController;
+        if (ReferenceEquals(previous, controller))
+        {
+            return;
+        }
+
+        // Resource replacement is serialized by CaptureService. Invalidate queued
+        // notifications before detaching the old playback-thread callback.
+        var generation = Interlocked.Increment(ref _playbackControllerGeneration);
+        if (previous != null && _playbackStateChangedHandler != null)
+        {
+            previous.StateChanged -= _playbackStateChangedHandler;
+        }
+
+        Volatile.Write(ref _playbackController, controller);
+        Volatile.Write(ref _preWarmedPlaybackController, null);
+        _playbackStateChangedHandler = null;
+        if (controller == null)
+        {
+            return;
+        }
+
+        _playbackStateChangedHandler = (oldState, newState, reason) =>
+        {
+            var change = new FlashbackPlaybackStateChange(generation, oldState, newState, reason);
+            if (IsCurrentPlaybackStateChange(change))
+            {
+                PlaybackStateChanged?.Invoke(change);
+            }
+        };
+        controller.StateChanged += _playbackStateChangedHandler;
+    }
+
+    public void PreWarmPlayback()
+    {
+        var controller = PlaybackController;
+        if (controller == null || controller.IsDisposed || !controller.IsInitialized)
+        {
+            return;
+        }
+
+        var previous = Volatile.Read(ref _preWarmedPlaybackController);
+        if (ReferenceEquals(previous, controller) ||
+            !ReferenceEquals(Interlocked.CompareExchange(ref _preWarmedPlaybackController, controller, previous), previous) ||
+            !ReferenceEquals(controller, PlaybackController))
+        {
+            return;
+        }
+
+        // PreWarm remains presentation-driven and starts no decode commands.
+        // The controller owns its thread-start synchronization and disposal gate.
+        controller.PreWarm();
+    }
 
     public CaptureSettings? SettingsSnapshot { get; set; }
 

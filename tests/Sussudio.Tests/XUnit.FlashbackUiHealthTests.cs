@@ -7,9 +7,9 @@ using Xunit;
 namespace Sussudio.Tests;
 
 /// <summary>
-/// Source-contract tests for UI health surfacing (Task 5 of the 2026-07-08
-/// flashback bulletproofing plan): the involuntary snap-to-live notice, the
-/// dead-backend banner, and the pre-warm hook relocated from Task 6.
+/// Ownership checks for the runtime health subscription, message presentation,
+/// and presentation-driven prewarm request. Backend lifetimes execute in
+/// FlashbackHealthLifetimeTests.
 /// </summary>
 public sealed class FlashbackUiHealthTests
 {
@@ -57,9 +57,13 @@ public sealed class FlashbackUiHealthTests
     {
         var source = ViewModelSource();
         var method = global::Program.ExtractDeclaredMemberCode(source, "private void OnFlashbackPlaybackStateChanged(");
-        Assert.Contains("FlashbackVoluntaryLiveReasons.Contains(reason)", method);
+        Assert.Contains("FlashbackVoluntaryLiveReasons.Contains(change.Reason)", method);
         Assert.Contains("_dispatcherQueue.TryEnqueue(", method);
         Assert.Contains("FlashbackSnapToLiveHealthMessage", method);
+        Assert.True(method.IndexOf("IsCurrentFlashbackPlaybackStateChange(change)", StringComparison.Ordinal) >
+            method.IndexOf("_dispatcherQueue.TryEnqueue(", StringComparison.Ordinal));
+        Assert.Contains("Volatile.Read(ref _disposeState) != 0", method);
+        Assert.Contains("FlashbackHealthMessage == FlashbackDeadBackendHealthMessage", method);
     }
 
     [Fact]
@@ -75,54 +79,77 @@ public sealed class FlashbackUiHealthTests
     }
 
     [Fact]
-    public void UpdateFlashbackBufferStatus_ResubscribesOnControllerInstanceChange()
+    public void RuntimeIngressOwnsStablePlaybackSubscription_OutsideTimelinePolling()
     {
         var source = ViewModelSource();
         var pollMethod = global::Program.ExtractDeclaredMemberCode(source, "public void UpdateFlashbackBufferStatus()");
-        Assert.Contains("RefreshFlashbackStateChangedSubscription();", pollMethod);
-        Assert.Contains("DetachFlashbackStateChangedSubscription();", pollMethod);
+        Assert.DoesNotContain("StateChanged", pollMethod);
+        Assert.DoesNotContain("FlashbackPlaybackControllerInstance", source);
+        Assert.DoesNotContain("_flashbackHealthSubscribedController", source);
 
-        var refreshMethod = global::Program.ExtractDeclaredMemberCode(source, "private void RefreshFlashbackStateChangedSubscription()");
-        // Must cache the last-seen instance, unsubscribe from the stale one,
-        // and subscribe to the new one — the controller is rebuilt on every
-        // backend cycle (FlashbackBackendResources.CycleSinkOnlyAsync).
-        Assert.Contains("ReferenceEquals(current, _flashbackHealthSubscribedController)", refreshMethod);
-        Assert.Contains("_flashbackHealthSubscribedController.StateChanged -= OnFlashbackPlaybackStateChanged;", refreshMethod);
-        Assert.Contains("current.StateChanged += OnFlashbackPlaybackStateChanged;", refreshMethod);
+        var lifecycle = RuntimeContractSource.ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs");
+        var attach = global::Program.ExtractDeclaredMemberCode(lifecycle, "public void Attach()");
+        var detach = global::Program.ExtractDeclaredMemberCode(lifecycle, "public void Detach()");
+        Assert.Contains("_context.AttachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);", attach);
+        Assert.Contains("_context.DetachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);", detach);
     }
 
     [Fact]
-    public void UpdateFlashbackBufferStatus_SetsPersistentDeadBackendBanner_WhenEnabledButInactive()
+    public void ExistingRuntimeTimerRefreshesHealth_EvenWithoutPreviewOrTimeline()
     {
         var source = ViewModelSource();
-        var pollMethod = global::Program.ExtractDeclaredMemberCode(source, "public void UpdateFlashbackBufferStatus()");
-        // The dead-backend branch lives inside the `!bufferStatus.IsActive` guard
-        // and is gated on the enabled toggle so a user-initiated disable doesn't
-        // read as a failure.
-        Assert.Contains("if (IsFlashbackEnabled)", pollMethod);
-        Assert.Contains("FlashbackHealthMessage = FlashbackDeadBackendHealthMessage;", pollMethod);
+        var healthMethod = global::Program.ExtractDeclaredMemberCode(source, "private void UpdateFlashbackHealthStatus()");
+        Assert.Contains("IsFlashbackEnabled && !_sessionCoordinator.IsFlashbackActive", healthMethod);
+        Assert.Contains("FlashbackHealthMessage = FlashbackDeadBackendHealthMessage;", healthMethod);
+        Assert.DoesNotContain("IsFlashbackTimelineVisible", healthMethod);
+
+        var lifecycle = RuntimeContractSource.ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs");
+        var timer = global::Program.ExtractDeclaredMemberCode(lifecycle, "private void SetupTimer()");
+        Assert.True(timer.IndexOf("_context.UpdateFlashbackHealthStatus();", StringComparison.Ordinal) >= 0);
+        Assert.True(timer.IndexOf("_context.UpdateFlashbackHealthStatus();", StringComparison.Ordinal) <
+            timer.IndexOf("if (_context.IsRecording())", StringComparison.Ordinal));
+        Assert.Contains("_context.UpdateFlashbackHealthStatus();",
+            global::Program.ExtractDeclaredMemberCode(lifecycle, "public void InitializePresentation()"));
+        Assert.Contains("_context.StopFlashbackHealthPresentation();",
+            global::Program.ExtractDeclaredMemberCode(lifecycle, "public void StopForDispose()"));
     }
 
     [Fact]
-    public void PreWarmFlashbackPlayback_IsCalledOncePerInstance_FromStartStatusPolling()
+    public void PreWarmRequestRemainsPresentationDriven_WithBackendOwnedReadiness()
     {
         var uiSource = UiControllersSource();
         var startPolling = global::Program.ExtractDeclaredMemberCode(uiSource, "public void StartStatusPolling()");
         Assert.Contains("_context.ViewModel.PreWarmFlashbackPlayback();", startPolling);
 
         var vmSource = ViewModelSource();
-        var preWarmMethod = global::Program.ExtractDeclaredMemberCode(vmSource, "public void PreWarmFlashbackPlayback()");
-        // Guard: no-op on missing/disposed/uninitialized controller or one already
-        // pre-warmed. The IsInitialized gate is load-bearing: PreWarm() no-ops
-        // silently before Initialize(), so latching early would consume the one
-        // warm-up this instance gets.
-        Assert.Contains("controller == null || controller.IsDisposed || !controller.IsInitialized ||", preWarmMethod);
-        Assert.Contains("ReferenceEquals(controller, _flashbackPreWarmedController)", preWarmMethod);
+        Assert.Contains("public void PreWarmFlashbackPlayback() => _sessionCoordinator.PreWarmFlashbackPlayback();", vmSource);
+        Assert.DoesNotContain("_flashbackPreWarmedController", vmSource);
+
+        var backend = RuntimeContractSource.ReadRepoFile("Sussudio/Services/Flashback/FlashbackBackendResources.cs");
+        var preWarmMethod = global::Program.ExtractDeclaredMemberCode(backend, "public void PreWarmPlayback()");
+        Assert.Contains("controller == null || controller.IsDisposed || !controller.IsInitialized", preWarmMethod);
         Assert.Contains("controller.PreWarm();", preWarmMethod);
 
         // The poll must re-attempt: polling starts before the controller is
         // initialized, and the controller is rebuilt on backend cycles.
         var pollMethod = global::Program.ExtractDeclaredMemberCode(vmSource, "public void UpdateFlashbackBufferStatus()");
         Assert.Contains("PreWarmFlashbackPlayback();", pollMethod);
+    }
+
+    [Fact]
+    public void HealthTimerTeardownReturnsToDispatcherOwner_AndSchedulingHonorsDisposal()
+    {
+        var source = ViewModelSource();
+        var stop = global::Program.ExtractDeclaredMemberCode(source, "private void StopFlashbackHealthPresentation()");
+        Assert.Contains("if (!_dispatcherQueue.HasThreadAccess)", stop);
+        Assert.Contains("_dispatcherQueue.TryEnqueue(StopFlashbackHealthPresentation)", stop);
+        Assert.True(stop.IndexOf("return;", StringComparison.Ordinal) <
+            stop.IndexOf("_flashbackHealthClearTimer = null;", StringComparison.Ordinal));
+        Assert.Contains("var timer = _flashbackHealthClearTimer;", stop);
+        Assert.Contains("timer.Tick -= FlashbackHealthClearTimer_Tick;", stop);
+
+        var schedule = global::Program.ExtractDeclaredMemberCode(source, "private void ScheduleFlashbackHealthMessageClear()");
+        Assert.Contains("Volatile.Read(ref _disposeState) != 0", schedule);
+        Assert.Contains("var timer = _flashbackHealthClearTimer ??= _dispatcherQueue.CreateTimer();", schedule);
     }
 }

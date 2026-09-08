@@ -55,6 +55,7 @@ public class DeviceService
     private readonly SemaphoreSlim _formatProbeGate = new(FormatProbeConcurrency, FormatProbeConcurrency);
     private readonly Func<Task<List<MfDeviceEnumerator.MfVideoDeviceInfo>>> _enumerateVideoDevicesAsync;
     private readonly Func<Task<List<AudioInputDevice>>> _enumerateAudioCaptureEndpointsAsync;
+    private readonly Func<string, Task<List<MediaFormat>>> _probeVideoFormatsAsync;
 
     public DeviceService()
         : this(MfDeviceEnumerator.EnumerateVideoDevicesAsync, MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync)
@@ -64,9 +65,18 @@ public class DeviceService
     internal DeviceService(
         Func<Task<List<MfDeviceEnumerator.MfVideoDeviceInfo>>> enumerateVideoDevicesAsync,
         Func<Task<List<AudioInputDevice>>> enumerateAudioCaptureEndpointsAsync)
+        : this(enumerateVideoDevicesAsync, enumerateAudioCaptureEndpointsAsync, MfDeviceEnumerator.ProbeVideoFormatsAsync)
+    {
+    }
+
+    internal DeviceService(
+        Func<Task<List<MfDeviceEnumerator.MfVideoDeviceInfo>>> enumerateVideoDevicesAsync,
+        Func<Task<List<AudioInputDevice>>> enumerateAudioCaptureEndpointsAsync,
+        Func<string, Task<List<MediaFormat>>> probeVideoFormatsAsync)
     {
         _enumerateVideoDevicesAsync = enumerateVideoDevicesAsync ?? throw new ArgumentNullException(nameof(enumerateVideoDevicesAsync));
         _enumerateAudioCaptureEndpointsAsync = enumerateAudioCaptureEndpointsAsync ?? throw new ArgumentNullException(nameof(enumerateAudioCaptureEndpointsAsync));
+        _probeVideoFormatsAsync = probeVideoFormatsAsync ?? throw new ArgumentNullException(nameof(probeVideoFormatsAsync));
     }
 
     private static readonly string[] PreferredDeviceNames =
@@ -159,7 +169,17 @@ public class DeviceService
             var hasEnumeratedFormats = false;
             if (waitForFormatProbes)
             {
-                hasEnumeratedFormats = await QuerySupportedFormatsAsync(captureDevice);
+                try
+                {
+                    hasEnumeratedFormats = await QuerySupportedFormatsAsync(captureDevice);
+                }
+                catch (Exception ex)
+                {
+                    var error = DescribeFormatProbeFailure(captureDevice.Name, ex);
+                    LastDiscoverySummary = error;
+                    Logger.Log($"{error}: {ex}");
+                    return new DeviceDiscoveryResult(discovered, noAudioDevices, Error: error);
+                }
             }
             else
             {
@@ -595,7 +615,8 @@ public class DeviceService
         }
         catch (Exception ex)
         {
-            Logger.Log($"Background format probe failed for {deviceName}: {ex.Message}");
+            var error = DescribeFormatProbeFailure(deviceName, ex);
+            Logger.Log(error);
             FormatProbeCompleted?.Invoke(
                 this,
                 new DeviceFormatProbeCompletedEventArgs(
@@ -605,7 +626,7 @@ public class DeviceService
                     IsHdrCapable: false,
                     HasEnumeratedFormats: false,
                     requestId,
-                    Error: ex.Message));
+                    Error: error));
         }
         finally
         {
@@ -615,81 +636,72 @@ public class DeviceService
 
     private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)
     {
-        try
+        var uniqueFormats = new HashSet<MediaFormat>();
+        var isHdrCapable = false;
+
+        var nativeFormats = await _probeVideoFormatsAsync(device.Id).ConfigureAwait(false);
+        foreach (var nativeFormat in nativeFormats)
         {
-            var uniqueFormats = new HashSet<MediaFormat>();
-            device.IsHdrCapable = false;
-
-            var nativeFormats = await MfDeviceEnumerator.ProbeVideoFormatsAsync(device.Id).ConfigureAwait(false);
-            foreach (var nativeFormat in nativeFormats)
+            var width = nativeFormat.Width;
+            var height = nativeFormat.Height;
+            if (width == 0 || height == 0)
             {
-                var width = nativeFormat.Width;
-                var height = nativeFormat.Height;
-                if (width == 0 || height == 0)
-                {
-                    continue;
-                }
-
-                var rawFps = nativeFormat.FrameRate;
-                if (rawFps <= 0 &&
-                    nativeFormat.FrameRateNumerator > 0 &&
-                    nativeFormat.FrameRateDenominator > 0)
-                {
-                    rawFps = (double)nativeFormat.FrameRateNumerator / nativeFormat.FrameRateDenominator;
-                }
-
-                if (rawFps <= 0)
-                {
-                    continue;
-                }
-
-                var pixelFormat = NormalizePixelFormat(nativeFormat.PixelFormat);
-                var (numerator, denominator, normalizedFps) = NormalizeFrameRate(rawFps);
-                var isHdr = MediaFormat.IsHdrPixelFormat(pixelFormat) || MediaFormat.IsTrue10BitPixelFormat(pixelFormat);
-                if (isHdr)
-                {
-                    device.IsHdrCapable = true;
-                }
-
-                uniqueFormats.Add(new MediaFormat
-                {
-                    Width = width,
-                    Height = height,
-                    FrameRate = normalizedFps,
-                    FrameRateNumerator = numerator,
-                    FrameRateDenominator = denominator,
-                    PixelFormat = pixelFormat,
-                    IsHdr = isHdr
-                });
+                continue;
             }
 
-            var sortedFormats = uniqueFormats
-                .OrderByDescending(f => (long)f.Width * f.Height)
-                .ThenByDescending(f => f.FrameRate)
-                .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.PixelFormat))
-                .ToList();
-
-            if (sortedFormats.Count == 0)
+            var rawFps = nativeFormat.FrameRate;
+            if (rawFps <= 0 &&
+                nativeFormat.FrameRateNumerator > 0 &&
+                nativeFormat.FrameRateDenominator > 0)
             {
-                Logger.Log($"MF source-reader format discovery produced no rows for {device.Name}.");
+                rawFps = (double)nativeFormat.FrameRateNumerator / nativeFormat.FrameRateDenominator;
             }
 
-            device.SupportedFormats.Clear();
-            foreach (var format in sortedFormats)
+            if (rawFps <= 0)
             {
-                device.SupportedFormats.Add(format);
+                continue;
             }
 
-            return sortedFormats.Count > 0;
+            var pixelFormat = NormalizePixelFormat(nativeFormat.PixelFormat);
+            var (numerator, denominator, normalizedFps) = NormalizeFrameRate(rawFps);
+            var isHdr = MediaFormat.IsHdrPixelFormat(pixelFormat) || MediaFormat.IsTrue10BitPixelFormat(pixelFormat);
+            isHdrCapable |= isHdr;
+
+            uniqueFormats.Add(new MediaFormat
+            {
+                Width = width,
+                Height = height,
+                FrameRate = normalizedFps,
+                FrameRateNumerator = numerator,
+                FrameRateDenominator = denominator,
+                PixelFormat = pixelFormat,
+                IsHdr = isHdr
+            });
         }
-        catch (Exception ex)
+
+        var sortedFormats = uniqueFormats
+            .OrderByDescending(f => (long)f.Width * f.Height)
+            .ThenByDescending(f => f.FrameRate)
+            .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.PixelFormat))
+            .ToList();
+
+        if (sortedFormats.Count == 0)
         {
-            Logger.Log($"Format discovery failed for {device.Name}: {ex.Message}");
-            device.SupportedFormats.Clear();
-            device.IsHdrCapable = false;
-            return false;
+            Logger.Log($"MF source-reader format discovery produced no rows for {device.Name}.");
         }
+
+        device.SupportedFormats.Clear();
+        foreach (var format in sortedFormats)
+        {
+            device.SupportedFormats.Add(format);
+        }
+
+        device.IsHdrCapable = isHdrCapable;
+        return sortedFormats.Count > 0;
     }
+
+    private static string DescribeFormatProbeFailure(string deviceName, Exception exception)
+        => $"Format probe failed for {deviceName} ({exception.GetType().Name}: {exception.Message})";
 
     private static (uint Numerator, uint Denominator, double Fps) NormalizeFrameRate(double fps)
     {

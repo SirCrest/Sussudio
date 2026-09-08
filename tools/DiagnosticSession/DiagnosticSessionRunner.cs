@@ -83,22 +83,7 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
 
         var result = await DiagnosticSessionResultBuilder.BuildAndWriteAsync(
-                CreateResultBuildRequest(
-                    context.Options,
-                    context.RunBootstrap,
-                    context.LivePath,
-                    context.CommandChannel.FailureCount,
-                    context.Samples,
-                    context.InitialSnapshot,
-                    postRunSnapshots,
-                    verification,
-                    context.ScenarioPhase.PresentMon,
-                    context.ScenarioPhase.StartedPreview,
-                    context.ScenarioPhase.EnabledFlashback,
-                    context.ScenarioPhase.StartedFlashbackPlayback,
-                    context.StoppedRecordingForVerification,
-                    context.Actions,
-                    context.Warnings),
+                CreateResultBuildRequest(context, postRunSnapshots, verification),
                 context.RunState)
             .ConfigureAwait(false);
 
@@ -107,46 +92,35 @@ public static class DiagnosticSessionRunner
     }
 
     private static DiagnosticSessionResultBuildRequest CreateResultBuildRequest(
-        DiagnosticSessionOptions options,
-        DiagnosticSessionRunBootstrap runBootstrap,
-        string livePath,
-        int commandFailureCount,
-        IReadOnlyList<DiagnosticSessionSample> samples,
-        JsonElement initialSnapshot,
+        DiagnosticSessionCompletionContext context,
         DiagnosticSessionPostRunSnapshotResult postRunSnapshots,
-        JsonElement? verification,
-        PresentMonProbeResult? presentMon,
-        bool startedPreview,
-        bool enabledFlashback,
-        bool startedFlashbackPlayback,
-        bool stoppedRecordingForVerification,
-        IReadOnlyList<string> actions,
-        List<string> warnings)
+        JsonElement? verification)
     {
+        var runBootstrap = context.RunBootstrap;
         return new DiagnosticSessionResultBuildRequest(
-            options,
+            context.Options,
             runBootstrap.ScenarioPlan,
             runBootstrap.SessionId,
             runBootstrap.Scenario,
             runBootstrap.DurationSeconds,
             runBootstrap.SampleIntervalMs,
             runBootstrap.OutputDirectory,
-            livePath,
+            context.LivePath,
             runBootstrap.StartedUtc,
             runBootstrap.RunnerProcessId,
-            commandFailureCount,
-            samples,
-            initialSnapshot,
+            context.CommandChannel.FailureCount,
+            context.Samples,
+            context.InitialSnapshot,
             postRunSnapshots.HealthSnapshot,
             postRunSnapshots.Timeline,
             verification,
-            presentMon,
-            startedPreview,
-            enabledFlashback,
-            startedFlashbackPlayback,
-            stoppedRecordingForVerification,
-            actions,
-            warnings);
+            context.ScenarioPhase.PresentMon,
+            context.ScenarioPhase.StartedPreview,
+            context.ScenarioPhase.EnabledFlashback,
+            context.ScenarioPhase.StartedFlashbackPlayback,
+            context.StoppedRecordingForVerification,
+            context.Actions,
+            context.Warnings);
     }
 
     private static async Task<DiagnosticSessionPostRunSnapshotResult> CapturePostRunSnapshotsAsync(

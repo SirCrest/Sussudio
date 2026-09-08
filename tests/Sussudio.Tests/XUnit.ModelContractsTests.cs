@@ -2894,6 +2894,51 @@ public sealed class CaptureConfigurationModelsTests
         Assert.Equal(new[] { "Auto", "NV12", "MJPG", "P010" }, videoOptions);
     }
 
+    [Theory]
+    [InlineData(null, 1080, 1280u, 1024u, true)]
+    [InlineData(1920, null, 1280u, 1024u, true)]
+    [InlineData(0, 1080, 1280u, 1024u, true)]
+    [InlineData(1920, 0, 1280u, 1024u, true)]
+    [InlineData(-1920, 1080, 1280u, 1024u, true)]
+    [InlineData(1920, 1080, 0u, 1024u, true)]
+    [InlineData(1920, 1080, 1280u, 0u, true)]
+    [InlineData(1920, 1080, 3840u, 2160u, true)]
+    [InlineData(1920, 1080, 3840u, 2159u, false)]
+    [InlineData(65536, 1, 65536u, 65537u, false)]
+    [InlineData(int.MaxValue, int.MaxValue - 1, 4294967294u, 4294967292u, true)]
+    [InlineData(int.MaxValue, int.MaxValue - 1, 4294967294u, 4294967293u, false)]
+    [InlineData(int.MaxValue, int.MaxValue, uint.MaxValue, uint.MaxValue, true)]
+    public void CaptureModeOptionsBuilder_PreservesAspectRatioBoundaryBehavior(
+        int? sourceWidth,
+        int? sourceHeight,
+        uint optionWidth,
+        uint optionHeight,
+        bool expectedIncluded)
+    {
+        var asm = SussudioAssembly.Load();
+        var builderType = RequireType(asm, "Sussudio.ViewModels.CaptureModeOptionsBuilder");
+        var mediaFormatType = RequireType(asm, "Sussudio.Models.MediaFormat");
+        var telemetryType = RequireType(asm, "Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var buildResolutionOptions = RequireMethod(builderType, "BuildResolutionOptions", ReflectionFlags.Static);
+        var formatsByResolution = CreateResolutionFormatDictionary(mediaFormatType);
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "candidate",
+            CreateMediaFormat(mediaFormatType, optionWidth, optionHeight, 60, "NV12", isHdr: false));
+        var telemetry = CreateInstance(telemetryType);
+        Set(telemetry, "Width", sourceWidth);
+        Set(telemetry, "Height", sourceHeight);
+
+        var options = ((IEnumerable)buildResolutionOptions.Invoke(
+                null,
+                new object?[] { formatsByResolution, false, false, telemetry })!)
+            .Cast<object>()
+            .ToArray();
+
+        Assert.Equal(expectedIncluded, options.Length == 1);
+    }
+
     [Fact]
     public void DeviceModeSupportPolicy_AppliesElgato4KXHdrUsbLimits()
     {
@@ -3266,6 +3311,24 @@ public sealed class CaptureConfigurationModelsTests
         Assert.Equal(1d, (double)clampCustomBitrate.Invoke(null, new object?[] { -5d })!);
         Assert.Equal(42d, (double)clampCustomBitrate.Invoke(null, new object?[] { 42d })!);
         Assert.Equal(300d, (double)clampCustomBitrate.Invoke(null, new object?[] { 999d })!);
+    }
+
+    [Fact]
+    public void MediaFormat_OwnershipFollowsCaptureWhileCodecMappingStaysWithRecording()
+    {
+        var captureModels = RuntimeContractSource.ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
+        var recordingModels = RuntimeContractSource.ReadRepoFile("Sussudio/Models/Recording/RecordingModels.cs");
+
+        Assert.Contains("public class MediaFormat", captureModels);
+        Assert.DoesNotContain("public class MediaFormat", recordingModels);
+        Assert.DoesNotContain("MapNvencCodecName", captureModels);
+        Assert.Contains("public sealed class EncoderSupport", recordingModels);
+
+        var assembly = SussudioAssembly.Load();
+        var mediaFormatType = RequireType(assembly, "Sussudio.Models.MediaFormat");
+        var encoderSupportType = RequireType(assembly, "Sussudio.Models.EncoderSupport");
+        Assert.Null(mediaFormatType.GetMethod("MapNvencCodecName", ReflectionFlags.Static));
+        Assert.NotNull(encoderSupportType.GetMethod("MapNvencCodecName", ReflectionFlags.Static));
     }
 
     [Fact]

@@ -73,11 +73,6 @@ internal static class CaptureModeOptionsBuilder
         ResolutionOption option,
         SourceSignalTelemetrySnapshot sourceTelemetry)
     {
-        if (!sourceTelemetry.HasDimensions)
-        {
-            return true;
-        }
-
         var sourceWidth = (uint)Math.Max(0, sourceTelemetry.Width ?? 0);
         var sourceHeight = (uint)Math.Max(0, sourceTelemetry.Height ?? 0);
         if (sourceWidth == 0 || sourceHeight == 0 || option.Width == 0 || option.Height == 0)
@@ -85,35 +80,7 @@ internal static class CaptureModeOptionsBuilder
             return true;
         }
 
-        var reducedSource = ReduceAspectRatio(sourceWidth, sourceHeight);
-        var reducedOption = ReduceAspectRatio(option.Width, option.Height);
-        return reducedSource.Width == reducedOption.Width &&
-               reducedSource.Height == reducedOption.Height;
-    }
-
-    private static (uint Width, uint Height) ReduceAspectRatio(uint width, uint height)
-    {
-        if (width == 0 || height == 0)
-        {
-            return (width, height);
-        }
-
-        var divisor = GreatestCommonDivisor(width, height);
-        return divisor == 0
-            ? (width, height)
-            : (width / divisor, height / divisor);
-    }
-
-    private static uint GreatestCommonDivisor(uint a, uint b)
-    {
-        while (b != 0)
-        {
-            var next = a % b;
-            a = b;
-            b = next;
-        }
-
-        return a;
+        return (ulong)sourceWidth * option.Height == (ulong)option.Width * sourceHeight;
     }
 }
 

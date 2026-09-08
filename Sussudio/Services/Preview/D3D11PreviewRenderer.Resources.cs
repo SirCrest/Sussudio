@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SharpGen.Runtime;
@@ -79,7 +80,7 @@ internal sealed class SharedD3DDeviceManager : IDisposable
 
     public uint ResetToken { get; private set; }
 
-    public bool TryCreateDeviceReference(out ID3D11Device? device, out string reason)
+    public bool TryCreateDeviceReference([NotNullWhen(true)] out ID3D11Device? device, out string reason)
     {
         lock (_sync)
         {

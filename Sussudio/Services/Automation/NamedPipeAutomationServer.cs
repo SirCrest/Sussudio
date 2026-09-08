@@ -468,18 +468,13 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
             requestCancellation.Cancel();
             Logger.Log($"Automation command exceeded request timeout; waiting for dispatch to stop: command={request.Command}");
-            if (await WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None).ConfigureAwait(false))
+            var responseAfterCancellation = await dispatchTask.ConfigureAwait(false);
+            if (string.Equals(responseAfterCancellation.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
             {
-                var response = await dispatchTask.ConfigureAwait(false);
-                if (string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
-                {
-                    response = _owner.CreateRequestTimeoutResponse();
-                }
-
-                return response;
+                responseAfterCancellation = _owner.CreateRequestTimeoutResponse();
             }
 
-            return _owner.CreateRequestTimeoutResponse();
+            return responseAfterCancellation;
         }
 
         private static async Task<bool> WaitForDispatchCompletionAsync(

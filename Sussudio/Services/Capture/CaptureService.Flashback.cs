@@ -22,6 +22,14 @@ public partial class CaptureService
     public int FlashbackSegmentCount => _flashbackBackend.BufferManager?.SegmentCount ?? 0;
     internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackBackend.PlaybackController;
     internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBackend.BufferManager;
+    internal event Action<FlashbackPlaybackStateChange> FlashbackPlaybackStateChanged
+    {
+        add => _flashbackBackend.PlaybackStateChanged += value;
+        remove => _flashbackBackend.PlaybackStateChanged -= value;
+    }
+    internal bool IsCurrentFlashbackPlaybackStateChange(FlashbackPlaybackStateChange change)
+        => _flashbackBackend.IsCurrentPlaybackStateChange(change);
+    internal void PreWarmFlashbackPlayback() => _flashbackBackend.PreWarmPlayback();
     public long FlashbackOutputBytes => _flashbackBackend.Sink?.OutputBytes ?? 0;
     public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
     public string? EncoderCodecName => _flashbackBackend.Sink?.CodecName;
@@ -444,25 +452,13 @@ public partial class CaptureService
         }, cancellationToken);
 
     /// <summary>
-    /// Updates the recording format and cycles the flashback encoder so the buffer
-    /// uses the new codec. No-op if not previewing or if a recording is active.
+    /// Applies a complete recording selection and rebuilds the Flashback encoder when
+    /// available. Desired settings are retained for later when application is deferred.
     /// </summary>
-    public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
-        => ApplyRecordingSettingsUpdateAsync(
-            current => RecordingSettingsSelection.From(current) with { RequestedFormat = format },
-            RecordingSettingsChangeKind.RecordingFormat,
-            cancellationToken);
-
-    internal Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(
+    internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(
         RecordingSettingsSelection selection,
         RecordingSettingsChangeKind kind,
         CancellationToken cancellationToken = default)
-        => ApplyRecordingSettingsUpdateAsync(_ => selection, kind, cancellationToken);
-
-    private async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsUpdateAsync(
-        Func<CaptureSettings, RecordingSettingsSelection> select,
-        RecordingSettingsChangeKind kind,
-        CancellationToken cancellationToken)
     {
         var disposition = RecordingSettingsApplyDisposition.Accepted;
         Exception? applicationFailure = null;
@@ -473,7 +469,6 @@ public partial class CaptureService
                 return;
             }
 
-            var selection = select(_currentSettings);
             var previousSettings = CloneCaptureSettings(_currentSettings);
             var changed = !selection.Matches(_currentSettings);
             selection.ApplyTo(_currentSettings);
@@ -567,24 +562,6 @@ public partial class CaptureService
         if (_isRecording && IsFlashbackRecordingBackendActive())
             _pendingFlashbackSettingsChange = true;
     }
-
-    // Compatibility adapter for callers updating individual backend fields.
-    // UI and automation use complete selections through ApplyRecordingSettingsAsync.
-    public Task CycleFlashbackEncoderSettingsAsync(
-        VideoQuality? quality = null,
-        double? customBitrateMbps = null,
-        string? nvencPreset = null,
-        string? splitEncodeMode = null,
-        CancellationToken cancellationToken = default)
-        => ApplyRecordingSettingsUpdateAsync(
-            current => new RecordingSettingsSelection(
-                current.Format,
-                quality ?? current.Quality,
-                customBitrateMbps ?? current.CustomBitrateMbps,
-                nvencPreset != null ? NvencPresetParser.Parse(nvencPreset) : current.NvencPreset,
-                splitEncodeMode != null ? SplitEncodeModeParser.Parse(splitEncodeMode) : current.SplitEncodeMode),
-            RecordingSettingsChangeKind.EncoderParameters,
-            cancellationToken);
 
     /// <summary>
     /// Retires the current Flashback history for bounded startup cleanup and

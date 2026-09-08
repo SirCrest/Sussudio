@@ -469,7 +469,7 @@ internal sealed class MainViewModelDeviceFormatProbeControllerContext
     public required Func<string?> GetSelectedResolution { get; init; }
     public required Func<double> GetSelectedFrameRate { get; init; }
     public required Func<MediaFormat?> GetSelectedFormat { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action<CaptureDevice, bool> RebuildSelectedDeviceCapabilities { get; init; }
     public required Func<MainViewModelDeviceFormatProbeRetargetApplier> CreateRetargetApplier { get; init; }
 }
@@ -505,8 +505,12 @@ internal sealed class MainViewModelDeviceFormatProbeController
 
             if (!e.Succeeded)
             {
-                _context.SetPendingSdrAutoSelectionForDeviceChange(false);
-                _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
+                if (string.Equals(_context.GetSelectedDevice()?.Id, target.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    _context.SetPendingSdrAutoSelectionForDeviceChange(false);
+                    _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
+                }
+
                 Logger.Log($"Format probe failed for {e.DeviceName}: {e.Error}");
                 return;
             }
@@ -548,14 +552,14 @@ internal sealed class MainViewModelDeviceFormatProbeController
                 Logger.Log($"Refreshing selected-device capabilities during active capture for {e.DeviceName} (preserveSelection={!allowProbeDrivenRetarget}).");
             }
 
-            _context.SetSuppressFormatChangeReinitialize(preserveActiveSelection);
-            try
+            if (preserveActiveSelection)
+            {
+                _context.ApplyCaptureSelectionWithoutReinitialize(
+                    () => _context.RebuildSelectedDeviceCapabilities(selectedDevice, false));
+            }
+            else
             {
                 _context.RebuildSelectedDeviceCapabilities(selectedDevice, false);
-            }
-            finally
-            {
-                _context.SetSuppressFormatChangeReinitialize(false);
             }
 
             var selectedResolution = _context.GetSelectedResolution();
@@ -597,7 +601,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
     public required Func<string, bool> AvailableResolutionsContains { get; init; }
     public required Action<bool> SetIsRebuildingModeOptions { get; init; }
     public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action RebuildFrameRateOptions { get; init; }
     public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
     public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
@@ -672,15 +676,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
                 _context.SetIsRebuildingModeOptions(false);
             }
 
-            _context.SetSuppressFormatChangeReinitialize(true);
-            try
-            {
-                _context.RebuildFrameRateOptions();
-            }
-            finally
-            {
-                _context.SetSuppressFormatChangeReinitialize(false);
-            }
+            _context.ApplyCaptureSelectionWithoutReinitialize(_context.RebuildFrameRateOptions);
 
             _context.EnqueueUiOperation(
                 () => _context.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
@@ -815,8 +811,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required Action<bool> SetIsRebuildingModeOptions { get; init; }
     public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
     public required Action<bool> SetIsApplyingAutomaticFrameRateSelection { get; init; }
-    public required Func<bool> IsSuppressFormatChangeReinitialize { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action<double?> SetDetectedSourceFrameRate { get; init; }
     public required Action<string?> SetDetectedSourceFrameRateArg { get; init; }
     public required Action<string> SetSourceFrameRateOrigin { get; init; }
@@ -881,32 +876,14 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             _context.ClearPendingSavedVideoFormat();
             if (_context.AvailableVideoFormats.Any(format => string.Equals(format, pendingSaved, StringComparison.OrdinalIgnoreCase)))
             {
-                var previousSuppress = _context.IsSuppressFormatChangeReinitialize();
-                _context.SetSuppressFormatChangeReinitialize(true);
-                try
-                {
-                    _context.SetSelectedVideoFormat(pendingSaved);
-                }
-                finally
-                {
-                    _context.SetSuppressFormatChangeReinitialize(previousSuppress);
-                }
+                _context.ApplyCaptureSelectionWithoutReinitialize(() => _context.SetSelectedVideoFormat(pendingSaved));
                 return;
             }
         }
 
         if (!_context.AvailableVideoFormats.Any(format => string.Equals(format, _context.GetSelectedVideoFormat(), StringComparison.OrdinalIgnoreCase)))
         {
-            var previousSuppress = _context.IsSuppressFormatChangeReinitialize();
-            _context.SetSuppressFormatChangeReinitialize(true);
-            try
-            {
-                _context.SetSelectedVideoFormat("Auto");
-            }
-            finally
-            {
-                _context.SetSuppressFormatChangeReinitialize(previousSuppress);
-            }
+            _context.ApplyCaptureSelectionWithoutReinitialize(() => _context.SetSelectedVideoFormat("Auto"));
         }
     }
 

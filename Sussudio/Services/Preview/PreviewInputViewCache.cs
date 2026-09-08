@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 
 namespace Sussudio.Services.Preview;
@@ -26,13 +27,13 @@ internal sealed class PreviewInputViewCache<TResource> where TResource : class, 
 
     // Texture descriptions are immutable. Reuse the retained texture's description
     // when another array slice arrives, instead of making another driver call.
-    public bool TryGetTextureResource(IntPtr texture, out TResource? resource)
+    public bool TryGetTextureResource(IntPtr texture, [NotNullWhen(true)] out TResource? resource)
     {
         for (var i = 0; i < _entries.Length; i++)
         {
-            if (_entries[i].Texture == texture && _entries[i].Resource != null)
+            if (_entries[i].Texture == texture && _entries[i].Resource is { } cachedResource)
             {
-                resource = _entries[i].Resource;
+                resource = cachedResource;
                 return true;
             }
         }
@@ -41,15 +42,15 @@ internal sealed class PreviewInputViewCache<TResource> where TResource : class, 
         return false;
     }
 
-    public bool TryGet(IntPtr texture, int subresource, out TResource? resource)
+    public bool TryGet(IntPtr texture, int subresource, [NotNullWhen(true)] out TResource? resource)
     {
         for (var i = 0; i < _entries.Length; i++)
         {
             ref var entry = ref _entries[i];
-            if (entry.Texture == texture && entry.Subresource == subresource && entry.Resource != null)
+            if (entry.Texture == texture && entry.Subresource == subresource && entry.Resource is { } cachedResource)
             {
                 entry.LastAccess = ++_accessOrder;
-                resource = entry.Resource;
+                resource = cachedResource;
                 HitCount++;
                 return true;
             }

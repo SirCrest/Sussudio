@@ -294,7 +294,7 @@ internal static class MfDeviceEnumerator
         catch (Exception ex)
         {
             Logger.Log($"MF format probe failed for {symbolicLink}: {ex.Message}");
-            formats.Clear();
+            throw;
         }
         finally
         {

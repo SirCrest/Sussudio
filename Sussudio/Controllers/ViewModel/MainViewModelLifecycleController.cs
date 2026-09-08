@@ -7,6 +7,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.Win32;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Controllers;
@@ -118,6 +119,8 @@ internal sealed class MainViewModelRuntimeLifecycleControllerContext
     public required Action<string> SetRecordingTime { get; init; }
     public required Action UpdateRecordingStats { get; init; }
     public required Action UpdateFlashbackBitrate { get; init; }
+    public required Action UpdateFlashbackHealthStatus { get; init; }
+    public required Action StopFlashbackHealthPresentation { get; init; }
     public required Action DisposeAudioDeviceWatcher { get; init; }
 
     public void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot snapshot)
@@ -158,6 +161,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
         _context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);
         _context.UpdateHdrRuntimeStatusFromCapture();
         _context.UpdateLiveCaptureInfo();
+        _context.UpdateFlashbackHealthStatus();
 
         SetupTimer();
         _context.UpdateDiskSpace();
@@ -166,6 +170,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
     public void StopForDispose()
     {
         _timer?.Stop();
+        _context.StopFlashbackHealthPresentation();
         _eventIngressController.Detach();
         _context.DisposeAudioDeviceWatcher();
     }
@@ -177,6 +182,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
         _timer.Tick += (s, e) =>
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
+            _context.UpdateFlashbackHealthStatus();
 
             if (_context.IsRecording())
             {
@@ -350,6 +356,10 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required Action<EventHandler<string>> DetachCaptureStatusChanged { get; init; }
     public required Action<EventHandler<Exception>> AttachCaptureErrorOccurred { get; init; }
     public required Action<EventHandler<Exception>> DetachCaptureErrorOccurred { get; init; }
+    public required Action<Action<FlashbackPlaybackStateChange>> AttachFlashbackPlaybackStateChanged { get; init; }
+    public required Action<Action<FlashbackPlaybackStateChange>> DetachFlashbackPlaybackStateChanged { get; init; }
+    public required Action<FlashbackPlaybackStateChange> OnFlashbackPlaybackStateChanged { get; init; }
+    public required Action UpdateFlashbackHealthStatus { get; init; }
     public required Action<Action> AttachCapturePreCleanupRequested { get; init; }
     public required Action<Action> DetachCapturePreCleanupRequested { get; init; }
     public required Action<EventHandler<ulong>> AttachFrameCaptured { get; init; }
@@ -404,6 +414,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
         _context.AttachCaptureStatusChanged(OnCaptureStatusChanged);
         _context.AttachCaptureErrorOccurred(OnCaptureError);
+        _context.AttachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);
         _context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
         _context.AttachFrameCaptured(OnFrameCaptured);
         _context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);
@@ -425,6 +436,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
         _context.DetachCaptureStatusChanged(OnCaptureStatusChanged);
         _context.DetachCaptureErrorOccurred(OnCaptureError);
+        _context.DetachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);
         _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
         _context.DetachFrameCaptured(OnFrameCaptured);
         _context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);
@@ -440,6 +452,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
             _context.SetStatusText(status);
+            _context.UpdateFlashbackHealthStatus();
             _context.UpdateLiveCaptureInfo(runtimeSnapshot);
             _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
         }))
@@ -454,6 +467,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
             _context.SetStatusText($"Error: {ex.Message}");
+            _context.UpdateFlashbackHealthStatus();
             _context.SetIsInitialized(_context.IsCaptureInitialized());
             _context.SetIsPreviewing(_context.IsVideoPreviewActive());
             _context.SetIsRecording(_context.IsCaptureRecording());

@@ -3448,7 +3448,17 @@ static partial class Program
         AssertContains(backendSource, "public FlashbackBufferManager? BufferManager { get; set; }");
         AssertContains(backendSource, "public FlashbackEncoderSink? Sink { get; set; }");
         AssertContains(backendSource, "public FlashbackExporter? Exporter { get; set; }");
-        AssertContains(backendSource, "public FlashbackPlaybackController? PlaybackController { get; set; }");
+        var playbackProperty = ExtractDeclaredMemberCode(
+            backendSource,
+            "public FlashbackPlaybackController? PlaybackController");
+        AssertContains(playbackProperty, "get => Volatile.Read(ref _playbackController);");
+        AssertContains(playbackProperty, "set => ReplacePlaybackController(value);");
+        var replacePlaybackController = ExtractDeclaredMemberCode(
+            backendSource,
+            "private void ReplacePlaybackController(");
+        AssertContains(replacePlaybackController, "Interlocked.Increment(ref _playbackControllerGeneration)");
+        AssertContains(replacePlaybackController, "previous.StateChanged -= _playbackStateChangedHandler;");
+        AssertContains(replacePlaybackController, "controller.StateChanged += _playbackStateChangedHandler;");
         AssertContains(backendSource, "public CaptureSettings? SettingsSnapshot { get; set; }");
         AssertContains(backendSource, "public bool HasAnyResource");
         AssertContains(backendSource, "public bool PreserveSegmentsAfterFailedRecordingFinalize { get; private set; }");
@@ -3690,7 +3700,7 @@ static partial class Program
         AssertContains(settingsText, "public Task UpdateFlashbackSettingsAsync(");
         AssertContains(settingsText, "_currentSettings.FlashbackBufferMinutes = bufferMinutes;");
         AssertContains(settingsText, "_flashbackBackend.PlaybackController.GpuDecodeEnabled = gpuDecode;");
-        AssertContains(settingsText, "public Task UpdateRecordingFormatAsync(");
+        AssertContains(settingsText, "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(");
         AssertContains(settingsText, "await _rebuildRecordingSettingsBackendAsync(transitionToken)");
         AssertContains(settingsText, "private async Task RebuildFlashbackPreviewBackendForSettingsChangeAsync(");
         AssertContains(settingsText, "await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false)");
@@ -3700,7 +3710,6 @@ static partial class Program
         AssertContains(settingsText, "FLASHBACK_FORMAT_CHANGE");
         AssertContains(settingsText, "{logPrefix}_ROLLBACK");
         AssertContains(settingsText, "private void UpdateEncodingSettings(CaptureSettings source)");
-        AssertContains(settingsText, "public Task CycleFlashbackEncoderSettingsAsync(");
         AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE");
         AssertContains(backendResourcesText, "FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
         AssertContains(backendResourcesText, "FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");

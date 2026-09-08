@@ -457,7 +457,7 @@ public partial class CaptureService
             return;
         }
 
-        if (!d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason) || sharedDevice == null)
+        if (!d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason))
         {
             Logger.Log($"UNIFIED_VIDEO_SHARED_DEVICE_APPLY_SKIP reason={reason}");
             return;

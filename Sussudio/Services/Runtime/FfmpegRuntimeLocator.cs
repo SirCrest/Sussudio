@@ -436,7 +436,7 @@ internal static unsafe class FfmpegRuntimeInit
 /// <remarks>
 /// Usage:
 /// <code>
-/// using var scope = FfmpegLogSuppressionScope.SuppressRecoverableSeekLogs();
+/// using var scope = FfmpegLogSuppressionScope.SuppressRecoverableSeekFfmpegLogs();
 /// // libav seek call that is known to spam recoverable errors
 /// </code>
 /// </remarks>

@@ -487,11 +487,15 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             for (var i = 0; i < streamCount; i++)
             {
-                var codecId = formatCtx->streams[i]->codecpar->codec_id;
-                if (codecId is AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264)
+                var codecPar = formatCtx->streams[i]->codecpar;
+                var codecId = codecPar->codec_id;
+                if ((codecId is AVCodecID.AV_CODEC_ID_HEVC or AVCodecID.AV_CODEC_ID_H264) &&
+                    codecPar->width > 0 && codecPar->height > 0 &&
+                    codecPar->format != (int)AVPixelFormat.AV_PIX_FMT_NONE)
                 {
-                    // SPS headers supply these codecs' dimensions and pixel format.
-                    // Avoid decoding a full 4K frame on FFmpeg's single probe thread.
+                    // Skip probe decoding only when the required video metadata is
+                    // already known. H.264 can leave its pixel format unknown when
+                    // every frame is skipped, even with dimensions in its headers.
                     // These options do not affect the separate playback decoder.
                     ThrowIfError(ffmpeg.av_dict_set(&probeOptions[i], "skip_frame", "all", 0), "av_dict_set(probe_skip_frame)");
                 }
@@ -1686,6 +1690,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         ValidateVideoDimensions(_videoWidth, _videoHeight);
 
         _decodedPixelFormat = (AVPixelFormat)codecPar->format;
+        if (_decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_NONE)
+        {
+            throw CreateException("Video pixel format is unknown after stream probing.");
+        }
+
         _isHdr = (codecPar->codec_id == AVCodecID.AV_CODEC_ID_HEVC ||
                   codecPar->codec_id == AVCodecID.AV_CODEC_ID_AV1) &&
                  (_decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P10LE ||
@@ -2063,7 +2072,18 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         var w = _videoWidth;
         var h = _videoHeight;
 
-        CopyPlane(_videoFrame->data[0], _videoFrame->linesize[0], dest, w * 2, h);
+        // Planar ten-bit samples occupy the low bits; P010 uses the high ten bits.
+        var yStride = _videoFrame->linesize[0];
+        var yDest = (ushort*)dest;
+        for (var row = 0; row < h; row++)
+        {
+            var yRow = (ushort*)(_videoFrame->data[0] + row * yStride);
+            var destRow = yDest + row * w;
+            for (var col = 0; col < w; col++)
+            {
+                destRow[col] = (ushort)(yRow[col] << 6);
+            }
+        }
 
         var uvDest = (ushort*)(dest + w * h * 2);
         var halfW = w / 2;
@@ -2078,8 +2098,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
             for (var col = 0; col < halfW; col++)
             {
-                destRow[col * 2] = uRow[col];
-                destRow[col * 2 + 1] = vRow[col];
+                destRow[col * 2] = (ushort)(uRow[col] << 6);
+                destRow[col * 2 + 1] = (ushort)(vRow[col] << 6);
             }
         }
     }

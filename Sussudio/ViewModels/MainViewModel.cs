@@ -626,6 +626,21 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _suppressHdrToggleReinitialize;
     private bool _isRevertingHdrToggle;
 
+    private void ApplyCaptureSelectionWithoutReinitialize(Action apply)
+    {
+        // Selection callbacks can nest through property-change handlers.
+        var previousSuppress = _suppressFormatChangeReinitialize;
+        _suppressFormatChangeReinitialize = true;
+        try
+        {
+            apply();
+        }
+        finally
+        {
+            _suppressFormatChangeReinitialize = previousSuppress;
+        }
+    }
+
     /// <summary>
     /// Capture-device, resolution, and frame-rate selection reactions.
     /// Capture-mode transactions that coordinate option rebuilds, HDR/SDR changes,
@@ -1052,16 +1067,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         if (!_isRebuildingModeOptions)
         {
-            var previousSuppress = _suppressFormatChangeReinitialize;
-            _suppressFormatChangeReinitialize = true;
-            try
-            {
-                UpdateSelectedFormat();
-            }
-            finally
-            {
-                _suppressFormatChangeReinitialize = previousSuppress;
-            }
+            ApplyCaptureSelectionWithoutReinitialize(UpdateSelectedFormat);
         }
 
         if (!_isChangingDevice && !_suppressFormatChangeReinitialize && IsPreviewing && IsInitialized)
@@ -1255,17 +1261,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         if (!_isChangingDevice)
         {
-            _suppressFormatChangeReinitialize = true;
-            try
+            ApplyCaptureSelectionWithoutReinitialize(() =>
             {
                 ResetModeSelectionState();
                 RebuildResolutionOptions();
                 RebuildRecordingFormatOptions();
-            }
-            finally
-            {
-                _suppressFormatChangeReinitialize = false;
-            }
+            });
 
             if (!_suppressHdrToggleReinitialize && IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)
             {
@@ -2546,7 +2547,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     GetSelectedFormat = () => viewModel.SelectedFormat,
                     CaptureSelectionSnapshot = viewModel.CaptureSelectionSnapshot,
                     RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,
-                    SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                    ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                     ReinitializeDeviceWithResultAsync = viewModel.ReinitializeDeviceWithResultAsync,
                 });
         }
@@ -2737,6 +2738,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     DetachCaptureStatusChanged = handler => viewModel._captureService.StatusChanged -= handler,
                     AttachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred += handler,
                     DetachCaptureErrorOccurred = handler => viewModel._captureService.ErrorOccurred -= handler,
+                    AttachFlashbackPlaybackStateChanged = handler => viewModel._sessionCoordinator.FlashbackPlaybackStateChanged += handler,
+                    DetachFlashbackPlaybackStateChanged = handler => viewModel._sessionCoordinator.FlashbackPlaybackStateChanged -= handler,
+                    OnFlashbackPlaybackStateChanged = viewModel.OnFlashbackPlaybackStateChanged,
+                    UpdateFlashbackHealthStatus = viewModel.UpdateFlashbackHealthStatus,
                     AttachCapturePreCleanupRequested = handler => viewModel._captureService.PreCleanupRequested += handler,
                     DetachCapturePreCleanupRequested = handler => viewModel._captureService.PreCleanupRequested -= handler,
                     AttachFrameCaptured = handler => viewModel._captureService.FrameCaptured += handler,
@@ -2838,8 +2843,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
                     SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
                     SetIsApplyingAutomaticFrameRateSelection = value => viewModel._isApplyingAutomaticFrameRateSelection = value,
-                    IsSuppressFormatChangeReinitialize = () => viewModel._suppressFormatChangeReinitialize,
-                    SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                    ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                     SetDetectedSourceFrameRate = value => viewModel.DetectedSourceFrameRate = value,
                     SetDetectedSourceFrameRateArg = value => viewModel.DetectedSourceFrameRateArg = value,
                     SetSourceFrameRateOrigin = value => viewModel.SourceFrameRateOrigin = value,
@@ -2873,7 +2877,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     GetSelectedResolution = () => viewModel.SelectedResolution,
                     GetSelectedFrameRate = () => viewModel.SelectedFrameRate,
                     GetSelectedFormat = () => viewModel.SelectedFormat,
-                    SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                    ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                     RebuildSelectedDeviceCapabilities = (device, resetTelemetryState) =>
                         viewModel.RebuildSelectedDeviceCapabilities(device, resetTelemetryState),
                     CreateRetargetApplier = () => new MainViewModelDeviceFormatProbeRetargetApplier(
@@ -2889,7 +2893,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                                 option => string.Equals(option.Value, value, StringComparison.OrdinalIgnoreCase)),
                             SetIsRebuildingModeOptions = value => viewModel._isRebuildingModeOptions = value,
                             SetIsApplyingAutomaticResolutionSelection = value => viewModel._isApplyingAutomaticResolutionSelection = value,
-                            SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,
+                            ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,
                             RebuildFrameRateOptions = viewModel.RebuildFrameRateOptions,
                             ReinitializeDeviceAsync = viewModel.ReinitializeDeviceAsync,
                             EnqueueUiOperation = (operation, operationName) => viewModel.EnqueueUiOperation(operation, operationName),
@@ -2990,6 +2994,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     SetRecordingTime = value => viewModel.RecordingTime = value,
                     UpdateRecordingStats = viewModel.UpdateRecordingStats,
                     UpdateFlashbackBitrate = viewModel.UpdateFlashbackBitrate,
+                    UpdateFlashbackHealthStatus = viewModel.UpdateFlashbackHealthStatus,
+                    StopFlashbackHealthPresentation = viewModel.StopFlashbackHealthPresentation,
                     DisposeAudioDeviceWatcher = viewModel._audioDeviceWatcher.Dispose,
                 });
         }

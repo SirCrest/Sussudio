@@ -24,8 +24,6 @@ static partial class Program
         var harness = CreateCaptureSessionCoordinatorHarness();
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var compatibilityEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseCompatibility = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         try
         {
             SetPrivateField(harness.CaptureService, "_currentSettings", NewRecordingApplicationSettings("High", "Auto"));
@@ -50,28 +48,10 @@ static partial class Program
             Assert.Equal("Deferred", await RecordingApplicationOutcomeAsync(last));
             AssertRecordingApplicationSelection(lastSelection, GetPrivateField(harness.CaptureService, "_currentSettings")!);
             Assert.Equal(1L, GetLongProperty(GetCoordinatorSnapshot(harness.Coordinator), "CommandsCoalesced"));
-
-            // Compatibility callers still submit partial patches. Both must run,
-            // otherwise the later quality patch would erase the split selection.
-            var compatibilityBlocker = EnqueueCoordinatorOperation(harness, "StartVideoPreview", async token =>
-            {
-                compatibilityEntered.SetResult();
-                await releaseCompatibility.Task.WaitAsync(token);
-            });
-            await compatibilityEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
-            var compatibility = harness.Coordinator.GetType().GetMethod("CycleFlashbackEncoderSettingsAsync")!;
-            var split = (Task)compatibility.Invoke(harness.Coordinator, new object?[] { null, null, null, "ThreeWay", CancellationToken.None })!;
-            var quality = (Task)compatibility.Invoke(harness.Coordinator, new object?[] { ParseEnum("Sussudio.Models.VideoQuality", "Medium"), null, null, null, CancellationToken.None })!;
-            releaseCompatibility.SetResult();
-            await Task.WhenAll(compatibilityBlocker, split, quality).WaitAsync(TimeSpan.FromSeconds(3));
-            var desired = GetPrivateField(harness.CaptureService, "_currentSettings")!;
-            Assert.Equal("ThreeWay", GetPropertyValue(desired, "SplitEncodeMode")!.ToString());
-            Assert.Equal("Medium", GetPropertyValue(desired, "Quality")!.ToString());
         }
         finally
         {
             release.TrySetResult();
-            releaseCompatibility.TrySetResult();
             await DisposeCaptureSessionCoordinatorHarnessAsync(harness);
         }
     }

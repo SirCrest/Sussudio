@@ -1653,7 +1653,7 @@ static partial class Program
         AssertContains(snapshotsText, "isFailure: true");
 
         AssertContains(snapshotsText, "private static string? ResolveEncoderCodecName(");
-        AssertContains(snapshotsText, "MediaFormat.MapNvencCodecName(settings.Format)");
+        AssertContains(snapshotsText, "EncoderSupport.MapNvencCodecName(settings.Format)");
         AssertContains(snapshotsText, "private static string? ResolveEncoderOutputPixelFormat(");
         AssertContains(snapshotsText, "return \"yuv420p10le\";");
         AssertContains(snapshotsText, "private static string? ResolveEncoderVideoProfile(");

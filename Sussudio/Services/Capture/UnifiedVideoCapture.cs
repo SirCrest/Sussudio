@@ -1120,13 +1120,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            var ownedLease = lease;
+            PooledVideoFrameLease? ownedLease = lease;
             try
             {
                 var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
                 var submitTick = Stopwatch.GetTimestamp();
                 previewSink.SubmitRawFrameLease(
-                    ownedLease!,
+                    ownedLease,
                     isHdr: isP010,
                     PreviewFrameTracking.Default with
                     {
@@ -1360,7 +1360,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             {
                 try
                 {
-                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease!);
+                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease);
                     lease = null;
                     if (accepted)
                     {
@@ -1466,7 +1466,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             {
                 try
                 {
-                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease!);
+                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease);
                     lease = null;
                     RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber, accepted ? null : "queue_rejected");
                     RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");

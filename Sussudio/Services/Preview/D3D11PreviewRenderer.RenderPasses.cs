@@ -189,7 +189,7 @@ internal sealed partial class D3D11PreviewRenderer
         int arraySize;
         if (_externalInputViewCacheEnabled && _externalInputViews.TryGetTextureResource(texturePointer, out var retained))
         {
-            mipLevels = retained!.MipLevels;
+            mipLevels = retained.MipLevels;
             arraySize = retained.ArraySize;
         }
         else
@@ -203,7 +203,7 @@ internal sealed partial class D3D11PreviewRenderer
         if (_externalInputViewCacheEnabled && _externalInputViews.TryGet(texturePointer, subresource, out var cached))
         {
             LogExternalInputViewCacheIfDue();
-            return cached!.View;
+            return cached.View;
         }
 
         var createStart = Stopwatch.GetTimestamp();

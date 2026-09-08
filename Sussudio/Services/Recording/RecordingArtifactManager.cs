@@ -151,45 +151,60 @@ internal static class RecordingFinalizationRecoveryArtifacts
     {
         try
         {
-            var markers = new List<(string Path, DateTime WriteUtc)>();
-            AddRecoveryMarkers(markers, outputDirectory);
-            AddRecoveryMarkers(markers, GetStableRecoveryDirectory());
-
-            markers.Sort(static (left, right) => right.WriteUtc.CompareTo(left.WriteUtc));
-            RecordingFailureRecoveryState? newestMetadataOnlyRecovery = null;
-            foreach (var marker in markers)
-            {
-                try
-                {
-                    var recovered = TryLoadMarker(marker.Path, marker.WriteUtc);
-                    if (recovered == null)
-                    {
-                        continue;
-                    }
-
-                    var hasRecoverableMedia = recovered.PreservedArtifacts.Any(path =>
-                        !string.Equals(path, recovered.MarkerPath, StringComparison.OrdinalIgnoreCase) &&
-                        File.Exists(path));
-                    if (hasRecoverableMedia)
-                    {
-                        return recovered;
-                    }
-
-                    newestMetadataOnlyRecovery ??= recovered;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Failed to restore recording recovery marker '{marker.Path}': {ex.Message}");
-                }
-            }
-
-            return newestMetadataOnlyRecovery;
+            return TryLoadLatestFromDirectories(
+                outputDirectory,
+                GetStableRecoveryDirectory(),
+                static directory => Directory.EnumerateFiles(directory, "*.recording-*.txt", SearchOption.TopDirectoryOnly),
+                File.GetLastWriteTimeUtc,
+                static message => Logger.Log(message));
         }
         catch (Exception ex)
         {
             Logger.Log($"Failed to restore recording recovery marker from '{outputDirectory}': {ex.Message}");
             return null;
         }
+    }
+
+    internal static RecordingFailureRecoveryState? TryLoadLatestFromDirectories(
+        string? outputDirectory,
+        string? stableRecoveryDirectory,
+        Func<string, IEnumerable<string>> enumerateMarkerPaths,
+        Func<string, DateTime> getLastWriteTimeUtc,
+        Action<string> log)
+    {
+        var markers = new List<(string Path, DateTime WriteUtc)>();
+        AddRecoveryMarkers(markers, outputDirectory, enumerateMarkerPaths, getLastWriteTimeUtc, log);
+        AddRecoveryMarkers(markers, stableRecoveryDirectory, enumerateMarkerPaths, getLastWriteTimeUtc, log);
+
+        markers.Sort(static (left, right) => right.WriteUtc.CompareTo(left.WriteUtc));
+        RecordingFailureRecoveryState? newestMetadataOnlyRecovery = null;
+        foreach (var marker in markers)
+        {
+            try
+            {
+                var recovered = TryLoadMarker(marker.Path, marker.WriteUtc);
+                if (recovered == null)
+                {
+                    continue;
+                }
+
+                var hasRecoverableMedia = recovered.PreservedArtifacts.Any(path =>
+                    !string.Equals(path, recovered.MarkerPath, StringComparison.OrdinalIgnoreCase) &&
+                    File.Exists(path));
+                if (hasRecoverableMedia)
+                {
+                    return recovered;
+                }
+
+                newestMetadataOnlyRecovery ??= recovered;
+            }
+            catch (Exception ex)
+            {
+                log($"Failed to restore recording recovery marker '{marker.Path}': {ex.Message}");
+            }
+        }
+
+        return newestMetadataOnlyRecovery;
     }
 
     public static IReadOnlyList<string> PreserveUnresolved(
@@ -403,27 +418,45 @@ internal static class RecordingFinalizationRecoveryArtifacts
 
     private static void AddRecoveryMarkers(
         List<(string Path, DateTime WriteUtc)> markers,
-        string? directory)
+        string? directory,
+        Func<string, IEnumerable<string>> enumerateMarkerPaths,
+        Func<string, DateTime> getLastWriteTimeUtc,
+        Action<string> log)
     {
         if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
         {
             return;
         }
 
-        foreach (var markerPath in Directory.EnumerateFiles(directory, "*.recording-*.txt", SearchOption.TopDirectoryOnly))
+        try
         {
-            if (!markerPath.EndsWith(UnresolvedMarkerSuffix, StringComparison.OrdinalIgnoreCase) &&
-                !markerPath.EndsWith(ActiveMarkerSuffix, StringComparison.OrdinalIgnoreCase))
+            foreach (var markerPath in enumerateMarkerPaths(directory))
             {
-                continue;
-            }
+                if (!markerPath.EndsWith(UnresolvedMarkerSuffix, StringComparison.OrdinalIgnoreCase) &&
+                    !markerPath.EndsWith(ActiveMarkerSuffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
-            if (markers.Any(marker => string.Equals(marker.Path, markerPath, StringComparison.OrdinalIgnoreCase)))
-            {
-                continue;
-            }
+                if (markers.Any(marker => string.Equals(marker.Path, markerPath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
 
-            markers.Add((markerPath, File.GetLastWriteTimeUtc(markerPath)));
+                try
+                {
+                    markers.Add((markerPath, getLastWriteTimeUtc(markerPath)));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    log($"Failed to read recording recovery marker timestamp '{markerPath}': {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Enumeration is lazy: retain candidates yielded before a root fails.
+            log($"Failed to enumerate recording recovery markers in '{directory}': {ex.Message}");
         }
     }
 

@@ -303,23 +303,6 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         return disposition;
     }
 
-    public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
-        => EnqueueAsync(
-            CaptureCommandKind.UpdateFlashbackRecordingFormat,
-            ct => _captureService.UpdateRecordingFormatAsync(format, ct),
-            cancellationToken);
-
-    public Task CycleFlashbackEncoderSettingsAsync(
-        VideoQuality? quality = null,
-        double? customBitrateMbps = null,
-        string? nvencPreset = null,
-        string? splitEncodeMode = null,
-        CancellationToken cancellationToken = default)
-        => EnqueueAsync(
-            CaptureCommandKind.CycleFlashbackEncoderSettings,
-            ct => _captureService.CycleFlashbackEncoderSettingsAsync(quality, customBitrateMbps, nvencPreset, splitEncodeMode, ct),
-            cancellationToken);
-
     public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
         => EnqueueAsync(
             CaptureCommandKind.SetFlashbackEnabled,
@@ -335,16 +318,22 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     internal bool IsFlashbackActive => _captureService.IsFlashbackActive;
 
-    /// <summary>
-    /// Exposes the live playback controller instance so the ViewModel layer can
-    /// subscribe to <see cref="FlashbackPlaybackController.StateChanged"/> and
-    /// invoke health-surfacing hooks (UI health surfacing, F1-UI/F8-UI). The
-    /// controller is rebuilt on every backend cycle
-    /// (<c>FlashbackBackendResources.CycleSinkOnlyAsync</c>) — callers must
-    /// re-read this on each poll and compare by reference rather than caching
-    /// across cycles.
-    /// </summary>
-    internal FlashbackPlaybackController? FlashbackPlaybackControllerInstance => _captureService.FlashbackPlaybackController;
+    internal event Action<FlashbackPlaybackStateChange> FlashbackPlaybackStateChanged
+    {
+        add => _captureService.FlashbackPlaybackStateChanged += value;
+        remove => _captureService.FlashbackPlaybackStateChanged -= value;
+    }
+
+    internal bool IsCurrentFlashbackPlaybackStateChange(FlashbackPlaybackStateChange change)
+        => !Volatile.Read(ref _isDisposed) && _captureService.IsCurrentFlashbackPlaybackStateChange(change);
+
+    internal void PreWarmFlashbackPlayback()
+    {
+        if (!Volatile.Read(ref _isDisposed))
+        {
+            _captureService.PreWarmFlashbackPlayback();
+        }
+    }
 
     internal long FlashbackTotalBytesWritten => _captureService.FlashbackTotalBytesWritten;
 

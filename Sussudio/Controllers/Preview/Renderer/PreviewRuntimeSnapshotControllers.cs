@@ -203,97 +203,6 @@ internal static class PreviewRuntimeSnapshotController
     }
 }
 
-internal readonly record struct PreviewRuntimeSnapshotSurfaceProjection(
-    bool IsPreviewing,
-    bool GpuActive,
-    bool PlaceholderVisible,
-    bool GpuElementVisible,
-    bool CpuElementVisible,
-    bool RendererAttached,
-    long FramesArrived,
-    long FramesDisplayed,
-    long FramesDropped,
-    bool BlankSuspected,
-    bool StallSuspected);
-
-internal static class PreviewRuntimeSnapshotSurfaceProjectionPolicy
-{
-    public static PreviewRuntimeSnapshotSurfaceProjection Evaluate(
-        PreviewRuntimeSnapshotInput input,
-        PreviewRuntimeD3DProjection d3dProjection,
-        PreviewRuntimeSnapshotHealth health)
-        => new(
-            IsPreviewing: input.IsPreviewing,
-            GpuActive: d3dProjection.GpuActive,
-            PlaceholderVisible: input.PlaceholderVisible,
-            GpuElementVisible: input.GpuElementVisible,
-            CpuElementVisible: input.CpuElementVisible,
-            RendererAttached: d3dProjection.RendererAttached,
-            FramesArrived: d3dProjection.FramesArrived,
-            FramesDisplayed: d3dProjection.FramesDisplayed,
-            FramesDropped: d3dProjection.FramesDropped,
-            BlankSuspected: health.BlankSuspected,
-            StallSuspected: health.StallSuspected);
-}
-
-internal readonly record struct PreviewRuntimeSnapshotStartupProjection(
-    string State,
-    string? AttemptId,
-    double? ElapsedMs,
-    int TimeoutMs,
-    bool GpuSignalMediaOpened,
-    bool GpuSignalFirstFrame,
-    bool GpuSignalPlaybackAdvancing,
-    PreviewStartupSignalFlags RequiredSignals,
-    PreviewStartupSignalFlags ReceivedSignals,
-    PreviewStartupStrategy Strategy,
-    string? MissingSignals,
-    int RecoveryAttemptCount,
-    string? LastFailureReason,
-    bool FirstVisualConfirmed);
-
-internal static class PreviewRuntimeSnapshotStartupProjectionPolicy
-{
-    public static PreviewRuntimeSnapshotStartupProjection Evaluate(
-        PreviewRuntimeSnapshotInput input,
-        PreviewRuntimeSnapshotHealth health)
-        => new(
-            State: input.StartupState,
-            AttemptId: input.StartupAttemptId,
-            ElapsedMs: health.StartupElapsedMs,
-            TimeoutMs: input.StartupTimeoutMs,
-            GpuSignalMediaOpened: input.StartupGpuSignalMediaOpened,
-            GpuSignalFirstFrame: input.StartupGpuSignalFirstFrame,
-            GpuSignalPlaybackAdvancing: input.StartupGpuSignalPlaybackAdvancing,
-            RequiredSignals: input.StartupRequiredSignals,
-            ReceivedSignals: input.StartupReceivedSignals,
-            Strategy: input.StartupStrategy,
-            MissingSignals: input.StartupMissingSignals,
-            RecoveryAttemptCount: input.StartupRecoveryAttemptCount,
-            LastFailureReason: input.StartupLastFailureReason,
-            FirstVisualConfirmed: input.FirstVisualConfirmed);
-}
-
-internal readonly record struct PreviewRuntimeSnapshotGpuPlaybackProjection(
-    string PlaybackState,
-    int NaturalVideoWidth,
-    int NaturalVideoHeight,
-    double PositionMs,
-    long PositionEventCount);
-
-internal static class PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy
-{
-    public static PreviewRuntimeSnapshotGpuPlaybackProjection Evaluate(
-        PreviewRuntimeSnapshotInput input,
-        PreviewRuntimeD3DProjection d3dProjection)
-        => new(
-            PlaybackState: d3dProjection.GpuPlaybackState,
-            NaturalVideoWidth: d3dProjection.GpuNaturalVideoWidth,
-            NaturalVideoHeight: d3dProjection.GpuNaturalVideoHeight,
-            PositionMs: d3dProjection.GpuPositionMs,
-            PositionEventCount: input.GpuPositionEventCount);
-}
-
 internal static class PreviewRuntimeSnapshotMapper
 {
     public static PreviewRuntimeSnapshot Build(
@@ -302,37 +211,33 @@ internal static class PreviewRuntimeSnapshotMapper
         PreviewRuntimeSnapshotHealth health,
         DateTimeOffset timestampUtc)
     {
-        var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);
-        var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);
-        var gpuPlayback = PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate(input, d3dProjection);
-
         return new PreviewRuntimeSnapshot
         {
             TimestampUtc = timestampUtc,
             PreviewRuntimeEpoch = input.PreviewRuntimeEpoch,
-            IsPreviewing = surface.IsPreviewing,
-            GpuActive = surface.GpuActive,
-            PlaceholderVisible = surface.PlaceholderVisible,
-            GpuElementVisible = surface.GpuElementVisible,
-            CpuElementVisible = surface.CpuElementVisible,
-            RendererAttached = surface.RendererAttached,
-            StartupState = startup.State,
-            StartupAttemptId = startup.AttemptId,
-            StartupElapsedMs = startup.ElapsedMs,
-            StartupTimeoutMs = startup.TimeoutMs,
-            StartupGpuSignalMediaOpened = startup.GpuSignalMediaOpened,
-            StartupGpuSignalFirstFrame = startup.GpuSignalFirstFrame,
-            StartupGpuSignalPlaybackAdvancing = startup.GpuSignalPlaybackAdvancing,
-            StartupRequiredSignals = startup.RequiredSignals,
-            StartupReceivedSignals = startup.ReceivedSignals,
-            StartupStrategy = startup.Strategy,
-            StartupMissingSignals = startup.MissingSignals,
-            StartupRecoveryAttemptCount = startup.RecoveryAttemptCount,
-            StartupLastFailureReason = startup.LastFailureReason,
-            FirstVisualConfirmed = startup.FirstVisualConfirmed,
-            FramesArrived = surface.FramesArrived,
-            FramesDisplayed = surface.FramesDisplayed,
-            FramesDropped = surface.FramesDropped,
+            IsPreviewing = input.IsPreviewing,
+            GpuActive = d3dProjection.GpuActive,
+            PlaceholderVisible = input.PlaceholderVisible,
+            GpuElementVisible = input.GpuElementVisible,
+            CpuElementVisible = input.CpuElementVisible,
+            RendererAttached = d3dProjection.RendererAttached,
+            StartupState = input.StartupState,
+            StartupAttemptId = input.StartupAttemptId,
+            StartupElapsedMs = health.StartupElapsedMs,
+            StartupTimeoutMs = input.StartupTimeoutMs,
+            StartupGpuSignalMediaOpened = input.StartupGpuSignalMediaOpened,
+            StartupGpuSignalFirstFrame = input.StartupGpuSignalFirstFrame,
+            StartupGpuSignalPlaybackAdvancing = input.StartupGpuSignalPlaybackAdvancing,
+            StartupRequiredSignals = input.StartupRequiredSignals,
+            StartupReceivedSignals = input.StartupReceivedSignals,
+            StartupStrategy = input.StartupStrategy,
+            StartupMissingSignals = input.StartupMissingSignals,
+            StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,
+            StartupLastFailureReason = input.StartupLastFailureReason,
+            FirstVisualConfirmed = input.FirstVisualConfirmed,
+            FramesArrived = d3dProjection.FramesArrived,
+            FramesDisplayed = d3dProjection.FramesDisplayed,
+            FramesDropped = d3dProjection.FramesDropped,
             DisplayCadenceSampleCount = d3dProjection.DisplayCadenceSampleCount,
             DisplayCadenceObservedFps = d3dProjection.DisplayCadenceObservedFps,
             DisplayCadenceExpectedIntervalMs = d3dProjection.DisplayCadenceExpectedIntervalMs,
@@ -347,8 +252,8 @@ internal static class PreviewRuntimeSnapshotMapper
             DisplayCadenceJitterStdDevMs = d3dProjection.DisplayCadenceJitterStdDevMs,
             DisplayCadenceSlowFrameCount = d3dProjection.DisplayCadenceSlowFrameCount,
             DisplayCadenceSlowFramePercent = d3dProjection.DisplayCadenceSlowFramePercent,
-            BlankSuspected = surface.BlankSuspected,
-            StallSuspected = surface.StallSuspected,
+            BlankSuspected = health.BlankSuspected,
+            StallSuspected = health.StallSuspected,
             RendererMode = d3dProjection.RendererMode,
             D3DPresentSyncInterval = d3dProjection.D3DPresentSyncInterval,
             D3DMaxFrameLatency = d3dProjection.D3DMaxFrameLatency,
@@ -431,11 +336,11 @@ internal static class PreviewRuntimeSnapshotMapper
             D3DLastDropReason = d3dProjection.D3DLastDropReason,
             D3DRecentSlowFrames = d3dProjection.D3DRecentSlowFrames,
             EstimatedPipelineLatencyMs = d3dProjection.EstimatedPipelineLatencyMs,
-            GpuPlaybackState = gpuPlayback.PlaybackState,
-            GpuNaturalVideoWidth = gpuPlayback.NaturalVideoWidth,
-            GpuNaturalVideoHeight = gpuPlayback.NaturalVideoHeight,
-            GpuPositionMs = gpuPlayback.PositionMs,
-            GpuPositionEventCount = gpuPlayback.PositionEventCount
+            GpuPlaybackState = d3dProjection.GpuPlaybackState,
+            GpuNaturalVideoWidth = d3dProjection.GpuNaturalVideoWidth,
+            GpuNaturalVideoHeight = d3dProjection.GpuNaturalVideoHeight,
+            GpuPositionMs = d3dProjection.GpuPositionMs,
+            GpuPositionEventCount = input.GpuPositionEventCount
         };
     }
 }

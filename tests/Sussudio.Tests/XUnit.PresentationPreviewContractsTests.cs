@@ -994,16 +994,16 @@ public sealed class PresentationPreviewRuntimePolicyContractsTests
         => global::Program.PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotSurfaceProjectionPolicyPreservesVisibilityAndHealthFields()
-        => global::Program.PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesVisibilityAndHealthFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesVisibilityAndHealthFields();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotStartupProjectionPolicyPreservesSampledStartupFields()
-        => global::Program.PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesSampledStartupFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicyPreservesRendererAndEventFields()
-        => global::Program.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesRendererAndEventFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields();
 
     [Fact]
     public Task PreviewRuntimeD3DFrameCounterPolicyPreservesCpuFallbackCounters()
@@ -1168,7 +1168,6 @@ static partial class Program
         AssertContains(metricsText, "public readonly record struct FrameLatencyWaitMetrics(");
         AssertContains(metricsText, "public readonly record struct FrameOwnershipMetrics(");
         AssertContains(metricsText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertContains(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
         AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertContains(metricsText, "private static double TicksToMs(long ticks)");
         AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
@@ -1288,7 +1287,8 @@ static partial class Program
         AssertContains(metricsText, "private void ResetPresentCadence()");
         AssertContains(metricsText, "var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));");
         AssertContains(metricsText, "Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);");
-        AssertContains(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricsText, "RingBufferHelpers.Copy(");
+        AssertDoesNotContain(metricsText, "CopyRecentRing(");
         AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertContains(metricsText, "private static double TicksToMs(long ticks)");
         AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
@@ -4850,9 +4850,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             previewRuntimeSnapshotControllerText,
             "internal static class PreviewRuntimeSnapshotMapper",
             "internal sealed class PreviewRuntimeSnapshotHealthInput");
-        var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotControllerText;
-        var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotControllerText;
-        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
         var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs").Replace("\r\n", "\n");
@@ -4917,31 +4914,11 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotControllerText, "return PreviewRuntimeSnapshotMapper.Build(input, d3dProjection, health, DateTimeOffset.UtcNow);");
         AssertContains(previewRuntimeSnapshotMapperText, "internal static class PreviewRuntimeSnapshotMapper");
         AssertContains(previewRuntimeSnapshotMapperText, "public static PreviewRuntimeSnapshot Build(");
-        AssertContains(previewRuntimeSnapshotMapperText, "var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);");
-        AssertContains(previewRuntimeSnapshotMapperText, "var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);");
-        AssertContains(previewRuntimeSnapshotMapperText, "var gpuPlayback = PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate(input, d3dProjection);");
         AssertContains(previewRuntimeSnapshotMapperText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotMapperText, "TimestampUtc = timestampUtc,");
-        AssertContains(previewRuntimeSnapshotMapperText, "IsPreviewing = surface.IsPreviewing,");
-        AssertContains(previewRuntimeSnapshotMapperText, "FramesArrived = surface.FramesArrived,");
-        AssertContains(previewRuntimeSnapshotMapperText, "StartupState = startup.State,");
-        AssertContains(previewRuntimeSnapshotMapperText, "StartupElapsedMs = startup.ElapsedMs,");
-        AssertContains(previewRuntimeSnapshotMapperText, "BlankSuspected = surface.BlankSuspected,");
-        AssertContains(previewRuntimeSnapshotMapperText, "StallSuspected = surface.StallSuspected,");
-        AssertContains(previewRuntimeSnapshotMapperText, "GpuPlaybackState = gpuPlayback.PlaybackState,");
-        AssertContains(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = gpuPlayback.PositionEventCount");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "internal static class PreviewRuntimeSnapshotSurfaceProjectionPolicy");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "public static PreviewRuntimeSnapshotSurfaceProjection Evaluate(");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "GpuActive: d3dProjection.GpuActive,");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "BlankSuspected: health.BlankSuspected,");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "internal static class PreviewRuntimeSnapshotStartupProjectionPolicy");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "public static PreviewRuntimeSnapshotStartupProjection Evaluate(");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "ElapsedMs: health.StartupElapsedMs,");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "RecoveryAttemptCount: input.StartupRecoveryAttemptCount,");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "internal static class PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "public static PreviewRuntimeSnapshotGpuPlaybackProjection Evaluate(");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PlaybackState: d3dProjection.GpuPlaybackState,");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PositionEventCount: input.GpuPositionEventCount);");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "PreviewRuntimeSnapshotSurfaceProjection");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "PreviewRuntimeSnapshotStartupProjection");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "PreviewRuntimeSnapshotGpuPlaybackProjection");
         AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "internal static class PreviewRuntimeSnapshotHealthInputFactory");
         AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "public static PreviewRuntimeSnapshotHealthInput Build(");
         AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "RendererAttached = d3dProjection.RendererAttached,");
@@ -4970,7 +4947,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(agentMapText, "MainWindow.xaml.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
-        AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
+        AssertContains(agentMapText, "direct surface/startup/GPU playback mapping");
         AssertContains(agentMapText, "health input factory");
         AssertContains(cleanupPlanText, "MainWindow.xaml.cs");
         AssertContains(cleanupPlanText, "surface/frame");
@@ -4978,20 +4955,12 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
-        AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");
+        AssertContains(cleanupPlanText, "direct surface/startup/GPU playback mapping");
         AssertContains(cleanupPlanText, "health input factory");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotMapper.cs")),
             "Preview runtime snapshot mapper stays folded into the snapshot controller owner");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuActive = d3dProjection.GpuActive,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "FramesArrived = d3dProjection.FramesArrived,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "BlankSuspected = health.BlankSuspected,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StallSuspected = health.StallSuspected,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupElapsedMs = health.StartupElapsedMs,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPlaybackState = d3dProjection.GpuPlaybackState,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "return new PreviewRuntimeSnapshot\n        {");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "BlankSuspected = health.BlankSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "StallSuspected = health.StallSuspected,");
@@ -5451,127 +5420,162 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields()
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesVisibilityAndHealthFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
         var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSurfaceProjectionPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate not found.");
+        var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build not found.");
+        var timestamp = new DateTimeOffset(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
 
-        var input = Activator.CreateInstance(inputType)
-                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "IsPreviewing", true);
-        SetPropertyOrBackingField(input, "PlaceholderVisible", false);
-        SetPropertyOrBackingField(input, "GpuElementVisible", true);
-        SetPropertyOrBackingField(input, "CpuElementVisible", false);
+        foreach (var active in new[] { true, false })
+        {
+            var input = Activator.CreateInstance(inputType)
+                        ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+            SetPropertyOrBackingField(input, "PreviewRuntimeEpoch", 73L);
+            SetPropertyOrBackingField(input, "IsPreviewing", active);
+            SetPropertyOrBackingField(input, "PlaceholderVisible", !active);
+            SetPropertyOrBackingField(input, "GpuElementVisible", active);
+            SetPropertyOrBackingField(input, "CpuElementVisible", !active);
+            // The final counters must come from the resolved projection, not the sampled CPU input.
+            SetPropertyOrBackingField(input, "FramesArrived", 901L);
+            SetPropertyOrBackingField(input, "FramesDisplayed", 807L);
+            SetPropertyOrBackingField(input, "FramesDropped", 94L);
 
-        var d3dProjection = Activator.CreateInstance(projectionType)
-                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-        SetPropertyOrBackingField(d3dProjection, "GpuActive", true);
-        SetPropertyOrBackingField(d3dProjection, "RendererAttached", true);
-        SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
-        SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
-        SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
+            var d3dProjection = Activator.CreateInstance(projectionType)
+                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            SetPropertyOrBackingField(d3dProjection, "GpuActive", !active);
+            SetPropertyOrBackingField(d3dProjection, "RendererAttached", active);
+            SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
+            SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
+            SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
 
-        var health = Activator.CreateInstance(healthType, new object?[] { null, true, false })
-                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
-        var surface = evaluate.Invoke(null, new object?[] { input, d3dProjection, health })
-                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy returned null.");
+            var health = Activator.CreateInstance(healthType, new object?[] { null, active, !active })
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+            var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, timestamp })
+                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
 
-        AssertEqual(true, GetBoolProperty(surface, "IsPreviewing"), "surface projection previewing");
-        AssertEqual(true, GetBoolProperty(surface, "GpuActive"), "surface projection GPU active");
-        AssertEqual(false, GetBoolProperty(surface, "PlaceholderVisible"), "surface projection placeholder visible");
-        AssertEqual(true, GetBoolProperty(surface, "GpuElementVisible"), "surface projection GPU element visible");
-        AssertEqual(false, GetBoolProperty(surface, "CpuElementVisible"), "surface projection CPU element visible");
-        AssertEqual(true, GetBoolProperty(surface, "RendererAttached"), "surface projection renderer attached");
-        AssertEqual(101L, GetLongProperty(surface, "FramesArrived"), "surface projection frames arrived");
-        AssertEqual(99L, GetLongProperty(surface, "FramesDisplayed"), "surface projection frames displayed");
-        AssertEqual(2L, GetLongProperty(surface, "FramesDropped"), "surface projection frames dropped");
-        AssertEqual(true, GetBoolProperty(surface, "BlankSuspected"), "surface projection blank suspected");
-        AssertEqual(false, GetBoolProperty(surface, "StallSuspected"), "surface projection stall suspected");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
-    {
-        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotStartupProjectionPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate not found.");
-        var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
-        var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "MediaOpened");
-        var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
-
-        var input = Activator.CreateInstance(inputType)
-                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "StartupState", "WaitingForFirstVisual");
-        SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-42");
-        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1250);
-        SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", true);
-        SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", false);
-        SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", true);
-        SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
-        SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
-        SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
-        SetPropertyOrBackingField(input, "StartupMissingSignals", "FirstVisual");
-        SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 5);
-        SetPropertyOrBackingField(input, "StartupLastFailureReason", "visual-timeout");
-        SetPropertyOrBackingField(input, "FirstVisualConfirmed", true);
-
-        var health = Activator.CreateInstance(healthType, new object?[] { 456.25d, true, false })
-                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
-        var startup = evaluate.Invoke(null, new object?[] { input, health })
-                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy returned null.");
-
-        AssertEqual("WaitingForFirstVisual", GetStringProperty(startup, "State"), "startup projection state");
-        AssertEqual("attempt-42", GetStringProperty(startup, "AttemptId"), "startup projection attempt id");
-        AssertEqual(456.25d, GetDoubleProperty(startup, "ElapsedMs"), "startup projection elapsed");
-        AssertEqual(1250, GetIntProperty(startup, "TimeoutMs"), "startup projection timeout");
-        AssertEqual(true, GetBoolProperty(startup, "GpuSignalMediaOpened"), "startup projection media opened signal");
-        AssertEqual(false, GetBoolProperty(startup, "GpuSignalFirstFrame"), "startup projection first frame signal");
-        AssertEqual(true, GetBoolProperty(startup, "GpuSignalPlaybackAdvancing"), "startup projection playback signal");
-        AssertEqual(requiredSignals, GetPropertyValue(startup, "RequiredSignals"), "startup projection required signals");
-        AssertEqual(receivedSignals, GetPropertyValue(startup, "ReceivedSignals"), "startup projection received signals");
-        AssertEqual(startupStrategy, GetPropertyValue(startup, "Strategy"), "startup projection strategy");
-        AssertEqual("FirstVisual", GetStringProperty(startup, "MissingSignals"), "startup projection missing signals");
-        AssertEqual(5, GetIntProperty(startup, "RecoveryAttemptCount"), "startup projection recovery count");
-        AssertEqual("visual-timeout", GetStringProperty(startup, "LastFailureReason"), "startup projection failure reason");
-        AssertEqual(true, GetBoolProperty(startup, "FirstVisualConfirmed"), "startup projection first visual confirmed");
+            AssertEqual(timestamp, GetPropertyValue(snapshot, "TimestampUtc"), "snapshot supplied timestamp");
+            AssertEqual(73L, GetLongProperty(snapshot, "PreviewRuntimeEpoch"), "snapshot sampled epoch");
+            AssertEqual(active, GetBoolProperty(snapshot, "IsPreviewing"), "snapshot previewing");
+            AssertEqual(!active, GetBoolProperty(snapshot, "GpuActive"), "snapshot GPU active");
+            AssertEqual(!active, GetBoolProperty(snapshot, "PlaceholderVisible"), "snapshot placeholder visible");
+            AssertEqual(active, GetBoolProperty(snapshot, "GpuElementVisible"), "snapshot GPU element visible");
+            AssertEqual(!active, GetBoolProperty(snapshot, "CpuElementVisible"), "snapshot CPU element visible");
+            AssertEqual(active, GetBoolProperty(snapshot, "RendererAttached"), "snapshot renderer attached");
+            AssertEqual(101L, GetLongProperty(snapshot, "FramesArrived"), "snapshot projected frames arrived");
+            AssertEqual(99L, GetLongProperty(snapshot, "FramesDisplayed"), "snapshot projected frames displayed");
+            AssertEqual(2L, GetLongProperty(snapshot, "FramesDropped"), "snapshot projected frames dropped");
+            AssertEqual(active, GetBoolProperty(snapshot, "BlankSuspected"), "snapshot blank suspected");
+            AssertEqual(!active, GetBoolProperty(snapshot, "StallSuspected"), "snapshot stall suspected");
+        }
 
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields()
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate not found.");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build not found.");
 
-        var input = Activator.CreateInstance(inputType)
-                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "GpuPositionEventCount", 42L);
+        foreach (var hasAttempt in new[] { true, false })
+        {
+            var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", hasAttempt ? "FirstVisual" : "MediaOpened");
+            var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", hasAttempt ? "MediaOpened" : "None");
+            var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", hasAttempt ? "D3D11VideoProcessor" : "CpuSoftwareBitmap");
+            var state = hasAttempt ? "WaitingForFirstVisual" : "Idle";
+            var attemptId = hasAttempt ? "attempt-42" : null;
+            var missingSignals = hasAttempt ? "FirstVisual" : null;
+            var failureReason = hasAttempt ? "visual-timeout" : null;
+            double? elapsedMs = hasAttempt ? 456.25d : null;
+            var timeoutMs = hasAttempt ? 1250 : 730;
+            var recoveryCount = hasAttempt ? 5 : 0;
 
-        var d3dProjection = Activator.CreateInstance(projectionType)
-                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-        SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", "Rendering");
-        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", 3840);
-        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", 2160);
-        SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", 1234.5d);
+            var input = Activator.CreateInstance(inputType)
+                        ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+            SetPropertyOrBackingField(input, "StartupState", state);
+            SetPropertyOrBackingField(input, "StartupAttemptId", attemptId);
+            SetPropertyOrBackingField(input, "StartupTimeoutMs", timeoutMs);
+            SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", hasAttempt);
+            SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", !hasAttempt);
+            SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", hasAttempt);
+            SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
+            SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
+            SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
+            SetPropertyOrBackingField(input, "StartupMissingSignals", missingSignals);
+            SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", recoveryCount);
+            SetPropertyOrBackingField(input, "StartupLastFailureReason", failureReason);
+            SetPropertyOrBackingField(input, "FirstVisualConfirmed", !hasAttempt);
 
-        var gpuPlayback = evaluate.Invoke(null, new object?[] { input, d3dProjection })
-                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy returned null.");
+            var d3dProjection = Activator.CreateInstance(projectionType)
+                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            var health = Activator.CreateInstance(healthType, new object?[] { elapsedMs, true, false })
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+            var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, DateTimeOffset.UnixEpoch })
+                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
 
-        AssertEqual("Rendering", GetStringProperty(gpuPlayback, "PlaybackState"), "GPU playback projection state");
-        AssertEqual(3840, GetIntProperty(gpuPlayback, "NaturalVideoWidth"), "GPU playback projection natural width");
-        AssertEqual(2160, GetIntProperty(gpuPlayback, "NaturalVideoHeight"), "GPU playback projection natural height");
-        AssertEqual(1234.5d, GetDoubleProperty(gpuPlayback, "PositionMs"), "GPU playback projection position");
-        AssertEqual(42L, GetLongProperty(gpuPlayback, "PositionEventCount"), "GPU playback projection event count");
+            AssertEqual(state, GetStringProperty(snapshot, "StartupState"), "snapshot startup state");
+            AssertEqual(attemptId, GetPropertyValue(snapshot, "StartupAttemptId"), "snapshot startup attempt id");
+            AssertEqual(elapsedMs, GetPropertyValue(snapshot, "StartupElapsedMs"), "snapshot startup elapsed");
+            AssertEqual(timeoutMs, GetIntProperty(snapshot, "StartupTimeoutMs"), "snapshot startup timeout");
+            AssertEqual(hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalMediaOpened"), "snapshot media opened signal");
+            AssertEqual(!hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalFirstFrame"), "snapshot first frame signal");
+            AssertEqual(hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalPlaybackAdvancing"), "snapshot playback signal");
+            AssertEqual(requiredSignals, GetPropertyValue(snapshot, "StartupRequiredSignals"), "snapshot required signals");
+            AssertEqual(receivedSignals, GetPropertyValue(snapshot, "StartupReceivedSignals"), "snapshot received signals");
+            AssertEqual(startupStrategy, GetPropertyValue(snapshot, "StartupStrategy"), "snapshot startup strategy");
+            AssertEqual(missingSignals, GetPropertyValue(snapshot, "StartupMissingSignals"), "snapshot missing signals");
+            AssertEqual(recoveryCount, GetIntProperty(snapshot, "StartupRecoveryAttemptCount"), "snapshot recovery count");
+            AssertEqual(failureReason, GetPropertyValue(snapshot, "StartupLastFailureReason"), "snapshot failure reason");
+            AssertEqual(!hasAttempt, GetBoolProperty(snapshot, "FirstVisualConfirmed"), "snapshot first visual confirmed");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build not found.");
+
+        foreach (var sample in new[]
+        {
+            (State: "Rendering", Width: 3840, Height: 2160, PositionMs: 1234.5d, EventCount: 42L),
+            (State: "Idle", Width: 1920, Height: 1080, PositionMs: 987.25d, EventCount: 17L)
+        })
+        {
+            var input = Activator.CreateInstance(inputType)
+                        ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+            SetPropertyOrBackingField(input, "GpuPositionEventCount", sample.EventCount);
+
+            var d3dProjection = Activator.CreateInstance(projectionType)
+                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", sample.State);
+            SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", sample.Width);
+            SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", sample.Height);
+            SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", sample.PositionMs);
+
+            var health = Activator.CreateInstance(healthType, new object?[] { null, false, false })
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+            var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, DateTimeOffset.UnixEpoch })
+                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
+
+            AssertEqual(sample.State, GetStringProperty(snapshot, "GpuPlaybackState"), "snapshot GPU playback state");
+            AssertEqual(sample.Width, GetIntProperty(snapshot, "GpuNaturalVideoWidth"), "snapshot GPU natural width");
+            AssertEqual(sample.Height, GetIntProperty(snapshot, "GpuNaturalVideoHeight"), "snapshot GPU natural height");
+            AssertEqual(sample.PositionMs, GetDoubleProperty(snapshot, "GpuPositionMs"), "snapshot GPU position");
+            AssertEqual(sample.EventCount, GetLongProperty(snapshot, "GpuPositionEventCount"), "snapshot GPU event count");
+        }
 
         return Task.CompletedTask;
     }
@@ -6910,7 +6914,14 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationControllerContext");
         AssertContains(controllerGraphText, "CaptureSelectionSnapshot = viewModel.CaptureSelectionSnapshot,");
         AssertContains(controllerGraphText, "RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,");
-        AssertContains(controllerGraphText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
+        AssertContains(controllerGraphText, "ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,");
+        foreach (var source in new[] { controllerGraphText, captureSettingsAutomationControllerText, deviceFormatProbeControllerText })
+        {
+            AssertDoesNotContain(source, "SetSuppressFormatChangeReinitialize");
+            AssertDoesNotContain(source, "IsSuppressFormatChangeReinitialize");
+        }
+        AssertContains(captureSettingsAutomationControllerText, "Action<Action> ApplyCaptureSelectionWithoutReinitialize");
+        AssertContains(deviceFormatProbeControllerText, "Action<Action> ApplyCaptureSelectionWithoutReinitialize");
         AssertContains(controllerGraphText, "ReinitializeDeviceWithResultAsync = viewModel.ReinitializeDeviceWithResultAsync,");
 
         AssertContains(recordingSettingsControllerText, "namespace Sussudio.Controllers;");
@@ -9429,7 +9440,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(retargetApplierText, "private DeviceFormatProbeRetargetDecision DecideDeviceFormatProbeRetarget(");
         AssertContains(retargetApplierText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
         AssertContains(retargetApplierText, "_context.SetSelectedResolution(retargetDecision.TargetResolution);");
-        AssertContains(retargetApplierText, "_context.RebuildFrameRateOptions();");
+        AssertContains(retargetApplierText, "_context.ApplyCaptureSelectionWithoutReinitialize(_context.RebuildFrameRateOptions);");
         AssertContains(retargetApplierText, "_context.SetSelectedResolution(previousResolution);");
         AssertContains(retargetApplierText, "_context.GetCaptureRuntimeSnapshot();");
         AssertDoesNotContain(retargetPolicyText, "EnqueueUiOperation(");

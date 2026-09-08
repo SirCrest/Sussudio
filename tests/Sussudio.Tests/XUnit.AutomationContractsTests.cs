@@ -132,6 +132,15 @@ public sealed class AutomationAppSurfaceContractsTests
     public Task AutomationPipeServerRequestTimeoutsUseBoundedDispatchCancellation()
         => global::Program.NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation();
 
+    [Theory]
+    [InlineData("canceled", false)]
+    [InlineData("CaNcElEd", false)]
+    [InlineData(null, false)]
+    [InlineData("execution-failed", false)]
+    [InlineData(null, true)]
+    public Task AutomationPipeServerTimeoutWaitsForDispatchAndPreservesOutcome(string? responseError, bool dispatchFaults)
+        => global::Program.NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(responseError, dispatchFaults);
+
     [Fact]
     public Task AutomationPipeServerRequestLimitHandlesCrLfBoundary()
         => global::Program.NamedPipeAutomationServer_RequestLimit_HandlesCrLfBoundary();
@@ -2925,9 +2934,10 @@ static partial class Program
         AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
         AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
         AssertContains(pipeServerText, "requestCancellation.Cancel();");
-        AssertContains(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
+        AssertDoesNotContain(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
+        AssertContains(pipeServerText, "var responseAfterCancellation = await dispatchTask.ConfigureAwait(false);");
         AssertContains(pipeServerText, "Automation command exceeded request timeout; waiting for dispatch to stop");
-        AssertContains(pipeServerText, "return _owner.CreateRequestTimeoutResponse();");
+        AssertContains(pipeServerText, "responseAfterCancellation = _owner.CreateRequestTimeoutResponse();");
         AssertDoesNotContain(pipeServerText, "DispatchContinues");
         AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
@@ -2940,6 +2950,73 @@ static partial class Program
         AssertDoesNotContain(pipeServerText, "reader.ReadLineAsync().WaitAsync(requestCancellation.Token)");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(
+        string? responseError,
+        bool dispatchFaults)
+    {
+        var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
+        var completionType = typeof(TaskCompletionSource<>).MakeGenericType(responseType);
+        var completion = Activator.CreateInstance(completionType, TaskCreationOptions.RunContinuationsAsynchronously)!;
+        var dispatchTask = (Task)completionType.GetProperty("Task")!.GetValue(completion)!;
+        var dispatchCalled = false;
+        var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
+            (method, arguments) =>
+            {
+                Assert.Equal("ExecuteAsync", method!.Name);
+                Assert.True(((CancellationToken)arguments![1]!).IsCancellationRequested);
+                dispatchCalled = true;
+                return dispatchTask;
+            });
+
+        var pipeName = $"unit-pipe-timeout-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        using var pipe = CreateTestPipeServerStream(pipeName);
+        var sessionType = server.GetType().GetNestedType("ConnectionSession", BindingFlags.NonPublic)!;
+        var session = Activator.CreateInstance(sessionType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null, args: new object[] { server, pipe, CancellationToken.None }, culture: null)!;
+        var execute = sessionType.GetMethod("ExecuteCommandWithTimeoutAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        using var timeout = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+        timeout.Cancel();
+
+        var execution = (Task)execute.Invoke(session, new object[]
+        {
+            CreateAutomationCommandRequest("GetSnapshot", null, "{}"), timeout, cancellation
+        })!;
+        Assert.True(dispatchCalled);
+        Assert.False(execution.IsCompleted, "Request timeout must wait for the admitted dispatch to stop.");
+
+        if (dispatchFaults)
+        {
+            var failure = new InvalidOperationException("dispatch failure after cancellation");
+            completionType.GetMethod("SetException", new[] { typeof(Exception) })!
+                .Invoke(completion, new object[] { failure });
+            var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => execution.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Same(failure, actual);
+            return;
+        }
+
+        var response = Activator.CreateInstance(responseType)!;
+        SetPropertyBackingField(response, "Success", responseError == null);
+        SetPropertyBackingField(response, "ErrorCode", responseError);
+        completionType.GetMethod("SetResult")!.Invoke(completion, new[] { response });
+        await execution.WaitAsync(TimeSpan.FromSeconds(5));
+        var result = execution.GetType().GetProperty("Result")!.GetValue(execution)!;
+        if (string.Equals(responseError, "canceled", StringComparison.OrdinalIgnoreCase))
+        {
+            Assert.NotSame(response, result);
+            AssertAutomationResponse(result, false, "request-timeout", "error", "dispatch canceled after timeout");
+            Assert.Equal("failed", GetAutomationLifecycle(result));
+        }
+        else
+        {
+            Assert.Same(response, result);
+        }
     }
 
     internal static async Task NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients()
@@ -3181,7 +3258,8 @@ static partial class Program
         bool authTokenRequired,
         byte[]? securityDescriptor,
         Func<byte[], NamedPipeServerStream> secureServerStreamFactory,
-        Func<NamedPipeServerStream> defaultServerStreamFactory)
+        Func<NamedPipeServerStream> defaultServerStreamFactory,
+        object? dispatcher = null)
     {
         var serverType = RequireType("Sussudio.Services.Automation.NamedPipeAutomationServer");
         var dispatcherType = RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher");
@@ -3191,7 +3269,7 @@ static partial class Program
 
         return (IDisposable)constructor.Invoke(new object?[]
         {
-            CreateThrowingProxy(dispatcherType),
+            dispatcher ?? CreateThrowingProxy(dispatcherType),
             pipeName,
             authTokenRequired,
             (securityDescriptor, "unit-test-security"),
@@ -3884,7 +3962,7 @@ static partial class Program
 
         var settingsChange = ExtractTextBetween(
             captureServiceText,
-            "private async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsUpdateAsync(",
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(",
             "private void UpdateEncodingSettings(CaptureSettings source)");
         AssertContains(settingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(settingsChange, "_currentSettings = previousSettings;");
@@ -3898,8 +3976,8 @@ static partial class Program
         }
         AssertContains(settingsChange, "FLASHBACK_FORMAT_CHANGE");
         AssertContains(settingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE");
-        AssertContains(captureServiceText, "current => RecordingSettingsSelection.From(current) with { RequestedFormat = format }");
-        AssertContains(captureServiceText, "splitEncodeMode != null ? SplitEncodeModeParser.Parse(splitEncodeMode) : current.SplitEncodeMode");
+        AssertContains(settingsChange, "RecordingSettingsSelection selection");
+        AssertContains(settingsChange, "selection.ApplyTo(_currentSettings);");
 
         var settingsRebuild = ExtractTextBetween(
             captureServiceText,
@@ -4240,8 +4318,6 @@ static partial class Program
             "UpdateAudioInputAsync",
             "UpdateMicrophoneMonitorAsync",
             "RestartFlashbackAsync",
-            "UpdateRecordingFormatAsync",
-            "CycleFlashbackEncoderSettingsAsync",
             "SetFlashbackEnabledAsync",
             "UpdateFlashbackSettingsAsync"
         };
@@ -4377,8 +4453,7 @@ static partial class Program
         var flashbackGuardsText = flashbackText;
 
         AssertContains(flashbackText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "public Task CycleFlashbackEncoderSettingsAsync(");
+        AssertContains(flashbackText, "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(");
         AssertContains(flashbackText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(flashbackStatusText, "internal FlashbackBufferStatus GetFlashbackBufferStatus()");
         AssertContains(flashbackStatusText, "internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()");
@@ -4747,7 +4822,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(flashbackText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "public Task CycleFlashbackEncoderSettingsAsync(");
+        AssertContains(flashbackText, "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(");
         AssertContains(flashbackText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(flashbackText, "public Task UpdateFlashbackSettingsAsync(int bufferMinutes, bool gpuDecode, CancellationToken cancellationToken = default)");
 
@@ -4789,7 +4864,7 @@ static partial class Program
         var cycleMethod = ExtractTextBetween(
             coordinatorText,
             "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync",
-            "public Task UpdateRecordingFormatAsync");
+            "public Task SetFlashbackEnabledAsync");
         var queueProcessor = ExtractTextBetween(
             coordinatorText,
             "private async Task ProcessQueueAsync",
@@ -4837,7 +4912,7 @@ static partial class Program
         var restartWithSettings = ExtractTextBetween(
             coordinatorText,
             "public Task RestartFlashbackAsync(CaptureSettings settings",
-            "public Task UpdateRecordingFormatAsync");
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync");
         var setFlashbackEnabled = ExtractTextBetween(
             coordinatorText,
             "public Task SetFlashbackEnabledAsync",
@@ -4867,16 +4942,15 @@ static partial class Program
             coordinatorText,
             "public Task StopRecordingAsync",
             "public Task StartAudioPreviewAsync");
-        var cycleFlashbackEncoder = ExtractTextBetween(
+        var recordingSettings = ExtractTextBetween(
             coordinatorText,
-            "public Task CycleFlashbackEncoderSettingsAsync",
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync",
             "public Task SetFlashbackEnabledAsync");
 
         AssertDoesNotContain(stopVideo, "propagateCancellationToOperation: true");
         AssertDoesNotContain(stopVideoTeardown, "propagateCancellationToOperation: true");
         AssertDoesNotContain(stopRecording, "propagateCancellationToOperation: true");
-        AssertDoesNotContain(cycleFlashbackEncoder, "propagateCancellationToOperation: true");
-        AssertDoesNotContain(cycleFlashbackEncoder, "coalesceLatest: true");
+        AssertDoesNotContain(recordingSettings, "propagateCancellationToOperation: true");
 
         return Task.CompletedTask;
     }
@@ -6454,8 +6528,7 @@ static partial class Program
         {
             "SetFlashbackEnabledAsync",
             "RestartFlashbackAsync",
-            "UpdateRecordingFormatAsync",
-            "CycleFlashbackEncoderSettingsAsync",
+            "ApplyRecordingSettingsAsync",
             "UpdateFlashbackSettingsAsync",
             "ExportFlashbackRangeAsync",
             "ExportFlashbackLastNSecondsAsync",
@@ -6689,7 +6762,7 @@ static partial class Program
 
         AssertNoRegex(
             viewModelText,
-            @"\b_captureService\s*\.\s*(SetFlashbackEnabled|RestartFlashbackAsync|UpdateRecordingFormatAsync|CycleFlashbackEncoderSettingsAsync|UpdateFlashbackSettings|ExportFlashback|GetFlashbackSegments|FlashbackPlaybackController|FlashbackBufferManager|FlashbackDiskBytes|FlashbackTotalBytesWritten)\b",
+            @"\b_captureService\s*\.\s*(SetFlashbackEnabled|RestartFlashbackAsync|ApplyRecordingSettingsAsync|UpdateFlashbackSettings|ExportFlashback|GetFlashbackSegments|FlashbackPlaybackController|FlashbackBufferManager|FlashbackDiskBytes|FlashbackTotalBytesWritten)\b",
             "MainViewModel flashback mutating/backend capture-service access");
         AssertNoRegex(
             viewModelText,
@@ -7372,8 +7445,8 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "AvailableVideoFormats.ToArray()");
         AssertContains(captureModeTransactionsText, "AvailableRecordingFormats.ToArray()");
         AssertContains(captureModeTransactionsText, "_latestSourceTelemetry");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(true);");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(false);");
+        AssertContains(captureSettingsAutomationControllerText, "_context.ApplyCaptureSelectionWithoutReinitialize(apply);");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "SetSuppressFormatChangeReinitialize");
         AssertContains(captureSettingsAutomationControllerText, "return wasPreviewing && _context.GetSelectedFormat() != null;");
         AssertContains(captureSettingsAutomationControllerText, "reinitialized = await _context.ReinitializeDeviceWithResultAsync($\"automation {reason}\")");
         AssertContains(captureSettingsAutomationControllerText, "var restored = await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);");

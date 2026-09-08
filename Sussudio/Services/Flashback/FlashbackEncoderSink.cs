@@ -365,7 +365,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     }
 
     private static string MapCodecName(RecordingFormat format)
-        => MediaFormat.MapNvencCodecName(format);
+        => EncoderSupport.MapNvencCodecName(format);
 
     private void ResetEncodingCounters()
     {

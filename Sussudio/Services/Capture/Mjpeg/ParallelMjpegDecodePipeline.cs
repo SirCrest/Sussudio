@@ -1297,7 +1297,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
         try
         {
-            callback(lease!);
+            callback(lease);
             lease = null;
         }
         catch (Exception ex)

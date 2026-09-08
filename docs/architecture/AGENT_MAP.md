@@ -68,8 +68,8 @@ mentions the moved files.
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
 | Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationSnapshotFlashbackProjectionBuilder.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/projection boundaries. |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | Flattened evidence snapshots and command/runtime DTOs; preserve wire shape. |
-| Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, health, cadence, and runtime DTOs. |
-| Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Recording options, outcomes, statistics, and integrity DTOs. |
+| Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
+| Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Recording options, outcomes, statistics, and integrity DTOs. `EncoderSupport` owns encoder capabilities and recording-format-to-NVENC codec-name mapping. |
 | Source telemetry | `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs`, `NativeXuAtProtocol.cs` | Native XU AT-command transport and source-signal protocol parsing. |
 | App service contracts | `Sussudio/Services/Contracts/ServiceContracts.cs`, `Sussudio/Services/Contracts/ISourceSignalTelemetryProvider.cs` | Shared source, recording, preview, and telemetry interfaces, separate from `Sussudio.Automation.Contracts` wire/protocol contracts. |
 | Recording | `Sussudio/Services/Recording/LibAvEncoder.cs`, `LibAvEncoder.Audio.cs`, `LibAvEncoder.VideoFrames.cs`, `LibAvRecordingSink.cs`, `Sussudio/Services/Recording/Verification/RecordingVerifier.cs`, `InProcessRecordingStructureVerifier.cs` | Encoder lifecycle, audio/video input, sink queues, and verification. See [recording](#recording). |
@@ -457,7 +457,8 @@ Important entry points:
   Flashback playback/buffer status projections, Flashback export and segment
   query forwarding, playback/scrub/marker/go-live command adapters, and active
   playback-controller readiness checks and rejection logging.
-- `CaptureModels.cs` owns capture settings/device/audio leaf models, pure
+- `CaptureModels.cs` owns capture settings/device/audio leaf models, input
+  `MediaFormat` descriptors and pixel-format/frame-rate behavior, pure
   transition legality, steady-state resolution, mutable session state,
   transition generation, frame-ledger DTOs, and the inherited diagnostics/health
   snapshot DTO surface used by runtime, automation, stats, recording, Flashback,
@@ -468,7 +469,9 @@ Important entry points:
   device priority/capability scoring, audio endpoint association, native XU
   interface path resolution for supported devices, inline/background Media
   Foundation format probing, persisted format-cache DTOs and load/save/delete
-  helpers, and pixel-format/frame-rate normalization.
+  helpers, and pixel-format/frame-rate normalization. It converts format-probe
+  failures into per-call discovery/completion errors; only successful probes
+  replace capabilities, including successful empty results.
 - `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` owns supported
   4K X VID/PID recognition, selected-interface projection, and the shared
   native XU transport gate used by telemetry, audio controls, discovery, and
@@ -477,7 +480,8 @@ Important entry points:
   P/Invoke declarations, native MF video-device enumeration, WASAPI capture
   endpoint enumeration and friendly-name reads, native video format probing,
   subtype/FourCC naming, direct symbolic-link MF source activation, and
-  enumeration fallback.
+  enumeration fallback. Native format-probe errors propagate to DeviceService;
+  Media Foundation's no-more-types result remains normal enumeration completion.
 - `CaptureService.cs` owns shared service state, construction, the
   event/property surface, and the public initialization transition with initial
   selected device/settings capture, negotiated-format seeding, observed-pixel
@@ -525,8 +529,8 @@ Important entry points:
 - `CaptureService.Flashback.cs` owns Flashback public state, segment
   access, enable/disable transition gating, restart entry points, committed
   restart orchestration after preview backend teardown, buffer/GPU settings
-  updates, live playback-controller GPU decode propagation, recording-format
-  changes, active encoding-setting application, encoder-setting cycles,
+  updates, live playback-controller GPU decode propagation, complete recording
+  selection application through `ApplyRecordingSettingsAsync`, encoder-setting cycles,
   rollback after failed Flashback buffer cycles, preview backend startup/disposal
   transition coordination, AV1 encoder support probing, video/audio readiness
   waiting, resource-owner request construction, deferred cleanup handoff,
@@ -538,7 +542,9 @@ Important entry points:
   validation, and Flashback session context construction.
 - `FlashbackBackendResources.cs` owns startup construction, install, playback
   initialization, rollback cleanup, producer attach/detach request contracts,
-  feed wiring, teardown mechanics, and backend artifact cleanup.
+  feed wiring, teardown mechanics, and backend artifact cleanup. Playback
+  replacement also owns state-event subscription transfer, generation stamps
+  for rejecting retired notifications, and the per-instance prewarm latch.
 - `CaptureService.Flashback.cs` owns buffer-cycle transition
   coordination: backend/export lock ordering, purge-preserve decisions, and
   full rebuild fallbacks. Sink-only resource mechanics live in
@@ -824,6 +830,12 @@ Entry points:
   and teardown. `CaptureService`
   remains the transition/readiness coordinator and reads/writes the backend
   aggregate directly, without private resource shim properties.
+- Playback health notifications follow the backend resource lifetime, through
+  stable `CaptureService.Flashback.cs` and `CaptureSessionCoordinator` events.
+  Backend generation is checked both before forwarding and after UI dispatch,
+  so callbacks from a retired controller cannot show a delayed notice.
+  `FlashbackHealthLifetimeTests.cs` executes replacement, captured-callback
+  retirement, clear, initialization/prewarm, and hidden-timeline health cases.
 - Flashback recording stop uses accepted/retired per-queue fences and a latched
   pre-stop video PTS. `CaptureService.Flashback.cs` freezes video and requested
   audio/microphone counters at that boundary, publishes the verified outcome
@@ -1051,7 +1063,7 @@ Primary current owners:
   preview runtime snapshot construction orchestration, and the UI-thread
   sampled preview snapshot input contract shared by the snapshot controller and
   D3D projection builder; final preview runtime snapshot DTO flattening from
-  sampled input and D3D projection; surface/startup/GPU playback projection policies;
+  sampled input and D3D projection; direct surface/startup/GPU playback mapping;
   the health input factory; preview startup elapsed timing; and
   blank/stall suspicion policy.
   `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs`
@@ -1267,7 +1279,7 @@ Primary current owners:
   adapter, preview runtime snapshot mapping, D3D projection ownership
   assertions, preview runtime snapshot controller Build integration, D3D policy
   null-renderer defaults, health policy/input factory, and
-  surface/startup/GPU playback projection policy regression checks.
+  final snapshot surface/startup/GPU playback field-preservation regression checks.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs` owns
   MainWindow startup/launch ownership, launch entrance animation, first-load
   hosting, splash loading phrases, splash pacing policy, native bootstrap,
@@ -1398,6 +1410,10 @@ Primary current owners:
   including HDR and SDR source retarget behavior, plus frame-rate source-filter,
   automatic-selection, always-on capture-option, timing-policy ownership,
   automatic frame-rate choice, and pure timing-policy behavior assertions.
+- `tests/Sussudio.Tests/CaptureSelectionSuppressionTests.cs` exercises the
+  view-model selection mutation operation with nested callbacks, incoming
+  suppression, and failures. It verifies that inner selections cannot clear
+  an outer selection's preview-reinitialization guard.
 - `tests/Sussudio.Tests/XUnit.PresentationPreviewContractsTests.cs`
   owns xUnit execution for the former legacy presentation-preview frame-rate
   selection/timing and resolution-selection catalog groups.
@@ -1729,6 +1745,8 @@ Primary current owners:
   subclassing, LocalAppData user-settings persistence and source-generated JSON
   context, bounded external process supervision contracts and runner, and
   best-effort MMCSS worker registration.
+  Renderer telemetry uses RingBufferHelpers.Copy for chronological samples;
+  renderer-owned locks and sample limits remain at its call sites.
   `tests/Sussudio.Tests/XUnit.CoreRuntimeContractsTests.cs` owns their behavior
   and native-entry-point contracts.
 - `tests/Sussudio.Tests/XUnit.AutomationContractsTests.cs` owns the former
@@ -1931,7 +1949,20 @@ Primary current owners:
   marker API, normalization, disposal, marker clamp, frame-duration, decoded-PTS
   cadence projection/telemetry, decode metrics reset/projection, decoded-frame
   submit-failure, preview frame submission, held-frame ownership, and
-  live-recovery ownership tests.
+  live-recovery ownership tests. Remaining prebuffer source checks cover owner,
+  command/resume wiring, policy constants, and diagnostic contracts.
+- `tests/Sussudio.Tests/FlashbackPrebufferBehaviorTests.cs` owns executable
+  prebuffer frame retention/cleanup, rewind PTS, audio queue thresholds and
+  timestamp gates, pending-command, and cancellation scenarios. It invokes the
+  production controller and decoder against committed media fixtures and the
+  managed WASAPI queue. Hardware-marked AVFrame sentinels verify actual native
+  reference release without claiming D3D11 decode, display, or audible output.
+  Real H.264 software opens cover incomplete probe metadata, and HEVC HDR
+  decoding verifies the HDR flag and every converted luma/chroma sample in
+  the P010 software output.
+  `tests/Sussudio.Tests/XUnit.FlashbackResumeHardeningTests.cs` retains the
+  playback state-change event source contract; prebuffer behavior lives in the
+  dedicated behavioral suite.
 - `tests/Sussudio.Tests/XUnit.FlashbackContractsTests.cs` owns the xUnit
   execution surface and backing `Program` methods for the former legacy
   Flashback playback startup, command-queue, source-shape, cadence, submission,
@@ -1985,7 +2016,8 @@ Primary current owners:
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` owns Flashback status
   and playback-position polling timers. `Sussudio/MainWindow.xaml.cs`
   is the XAML-facing adapter; CTI anchor timing lives with Flashback UI
-  playhead motion in `FlashbackUiControllers.cs`.
+  playhead motion in `FlashbackUiControllers.cs`. These presentation timers
+  request prewarm but do not own health observation or playback subscriptions.
 - `Sussudio/Controllers/Shell/ShellChromeController.cs` owns settings shelf
   visibility, the animation gate, and show/hide storyboard construction.
   `Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter.
@@ -2215,7 +2247,11 @@ Primary current owners:
   points, preview-sink handoff, preview lifecycle flags,
   preview reinitialize coordination, and preview request events; `MainViewModel.cs` owns capture-selection
   state, option collections, HDR capture/runtime presentation state, and
-  source signal/source-telemetry presentation state; `MainViewModel.AudioState.cs` owns audio,
+  source signal/source-telemetry presentation state. Its synchronous
+  `ApplyCaptureSelectionWithoutReinitialize` operation owns suppression around
+  controller-requested selection mutations and restores the caller's prior
+  state through nesting and exceptions; controllers cannot set that guard directly.
+  `MainViewModel.AudioState.cs` owns audio,
   microphone, device-native audio/XU UI state, live meter callback state,
   custom audio-input retargeting, preview-monitoring ramp handoff, and
   audio-preview property-change routing; `MainViewModel.FlashbackState.cs` owns Flashback
@@ -2288,7 +2324,9 @@ Primary current owners:
   capture pre-cleanup renderer stop fan-out, frame-captured callbacks, the
   runtime event ingress graph-port contract, and event
   subscription/unsubscription ordering including the desktop power-resume
-  signal.
+  signal. The existing runtime timer and initial/status/error refresh update
+  persistent Flashback health regardless of timeline visibility; runtime ingress
+  owns the stable playback health subscription and detaches it for disposal.
   `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs`
   is a top-level `Sussudio.Controllers` owner for late device-format probe event
   ingress, UI enqueue/generation checks, selected-device capability refresh,
@@ -2382,7 +2420,10 @@ Primary current owners:
   in/out marker, gap-from-live UI projection, read-only Flashback playback
   snapshot and segment access, rejection status projection for UI, CLI, and
   MCP callers, scrub, nudge, in/out marker command routing, and
-  automation-facing Flashback playback action dispatch.
+  automation-facing Flashback playback action dispatch. It owns health-message
+  presentation, voluntary live-reason filtering, dead-backend priority, the
+  five-second transient notice timer, and UI-dispatch generation checks; it
+  neither caches a playback controller nor repairs subscriptions while polling.
   `MainViewModel.FlashbackState.cs` owns Flashback UI export commands,
   save-picker flow, active-export guard, user-facing export result/status
   handling, shared export operation lifecycle, asynchronous request serialization
@@ -2469,7 +2510,7 @@ Primary current owners:
   application.
   It also owns the late-probe reconciliation graph-port contract for UI
   enqueue, device-scan generation, selected-device lookup/state, active capture
-  guards, suppress-format-change state, capability rebuild, and retarget
+  guards, scoped selection mutation, capability rebuild, and retarget
   applier construction. It also owns HDR/SDR reinitialize dispatch, MJPG HFR
   preserve, session mismatch check, active-capture restore behavior, and the
   late-probe retarget graph-port contract for capture-mode
@@ -2540,7 +2581,7 @@ Primary current owners:
   routing.
   It also owns the capture-settings automation graph-port contract for option
   collections, selected capture-mode state, preview reinitialization checks,
-  UI-thread dispatch, and format-change suppression.
+  UI-thread dispatch, and scoped selection mutation through the view-model owner.
   `MainViewModel.cs` owns capture-mode/HDR
   property-change side effects outside the capture-settings automation
   controller.
