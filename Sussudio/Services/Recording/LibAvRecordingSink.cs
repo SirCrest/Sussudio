@@ -75,6 +75,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private long _audioDropsBacklogEviction;
     private long _microphoneDropsQueueSaturated;
     private long _microphoneDropsBacklogEviction;
+    private long _workSignalAlreadySignaled;
     private long _gpuFramesEnqueued;
     private long _gpuFramesDropped;
     private long _cudaFramesEnqueued;
@@ -184,6 +185,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _audioQueueDepth, 0);
             Interlocked.Exchange(ref _microphoneQueueDepth, 0);
+            Interlocked.Exchange(ref _workSignalAlreadySignaled, 0);
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
                 _cts.Token,
@@ -384,6 +386,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
     public long MicrophoneDropsQueueSaturated => Interlocked.Read(ref _microphoneDropsQueueSaturated);
     public long MicrophoneDropsBacklogEviction => Interlocked.Read(ref _microphoneDropsBacklogEviction);
+    public long WorkSignalAlreadySignaledCount => Interlocked.Read(ref _workSignalAlreadySignaled);
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
@@ -1509,7 +1512,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private void SignalWork(string operation)
     {
         try { _workAvailable.Release(); }
-        catch (SemaphoreFullException) { /* Best-effort: semaphore already signaled — work loop will pick it up */ }
+        catch (SemaphoreFullException)
+        {
+            // Best-effort: semaphore already signaled — work loop will pick it up.
+            var alreadySignaled = Interlocked.Increment(ref _workSignalAlreadySignaled);
+            if (alreadySignaled == 1 || alreadySignaled % 30 == 0)
+            {
+                Logger.Log($"LIBAV_SINK_WORK_SIGNAL_ALREADY_SIGNALED op={operation} count={alreadySignaled}");
+            }
+        }
         catch (ObjectDisposedException)
         {
             Logger.Log($"LIBAV_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");

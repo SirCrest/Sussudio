@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-09T18:50:23Z
+Generated UTC: 2026-09-09T22:31:10Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -8,11 +8,11 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Metric | Value |
 | --- | ---: |
 | Production .cs files | 148 |
-| Test .cs files | 87 |
+| Test .cs files | 88 |
 | Core app .cs files (Sussudio/) | 114 |
-| Core app nonblank LoC (Sussudio/) | 96357 |
-| Sussudio.Tests .cs files | 86 |
-| Sussudio.Tests nonblank LoC | 74190 |
+| Core app nonblank LoC (Sussudio/) | 96368 |
+| Sussudio.Tests .cs files | 87 |
+| Sussudio.Tests nonblank LoC | 74300 |
 | Production .cs files under 60 lines | 3 (2.0%) |
 | Production .cs files under 80 lines | 7 (4.7%) |
 
@@ -49,8 +49,8 @@ Root: C:\Users\crest\source\repos\Sussudio
 | 2380 | Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs |
 | 2149 | Sussudio/Services/Flashback/FlashbackDecoder.cs |
 | 2105 | Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs |
+| 2040 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 2033 | Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs |
-| 2029 | Sussudio/Services/Recording/LibAvRecordingSink.cs |
 | 1934 | Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs |
 | 1813 | Sussudio/Services/Flashback/FlashbackBufferManager.cs |
 | 1787 | Sussudio/Services/Capture/UnifiedVideoCapture.cs |
