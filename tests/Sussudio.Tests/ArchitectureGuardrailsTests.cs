@@ -573,15 +573,36 @@ static partial class Program
         AssertContains(scriptText, "Remove-Item -LiteralPath $tmpOutPath -Force");
         AssertContains(scriptText, "Core app .cs files (Sussudio/)");
         AssertContains(scriptText, "Sussudio.Tests nonblank LoC");
-        AssertContains(baselineText, $"| Core app .cs files (Sussudio/) | {coreFiles.Length} |");
-        AssertContains(baselineText, $"| Core app nonblank LoC (Sussudio/) | {coreNonBlankLines} |");
-        AssertContains(baselineText, $"| Sussudio.Tests .cs files | {sussudioTestFiles.Length} |");
-        AssertContains(baselineText, $"| Sussudio.Tests nonblank LoC | {sussudioTestNonBlankLines} |");
+        // Any edit that moves a line count invalidates the generated baseline. Report that
+        // as a regeneration instruction rather than as a diff against the whole document,
+        // so the fix does not have to be rediscovered on every such edit.
+        AssertBaselineRow(baselineText, "Core app .cs files (Sussudio/)", coreFiles.Length);
+        AssertBaselineRow(baselineText, "Core app nonblank LoC (Sussudio/)", coreNonBlankLines);
+        AssertBaselineRow(baselineText, "Sussudio.Tests .cs files", sussudioTestFiles.Length);
+        AssertBaselineRow(baselineText, "Sussudio.Tests nonblank LoC", sussudioTestNonBlankLines);
         AssertDoesNotContain(baselineText, ".claude/worktrees");
         AssertDoesNotContain(baselineText, ".desloppify/");
         AssertDoesNotContain(baselineText, ".desloppify.bak.");
 
         return Task.CompletedTask;
+    }
+
+    private static void AssertBaselineRow(string baselineText, string label, int expected)
+    {
+        var expectedRow = $"| {label} | {expected} |";
+        if (NormalizeLineEndings(baselineText).Contains(expectedRow, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var actualRow = NormalizeLineEndings(baselineText)
+            .Split('\n')
+            .FirstOrDefault(line => line.StartsWith($"| {label} |", StringComparison.Ordinal))
+            ?.Trim() ?? "<row missing>";
+        throw new InvalidOperationException(
+            $"docs/architecture/Sussudio-Defragmentation-Baseline.generated.md is stale: '{label}' reads " +
+            $"'{actualRow}' but the tree now has {expected}. Regenerate it (never hand-edit the numbers) with: " +
+            "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/architecture/Capture-SussudioDefragBaseline.ps1");
     }
 
     internal static Task TestMigrationPlan_FileReferencesResolveAndNamesValidationCommands()
