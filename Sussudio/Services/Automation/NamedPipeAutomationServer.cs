@@ -438,9 +438,13 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
                     return clientPid;
                 }
             }
-            catch
+            catch (ObjectDisposedException)
             {
-                // PID lookup is best-effort.
+                // Client disconnected and the pipe was disposed mid-lookup; the caller logs "?".
+            }
+            catch (InvalidOperationException)
+            {
+                // Pipe is not in a connected state, same outcome.
             }
 
             return 0;
