@@ -282,19 +282,15 @@ internal static class AutomationPipeClient
         int responseTimeoutMs,
         string? authToken = null,
         CancellationToken cancellationToken = default)
-    {
-        var result = await SendCommandWithResultAsync(
+        => await SendCommandAsync(
                 pipeName,
-                commandName,
+                AutomationPipeProtocol.ResolveCommand(commandName),
                 payload,
                 connectTimeoutMs,
                 responseTimeoutMs,
                 authToken,
-                includeResponseElement: false,
                 cancellationToken)
             .ConfigureAwait(false);
-        return result.ResponseJson;
-    }
 
     internal static async Task<string> SendCommandAsync(
         string pipeName,
@@ -304,10 +300,28 @@ internal static class AutomationPipeClient
         int responseTimeoutMs,
         string? authToken = null,
         CancellationToken cancellationToken = default)
+        => await SendCommandAsync(
+                pipeName,
+                (int)kind,
+                payload,
+                connectTimeoutMs,
+                responseTimeoutMs,
+                authToken,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    private static async Task<string> SendCommandAsync(
+        string pipeName,
+        int commandValue,
+        object? payload,
+        int connectTimeoutMs,
+        int responseTimeoutMs,
+        string? authToken,
+        CancellationToken cancellationToken)
     {
         var result = await SendCommandWithResultAsync(
                 pipeName,
-                kind,
+                commandValue,
                 payload,
                 connectTimeoutMs,
                 responseTimeoutMs,

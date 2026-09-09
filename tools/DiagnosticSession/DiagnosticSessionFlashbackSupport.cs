@@ -168,27 +168,31 @@ internal static class DiagnosticSessionFlashbackWaits
         bool expectedActive,
         TimeSpan timeout,
         CancellationToken cancellationToken)
-    {
-        var started = Stopwatch.GetTimestamp();
-        while (Stopwatch.GetElapsedTime(started) < timeout)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
-            if (TryGetSnapshot(response, out var snapshot) &&
-                GetBool(snapshot, "FlashbackActive") == expectedActive)
-            {
-                return snapshot.Clone();
-            }
-
-            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
-        }
-
-        return null;
-    }
+        => await WaitForSnapshotFlagAsync(
+                sendCommandAsync,
+                "FlashbackActive",
+                expectedActive,
+                timeout,
+                cancellationToken)
+            .ConfigureAwait(false);
 
     internal static async Task<JsonElement?> WaitForPreviewActiveAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         bool expectedActive,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+        => await WaitForSnapshotFlagAsync(
+                sendCommandAsync,
+                "IsPreviewing",
+                expectedActive,
+                timeout,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    private static async Task<JsonElement?> WaitForSnapshotFlagAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        string flagName,
+        bool expectedValue,
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
@@ -198,7 +202,7 @@ internal static class DiagnosticSessionFlashbackWaits
             cancellationToken.ThrowIfCancellationRequested();
             var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(response, out var snapshot) &&
-                GetBool(snapshot, "IsPreviewing") == expectedActive)
+                GetBool(snapshot, flagName) == expectedValue)
             {
                 return snapshot.Clone();
             }
