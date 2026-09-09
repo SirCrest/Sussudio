@@ -1293,8 +1293,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             }
             finally
             {
+                // Only a disposed wait handle is an expected race here; any other
+                // failure would strand the caller waiting on this fence.
                 try { done.Set(); }
-                catch { /* race with dispose if we aborted; safe to ignore */ }
+                catch (ObjectDisposedException) { /* aborted bind already disposed the fence */ }
             }
         });
 

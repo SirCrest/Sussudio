@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -645,9 +645,28 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         {
             process.Kill(entireProcessTree: true);
         }
-        catch
+        catch (Exception ex) when (!HasExitedSafely(process))
         {
-            // Best-effort - process may have already exited.
+            // An already-exited process is the expected race and stays quiet; a live
+            // one that resisted termination can hold handles and is worth recording.
+            Logger.Log($"PROCESS_KILL_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+        catch (Exception)
+        {
+            // The process exited between the kill attempt and the liveness check.
+        }
+    }
+
+    private static bool HasExitedSafely(Process process)
+    {
+        try
+        {
+            return process.HasExited;
+        }
+        catch (Exception)
+        {
+            // Treat an unreadable exit state as exited so the filter stays quiet.
+            return true;
         }
     }
 

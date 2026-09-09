@@ -708,9 +708,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         {
                             _ = Marshal.Release(activatePtr);
                         }
-                        catch
+                        catch (Exception releaseEx)
                         {
-                            // Best effort.
+                            // The activation leaks either way; record why so a leaked
+                            // handle is traceable to this failure path.
+                            Logger.Log(
+                                $"MF_ACTIVATE_RELEASE_FAIL stage=activation_cleanup type={releaseEx.GetType().Name} " +
+                                $"hr=0x{releaseEx.HResult:X8} msg='{releaseEx.Message}'");
                         }
                     }
 
