@@ -1562,22 +1562,22 @@ static partial class Program
         AssertContains(libAvSource, "_videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick)");
         AssertContains(libAvSource, "_videoLatencyTracker.TrackDequeueUnderLock(packet.EnqueueTick)");
         AssertContains(libAvSource, "_videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber)");
+        // The claim/high-water/rollback sequence now lives in QueueAdmission
+        // (behaviorally covered by QueueAdmissionTests) and is shared with
+        // FlashbackEncoderSink; each lane here supplies only its own counters and tag.
         AssertContains(libAvSource, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _videoQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(libAvSource, "AtomicMax.Update(ref _videoQueueMaxDepth, depth);");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, \"video\", DecrementQueueDepth)");
         AssertContains(libAvSource, "public int GpuQueueMaxDepth");
         AssertContains(libAvSource, "public int CudaQueueMaxDepth");
         AssertContains(libAvSource, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _gpuQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(libAvSource, "AtomicMax.Update(ref _gpuQueueMaxDepth, depth);");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, \"gpu\", DecrementQueueDepth)");
         AssertContains(libAvSource, "private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
-        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _cudaQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(libAvSource, "AtomicMax.Update(ref _cudaQueueMaxDepth, depth);");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref _cudaQueueDepth, \"cuda_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref _cudaQueueDepth, ref _cudaQueueMaxDepth, \"cuda\", DecrementQueueDepth)");
         AssertContains(libAvSource, "private static bool TryWriteAudioPacket(");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth)");
+        AssertDoesNotContain(libAvSource, "var depth = Interlocked.Increment(ref _videoQueueDepth);");
+        AssertDoesNotContain(libAvSource, "var depth = Interlocked.Increment(ref _gpuQueueDepth);");
+        AssertDoesNotContain(libAvSource, "var depth = Interlocked.Increment(ref _cudaQueueDepth);");
         AssertContains(libAvSource, "private static void DecrementQueueDepth(ref int target, string queueName)");
         AssertContains(libAvSource, "LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertContains(libAvSource, "private void SignalWork(string operation)");

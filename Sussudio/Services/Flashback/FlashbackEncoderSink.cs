@@ -1596,47 +1596,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return texture == IntPtr.Zero ? "null_texture" : null;
     }
 
+    // QueueAdmission owns the claim/high-water/rollback sequence shared with
+    // LibAvRecordingSink; these lanes supply only their own counters and log tag.
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _videoQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, "video", DecrementQueueDepth);
 
     private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _gpuQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, "gpu", DecrementQueueDepth);
 
     private static bool TryWriteAudioPacket(
         Channel<AudioSamplePacket> queue,
         AudioSamplePacket packet,
         ref int queueDepth,
         string queueName)
-    {
-        Interlocked.Increment(ref queueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            return true;
-        }
-
-        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth);
 
     private void TrackVideoQueueRejected(string reason)
     {

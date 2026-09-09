@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Sussudio.Services.Runtime;
@@ -188,6 +189,59 @@ internal static class AtomicCounter
                 return current >= amount;
             }
         }
+    }
+}
+
+// Bounded-queue admission shared by the recording and flashback encoder sinks.
+// Both sinks publish onto a bounded Channel from a hot capture callback, and both
+// need the same three steps: claim a depth slot, record the high-water mark when
+// the write lands, and give the slot back when the channel refuses. That sequence
+// was open-coded seven times across the two sinks (video, gpu, cuda and audio
+// lanes) and every copy was byte-identical, so a drift in one lane would have been
+// invisible. The rollback stays a caller-supplied delegate because each sink tags
+// its underflow diagnostic with its own log prefix.
+internal static class QueueAdmission
+{
+    // Matches the sinks' own `DecrementQueueDepth(ref int, string)`, so a method
+    // group converts without allocating per call.
+    internal delegate void DepthRollback(ref int depth, string queueName);
+
+    // Video/gpu/cuda lanes: the observed depth feeds the lane's high-water mark.
+    public static bool TryWrite<T>(
+        Channel<T> queue,
+        T packet,
+        ref int depth,
+        ref int maxDepth,
+        string queueName,
+        DepthRollback rollback)
+    {
+        var observed = Interlocked.Increment(ref depth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            AtomicMax.Update(ref maxDepth, observed);
+            return true;
+        }
+
+        rollback(ref depth, $"{queueName}_write_failed");
+        return false;
+    }
+
+    // Audio lanes track depth but no high-water mark.
+    public static bool TryWrite<T>(
+        Channel<T> queue,
+        T packet,
+        ref int depth,
+        string queueName,
+        DepthRollback rollback)
+    {
+        Interlocked.Increment(ref depth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            return true;
+        }
+
+        rollback(ref depth, $"{queueName}_write_failed");
+        return false;
     }
 }
 

@@ -4483,17 +4483,17 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
         AssertContains(sourceText, "FLASHBACK_SINK_GPU_QUEUE_REJECT");
         AssertContains(sourceText, "total == 1 || total % 30 == 0");
+        // The claim/high-water/rollback sequence now lives in QueueAdmission
+        // (behaviorally covered by QueueAdmissionTests) and is shared with
+        // LibAvRecordingSink; each lane here supplies only its own counters and tag.
         AssertContains(sourceText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(sourceText, "var depth = Interlocked.Increment(ref _videoQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(sourceText, "AtomicMax.Update(ref _videoQueueMaxDepth, depth);");
-        AssertContains(sourceText, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
+        AssertContains(sourceText, "QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, \"video\", DecrementQueueDepth)");
         AssertContains(sourceText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertContains(sourceText, "var depth = Interlocked.Increment(ref _gpuQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(sourceText, "AtomicMax.Update(ref _gpuQueueMaxDepth, depth);");
-        AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        AssertContains(sourceText, "QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, \"gpu\", DecrementQueueDepth)");
         AssertContains(sourceText, "private static bool TryWriteAudioPacket(");
-        AssertContains(sourceText, "Interlocked.Increment(ref queueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(sourceText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertContains(sourceText, "QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth)");
+        AssertDoesNotContain(sourceText, "var depth = Interlocked.Increment(ref _videoQueueDepth);");
+        AssertDoesNotContain(sourceText, "var depth = Interlocked.Increment(ref _gpuQueueDepth);");
         AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
         AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
         AssertContains(sourceText, "private static void DecrementQueueDepth(ref int target, string queueName)");
@@ -4930,10 +4930,9 @@ static partial class Program
         AssertContains(inputsText, "return texture == IntPtr.Zero ? \"null_texture\" : null;");
         AssertContains(inputsText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
         AssertContains(inputsText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertContains(inputsText, "AtomicMax.Update(ref _videoQueueMaxDepth, depth);");
-        AssertContains(inputsText, "AtomicMax.Update(ref _gpuQueueMaxDepth, depth);");
-        AssertContains(inputsText, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
-        AssertContains(inputsText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        // QueueAdmission carries the high-water update and the rollback tag for both lanes.
+        AssertContains(inputsText, "QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, \"video\", DecrementQueueDepth)");
+        AssertContains(inputsText, "QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, \"gpu\", DecrementQueueDepth)");
         AssertContains(inputsText, "private void TrackVideoQueueRejected(string reason)");
         AssertContains(inputsText, "private void TrackGpuQueueRejected(string reason)");
         AssertContains(inputsText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
@@ -4949,7 +4948,7 @@ static partial class Program
         AssertContains(inputsText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
         AssertContains(inputsText, "FLASHBACK_SINK_AUDIO_EVICT_PTS");
         AssertContains(inputsText, "private static bool TryWriteAudioPacket(");
-        AssertContains(inputsText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertContains(inputsText, "QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth)");
 
         AssertContains(queueCleanupText, "private void ReturnAllRemainingQueuedBuffers()");
         AssertContains(queueCleanupText, "private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)");

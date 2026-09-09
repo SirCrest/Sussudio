@@ -1261,44 +1261,16 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return VideoEnqueueResult.Overloaded;
     }
 
+    // QueueAdmission owns the claim/high-water/rollback sequence shared with
+    // FlashbackEncoderSink; these lanes supply only their own counters and log tag.
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _videoQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, "video", DecrementQueueDepth);
 
     private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _gpuQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, "gpu", DecrementQueueDepth);
 
     private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _cudaQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _cudaQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _cudaQueueDepth, "cuda_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _cudaQueueDepth, ref _cudaQueueMaxDepth, "cuda", DecrementQueueDepth);
 
     private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)
     {
@@ -1743,16 +1715,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         AudioSamplePacket packet,
         ref int queueDepth,
         string queueName)
-    {
-        Interlocked.Increment(ref queueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            return true;
-        }
-
-        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth);
 
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
 }
