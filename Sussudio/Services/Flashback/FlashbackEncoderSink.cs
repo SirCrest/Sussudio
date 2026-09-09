@@ -1047,22 +1047,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return;
         }
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await encodingTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _encodingFailure ??= ex;
-            }
-            finally
-            {
-                FinalizeDisposeCore();
-                Logger.Log("FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
-            }
-        });
+        EncodingTaskHelpers.DrainDeferred(
+            encodingTask,
+            ex => _encodingFailure ??= ex,
+            FinalizeDisposeCore,
+            "FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
     }
 
     private void FinalizeDisposeCore()

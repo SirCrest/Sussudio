@@ -931,22 +931,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return;
         }
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await encodingTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _encodingFailure ??= ex;
-            }
-            finally
-            {
-                FinalizeDisposeCore();
-                Logger.Log("LIBAV_SINK_DISPOSE_DEFERRED_COMPLETE");
-            }
-        });
+        EncodingTaskHelpers.DrainDeferred(
+            encodingTask,
+            ex => _encodingFailure ??= ex,
+            FinalizeDisposeCore,
+            "LIBAV_SINK_DISPOSE_DEFERRED_COMPLETE");
     }
 
     private void FinalizeDisposeCore()

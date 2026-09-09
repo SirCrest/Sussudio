@@ -316,6 +316,34 @@ internal static class RingBufferHelpers
 // from the other. Ownership of the retained exception stays with each sink.
 internal static class EncodingTaskHelpers
 {
+    // Both encoder sinks defer the same drain when the encoding task outlives their
+    // dispose timeout: await it off the dispose path, keep the first failure, then
+    // finalize exactly once. Only the completion tag differs, so the async
+    // exception-handling shape lives here rather than drifting in two copies.
+    public static void DrainDeferred(
+        Task encodingTask,
+        Action<Exception> recordFailure,
+        Action finalize,
+        string completeTag)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await encodingTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                recordFailure(ex);
+            }
+            finally
+            {
+                finalize();
+                Logger.Log(completeTag);
+            }
+        });
+    }
+
     public static Exception? ObserveCompletion(Task encodingTask)
     {
         try
