@@ -7356,7 +7356,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempRoot);
         }
 
         return Task.CompletedTask;

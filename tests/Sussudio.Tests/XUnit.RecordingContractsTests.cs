@@ -150,7 +150,7 @@ public sealed class CoreRuntimeRecordingContractsTests
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -486,7 +486,7 @@ public sealed class RecordingModelContractsTests
         finally
         {
             (manager as IDisposable)?.Dispose();
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         static void SetBackingField(object instance, string name, object value)
@@ -2592,7 +2592,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2617,7 +2617,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2651,7 +2651,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2683,7 +2683,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2715,7 +2715,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2747,7 +2747,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2781,7 +2781,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2814,7 +2814,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2845,7 +2845,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2877,7 +2877,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2926,7 +2926,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2996,7 +2996,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3029,7 +3029,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -5111,7 +5111,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -5213,7 +5213,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -5246,8 +5246,8 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-            try { Directory.Delete(outsideDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
+            global::Program.TryDeleteDirectory(outsideDir);
         }
 
         return Task.CompletedTask;
@@ -5279,8 +5279,8 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-            try { Directory.Delete(outsideDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
+            global::Program.TryDeleteDirectory(outsideDir);
         }
 
         return Task.CompletedTask;
@@ -5320,7 +5320,7 @@ static partial class Program
         AssertContains(source, "public void UpdateLatestPts(TimeSpan pts)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
         AssertContains(source, "public void UpdateDiskBytes(long activeSegmentBytes)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
 
-        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        global::Program.TryDeleteDirectory(tempDir);
         return Task.CompletedTask;
     }
 
@@ -5361,7 +5361,7 @@ static partial class Program
         AssertContains(source, "FLASHBACK_PURGE_SKIP reason=disposed");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
 
-        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        global::Program.TryDeleteDirectory(tempDir);
         return Task.CompletedTask;
     }
 
@@ -5408,7 +5408,7 @@ static partial class Program
         AssertContains(source, "FLASHBACK_BUFFER_EVICT_SKIP reason=recovery_preserved");
         AssertContains(source, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
 
-        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        global::Program.TryDeleteDirectory(tempDir);
         return Task.CompletedTask;
     }
 
@@ -6034,7 +6034,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6083,7 +6083,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6135,7 +6135,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6194,7 +6194,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6231,7 +6231,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6278,7 +6278,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6323,7 +6323,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6388,7 +6388,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6452,7 +6452,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6548,7 +6548,7 @@ static partial class Program
         {
             if (!string.IsNullOrWhiteSpace(activePath) && File.Exists(activePath))
             {
-                try { File.SetAttributes(activePath, FileAttributes.Normal); } catch { }
+                global::Program.TryClearReadOnlyAttribute(activePath);
             }
 
             if (manager is IDisposable disposable)
@@ -6556,7 +6556,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6608,7 +6608,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6676,7 +6676,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;

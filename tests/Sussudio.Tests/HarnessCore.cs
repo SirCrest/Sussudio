@@ -111,14 +111,25 @@ static partial class Program
     private static string GetToolAssemblyRelativePath(string toolName, string targetFramework, string assemblyName)
         => Path.Combine("tools", toolName, "bin", ActiveTestConfiguration, targetFramework, assemblyName);
 
-    private static string? InferConfigurationFromOutputPath(string path)
+    internal static string? InferConfigurationFromOutputPath(string path)
     {
+        // Output is bin/<Configuration>/<TFM>[/<RID>] without an explicit platform and
+        // bin/<Platform>/<Configuration>/<TFM>[/<RID>] with one, so the first segment under
+        // bin is the configuration only in the former. Anchor on the TFM instead: building
+        // with -p:Platform=x64 otherwise reports "x64" as the configuration and sends every
+        // artifact lookup to a directory no build ever writes.
+        var segmentsFromPath = new List<string>();
         var directory = new DirectoryInfo(path);
         while (directory != null)
         {
+            segmentsFromPath.Add(directory.Name);
             if (directory.Parent?.Name.Equals("bin", StringComparison.OrdinalIgnoreCase) == true)
             {
-                return directory.Name;
+                segmentsFromPath.Reverse();
+                var targetFrameworkIndex = segmentsFromPath.FindIndex(IsTargetFrameworkSegment);
+                return targetFrameworkIndex > 0
+                    ? segmentsFromPath[targetFrameworkIndex - 1]
+                    : segmentsFromPath[0];
             }
 
             directory = directory.Parent;
@@ -126,6 +137,13 @@ static partial class Program
 
         return null;
     }
+
+    private static bool IsTargetFrameworkSegment(string segment)
+        => segment.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase)
+            || segment.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase)
+            || (segment.StartsWith("net", StringComparison.OrdinalIgnoreCase)
+                && segment.Length > 3
+                && char.IsDigit(segment[3]));
 
     private enum ConfigSetterExpectation
     {
@@ -1663,6 +1681,26 @@ static partial class Program
         return process;
     }
 
+    // Stderr has to be consumed or a chatty server fills the pipe buffer and blocks, but the
+    // read is expected to fail once the process is torn down, and this runs unawaited where a
+    // throw would surface as an unobserved task exception instead of a test failure.
+    private static void DrainStandardErrorInBackground(Process process)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        });
+    }
+
     private static async Task WriteJsonRpcLineAsync(Process process, string json, CancellationToken cancellationToken)
     {
         await process.StandardInput.WriteLineAsync(CompactJsonLine(json))
@@ -1719,7 +1757,12 @@ static partial class Program
                 process.StandardInput.Close();
             }
         }
-        catch
+        catch (InvalidOperationException)
+        {
+            // Raced with the process exiting between HasExited and Close; the Kill below
+            // still runs, so there is nothing to recover here.
+        }
+        catch (IOException)
         {
         }
 
@@ -2249,6 +2292,52 @@ static partial class Program
             payload.ValueKind is not JsonValueKind.Object and not JsonValueKind.Null)
         {
             throw new InvalidOperationException($"Pipe request {requestNumber} envelope payload had unexpected kind {payload.ValueKind}.");
+        }
+    }
+
+    // Temp-artifact cleanup runs in finally blocks, where throwing would replace the real
+    // test failure with a cleanup error, and a leftover temp file only costs disk. Only the
+    // exceptions a losing cleanup race actually produces are absorbed: a bad path or a null
+    // argument is a defect in the test itself and still fails loudly.
+    internal static void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    internal static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    internal static void TryClearReadOnlyAttribute(string path)
+    {
+        try
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
         }
     }
 

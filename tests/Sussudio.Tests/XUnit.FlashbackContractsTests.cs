@@ -976,7 +976,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempInput); } catch { }
+            global::Program.TryDeleteFile(tempInput);
         }
     }
 
@@ -1015,8 +1015,8 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempInput); } catch { }
-            try { Directory.Delete(outputDirectory, recursive: true); } catch { }
+            global::Program.TryDeleteFile(tempInput);
+            global::Program.TryDeleteDirectory(outputDirectory);
         }
     }
 
@@ -1261,7 +1261,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2147,7 +2147,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2212,7 +2212,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2265,7 +2265,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2376,7 +2376,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2416,7 +2416,7 @@ static partial class Program
                 secondDisposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2474,7 +2474,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2533,7 +2533,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2606,7 +2606,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
     }
 
@@ -2646,7 +2646,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2690,7 +2690,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2728,7 +2728,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2776,7 +2776,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2818,7 +2818,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -2849,7 +2849,7 @@ static partial class Program
             {
                 disposable.Dispose();
             }
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;

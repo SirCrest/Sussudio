@@ -2164,16 +2164,7 @@ static partial class Program
             assemblyPath,
             NewMcpToolPipeName("host-pipe-failure"));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
-            }
-            catch
-            {
-            }
-        });
+        DrainStandardErrorInBackground(process);
 
         try
         {
@@ -2252,16 +2243,7 @@ static partial class Program
             assemblyPath,
             NewMcpToolPipeName("host-pipe-failure"));
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
-            }
-            catch
-            {
-            }
-        });
+        DrainStandardErrorInBackground(process);
 
         try
         {
@@ -10827,6 +10809,36 @@ public sealed class AutomationToolContractsProtocolXunitTests
         Assert.Contains("\"--response-timeout-ms\", $ResponseTimeoutMs", invocation);
         Assert.Contains("& dotnet @arguments", invocation);
     }
+
+    [Theory]
+    [InlineData("bin/Debug/net8.0", "Debug")]
+    [InlineData("bin/Release/net8.0", "Release")]
+    [InlineData("bin/x64/Debug/net8.0", "Debug")]
+    [InlineData("bin/x64/Release/net8.0", "Release")]
+    [InlineData("bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64", "Debug")]
+    [InlineData("bin/ARM64/Debug/net8.0-windows10.0.19041.0/win-arm64", "Debug")]
+    [InlineData("bin/Debug", "Debug")]
+    public void ConfigurationInference_ReadsConfiguration_NotPlatform(string outputPath, string expected)
+    {
+        var absolute = ConfigurationInferenceRoot(outputPath);
+
+        Assert.Equal(expected, global::Program.InferConfigurationFromOutputPath(absolute));
+    }
+
+    [Fact]
+    public void ConfigurationInference_ReturnsNull_WhenPathHasNoBinDirectory()
+    {
+        var absolute = ConfigurationInferenceRoot("obj/Debug/net8.0");
+
+        Assert.Null(global::Program.InferConfigurationFromOutputPath(absolute));
+    }
+
+    // Rooted at the volume root so no ancestor of the machine's temp path can
+    // introduce a stray "bin" segment and change what the inference sees.
+    private static string ConfigurationInferenceRoot(string outputPath)
+        => Path.Combine(
+            $"{Path.DirectorySeparatorChar}sussudio-cfg-infer",
+            outputPath.Replace('/', Path.DirectorySeparatorChar));
 
     [Fact]
     public void ContractTests_LoadActiveFreshBuildArtifacts()
