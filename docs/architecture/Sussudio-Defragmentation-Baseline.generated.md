@@ -1,6 +1,6 @@
 ﻿# Sussudio Defragmentation Baseline - Generated
 
-Generated UTC: 2026-09-09T22:31:10Z
+Generated UTC: 2026-09-09T22:33:06Z
 Root: C:\Users\crest\source\repos\Sussudio
 
 ## Summary
@@ -10,7 +10,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | Production .cs files | 148 |
 | Test .cs files | 88 |
 | Core app .cs files (Sussudio/) | 114 |
-| Core app nonblank LoC (Sussudio/) | 96368 |
+| Core app nonblank LoC (Sussudio/) | 96369 |
 | Sussudio.Tests .cs files | 87 |
 | Sussudio.Tests nonblank LoC | 74300 |
 | Production .cs files under 60 lines | 3 (2.0%) |
@@ -27,7 +27,7 @@ Root: C:\Users\crest\source\repos\Sussudio
 | LibAvEncoder | 3 | 3055 | Sussudio/Services/Recording/LibAvEncoder.Audio.cs, Sussudio/Services/Recording/LibAvEncoder.cs, Sussudio/Services/Recording/LibAvEncoder.VideoFrames.cs |
 | MainViewModel | 3 | 5238 | Sussudio/ViewModels/MainViewModel.AudioState.cs, Sussudio/ViewModels/MainViewModel.cs, Sussudio/ViewModels/MainViewModel.FlashbackState.cs |
 | LoggingJsonContext | 1 | 613 | Sussudio/AppRuntime.cs |
-| SettingsJsonContext | 1 | 906 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
+| SettingsJsonContext | 1 | 907 | Sussudio/Services/Runtime/RuntimeHelpers.cs |
 | App | 1 | 222 | Sussudio/App.xaml.cs |
 | DeviceFormatCacheJsonContext | 1 | 765 | Sussudio/Services/Capture/DeviceService.cs |
 | StatsWindow | 1 | 328 | Sussudio/StatsWindow.xaml.cs |

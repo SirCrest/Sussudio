@@ -733,9 +733,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             // one that resisted termination can hold handles and is worth recording.
             Logger.Log($"PROCESS_KILL_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // The process exited between the kill attempt and the liveness check.
+            Logger.Log($"PROCESS_KILL_RACE_EXITED type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
