@@ -1305,6 +1305,10 @@ public sealed class McpDiagnosticSessionResultSurfaceContractsTests
         => global::Program.DiagnosticSessionResultFormatter_OwnsFormattedSummaryText();
 
     [Fact]
+    public Task ResultFormatterComputesRepresentativeSummaryFromResultData()
+        => global::Program.DiagnosticSessionResultFormatter_ComputesRepresentativeSummaryFromResultData();
+
+    [Fact]
     public Task ResultBuilderOwnsSummaryConstruction()
         => global::Program.DiagnosticSessionResultBuilder_OwnsSummaryConstruction();
 
@@ -2770,6 +2774,90 @@ static partial class Program
         AssertDoesNotContain(runnerText, "== Diagnostic Session:");
         AssertDoesNotContain(runnerText, "\"Flashback Playback Perf: \"");
         AssertDoesNotContain(runnerText, "private static string FormatFrameRate(");
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task DiagnosticSessionResultFormatter_ComputesRepresentativeSummaryFromResultData()
+    {
+        var assembly = LoadToolAssembly(global::Program.SsctlAssemblyRelativePath);
+        var resultType = assembly.GetType("Sussudio.Tools.DiagnosticSessionResult")
+            ?? throw new InvalidOperationException("DiagnosticSessionResult type was not found.");
+        var presentMonType = assembly.GetType("Sussudio.Tools.PresentMonProbeResult")
+            ?? throw new InvalidOperationException("PresentMonProbeResult type was not found.");
+        var formatterType = assembly.GetType("Sussudio.Tools.DiagnosticSessionResultFormatter")
+            ?? throw new InvalidOperationException("DiagnosticSessionResultFormatter type was not found.");
+        var formatMethod = formatterType.GetMethod("Format", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("DiagnosticSessionResultFormatter.Format was not found.");
+
+        var presentMon = Activator.CreateInstance(presentMonType)!;
+        presentMonType.GetProperty("Success")!.SetValue(presentMon, true);
+        presentMonType.GetProperty("Message")!.SetValue(presentMon, "capture ok");
+
+        var result = Activator.CreateInstance(resultType)!;
+        void Set(string name, object? value) => resultType.GetProperty(name)!.SetValue(result, value);
+        Set("Success", true);
+        Set("Scenario", "flashback-playback");
+        Set("DurationSeconds", 12);
+        Set("SampleCount", 34);
+        Set("SampleIntervalMs", 250);
+        Set("TerminalState", "completed");
+        Set("LastStage", "sampling");
+        Set("RunnerProcessId", 4242);
+        Set("HealthStatus", "Healthy");
+        Set("LikelyStage", "steady_state");
+        Set("Summary", "All checks passed.");
+        Set("Evidence", "frame ledger clean");
+        Set("SelectedResolutionAtEnd", "1920x1080");
+        Set("SelectedFrameRateAtEnd", 59.94);
+        Set("SelectedFriendlyFrameRateAtEnd", "");
+        Set("SelectedExactFrameRateArgAtEnd", "60000/1001");
+        Set("SelectedVideoFormatAtEnd", "NV12");
+        Set("SourceWidthAtEnd", 1920);
+        Set("SourceHeightAtEnd", 1080);
+        Set("SourceIsHdrAtEnd", true);
+        Set("RecordingVerificationRun", true);
+        Set("RecordingVerificationSucceeded", true);
+        Set("RecordingVerificationMessage", "structure verified");
+        Set("PresentMon", presentMon);
+        Set("ProcessCpuPercentAtEnd", 12.5);
+        Set("FlashbackExportMaxOutputBytesObserved", 2_500_000L);
+        Set("FlashbackExportMaxThroughputBytesPerSecObserved", 1_048_576d);
+        Set("OutputDirectory", @"C:\out");
+        Set("Actions", new[] { "started preview", "started recording" });
+        Set("Warnings", new[] { "sparse cadence" });
+
+        var formatted = (string)formatMethod.Invoke(null, new object?[] { result })!;
+
+        AssertContains(formatted, "== Diagnostic Session: PASS ==");
+        AssertContains(formatted, "Scenario: flashback-playback | Duration: 12s | Samples: 34 @ 250ms");
+        AssertContains(formatted, "Terminal: completed | LastStage: sampling | RunnerPid: 4242");
+        AssertContains(formatted, "Health: Healthy | Stage: steady_state");
+        AssertContains(formatted, "Summary: All checks passed.");
+        AssertContains(formatted, "Evidence: frame ledger clean");
+        AssertContains(formatted, "selected=1920x1080 @59.94fps (60000/1001)");
+        AssertContains(formatted, "source=1920x1080 @0fps");
+        AssertContains(formatted, "hdr=True");
+        AssertContains(formatted, "Recording Verification: PASS | structure verified");
+        AssertContains(formatted, "PresentMon: PASS | capture ok");
+        AssertContains(formatted, "cpuPercentEnd=12.5");
+        AssertContains(formatted, "maxBytes=2.38 MB");
+        AssertContains(formatted, "maxThroughput=1 MB/s");
+        AssertContains(formatted, "Actions: started preview, started recording");
+        AssertContains(formatted, "Warnings:");
+        AssertContains(formatted, "  sparse cadence");
+
+        var defaultResult = Activator.CreateInstance(resultType)!;
+        var defaultFormatted = (string)formatMethod.Invoke(null, new object?[] { defaultResult })!;
+
+        AssertContains(defaultFormatted, "== Diagnostic Session: FAIL ==");
+        AssertContains(defaultFormatted, "selected=none @0fps");
+        AssertDoesNotContain(defaultFormatted, "Recording Verification:");
+        AssertDoesNotContain(defaultFormatted, "PresentMon:");
+        AssertDoesNotContain(defaultFormatted, "\nSummary: ");
+        AssertDoesNotContain(defaultFormatted, "Evidence:");
+        AssertDoesNotContain(defaultFormatted, "Actions:");
+        AssertDoesNotContain(defaultFormatted, "Warnings:");
 
         return Task.CompletedTask;
     }
