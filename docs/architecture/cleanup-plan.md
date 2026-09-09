@@ -647,7 +647,6 @@ Per-owner lifetimes and invariants for these families are documented in
 - `Sussudio/Services/Capture/CaptureService.cs` (1318 lines) - Root of the six-file CaptureService family, owning transition serialization and root state. 105 File.Exists guards name candidate splits that were tried and reverted.
 - `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` (1291 lines) - Named Flashback UI controller owner for the manual binding surface.
 - `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs` (1262 lines) - Owns preview lifecycle admission - debounce, Flashback cycle wait, reinitialize gate - as one ordered sequence that the behavioral tests drive end to end.
-- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` (1250 lines) - Owns diagnostics evaluation thresholds that are compared against one another.
 - `Sussudio/Services/Audio/WasapiAudioPlayback.cs` (1249 lines) - One WASAPI render lifetime: worker, queue depth and quarantine share a disposal ordering invariant.
 - `Sussudio/Services/Recording/LibAvEncoder.cs` (1223 lines) - One encoder lifetime spanning configuration, video and audio submission.
 
@@ -878,7 +877,7 @@ verification entry points, flashback-export verification profile shaping, event
 publication for explicit verification, last-verification snapshot state,
 post-recording auto-verification gating, and background scheduling.
 `AutomationDiagnosticsHub.Evaluation.cs` owns diagnostic scoring, root
-diagnostic verdict orchestration, Flashback-specific and realtime diagnostic
+diagnostic verdict orchestration, realtime diagnostic
 verdict ordering, final healthy/mixed diagnostic fallback, diagnostic lane text
 orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
 source cadence/source-signal lane formatting, preview
@@ -886,6 +885,14 @@ scheduler/renderer/present/display/visual-cadence lane formatting, Flashback
 recording/export/playback lane formatting, lane DTOs used by diagnostic
 verdicts, shared renderer-drop threshold constants, shared alert-detail
 formatting, and health classifiers used by alerts and diagnostic evaluation.
+`AutomationDiagnosticsHub.FlashbackEvaluation.cs` owns the
+`FlashbackDiagnosticEvaluator` collaborator: Flashback storage, recording,
+encoder-failure, export, export-rotation, backend-settings, degradation and
+playback verdict ordering, plus the recording-condition DTO those branches
+share. It is nested in the hub so it still reads the private Flashback
+thresholds that `AutomationDiagnosticsHub.Snapshots.cs` shares with the alert
+path; the health classifiers it calls stay in the Evaluation root for the same
+reason.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns HDR truth
 classification from capture pipeline, source-HDR, and verification metadata
 evidence, plus preview HDR input detection, HDR pixel-format helpers used by

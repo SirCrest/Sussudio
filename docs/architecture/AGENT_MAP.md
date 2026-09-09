@@ -66,7 +66,7 @@ mentions the moved files.
 | MJPEG decode pipeline | `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`, `Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs` | Bounded compressed input, CPU decode workers, output ordering, and source-packet cadence metrics. |
 | GPU telemetry | `Sussudio/Services/Gpu/NvmlMonitor.cs` | Optional NVML sampling and graceful unavailable telemetry. |
 | FFmpeg D3D11 ownership | `Sussudio/Services/Gpu/FfmpegD3D11Ownership.cs` | Atomic device/context reference transfer to FFmpeg with rollback before publication. |
-| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationSnapshotFlashbackProjectionBuilder.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/projection boundaries. |
+| Automation diagnostics | `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`, `AutomationDiagnosticsHub.Evaluation.cs`, `AutomationDiagnosticsHub.FlashbackEvaluation.cs`, `AutomationDiagnosticsHub.Snapshots.cs`, `AutomationDiagnosticsHub.SnapshotProjection.cs`, `AutomationSnapshotFlashbackProjectionBuilder.cs` | Snapshot assembly and health evaluation. See [automation](#automation) for collector/projection boundaries. |
 | Automation snapshot models | `Sussudio/Models/Automation/AutomationSnapshot.cs`, `AutomationModels.cs` | Flattened evidence snapshots and command/runtime DTOs; preserve wire shape. |
 | Capture models | `Sussudio/Models/Capture/CaptureModels.cs` | Capture configuration, input media formats, health, cadence, and runtime DTOs. `MediaFormat` owns input frame-rate and pixel-format behavior beside `CaptureDevice`. |
 | Recording models | `Sussudio/Models/Recording/RecordingModels.cs` | Encoder capabilities, recording statistics, and integrity DTOs. `EncoderSupport` owns recording-format-to-NVENC codec-name mapping. |
@@ -304,14 +304,18 @@ Automation diagnostics ownership:
   verification profile shaping, event publication for explicit verification,
   last-verification snapshot state, post-recording auto-verification gating, and
   background scheduling.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.FlashbackEvaluation.cs`
+  owns the `FlashbackDiagnosticEvaluator` collaborator: Flashback-specific
+  diagnostic verdict ordering, Flashback storage pressure, current recording
+  encoder failure separated from restored recovery history, export-rotation gap,
+  backend staleness, recording degradation, Flashback recording diagnostic
+  condition assembly, active/stalled export, playback command, playback
+  performance, frametime, and submission diagnostic verdicts. It is nested in
+  the hub so it reads the private Flashback thresholds that
+  `AutomationDiagnosticsHub.Snapshots.cs` shares with the alert path.
 - `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` owns
   performance scoring, root diagnostic verdict orchestration, final
-  healthy/mixed diagnostic fallback, Flashback-specific diagnostic verdict
-  ordering, Flashback storage pressure, current recording encoder failure
-  separated from restored recovery history,
-  export-rotation gap, backend staleness, recording degradation, Flashback
-  recording diagnostic condition assembly, active/stalled export, playback
-  command, playback performance, frametime, and submission diagnostic verdicts,
+  healthy/mixed diagnostic fallback,
   realtime diagnostic verdict ordering, idle/warmup/recording/audio/source/MJPEG
   and preview verdicts, shared renderer-drop threshold constants, diagnostic
   lane text orchestration, MJPEG decode lane formatting, source

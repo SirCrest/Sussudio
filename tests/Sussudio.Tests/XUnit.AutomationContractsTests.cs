@@ -8045,9 +8045,14 @@ static partial class Program
         AssertContains(diagnostics.EvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnostics.EvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
-        AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = TryBuildFlashbackDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = FlashbackDiagnosticEvaluator.TryBuildFlashbackDiagnosticEvaluation(");
         AssertContains(diagnostics.EvaluationText, "var realtimeDiagnostic = TryBuildRealtimeDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
+        // Flashback verdicts now have a named owner instead of sitting in the Evaluation partial.
+        // The nested collaborator keeps reading the hub's private thresholds, which the alert
+        // snapshot path shares and other assertions here pin to the hub root.
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "internal static class FlashbackDiagnosticEvaluator");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "internal static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
+        AssertDoesNotContain(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackStorageDiagnosticEvaluation(health, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackRecordingDiagnosticEvaluation(health, isRecording, recentFlashbackRecording, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackExportDiagnosticEvaluation(health, lanes)");
@@ -8139,7 +8144,8 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationRenderLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationLanes(");
+        // internal, not private: FlashbackDiagnosticEvaluator takes it as a parameter.
+        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "internal readonly record struct DiagnosticEvaluationLanes(");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs")),
@@ -8829,7 +8835,7 @@ static partial class Program
         {
             HubText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
             EvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
+            DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackEvaluation.cs"),
             DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
@@ -9185,9 +9191,9 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "recentFlashbackRecording.BackpressureEvents > 0");
         AssertContains(diagnostics.SourceFamilyText, "health.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackBackendSettingsUnexpectedlyStale =");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackBackendSettingsStale &&\n            !isRecording");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackBackendSettingsStale &&\n                !isRecording");
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback backend settings differ from requested settings.\"");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackVideoQueueDepth,\n                 health.FlashbackVideoQueueCapacity,\n                 health.FlashbackVideoQueueOldestFrameAgeMs");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackVideoQueueDepth,\n                     health.FlashbackVideoQueueCapacity,\n                     health.FlashbackVideoQueueOldestFrameAgeMs");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={health.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "queueRejects={health.FlashbackVideoQueueRejectedFrames}");
         AssertContains(diagnostics.SourceFamilyText, "audioQueue={health.FlashbackAudioQueueDepth}/{health.FlashbackAudioQueueCapacity}");
@@ -9200,8 +9206,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback recording path is dropping or backing up.\"");
         AssertContains(diagnostics.SourceFamilyText, "\"flashback_export\"");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackForceRotateRejectWithoutDamage =");
-        AssertContains(diagnostics.SourceFamilyText, "!flashbackForceRotateRejectWithoutDamage &&\n              recentFlashbackRecording.SequenceGaps > 0");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackExportActive ||\n             health.FlashbackForceRotateActive ||\n             health.FlashbackForceRotateRequested ||\n             health.FlashbackForceRotateDraining");
+        AssertContains(diagnostics.SourceFamilyText, "!flashbackForceRotateRejectWithoutDamage &&\n                  recentFlashbackRecording.SequenceGaps > 0");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackExportActive ||\n                 health.FlashbackForceRotateActive ||\n                 health.FlashbackForceRotateRequested ||\n                 health.FlashbackForceRotateDraining");
     }
 
     private static void AssertDiagnosticsRefreshFlashbackPlaybackAndPreviewAlertCoverage(
