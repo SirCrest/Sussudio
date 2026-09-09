@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Sussudio.Models;
@@ -293,7 +293,9 @@ internal sealed class DiagnosticSessionLiveStateWriter
         }
         catch
         {
-            // The live-state file is diagnostic breadcrumbs only.
+            // The live-state file is diagnostic breadcrumbs only. This library is loaded
+            // into an MCP stdio server, so it has no logger and must not write to stdout,
+            // and the warnings list it receives is read-only by contract.
         }
     }
 

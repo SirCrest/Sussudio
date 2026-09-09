@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -101,9 +101,12 @@ internal static class MfDeviceEnumerator
                             {
                                 _ = Marshal.Release(activatePtr);
                             }
-                            catch
+                            catch (Exception releaseEx)
                             {
-                                // Best effort.
+                                // The activation leaks either way; record why.
+                                Logger.Log(
+                                    $"MF_ACTIVATE_RELEASE_FAIL stage=enumeration_cleanup type={releaseEx.GetType().Name} " +
+                                    $"hr=0x{releaseEx.HResult:X8} msg='{releaseEx.Message}'");
                             }
                         }
 
@@ -462,7 +465,12 @@ internal static class MfDeviceEnumerator
                             if (remainingPtr != IntPtr.Zero)
                             {
                                 try { Marshal.Release(remainingPtr); }
-                                catch { /* Best effort. */ }
+                                catch (Exception releaseEx)
+                                {
+                                    Logger.Log(
+                                        $"MF_ACTIVATE_RELEASE_FAIL stage=skip_remaining index={j} " +
+                                        $"type={releaseEx.GetType().Name} hr=0x{releaseEx.HResult:X8}");
+                                }
                             }
                         }
 
@@ -482,9 +490,12 @@ internal static class MfDeviceEnumerator
                         {
                             _ = Marshal.Release(activatePtr);
                         }
-                        catch
+                        catch (Exception releaseEx)
                         {
-                            // Best effort.
+                            // The activation leaks either way; record why.
+                            Logger.Log(
+                                $"MF_ACTIVATE_RELEASE_FAIL stage=source_cleanup type={releaseEx.GetType().Name} " +
+                                $"hr=0x{releaseEx.HResult:X8} msg='{releaseEx.Message}'");
                         }
                     }
 

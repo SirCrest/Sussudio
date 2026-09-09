@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -492,9 +492,11 @@ internal static class SplashLoadingPhraseCatalog
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Splash copy must never block startup.
+            // Splash copy must never block startup, but silently falling back to the
+            // built-in phrases hides a broken or missing asset.
+            Sussudio.Logger.Log($"LAUNCH_SPLASH_PHRASES_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
         }
 
         _cachedSplashPhrases = DefaultSplashLoadingPhrases;
