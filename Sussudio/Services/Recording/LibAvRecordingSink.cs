@@ -528,9 +528,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 _encoder.Dispose();
             }
-            catch
+            catch (Exception disposeEx)
             {
-                // Preserve the original failure.
+                // Preserve the original failure; a faulting dispose leaves evidence.
+                Logger.Log($"LIBAV_SINK_ENCODER_DISPOSE_FAIL_DURING_FAILURE type={disposeEx.GetType().Name} msg={disposeEx.Message}");
             }
 
             try
