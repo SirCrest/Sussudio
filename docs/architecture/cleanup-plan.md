@@ -609,26 +609,48 @@ owner, fold it back into that owner and update the source-shape tests and
 
 The file-size policy in
 [Sussudio-Defragmentation-Goal.md](Sussudio-Defragmentation-Goal.md) requires an
-explicit locality or testability rationale for any file left above 1200 lines.
-This section records those rationales. Every other production file is inside the
-policy bands, where 300-800 lines is normally acceptable and 800-1200 is a review
-smell rather than an automatic split trigger.
+explicit locality or testability rationale for any file left above 1200 lines,
+measured in non-blank lines the way the generated baseline measures it. Every
+such file is listed below with the reason it stays whole; files inside the
+policy bands (300-800 normally acceptable, 800-1200 a review smell rather than
+an automatic split trigger) are not listed.
 
-- `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` holds one hot-path
-  lifetime, not several concerns that happen to share a file. The decode workers
-  (`_workers`/`_decoders`), the reorder buffer, and the emit loop are a single
-  sequencing invariant: `_reorderLock` guards `_reorderFrames`, `_nextEmitSeq`,
-  `_knownMissingSequences` and `_reorderBufferDepth` together, and the workers, the
-  emitter and disposal all take that lock in a fixed order to keep frame ownership
-  and drop accounting correct under a fatal stop. A partial split would scatter that
-  invariant across files without producing a new test seam, so
-  `MjpegPipelineTests` forbids each candidate partial by name
-  (`.Workers.cs`, `.Reorder.cs`, `.ReorderEmission.cs`, `.CompressedQueue.cs`,
-  `.Metrics.cs`, `.Lifecycle.cs`, `.ResourceCleanup.cs`).
-  `SoftwareMjpegDecoder` stays in the same file as the per-worker leaf the pipeline
-  constructs, initializes and disposes; `SoftwareMjpegDecoderLivesWithPipelineWorker`
-  pins that placement, and the decoder already has its own reflection-driven tests,
-  so moving it would buy no additional testability.
+`ArchitectureDefragBaseline_DocumentsEveryRetainedLargeFile` enumerates the
+production tree and fails if a file crosses the threshold without an entry here,
+so growth past 1200 lines forces a deliberate decision rather than silence.
+Per-owner lifetimes and invariants for these families are documented in
+[AGENT_MAP.md](AGENT_MAP.md); the entries below give only the locality reason.
+
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` (3009 lines) - Projects one automation snapshot shape consumed by CLI, MCP and tests; the field set is a wire contract asserted field-by-field, so scattering it hides the shape it exists to define.
+- `Sussudio/ViewModels/MainViewModel.cs` (2771 lines) - The binding facade. This project uses manual code-behind binding (PropertyChanged switch plus SetupBindings) instead of x:Bind, so the property surface and its change notifications must stay legible in one place.
+- `Sussudio/Services/Flashback/FlashbackExporter.cs` (2629 lines) - Owns the FFmpeg remux export end to end - packet copy with PTS adjustment and no re-encode - across one unmanaged lifetime; 11 File.Exists guards name the candidate splits that were tried and reverted.
+- `Sussudio/Services/Flashback/FlashbackEncoderSink.cs` (2560 lines) - Owns the Flashback encoder lifetime, its queues and their depth accounting as a single hot-path owner; AGENT_MAP records per-owner lifetimes for this family.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` (2339 lines) - Already the facade third of a deliberate three-file split (facade/thread/submission/metrics, RenderPasses, Resources). AGENT_MAP: reopen only if a named resource or pass collaborator gains an independent test seam.
+- `Sussudio/Services/Capture/CaptureService.Flashback.cs` (2313 lines) - One member of the six-file CaptureService family. AGENT_MAP: do not merge or further split this family just to move a partial count.
+- `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs` (2293 lines) - One member of the six-file CaptureService family; owns recording lifecycle transitions whose ordering is the invariant under test.
+- `Sussudio/Services/Flashback/FlashbackPlaybackController.cs` (2203 lines) - Owns public playback command and state admission in a deliberate four-file controller split documented in AGENT_MAP.
+- `Sussudio/MainWindow.xaml.cs` (2141 lines) - XAML companion file. The file-size policy exempts XAML adapters, and every AutomationId-bearing control is wired here.
+- `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs` (2132 lines) - A single native XU/AT command surface; the command table and its marshalling must be read together to audit a device protocol.
+- `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs` (1881 lines) - One Media Foundation source-reader lifetime including COM activation ownership; splitting it separates acquisition from release.
+- `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` (1878 lines) - Read-only snapshot projection consumed by UI, automation and verification. The file header states the invariant: this path stays read-only so frequent polling cannot mutate capture behavior.
+- `Sussudio/Services/Flashback/FlashbackDecoder.cs` (1858 lines) - Owns the decoder plus its decoded frame and audio value types, and both the D3D11 GPU-direct and software paths share that lifetime and its buffer ownership rules.
+- `Sussudio/Services/Recording/LibAvRecordingSink.cs` (1834 lines) - Owns the recording encoder lifetime, its queues and their depth accounting as a single hot-path owner.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` (1764 lines) - Assembles the diagnostics snapshots whose field set is pinned as a wire contract.
+- `Sussudio/Services/Capture/UnifiedVideoCapture.cs` (1619 lines) - One capture lifetime whose stop and disposal ordering is the invariant; the stop-failure stack preservation test depends on that ordering staying in one place.
+- `Sussudio/Services/Flashback/FlashbackBufferManager.cs` (1600 lines) - Owns the active segment plus retained completed segments, disk retention and recovery markers as one retention policy.
+- `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs` (1600 lines) - Named device-controller owner for the manual binding surface.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` (1534 lines) - One dispatch table mapping automation command names and ordinals to handlers; the mapping is an external contract for CLI and MCP.
+- `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs` (1475 lines) - One member of the six-file CaptureService family; owns health snapshot assembly.
+- `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (1435 lines) - Decode workers, reorder buffer and emit loop are one _reorderLock-guarded sequencing invariant; MjpegPipelineTests forbids each candidate partial by name, and SoftwareMjpegDecoder is the per-worker leaf this file constructs and disposes.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` (1387 lines) - The resource third of the deliberate D3D11PreviewRenderer split; owns device, swap-chain and shader lifetime.
+- `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` (1370 lines) - One selection-policy surface; the policies are compared against each other and read as a set.
+- `Sussudio/Services/Capture/CaptureService.cs` (1318 lines) - Root of the six-file CaptureService family, owning transition serialization and root state. 105 File.Exists guards name candidate splits that were tried and reverted.
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` (1291 lines) - Named Flashback UI controller owner for the manual binding surface.
+- `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs` (1262 lines) - Owns preview lifecycle admission - debounce, Flashback cycle wait, reinitialize gate - as one ordered sequence that the behavioral tests drive end to end.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Evaluation.cs` (1250 lines) - Owns diagnostics evaluation thresholds that are compared against one another.
+- `Sussudio/Services/Audio/WasapiAudioPlayback.cs` (1249 lines) - One WASAPI render lifetime: worker, queue depth and quarantine share a disposal ordering invariant.
+- `Sussudio/Services/Recording/LibAvEncoder.cs` (1223 lines) - One encoder lifetime spanning configuration, video and audio submission.
+
 ## Completed Slices
 
 Historical checkpoint descriptions, retained for context. Consult

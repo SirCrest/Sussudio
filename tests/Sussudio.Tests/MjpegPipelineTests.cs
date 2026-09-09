@@ -458,10 +458,9 @@ namespace Sussudio.Tests
             // for any file left above 1200 lines; keep the pipeline's entry honest.
             var cleanupPlanText = RuntimeContractSource.ReadRepoFile("docs/architecture/cleanup-plan.md");
             AssertContains(cleanupPlanText, "## Retained Large Files");
-            AssertContains(
-                cleanupPlanText,
-                "`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` holds one hot-path");
-            AssertContains(cleanupPlanText, "SoftwareMjpegDecoderLivesWithPipelineWorker");
+            AssertContains(cleanupPlanText, "`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (");
+            AssertContains(cleanupPlanText, "one _reorderLock-guarded sequencing invariant");
+            AssertContains(cleanupPlanText, "SoftwareMjpegDecoder is the per-worker leaf");
 
             var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
             var heightProp = decoderType.GetProperty("Height", BindingFlags.Public | BindingFlags.Instance);

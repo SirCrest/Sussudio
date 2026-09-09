@@ -484,6 +484,55 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    // The file-size policy in Sussudio-Defragmentation-Goal.md requires a written
+    // locality/testability rationale for any file left above 1200 non-blank lines.
+    // Enumerating the tree here makes that policy enforceable: a file that grows past
+    // the threshold fails until someone records why it stays whole.
+    internal static Task ArchitectureDefragBaseline_DocumentsEveryRetainedLargeFile()
+    {
+        const int RetainedLargeFileThreshold = 1200;
+        var repoRoot = GetRepoRoot();
+        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md");
+        var sectionStart = cleanupPlanText.IndexOf("## Retained Large Files", StringComparison.Ordinal);
+        AssertEqual(true, sectionStart >= 0, "cleanup-plan.md defines a Retained Large Files section");
+        var sectionEnd = cleanupPlanText.IndexOf("## Completed Slices", sectionStart, StringComparison.Ordinal);
+        AssertEqual(true, sectionEnd > sectionStart, "Retained Large Files section is followed by Completed Slices");
+        var sectionText = cleanupPlanText[sectionStart..sectionEnd];
+
+        var undocumented = new List<string>();
+        var documentedButSmall = new List<string>();
+        foreach (var directory in new[] { "Sussudio", "tools" })
+        {
+            foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, directory), SearchOption.AllDirectories))
+            {
+                var relativePath = Path.GetRelativePath(repoRoot, file).Replace(Path.DirectorySeparatorChar, '/');
+                var entry = $"`{relativePath}` (";
+                var documented = sectionText.Contains(entry, StringComparison.Ordinal);
+                if (CountNonBlankSourceLines(file) > RetainedLargeFileThreshold)
+                {
+                    if (!documented)
+                    {
+                        undocumented.Add(relativePath);
+                    }
+                }
+                else if (documented)
+                {
+                    documentedButSmall.Add(relativePath);
+                }
+            }
+        }
+
+        AssertEqual(
+            string.Empty,
+            string.Join(", ", undocumented.OrderBy(path => path, StringComparer.Ordinal)),
+            $"every production file over {RetainedLargeFileThreshold} non-blank lines has a Retained Large Files rationale");
+        AssertEqual(
+            string.Empty,
+            string.Join(", ", documentedButSmall.OrderBy(path => path, StringComparer.Ordinal)),
+            "Retained Large Files only lists files that are still over the threshold");
+
+        return Task.CompletedTask;
+    }
     internal static Task ArchitectureDefragBaseline_TracksCheckpointCountsAndLoc()
     {
         var repoRoot = GetRepoRoot();
@@ -2935,6 +2984,10 @@ namespace Sussudio.Tests
         [Fact]
         public Task DefragBaselineTracksCheckpointCountsAndLoc()
             => global::Program.ArchitectureDefragBaseline_TracksCheckpointCountsAndLoc();
+
+        [Fact]
+        public Task RetainedLargeFilesDocumentsEveryFileOverThePolicyThreshold()
+            => global::Program.ArchitectureDefragBaseline_DocumentsEveryRetainedLargeFile();
 
         [Fact]
         public Task TestMigrationPlanFileReferencesResolveAndNamesValidationCommands()
