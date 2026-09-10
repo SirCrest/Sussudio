@@ -174,10 +174,6 @@ public static class DiagnosticSessionTools
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return new CallToolResult
-        {
-            Content = [new TextContentBlock { Text = DiagnosticSessionRunner.Format(result) }],
-            IsError = !result.Success
-        };
+        return McpToolResultFactory.FromText(DiagnosticSessionRunner.Format(result), isError: !result.Success);
     }
 }

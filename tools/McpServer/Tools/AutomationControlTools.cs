@@ -467,11 +467,9 @@ public static class FlashbackTools
     {
         cancellationToken.ThrowIfCancellationRequested();
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.FlashbackGetSegments, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 
         var builder = new StringBuilder();
-        builder.AppendLine($"[{status}] FlashbackGetSegments: {message}");
+        builder.AppendLine(ToolCommandFormatter.FormatCommandResponse(response, AutomationCommandKind.FlashbackGetSegments));
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
         {
@@ -570,11 +568,9 @@ public static class FlashbackTools
         };
 
         var response = await pipeClient.SendCommandAsync(AutomationCommandKind.FlashbackExport, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 
         var builder = new StringBuilder();
-        builder.AppendLine($"[{status}] FlashbackExport: {message}");
+        builder.AppendLine(ToolCommandFormatter.FormatCommandResponse(response, AutomationCommandKind.FlashbackExport));
         builder.AppendLine(useSelectionRange
             ? $"Requested: selected range -> {outputPath}"
             : $"Requested: {seconds}s -> {outputPath}");
