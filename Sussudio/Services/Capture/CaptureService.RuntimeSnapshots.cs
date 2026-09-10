@@ -282,7 +282,7 @@ public partial class CaptureService
             RecordingObservedTracks = recordingOutcome.ObservedTracks,
             RecordingFinalizationProgressStage = recordingOutcome.ProgressStage,
             LastRecordingFinalizationProgressUtc = recordingOutcome.LastProgressUtc,
-            FlashbackExportOutputPath = _flashbackExportOutputPath,
+            FlashbackExportOutputPath = _flashbackExport.OutputPath,
             FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),
             FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),
             RuntimeAvSyncDriftMs = runtimeAvSyncDriftMs,

@@ -1632,7 +1632,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var healthSnapshotText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs")
             .Replace("\r\n", "\n");
-        var flashbackExportText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs")
+        var flashbackExportText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportState.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(snapshotsText, "public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()");
@@ -1668,9 +1668,9 @@ static partial class Program
         AssertContains(snapshotsText, "ObservedNv12FrameCount: isNv12 ? 1 : 0");
         AssertContains(snapshotsText, "ObservedOtherFrameCount: observedFormat != null");
         AssertContains(healthSnapshotText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
-        AssertContains(flashbackExportText, "private static long ComputeFlashbackExportElapsedMs(");
-        AssertContains(flashbackExportText, "private static long ComputeFlashbackExportLastProgressAgeMs(");
-        AssertContains(flashbackExportText, "private static long GetFileLengthOrZero(string? path)");
+        AssertContains(flashbackExportText, "public static long ComputeFlashbackExportElapsedMs(");
+        AssertContains(flashbackExportText, "public static long ComputeFlashbackExportLastProgressAgeMs(");
+        AssertContains(flashbackExportText, "public static long GetFileLengthOrZero(string? path)");
 
         AssertDoesNotContain(snapshotsText, "private static string ResolveFlashbackBackendSettingsStaleReason(");
         AssertDoesNotContain(snapshotsText, "private static long ComputeFlashbackExportElapsedMs(");

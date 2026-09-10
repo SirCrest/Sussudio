@@ -123,29 +123,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private RecordingIntegritySummary _lastRecordingIntegrity = RecordingIntegritySummary.NotStarted;
     private RecordingIntegrityCounterSnapshot? _recordingIntegrityCounterBaseline;
     private RecordingAudioIntegrityCounterSnapshot? _recordingIntegrityAudioBaseline;
-    private FinalizeResult? _lastExportResult;
-    private long _lastFlashbackExportResultId;
     private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);
-    private readonly object _flashbackExportDiagnosticsLock = new();
-    private bool _flashbackExportActive;
-    private long _flashbackExportId;
-    private string _flashbackExportStatus = "NotStarted";
-    private string _flashbackExportOutputPath = string.Empty;
-    private long _flashbackExportStartedUtcUnixMs;
-    private long _flashbackExportLastProgressUtcUnixMs;
-    private long _flashbackExportCompletedUtcUnixMs;
-    private int _flashbackExportSegmentsProcessed;
-    private int _flashbackExportTotalSegments;
-    private double _flashbackExportPercent;
-    private long _flashbackExportInPointMs;
-    private long _flashbackExportOutPointMs;
-    private string _flashbackExportMessage = string.Empty;
-    private string _flashbackExportFailureKind = string.Empty;
-    private long _flashbackExportForceRotateFallbacks;
-    private long _flashbackExportLastForceRotateFallbackUtcUnixMs;
-    private int _flashbackExportLastForceRotateFallbackSegments;
-    private long _flashbackExportLastForceRotateFallbackInPointMs;
-    private long _flashbackExportLastForceRotateFallbackOutPointMs;
+    private readonly FlashbackExportState _flashbackExport = new();
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private int _audioSwitchGeneration;
@@ -280,7 +259,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             recordingOutcome.RecoveryPath,
             recordingOutcome.ProgressStage,
             recordingOutcome.LastProgressUtc,
-            _flashbackExportOutputPath);
+            _flashbackExport.OutputPath);
     }
 
     private async Task RunTransitionAsync(

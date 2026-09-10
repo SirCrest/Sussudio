@@ -1189,9 +1189,15 @@ static partial class Program
         }
         var unknown = create.Invoke(null, new object?[] { "cancel.mp4", "Flashback export cancelled.", "unknown-code", null });
         AssertEqual("Failed", method.Invoke(null, new[] { unknown })?.ToString(), "Unknown code never falls back to message parsing");
-        var source = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
+        // The export diagnostics that classify failures moved out of CaptureService into
+        // FlashbackExportState, so the classifier call is pinned against its new owner.
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExportState.cs");
         AssertContains(source, "FlashbackExportFailureCodes.Classify(result)");
         AssertDoesNotContain(source, "ContainsFlashbackExportFailureText");
+        // Neither owner may regress to parsing display text for the failure category.
+        AssertDoesNotContain(
+            ReadRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs"),
+            "ContainsFlashbackExportFailureText");
 
         return Task.CompletedTask;
     }

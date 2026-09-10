@@ -33,7 +33,7 @@ public partial class CaptureService
             fbSink,
             recordingHealth.FlashbackVideoQueueLatencyMetrics);
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var flashbackExport = CaptureFlashbackExportHealthSnapshotFields(snapshotUtcUnixMs);
+        var flashbackExport = _flashbackExport.CaptureHealthSnapshotFields(snapshotUtcUnixMs);
         var flashbackBackendSettings = _flashbackBackend.SettingsSnapshot;
         var flashbackBuffer = CaptureFlashbackBufferHealthSnapshotFields(
             fbSink,
@@ -1106,7 +1106,7 @@ private RecordingHealthSnapshotFields CaptureRecordingHealthSnapshotFields(
 
         public long SnapshotUtcUnixMs { get; init; }
 
-        public FlashbackExportHealthSnapshotFields FlashbackExport { get; init; }
+        public FlashbackExportState.FlashbackExportHealthSnapshotFields FlashbackExport { get; init; }
 
         public FlashbackBufferHealthSnapshotFields FlashbackBuffer { get; init; }
 
