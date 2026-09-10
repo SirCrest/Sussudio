@@ -438,4 +438,31 @@ namespace Sussudio.Tools
             return new string(buffer);
         }
     }
+
+    // Shared flashback-action validation used by both the MCP tool (string action names
+    // taken directly from tool arguments) and the raw automation pipe dispatcher (which
+    // parses to AutomationFlashbackAction first, then applies the same positionMs bounds
+    // rule). Keeping this in one place means the MCP surface and the raw pipe can never
+    // silently diverge on what counts as a valid flashback action or positionMs value.
+    public static class AutomationFlashbackValidation
+    {
+        public static readonly IReadOnlyCollection<string> ValidActionNames = new[]
+        {
+            "play", "pause", "go-live", "seek", "begin-scrub", "update-scrub", "end-scrub",
+            "set-in-point", "set-out-point", "clear-in-out-points"
+        };
+
+        public static bool RequiresPositionMs(string normalizedAction)
+            => normalizedAction is "seek" or "begin-scrub" or "update-scrub";
+
+        public static void ValidatePositionMs(double positionMs)
+        {
+            if (!double.IsFinite(positionMs) ||
+                positionMs < 0 ||
+                positionMs > TimeSpan.MaxValue.TotalMilliseconds)
+            {
+                throw new ArgumentOutOfRangeException(nameof(positionMs), "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+            }
+        }
+    }
 }

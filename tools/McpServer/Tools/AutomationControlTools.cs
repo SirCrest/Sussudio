@@ -495,17 +495,14 @@ public static class FlashbackTools
         }
 
         var normalizedAction = action.Replace("_", "-").ToLowerInvariant();
-        if (normalizedAction is not ("play" or "pause" or "go-live" or "seek" or "begin-scrub" or "update-scrub" or "end-scrub" or "set-in-point" or "set-out-point" or "clear-in-out-points"))
+        if (!AutomationFlashbackValidation.ValidActionNames.Contains(normalizedAction))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(action),
                 "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
         }
 
-        if ((normalizedAction == "seek" ||
-             normalizedAction == "begin-scrub" ||
-             normalizedAction == "update-scrub") &&
-            !positionMs.HasValue)
+        if (AutomationFlashbackValidation.RequiresPositionMs(normalizedAction) && !positionMs.HasValue)
         {
             throw new ArgumentException("Flashback seek, begin_scrub, and update_scrub require positionMs.", nameof(positionMs));
         }
@@ -517,13 +514,7 @@ public static class FlashbackTools
 
         if (positionMs.HasValue)
         {
-            if (!double.IsFinite(positionMs.Value) ||
-                positionMs.Value < 0 ||
-                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)
-            {
-                throw new ArgumentOutOfRangeException(nameof(positionMs), "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
-            }
-
+            AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);
             payload["positionMs"] = positionMs.Value;
         }
 

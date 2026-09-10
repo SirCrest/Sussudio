@@ -6011,7 +6011,10 @@ static partial class Program
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
-        AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+        AssertContains(dispatcherText, "AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);");
+        var flashbackValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");

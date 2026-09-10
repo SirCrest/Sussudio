@@ -4592,6 +4592,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var flashbackToolsActionText = flashbackToolsRootText;
         var flashbackToolsExportText = flashbackToolsRootText;
+        var flashbackValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n");
         AssertContains(flashbackToolsRootText, "[McpServerToolType]");
         AssertContains(flashbackToolsRootText, "public static class FlashbackTools");
         AssertDoesNotContain(flashbackToolsRootText, "public static partial class FlashbackTools");
@@ -4603,13 +4605,16 @@ static partial class Program
         AssertContains(flashbackToolsActionText, "public static async Task<CallToolResult> flashback_action");
         AssertContains(flashbackToolsActionText, "if (string.IsNullOrWhiteSpace(action))");
         AssertContains(flashbackToolsActionText, "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.");
-        AssertContains(flashbackToolsActionText, "normalizedAction is not (\"play\" or \"pause\" or \"go-live\" or \"seek\" or \"begin-scrub\" or \"update-scrub\" or \"end-scrub\" or \"set-in-point\" or \"set-out-point\" or \"clear-in-out-points\")");
+        AssertContains(flashbackToolsActionText, "!AutomationFlashbackValidation.ValidActionNames.Contains(normalizedAction)");
         AssertContains(flashbackToolsActionText, "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
-        AssertContains(flashbackToolsActionText, "normalizedAction == \"begin-scrub\"");
-        AssertContains(flashbackToolsActionText, "normalizedAction == \"update-scrub\"");
+        AssertContains(flashbackToolsActionText, "AutomationFlashbackValidation.RequiresPositionMs(normalizedAction) && !positionMs.HasValue");
         AssertContains(flashbackToolsActionText, "Flashback seek, begin_scrub, and update_scrub require positionMs.");
-        AssertContains(flashbackToolsActionText, "if (!double.IsFinite(positionMs.Value) ||\n                positionMs.Value < 0 ||\n                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)");
-        AssertContains(flashbackToolsActionText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+        AssertContains(flashbackToolsActionText, "AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);");
+        AssertContains(flashbackValidationText, "public static class AutomationFlashbackValidation");
+        AssertContains(flashbackValidationText, "\"play\", \"pause\", \"go-live\", \"seek\", \"begin-scrub\", \"update-scrub\", \"end-scrub\",\n            \"set-in-point\", \"set-out-point\", \"clear-in-out-points\"");
+        AssertContains(flashbackValidationText, "normalizedAction is \"seek\" or \"begin-scrub\" or \"update-scrub\"");
+        AssertContains(flashbackValidationText, "if (!double.IsFinite(positionMs) ||\n                positionMs < 0 ||\n                positionMs > TimeSpan.MaxValue.TotalMilliseconds)");
+        AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(flashbackToolsExportText, "public static async Task<CallToolResult> flashback_export");
         AssertContains(flashbackToolsExportText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
         AssertContains(flashbackToolsExportText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
