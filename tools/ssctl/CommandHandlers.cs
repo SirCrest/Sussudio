@@ -1066,14 +1066,14 @@ internal static class CommandHandlers
 internal sealed class PipeTransport
 {
     private readonly string _pipeName;
-    private readonly int? _responseTimeoutOverrideMs;
+    private readonly int? _sessionResponseTimeoutMs;
 
-    public PipeTransport(string pipeName, int? responseTimeoutOverrideMs = null)
+    public PipeTransport(string pipeName, int? sessionResponseTimeoutMs = null)
     {
         _pipeName = string.IsNullOrWhiteSpace(pipeName)
             ? AutomationPipeProtocol.DefaultPipeName
             : pipeName;
-        _responseTimeoutOverrideMs = responseTimeoutOverrideMs;
+        _sessionResponseTimeoutMs = sessionResponseTimeoutMs;
     }
 
     public async Task<JsonElement> SendCommandAsync(
@@ -1088,8 +1088,8 @@ internal sealed class PipeTransport
                     _pipeName,
                     commandName,
                     payload,
-                    responseTimeoutOverrideMs: _responseTimeoutOverrideMs,
-                    responseTimeoutMs: responseTimeoutMs,
+                    sessionResponseTimeoutMs: _sessionResponseTimeoutMs,
+                    callResponseTimeoutMs: responseTimeoutMs,
                     unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
@@ -1111,8 +1111,8 @@ internal sealed class PipeTransport
             _pipeName,
             kind,
             payload,
-            responseTimeoutOverrideMs: _responseTimeoutOverrideMs,
-            responseTimeoutMs: responseTimeoutMs,
+            sessionResponseTimeoutMs: _sessionResponseTimeoutMs,
+            callResponseTimeoutMs: responseTimeoutMs,
             unknownCommandHandling: AutomationUnknownCommandHandling.ThrowArgumentException,
             cancellationToken: cancellationToken);
 }

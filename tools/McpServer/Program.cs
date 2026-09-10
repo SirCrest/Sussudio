@@ -52,7 +52,7 @@ namespace McpServer
                 _pipeName,
                 commandName,
                 payload,
-                responseTimeoutMs: responseTimeoutMs,
+                callResponseTimeoutMs: responseTimeoutMs,
                 unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
             // Shared tools retain synthetic pipe-canceled responses; MCP requests
@@ -72,7 +72,7 @@ namespace McpServer
                 _pipeName,
                 kind,
                 payload,
-                responseTimeoutMs: responseTimeoutMs,
+                callResponseTimeoutMs: responseTimeoutMs,
                 unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();

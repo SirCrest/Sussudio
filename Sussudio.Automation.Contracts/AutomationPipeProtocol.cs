@@ -599,8 +599,8 @@ internal static class AutomationCommandTransport
         string pipeName,
         AutomationCommandKind kind,
         object? payload = null,
-        int? responseTimeoutOverrideMs = null,
-        int? responseTimeoutMs = null,
+        int? sessionResponseTimeoutMs = null,
+        int? callResponseTimeoutMs = null,
         AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
         CancellationToken cancellationToken = default)
         => SendAndUnwrapAsync(
@@ -610,8 +610,8 @@ internal static class AutomationCommandTransport
                 kind,
                 payload,
                 AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                responseTimeoutMs
-                    ?? responseTimeoutOverrideMs
+                callResponseTimeoutMs
+                    ?? sessionResponseTimeoutMs
                     ?? AutomationPipeProtocol.GetDefaultResponseTimeout(kind),
                 includeResponseElement: true,
                 cancellationToken: cancellationToken));
@@ -620,8 +620,8 @@ internal static class AutomationCommandTransport
         string pipeName,
         string commandName,
         object? payload = null,
-        int? responseTimeoutOverrideMs = null,
-        int? responseTimeoutMs = null,
+        int? sessionResponseTimeoutMs = null,
+        int? callResponseTimeoutMs = null,
         AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
         CancellationToken cancellationToken = default)
         => SendAndUnwrapAsync(
@@ -631,8 +631,8 @@ internal static class AutomationCommandTransport
                 commandName,
                 payload,
                 AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                responseTimeoutMs
-                    ?? responseTimeoutOverrideMs
+                callResponseTimeoutMs
+                    ?? sessionResponseTimeoutMs
                     ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName),
                 includeResponseElement: true,
                 cancellationToken: cancellationToken));

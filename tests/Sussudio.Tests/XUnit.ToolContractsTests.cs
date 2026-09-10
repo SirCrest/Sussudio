@@ -10866,7 +10866,7 @@ public sealed class AutomationToolContractsProtocolXunitTests
             "public async Task<JsonElement> SendCommandAsync(\n            AutomationCommandKind kind,");
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
-        Assert.Contains("responseTimeoutMs: responseTimeoutMs", typedSend);
+        Assert.Contains("callResponseTimeoutMs: responseTimeoutMs", typedSend);
         Assert.Contains("unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError", typedSend);
         Assert.Contains("cancellationToken: cancellationToken", typedSend);
         Assert.Equal(2, typedSend.Split("cancellationToken.ThrowIfCancellationRequested();").Length - 1);
@@ -10881,8 +10881,8 @@ public sealed class AutomationToolContractsProtocolXunitTests
             "public Task<JsonElement> SendCommandAsync(\n        AutomationCommandKind kind,");
 
         Assert.Contains("AutomationCommandTransport.SendCommandAsync(", typedSend);
-        Assert.Contains("responseTimeoutOverrideMs: _responseTimeoutOverrideMs", typedSend);
-        Assert.Contains("responseTimeoutMs: responseTimeoutMs", typedSend);
+        Assert.Contains("sessionResponseTimeoutMs: _sessionResponseTimeoutMs", typedSend);
+        Assert.Contains("callResponseTimeoutMs: responseTimeoutMs", typedSend);
     }
 
     [Fact]
