@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.NativeXu;
 
 namespace Sussudio.Services.Capture;
@@ -755,7 +756,7 @@ public class DeviceService
             return "UYVY";
         }
 
-        if (token.Equals("p010le", StringComparison.OrdinalIgnoreCase))
+        if (PixelFormatIds.IsP010(token))
         {
             return "P010";
         }

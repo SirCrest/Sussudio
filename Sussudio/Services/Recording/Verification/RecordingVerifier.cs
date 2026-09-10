@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
@@ -462,7 +463,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         }
 
         var pixelFormatLooksHdr = !string.IsNullOrWhiteSpace(detectedPixelFormat) &&
-                                  (string.Equals(detectedPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ||
+                                  (PixelFormatIds.IsP010(detectedPixelFormat) ||
                                    string.Equals(detectedPixelFormat, "yuv420p10le", StringComparison.OrdinalIgnoreCase) ||
                                    string.Equals(detectedPixelFormat, "yuv422p10le", StringComparison.OrdinalIgnoreCase) ||
                                    string.Equals(detectedPixelFormat, "yuv444p10le", StringComparison.OrdinalIgnoreCase));

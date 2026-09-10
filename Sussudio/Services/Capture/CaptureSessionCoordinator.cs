@@ -318,12 +318,6 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     internal bool IsFlashbackActive => _captureService.IsFlashbackActive;
 
-    internal event Action<FlashbackPlaybackStateChange> FlashbackPlaybackStateChanged
-    {
-        add => _captureService.FlashbackPlaybackStateChanged += value;
-        remove => _captureService.FlashbackPlaybackStateChanged -= value;
-    }
-
     internal bool IsCurrentFlashbackPlaybackStateChange(FlashbackPlaybackStateChange change)
         => !Volatile.Read(ref _isDisposed) && _captureService.IsCurrentFlashbackPlaybackStateChange(change);
 

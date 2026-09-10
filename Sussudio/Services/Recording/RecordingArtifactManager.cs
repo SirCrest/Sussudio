@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
+using Sussudio.Services.Contracts;
 using Windows.Storage;
 
 namespace Sussudio.Services.Recording;
@@ -34,7 +35,7 @@ public sealed class RecordingArtifactManager
                     CreationCollisionOption.GenerateUniqueName)).Path
             : ResolveUniqueOutputPath(outputFolder, outputFileName);
 
-        var hdrPipelineActive = string.Equals(request.VideoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+        var hdrPipelineActive = PixelFormatIds.IsP010(request.VideoInputPixelFormat);
 
         return BuildContext(request, finalOutputPath, hdrPipelineActive);
     }

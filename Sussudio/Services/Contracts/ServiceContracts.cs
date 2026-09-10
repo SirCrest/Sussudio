@@ -196,6 +196,14 @@ namespace Sussudio.Services.Contracts
     // Requested track names follow the recording settings. Shared by the recording
     // lifecycle, the LibAv sink, and the in-process structure verifier so failure
     // evidence cannot drift between them.
+    // Shared P010 boundary check so the HDR pipeline's "is this stream P010" test
+    // cannot drift between the sites that decide, log, and verify it.
+    internal static class PixelFormatIds
+    {
+        public static bool IsP010(string? pixelFormat) =>
+            string.Equals(pixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static class RecordingTracks
     {
         public static IReadOnlyList<string> BuildRequestedTracks(RecordingContext? context)

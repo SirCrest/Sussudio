@@ -309,7 +309,7 @@ public partial class CaptureService
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
 
-        var requireP010 = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+        var requireP010 = PixelFormatIds.IsP010(videoInputPixelFormat);
         var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
         var unifiedVideoCapture = await PrepareLibAvRecordingVideoCaptureAsync(
                 settings,
@@ -341,24 +341,18 @@ public partial class CaptureService
             $"requested_source_subtype={settings.RequestedPixelFormat ?? (hdrPipelineRequested ? "P010" : "NV12")} " +
             $"mjpeg_hfr={useMjpegHighFrameRateMode} " +
             $"negotiated_pixel_format={(unifiedVideoCapture.IsP010 ? "P010" : "NV12")} " +
-            $"negotiated_subtype_token={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "P010|MFVideoFormat_P010" : "NV12")} " +
+            $"negotiated_subtype_token={(PixelFormatIds.IsP010(videoInputPixelFormat) ? "P010|MFVideoFormat_P010" : "NV12")} " +
             $"hdr_static_metadata_requested={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata) || (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0))} " +
             $"hdr_master_display_set={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))} " +
             $"hdr_max_cll={settings.HdrMaxCll} " +
             $"hdr_max_fall={settings.HdrMaxFall} " +
             $"mf_readwrite_disable_converters={(_mfConvertersDisabled ? "true" : "false")} " +
-            $"libav_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
+            $"libav_ingest_pix_fmt={(PixelFormatIds.IsP010(videoInputPixelFormat) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
 
         await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken).ConfigureAwait(false);
         transitionToken.ThrowIfCancellationRequested();
 
-        _lastMfSourceReaderFramesDelivered = 0;
-        _lastMfSourceReaderFramesDropped = 0;
-        _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
-        _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
-        _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
-        SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate);
-        _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
+        ResetVideoBaselineCounters(unifiedVideoCapture, settings, effectiveFrameRate);
 
         var activeRecordingSink = rollback.RecordingSink
             ?? throw new InvalidOperationException("Recording requires an active sink.");
@@ -372,24 +366,13 @@ public partial class CaptureService
             activeRecordingSink,
             audioDeviceId).ConfigureAwait(false);
 
-        _recordingMicrophoneSamplesBaseline = activeLibAvSink.MicrophoneSamplesReceived;
-        _recordingMicrophoneDropsBaseline =
-            activeLibAvSink.MicrophoneDropsQueueSaturated +
-            activeLibAvSink.MicrophoneDropsBacklogEviction;
-        _recordingMicrophoneDiscontinuitiesBaseline =
-            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
-        _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
+        ResetAudioBaselineCounters(activeLibAvSink, settings);
 
         IGpuVideoFrameTryEncoder? gpuEncoder =
             (!isMjpegMode && activeLibAvSink.GpuEncodingEnabled)
                 ? activeLibAvSink
                 : null;
 
-        _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeLibAvSink);
-        _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
-            _previewAudioGraph.ProgramCapture,
-            activeLibAvSink,
-            settings);
         activeLibAvSink.MarkRecordingBoundaryStarted();
         await unifiedVideoCapture.StartRecordingAsync(rollback.RecordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
         if (gpuEncoder != null)
@@ -417,10 +400,42 @@ public partial class CaptureService
         _recordingStopwatch.Restart();
         EnsureCaptureTelemetrySampling();
         StatusChanged?.Invoke(this, "Recording");
-        rollback.LibAvSink = null;
-        rollback.RecordingSink = null;
-        rollback.OwnedWasapiAudioCapture = null;
-        rollback.OwnedUnifiedVideoCapture = null;
+        rollback.Commit();
+    }
+
+    // Runs before StartLibAvRecordingAudioInputsAsync's await, so these fields are
+    // committed even if audio startup subsequently throws.
+    private void ResetVideoBaselineCounters(
+        UnifiedVideoCapture unifiedVideoCapture,
+        CaptureSettings settings,
+        double effectiveFrameRate)
+    {
+        _lastMfSourceReaderFramesDelivered = 0;
+        _lastMfSourceReaderFramesDropped = 0;
+        _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+        _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
+        _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
+        SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate);
+        _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
+    }
+
+    // Runs after StartLibAvRecordingAudioInputsAsync's await, so it depends on a
+    // fully-populated activeLibAvSink.
+    private void ResetAudioBaselineCounters(LibAvRecordingSink activeLibAvSink, CaptureSettings settings)
+    {
+        _recordingMicrophoneSamplesBaseline = activeLibAvSink.MicrophoneSamplesReceived;
+        _recordingMicrophoneDropsBaseline =
+            activeLibAvSink.MicrophoneDropsQueueSaturated +
+            activeLibAvSink.MicrophoneDropsBacklogEviction;
+        _recordingMicrophoneDiscontinuitiesBaseline =
+            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
+        _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
+
+        _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeLibAvSink);
+        _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
+            _previewAudioGraph.ProgramCapture,
+            activeLibAvSink,
+            settings);
     }
 
     private async Task<UnifiedVideoCapture> PrepareLibAvRecordingVideoCaptureAsync(
@@ -2516,5 +2531,15 @@ public partial class CaptureService
         public bool FlashbackRecordingBackendLeaseHeld { get; set; }
 
         public bool SinkAttachedForAudioOnly { get; set; }
+
+        // Clears the handles a successful start has handed off, so rollback on a
+        // later failure path no longer tears down resources the caller now owns.
+        public void Commit()
+        {
+            LibAvSink = null;
+            RecordingSink = null;
+            OwnedWasapiAudioCapture = null;
+            OwnedUnifiedVideoCapture = null;
+        }
     }
 }

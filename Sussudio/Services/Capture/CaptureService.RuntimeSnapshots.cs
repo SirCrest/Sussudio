@@ -415,14 +415,11 @@ public partial class CaptureService
         bool? encoderTenBitPipelineConfirmed = recordingActive
             ? recordingContext?.HdrPipelineActive == true
             : null;
-        var negotiatedMediaSubtypeToken = string.Equals(encoderInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
+        var negotiatedMediaSubtypeToken = PixelFormatIds.IsP010(encoderInputPixelFormat)
             ? "P010|MFVideoFormat_P010"
             : "NV12";
         var activePipelineMode = recordingActive
-            ? (string.Equals(
-                encoderInputPixelFormat,
-                "p010le",
-                StringComparison.OrdinalIgnoreCase)
+            ? (PixelFormatIds.IsP010(encoderInputPixelFormat)
                 ? "HDR10-PQ"
                 : "SDR")
             : requestedPipelineMode;
