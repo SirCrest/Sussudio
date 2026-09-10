@@ -357,3 +357,9 @@ helper namespace once each xUnit class owns its own checks and fixtures:
   loops into behavioural tests.
 - `untested_critical_subsystems_on_hdr_rail` — needs the integration-test seam
   before meaningful coverage lands.
+- `wall_clock_mcp_process_tests` — `XUnit.McpCancellationTests.cs`'s
+  `AssertMcpCancellationConnectionAbsentAsync` proves a negative (no pipe
+  connection ever arrives) via a finite wall-clock wait
+  (`NoConnectionWindowMs`), because there is no deterministic completion
+  signal for an absence proof. Tracked here in case other process/IPC tests
+  grow the same pattern and need a shared convention.

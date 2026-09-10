@@ -430,6 +430,10 @@ public sealed class RecordingModelContractsTests
         => global::Program.LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches();
 
     [Fact]
+    public Task LibAvRecordingP010EncodeRoundTrip()
+        => global::Program.LibAvRecordingSink_P010EncodeRoundTrip();
+
+    [Fact]
     public Task LibAvRecordingEncodingLoopAndPacketDrainsLiveWithSinkRoot()
         => global::Program.LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot();
 
@@ -1131,8 +1135,9 @@ static partial class Program
 
         AssertContains(queueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
         AssertContains(queueText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(queueText, "private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
-        AssertContains(queueText, "private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
+        AssertContains(
+            queueText,
+            "private bool TryEnqueueChannelPacket(\n        Channel<AudioSamplePacket> queue,\n        AudioSamplePacket packet,\n        ref int queueDepth,\n        ref long dropsBacklogEviction,\n        AudioChannelState channel)");
         AssertContains(queueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
         AssertContains(queueText, "private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);");
         AssertEqual(
@@ -1209,13 +1214,16 @@ static partial class Program
     internal static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
         => Sussudio.Tests.LibAvRecordingDrainBehaviorTests.VerifyAudioInterleavingAsync();
 
+    internal static Task LibAvRecordingSink_P010EncodeRoundTrip()
+        => Sussudio.Tests.LibAvRecordingDrainBehaviorTests.VerifyP010EncodeRoundTripAsync();
+
     internal static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot()
     {
         var rootText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
-        AssertContains(rootText, "DrainAudioPackets(audioQueue.Reader)");
+        AssertContains(rootText, "DrainChannelPackets(audioQueue.Reader, ref _audioQueueDepth, _audioChannel)");
         AssertContains(rootText, "DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit)");
         AssertContains(rootText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
         AssertContains(rootText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
@@ -1234,8 +1242,7 @@ static partial class Program
         AssertContains(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(rootText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(rootText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
-        AssertContains(rootText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(rootText, "private bool DrainChannelPackets(ChannelReader<AudioSamplePacket> reader, ref int queueDepth, AudioChannelState channel)");
         AssertContains(rootText, "Marshal.Release(packet.Texture);");
         AssertContains(rootText, "ffmpeg.av_frame_free(&frame);");
         AssertContains(rootText, "ReturnVideoPacket(packet);");

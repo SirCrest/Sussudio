@@ -386,15 +386,6 @@ namespace Sussudio.Services.Contracts
         bool TryEnqueueRawVideoFrame(PooledVideoFrameLease frame);
     }
 
-    /// <summary>
-    /// Accepts decoded CUDA AVFrame references for GPU-resident NVENC encoding.
-    /// Callee clones the frame; caller retains ownership.
-    /// </summary>
-    public unsafe interface ICudaVideoFrameEncoder
-    {
-        void EnqueueCudaVideoFrame(AVFrame* cudaFrame);
-    }
-
     public interface IRecordingSink : IDisposable, IAsyncDisposable
     {
         Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default);

@@ -17,7 +17,7 @@ namespace Sussudio.Services.Recording;
 // Bounded-queue recording sink that isolates capture callbacks from libav.
 // Capture threads enqueue raw/GPU/CUDA video and audio quickly; one encoding
 // task drains the queues and serializes every LibAvEncoder call.
-public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder, ICudaVideoFrameEncoder
+public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
@@ -84,6 +84,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private int _videoQueueMaxDepth;
     private int _audioQueueDepth;
     private int _microphoneQueueDepth;
+    private readonly AudioChannelState _audioChannel;
+    private readonly AudioChannelState _microphoneChannel;
     private int _gpuQueueDepth;
     private int _gpuQueueMaxDepth;
     private int _cudaQueueDepth;
@@ -108,6 +110,26 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     {
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "LIBAV_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
+        _audioChannel = new AudioChannelState
+        {
+            Label = "audio",
+            EvictLabel = "audio_evict",
+            AfterEvictLabel = "audio_after_evict",
+            LogTag = "LIBAV_SINK_AUDIO_EVICT",
+            EnqueueSignal = "audio_enqueue",
+            AfterEvictSignal = "audio_after_evict",
+            SendSamples = _encoder.SendAudioSamples,
+        };
+        _microphoneChannel = new AudioChannelState
+        {
+            Label = "microphone",
+            EvictLabel = "microphone_evict",
+            AfterEvictLabel = "microphone_after_evict",
+            LogTag = "LIBAV_SINK_MIC_EVICT",
+            EnqueueSignal = "microphone_enqueue",
+            AfterEvictSignal = "microphone_after_evict",
+            SendSamples = _encoder.SendMicrophoneSamples,
+        };
     }
 
     public event EventHandler<long>? FrameEncoded;
@@ -436,10 +458,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 var madeProgress = false;
 
-                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                madeProgress = DrainChannelPackets(audioQueue.Reader, ref _audioQueueDepth, _audioChannel) || madeProgress;
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
-                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                    madeProgress = DrainChannelPackets(microphoneQueue.Reader, ref _microphoneQueueDepth, _microphoneChannel) || madeProgress;
                 }
 
                 if (cudaQueue != null)
@@ -455,10 +477,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
                 // Audio again catches samples that arrived while video encoding
                 // was consuming its bounded batch.
-                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                madeProgress = DrainChannelPackets(audioQueue.Reader, ref _audioQueueDepth, _audioChannel) || madeProgress;
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
-                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                    madeProgress = DrainChannelPackets(microphoneQueue.Reader, ref _microphoneQueueDepth, _microphoneChannel) || madeProgress;
                 }
 
                 if (videoQueue.Reader.Completion.IsCompleted &&
@@ -1108,36 +1130,33 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return drainedAny;
     }
 
-    private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)
+    // Per-channel labels/tags/delegate so the audio and microphone Drain/TryEnqueue
+    // pairs can share one implementation. Queue depth and drop counters stay ref
+    // parameters threaded by the caller, since a plain class cannot hold a ref field.
+    // ReadOnlySpan<byte> is a ref struct, so it cannot be a generic argument to
+    // Action<T> on net8.0 (CS9244). A purpose-built delegate takes it fine.
+    private delegate void SendSamplesCallback(ReadOnlySpan<byte> samples);
+
+    private sealed class AudioChannelState
     {
-        var drainedAny = false;
-        while (reader.TryRead(out var packet))
-        {
-            DecrementQueueDepth(ref _audioQueueDepth, "audio");
-            try
-            {
-                _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
-            }
-            finally
-            {
-                ReturnBuffer(packet.Buffer);
-            }
-
-            drainedAny = true;
-        }
-
-        return drainedAny;
+        public required string Label;            // "audio" | "microphone" -- passed to DecrementQueueDepth
+        public required string EvictLabel;        // "audio_evict" | "microphone_evict"
+        public required string AfterEvictLabel;   // "audio_after_evict" | "microphone_after_evict"
+        public required string LogTag;             // "LIBAV_SINK_AUDIO_EVICT" | "LIBAV_SINK_MIC_EVICT"
+        public required string EnqueueSignal;       // "audio_enqueue" | "microphone_enqueue" -- SignalWork tag
+        public required string AfterEvictSignal;    // "audio_after_evict" | "microphone_after_evict" -- SignalWork tag
+        public required SendSamplesCallback SendSamples; // _encoder.SendAudioSamples | _encoder.SendMicrophoneSamples
     }
 
-    private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)
+    private bool DrainChannelPackets(ChannelReader<AudioSamplePacket> reader, ref int queueDepth, AudioChannelState channel)
     {
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone");
+            DecrementQueueDepth(ref queueDepth, channel.Label);
             try
             {
-                _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
+                channel.SendSamples(packet.Buffer.AsSpan(0, packet.Length));
             }
             finally
             {
@@ -1585,7 +1604,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueAudioPacket(queue, packet))
+        if (TryEnqueueChannelPacket(queue, packet, ref _audioQueueDepth, ref _audioDropsBacklogEviction, _audioChannel))
         {
             return Task.CompletedTask;
         }
@@ -1613,7 +1632,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueMicrophonePacket(queue, packet))
+        if (TryEnqueueChannelPacket(queue, packet, ref _microphoneQueueDepth, ref _microphoneDropsBacklogEviction, _microphoneChannel))
         {
             return Task.CompletedTask;
         }
@@ -1647,7 +1666,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         Interlocked.Exchange(ref queueDepth, 0);
     }
 
-    private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
+    private bool TryEnqueueChannelPacket(
+        Channel<AudioSamplePacket> queue,
+        AudioSamplePacket packet,
+        ref int queueDepth,
+        ref long dropsBacklogEviction,
+        AudioChannelState channel)
     {
         if (_cts?.IsCancellationRequested == true)
         {
@@ -1655,65 +1679,28 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return false;
         }
 
-        if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio"))
+        if (TryWriteAudioPacket(queue, packet, ref queueDepth, channel.Label))
         {
-            SignalWork("audio_enqueue");
+            SignalWork(channel.EnqueueSignal);
             return true;
         }
 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
-            DecrementQueueDepth(ref _audioQueueDepth, "audio_evict");
-            var evicted = Interlocked.Increment(ref _audioDropsBacklogEviction);
+            DecrementQueueDepth(ref queueDepth, channel.EvictLabel);
+            var evicted = Interlocked.Increment(ref dropsBacklogEviction);
             if (evicted == 1 || evicted % 120 == 0)
             {
                 // Log evicted audio bytes so A/V drift from dropped audio is traceable.
                 Logger.Log(
-                    $"LIBAV_SINK_AUDIO_EVICT evicted={evicted} dropped_bytes={evictedPacket.Length} " +
-                    $"queue_depth={Volatile.Read(ref _audioQueueDepth)}");
+                    $"{channel.LogTag} evicted={evicted} dropped_bytes={evictedPacket.Length} " +
+                    $"queue_depth={Volatile.Read(ref queueDepth)}");
             }
 
             ReturnBuffer(evictedPacket.Buffer);
-            if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio_after_evict"))
+            if (TryWriteAudioPacket(queue, packet, ref queueDepth, channel.AfterEvictLabel))
             {
-                SignalWork("audio_after_evict");
-                return true;
-            }
-        }
-
-        ReturnBuffer(packet.Buffer);
-        return false;
-    }
-
-    private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
-    {
-        if (_cts?.IsCancellationRequested == true)
-        {
-            ReturnBuffer(packet.Buffer);
-            return false;
-        }
-
-        if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone"))
-        {
-            SignalWork("microphone_enqueue");
-            return true;
-        }
-
-        if (queue.Reader.TryRead(out var evictedPacket))
-        {
-            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone_evict");
-            var evicted = Interlocked.Increment(ref _microphoneDropsBacklogEviction);
-            if (evicted == 1 || evicted % 120 == 0)
-            {
-                Logger.Log(
-                    $"LIBAV_SINK_MIC_EVICT evicted={evicted} dropped_bytes={evictedPacket.Length} " +
-                    $"queue_depth={Volatile.Read(ref _microphoneQueueDepth)}");
-            }
-
-            ReturnBuffer(evictedPacket.Buffer);
-            if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone_after_evict"))
-            {
-                SignalWork("microphone_after_evict");
+                SignalWork(channel.AfterEvictSignal);
                 return true;
             }
         }

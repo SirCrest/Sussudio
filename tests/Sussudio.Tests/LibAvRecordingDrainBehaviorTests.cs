@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using Xunit;
 
@@ -145,6 +146,139 @@ internal static class LibAvRecordingDrainBehaviorTests
         }
     }
 
+    // HDR/P010 counterpart to VerifyAudioInterleavingAsync. Drives the same real
+    // LibAvEncoder/EncodingLoop path but with LibAvEncoderOptions.IsP010 = true,
+    // which flips the codec's pix_fmt from AV_PIX_FMT_NV12 to AV_PIX_FMT_P010LE
+    // (LibAvEncoder.cs / LibAvEncoder.VideoFrames.cs). Audio is disabled so the
+    // test isolates the P010 video path. Uses "hevc_nvenc" as the codec, matching
+    // production's EncoderSupport.MapNvencCodecName(RecordingFormat.HevcMp4) --
+    // P010/HDR encoding in this codebase is coupled to NVENC everywhere it is
+    // configured (LibAvRecordingSink.CreateOptions), there is no software P010
+    // encoder path to fall back to. This requires an NVENC-capable GPU at test
+    // time; unlike the SDR test's "libx264" (always-available software encoder),
+    // this is an environmental dependency the parent should confirm.
+    internal static async Task VerifyP010EncodeRoundTripAsync()
+    {
+        const int totalFrames = 30;
+        // NVENC rejects tiny resolutions: at 64x64 (the size the SDR libx264 test uses)
+        // avcodec_open2 fails with -22 EINVAL. 256x256 clears the HEVC minimum while
+        // staying small enough to encode 30 frames quickly.
+        const int width = 256;
+        const int height = 256;
+        var assembly = SussudioAssembly.Load();
+        Type TypeOf(string name) => assembly.GetType(name, throwOnError: true)!;
+        var encoderType = TypeOf("Sussudio.Services.Recording.LibAvEncoder");
+        encoderType.GetMethod("InitializeFFmpeg")!.Invoke(null, new object[] { true });
+        var sinkType = TypeOf("Sussudio.Services.Recording.LibAvRecordingSink");
+        var sink = Activator.CreateInstance(sinkType)!;
+        var directory = Directory.CreateTempSubdirectory("sussudio-drain-p010-");
+        using var cancellation = new CancellationTokenSource();
+        Task? owner = null;
+        try
+        {
+            var outputPath = Path.Combine(directory.FullName, "recording.mp4");
+            var options = Activator.CreateInstance(TypeOf("Sussudio.Services.Recording.LibAvEncoderOptions"))!;
+            Set(options, "OutputPath", outputPath);
+            Set(options, "CodecName", "hevc_nvenc");
+            Set(options, "Width", width);
+            Set(options, "Height", height);
+            Set(options, "FrameRate", 30d);
+            Set(options, "BitRate", 2_000_000u);
+            Set(options, "IsP010", true);
+            Set(options, "HdrEnabled", true);
+            Set(options, "AudioEnabled", false);
+            Set(options, "MicrophoneEnabled", false);
+            var encoder = GetField(sink, "_encoder")!;
+            encoderType.GetMethod("Initialize")!.Invoke(encoder, new[] { options });
+
+            var settings = Activator.CreateInstance(TypeOf("Sussudio.Models.CaptureSettings"))!;
+            Set(settings, "Format", Enum.Parse(TypeOf("Sussudio.Models.RecordingFormat"), "HevcMp4"));
+            Set(settings, "AudioEnabled", false);
+            Set(settings, "MicrophoneEnabled", false);
+            var context = Activator.CreateInstance(TypeOf("Sussudio.Services.Contracts.RecordingContext"))!;
+            Set(context, "Settings", settings);
+            Set(context, "FinalOutputPath", outputPath);
+            Set(context, "VideoOutputPath", outputPath);
+            Set(context, "EffectiveWidth", (uint)width);
+            Set(context, "EffectiveHeight", (uint)height);
+            Set(context, "EffectiveFrameRate", 30d);
+            Set(context, "HdrPipelineActive", true);
+            Set(context, "VideoInputPixelFormat", "p010le");
+            SetField(sink, "_context", context);
+            SetField(sink, "_width", width);
+            SetField(sink, "_height", height);
+            SetField(sink, "_audioEnabled", false);
+            SetField(sink, "_microphoneEnabled", false);
+            SetField(sink, "_started", true);
+            SetField(sink, "_cts", cancellation);
+            var video = CreateQueue(sink, "_videoQueue");
+            var audio = CreateQueue(sink, "_audioQueue");
+            var videoPacketType = sinkType.GetNestedType("VideoFramePacket", BindingFlags.NonPublic)!;
+
+            // P010 is 4:2:0 with 16-bit samples (MSB-justified: the 10 significant
+            // bits sit in the top bits of each 16-bit word), so the packed frame is
+            // double the byte size of the NV12 equivalent (width*height*3/2):
+            // width*height*3 total, per PooledVideoFrame.GetFrameSizeBytes and
+            // LibAvEncoder.CopyPackedFrameToVideoFrame's rowBytes = width*2 math.
+            var length = width * height * 3;
+            for (var frame = 0; frame < totalFrames; frame++)
+            {
+                var buffer = ArrayPool<byte>.Shared.Rent(length);
+                FillP010Fixture(buffer, length, width * height);
+                Write(video, Activator.CreateInstance(videoPacketType,
+                    new object?[] { buffer, null, length, Environment.TickCount64, null })!);
+            }
+            SetField(sink, "_videoQueueDepth", totalFrames);
+            Complete(video);
+            Complete(audio);
+
+            Exception? callbackFailure = null;
+            var encodedFrames = 0;
+            EventHandler<long> frameEncoded = (_, _) =>
+            {
+                try
+                {
+                    encodedFrames++;
+                }
+                catch (Exception error)
+                {
+                    callbackFailure = error;
+                    cancellation.Cancel();
+                }
+            };
+            sinkType.GetEvent("FrameEncoded")!.AddEventHandler(sink, frameEncoded);
+            var encode = sinkType.GetMethod("EncodingLoop", PrivateInstance)!
+                .CreateDelegate<Action<CancellationToken>>(sink);
+            owner = Task.Factory.StartNew(() => encode(cancellation.Token), CancellationToken.None,
+                TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            SetField(sink, "_encodingTask", owner);
+            await owner.WaitAsync(TimeSpan.FromSeconds(15));
+
+            Assert.Null(callbackFailure);
+            Assert.Null(GetField(sink, "_encodingFailure"));
+            Assert.Equal(totalFrames, encodedFrames);
+            // _structureVerificationCompleted only flips true after
+            // InProcessRecordingStructureVerifier.Verify succeeds, which (because
+            // context.HdrPipelineActive is true) includes reopening the file and
+            // asserting the video stream's color_primaries/color_trc/color_space
+            // are BT.2020/PQ/non-constant-luminance and its codec is HEVC -- a
+            // real, cheap, in-process check that P010/HDR metadata actually landed
+            // in the encoded output, with no ffprobe process spawn required.
+            Assert.True((bool)GetField(sink, "_structureVerificationCompleted")!);
+            foreach (var field in new[] { "_videoQueueDepth", "_audioQueueDepth" })
+                Assert.Equal(0, (int)GetField(sink, field)!);
+            using var reopened = File.Open(outputPath, FileMode.Open, FileAccess.Read, FileShare.None);
+            Assert.True(reopened.Length > 0);
+        }
+        finally
+        {
+            if (owner == null || !owner.IsCompleted) cancellation.Cancel();
+            if (owner != null) await owner.WaitAsync(TimeSpan.FromSeconds(15));
+            await ((IAsyncDisposable)sink).DisposeAsync();
+            directory.Delete(recursive: true);
+        }
+    }
+
     private static object CreateQueue(object sink, string name)
     {
         var packetType = sink.GetType().GetField(name, PrivateInstance)!.FieldType.GenericTypeArguments[0];
@@ -165,6 +299,18 @@ internal static class LibAvRecordingDrainBehaviorTests
     {
         var writer = queue.GetType().GetProperty("Writer")!.GetValue(queue)!;
         Assert.True((bool)writer.GetType().GetMethod("TryComplete")!.Invoke(writer, new object?[] { null })!);
+    }
+
+    // Kept out of the async test body on purpose: Span<T> is a ref struct and C# 12
+    // forbids ref structs in async methods (CS9202), so the cast has to live here.
+    private static void FillP010Fixture(byte[] buffer, int length, int lumaSampleCount)
+    {
+        var samples = MemoryMarshal.Cast<byte, ushort>(buffer.AsSpan(0, length));
+        // 10-bit luma ~64 (the SDR fixture's 8-bit Y=16 black level scaled to 10-bit),
+        // MSB-justified into the top bits of each 16-bit word as P010LE expects.
+        samples[..lumaSampleCount].Fill(unchecked((ushort)(64 << 6)));
+        // 10-bit neutral chroma ~512 (the SDR fixture's 8-bit UV=128 scaled), same layout.
+        samples[lumaSampleCount..].Fill(unchecked((ushort)(512 << 6)));
     }
 
     private const BindingFlags PrivateInstance = BindingFlags.Instance | BindingFlags.NonPublic;

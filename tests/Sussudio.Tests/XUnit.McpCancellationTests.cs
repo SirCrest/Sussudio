@@ -212,10 +212,20 @@ static partial class Program
         return (Task)method.Invoke(pipeClient, new object?[] { command, null, 30_000, cancellationToken })!;
     }
 
+    // Proving a connection never arrives is a negative/absence assertion: there is
+    // no deterministic completion signal to await (nothing will ever complete
+    // `accept` in the passing case), so a finite wall-clock wait is unavoidable
+    // here. Keep this at 250ms -- it is used at exactly two call sites and no
+    // flakiness at this bound has been observed; widening it "just in case" would
+    // add roughly 3.5s of dead wall-clock time to every suite run. If CI later
+    // shows real timeouts at this bound, raise it (e.g. to 500ms) in a change that
+    // cites the failing run, rather than pre-emptively.
+    private const int NoConnectionWindowMs = 250;
+
     private static async Task AssertMcpCancellationConnectionAbsentAsync(Task accept)
     {
         await Assert.ThrowsAsync<TimeoutException>(
-            () => accept.WaitAsync(TimeSpan.FromMilliseconds(250))).ConfigureAwait(false);
+            () => accept.WaitAsync(TimeSpan.FromMilliseconds(NoConnectionWindowMs))).ConfigureAwait(false);
     }
 
     private static async Task AssertMcpCancellationPipeDisconnectedAsync(StreamReader reader, CancellationToken cancellationToken)
