@@ -923,10 +923,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     }
 
 
-    private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;
-    private const int MinDecodedReorderCapacity = 32;
-    private const int MaxDecodedReorderCapacity = 240;
-
     private readonly record struct DecodedFrame(
         long SeqNo,
         PooledVideoFrame Frame,
@@ -1276,7 +1272,17 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 frame.Frame.Dispose();
             }
 
-            _nextEmitSeq++;
+            // The reorder cursor belongs to _reorderLock (see its declaration): workers
+            // evaluate `seqNo != _nextEmitSeq` and the staleness comparisons while holding
+            // it. Advance under the lock and pulse, so a producer blocked on a full ring
+            // re-evaluates immediately instead of waiting out its 8ms timeout and
+            // force-dropping the oldest frame. Mirrors ConsumeKnownMissingFrames.
+            lock (_reorderLock)
+            {
+                _nextEmitSeq++;
+                Monitor.PulseAll(_reorderLock);
+            }
+
             if (emitted)
             {
                 Interlocked.Increment(ref _totalFramesEmitted);
@@ -1321,7 +1327,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     {
         // Out-of-order window is bounded by decoder count; empirically ≤6 frames at 4K120.
         // Formula: decoderCount * 2 + 4 for 6 workers = 16 slots ≈ 190 MB at 4K NV12.
-        // Byte-budget constant is retained for diagnostics compatibility.
         _ = width;
         _ = height;
         var overrideSlots = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_MJPEG_REORDER_SLOTS", 0, 0, 240);

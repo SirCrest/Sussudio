@@ -1490,7 +1490,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     /// <summary>
     /// Pauses eviction and marks the recording start PTS.
-    /// While paused, the .ts file grows without evicting old frames.
+    /// While paused, the active segment file grows without evicting old frames.
     /// </summary>
     public void PauseEviction()
     {

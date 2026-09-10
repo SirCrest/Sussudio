@@ -7094,8 +7094,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeLifecycleControllerText, "var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();");
         AssertContains(runtimeLifecycleControllerText, "_context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);");
         AssertContains(runtimeLifecycleControllerText, "_context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCapture();");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfoWithoutSnapshot();");
         AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
 

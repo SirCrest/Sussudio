@@ -417,8 +417,7 @@ internal sealed class NativeXuAudioControlService
                 continue;
             }
 
-            var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
-            foreach (var node in nodeList.Where(node => node.IsDevSpecific))
+            foreach (var node in nodes.Where(node => node.IsDevSpecific))
             {
                 yield return new RawControlCandidate(ksInterface.Path, node.NodeId);
             }

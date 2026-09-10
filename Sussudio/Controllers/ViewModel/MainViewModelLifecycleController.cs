@@ -122,18 +122,6 @@ internal sealed class MainViewModelRuntimeLifecycleControllerContext
     public required Action UpdateFlashbackHealthStatus { get; init; }
     public required Action StopFlashbackHealthPresentation { get; init; }
     public required Action DisposeAudioDeviceWatcher { get; init; }
-
-    public void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot snapshot)
-        => UpdateLiveCaptureInfoWithSnapshot(snapshot);
-
-    public void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot snapshot)
-        => UpdateHdrRuntimeStatusFromCaptureWithSnapshot(snapshot);
-
-    public void UpdateLiveCaptureInfo()
-        => UpdateLiveCaptureInfoWithoutSnapshot();
-
-    public void UpdateHdrRuntimeStatusFromCapture()
-        => UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot();
 }
 
 /// <summary>
@@ -159,8 +147,8 @@ internal sealed class MainViewModelRuntimeLifecycleController
         var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();
         _context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);
         _context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);
-        _context.UpdateHdrRuntimeStatusFromCapture();
-        _context.UpdateLiveCaptureInfo();
+        _context.UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot();
+        _context.UpdateLiveCaptureInfoWithoutSnapshot();
         _context.UpdateFlashbackHealthStatus();
 
         SetupTimer();
@@ -200,7 +188,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
 
             if (_context.IsPreviewing() || _context.IsRecording())
             {
-                _context.UpdateLiveCaptureInfo(runtimeSnapshot);
+                _context.UpdateLiveCaptureInfoWithSnapshot(runtimeSnapshot);
             }
             else
             {
@@ -209,7 +197,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
 
             _context.UpdateDiskSpace();
             _context.RefreshSourceTelemetrySummaryAge();
-            _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
+            _context.UpdateHdrRuntimeStatusFromCaptureWithSnapshot(runtimeSnapshot);
         };
         _timer.Start();
     }

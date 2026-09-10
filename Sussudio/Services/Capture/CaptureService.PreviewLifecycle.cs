@@ -252,13 +252,13 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_uvc {(int)settings.Width}x{(int)settings.Height}@{settings.FrameRate:0.###} p010={requireP010} pxfmt={settings.RequestedPixelFormat} mjpeg_hfr={useMjpegHighFrameRateMode}");
             await unifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                (int)settings.Width,
-                (int)settings.Height,
-                settings.FrameRate,
-                requireP010,
-                settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                settings.MjpegDecoderCount).ConfigureAwait(false);
+                width: (int)settings.Width,
+                height: (int)settings.Height,
+                fps: settings.FrameRate,
+                requireP010: requireP010,
+                requestedPixelFormat: settings.RequestedPixelFormat,
+                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
             unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);
             TryApplySharedPreviewDevice(unifiedVideoCapture, _videoPipeline.PreviewFrameSink);

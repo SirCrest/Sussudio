@@ -1946,7 +1946,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 // Handle force-rotate requests from the export thread (must run on encoding thread)
                 if (Volatile.Read(ref _forceRotateRequested))
                 {
-                    if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))
+                    if (DrainAndRotateForceRotateRequest(videoQueue, audioQueue, microphoneQueue, gpuQueue))
                     {
                         madeProgress = true;
                         continue;
@@ -2584,7 +2584,16 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());
     }
 
-    private bool ProcessPendingForceRotate(
+    /// <summary>
+    /// Drains queued packets and rotates the active segment to service a pending force-rotate
+    /// request, if one exists.
+    /// Returns <see langword="true"/> on every skip/abort path (no pending request, the request
+    /// was already completed, the drain was aborted, or rotation could not begin) — the caller
+    /// should loop immediately without further processing. Returns <see langword="false"/> only
+    /// when the request was actually rotated (or abandoned) and completed via
+    /// <c>localRequest.Complete(...)</c>.
+    /// </summary>
+    private bool DrainAndRotateForceRotateRequest(
         Channel<VideoFramePacket> videoQueue,
         Channel<AudioSamplePacket> audioQueue,
         Channel<AudioSamplePacket>? microphoneQueue,

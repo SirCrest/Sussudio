@@ -115,7 +115,7 @@ internal static class MfInteropHelpers
         return true;
     }
 
-    public static string TryReadAllocatedString(IMFAttributes attributes, ref Guid key)
+    public static bool TryReadAllocatedString(IMFAttributes attributes, ref Guid key, out string value)
     {
         IntPtr textPtr = IntPtr.Zero;
         try
@@ -123,13 +123,15 @@ internal static class MfInteropHelpers
             var hr = attributes.GetAllocatedString(ref key, out textPtr, out var length);
             if (hr == MfEAttributeNotFound || textPtr == IntPtr.Zero)
             {
-                return string.Empty;
+                value = string.Empty;
+                return false;
             }
 
             ThrowIfFailed(hr, $"IMFAttributes.GetAllocatedString({key})");
-            return length > 0
+            value = length > 0
                 ? Marshal.PtrToStringUni(textPtr, length) ?? string.Empty
                 : Marshal.PtrToStringUni(textPtr) ?? string.Empty;
+            return true;
         }
         finally
         {

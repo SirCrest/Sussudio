@@ -273,7 +273,7 @@ internal sealed class MainViewModelUiDispatchController
         return enqueued;
     }
 
-    public async Task ExecuteAsync(Func<Task> operation, string operationName)
+    private async Task ExecuteAsync(Func<Task> operation, string operationName)
     {
         try
         {

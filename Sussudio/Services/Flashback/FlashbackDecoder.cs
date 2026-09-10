@@ -44,7 +44,7 @@ internal readonly struct DecodedAudioChunk
 }
 
 /// <summary>
-/// Video+audio decoder for Flashback .ts files.
+/// Video+audio decoder for Flashback segment (.ts) files.
 /// Decodes HEVC/H.264 video via D3D11VA (GPU-direct) or software fallback to NV12/P010,
 /// and AAC audio to f32le interleaved stereo 48kHz.
 /// This type is NOT thread-safe — all calls must come from the playback controller's thread.

@@ -200,12 +200,12 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
             if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out var topologyError))
             {
-                var detail = $"{ksInterface.Path}: {topologyError ?? "unknown"}";
-                Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError ?? "unknown"}'");
+                var detail = $"{ksInterface.Path}: {topologyError}";
+                Logger.Log($"NATIVEXU_TOPOLOGY_FAILED path='{ksInterface.Path}' error='{topologyError}'");
                 return new NodeReadAttempt(null, false, "nativexu-topology-read-failed", detail);
             }
 
-            var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+            var nodeList = nodes;
             var devSpecificIds = new List<int>();
             foreach (var node in nodeList)
             {
@@ -1786,7 +1786,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                     continue;
                 }
 
-                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                var nodeList = nodes;
                 foreach (var node in nodeList)
                 {
                     if (!node.IsDevSpecific)
@@ -1868,7 +1868,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                     continue;
                 }
 
-                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                var nodeList = nodes;
                 foreach (var node in nodeList)
                 {
                     if (!node.IsDevSpecific)
@@ -2074,7 +2074,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                     continue;
                 }
 
-                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                var nodeList = nodes;
                 foreach (var node in nodeList)
                 {
                     if (!node.IsDevSpecific)
@@ -2171,7 +2171,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                     continue;
                 }
 
-                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                var nodeList = nodes;
                 foreach (var node in nodeList)
                 {
                     if (!node.IsDevSpecific)

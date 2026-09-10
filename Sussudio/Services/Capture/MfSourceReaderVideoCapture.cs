@@ -24,6 +24,16 @@ public sealed record VideoCaptureNegotiationOptions(
     IntPtr DxgiDeviceManager = default,
     bool UseExternalMjpegDecode = false);
 
+// Which of the three mutually-exclusive negotiation shapes InitializeAsync
+// selected for a session: unmodified native negotiation, the GPU MJPG->NV12
+// hardware-transform path, or raw MJPG passed through for external decode.
+internal enum SourceNegotiationMode
+{
+    Standard,
+    ConvertedMjpegNv12,
+    RawMjpgPassthrough,
+}
+
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {
     private const int CadenceWindowSeconds = 20;
@@ -156,14 +166,17 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var sourceReaderD3DEnabled = false;
         var disableConverters = true;
         var requestedSourceSubtypeName = requestedPixelFormat;
-        var useConvertedMjpegNv12 = useMjpegHighFrameRateMode &&
-                                    !requireP010 &&
-                                    !useExternalMjpegDecode &&
-                                    string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
-        var useRawMjpgOutput = useMjpegHighFrameRateMode &&
+        // useConvertedMjpegNv12 and useRawMjpgOutput were the same three-condition
+        // gate (high-frame-rate MJPG mode, non-P010, requested subtype "MJPG"),
+        // split only by the mutually-exclusive useExternalMjpegDecode flag -
+        // collapsed here into one three-way mode instead of two derived bools.
+        var negotiationMode = useMjpegHighFrameRateMode &&
                                !requireP010 &&
-                               useExternalMjpegDecode &&
-                                    string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+                               string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase)
+            ? (useExternalMjpegDecode
+                ? SourceNegotiationMode.RawMjpgPassthrough
+                : SourceNegotiationMode.ConvertedMjpegNv12)
+            : SourceNegotiationMode.Standard;
 
         try
         {
@@ -209,11 +222,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 throw new InvalidOperationException("Media Foundation device activation completed without returning a media source.");
             }
 
-            disableConverters = !useConvertedMjpegNv12 && !useRawMjpgOutput;
+            disableConverters = negotiationMode == SourceNegotiationMode.Standard;
             MfInteropHelpers.ThrowIfFailed(
-                MfInterop.MFCreateAttributes(out readerAttributes, useConvertedMjpegNv12 ? 3 : 2),
+                MfInterop.MFCreateAttributes(out readerAttributes, negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12 ? 3 : 2),
                 "MFCreateAttributes(reader)");
-            if (useConvertedMjpegNv12)
+            if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
             {
                 MfInteropHelpers.ThrowIfFailed(
                     readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1),
@@ -226,13 +239,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
             }
 
-            if (!useRawMjpgOutput &&
+            if (negotiationMode != SourceNegotiationMode.RawMjpgPassthrough &&
                 dxgiDeviceManager != IntPtr.Zero &&
                 TrySetSourceReaderD3DManager(readerAttributes, dxgiDeviceManager))
             {
                 sourceReaderD3DEnabled = true;
             }
-            else if (useConvertedMjpegNv12)
+            else if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
             {
                 throw new InvalidOperationException("4K120 MJPG mode requires D3D11-backed SourceReader output.");
             }
@@ -240,7 +253,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             var createSourceReaderHr = MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader);
             if (createSourceReaderHr < 0 && sourceReaderD3DEnabled)
             {
-                if (useConvertedMjpegNv12)
+                if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
                 {
                     MfInteropHelpers.ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource(hfr_mjpeg_d3d)");
                 }
@@ -278,50 +291,50 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             int negotiatedHeight;
             double negotiatedFps;
             string negotiatedDescription;
-            if (useConvertedMjpegNv12)
+            switch (negotiationMode)
             {
-                requestedSourceSubtypeName = "MJPG";
-                selectedMediaType = SelectConvertedMediaType(
-                    sourceReader,
-                    width,
-                    height,
-                    fps,
-                    MfGuids.MFVideoFormat_MJPG,
-                    requestedSubtype,
-                    out negotiatedSubtype,
-                    out negotiatedWidth,
-                    out negotiatedHeight,
-                    out negotiatedFps,
-                    out negotiatedDescription);
-            }
-            else if (useRawMjpgOutput)
-            {
-                requestedSourceSubtypeName = "MJPG";
-                selectedMediaType = SelectMediaType(
-                    sourceReader,
-                    width,
-                    height,
-                    fps,
-                    MfGuids.MFVideoFormat_MJPG,
-                    out negotiatedSubtype,
-                    out negotiatedWidth,
-                    out negotiatedHeight,
-                    out negotiatedFps,
-                    out negotiatedDescription);
-            }
-            else
-            {
-                selectedMediaType = SelectMediaType(
-                    sourceReader,
-                    width,
-                    height,
-                    fps,
-                    requestedSubtype,
-                    out negotiatedSubtype,
-                    out negotiatedWidth,
-                    out negotiatedHeight,
-                    out negotiatedFps,
-                    out negotiatedDescription);
+                case SourceNegotiationMode.ConvertedMjpegNv12:
+                    requestedSourceSubtypeName = "MJPG";
+                    selectedMediaType = SelectConvertedMediaType(
+                        sourceReader,
+                        width,
+                        height,
+                        fps,
+                        MfGuids.MFVideoFormat_MJPG,
+                        requestedSubtype,
+                        out negotiatedSubtype,
+                        out negotiatedWidth,
+                        out negotiatedHeight,
+                        out negotiatedFps,
+                        out negotiatedDescription);
+                    break;
+                case SourceNegotiationMode.RawMjpgPassthrough:
+                    requestedSourceSubtypeName = "MJPG";
+                    selectedMediaType = SelectMediaType(
+                        sourceReader,
+                        width,
+                        height,
+                        fps,
+                        MfGuids.MFVideoFormat_MJPG,
+                        out negotiatedSubtype,
+                        out negotiatedWidth,
+                        out negotiatedHeight,
+                        out negotiatedFps,
+                        out negotiatedDescription);
+                    break;
+                default:
+                    selectedMediaType = SelectMediaType(
+                        sourceReader,
+                        width,
+                        height,
+                        fps,
+                        requestedSubtype,
+                        out negotiatedSubtype,
+                        out negotiatedWidth,
+                        out negotiatedHeight,
+                        out negotiatedFps,
+                        out negotiatedDescription);
+                    break;
             }
 
             var negotiatedMode = ApplyCurrentMediaTypeAndReconcileActualOutput(
@@ -333,11 +346,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     negotiatedHeight,
                     negotiatedFps,
                     negotiatedDescription),
-                useConvertedMjpegNv12);
+                negotiationMode);
             ValidateNegotiatedOutputMode(
                 negotiatedMode,
-                useConvertedMjpegNv12,
-                useRawMjpgOutput,
+                negotiationMode,
                 sourceReaderD3DEnabled);
             CommitInitializedRuntimeState(
                 deviceSymbolicLink,
@@ -347,8 +359,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 ref startupHeld,
                 sourceReaderD3DEnabled,
                 dxgiDeviceManager,
-                useConvertedMjpegNv12,
-                useRawMjpgOutput);
+                negotiationMode);
 
             Logger.Log(
                 "MF_SOURCE_READER_INIT " +
@@ -359,7 +370,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 $"negotiated='{_negotiatedFormat}' " +
                 $"d3d_manager_enabled={sourceReaderD3DEnabled} " +
                 $"mf_readwrite_disable_converters={disableConverters.ToString().ToLowerInvariant()} " +
-                $"mf_readwrite_enable_hardware_transforms={useConvertedMjpegNv12.ToString().ToLowerInvariant()}");
+                $"mf_readwrite_enable_hardware_transforms={(negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12).ToString().ToLowerInvariant()}");
         }
         catch (Exception ex)
         {
@@ -399,7 +410,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFSourceReader sourceReader,
         IMFMediaType selectedMediaType,
         SourceReaderNegotiatedMode selectedMode,
-        bool useConvertedMjpegNv12)
+        SourceNegotiationMode negotiationMode)
     {
         IMFMediaType? actualMediaType = null;
         try
@@ -418,7 +429,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 "IMFSourceReader.GetCurrentMediaType");
 
             return actualMediaType != null
-                ? ReconcileActualMediaType(actualMediaType, selectedMode, useConvertedMjpegNv12)
+                ? ReconcileActualMediaType(actualMediaType, selectedMode, negotiationMode)
                 : selectedMode;
         }
         finally
@@ -430,7 +441,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private static SourceReaderNegotiatedMode ReconcileActualMediaType(
         IMFMediaType actualMediaType,
         SourceReaderNegotiatedMode selectedMode,
-        bool useConvertedMjpegNv12)
+        SourceNegotiationMode negotiationMode)
     {
         var subtype = selectedMode.Subtype;
         var width = selectedMode.Width;
@@ -455,7 +466,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             fps = (double)actualFpsNumerator / actualFpsDenominator;
         }
 
-        if (useConvertedMjpegNv12)
+        if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
         {
             description = $"{SubtypeGuidToName(subtype)} <= MJPG {width}x{height}@{fps:0.###}";
         }
@@ -465,11 +476,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
     private void ValidateNegotiatedOutputMode(
         SourceReaderNegotiatedMode mode,
-        bool useConvertedMjpegNv12,
-        bool useRawMjpgOutput,
+        SourceNegotiationMode negotiationMode,
         bool sourceReaderD3DEnabled)
     {
-        if (useConvertedMjpegNv12)
+        if (negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12)
         {
             if (!sourceReaderD3DEnabled)
             {
@@ -482,7 +492,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     $"4K120 MJPG mode requires decoded NV12 output, but negotiated {SubtypeGuidToName(mode.Subtype)}.");
             }
         }
-        else if (useRawMjpgOutput && mode.Subtype != MfGuids.MFVideoFormat_MJPG)
+        else if (negotiationMode == SourceNegotiationMode.RawMjpgPassthrough && mode.Subtype != MfGuids.MFVideoFormat_MJPG)
         {
             throw new InvalidOperationException(
                 $"External MJPG decode requires native MJPG output, but negotiated {SubtypeGuidToName(mode.Subtype)}.");
@@ -491,11 +501,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
     private string ResolveNativeInputFormatName(
         SourceReaderNegotiatedMode mode,
-        bool useConvertedMjpegNv12,
-        bool useRawMjpgOutput)
+        SourceNegotiationMode negotiationMode)
     {
         var nativeFormatName = SubtypeGuidToName(mode.Subtype);
-        if (!useConvertedMjpegNv12 && !useRawMjpgOutput)
+        if (negotiationMode == SourceNegotiationMode.Standard)
         {
             // Bandwidth heuristic: raw uncompressed NV12/YUY2 at this res+fps may exceed USB 3.0 (~5 Gbps).
             // If so, the device must be delivering compressed (MJPG) regardless of what MF negotiated.
@@ -524,21 +533,23 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         ref bool startupHeld,
         bool sourceReaderD3DEnabled,
         IntPtr dxgiDeviceManager,
-        bool useConvertedMjpegNv12,
-        bool useRawMjpgOutput)
+        SourceNegotiationMode negotiationMode)
     {
+        var isConvertedMjpegNv12 = negotiationMode == SourceNegotiationMode.ConvertedMjpegNv12;
+        var isRawMjpgPassthrough = negotiationMode == SourceNegotiationMode.RawMjpgPassthrough;
+
         _deviceSymbolicLink = deviceSymbolicLink;
         _width = mode.Width;
         _height = mode.Height;
         _fps = mode.Fps;
         SetExpectedFrameRate(_fps);
-        _isP010 = useRawMjpgOutput ? false : mode.Subtype == MfGuids.MFVideoFormat_P010;
-        _isCompressedMjpgOutput = useRawMjpgOutput;
-        _isHighFrameRateMjpegMode = useConvertedMjpegNv12 || useRawMjpgOutput;
-        _strictD3DOutputRequired = useConvertedMjpegNv12;
-        _strictTextureOutputRequired = useConvertedMjpegNv12;
+        _isP010 = isRawMjpgPassthrough ? false : mode.Subtype == MfGuids.MFVideoFormat_P010;
+        _isCompressedMjpgOutput = isRawMjpgPassthrough;
+        _isHighFrameRateMjpegMode = negotiationMode != SourceNegotiationMode.Standard;
+        _strictD3DOutputRequired = isConvertedMjpegNv12;
+        _strictTextureOutputRequired = isConvertedMjpegNv12;
 
-        Volatile.Write(ref _nativeInputFormat, ResolveNativeInputFormatName(mode, useConvertedMjpegNv12, useRawMjpgOutput));
+        Volatile.Write(ref _nativeInputFormat, ResolveNativeInputFormatName(mode, negotiationMode));
         Volatile.Write(ref _negotiatedFormat, mode.Description);
         Interlocked.Exchange(ref _framesDelivered, 0);
         Interlocked.Exchange(ref _framesDropped, 0);
@@ -668,9 +679,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     _ = Marshal.Release(activatePtr);
                     rawReleased = true;
 
-                    var link = MfInteropHelpers.TryReadAllocatedString(
+                    MfInteropHelpers.TryReadAllocatedString(
                         activate,
-                        ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK);
+                        ref MfGuids.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK,
+                        out var link);
                     if (!string.IsNullOrWhiteSpace(link))
                     {
                         candidates.Add(link);

@@ -1057,7 +1057,6 @@ static partial class Program
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
         AssertContains(source, "MJPEG_REORDER_STRICT_ADVANCE");
         AssertContains(source, "SortedDictionary<long, DecodedFrame>");
-        AssertContains(source, "DefaultDecodedReorderByteBudget");
         AssertContains(source, "TryAddDecodedFrame");
         AssertContains(source, "private void DecrementCompressedQueueDepth(string operation)");
         AssertContains(source, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
@@ -1269,7 +1268,6 @@ static partial class Program
             .Replace("\r\n", "\n");
         var reorderText = rootText;
 
-        AssertContains(reorderText, "private const long DefaultDecodedReorderByteBudget = 1024L * 1024 * 1024;");
         AssertContains(reorderText, "private readonly record struct DecodedFrame(");
         AssertContains(reorderText, "private readonly SortedDictionary<long, DecodedFrame> _reorderFrames = new();");
         AssertContains(reorderText, "private readonly SortedSet<long> _knownMissingSequences = new();");

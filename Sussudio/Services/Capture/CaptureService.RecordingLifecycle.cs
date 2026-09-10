@@ -439,13 +439,13 @@ public partial class CaptureService
             AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
             await rollback.OwnedUnifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                (int)effectiveWidth,
-                (int)effectiveHeight,
-                effectiveFrameRate,
-                requireP010,
-                settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                settings.MjpegDecoderCount).ConfigureAwait(false);
+                width: (int)effectiveWidth,
+                height: (int)effectiveHeight,
+                fps: effectiveFrameRate,
+                requireP010: requireP010,
+                requestedPixelFormat: settings.RequestedPixelFormat,
+                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;

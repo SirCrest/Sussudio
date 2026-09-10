@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -163,8 +164,8 @@ internal static class KsExtensionUnitNative
 
     internal static bool TryReadTopologyNodes(
         SafeFileHandle handle,
-        out IReadOnlyList<KsTopologyNode>? nodes,
-        out string? error)
+        [NotNullWhen(true)] out IReadOnlyList<KsTopologyNode>? nodes,
+        [NotNullWhen(false)] out string? error)
     {
         nodes = null;
         error = null;

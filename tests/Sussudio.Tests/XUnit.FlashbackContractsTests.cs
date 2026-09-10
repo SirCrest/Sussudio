@@ -4688,7 +4688,7 @@ static partial class Program
             "                if (videoQueue.Reader.Completion.IsCompleted");
         var executionBlock = ExtractTextBetween(
             forceRotateText,
-            "private bool ProcessPendingForceRotate(",
+            "private bool DrainAndRotateForceRotateRequest(",
             "    private bool TryCancelForceRotate");
 
         AssertContains(sourceText, "private sealed class ForceRotateRequest");
@@ -4704,7 +4704,7 @@ static partial class Program
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Flashback", "FlashbackEncoderSink.ForceRotate.cs")),
             "FlashbackEncoderSink.ForceRotate.cs folded into FlashbackEncoderSink.cs");
-        AssertContains(loopBlock, "if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
+        AssertContains(loopBlock, "if (DrainAndRotateForceRotateRequest(videoQueue, audioQueue, microphoneQueue, gpuQueue))");
         AssertContains(loopBlock, "madeProgress = true;\n                        continue;");
         AssertContains(executionBlock, "localRequest = _forceRotateRequest;\n            _forceRotateRequest = null;");
         AssertContains(executionBlock, "if (localRequest == null)\n            {\n                Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                return true;\n            }");
@@ -5034,7 +5034,7 @@ static partial class Program
         AssertContains(forceRotateText, "public bool TryBeginCommit()");
         AssertContains(forceRotateText, "public bool TryCancel()");
         AssertContains(forceRotateText, "public void Complete(IReadOnlyList<string> paths)");
-        AssertContains(forceRotateText, "private bool ProcessPendingForceRotate(");
+        AssertContains(forceRotateText, "private bool DrainAndRotateForceRotateRequest(");
         AssertContains(forceRotateText, "Volatile.Write(ref _forceRotateDraining, true);");
         AssertContains(forceRotateText, "private static bool TryDrainForceRotatePhase(");
         AssertContains(forceRotateText, "() => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit)");

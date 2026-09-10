@@ -77,8 +77,8 @@ internal static class MfDeviceEnumerator
                         _ = Marshal.Release(activatePtr);
                         rawReleased = true;
 
-                        var friendlyName = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeFriendlyName);
-                        var symbolicLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
+                        MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeFriendlyName, out var friendlyName);
+                        MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink, out var symbolicLink);
                         if (string.IsNullOrWhiteSpace(symbolicLink))
                         {
                             continue;
@@ -446,7 +446,7 @@ internal static class MfDeviceEnumerator
                     _ = Marshal.Release(activatePtr);
                     rawReleased = true;
 
-                    var candidateLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
+                    MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink, out var candidateLink);
                     if (!MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink))
                     {
                         continue;
