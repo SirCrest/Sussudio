@@ -897,7 +897,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         var positionMs = action switch
         {
             AutomationFlashbackAction.Play => GetDouble(payload, "positionMs"),
-            AutomationFlashbackAction.Seek => GetDouble(payload, "positionMs") ?? 0,
+            AutomationFlashbackAction.Seek => RequireDouble(payload, "positionMs"),
             AutomationFlashbackAction.BeginScrub => RequireDouble(payload, "positionMs"),
             AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, "positionMs"),
             AutomationFlashbackAction.EndScrub => GetDouble(payload, "positionMs"),
