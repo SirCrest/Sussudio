@@ -1489,6 +1489,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string correlationId,
         CancellationToken cancellationToken)
     {
+        // Intentional asymmetry: unlike sibling handlers, whose snapshot is incidental response
+        // metadata served from the cache, GetSnapshot's contract is on-demand current truth --
+        // serving it from the ~500ms poll cache would make MCP/ssctl assertions observe stale state.
         var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
         return CreateResponse(correlationId, "Snapshot retrieved.", snapshot: snapshot);
     }
