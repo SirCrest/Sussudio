@@ -44,14 +44,17 @@ Agents have repeatedly made these mistakes in this repo. Check for them before f
 
 ## Validation
 
-Use focused tests while editing. After meaningful code changes, including ownership moves and runtime changes, run the full validation sequence below: build, tests, offline harness, and diff checks.
+Use focused tests while editing. After meaningful code changes, including ownership moves and runtime changes, run the single validation entry point:
 
 ```powershell
-dotnet build Sussudio.slnx -p:Platform=x64 --no-restore
-dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore
-dotnet exec tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
-git diff --check
+powershell -NoProfile -File scripts\validate.ps1
 ```
+
+It builds the solution, runs the xUnit suite, performs the assembly-load smoke check, and runs `git diff --check`, then writes `artifacts/validation.json` describing what ran, what passed, and what the run does not prove. Exit code is 0 only when every step succeeded. Read the JSON rather than scraping console output.
+
+That smoke step only loads the built app assembly and executes **zero tests**; it is reported as its own step kind and must never be cited as regression coverage. The xUnit suite is the only source of test results.
+
+`scripts\validate.ps1` uses `--no-restore` because NuGet writes to the global package cache, which a workspace-scoped agent sandbox denies silently. Run it with `-Restore` when running outside a confined sandbox, and note that a confined sandbox also blocks both MSBuild compiler paths (the shared `VBCSCompiler` named pipe and the piped-stdio `csc` task), so builds inside one require elevated access.
 
 When editing shared automation or tool sources, also rebuild affected tools such as `ssctl` and `NativeXuAudioProbe`.
 
