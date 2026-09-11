@@ -205,7 +205,7 @@ public sealed class FlashbackPlaybackMailboxTests
             return (bool)Invoke("TryEnqueue", command);
         }
 
-        internal object Resolve(object command) => Invoke("ResolveLatestPosition", command);
+        internal object Resolve(object command) => Invoke("ResolveLatestPositionAndReleaseCoalescingSlot", command);
         internal string Kind(object command) => GetProperty(command, "Kind").ToString()!;
         internal TimeSpan Position(object command) => (TimeSpan)GetProperty(command, "Position");
         internal object RenewGeneration() => Invoke("RenewGeneration");

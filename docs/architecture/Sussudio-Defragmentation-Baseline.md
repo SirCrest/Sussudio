@@ -58,15 +58,15 @@ Notes for future agents:
 
 Date: 2026-06-01
 Area: diagnostic-session Flashback cycle scenario locality
-Problem: `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` was the smallest remaining Flashback diagnostic scenario-family owner, but it used the same wait/export helpers and startup delegation pattern as `DiagnosticSessionFlashbackCycleScenarios.cs`. Reviewing Flashback cycle diagnostics still required opening one file for restart/encoder/lifecycle cycles and a second sibling for preview stop/restart cycles, even though both are state-mutating Flashback cycle scenarios selected by the same catalog/startup flow.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
-Files added: none; `DiagnosticSessionFlashbackPreviewCycleScenarios` keeps its type/member names while living in `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`.
+Problem: `tools/DiagnosticSession/DiagnosticSessionFlashbackPreviewCycleScenarios.cs` was the smallest remaining Flashback diagnostic scenario-family owner, but it used the same wait/export helpers and startup delegation pattern as `DiagnosticSessionFlashbackCycleScenarios.cs`. Reviewing Flashback cycle diagnostics still required opening one file for restart/encoder/lifecycle cycles and a second sibling for preview stop/restart cycles, even though both are state-mutating Flashback cycle scenarios selected by the same catalog/startup flow.
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackPreviewCycleScenarios.cs`
+Files added: none; `DiagnosticSessionFlashbackPreviewCycleScenarios` keeps its type/member names while living in `tools/DiagnosticSession/DiagnosticSessionFlashbackCycleScenarios.cs`.
 Net production .cs delta: -1; net core app .cs delta: 0; net test .cs delta: 0
 Partial clusters reduced: n/a; folded adjacent standalone diagnostic scenario owners rather than changing a production partial cluster.
 Build/tests/runtime checks: regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings, including `ssctl` and `McpServer` rebuilds); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionFlashbackCycle|FullyQualifiedName~DiagnosticSessionFlashbackPreviewCycle|FullyQualifiedName~DiagnosticSessionBackgroundTasks|FullyQualifiedName~ArchitectureDocs"` passed (19 passed); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed.
 CLI/MCP/pipe checks, if applicable: no public automation command names/IDs, scenario names, task labels, await priorities, pipe protocol, MCP/tool command surface, CLI payloads, XAML bindings, capture, recording, Flashback runtime, preview, HDR, or app hot-path behavior changed; this slice only moved shared diagnostic-session tool source ownership and updated source-shape docs/tests.
 Behavior preserved: Flashback preview-cycle registration, priorities 13/14/15, task labels, started action strings, preview stop/restart commands, pre-stop encoded-frame capture, preview-off Flashback validation, export verification filenames, playback-under-preview-stop validation, recording-backed counter validation, restart frame-flow waits, and startup call sites keep the same type/member names and call flow while living with restart/encoder/lifecycle cycle diagnostics in `DiagnosticSessionFlashbackCycleScenarios.cs`.
-Notes for future agents: keep Flashback restart, encoder, lifecycle, and preview-cycle diagnostic command flows in `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs` while they remain one state-mutating cycle scenario family. Keep export-centric scenarios in `DiagnosticSessionFlashbackExportScenarios.cs`, read-only segment/wait helpers in `DiagnosticSessionFlashbackSupport.cs`, and scenario selection/policy predicates in `DiagnosticSessionScenarioCatalog.cs`. Current counts: core app 87 `.cs` files / 88,338 nonblank LoC; `Sussudio.Tests` 12 `.cs` files / 55,822 nonblank LoC; all tests 14 `.cs` files / 56,672 nonblank LoC.
+Notes for future agents: keep Flashback restart, encoder, lifecycle, and preview-cycle diagnostic command flows in `tools/DiagnosticSession/DiagnosticSessionFlashbackCycleScenarios.cs` while they remain one state-mutating cycle scenario family. Keep export-centric scenarios in `DiagnosticSessionFlashbackExportScenarios.cs`, read-only segment/wait helpers in `DiagnosticSessionFlashbackSupport.cs`, and scenario selection/policy predicates in `DiagnosticSessionScenarioCatalog.cs`. Current counts: core app 87 `.cs` files / 88,338 nonblank LoC; `Sussudio.Tests` 12 `.cs` files / 55,822 nonblank LoC; all tests 14 `.cs` files / 56,672 nonblank LoC.
 
 Date: 2026-06-01
 Area: MainViewModel root state locality
@@ -526,15 +526,15 @@ Notes for future agents: keep LibAv encoder behavior/reflection contracts, sourc
 
 Date: 2026-05-31
 Area: MainWindow controller/UI contract test locality
-Problem: `MainWindowUiContract.Tests.cs` was the remaining sidecar for agent-facing MainWindow automation IDs, full-screen/window automation, UI dispatching, and stats snapshot builder/provider contracts even though `MainWindow.ControllerOwnership.Tests.cs` already owned adjacent MainWindow controller-adapter, shell chrome, stats overlay composition, window automation geometry, screenshot, recording, preview, and audio presentation ownership checks. Reviewing the MainWindow controller/UI surface still required opening a small mixed contract file beside the main controller ownership owner.
+Problem: `MainWindowUiContract.Tests.cs` was the remaining sidecar for agent-facing MainWindow automation IDs, full-screen/window automation, UI dispatching, and stats snapshot builder/provider contracts even though `MainWindowControllerOwnershipTests.cs` already owned adjacent MainWindow controller-adapter, shell chrome, stats overlay composition, window automation geometry, screenshot, recording, preview, and audio presentation ownership checks. Reviewing the MainWindow controller/UI surface still required opening a small mixed contract file beside the main controller ownership owner.
 Files consolidated: `tests/Sussudio.Tests/MainWindowUiContract.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MainWindow UI contract sidecar count -1; `Sussudio.Tests` `.cs` count 56 -> 55
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MainWindowAutomation|FullyQualifiedName~MainWindowUiContractStatsSnapshot|FullyQualifiedName~MainWindow.ControllerOwnership|FullyQualifiedName~PresentationPreviewShellChrome|FullyQualifiedName~PresentationPreviewMainWindow"` passed (15 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); current core app `.cs` count/LoC: 135 / 89,674; current test `.cs` count/LoC: 55 / 55,979.
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves test method bodies/classes and updates architecture ownership docs.
-Behavior preserved: `XUnit.AutomationContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.MainWindowAutomationIds_CoverAgentCriticalSurface`, `Program.MainWindowFullScreenAutomation_AwaitsTransitionTask`, `Program.MainWindowWindowAutomationCommands_LiveInController`, and `Program.MainWindowUiDispatching_LivesInShellChromeAdapter` method names. `MainWindowUiContractStatsSnapshotTests` keeps the same xUnit class and `[Fact]` method names. Automation ID inventory, full-screen transition/dispatch guards, window automation controller ownership, UI dispatching source-shape checks, stats snapshot construction, and stats builder behavior now live in `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs`.
-Notes for future agents: keep MainWindow controller-adapter ownership, agent-facing UI contracts, stats overlay snapshot/provider contracts, window automation geometry, shell chrome, screenshot, recording, preview, and audio presentation checks together in `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` while they share the MainWindow controller/composition source readers. Split again only for an independent runtime fixture or a distinct production controller family.
+Behavior preserved: `XUnit.AutomationContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.MainWindowAutomationIds_CoverAgentCriticalSurface`, `Program.MainWindowFullScreenAutomation_AwaitsTransitionTask`, `Program.MainWindowWindowAutomationCommands_LiveInController`, and `Program.MainWindowUiDispatching_LivesInShellChromeAdapter` method names. `MainWindowUiContractStatsSnapshotTests` keeps the same xUnit class and `[Fact]` method names. Automation ID inventory, full-screen transition/dispatch guards, window automation controller ownership, UI dispatching source-shape checks, stats snapshot construction, and stats builder behavior now live in `tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs`.
+Notes for future agents: keep MainWindow controller-adapter ownership, agent-facing UI contracts, stats overlay snapshot/provider contracts, window automation geometry, shell chrome, screenshot, recording, preview, and audio presentation checks together in `tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs` while they share the MainWindow controller/composition source readers. Split again only for an independent runtime fixture or a distinct production controller family.
 
 Date: 2026-05-31
 Area: D3D preview renderer diagnostics test locality
@@ -622,15 +622,15 @@ Notes for future agents: keep capture-format, transport, HDR truth, MJPEG totals
 
 Date: 2026-05-31
 Area: diagnostic-session result builder projection locality
-Problem: `tools/Common/DiagnosticSessionResultBuilder.Projections.cs` was the last private partial for `DiagnosticSessionResultBuilder`, holding projection records/builders called only by `CreateResult`/`FlattenResultProjectionSet`. Reviewing diagnostic-session summary construction still required opening a second builder file even though projection composition, final DTO assignment, analysis, artifact writes, and summary-write repair are one result-construction owner.
-Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.Projections.cs`
+Problem: `tools/DiagnosticSession/DiagnosticSessionResultBuilder.Projections.cs` was the last private partial for `DiagnosticSessionResultBuilder`, holding projection records/builders called only by `CreateResult`/`FlattenResultProjectionSet`. Reviewing diagnostic-session summary construction still required opening a second builder file even though projection composition, final DTO assignment, analysis, artifact writes, and summary-write repair are one result-construction owner.
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultBuilder.Projections.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: `DiagnosticSessionResultBuilder` partial file count 2 -> 1; generated baseline production `.cs` count 181 -> 180
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionResultBuilder|FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface"` passed (66 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); diff checks passed; current core app `.cs` count/LoC: 137 / 89,690; current test `.cs` count/LoC: 81 / 56,098.
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt AutomationClient, ssctl, MCP, NativeXuAudioProbe, app, and tests. No public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
 Behavior preserved: result stage transitions, pre-summary artifact writes, summary-write failure repair, `summary.json` field shape, projection record names/builders, Flashback playback/recording/export value maps, preview scheduler/D3D/visual-cadence projections, diagnostic health/analysis flow, and formatter/tool consumers remain unchanged while living in `DiagnosticSessionResultBuilder.cs`.
-Notes for future agents: keep diagnostic-session result analysis, projection-set assembly, final summary DTO assignment, artifact-write handoff, and summary-write repair in `tools/Common/DiagnosticSessionResultBuilder.cs` unless a real reusable result-projection collaborator emerges outside diagnostic-session summary construction.
+Notes for future agents: keep diagnostic-session result analysis, projection-set assembly, final summary DTO assignment, artifact-write handoff, and summary-write repair in `tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` unless a real reusable result-projection collaborator emerges outside diagnostic-session summary construction.
 
 Date: 2026-05-31
 Area: shared D3D device resource locality
@@ -784,14 +784,14 @@ Current file/LoC checkpoint: core app `.cs`: 147 / 89,754 nonblank LoC; tests `.
 
 Date: 2026-05-31
 Area: Stats overlay lifecycle test locality
-Problem: `StatsOverlay.Lifecycle.Tests.cs` was a small direct xUnit shard for stats overlay lifecycle and section chrome wiring, while the adjacent `MainWindow.ControllerOwnership.Tests.cs` parent already owned MainWindow controller adapter/source-shape contracts and `XUnit.PresentationPreviewContractsTests.cs` already exposed that contract surface to xUnit. Reviewing MainWindow stats overlay ownership still required opening a separate small test file with duplicated source-reader/assert helper plumbing.
+Problem: `StatsOverlay.Lifecycle.Tests.cs` was a small direct xUnit shard for stats overlay lifecycle and section chrome wiring, while the adjacent `MainWindowControllerOwnershipTests.cs` parent already owned MainWindow controller adapter/source-shape contracts and `XUnit.PresentationPreviewContractsTests.cs` already exposed that contract surface to xUnit. Reviewing MainWindow stats overlay ownership still required opening a separate small test file with duplicated source-reader/assert helper plumbing.
 Files consolidated: `tests/Sussudio.Tests/StatsOverlay.Lifecycle.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: n/a; test `.cs` count 103 -> 102
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~StatsOverlay|FullyQualifiedName~PresentationPreviewMainWindowInitialContractsTests|FullyQualifiedName~MainWindowPropertyChangedRouting"` passed (7 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed).
 CLI/MCP/pipe checks, if applicable: not applicable; no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed.
-Behavior preserved: `StatsOverlayLifecycle_LivesInController` and `StatsSectionChrome_LivesInFocusedPartial` still assert the same MainWindow stats overlay adapter/controller ownership and section chrome wiring; they now live in `MainWindow.ControllerOwnership.Tests.cs` and are exposed through `XUnit.PresentationPreviewContractsTests.cs`.
+Behavior preserved: `StatsOverlayLifecycle_LivesInController` and `StatsSectionChrome_LivesInFocusedPartial` still assert the same MainWindow stats overlay adapter/controller ownership and section chrome wiring; they now live in `MainWindowControllerOwnershipTests.cs` and are exposed through `XUnit.PresentationPreviewContractsTests.cs`.
 Notes for future agents: keep MainWindow stats overlay lifecycle and section chrome source-shape checks with the broader MainWindow controller ownership test parent unless the stats overlay gains an independent fixture or runtime seam; keep stats presentation/dock formatting behavior in `XUnit.StatsPresentation.Formatting.Tests.cs`.
 Current file/LoC checkpoint: core app `.cs`: 147 / 89,754 nonblank LoC; tests `.cs`: 102 / 56,114 nonblank LoC.
 
@@ -870,15 +870,15 @@ Notes for future agents: superseded by the 2026-05-31 Flashback encoder sink tes
 
 Date: 2026-05-27
 Area: MainWindow controller ownership test locality
-Problem: `MainWindow.ControllerOwnership.Layout.Tests.cs`, `MainWindow.ControllerOwnership.Output.Tests.cs`, and `MainWindow.ControllerOwnership.Screenshot.Tests.cs` were small source-shape shards for the same MainWindow controller ownership review surface already rooted in `MainWindow.ControllerOwnership.Tests.cs`. Reviewing MainWindow controller boundaries still required hopping through separate layout, output, and screenshot files even though the xUnit forwarding surface and helper inputs were shared.
+Problem: `MainWindow.ControllerOwnership.Layout.Tests.cs`, `MainWindow.ControllerOwnership.Output.Tests.cs`, and `MainWindow.ControllerOwnership.Screenshot.Tests.cs` were small source-shape shards for the same MainWindow controller ownership review surface already rooted in `MainWindowControllerOwnershipTests.cs`. Reviewing MainWindow controller boundaries still required hopping through separate layout, output, and screenshot files even though the xUnit forwarding surface and helper inputs were shared.
 Files consolidated: `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Layout.Tests.cs`, `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Output.Tests.cs`, `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Screenshot.Tests.cs`
 Files added: none
 Net production .cs delta: 0
 Partial clusters reduced: `Program` MainWindow controller ownership test partial-family file count -3; test `.cs` count 146 -> 143
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MainWindow|FullyQualifiedName~PresentationPreview|FullyQualifiedName~WindowSnapRegionLayoutPolicyTests|FullyQualifiedName~StatsOverlay"` (199 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: no production automation behavior changed; full build still rebuilt `ssctl`, `McpServer`, `AutomationClient`, and automation contracts
-Behavior preserved: same `Program` method names, xUnit forwarding methods, and `WindowSnapRegionLayoutPolicyTests` class/method names now live under `MainWindow.ControllerOwnership.Tests.cs`; responsive layout, output path, screenshot workflow, whole-window screenshot, and image-encoding assertions are unchanged.
-Notes for future agents: keep MainWindow root/property routing, layout, output, screenshot, and button/controller ownership source-shape assertions in `MainWindow.ControllerOwnership.Tests.cs`; use separate MainWindow ownership test files only for cohesive sub-surfaces with enough independent fixture or assertion volume, such as capture selection or option presentation.
+Behavior preserved: same `Program` method names, xUnit forwarding methods, and `WindowSnapRegionLayoutPolicyTests` class/method names now live under `MainWindowControllerOwnershipTests.cs`; responsive layout, output path, screenshot workflow, whole-window screenshot, and image-encoding assertions are unchanged.
+Notes for future agents: keep MainWindow root/property routing, layout, output, screenshot, and button/controller ownership source-shape assertions in `MainWindowControllerOwnershipTests.cs`; use separate MainWindow ownership test files only for cohesive sub-surfaces with enough independent fixture or assertion volume, such as capture selection or option presentation.
 
 Date: 2026-05-27
 Area: Small no-hardware xUnit contract locality
@@ -938,7 +938,7 @@ Partial clusters reduced: n/a; MainWindow UI contract test file count 2 -> 1 whi
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MainWindowUiContract|FullyQualifiedName~StatsSnapshot|FullyQualifiedName~StatsOverlay|FullyQualifiedName~StatsPresentation"` (14 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: not applicable; test-owner consolidation only
 Behavior preserved: MainWindow automation ID, full-screen/window automation, UI-dispatching, stats snapshot construction, and stats snapshot builder metric mapping checks still execute.
-Notes for future agents: superseded by the later MainWindow controller test locality slice; keep MainWindow UI contract source and stats snapshot checks in `MainWindow.ControllerOwnership.Tests.cs`; add a separate test owner only when a check exercises a distinct runtime seam rather than another MainWindow UI contract shard.
+Notes for future agents: superseded by the later MainWindow controller test locality slice; keep MainWindow UI contract source and stats snapshot checks in `MainWindowControllerOwnershipTests.cs`; add a separate test owner only when a check exercises a distinct runtime seam rather than another MainWindow UI contract shard.
 
 Date: 2026-05-27
 Area: Automation pipe protocol contract locality
@@ -955,8 +955,8 @@ Notes for future agents: keep pipe constants, request envelopes, security fallba
 Date: 2026-05-27
 Area: Diagnostic-session Flashback helper locality
 Problem: Small internal Flashback diagnostic-session helper surfaces for export payload/cleanup, segment polling/parsing, and warning validation lived in three files even though scenario review usually needs all three together. The split preserved type names but forced file hopping across adjacent support-only helpers with no separate transport or runtime boundary.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackExports.cs`; `tools/Common/DiagnosticSessionFlashbackSegments.cs`; `tools/Common/DiagnosticSessionFlashbackValidation.cs`
-Files added: `tools/Common/DiagnosticSessionFlashbackSupport.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackExports.cs`; `tools/DiagnosticSession/DiagnosticSessionFlashbackSegments.cs`; `tools/DiagnosticSession/DiagnosticSessionFlashbackValidation.cs`
+Files added: `tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`
 Net production .cs delta: -2
 Partial clusters reduced: n/a; diagnostic-session Flashback support helper file count 3 -> 1 while preserving the internal `DiagnosticSessionFlashbackExports`, `DiagnosticSessionFlashbackSegments`, and `DiagnosticSessionFlashbackValidation` type names
 Build/tests/runtime checks: `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` (0 warnings); `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (0 warnings after stale assembly guard); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession|FullyQualifiedName~Flashback"` (296 passed after MCP rebuild); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
@@ -1039,14 +1039,14 @@ Notes for future agents: keep the root `ssctl` help facade with `tools/ssctl/Pro
 Date: 2026-05-26
 Area: Native XU KS bridge support locality
 Problem: `NativeXuDeviceSupport.cs` was a small sidecar for the same Native XU bridge review path already owned by `KsExtensionUnitNative.cs`: shared 4K X VID/PID recognition, selected-interface projection, and the transport gate were split from the KS interface/handle/topology/XU transfer bridge, and `NativeXuAudioProbe` had to link an extra shared source file for one bridge surface.
-Files consolidated: `Sussudio/Services/Capture/NativeXu/NativeXuDeviceSupport.cs`
+Files consolidated: `Sussudio/Services/NativeXu/NativeXuDeviceSupport.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: n/a; Native XU bridge support file count -1
 Build/tests/runtime checks: `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~NativeXu|FullyQualifiedName~DeviceAudio"` (8 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: affected `NativeXuAudioProbe` linked-source build passed; probe project now links `KsExtensionUnitNative.cs` for the consolidated bridge support; no CLI command names or arguments changed
 Behavior preserved: `NativeXuDeviceSupport` type name, extension-unit GUID, transport-gate timeout and serialization, supported 4K X VID/PID list, selected-interface projection, missing-interface logging, vendor/product parsing, telemetry/audio-control/discovery/probe call sites, and linked-probe source ownership checks remain intact.
-Notes for future agents: keep shared Native XU identity, selected-interface projection, and transport-gate support with `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs` unless another consumer needs a smaller source-link surface independent from the KS bridge.
+Notes for future agents: keep shared Native XU identity, selected-interface projection, and transport-gate support with `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs` unless another consumer needs a smaller source-link surface independent from the KS bridge.
 
 Date: 2026-05-26
 Area: Flashback shared test helper locality
@@ -1191,7 +1191,7 @@ Partial clusters reduced: legacy `Program` pooled-frame test partial file count 
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: pooled-frame reflection helpers, lease lifecycle checks, MJPEG pooled-frame fan-out contracts, D3D pending-frame queued lease disposal, and recording/Flashback queued packet lease cleanup checks remain unchanged.
-Notes for future agents: keep direct pooled-frame lease lifecycle and fan-out contract tests in `PooledVideoFrame.Tests.cs`; keep MJPEG jitter queue policy and adaptive queue behavior with the MJPEG pipeline xUnit surface in `MjpegPipeline.Tests.cs`.
+Notes for future agents: keep direct pooled-frame lease lifecycle and fan-out contract tests in `PooledVideoFrame.Tests.cs`; keep MJPEG jitter queue policy and adaptive queue behavior with the MJPEG pipeline xUnit surface in `MjpegPipelineTests.cs`.
 
 Date: 2026-05-26
 Area: Capture selection policy core test locality
@@ -1288,7 +1288,7 @@ Partial clusters reduced: none; legacy `Program` test shard count reduced by one
 Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter 'FullyQualifiedName~MjpegPipelineContractsTests'` (31 passed); full validation recorded in checkpoint commit notes
 CLI/MCP/pipe checks, if applicable: not applicable
 Behavior preserved: test-only relocation; xUnit method names and invoked `Program` contract names unchanged
-Notes for future agents: keep packet-hash duplicate cadence, visual-cadence crop sampling, and MJPEG pipeline source-shape checks together in `tests/Sussudio.Tests/MjpegPipeline.Tests.cs`; create a separate cadence file only if cadence gains an independent executable fixture or reusable test harness.
+Notes for future agents: keep packet-hash duplicate cadence, visual-cadence crop sampling, and MJPEG pipeline source-shape checks together in `tests/Sussudio.Tests/MjpegPipelineTests.cs`; create a separate cadence file only if cadence gains an independent executable fixture or reusable test harness.
 
 Date: 2026-05-26
 Area: Flashback export output finalization locality
@@ -1377,14 +1377,14 @@ Notes for future agents: keep source-reader initialization orchestration and ini
 Date: 2026-05-26
 Area: diagnostic-session model/result surface locality
 Problem: `DiagnosticSessionModels.cs` carried diagnostic-session options, sampled snapshot DTOs, and scenario phase handoff models while `DiagnosticSessionResult.cs` carried the final summary DTO for the same tool contract. Auditing the diagnostic-session public model surface and phase/result handoffs required opening two adjacent model files before reaching runner or builder behavior.
-Files consolidated: `tools/Common/DiagnosticSessionModels.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionModels.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session model/result surface now lives in one production file
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, `ssctl`, MCP, automation contracts, app, and console harnesses; diagnostic-session result ownership and scenario phase ownership tests cover the moved model/result surface; no public command names, IDs, wire payloads, CLI usage string, or summary JSON field names changed
 Behavior preserved: diagnostic-session options, sample DTO, scenario phase context/state/result models, summary result DTO type names, property names, defaults, CLI usage string, and summary JSON field names remain unchanged.
-Notes for future agents: keep diagnostic-session public options/sample DTOs, scenario phase handoff models, and summary result DTO in `tools/Common/DiagnosticSessionResult.cs`; keep runner lifecycle, scenario execution, result building, and formatting in their existing owners.
+Notes for future agents: keep diagnostic-session public options/sample DTOs, scenario phase handoff models, and summary result DTO in `tools/DiagnosticSession/DiagnosticSessionResult.cs`; keep runner lifecycle, scenario execution, result building, and formatting in their existing owners.
 
 Date: 2026-05-26
 Area: MainViewModel preview lifecycle locality
@@ -1593,7 +1593,7 @@ Notes for future agents: keep generic JSON response/value helpers together unles
 Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Three small diagnostic-session summary rows lived in separate partial files from the formatter orchestration, forcing a reader to open four files to understand the top-level report flow.
-Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.RecordingVerification.cs`; `tools/Common/DiagnosticSessionResultFormatter.PresentMon.cs`; `tools/Common/DiagnosticSessionResultFormatter.ProcessPerformance.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.RecordingVerification.cs`; `tools/DiagnosticSession/DiagnosticSessionResultFormatter.PresentMon.cs`; `tools/DiagnosticSession/DiagnosticSessionResultFormatter.ProcessPerformance.cs`
 Files added: none
 Net production .cs delta: -3
 Partial clusters reduced: `DiagnosticSessionResultFormatter` -3 files
@@ -1605,7 +1605,7 @@ Notes for future agents: keep short scalar summary rows with the formatter root 
 Date: 2026-05-21
 Area: Diagnostic session result models
 Problem: Preview cadence and visual-cadence DTO fields were split across two tiny partial files even though callers treat them as one preview cadence result surface.
-Files consolidated: `tools/Common/DiagnosticSessionResult.PreviewVisualCadence.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResult.PreviewVisualCadence.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: `DiagnosticSessionResult` -1 file
@@ -1617,7 +1617,7 @@ Notes for future agents: keep preview cadence DTO fields grouped unless visual c
 Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Preview diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
-Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Preview.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.Preview.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: `DiagnosticSessionResultFormatter` -1 file
@@ -2637,7 +2637,7 @@ Notes for future agents: keep direct one-to-one projection/flattening pairs toge
 Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback playback performance text was split across separate cadence, 1% low, audio-master, and row-assembly fragments even though those helpers only compose the single `Flashback Playback Perf` row.
-Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`; `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs`; `tools/Common/DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.FlashbackPlayback.Cadence.cs`; `tools/DiagnosticSession/DiagnosticSessionResultFormatter.FlashbackPlayback.OnePercentLow.cs`; `tools/DiagnosticSession/DiagnosticSessionResultFormatter.FlashbackPlayback.AudioMaster.cs`
 Files added: none
 Net production .cs delta: -3
 Partial clusters reduced: `DiagnosticSessionResultFormatter` -3 files
@@ -2649,7 +2649,7 @@ Notes for future agents: keep helper-only text builders with their owning format
 Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Preview D3D diagnostic-session text split performance/slow-frame output and CPU-timing output across separate tiny files even though both rows describe the same Preview D3D report concern.
-Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.PreviewD3D.CpuTiming.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: `DiagnosticSessionResultFormatter` -1 file
@@ -2661,7 +2661,7 @@ Notes for future agents: keep tightly coupled report rows together when they des
 Date: 2026-05-21
 Area: Diagnostic session result models
 Problem: Flashback playback result fields kept 1% low and audio-master performance properties in separate tiny DTO partials from the cadence/frame-delivery properties that consume the same playback performance projection.
-Files consolidated: `tools/Common/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`; `tools/Common/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResult.FlashbackPlayback.OnePercentLow.cs`; `tools/DiagnosticSession/DiagnosticSessionResult.FlashbackPlayback.AudioMaster.cs`
 Files added: none
 Net production .cs delta: -2
 Partial clusters reduced: `DiagnosticSessionResult` -2 files
@@ -2673,7 +2673,7 @@ Notes for future agents: keep property-only result partials grouped by the proje
 Date: 2026-05-21
 Area: Diagnostic session result construction
 Problem: Flashback playback result builder projections kept 1% low and audio-master value mappings in separate tiny partials from the cadence/frame-delivery projection owner, while the result DTO and formatter now group these playback performance concerns together.
-Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`; `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultBuilder.FlashbackPlaybackOnePercentLowResult.cs`; `tools/DiagnosticSession/DiagnosticSessionResultBuilder.FlashbackPlaybackAudioMasterResult.cs`
 Files added: none
 Net production .cs delta: -2
 Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
@@ -2685,7 +2685,7 @@ Notes for future agents: keep builder projection records near the mapping code f
 Date: 2026-05-21
 Area: Diagnostic session result construction
 Problem: Preview result construction kept scheduler and visual-cadence result projection records in separate small partials even though they are preview DTO mappings consumed by the same final result initializer.
-Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`; `tools/Common/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultBuilder.PreviewSchedulerResult.cs`; `tools/DiagnosticSession/DiagnosticSessionResultBuilder.PreviewVisualCadenceResult.cs`
 Files added: none
 Net production .cs delta: -2
 Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
@@ -2697,7 +2697,7 @@ Notes for future agents: keep simple preview result projection records together 
 Date: 2026-05-21
 Area: Diagnostic session result models
 Problem: End-of-run overview fields lived in a tiny property-only partial separate from the root diagnostic-session summary DTO.
-Files consolidated: `tools/Common/DiagnosticSessionResult.Overview.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResult.Overview.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: `DiagnosticSessionResult` -1 file
@@ -2745,7 +2745,7 @@ Notes for future agents: keep one-method flattening routers with the flattened s
 Date: 2026-05-21
 Area: Diagnostic session result formatting
 Problem: Flashback diagnostic-session section ordering lived in a one-method router file separate from the formatter orchestration.
-Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.Flashback.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.Flashback.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: `DiagnosticSessionResultFormatter` -1 file
@@ -2817,7 +2817,7 @@ Notes for future agents: keep single-use ssctl thread-health snapshot text with 
 Date: 2026-05-24
 Area: Diagnostic session runner locality
 Problem: `DiagnosticSessionRunner.cs` was a 25-line public wrapper over a single-use `DiagnosticSessionRunExecution.cs` phase-plan class, forcing agents to open two files to understand the diagnostic-session entry point and run sequence.
-Files consolidated: `tools/Common/DiagnosticSessionRunExecution.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionRunExecution.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: none
@@ -3141,7 +3141,7 @@ Notes for future agents: keep tiny automation pipe policy helpers beside `Automa
 Date: 2026-05-25
 Area: diagnostic-session run context locality
 Problem: `DiagnosticSessionRunState.cs` was a 63-line state holder constructed only by `DiagnosticSessionRunContext`, splitting terminal exception state, last-stage tracking, and best-effort artifact failure recording from the mutable run context that owns the lifecycle using that state.
-Files consolidated: `tools/Common/DiagnosticSessionRunState.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionRunState.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
@@ -3153,7 +3153,7 @@ Notes for future agents: keep mutable run lifecycle state and live breadcrumb pa
 Date: 2026-05-25
 Area: diagnostic-session result artifact locality
 Problem: `DiagnosticSessionResultArtifacts.cs` was a 74-line helper called by `DiagnosticSessionResultBuilder.BuildAndWriteAsync`, splitting pre-summary artifact path construction/writes and JSON artifact helpers from the summary write path that completes the same result.
-Files consolidated: `tools/Common/DiagnosticSessionResultArtifacts.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultArtifacts.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
@@ -3638,14 +3638,14 @@ Notes for future agents: superseded by the 2026-05-31 Flashback buffer manager r
 Date: 2026-05-25
 Area: Diagnostic-session Flashback metrics locality
 Problem: `DiagnosticSessionFlashbackMetrics` had no concrete owner file; recording/export, playback-session observation, and playback-result projection lived in three partials totaling a reviewable metrics owner. Reviewing one snapshot-only projection family required opening three tiny files and kept an unnecessary partial cluster alive.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackMetrics.RecordingExport.cs`; `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`; `tools/Common/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
-Files added: `tools/Common/DiagnosticSessionFlashbackMetrics.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.RecordingExport.cs`; `tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.PlaybackSession.cs`; `tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.PlaybackResult.cs`
+Files added: `tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.cs`
 Net production .cs delta: -2
 Partial clusters reduced: `DiagnosticSessionFlashbackMetrics` partial family removed
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore`; `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; `git diff --check`
 CLI/MCP/pipe checks, if applicable: tool contract coverage remains in the xUnit suite; no automation command names/IDs changed
 Behavior preserved: recording/export metrics, export relevance gating, force-rotate fallback counters outside the export-observed relevance gate, playback active/relevant snapshot gating, session frame-count projection, 1% low capture, frame/decode/audio-master maxima, playback counter deltas, final result construction, and grouped command/cadence/decode/audio-master/stage reads remain unchanged
-Notes for future agents: keep Flashback diagnostic-session metric projection in `tools/Common/DiagnosticSessionFlashbackMetrics.cs`; split only if a new independent metric subsystem grows its own state or external seam.
+Notes for future agents: keep Flashback diagnostic-session metric projection in `tools/DiagnosticSession/DiagnosticSessionFlashbackMetrics.cs`; split only if a new independent metric subsystem grows its own state or external seam.
 
 Date: 2026-05-25
 Area: Device discovery locality
@@ -3782,7 +3782,7 @@ Notes for future agents: keep small top-level NativeXuAudioProbe command workflo
 Date: 2026-05-25
 Area: diagnostic-session health policy locality
 Problem: Diagnostic-session health severity/observation logic lived in `DiagnosticSessionHealthPolicy.cs`, while the source/preview/Flashback classifiers and sparse-run tolerance helpers lived in adjacent `DiagnosticSessionHealthTolerances.cs`. Understanding why a diagnostic health warning was emitted or tolerated required opening two small policy files that shared the same severity model.
-Files consolidated: `tools/Common/DiagnosticSessionHealthTolerances.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionHealthTolerances.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: n/a; diagnostic-session support file count -1
@@ -3842,7 +3842,7 @@ Notes for future agents: keep small top-level NativeXuAudioProbe service-control
 Date: 2026-05-25
 Area: diagnostic-session scenario planning locality
 Problem: `DiagnosticSessionScenarioCatalog.cs` owned every scenario entry and constructed every `DiagnosticSessionScenarioPlan`, while `DiagnosticSessionScenarioPlan.cs` held the adjacent flag DTO, creation factory, catalog lookup handoff, and grouped scenario predicates. Reviewing scenario requirements, plan metadata, and grouped warning policy required opening two small files that called back into each other.
-Files consolidated: `tools/Common/DiagnosticSessionScenarioPlan.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionScenarioPlan.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: n/a; diagnostic-session support file count -1
@@ -3854,7 +3854,7 @@ Notes for future agents: keep scenario name metadata and `DiagnosticSessionScena
 Date: 2026-05-25
 Area: diagnostic-session command transport locality
 Problem: `DiagnosticSessionCommandChannel.cs` owned serialized diagnostic-session command sending and connect-retry invocation, while `DiagnosticSessionPipeRetryPolicy.cs` held the adjacent retry classifier and local failure-envelope helpers used by that transport surface and Flashback export diagnostics. Reviewing command transport failure behavior required opening two small files for one retry/error-envelope path.
-Files consolidated: `tools/Common/DiagnosticSessionPipeRetryPolicy.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionPipeRetryPolicy.cs`
 Files added: none
 Net production .cs delta: -1
 Partial clusters reduced: n/a; diagnostic-session support file count -1
@@ -3962,7 +3962,7 @@ Notes for future agents: keep MainWindow's XAML-facing stats adapter with `MainW
 Date: 2026-05-25
 Area: diagnostic-session result builder projection locality
 Problem: `DiagnosticSessionResultBuilder.DiagnosticHealth.cs` and `DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs` were private helper partials inside the same result-builder family. Diagnostic health verdict helpers are only used by the analysis pass, and Flashback playback result maps are only used by the projection-set owner, so reviewing result construction still required two extra files for subordinate behavior.
-Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.DiagnosticHealth.cs`; `tools/Common/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultBuilder.DiagnosticHealth.cs`; `tools/DiagnosticSession/DiagnosticSessionResultBuilder.FlashbackPlaybackResult.cs`
 Files added: none
 Net production .cs delta: -2
 Partial clusters reduced: `DiagnosticSessionResultBuilder` -2 files
@@ -4053,7 +4053,7 @@ Partial clusters reduced: legacy `Program` MainWindow UI contract partial file c
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: n/a; test-file consolidation only, no automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MainWindow automation ID inventory checks, uniqueness checks, full-screen automation transition assertions, window automation controller routing checks, snap-region ownership assertion, and UI dispatching/run-handler source contract assertions remain unchanged.
-Notes for future agents: superseded by the later MainWindow controller test locality slice; keep MainWindow's agent-facing UI contract checks in `MainWindow.ControllerOwnership.Tests.cs`; add focused behavior tests elsewhere only when they exercise a different runtime seam rather than another source-contract shard for the same UI surface.
+Notes for future agents: superseded by the later MainWindow controller test locality slice; keep MainWindow's agent-facing UI contract checks in `MainWindowControllerOwnershipTests.cs`; add focused behavior tests elsewhere only when they exercise a different runtime seam rather than another source-contract shard for the same UI surface.
 
 Date: 2026-05-26
 Area: ssctl command-handler routing test locality
@@ -4545,7 +4545,7 @@ Partial clusters reduced: legacy `Program` MJPEG preview jitter test partial fil
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `git diff --check`; `git diff --cached --check`
 CLI/MCP/pipe checks, if applicable: n/a; test-only consolidation, no public automation command names, IDs, wire payloads, XAML bindings, or runtime behavior changed
 Behavior preserved: MJPEG preview jitter adaptive deadline/source-ownership checks and queue/drop/reprime behavior checks remain registered through `XUnit.MjpegPipelineContractsTests`.
-Notes for future agents: keep MJPEG preview jitter source ownership, adaptive policy, queue/drop, and reprime checks with the MJPEG pipeline xUnit surface in `MjpegPipeline.Tests.cs`; keep shared pooled-frame reflection/factory helpers in `PooledVideoFrame.Tests.cs`.
+Notes for future agents: keep MJPEG preview jitter source ownership, adaptive policy, queue/drop, and reprime checks with the MJPEG pipeline xUnit surface in `MjpegPipelineTests.cs`; keep shared pooled-frame reflection/factory helpers in `PooledVideoFrame.Tests.cs`.
 
 Date: 2026-05-26
 Area: NativeXu RTK probe test locality
@@ -5020,14 +5020,14 @@ Notes for future agents: keep MainViewModel settings persistence projection reco
 Date: 2026-05-26
 Area: diagnostic-session live-state writer locality
 Problem: `DiagnosticSessionLiveStateWriter.cs` was a small breadcrumb writer constructed only by `DiagnosticSessionRunContext`, splitting `session-live.json` path ownership, payload projection, terminal-state mapping, warning projection, and sampling throttle from the mutable run context that owns the lifecycle and exposes live-state write callbacks.
-Files consolidated: `tools/Common/DiagnosticSessionLiveStateWriter.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionLiveStateWriter.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session shared helper file count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after scoping one run-state ownership assertion to the `DiagnosticSessionRunState` block); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds `ssctl`, MCP, app automation contracts, and console harnesses; no public automation command names, IDs, wire payloads, diagnostic-session JSON field names, live-state terminal states, warning text, throttle interval, or summary paths changed
 Behavior preserved: best-effort live breadcrumb writes, sample-time throttle, health/likely-stage projection, terminal override mapping, last-stage mapping, warning projection, command-failure count, and exception formatting now live in `DiagnosticSessionRunContext.cs` with the run lifecycle that invokes them.
-Notes for future agents: keep diagnostic-session run lifecycle state, live breadcrumb payload writing/throttling, initial snapshot state, scenario/completion context construction, and disposal in `tools/Common/DiagnosticSessionRunContext.cs`; keep scenario execution in `DiagnosticSessionScenarioPhaseRunner.cs`.
+Notes for future agents: keep diagnostic-session run lifecycle state, live breadcrumb payload writing/throttling, initial snapshot state, scenario/completion context construction, and disposal in `tools/DiagnosticSession/DiagnosticSessionRunContext.cs`; keep scenario execution in `DiagnosticSessionScenarioPhaseRunner.cs`.
 
 Date: 2026-05-26
 Area: UnifiedVideoCapture source-session lifecycle locality
@@ -5080,38 +5080,38 @@ Notes for future agents: keep shallow MCP performance entry points in `tools/Mcp
 Date: 2026-05-26
 Area: diagnostic-session Flashback cycle/lifecycle locality
 Problem: `DiagnosticSessionFlashbackLifecycleScenarios.cs` was a small playback disable/re-enable scenario file split from the adjacent Flashback cycle scenario owner. Reviewing Flashback diagnostic cycle behavior required opening two files for related restart/encoder/lifecycle command flows that all validate playback thread, queue, active-state, and export/readiness behavior through the same wait helpers.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackLifecycleScenarios.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackLifecycleScenarios.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session Flashback scenario helper count -1
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, MCP, `ssctl`, automation contracts, app, and console harnesses; no public scenario names, task labels, priorities, automation command names, IDs, wire payloads, warning text, or lifecycle validation semantics changed
 Behavior preserved: Flashback lifecycle registration, pause/seek/play choreography, disable/re-enable commands, post-disable playback-thread and pending-command checks, and post-re-enable active-state validation now live in `DiagnosticSessionFlashbackCycleScenarios.cs` with restart and encoder cycle scenario flows.
-Notes for future agents: this note is superseded by the 2026-06-01 Flashback cycle diagnostic scenario owner fold; keep Flashback restart, encoder, lifecycle, and preview-cycle scenario command flows in `tools/Common/DiagnosticSessionFlashbackCycleScenarios.cs`, export flows in `DiagnosticSessionFlashbackExportScenarios.cs`, and read-only segment helpers in `DiagnosticSessionFlashbackSupport.cs`.
+Notes for future agents: this note is superseded by the 2026-06-01 Flashback cycle diagnostic scenario owner fold; keep Flashback restart, encoder, lifecycle, and preview-cycle scenario command flows in `tools/DiagnosticSession/DiagnosticSessionFlashbackCycleScenarios.cs`, export flows in `DiagnosticSessionFlashbackExportScenarios.cs`, and read-only segment helpers in `DiagnosticSessionFlashbackSupport.cs`.
 
 Date: 2026-05-26
 Area: diagnostic-session post-run action locality
 Problem: `DiagnosticSessionCleanupActions.cs` and `DiagnosticSessionRecordingChecks.cs` split the same post-scenario cleanup/evidence lane into two small adjacent files. Reviewing completion behavior required opening both files plus the runner to understand cleanup ordering, recording-stop-for-verification, deferred Flashback setting restore, recording/export verification, and Flashback recording validation.
-Files consolidated: `tools/Common/DiagnosticSessionCleanupActions.cs`; `tools/Common/DiagnosticSessionRecordingChecks.cs`
-Files added: `tools/Common/DiagnosticSessionPostRunActions.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionCleanupActions.cs`; `tools/DiagnosticSession/DiagnosticSessionRecordingChecks.cs`
+Files added: `tools/DiagnosticSession/DiagnosticSessionPostRunActions.cs`
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session post-run helper count -1 while preserving `DiagnosticSessionCleanupActions` and `DiagnosticSessionRecordingChecks` class names
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, `ssctl`, MCP, automation contracts, app, and console harnesses; no public scenario names, task labels, automation command names, IDs, wire payloads, stage names, warning text, verification payload shape, or cleanup semantics changed
 Behavior preserved: cleanup stop-recording/go-live/preview/Flashback restore flow, cleanup result handoff, deferred Flashback recording-settings restore, recording/export verification selection, cloned verification result, skipped-verification action, and Flashback recording validation now live together in `DiagnosticSessionPostRunActions.cs`.
-Notes for future agents: keep post-scenario cleanup mutations and post-cleanup recording verification/validation in `tools/Common/DiagnosticSessionPostRunActions.cs`; keep the high-level completion order and post-run snapshot capture in `DiagnosticSessionRunner.cs`.
+Notes for future agents: keep post-scenario cleanup mutations and post-cleanup recording verification/validation in `tools/DiagnosticSession/DiagnosticSessionPostRunActions.cs`; keep the high-level completion order and post-run snapshot capture in `DiagnosticSessionRunner.cs`.
 
 Date: 2026-05-26
 Area: diagnostic-session scenario activation locality
 Problem: `DiagnosticSessionScenarioSetup.cs` and `DiagnosticSessionScenarioStartup.cs` split one scenario activation lane into two small files. Understanding pre-sampling behavior required opening both files to see fixed setup mutations, Flashback enable/disable, preview/recording readiness waits, PresentMon launch, background scenario registration, deferred recording-settings registration, and direct Flashback playback startup.
-Files consolidated: `tools/Common/DiagnosticSessionScenarioSetup.cs`; `tools/Common/DiagnosticSessionScenarioStartup.cs`
-Files added: `tools/Common/DiagnosticSessionScenarioActivation.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionScenarioSetup.cs`; `tools/DiagnosticSession/DiagnosticSessionScenarioStartup.cs`
+Files added: `tools/DiagnosticSession/DiagnosticSessionScenarioActivation.cs`
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session activation helper count -1 while preserving `DiagnosticSessionScenarioSetup` and `DiagnosticSessionScenarioStartup` class names and phase-runner call order
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilds diagnostic-session shared tooling, `ssctl`, MCP, automation contracts, app, and console harnesses; no public scenario names, task labels, priorities, automation command names, IDs, wire payloads, stage names, readiness waits, PresentMon output naming, or scenario activation behavior changed
 Behavior preserved: initial Flashback/preview/recording setup, setup result handoff, PresentMon startup, Flashback scenario task registration, deferred recording-settings task registration, and direct Flashback playback startup now live together in `DiagnosticSessionScenarioActivation.cs`.
-Notes for future agents: keep pre-sampling diagnostic-session setup and scenario startup orchestration in `tools/Common/DiagnosticSessionScenarioActivation.cs`; keep phase sequencing and sampling in `DiagnosticSessionScenarioPhaseRunner.cs`.
+Notes for future agents: keep pre-sampling diagnostic-session setup and scenario startup orchestration in `tools/DiagnosticSession/DiagnosticSessionScenarioActivation.cs`; keep phase sequencing and sampling in `DiagnosticSessionScenarioPhaseRunner.cs`.
 
 Date: 2026-05-26
 Area: ssctl pipe transport locality
@@ -5295,15 +5295,15 @@ Notes for future agents: keep the expected command-ID table with `AutomationTool
 
 Date: 2026-05-26
 Area: CPU MJPEG timing xUnit locality
-Problem: `MjpegPipeline.Timing.Tests.cs` was a standalone direct xUnit file for CPU MJPEG timing metric math, stopwatch timeout helpers, and software decoder shape checks while the rest of the MJPEG pipeline contracts already executed through `MjpegPipeline.Tests.cs`. Reviewing CPU MJPEG behavior required opening a second xUnit owner for the same pipeline/decoder contract surface.
+Problem: `MjpegPipeline.Timing.Tests.cs` was a standalone direct xUnit file for CPU MJPEG timing metric math, stopwatch timeout helpers, and software decoder shape checks while the rest of the MJPEG pipeline contracts already executed through `MjpegPipelineTests.cs`. Reviewing CPU MJPEG behavior required opening a second xUnit owner for the same pipeline/decoder contract surface.
 Files consolidated: `tests/Sussudio.Tests/MjpegPipeline.Timing.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: n/a; CPU MJPEG xUnit owner count -1 while keeping the same direct xUnit facts
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore`; `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~MjpegPipelineContractsTests` (31 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (884 passed after serial rerun; an initial parallel run raced the solution build and failed to find the freshly rebuilt `ssctl.dll`); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt app, automation contracts, MCP, `ssctl`, probes, and console harnesses; no public automation command names, IDs, wire payloads, XAML bindings, MJPEG decode behavior, timing metric semantics, or decoder shape changed.
-Behavior preserved: `MjpegPipeline.Tests.cs` now owns the timing metric, timeout helper, software decoder shape, CPU MJPEG pipeline, pooled-frame, preview jitter, visual cadence, queued lease-release xUnit surface, and `Program`-based implementation/source-shape checks together.
-Notes for future agents: keep CPU MJPEG direct xUnit checks with `MjpegPipeline.Tests.cs` unless a separate executable MJPEG fixture appears.
+Behavior preserved: `MjpegPipelineTests.cs` now owns the timing metric, timeout helper, software decoder shape, CPU MJPEG pipeline, pooled-frame, preview jitter, visual cadence, queued lease-release xUnit surface, and `Program`-based implementation/source-shape checks together.
+Notes for future agents: keep CPU MJPEG direct xUnit checks with `MjpegPipelineTests.cs` unless a separate executable MJPEG fixture appears.
 
 Date: 2026-05-26
 Area: MainWindow launch startup test locality
@@ -5572,14 +5572,14 @@ Notes for future agents: keep automation snapshot formatter behavior and source-
 Date: 2026-05-26
 Area: Diagnostic-session Flashback export scenario locality
 Problem: `DiagnosticSessionFlashbackRejectedExports.cs` was a small scenario-family sidecar for rejected Flashback export checks, while `DiagnosticSessionFlashbackExportScenarios.cs` already owned Flashback export scenario registration, export command choreography, verification, and export-result warning policy. Reviewing export diagnostics required opening a second file for inactive-buffer and active-recording export rejection assertions.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackRejectedExports.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackRejectedExports.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: none; Flashback diagnostic-session scenario helper-file count -1
 Build/tests/runtime checks: `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~McpDiagnosticSessionFlashbackContractsTests|FullyQualifiedName~McpDiagnosticSessionInfrastructureContractsTests|FullyQualifiedName~DiagnosticsRefresh"` initially failed because `tools/ssctl/bin/Debug/net8.0/ssctl.dll` was stale; after `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore`, the same focused filter passed (19 passed). `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` initially found a duplicate AGENT_MAP ownership bullet, then passed after doc cleanup (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt MCP, `ssctl`, automation contracts, probes, and console harnesses; no public automation command names, IDs, wire payloads, MCP tool schemas, or app runtime code changed.
 Behavior preserved: rejected Flashback export scenario dispatch, inactive-buffer `BufferInactive` failure-kind assertions, failed last-result checks, active Flashback-recording `UnavailableDuringRecording` failure-kind assertions, and recording-backend stability checks now live with the export scenario owner.
-Notes for future agents: keep Flashback export success, concurrent/range/rotated/disable-during-export, and rejected-export scenario command choreography in `tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`; split rejected exports only if they grow a separate runner phase or fixture.
+Notes for future agents: keep Flashback export success, concurrent/range/rotated/disable-during-export, and rejected-export scenario command choreography in `tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs`; split rejected exports only if they grow a separate runner phase or fixture.
 
 Date: 2026-05-26
 Area: Preview runtime snapshot mapping locality
@@ -5608,14 +5608,14 @@ Notes for future agents: keep recording queue source readers with the overload-p
 Date: 2026-05-26
 Area: Diagnostic-session result builder flattening locality
 Problem: `DiagnosticSessionResultBuilder.Flattening.cs` only carried the final `DiagnosticSessionResult` DTO initializer called by `DiagnosticSessionResultBuilder.CreateResult`. Reviewing diagnostic-session summary construction required opening the root builder for phase/artifact orchestration, then a second small partial for the final result assignment, even though projection composition remains in the named projection owner.
-Files consolidated: `tools/Common/DiagnosticSessionResultBuilder.Flattening.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultBuilder.Flattening.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: `DiagnosticSessionResultBuilder` partial file count 4 -> 3
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings) and refreshed stale `ssctl` and MCP assemblies; focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionResultBuilder|FullyQualifiedName~DiagnosticSession|FullyQualifiedName~McpToolSurface"` (66 passed); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll`; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`.
 CLI/MCP/pipe checks, if applicable: solution build refreshed `ssctl`, MCP, automation contracts, and shared tools; focused MCP/diagnostic-session coverage passed; no public automation command names, IDs, wire payloads, MCP tool schemas, app runtime code, or XAML bindings changed.
 Behavior preserved: result phase orchestration, pre-summary artifact writes, summary-write failure repair, projection-set construction, and final `DiagnosticSessionResult` field assignment are unchanged; the final initializer now lives in `DiagnosticSessionResultBuilder.cs`.
-Notes for future agents: keep final `DiagnosticSessionResult` DTO assignment with `tools/Common/DiagnosticSessionResultBuilder.cs`; keep domain projection composition in `DiagnosticSessionResultBuilder.Projections.cs` and metric/health analysis in `DiagnosticSessionResultBuilder.cs`.
+Notes for future agents: keep final `DiagnosticSessionResult` DTO assignment with `tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs`; keep domain projection composition in `DiagnosticSessionResultBuilder.Projections.cs` and metric/health analysis in `DiagnosticSessionResultBuilder.cs`.
 
 Date: 2026-05-27
 Area: Capture discovery source-ownership test locality
@@ -6712,14 +6712,14 @@ Notes for future agents: keep MainViewModel audio-control behavior, device-audio
 
 Date: 2026-05-31
 Area: MainWindow shell chrome ownership test locality
-Problem: `MainWindow.ShellOwnership.Chrome.Tests.cs` carried settings shelf, window title, live signal, status-strip, and window-title formatting assertions for the same MainWindow controller ownership review surface already rooted in `MainWindow.ControllerOwnership.Tests.cs`. Reviewing shell chrome routing and adjacent MainWindow controller ownership still required opening a small extra `Program` partial even though the xUnit shell-chrome entry points forward to the same shared harness.
+Problem: `MainWindow.ShellOwnership.Chrome.Tests.cs` carried settings shelf, window title, live signal, status-strip, and window-title formatting assertions for the same MainWindow controller ownership review surface already rooted in `MainWindowControllerOwnershipTests.cs`. Reviewing shell chrome routing and adjacent MainWindow controller ownership still required opening a small extra `Program` partial even though the xUnit shell-chrome entry points forward to the same shared harness.
 Files consolidated: `tests/Sussudio.Tests/MainWindow.ShellOwnership.Chrome.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: `Program` MainWindow shell/controller ownership test partial count -1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PresentationPreviewShellChromeContractsTests|FullyQualifiedName~MainWindow.ControllerOwnership"` passed (5 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 182 / 89,997; current test `.cs` count/LoC: 113 / 56,023.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves private test assertions and architecture docs.
-Behavior preserved: settings shelf lifecycle, window title source-shape, invariant build-stamp formatting, live signal pill ownership, and status-strip presentation assertions keep the same method names and xUnit entry points while living in `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs`.
+Behavior preserved: settings shelf lifecycle, window title source-shape, invariant build-stamp formatting, live signal pill ownership, and status-strip presentation assertions keep the same method names and xUnit entry points while living in `tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs`.
 Notes for future agents: keep MainWindow shell chrome ownership assertions with the broader MainWindow controller ownership parent while they share the same `MainWindow.ShellChrome.Composition.cs` adapter and `ShellChromeController` source readers; keep startup/launch, preview runtime, and window lifecycle shell ownership in their focused files.
 
 Date: 2026-05-31
@@ -6756,18 +6756,18 @@ Partial clusters reduced: `Sussudio.Models` recording/Flashback model file count
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~FlashbackModelsTests|FullyQualifiedName~CaptureConfigurationModelsTests|FullyQualifiedName~RecordingContractsTests"` passed (75 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); `git diff --check` passed; current core app `.cs` count/LoC: 181 / 89,995; current test `.cs` count/LoC: 111 / 56,012.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves shared model DTOs without changing namespaces or public names.
 Behavior preserved: `FlashbackBufferOptions`, `FlashbackSessionContext`, `FlashbackPlaybackState`, `ExportProgress`, `FlashbackExportSegment`, `FlashbackForceRotateStatus`, `FlashbackForceRotateResult`, and `FlashbackExportRequest` keep the same `Sussudio.Models` namespace, type names, property contracts, default values, and callers while living in `Sussudio/Models/Recording/RecordingModels.cs`.
-Notes for future agents: keep recording/Flashback DTO and small model policy types together in `Sussudio/Models/Recording/RecordingModels.cs` while they remain shared `Sussudio.Models` records/enums without independent runtime collaborators or external shared-source constraints.
+Notes for future agents (superseded 2026-09-07): recording capabilities, integrity, and statistics remain in `Sussudio/Models/Recording/RecordingModels.cs`; Flashback buffer/session/playback/export contracts now live in `Sussudio/Models/Flashback/FlashbackModels.cs`. Both retain the `Sussudio.Models` namespace. The consolidation described above is historical.
 
 Date: 2026-05-31
 Area: UI dispatch controller locality
 Problem: `Sussudio/Controllers/Window/WindowUiDispatchController.cs` and `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs` were parallel dispatcher-queue policy wrappers for MainWindow and MainViewModel. Reviewing UI-thread cancellation, enqueue failure, status-error projection, retry, and disposal-skip behavior required opening two small adjacent controller files even though both are the same UI-dispatch ownership surface.
 Files consolidated: `Sussudio/Controllers/Window/WindowUiDispatchController.cs`; `Sussudio/Controllers/ViewModel/MainViewModelUiDispatchController.cs`
-Files added: `Sussudio/Controllers/UiDispatchControllers.cs`
+Files added: `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: UI dispatch controller file count -1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter FullyQualifiedName~MainWindowFullScreenAutomationAwaitsTransitionTasks` passed (1 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); `git diff --check` passed; current core app `.cs` count/LoC: 180 / 89,990; current test `.cs` count/LoC: 111 / 56,044.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves internal UI dispatch controller types without changing type names or call sites.
-Behavior preserved: `WindowUiDispatchController`, `WindowUiDispatchControllerContext`, `MainViewModelUiDispatchController`, and `MainViewModelUiDispatchControllerContext` keep the same namespace, type names, methods, cancellation/error/status behavior, retry behavior, and callers while living in `Sussudio/Controllers/UiDispatchControllers.cs`.
+Behavior preserved: `WindowUiDispatchController`, `WindowUiDispatchControllerContext`, `MainViewModelUiDispatchController`, and `MainViewModelUiDispatchControllerContext` keep the same namespace, type names, methods, cancellation/error/status behavior, retry behavior, and callers while living in `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`.
 Notes for future agents: keep MainWindow and MainViewModel UI-dispatch wrappers together in `UiDispatchControllers.cs` while they remain small `DispatcherQueue` policy adapters; split only if either grows a distinct runtime collaborator beyond dispatch invocation/error handling.
 
 Date: 2026-05-31
@@ -6918,12 +6918,12 @@ Date: 2026-05-31
 Area: Preview audio transition and ramp trace locality
 Problem: `AudioRampTraceRecorder.cs` and `PreviewAudioVolumeTransitionController.cs` were two small ViewModel-side owners for one preview-audio transition evidence path. The volume ramp controller initiated trace sessions and trace points while the trace recorder held the bounded diagnostic buffer, sampler, and snapshot projection, so reviewing preview-audio fade/ramp behavior and its automation evidence required opening two sibling files plus the MainViewModel adapter.
 Files consolidated: `Sussudio/ViewModels/AudioRampTraceRecorder.cs`; `Sussudio/ViewModels/PreviewAudioVolumeTransitionController.cs`
-Files added: `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`
+Files added: `Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; preview audio transition owner file count 2 -> 1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~AudioControls|FullyQualifiedName~PreviewStartup"` passed (29 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 164 / 89,906; current test `.cs` count/LoC: 111 / 56,134.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, XAML bindings, or tool protocols changed; this slice only moves internal preview-audio transition/trace types while preserving type names and MainViewModel adapter calls.
-Behavior preserved: `AudioRampTraceRecorder`, `AudioRampTraceRecorderContext`, `PreviewAudioVolumeTransitionController`, `PreviewAudioVolumeTransitionControllerContext`, trace capacity/sample/post-complete timing, trace session start/complete, trace-point capture, sampler lifetime, snapshot projection, preview-volume save suppression/override, priming, restore behavior, session volume forwarding, ramp constants/easing, and async ramp-down/ramp-up execution keep the same type/member names and behavior while living in `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`.
+Behavior preserved: `AudioRampTraceRecorder`, `AudioRampTraceRecorderContext`, `PreviewAudioVolumeTransitionController`, `PreviewAudioVolumeTransitionControllerContext`, trace capacity/sample/post-complete timing, trace session start/complete, trace-point capture, sampler lifetime, snapshot projection, preview-volume save suppression/override, priming, restore behavior, session volume forwarding, ramp constants/easing, and async ramp-down/ramp-up execution keep the same type/member names and behavior while living in `Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`.
 Notes for future agents: keep preview-audio volume transition mechanics and the ramp trace recorder together in `PreviewAudioTransitionControllers.cs` while the ramp controller owns trace session/point calls and the recorder owns the bounded diagnostic evidence buffer; keep `MainViewModel.AudioState.cs` as the compatibility adapter and construction site.
 
 Date: 2026-05-31
@@ -7144,7 +7144,7 @@ Notes for future agents: keep Flashback diagnostic-session scenario, helper, and
 
 Date: 2026-05-31
 Area: MainWindow controller interaction test locality
-Problem: `MainWindow.ControllerOwnership.Interaction.Tests.cs` was a small `Program` partial for recording action, preview audio fade, preview button presentation, audio control presentation, and microphone control ownership checks. Those checks share the same MainWindow controller-adapter review surface as the broader `MainWindow.ControllerOwnership.Tests.cs` parent, which already owns adjacent recording button chrome, recording-state presentation, output path actions, screenshot workflow, shell/status presentation, and property-change routing assertions.
+Problem: `MainWindow.ControllerOwnership.Interaction.Tests.cs` was a small `Program` partial for recording action, preview audio fade, preview button presentation, audio control presentation, and microphone control ownership checks. Those checks share the same MainWindow controller-adapter review surface as the broader `MainWindowControllerOwnershipTests.cs` parent, which already owns adjacent recording button chrome, recording-state presentation, output path actions, screenshot workflow, shell/status presentation, and property-change routing assertions.
 Files consolidated: `tests/Sussudio.Tests/MainWindow.ControllerOwnership.Interaction.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
@@ -7152,7 +7152,7 @@ Partial clusters reduced: `Program` MainWindow controller ownership test partial
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~PresentationPreviewAudioControlContractsTests|FullyQualifiedName~PresentationPreviewRecordingContractsTests"` passed (8 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 148 / 89,758; current test `.cs` count/LoC: 103 / 56,129.
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, or runtime behavior changed; this slice only moves test method bodies and updates architecture ownership docs.
 Behavior preserved: xUnit wrappers keep calling the same `Program` method names for recording action, preview audio fade, preview button presentation, audio control presentation, and microphone controls, while the assertions now live with the broader MainWindow controller ownership test parent and continue to guard the same source files and adapter/controller boundaries.
-Notes for future agents: keep MainWindow root/property routing, layout, output, screenshot, button/controller, recording action, preview/audio interaction, and microphone-control ownership assertions in `MainWindow.ControllerOwnership.Tests.cs`; use separate MainWindow ownership test files only for cohesive sub-surfaces with enough independent fixture or assertion volume, such as capture selection, option presentation, shell startup/runtime, window lifecycle, or Flashback ownership.
+Notes for future agents: keep MainWindow root/property routing, layout, output, screenshot, button/controller, recording action, preview/audio interaction, and microphone-control ownership assertions in `MainWindowControllerOwnershipTests.cs`; use separate MainWindow ownership test files only for cohesive sub-surfaces with enough independent fixture or assertion volume, such as capture selection, option presentation, shell startup/runtime, window lifecycle, or Flashback ownership.
 
 Date: 2026-05-31
 Area: Flashback playback command facade locality
@@ -7205,14 +7205,14 @@ Notes for future agents: keep snapshot DTO contract checks in `tests/Sussudio.Te
 Date: 2026-05-31
 Area: diagnostic-session runner phase locality
 Problem: `DiagnosticSessionScenarioPhaseRunner.cs` and `DiagnosticSessionBackgroundTasks.cs` were small adjacent helper files for the same diagnostic-session run phase that `DiagnosticSessionRunner.cs` already orchestrated. Reviewing scenario setup/startup, sampling, normal post-sampling completion, and fault background-task drain still required bouncing through two private helper shards even though neither helper had an independent public surface or injected test seam.
-Files consolidated: `tools/Common/DiagnosticSessionScenarioPhaseRunner.cs`; `tools/Common/DiagnosticSessionBackgroundTasks.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionScenarioPhaseRunner.cs`; `tools/DiagnosticSession/DiagnosticSessionBackgroundTasks.cs`
 Files added: none
 Net production .cs delta: -2; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session tool helper sidecar count -2
 Build/tests/runtime checks: `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 96 / 56,085.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, DTO property names, artifact filenames, summary JSON fields, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, or HDR semantics changed; this slice only moves private diagnostic-session phase and background-task helper types into the runner owner.
-Behavior preserved: `DiagnosticSessionScenarioPhaseRunner`, `DiagnosticSessionBackgroundTasks`, `DiagnosticSessionBackgroundTaskRegistration`, and `DiagnosticSessionBackgroundTaskDrainResult` keep the same type names and member behavior while living in `tools/Common/DiagnosticSessionRunner.cs`. Scenario state-mutation gating, setup/startup ordering, sampling live-state writes, snapshot sample append-before-checkpoint ordering, normal registered-work/deferred-settings/rejected-export/PresentMon completion order, interrupted task observation, warning collection, and fault drain handoff keep the same call order and stage names.
-Notes for future agents: keep diagnostic-session public runner compatibility, scenario phase execution, sample loop, post-sampling completion, PresentMon/deferred-settings/background-task drain, post-cleanup completion, output locking, and final timeline/final-snapshot fetch in `tools/Common/DiagnosticSessionRunner.cs` while they remain one run-phase owner. Split again only if scenario phase or background-task drain becomes an independently injected collaborator with its own fixture.
+Behavior preserved: `DiagnosticSessionScenarioPhaseRunner`, `DiagnosticSessionBackgroundTasks`, `DiagnosticSessionBackgroundTaskRegistration`, and `DiagnosticSessionBackgroundTaskDrainResult` keep the same type names and member behavior while living in `tools/DiagnosticSession/DiagnosticSessionRunner.cs`. Scenario state-mutation gating, setup/startup ordering, sampling live-state writes, snapshot sample append-before-checkpoint ordering, normal registered-work/deferred-settings/rejected-export/PresentMon completion order, interrupted task observation, warning collection, and fault drain handoff keep the same call order and stage names.
+Notes for future agents: keep diagnostic-session public runner compatibility, scenario phase execution, sample loop, post-sampling completion, PresentMon/deferred-settings/background-task drain, post-cleanup completion, output locking, and final timeline/final-snapshot fetch in `tools/DiagnosticSession/DiagnosticSessionRunner.cs` while they remain one run-phase owner. Split again only if scenario phase or background-task drain becomes an independently injected collaborator with its own fixture.
 
 Date: 2026-05-31
 Area: Flashback playback source-shape test locality
@@ -7253,14 +7253,14 @@ Notes for future agents: keep ssctl pipe-captured route coverage, command reques
 Date: 2026-05-31
 Area: diagnostic-session Flashback support locality
 Problem: `DiagnosticSessionFlashbackWaits.cs` was a small read-only polling helper beside `DiagnosticSessionFlashbackSupport.cs`, while both files only served Flashback diagnostic-session support scenarios and shared the same snapshot/segment parsing imports. Reviewing Flashback diagnostic support still required opening a separate waits sidecar before returning to the support helper owner.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackWaits.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackWaits.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: n/a; diagnostic-session Flashback support sidecar count -1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionFlashbackWaits|FullyQualifiedName~DiagnosticSessionFlashback|FullyQualifiedName~AutomationDiagnosticsRefresh"` passed (15 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (883 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (16 passed); generated production `.cs` count: 186; current core app `.cs` count/LoC: 141 / 89,708; current test `.cs` count/LoC: 93 / 56,108.
 CLI/MCP/pipe checks, if applicable: no public automation command names, command IDs, wire payloads, DTO property names, artifact filenames, summary JSON fields, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, or HDR semantics changed; this slice only moves an internal diagnostic-session support type.
-Behavior preserved: `DiagnosticSessionFlashbackWaits` keeps the same type name, static method names, polling intervals, timeout behavior, snapshot clone behavior, fallback last-snapshot returns, readiness thresholds, and caller `using static Sussudio.Tools.DiagnosticSessionFlashbackWaits` imports while living in `tools/Common/DiagnosticSessionFlashbackSupport.cs`. Segment helpers, export helpers, and validation helpers stay in the same support file.
-Notes for future agents: keep read-only Flashback diagnostic-session support helpers in `tools/Common/DiagnosticSessionFlashbackSupport.cs` while they are internal static sections for exports, segments, snapshot waits, and validation. Split a section back out only if it gains independent scenario orchestration, transport policy, reusable runtime state, or enough standalone test fixture weight to justify a real owner.
+Behavior preserved: `DiagnosticSessionFlashbackWaits` keeps the same type name, static method names, polling intervals, timeout behavior, snapshot clone behavior, fallback last-snapshot returns, readiness thresholds, and caller `using static Sussudio.Tools.DiagnosticSessionFlashbackWaits` imports while living in `tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`. Segment helpers, export helpers, and validation helpers stay in the same support file.
+Notes for future agents: keep read-only Flashback diagnostic-session support helpers in `tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs` while they are internal static sections for exports, segments, snapshot waits, and validation. Split a section back out only if it gains independent scenario orchestration, transport policy, reusable runtime state, or enough standalone test fixture weight to justify a real owner.
 
 Date: 2026-05-31
 Area: WASAPI recording queue test locality
@@ -7396,15 +7396,15 @@ Notes for future agents: keep Flashback playback root state, command no-op/coale
 
 Date: 2026-05-31
 Area: MJPEG preview jitter test locality
-Problem: `PooledVideoFrame.MjpegJitterQueue.Tests.cs` carried the MJPEG preview jitter source-ownership, adaptive deadline policy, queue/drop, and reprime checks even though every wrapper already executes through `MjpegPipelineContractsTests` in `MjpegPipeline.Tests.cs`. Reviewing MJPEG decode/preview behavior required opening a second legacy `Program` sidecar for the same pipeline xUnit surface.
+Problem: `PooledVideoFrame.MjpegJitterQueue.Tests.cs` carried the MJPEG preview jitter source-ownership, adaptive deadline policy, queue/drop, and reprime checks even though every wrapper already executes through `MjpegPipelineContractsTests` in `MjpegPipelineTests.cs`. Reviewing MJPEG decode/preview behavior required opening a second legacy `Program` sidecar for the same pipeline xUnit surface.
 Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.MjpegJitterQueue.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MJPEG preview-jitter test sidecar count -1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MjpegPipeline|FullyQualifiedName~PooledVideoFrame|FullyQualifiedName~MjpegPreviewJitter"` passed (31 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); diff checks passed; current core app `.cs` count/LoC: 136 / 89,684; current test `.cs` count/LoC: 78 / 56,095.
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves test method bodies and updates architecture ownership docs.
-Behavior preserved: `MjpegPipelineContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy`, `Program.MjpegPreviewJitter_EmitLoopLivesWithLifecycleRoot`, `Program.MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency`, `Program.MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth`, `Program.MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline`, `Program.MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued`, `Program.MjpegPreviewJitter_ClearResetsPreviewSequence`, and `Program.MjpegPreviewJitter_ReprimesAfterSuppressionResume` method names. Those assertions now live in `tests/Sussudio.Tests/MjpegPipeline.Tests.cs`.
-Notes for future agents: keep CPU MJPEG decode pipeline source-shape/runtime checks, pooled-frame fan-out wrappers, queued lease-release wrappers, and MJPEG preview jitter queue/adaptive/reprime checks in `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` while they share the same `MjpegPipelineContractsTests` xUnit surface. Keep direct pooled-frame lease lifecycle and shared frame/jitter helper methods in `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs`.
+Behavior preserved: `MjpegPipelineContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy`, `Program.MjpegPreviewJitter_EmitLoopLivesWithLifecycleRoot`, `Program.MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency`, `Program.MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth`, `Program.MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline`, `Program.MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued`, `Program.MjpegPreviewJitter_ClearResetsPreviewSequence`, and `Program.MjpegPreviewJitter_ReprimesAfterSuppressionResume` method names. Those assertions now live in `tests/Sussudio.Tests/MjpegPipelineTests.cs`.
+Notes for future agents: keep CPU MJPEG decode pipeline source-shape/runtime checks, pooled-frame fan-out wrappers, queued lease-release wrappers, and MJPEG preview jitter queue/adaptive/reprime checks in `tests/Sussudio.Tests/MjpegPipelineTests.cs` while they share the same `MjpegPipelineContractsTests` xUnit surface. Keep direct pooled-frame lease lifecycle and shared frame/jitter helper methods in `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs`.
 
 Date: 2026-05-31
 Area: MainWindow shell launch/lifecycle test locality
@@ -7420,15 +7420,15 @@ Notes for future agents: keep MainWindow shell startup, launch entrance, splash 
 
 Date: 2026-05-31
 Area: MJPEG pooled-frame test locality
-Problem: `PooledVideoFrame.Tests.cs` had become the remaining standalone legacy `Program` partial for pooled-frame helpers and lease lifecycle/fan-out contracts even though all of its xUnit wrappers already execute through `MjpegPipelineContractsTests` in `MjpegPipeline.Tests.cs`. After the previous jitter merge, reviewing the MJPEG pooled-frame path still required opening a helper sidecar beside the real MJPEG pipeline execution surface.
+Problem: `PooledVideoFrame.Tests.cs` had become the remaining standalone legacy `Program` partial for pooled-frame helpers and lease lifecycle/fan-out contracts even though all of its xUnit wrappers already execute through `MjpegPipelineContractsTests` in `MjpegPipelineTests.cs`. After the previous jitter merge, reviewing the MJPEG pooled-frame path still required opening a helper sidecar beside the real MJPEG pipeline execution surface.
 Files consolidated: `tests/Sussudio.Tests/PooledVideoFrame.Tests.cs`
 Files added: none
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: legacy `Program` MJPEG pooled-frame test sidecar count -1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~MjpegPipeline|FullyQualifiedName~PooledVideoFrame|FullyQualifiedName~MjpegPreviewJitter"` passed (31 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); diff checks passed; current core app `.cs` count/LoC: 136 / 89,684; current test `.cs` count/LoC: 76 / 56,082.
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, XAML bindings, tool protocols, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves test helper/method bodies and updates architecture ownership docs.
-Behavior preserved: `MjpegPipelineContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.PooledVideoFrame_*`, `Program.MjpegPooledFrameFanout_ExposesLeaseContracts`, `Program.D3DPreviewPendingFrame_ReleasesQueuedLease`, and `Program.MjpegLeasedVideoPackets_ReleaseQueuedLeases` method names. Shared pooled-frame reflection, frame factory, jitter-buffer factory, tracking pool helpers, lease lifecycle checks, fan-out contracts, and queued lease return coverage now live in `tests/Sussudio.Tests/MjpegPipeline.Tests.cs`.
-Notes for future agents: keep CPU MJPEG decode pipeline source-shape/runtime checks, pooled-frame helpers, pooled-frame lease lifecycle/fan-out contracts, D3D/recording/Flashback queued lease-release checks, and MJPEG preview jitter queue/adaptive/reprime checks in `tests/Sussudio.Tests/MjpegPipeline.Tests.cs` while they share the same `MjpegPipelineContractsTests` xUnit surface. Split again only for an independent pooled-frame fixture or a production pooled-frame collaborator boundary separate from the MJPEG fan-out path.
+Behavior preserved: `MjpegPipelineContractsTests` keeps the same `[Fact]` wrappers and underlying `Program.PooledVideoFrame_*`, `Program.MjpegPooledFrameFanout_ExposesLeaseContracts`, `Program.D3DPreviewPendingFrame_ReleasesQueuedLease`, and `Program.MjpegLeasedVideoPackets_ReleaseQueuedLeases` method names. Shared pooled-frame reflection, frame factory, jitter-buffer factory, tracking pool helpers, lease lifecycle checks, fan-out contracts, and queued lease return coverage now live in `tests/Sussudio.Tests/MjpegPipelineTests.cs`.
+Notes for future agents: keep CPU MJPEG decode pipeline source-shape/runtime checks, pooled-frame helpers, pooled-frame lease lifecycle/fan-out contracts, D3D/recording/Flashback queued lease-release checks, and MJPEG preview jitter queue/adaptive/reprime checks in `tests/Sussudio.Tests/MjpegPipelineTests.cs` while they share the same `MjpegPipelineContractsTests` xUnit surface. Split again only for an independent pooled-frame fixture or a production pooled-frame collaborator boundary separate from the MJPEG fan-out path.
 
 Date: 2026-05-31
 Area: Native XU core-runtime test locality
@@ -7589,13 +7589,13 @@ Notes for future agents: keep MainWindow preview runtime adapter ownership, rend
 Date: 2026-05-31
 Area: diagnostic-session Flashback scenario-task locality
 Problem: `DiagnosticSessionFlashbackRecordingSettingsScenarios.cs` and `DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs` were the two smallest diagnostic-session Flashback scenario task files. They owned distinct static classes, but both were special-case Flashback scenario flows using the same snapshot parsing, wait helpers, actions/warnings plumbing, and background-task orchestration surface. Reviewing Flashback scenario task behavior still required opening two tiny adjacent production files before returning to shared support and scenario activation.
-Files consolidated: `tools/Common/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`; `tools/Common/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
-Files added: `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs`
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionFlashbackRecordingSettingsScenarios.cs`; `tools/DiagnosticSession/DiagnosticSessionFlashbackSegmentPlaybackScenarios.cs`
+Files added: `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs`
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: none
 Build/tests/runtime checks: `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` passed (0 warnings); initial focused diagnostic-session test run failed because `tools\ssctl\bin\Debug\net8.0\ssctl.dll` was stale; `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSessionFlashback|FullyQualifiedName~DiagnosticSession"` passed (53 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (884 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; architecture-doc tests passed (17 passed); `git diff --check` passed; current core app `.cs` count/LoC: 136 / 89,684; current test `.cs` count/LoC: 58 / 55,992.
 CLI/MCP/pipe checks, if applicable: full solution build rebuilt MCP, `ssctl`, automation contracts, app, and tests; no public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed.
-Behavior preserved: `DiagnosticSessionFlashbackRecordingSettingsScenarios`, `DiagnosticSessionFlashbackSegmentPlaybackScenarios`, and `FlashbackRecordingSettingsDeferredPresetState` keep the same type names and method names. Deferred recording-settings preset mutation/rejection/restore checks and completed-segment playback boundary/go-live validation now live in `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs`.
+Behavior preserved: `DiagnosticSessionFlashbackRecordingSettingsScenarios`, `DiagnosticSessionFlashbackSegmentPlaybackScenarios`, and `FlashbackRecordingSettingsDeferredPresetState` keep the same type names and method names. Deferred recording-settings preset mutation/rejection/restore checks and completed-segment playback boundary/go-live validation now live in `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs`.
 Notes for future agents: keep small Flashback diagnostic-session scenario task flows together in `DiagnosticSessionFlashbackScenarioTasks.cs` while they remain special-case scenario choreography over the shared waits/support helpers. Split again only if a flow gains an independent reusable collaborator, state model, or runtime fixture.
 Date: 2026-05-31
 Area: stats overlay dock refresh locality
@@ -7757,25 +7757,25 @@ Date: 2026-06-01
 Area: CaptureService ownership test locality
 Problem: `CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs` and `CaptureService.LifecycleOwnership.Tests.cs` were the two smallest remaining CaptureService ownership test shards. Both asserted source-shape and behavior-locality contracts for the same CaptureService ownership surface, so reviewing lifecycle, transition, preview/audio, failure-cleanup, health snapshot, telemetry, and cached MJPEG guardrails still required two adjacent files with no independent fixture boundary.
 Files consolidated: `tests/Sussudio.Tests/CaptureService.HealthSnapshots.AssemblyAndSamplerOwnership.Tests.cs`; `tests/Sussudio.Tests/CaptureService.LifecycleOwnership.Tests.cs`
-Files added: `tests/Sussudio.Tests/CaptureService.Ownership.Tests.cs`
+Files added: `tests/Sussudio.Tests/CaptureServiceOwnershipTests.cs`
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: `static partial class Program` CaptureService ownership test bodies 2 -> 1 file; CaptureService ownership xUnit source set 2 -> 1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~CaptureServiceHealthSnapshotOwnershipTests|FullyQualifiedName~CaptureServiceLifecycleOwnershipTests|FullyQualifiedName~ArchitectureDocs"` initially failed only because `Sussudio-Defragmentation-Baseline.generated.md` still had the previous test file count, then passed after regenerating the baseline (31 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with only LF-to-CRLF working-copy warnings.
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves xUnit test declarations, backing legacy `Program` methods, and ownership docs.
-Behavior preserved: `CaptureServiceHealthSnapshotOwnershipTests`, `CaptureServiceLifecycleOwnershipTests`, all `[Fact]` method names, all backing `Program.CaptureService_*`, `Program.CaptureHealthSnapshot_*`, `Program.GetHealthSnapshot_*`, `Program.GetDiagnosticsSnapshot_*`, `Program.AudioPreview_*`, and `Program.PreviewBackendLog_*` method names, source-shape assertions, structured source telemetry behavior checks, cached MJPEG metric factories, lifecycle transition-policy checks, preview/audio ownership guards, and missing-audio fallback behavior checks keep the same execution identities while living in `tests/Sussudio.Tests/CaptureService.Ownership.Tests.cs`.
-Notes for future agents: keep CaptureService lifecycle/transition/source-shape, preview/audio/microphone restart, failure-cleanup, health snapshot assembly/sampler, telemetry, and cached MJPEG propagation ownership checks together in `CaptureService.Ownership.Tests.cs` while they remain one reflection/source-shape CaptureService ownership surface. Split again only if an independent runtime fixture, production collaborator boundary, or non-CaptureService ownership surface emerges. Current core app `.cs` count/LoC: 118 / 89,562; current `Sussudio.Tests` `.cs` count/LoC: 21 / 55,946; current all-test `.cs` count/LoC: 23 / 56,796.
+Behavior preserved: `CaptureServiceHealthSnapshotOwnershipTests`, `CaptureServiceLifecycleOwnershipTests`, all `[Fact]` method names, all backing `Program.CaptureService_*`, `Program.CaptureHealthSnapshot_*`, `Program.GetHealthSnapshot_*`, `Program.GetDiagnosticsSnapshot_*`, `Program.AudioPreview_*`, and `Program.PreviewBackendLog_*` method names, source-shape assertions, structured source telemetry behavior checks, cached MJPEG metric factories, lifecycle transition-policy checks, preview/audio ownership guards, and missing-audio fallback behavior checks keep the same execution identities while living in `tests/Sussudio.Tests/CaptureServiceOwnershipTests.cs`.
+Notes for future agents: keep CaptureService lifecycle/transition/source-shape, preview/audio/microphone restart, failure-cleanup, health snapshot assembly/sampler, telemetry, and cached MJPEG propagation ownership checks together in `CaptureServiceOwnershipTests.cs` while they remain one reflection/source-shape CaptureService ownership surface. Split again only if an independent runtime fixture, production collaborator boundary, or non-CaptureService ownership surface emerges. Current core app `.cs` count/LoC: 118 / 89,562; current `Sussudio.Tests` `.cs` count/LoC: 21 / 55,946; current all-test `.cs` count/LoC: 23 / 56,796.
 
 Date: 2026-06-01
 Area: Architecture guardrail test locality
 Problem: `ArchitectureDocs.ReferenceIntegrity.Tests.cs` owned docs/reference/test-shape guardrails while `ServiceNamespace.FolderRules.Tests.cs` owned adjacent service namespace/source-layout guardrails. Both were architecture-boundary tests with no runtime fixture separation, so reviewing the active architecture guardrails required opening two small owners before returning to the same legacy `Program` and xUnit execution surfaces.
 Files consolidated: `tests/Sussudio.Tests/ArchitectureDocs.ReferenceIntegrity.Tests.cs`; `tests/Sussudio.Tests/ServiceNamespace.FolderRules.Tests.cs`
-Files added: `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs`
+Files added: `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs`
 Net production .cs delta: 0; net test .cs delta: -1
 Partial clusters reduced: `static partial class Program` architecture guardrail test bodies 2 -> 1 file; architecture/service namespace guardrail source set 2 -> 1
 Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~ArchitectureDocs|FullyQualifiedName~AutomationContracts"` initially failed only because `Sussudio-Defragmentation-Baseline.generated.md` still had the previous test file count, then passed after regenerating the baseline (23 passed); `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with only LF-to-CRLF working-copy warnings.
 CLI/MCP/pipe checks, if applicable: no production code, public automation command names, command IDs, wire payloads, DTO property names, CLI/MCP tool names, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or hot paths changed; this slice only moves xUnit/legacy harness architecture guardrail test declarations and updates architecture/test migration docs.
-Behavior preserved: `ArchitectureDocsAgentMapOwnershipTests`, `ArchitectureDocsReferenceIntegrityTests`, `XUnit.AutomationContractsTests`, all existing `[Fact]` wrapper class/method identities, `Program.ServiceNamespaces_FollowServiceFolders`, `Program.AutomationContracts_SourceOwnership_IsCatalogAligned`, `Program.RtkI2cProbe_GuardsUnsafeNativePaths`, `Program.MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator`, `Program.CaptureDiscoverySourceOwnership_LivesInFocusedPartials`, and the docs/reference/service namespace/source ownership assertions keep the same execution surfaces while living in `tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs`.
-Notes for future agents: keep docs reference integrity, test-shape guardrails, AGENT_MAP/cleanup-plan/migration coverage, service namespace folder rules, service/source ownership checks, automation contract source ownership, NativeXuAudioProbe linked-source checks, MF enumerator ownership, and capture-discovery source-shape checks together in `ArchitectureGuardrails.Tests.cs` while they remain one architecture-boundary guardrail surface. Split again only for an independent fixture, a non-architecture runtime contract family, or a reusable helper boundary. Current core app `.cs` count/LoC: 118 / 89,562; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,941; current all-test `.cs` count/LoC: 22 / 56,791.
+Behavior preserved: `ArchitectureDocsAgentMapOwnershipTests`, `ArchitectureDocsReferenceIntegrityTests`, `XUnit.AutomationContractsTests`, all existing `[Fact]` wrapper class/method identities, `Program.ServiceNamespaces_FollowServiceFolders`, `Program.AutomationContracts_SourceOwnership_IsCatalogAligned`, `Program.RtkI2cProbe_GuardsUnsafeNativePaths`, `Program.MfDeviceEnumerator_SourceOwnershipLivesInCohesiveEnumerator`, `Program.CaptureDiscoverySourceOwnership_LivesInFocusedPartials`, and the docs/reference/service namespace/source ownership assertions keep the same execution surfaces while living in `tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs`.
+Notes for future agents: keep docs reference integrity, test-shape guardrails, AGENT_MAP/cleanup-plan/migration coverage, service namespace folder rules, service/source ownership checks, automation contract source ownership, NativeXuAudioProbe linked-source checks, MF enumerator ownership, and capture-discovery source-shape checks together in `ArchitectureGuardrailsTests.cs` while they remain one architecture-boundary guardrail surface. Split again only for an independent fixture, a non-architecture runtime contract family, or a reusable helper boundary. Current core app `.cs` count/LoC: 118 / 89,562; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,941; current all-test `.cs` count/LoC: 22 / 56,791.
 
 Date: 2026-06-01
 Area: AutomationDiagnosticsHub alert refresh locality
@@ -7827,39 +7827,39 @@ Notes for future agents: keep automation command catalog, pipe protocol constant
 
 Date: 2026-06-01
 Area: Diagnostic-session result text locality
-Problem: `tools/Common/DiagnosticSessionResultFormatter.cs` was a standalone 341-line formatter for only the `DiagnosticSessionResult` DTO surface, while `DiagnosticSessionResult.cs` already owned the public options/sample/result model and scenario phase handoff records. Reviewing the diagnostic-session result contract still required opening a separate formatter file for the one public human-readable result projection used by ssctl/MCP, after previous slices had already collapsed formatter partial sprawl into that single sidecar.
-Files consolidated: `tools/Common/DiagnosticSessionResultFormatter.cs`
+Problem: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.cs` was a standalone 341-line formatter for only the `DiagnosticSessionResult` DTO surface, while `DiagnosticSessionResult.cs` already owned the public options/sample/result model and scenario phase handoff records. Reviewing the diagnostic-session result contract still required opening a separate formatter file for the one public human-readable result projection used by ssctl/MCP, after previous slices had already collapsed formatter partial sprawl into that single sidecar.
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionResultFormatter.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: none; diagnostic-session result DTO and text formatter source files 2 -> 1
-Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession"` initially failed only because `tools/ssctl/bin/Debug/net8.0/ssctl.dll` and `tools/McpServer/bin/Debug/net8.0/McpServer.dll` were stale after the shared-source move, then passed after explicit `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` and `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (53 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` initially failed on a duplicate AGENT_MAP ownership bullet for `tools/Common/DiagnosticSessionResult.cs`, then passed after merging the map entries (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with only LF-to-CRLF working-copy warnings.
+Build/tests/runtime checks: focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession"` initially failed only because `tools/ssctl/bin/Debug/net8.0/ssctl.dll` and `tools/McpServer/bin/Debug/net8.0/McpServer.dll` were stale after the shared-source move, then passed after explicit `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` and `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` (53 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` initially failed on a duplicate AGENT_MAP ownership bullet for `tools/DiagnosticSession/DiagnosticSessionResult.cs`, then passed after merging the map entries (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; `git diff --check` passed with only LF-to-CRLF working-copy warnings.
 CLI/MCP/pipe checks, if applicable: public diagnostic-session CLI/MCP command names, options, DTO properties, JSON artifacts, formatted row labels, automation command names/IDs, wire payloads, response fields, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, and app hot paths were not changed; this slice only moves the shared diagnostic-session formatter type and docs/tests that point at its source owner.
-Behavior preserved: `DiagnosticSessionResultFormatter.Format`, all private append/build helper method names, `DiagnosticSessionOptionalTextFormatter.FormatOptional`, `DiagnosticSessionRunner.Format`, diagnostic result DTO property names/defaults, formatted section ordering, and shared optional text helper call sites keep the same type/member names and runtime behavior while living in `tools/Common/DiagnosticSessionResult.cs`.
-Notes for future agents: keep `DiagnosticSessionOptions`, `DiagnosticSessionSample`, scenario phase handoff records, `DiagnosticSessionResult`, `DiagnosticSessionResultFormatter`, and `DiagnosticSessionOptionalTextFormatter` together in `tools/Common/DiagnosticSessionResult.cs` while the formatter remains the human-readable projection of that single result DTO surface. Split again only if the formatter becomes an injected renderer with independent tests or multiple output formats. Current production `.cs` count/LoC: 152 / 109,091; current core app `.cs` count/LoC: 115 / 89,534; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,962; current all-test `.cs` count/LoC: 22 / 56,812.
+Behavior preserved: `DiagnosticSessionResultFormatter.Format`, all private append/build helper method names, `DiagnosticSessionOptionalTextFormatter.FormatOptional`, `DiagnosticSessionRunner.Format`, diagnostic result DTO property names/defaults, formatted section ordering, and shared optional text helper call sites keep the same type/member names and runtime behavior while living in `tools/DiagnosticSession/DiagnosticSessionResult.cs`.
+Notes for future agents: keep `DiagnosticSessionOptions`, `DiagnosticSessionSample`, scenario phase handoff records, `DiagnosticSessionResult`, `DiagnosticSessionResultFormatter`, and `DiagnosticSessionOptionalTextFormatter` together in `tools/DiagnosticSession/DiagnosticSessionResult.cs` while the formatter remains the human-readable projection of that single result DTO surface. Split again only if the formatter becomes an injected renderer with independent tests or multiple output formats. Current production `.cs` count/LoC: 152 / 109,091; current core app `.cs` count/LoC: 115 / 89,534; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,962; current all-test `.cs` count/LoC: 22 / 56,812.
 
 Date: 2026-06-01
 Area: Diagnostic-session command-channel run context locality
-Problem: `tools/Common/DiagnosticSessionCommandChannel.cs` was the smallest remaining shared diagnostic-session source file and was constructed, owned, and disposed only by `DiagnosticSessionRunContext`. Reviewing mutable diagnostic-session run infrastructure still required opening a separate channel file for command send serialization, failure accounting, retry classification, local failure-envelope shaping, and wait-command payload construction before returning to the run context that owns its lifetime and passes it to scenario/cleanup phases.
-Files consolidated: `tools/Common/DiagnosticSessionCommandChannel.cs`
+Problem: `tools/DiagnosticSession/DiagnosticSessionCommandChannel.cs` was the smallest remaining shared diagnostic-session source file and was constructed, owned, and disposed only by `DiagnosticSessionRunContext`. Reviewing mutable diagnostic-session run infrastructure still required opening a separate channel file for command send serialization, failure accounting, retry classification, local failure-envelope shaping, and wait-command payload construction before returning to the run context that owns its lifetime and passes it to scenario/cleanup phases.
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionCommandChannel.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: none; diagnostic-session run infrastructure source files 2 -> 1
 Build/tests/runtime checks: explicit `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` passed; the first parallel `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` attempt failed only with CS2012 because the shared `Sussudio.Automation.Contracts` obj DLL was locked by the simultaneous MCP build, then the serial rerun passed; focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession|FullyQualifiedName~AutomationPipeConnectFailures"` passed (54 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed (19 passed); `git diff --check` passed with only LF-to-CRLF working-copy warnings.
 CLI/MCP/pipe checks, if applicable: no public diagnostic-session CLI/MCP command names, options, DTO properties, JSON artifacts, automation command names/IDs, pipe protocol fields, response fields, timeout values, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or app hot paths changed; this slice only moves the internal diagnostic-session command-channel and retry policy types into the mutable run-context source owner.
-Behavior preserved: `DiagnosticSessionCommandChannel`, `DiagnosticSessionPipeRetryPolicy`, `SendAsync`, `SendWithTokenAsync`, `SendRawWithConnectRetryAsync`, `SendRawWithConnectRetryWithTokenAsync`, `TryWaitAsync`, `TryWaitWithTokenAsync`, `RecordFailure`, fixed `AutomationCommandKind` name resolution, serialized send gate, connect retry, synthetic pipe-connect retry, permanent access-denied classification, local failure-response envelopes, wait-command payload, and run-context command-channel disposal keep the same type/member names and runtime behavior while living in `tools/Common/DiagnosticSessionRunContext.cs`.
-Notes for future agents: keep diagnostic-session bootstrap, mutable run state, live-state breadcrumbs, initial snapshot capture, automation response-shape helpers, command-channel transport, pipe retry policy, scenario/completion context construction, and disposal together in `tools/Common/DiagnosticSessionRunContext.cs` while the channel remains per-run infrastructure owned by the context. Split again only if command transport becomes an injected service reused outside diagnostic sessions. Current production `.cs` count/LoC: 151 / 109,087; current core app `.cs` count/LoC: 115 / 89,534; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,966; current all-test `.cs` count/LoC: 22 / 56,816.
+Behavior preserved: `DiagnosticSessionCommandChannel`, `DiagnosticSessionPipeRetryPolicy`, `SendAsync`, `SendWithTokenAsync`, `SendRawWithConnectRetryAsync`, `SendRawWithConnectRetryWithTokenAsync`, `TryWaitAsync`, `TryWaitWithTokenAsync`, `RecordFailure`, fixed `AutomationCommandKind` name resolution, serialized send gate, connect retry, synthetic pipe-connect retry, permanent access-denied classification, local failure-response envelopes, wait-command payload, and run-context command-channel disposal keep the same type/member names and runtime behavior while living in `tools/DiagnosticSession/DiagnosticSessionRunContext.cs`.
+Notes for future agents: keep diagnostic-session bootstrap, mutable run state, live-state breadcrumbs, initial snapshot capture, automation response-shape helpers, command-channel transport, pipe retry policy, scenario/completion context construction, and disposal together in `tools/DiagnosticSession/DiagnosticSessionRunContext.cs` while the channel remains per-run infrastructure owned by the context. Split again only if command transport becomes an injected service reused outside diagnostic sessions. Current production `.cs` count/LoC: 151 / 109,087; current core app `.cs` count/LoC: 115 / 89,534; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,966; current all-test `.cs` count/LoC: 22 / 56,816.
 
 Date: 2026-06-01
 Area: Diagnostic-session post-run completion locality
-Problem: `tools/Common/DiagnosticSessionPostRunActions.cs` owned cleanup mutations and post-cleanup recording/export verification, but both named helper types were called only by `DiagnosticSessionRunner` in its cleanup/completion path. Reviewing diagnostic-session post-run behavior still required opening a separate 338-line sidecar plus the runner to understand cleanup ordering, recording-stop-for-verification, deferred Flashback setting restore, recording/export verification, Flashback recording validation, and post-run snapshot/result sequencing.
-Files consolidated: `tools/Common/DiagnosticSessionPostRunActions.cs`
+Problem: `tools/DiagnosticSession/DiagnosticSessionPostRunActions.cs` owned cleanup mutations and post-cleanup recording/export verification, but both named helper types were called only by `DiagnosticSessionRunner` in its cleanup/completion path. Reviewing diagnostic-session post-run behavior still required opening a separate 338-line sidecar plus the runner to understand cleanup ordering, recording-stop-for-verification, deferred Flashback setting restore, recording/export verification, Flashback recording validation, and post-run snapshot/result sequencing.
+Files consolidated: `tools/DiagnosticSession/DiagnosticSessionPostRunActions.cs`
 Files added: none
 Net production .cs delta: -1; net test .cs delta: 0
 Partial clusters reduced: none; diagnostic-session runner/completion source files 2 -> 1
 Build/tests/runtime checks: explicit `dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore` and `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore` passed (0 warnings); focused `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore --filter "FullyQualifiedName~DiagnosticSession"` initially failed only on a wrapped AGENT_MAP phrase expected by a source-shape assertion, then passed after keeping the phrase contiguous (53 passed); regenerated `docs/architecture/Sussudio-Defragmentation-Baseline.generated.md`; `dotnet build Sussudio.slnx -p:Platform=x64 --no-restore` passed (0 warnings); full `dotnet test tests\Sussudio.Tests\Sussudio.Tests.csproj --no-restore` passed (886 passed); `dotnet exec --% tests\Sussudio.Tests\bin\Debug\net8.0\Sussudio.Tests.dll Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll` passed; architecture-doc tests passed (19 passed); `git diff --check` passed with only LF-to-CRLF working-copy warnings.
 CLI/MCP/pipe checks, if applicable: no public diagnostic-session CLI/MCP command names, options, DTO properties, JSON artifacts, automation command names/IDs, pipe protocol fields, response fields, timeout values, XAML bindings, capture behavior, recording behavior, Flashback behavior, preview behavior, HDR semantics, or app hot paths changed; this slice only moves the internal diagnostic-session post-run cleanup/recording-check helper types into the runner completion source owner.
-Behavior preserved: `DiagnosticSessionCleanupActions`, `DiagnosticSessionRecordingChecks`, `DiagnosticSessionCleanupResult`, `DiagnosticSessionRecordingCheckResult`, cleanup stage/action names, typed `AutomationCommandKind` cleanup sends, Flashback go-live restore, preview stop, Flashback enable-state restore, recording stop for verification, deferred Flashback recording-settings restore, recording/export verification command/payload selection, cloned verification result, skipped-verification action text, Flashback recording validation, and runner completion ordering keep the same type/member names and runtime behavior while living in `tools/Common/DiagnosticSessionRunner.cs`.
-Notes for future agents: keep diagnostic-session public runner entry points, scenario phase sequencing, cleanup mutations, recording/export verification, post-run snapshot fetches, result-build handoff, scenario sampling, and background-task completion/fault-drain together in `tools/Common/DiagnosticSessionRunner.cs` while they remain one run phase plan. Extract again only if cleanup or verification becomes an injected service reused outside diagnostic sessions. Current production `.cs` count/LoC: 150 / 109,084; current core app `.cs` count/LoC: 115 / 89,534; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,967; current all-test `.cs` count/LoC: 22 / 56,817.
+Behavior preserved: `DiagnosticSessionCleanupActions`, `DiagnosticSessionRecordingChecks`, `DiagnosticSessionCleanupResult`, `DiagnosticSessionRecordingCheckResult`, cleanup stage/action names, typed `AutomationCommandKind` cleanup sends, Flashback go-live restore, preview stop, Flashback enable-state restore, recording stop for verification, deferred Flashback recording-settings restore, recording/export verification command/payload selection, cloned verification result, skipped-verification action text, Flashback recording validation, and runner completion ordering keep the same type/member names and runtime behavior while living in `tools/DiagnosticSession/DiagnosticSessionRunner.cs`.
+Notes for future agents: keep diagnostic-session public runner entry points, scenario phase sequencing, cleanup mutations, recording/export verification, post-run snapshot fetches, result-build handoff, scenario sampling, and background-task completion/fault-drain together in `tools/DiagnosticSession/DiagnosticSessionRunner.cs` while they remain one run phase plan. Extract again only if cleanup or verification becomes an injected service reused outside diagnostic sessions. Current production `.cs` count/LoC: 150 / 109,084; current core app `.cs` count/LoC: 115 / 89,534; current `Sussudio.Tests` `.cs` count/LoC: 20 / 55,967; current all-test `.cs` count/LoC: 22 / 56,817.
 
 Date: 2026-06-01
 Area: Automation diagnostics snapshot projection parent locality

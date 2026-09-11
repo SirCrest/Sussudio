@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -145,7 +146,6 @@ namespace Sussudio.Services.Contracts
     public sealed class RecordingContextRequest
     {
         public required CaptureSettings Settings { get; init; }
-        public bool UsePostMuxAudio { get; init; }
         public string? AudioDeviceName { get; init; }
         public string? MicrophoneDeviceName { get; init; }
         public double EffectiveFrameRate { get; init; }
@@ -165,7 +165,6 @@ namespace Sussudio.Services.Contracts
     public sealed record RecordingContext
     {
         public required CaptureSettings Settings { get; init; }
-        public bool UsePostMuxAudio { get; init; }
         public string? AudioDeviceName { get; init; }
         public string? MicrophoneDeviceName { get; init; }
         public double EffectiveFrameRate { get; init; }
@@ -179,7 +178,6 @@ namespace Sussudio.Services.Contracts
 
         public required string VideoOutputPath { get; init; }
         public required string FinalOutputPath { get; init; }
-        public string? AudioTempPath { get; init; }
         public bool HdrPipelineActive { get; init; }
 
         // Expected output topology follows the user's selected recording
@@ -198,6 +196,14 @@ namespace Sussudio.Services.Contracts
     // Requested track names follow the recording settings. Shared by the recording
     // lifecycle, the LibAv sink, and the in-process structure verifier so failure
     // evidence cannot drift between them.
+    // Shared P010 boundary check so the HDR pipeline's "is this stream P010" test
+    // cannot drift between the sites that decide, log, and verify it.
+    internal static class PixelFormatIds
+    {
+        public static bool IsP010(string? pixelFormat) =>
+            string.Equals(pixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static class RecordingTracks
     {
         public static IReadOnlyList<string> BuildRequestedTracks(RecordingContext? context)
@@ -364,6 +370,11 @@ namespace Sussudio.Services.Contracts
         void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
     }
 
+    /// <summary>
+    /// On either normal return the callee has taken and released any reference it
+    /// needed, including when admission is rejected; the caller may release its
+    /// texture after return.
+    /// </summary>
     public interface IGpuVideoFrameTryEncoder
     {
         bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
@@ -386,15 +397,6 @@ namespace Sussudio.Services.Contracts
     internal interface IRawVideoFrameLeaseTryEncoder
     {
         bool TryEnqueueRawVideoFrame(PooledVideoFrameLease frame);
-    }
-
-    /// <summary>
-    /// Accepts decoded CUDA AVFrame references for GPU-resident NVENC encoding.
-    /// Callee clones the frame; caller retains ownership.
-    /// </summary>
-    public unsafe interface ICudaVideoFrameEncoder
-    {
-        void EnqueueCudaVideoFrame(AVFrame* cudaFrame);
     }
 
     public interface IRecordingSink : IDisposable, IAsyncDisposable
@@ -530,13 +532,13 @@ namespace Sussudio.Services.Contracts
         {
             if (TryAddLease(out var lease))
             {
-                return lease!;
+                return lease;
             }
 
             throw new ObjectDisposedException(nameof(PooledVideoFrame));
         }
 
-        public bool TryAddLease(out PooledVideoFrameLease? lease)
+        public bool TryAddLease([NotNullWhen(true)] out PooledVideoFrameLease? lease)
         {
             lock (_leaseSync)
             {

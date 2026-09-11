@@ -60,7 +60,7 @@ public partial class CaptureService
             _lastPreservedArtifacts = recovery.PreservedArtifacts;
             _recordingLifecyclePhase = RecordingLifecyclePhase.Idle;
             _lastFinalizeOutcome = RecordingFinalizeOutcome.Failed;
-            _lastFinalizeFailureCode = "recording-recovery-restored";
+            _lastFinalizeFailureCode = RecordingFailureCodes.RecoveryRestored;
             _lastFinalizationVerificationCompleted = false;
             _recordingFinalizationCleanupPending = false;
             _lastFinalizationElapsedMs = 0;
@@ -236,7 +236,6 @@ public partial class CaptureService
             new RecordingContextRequest
             {
                 Settings = settings,
-                UsePostMuxAudio = false,
                 AudioDeviceName = audioDeviceName,
                 MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
                 EffectiveFrameRate = recordingFrameRate,
@@ -262,7 +261,6 @@ public partial class CaptureService
             new RecordingContextRequest
             {
                 Settings = settings,
-                UsePostMuxAudio = false,
                 AudioDeviceName = settings.AudioEnabled
                     ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice?.AudioDeviceName))
                     : null,
@@ -311,7 +309,7 @@ public partial class CaptureService
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
 
-        var requireP010 = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+        var requireP010 = PixelFormatIds.IsP010(videoInputPixelFormat);
         var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
         var unifiedVideoCapture = await PrepareLibAvRecordingVideoCaptureAsync(
                 settings,
@@ -343,24 +341,18 @@ public partial class CaptureService
             $"requested_source_subtype={settings.RequestedPixelFormat ?? (hdrPipelineRequested ? "P010" : "NV12")} " +
             $"mjpeg_hfr={useMjpegHighFrameRateMode} " +
             $"negotiated_pixel_format={(unifiedVideoCapture.IsP010 ? "P010" : "NV12")} " +
-            $"negotiated_subtype_token={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "P010|MFVideoFormat_P010" : "NV12")} " +
+            $"negotiated_subtype_token={(PixelFormatIds.IsP010(videoInputPixelFormat) ? "P010|MFVideoFormat_P010" : "NV12")} " +
             $"hdr_static_metadata_requested={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata) || (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0))} " +
             $"hdr_master_display_set={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))} " +
             $"hdr_max_cll={settings.HdrMaxCll} " +
             $"hdr_max_fall={settings.HdrMaxFall} " +
             $"mf_readwrite_disable_converters={(_mfConvertersDisabled ? "true" : "false")} " +
-            $"libav_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
+            $"libav_ingest_pix_fmt={(PixelFormatIds.IsP010(videoInputPixelFormat) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
 
         await rollback.RecordingSink.StartAsync(rollback.RecordingContext, transitionToken).ConfigureAwait(false);
         transitionToken.ThrowIfCancellationRequested();
 
-        _lastMfSourceReaderFramesDelivered = 0;
-        _lastMfSourceReaderFramesDropped = 0;
-        _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
-        _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
-        _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
-        SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate);
-        _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
+        ResetVideoBaselineCounters(unifiedVideoCapture, settings, effectiveFrameRate);
 
         var activeRecordingSink = rollback.RecordingSink
             ?? throw new InvalidOperationException("Recording requires an active sink.");
@@ -374,24 +366,13 @@ public partial class CaptureService
             activeRecordingSink,
             audioDeviceId).ConfigureAwait(false);
 
-        _recordingMicrophoneSamplesBaseline = activeLibAvSink.MicrophoneSamplesReceived;
-        _recordingMicrophoneDropsBaseline =
-            activeLibAvSink.MicrophoneDropsQueueSaturated +
-            activeLibAvSink.MicrophoneDropsBacklogEviction;
-        _recordingMicrophoneDiscontinuitiesBaseline =
-            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
-        _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
+        ResetAudioBaselineCounters(activeLibAvSink, settings);
 
         IGpuVideoFrameTryEncoder? gpuEncoder =
             (!isMjpegMode && activeLibAvSink.GpuEncodingEnabled)
                 ? activeLibAvSink
                 : null;
 
-        _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeLibAvSink);
-        _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
-            _previewAudioGraph.ProgramCapture,
-            activeLibAvSink,
-            settings);
         activeLibAvSink.MarkRecordingBoundaryStarted();
         await unifiedVideoCapture.StartRecordingAsync(rollback.RecordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
         if (gpuEncoder != null)
@@ -415,16 +396,46 @@ public partial class CaptureService
         _isRecording = true;
         _activeVideoInputPixelFormat = videoInputPixelFormat;
         Interlocked.Exchange(ref _videoFramesDropped, 0);
-        ResetObservedPixelTelemetry();
-        RecordObservedPixelFormat(rollback.RecordingContext.HdrPipelineActive ? "P010" : "NV12", incrementAsFrame: false);
         PublishRecordingStartedOutcome(rollback.RecordingContext);
-        _lastUsePostMuxAudio = rollback.RecordingContext.UsePostMuxAudio;
         _recordingStopwatch.Restart();
+        EnsureCaptureTelemetrySampling();
         StatusChanged?.Invoke(this, "Recording");
-        rollback.LibAvSink = null;
-        rollback.RecordingSink = null;
-        rollback.OwnedWasapiAudioCapture = null;
-        rollback.OwnedUnifiedVideoCapture = null;
+        rollback.Commit();
+    }
+
+    // Runs before StartLibAvRecordingAudioInputsAsync's await, so these fields are
+    // committed even if audio startup subsequently throws.
+    private void ResetVideoBaselineCounters(
+        UnifiedVideoCapture unifiedVideoCapture,
+        CaptureSettings settings,
+        double effectiveFrameRate)
+    {
+        _lastMfSourceReaderFramesDelivered = 0;
+        _lastMfSourceReaderFramesDropped = 0;
+        _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+        _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
+        _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
+        SetActualCaptureFrameRate(settings, unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate);
+        _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
+    }
+
+    // Runs after StartLibAvRecordingAudioInputsAsync's await, so it depends on a
+    // fully-populated activeLibAvSink.
+    private void ResetAudioBaselineCounters(LibAvRecordingSink activeLibAvSink, CaptureSettings settings)
+    {
+        _recordingMicrophoneSamplesBaseline = activeLibAvSink.MicrophoneSamplesReceived;
+        _recordingMicrophoneDropsBaseline =
+            activeLibAvSink.MicrophoneDropsQueueSaturated +
+            activeLibAvSink.MicrophoneDropsBacklogEviction;
+        _recordingMicrophoneDiscontinuitiesBaseline =
+            _previewAudioGraph.MicrophoneCapture?.AudioDataDiscontinuityCount ?? 0;
+        _recordingMicrophoneDiscontinuitiesFinal = _recordingMicrophoneDiscontinuitiesBaseline;
+
+        _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeLibAvSink);
+        _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
+            _previewAudioGraph.ProgramCapture,
+            activeLibAvSink,
+            settings);
     }
 
     private async Task<UnifiedVideoCapture> PrepareLibAvRecordingVideoCaptureAsync(
@@ -443,13 +454,13 @@ public partial class CaptureService
             AttachUnifiedVideoCapture(rollback.OwnedUnifiedVideoCapture);
             await rollback.OwnedUnifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                (int)effectiveWidth,
-                (int)effectiveHeight,
-                effectiveFrameRate,
-                requireP010,
-                settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                settings.MjpegDecoderCount).ConfigureAwait(false);
+                width: (int)effectiveWidth,
+                height: (int)effectiveHeight,
+                fps: effectiveFrameRate,
+                requireP010: requireP010,
+                requestedPixelFormat: settings.RequestedPixelFormat,
+                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             rollback.OwnedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             TryApplySharedPreviewDevice(rollback.OwnedUnifiedVideoCapture, _isVideoPreviewActive ? _videoPipeline.PreviewFrameSink : null);
             unifiedVideoCapture = rollback.OwnedUnifiedVideoCapture;
@@ -488,7 +499,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 staleProgramCapture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log("RECORDING_AUDIO_CAPTURE_REPLACED reason=terminal_preview_worker");
@@ -501,7 +511,7 @@ public partial class CaptureService
             rollback.OwnedWasapiAudioCapture = new WasapiAudioCapture();
             await rollback.OwnedWasapiAudioCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
             rollback.OwnedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-            rollback.OwnedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.AttachCaptureFailure(rollback.OwnedWasapiAudioCapture, "program", OnWasapiCaptureFailed);
             _previewAudioGraph.ProgramCapture = rollback.OwnedWasapiAudioCapture;
             await rollback.OwnedWasapiAudioCapture.StartAndWaitForRecordingReadyAsync(transitionToken).ConfigureAwait(false);
         }
@@ -524,7 +534,7 @@ public partial class CaptureService
             var micCapture = new WasapiAudioCapture();
             await micCapture.InitializeAsync(microphoneDeviceId, transitionToken).ConfigureAwait(false);
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.AttachCaptureFailure(micCapture, "microphone", OnWasapiCaptureFailed);
             _previewAudioGraph.MicrophoneCapture = micCapture;
             await micCapture.StartAndWaitForRecordingReadyAsync(transitionToken).ConfigureAwait(false);
             Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
@@ -618,7 +628,6 @@ public partial class CaptureService
         _activeRecordingRecoveryJournalPath = RecordingFinalizationRecoveryArtifacts.BeginActive(
             recordingContext.FinalOutputPath,
             recordingContext.VideoOutputPath,
-            recordingContext.AudioTempPath,
             string.IsNullOrWhiteSpace(artifactDirectory)
                 ? Array.Empty<string>()
                 : new[] { artifactDirectory });
@@ -838,7 +847,7 @@ public partial class CaptureService
                 fallbackOutputPath,
                 statusMessage,
                 preservedArtifacts,
-                "recording-finalization-unresolved"),
+                RecordingFailureCodes.FinalizationUnresolved),
             _recordingBackend.Context);
         PublishRecordingFinalizedOutcome(unresolvedResult, updateOutputPath: false);
     }
@@ -1030,7 +1039,7 @@ public partial class CaptureService
                 result.OutputPath,
                 "Recording failed (finalization context was unavailable for verification)",
                 result.PreservedArtifacts,
-                "recording-verification-context-missing",
+                RecordingFailureCodes.VerificationContextMissing,
                 result.CleanupPending,
                 result.RecoveryPath,
                 verificationCompleted: false,
@@ -1111,7 +1120,7 @@ public partial class CaptureService
             ? "Recording failed (WASAPI audio capture faulted)."
             : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFault.Message})";
         Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
-        return result.AsFailure(statusMessage, "recording-audio-capture-failed");
+        return result.AsFailure(statusMessage, RecordingFailureCodes.AudioCaptureFailed);
     }
 
     private FinalizeResult FoldRequestedMicrophoneIntegrityIntoFinalizeResult(
@@ -1141,7 +1150,7 @@ public partial class CaptureService
         Logger.Log(
             $"RECORDING_MICROPHONE_INTEGRITY_FAIL samples={recordedSamples} " +
             $"drops={droppedPackets} discontinuities={microphoneDiscontinuities}");
-        return result.AsFailure(reason, "recording-microphone-integrity-failed");
+        return result.AsFailure(reason, RecordingFailureCodes.MicrophoneIntegrityFailed);
     }
 
     private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(
@@ -1173,7 +1182,7 @@ public partial class CaptureService
             $"discontinuities={audioCounters.AudioDiscontinuities} " +
             $"timestamp_errors={audioCounters.AudioTimestampErrors} " +
             $"callback_gaps={audioCounters.AudioCallbackGaps}");
-        return result.AsFailure(reason, "recording-program-audio-integrity-failed");
+        return result.AsFailure(reason, RecordingFailureCodes.ProgramAudioIntegrityFailed);
     }
 
     private FinalizeResult FoldRecordedRuntimeFailureIntoFinalizeResult(FinalizeResult result)
@@ -1198,7 +1207,7 @@ public partial class CaptureService
         Logger.Log(
             "RECORDING_RUNTIME_FAILURE_FOLDED " +
             $"type='{failureType}' message='{failureMessage}'");
-        return result.AsFailure($"Recording failed ({failureType}: {failureMessage})", "recording-runtime-failed");
+        return result.AsFailure($"Recording failed ({failureType}: {failureMessage})", RecordingFailureCodes.RuntimeFailed);
     }
 
     private void PublishLibAvRecordingIntegrity(
@@ -1882,7 +1891,7 @@ public partial class CaptureService
     {
         _recordingStopwatch.Stop();
         _isRecording = false;
-        if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
+        if (!_isVideoPreviewActive) await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
         _recordingBackend.ClearContextAndSettings();
         _mfConvertersDisabled = false;
     }
@@ -1913,7 +1922,11 @@ public partial class CaptureService
                 Logger.Log($"Unified video recording stop failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video recording stop failed: {ex.Message}");
+                    result = FinalizeResult.Failure(
+                        fallbackOutputPath,
+                        $"Unified video recording stop failed: {ex.Message}",
+                        null,
+                        RecordingFailureCodes.UnifiedStopFailed);
                 }
             }
             finally
@@ -2026,7 +2039,11 @@ public partial class CaptureService
             Logger.Log($"Recording sink stop failed: {ex.Message}");
             if (result.Succeeded)
             {
-                result = FinalizeResult.Failure(fallbackOutputPath, $"Recording stop failed: {ex.Message}");
+                result = FinalizeResult.Failure(
+                    fallbackOutputPath,
+                    $"Recording stop failed: {ex.Message}",
+                    null,
+                    RecordingFailureCodes.StopFailed);
             }
         }
         finally
@@ -2048,7 +2065,7 @@ public partial class CaptureService
                 Logger.Log($"Recording sink dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = result.AsFailure($"Recording dispose failed: {ex.Message}", "recording-sink-dispose-failed");
+                    result = result.AsFailure($"Recording dispose failed: {ex.Message}", RecordingFailureCodes.SinkDisposeFailed);
                 }
             }
         }
@@ -2083,6 +2100,7 @@ public partial class CaptureService
             return new LibAvFinalizeStepResult(result, cancellationException);
         }
 
+        await StopPreviewRendererBeforeCaptureCleanupAsync(CancellationToken.None).ConfigureAwait(false);
         var unifiedVideoCapture = _videoPipeline.TakeCapture();
         if (unifiedVideoCapture != null)
         {
@@ -2125,7 +2143,7 @@ public partial class CaptureService
                             fallbackOutputPath,
                             "Recording failed because the video capture worker did not stop within the finalization deadline; cleanup continues in quarantine.",
                             result.PreservedArtifacts,
-                            "recording-video-capture-cleanup-timeout",
+                            RecordingFailureCodes.VideoCaptureCleanupTimeout,
                             cleanupPending: true,
                             recoveryPath: result.RecoveryPath,
                             verificationCompleted: result.VerificationCompleted,
@@ -2139,7 +2157,7 @@ public partial class CaptureService
                 Logger.Log($"Unified video capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = result.AsFailure($"Unified video capture dispose failed: {ex.Message}", "recording-video-capture-dispose-failed");
+                    result = result.AsFailure($"Unified video capture dispose failed: {ex.Message}", RecordingFailureCodes.VideoCaptureDisposeFailed);
                 }
             }
         }
@@ -2149,7 +2167,6 @@ public partial class CaptureService
         _previewAudioGraph.DetachCapture(
             capture,
             OnWasapiAudioLevelUpdated,
-            OnWasapiCaptureFailed,
             _flashbackBackend.PlaybackController);
         if (capture != null)
         {
@@ -2185,7 +2202,7 @@ public partial class CaptureService
                         fallbackOutputPath,
                         "Recording failed because the program-audio worker did not stop within the emergency deadline; cleanup continues in quarantine.",
                         result.PreservedArtifacts,
-                        "recording-program-audio-cleanup-timeout",
+                        RecordingFailureCodes.ProgramAudioCleanupTimeout,
                         cleanupPending: true,
                         recoveryPath: result.RecoveryPath,
                         verificationCompleted: result.VerificationCompleted,
@@ -2198,7 +2215,7 @@ public partial class CaptureService
                 Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
                 if (cancellationException == null && result.Succeeded)
                 {
-                    result = result.AsFailure($"Recording WASAPI capture dispose failed: {ex.Message}", "recording-program-audio-dispose-failed");
+                    result = result.AsFailure($"Recording WASAPI capture dispose failed: {ex.Message}", RecordingFailureCodes.ProgramAudioDisposeFailed);
                 }
             }
         }
@@ -2377,7 +2394,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 rollback.OwnedWasapiAudioCapture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             _previewAudioGraph.ProgramCapture = null;
         }
@@ -2515,5 +2531,15 @@ public partial class CaptureService
         public bool FlashbackRecordingBackendLeaseHeld { get; set; }
 
         public bool SinkAttachedForAudioOnly { get; set; }
+
+        // Clears the handles a successful start has handed off, so rollback on a
+        // later failure path no longer tears down resources the caller now owns.
+        public void Commit()
+        {
+            LibAvSink = null;
+            RecordingSink = null;
+            OwnedWasapiAudioCapture = null;
+            OwnedUnifiedVideoCapture = null;
+        }
     }
 }

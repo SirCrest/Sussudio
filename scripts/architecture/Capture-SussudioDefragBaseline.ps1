@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Captures a lightweight Sussudio defragmentation baseline.
 
@@ -40,6 +40,7 @@ function Get-InputFingerprint {
 function Test-ExcludedPath {
     param([string]$Path)
     $parts = $Path -split '[\\/]'
+    if (@($parts | Where-Object { $_ -like '.desloppify.bak.*' }).Count -gt 0) { return $true }
     foreach ($dir in $excludeDirs) {
         if ($parts -contains $dir) { return $true }
     }
@@ -97,8 +98,20 @@ function Convert-ToRepoPath {
 
 $beforeStatus = Get-RepositoryStatusSnapshot $Root
 
-$allCs = Get-ChildItem -LiteralPath $Root -Recurse -Filter *.cs -File |
-    Where-Object { -not (Test-ExcludedPath $_.FullName) }
+# Prune excluded directories during the walk. Recursing first and filtering after
+# descends into tool-local state such as .desloppify, where an unreadable directory
+# aborts the whole enumeration.
+function Get-BaselineSourceFile {
+    param([string]$Directory)
+
+    Get-ChildItem -LiteralPath $Directory -Filter *.cs -File -ErrorAction SilentlyContinue
+    foreach ($child in Get-ChildItem -LiteralPath $Directory -Directory -ErrorAction SilentlyContinue) {
+        if (Test-ExcludedPath $child.FullName) { continue }
+        Get-BaselineSourceFile $child.FullName
+    }
+}
+
+$allCs = @(Get-BaselineSourceFile $Root)
 $capturedInputs = @($allCs | ForEach-Object { Get-CapturedSourceInput $_ })
 $beforeFingerprint = Get-InputFingerprint $capturedInputs
 
@@ -215,8 +228,7 @@ if ($beforeStatus -cne $afterStatus) {
     throw "Repository changed while capturing baseline; discard this run and retry from a stable tree."
 }
 
-$afterCs = Get-ChildItem -LiteralPath $Root -Recurse -Filter *.cs -File |
-    Where-Object { -not (Test-ExcludedPath $_.FullName) }
+$afterCs = @(Get-BaselineSourceFile $Root)
 $afterInputs = @($afterCs | ForEach-Object { Get-CapturedSourceInput $_ })
 $afterFingerprint = Get-InputFingerprint $afterInputs
 if ($beforeFingerprint -cne $afterFingerprint) {

@@ -2894,6 +2894,51 @@ public sealed class CaptureConfigurationModelsTests
         Assert.Equal(new[] { "Auto", "NV12", "MJPG", "P010" }, videoOptions);
     }
 
+    [Theory]
+    [InlineData(null, 1080, 1280u, 1024u, true)]
+    [InlineData(1920, null, 1280u, 1024u, true)]
+    [InlineData(0, 1080, 1280u, 1024u, true)]
+    [InlineData(1920, 0, 1280u, 1024u, true)]
+    [InlineData(-1920, 1080, 1280u, 1024u, true)]
+    [InlineData(1920, 1080, 0u, 1024u, true)]
+    [InlineData(1920, 1080, 1280u, 0u, true)]
+    [InlineData(1920, 1080, 3840u, 2160u, true)]
+    [InlineData(1920, 1080, 3840u, 2159u, false)]
+    [InlineData(65536, 1, 65536u, 65537u, false)]
+    [InlineData(int.MaxValue, int.MaxValue - 1, 4294967294u, 4294967292u, true)]
+    [InlineData(int.MaxValue, int.MaxValue - 1, 4294967294u, 4294967293u, false)]
+    [InlineData(int.MaxValue, int.MaxValue, uint.MaxValue, uint.MaxValue, true)]
+    public void CaptureModeOptionsBuilder_PreservesAspectRatioBoundaryBehavior(
+        int? sourceWidth,
+        int? sourceHeight,
+        uint optionWidth,
+        uint optionHeight,
+        bool expectedIncluded)
+    {
+        var asm = SussudioAssembly.Load();
+        var builderType = RequireType(asm, "Sussudio.ViewModels.CaptureModeOptionsBuilder");
+        var mediaFormatType = RequireType(asm, "Sussudio.Models.MediaFormat");
+        var telemetryType = RequireType(asm, "Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var buildResolutionOptions = RequireMethod(builderType, "BuildResolutionOptions", ReflectionFlags.Static);
+        var formatsByResolution = CreateResolutionFormatDictionary(mediaFormatType);
+        AddResolutionFormats(
+            formatsByResolution,
+            mediaFormatType,
+            "candidate",
+            CreateMediaFormat(mediaFormatType, optionWidth, optionHeight, 60, "NV12", isHdr: false));
+        var telemetry = CreateInstance(telemetryType);
+        Set(telemetry, "Width", sourceWidth);
+        Set(telemetry, "Height", sourceHeight);
+
+        var options = ((IEnumerable)buildResolutionOptions.Invoke(
+                null,
+                new object?[] { formatsByResolution, false, false, telemetry })!)
+            .Cast<object>()
+            .ToArray();
+
+        Assert.Equal(expectedIncluded, options.Length == 1);
+    }
+
     [Fact]
     public void DeviceModeSupportPolicy_AppliesElgato4KXHdrUsbLimits()
     {
@@ -2951,7 +2996,6 @@ public sealed class CaptureConfigurationModelsTests
         var videoQualityType = RequireType(asm, "Sussudio.Models.VideoQuality");
         var hdrOutputModeType = RequireType(asm, "Sussudio.Models.HdrOutputMode");
         var previewModeType = RequireType(asm, "Sussudio.Models.PreviewMode");
-        var audioPathModeType = RequireType(asm, "Sussudio.Models.AudioPathMode");
         var splitEncodeSupportType = RequireType(asm, "Sussudio.Models.SplitEncodeSupport");
         var nvencPresetType = RequireType(asm, "Sussudio.Models.NvencPreset");
         var splitEncodeModeType = RequireType(asm, "Sussudio.Models.SplitEncodeMode");
@@ -2994,7 +3038,6 @@ public sealed class CaptureConfigurationModelsTests
                 Property("MicrophoneEnabled", typeof(bool), SetterExpectation.Set),
                 String("MicrophoneDeviceId", SetterExpectation.Set, NullabilityExpectation.Nullable),
                 String("MicrophoneDeviceName", SetterExpectation.Set, NullabilityExpectation.Nullable),
-                Property("AudioPathMode", audioPathModeType, SetterExpectation.Set),
                 Property("ForceMjpegDecode", typeof(bool), SetterExpectation.Set),
                 Property("FlashbackGpuDecode", typeof(bool), SetterExpectation.Set),
                 Property("FlashbackBufferMinutes", typeof(int), SetterExpectation.Set),
@@ -3027,7 +3070,6 @@ public sealed class CaptureConfigurationModelsTests
         Assert.True(Get<bool>(settings, "AudioEnabled"));
         Assert.False(Get<bool>(settings, "UseCustomAudioInput"));
         Assert.False(Get<bool>(settings, "MicrophoneEnabled"));
-        Assert.Equal(ParseEnum(asm, "Sussudio.Models.AudioPathMode", "PostMuxDefault"), Get(settings, "AudioPathMode"));
         Assert.False(Get<bool>(settings, "ForceMjpegDecode"));
         Assert.True(Get<bool>(settings, "FlashbackGpuDecode"));
         Assert.Equal(5, Get<int>(settings, "FlashbackBufferMinutes"));
@@ -3269,6 +3311,24 @@ public sealed class CaptureConfigurationModelsTests
         Assert.Equal(1d, (double)clampCustomBitrate.Invoke(null, new object?[] { -5d })!);
         Assert.Equal(42d, (double)clampCustomBitrate.Invoke(null, new object?[] { 42d })!);
         Assert.Equal(300d, (double)clampCustomBitrate.Invoke(null, new object?[] { 999d })!);
+    }
+
+    [Fact]
+    public void MediaFormat_OwnershipFollowsCaptureWhileCodecMappingStaysWithRecording()
+    {
+        var captureModels = RuntimeContractSource.ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs");
+        var recordingModels = RuntimeContractSource.ReadRepoFile("Sussudio/Models/Recording/RecordingModels.cs");
+
+        Assert.Contains("public class MediaFormat", captureModels);
+        Assert.DoesNotContain("public class MediaFormat", recordingModels);
+        Assert.DoesNotContain("MapNvencCodecName", captureModels);
+        Assert.Contains("public sealed class EncoderSupport", recordingModels);
+
+        var assembly = SussudioAssembly.Load();
+        var mediaFormatType = RequireType(assembly, "Sussudio.Models.MediaFormat");
+        var encoderSupportType = RequireType(assembly, "Sussudio.Models.EncoderSupport");
+        Assert.Null(mediaFormatType.GetMethod("MapNvencCodecName", ReflectionFlags.Static));
+        Assert.NotNull(encoderSupportType.GetMethod("MapNvencCodecName", ReflectionFlags.Static));
     }
 
     [Fact]
@@ -3514,7 +3574,7 @@ public class StatsPresentationTests
     public void DockEncoderPresentation_FormatsCodecAndBitrate()
     {
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var snapshotType = RequireType("Sussudio.ViewModels.StatsSnapshot");
         var buildDockPresentation = builderType.GetMethod("BuildDockPresentation", ReflectionFlags.Static)
             ?? throw new InvalidOperationException("BuildDockPresentation was not found.");
 
@@ -3563,7 +3623,7 @@ public class StatsPresentationTests
     public void WindowPresentation_FormatsDetachedWindowText()
     {
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var snapshotType = RequireType("Sussudio.ViewModels.StatsSnapshot");
         var buildWindowPresentation = builderType.GetMethod("BuildStatsWindowPresentation", ReflectionFlags.Static)
             ?? throw new InvalidOperationException("BuildStatsWindowPresentation was not found.");
 
@@ -3630,7 +3690,7 @@ public class StatsPresentationTests
     public void VisualPresentation_TreatsExpectedDisplayRepeatAsGood()
     {
         var builderType = RequireType("Sussudio.ViewModels.StatsPresentationBuilder");
-        var snapshotType = RequireType("Sussudio.StatsSnapshot");
+        var snapshotType = RequireType("Sussudio.ViewModels.StatsSnapshot");
         var buildDockPresentation = builderType.GetMethod("BuildDockPresentation", ReflectionFlags.Static)
             ?? throw new InvalidOperationException("BuildDockPresentation was not found.");
 
@@ -3839,28 +3899,27 @@ public class StatsPresentationTests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ExtractTextBetween(
             statsOverlayCompositionText,
-            "internal sealed class StatsDockControllerGraphContext",
-            "internal sealed class StatsDockRefreshControllerContext");
+            "internal sealed class StatsOverlayCompositionController : IDisposable",
+            "internal enum StatsDockSimpleRowPool");
         var refreshControllerText = statsOverlayCompositionText;
         var controllerText = refreshControllerText;
 
-        AssertContains(statsOverlayCompositionText, "private readonly StatsDockControllerGraph _statsDockControllerGraph;");
-        AssertContains(statsOverlayCompositionText, "private StatsDockControllerGraph CreateDockControllerGraph(");
-        AssertContains(statsDockCompositionText, "internal sealed class StatsDockControllerGraphContext");
-        AssertContains(statsDockCompositionText, "var statsDockPresentationController = CreatePresentationController(context);");
-        AssertContains(statsDockCompositionText, "_refreshController = CreateRefreshController(");
-        AssertContains(statsDockCompositionText, "private static StatsDockPresentationController CreatePresentationController(");
-        AssertContains(statsDockCompositionText, "private static StatsDockRefreshController CreateRefreshController(");
-        AssertContains(statsDockCompositionText, "internal sealed class StatsDockControllerGraph");
-        AssertContains(statsDockCompositionText, "public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)");
-        AssertContains(statsDockCompositionText, "public void RefreshDiagnosticsSection()");
-        AssertOccursBefore(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);", "_statsDockControllerGraph = CreateDockControllerGraph(context);");
-        AssertOccursBefore(statsOverlayCompositionText, "_statsDockControllerGraph = CreateDockControllerGraph(context);", "_statsOverlayController = CreateOverlayController(context);");
-        AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = CreatePresentationController(context);", "var statsDockRowChromeController = CreateRowChromeController(context);");
+        AssertContains(statsOverlayCompositionText, "private readonly StatsDockRefreshController _statsDockRefreshController;");
+        AssertContains(statsOverlayCompositionText, "private StatsDockRefreshController CreateDockRefreshController(");
+        AssertDoesNotContain(statsOverlayCompositionText, "StatsDockControllerGraph");
+        AssertContains(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);");
+        AssertContains(statsDockCompositionText, "return CreateRefreshController(");
+        AssertDoesNotContain(statsDockCompositionText, "CreatePresentationController(");
+        AssertContains(statsDockCompositionText, "private StatsDockRefreshController CreateRefreshController(");
+        AssertDoesNotContain(statsDockCompositionText, "public void RefreshDock(");
+        AssertDoesNotContain(statsDockCompositionText, "public void RefreshDiagnosticsSection()");
+        AssertOccursBefore(statsOverlayCompositionText, "_frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);", "_statsDockRefreshController = CreateDockRefreshController(context);");
+        AssertOccursBefore(statsOverlayCompositionText, "_statsDockRefreshController = CreateDockRefreshController(context);", "_statsOverlayController = CreateOverlayController(context);");
+        AssertOccursBefore(statsDockCompositionText, "var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);", "var statsDockRowChromeController = CreateRowChromeController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDockRowChromeController = CreateRowChromeController(context);", "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);", "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
-        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = CreateHardwareRowsController(", "_refreshController = CreateRefreshController(");
+        AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsController = CreateHardwareRowsController(", "return CreateRefreshController(");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshControllerContext");
         AssertContains(refreshControllerText, "internal sealed class StatsDockRefreshController");
         AssertContains(refreshControllerText, "public required Func<bool> IsStatsDockVisible { get; init; }");
@@ -3874,7 +3933,8 @@ public class StatsPresentationTests
         AssertContains(refreshControllerText, "_context.HardwareRowsController.UpdateGpuSection();");
         AssertContains(refreshControllerText, "StatsPresentationBuilder.BuildDiagnosticRows(telemetryDetails, diagnosticSummary)");
         AssertContains(refreshControllerText, "if (!_context.IsDiagnosticsSectionVisible())");
-        AssertContains(controllerText, "internal sealed class StatsDockPresentationControllerContext");
+        AssertDoesNotContain(controllerText, "StatsDockPresentationControllerContext");
+        AssertContains(controllerText, "public StatsDockPresentationController(StatsOverlayDockTargetsContext context)");
         AssertContains(controllerText, "internal sealed class StatsDockPresentationController");
         AssertContains(controllerText, "public void Apply(StatsDockPresentation presentation)");
         AssertContains(controllerText, "SetTextIfChanged(_context.SessionStateValue, presentation.SessionState);");
@@ -3898,10 +3958,10 @@ public class StatsPresentationTests
         AssertDoesNotContain(statsOverlayText, "private void UpdateDiagnosticsSection(");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.Contexts.cs")),
-            "stats dock graph context folded into StatsOverlayCompositionController.cs");
+            "stats dock factories use the existing overlay composition context");
         Assert.False(
             File.Exists(Path.Combine(FindRepoRoot(), "Sussudio", "Controllers", "Stats", "StatsDockControllerGraph.cs")),
-            "stats dock graph folded into StatsOverlayCompositionController.cs");
+            "stats dock refresh has no runtime graph wrapper");
     }
 
     [Fact]
@@ -3911,8 +3971,8 @@ public class StatsPresentationTests
         var statsOverlayCompositionText = ReadRepoFile("Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs").Replace("\r\n", "\n");
         var statsDockCompositionText = ExtractTextBetween(
             statsOverlayCompositionText,
-            "internal sealed class StatsDockControllerGraphContext",
-            "internal sealed class StatsDockRefreshControllerContext");
+            "internal sealed class StatsOverlayCompositionController : IDisposable",
+            "internal enum StatsDockSimpleRowPool");
         var mainWindowText = MainWindowCompositionSource.Read();
         var statsDockRowsText = statsOverlayCompositionText;
         var controllerText = statsDockRowsText;
@@ -3937,13 +3997,13 @@ public class StatsPresentationTests
         AssertContains(statsDockCompositionText, "private static StatsDiagnosticRowsController CreateDiagnosticRowsController(");
         AssertContains(statsDockCompositionText, "private static StatsDockRowChromeController CreateRowChromeController(");
         AssertContains(statsDockCompositionText, "private static StatsHardwareRowsController CreateHardwareRowsController(");
-        AssertContains(statsDockCompositionText, "ResourceOwner = context.StatsDockPanel");
-        AssertContains(statsDockCompositionText, "DiagnosticsContent = context.DiagnosticsContent");
+        AssertContains(statsDockCompositionText, "ResourceOwner = context.Shell.StatsDockPanel");
+        AssertContains(statsDockCompositionText, "DiagnosticsContent = context.DockTargets.DiagnosticsContent");
         AssertContains(statsDockCompositionText, "RowChromeController = statsDockRowChromeController");
         AssertContains(statsDockCompositionText, "private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(");
-        AssertContains(statsDockCompositionText, "GetMjpegPipelineTimingDetails = context.GetMjpegPipelineTimingDetails,");
-        AssertContains(statsDockCompositionText, "GetPendingPreviewFrameCount = context.GetPendingPreviewFrameCount,");
-        AssertContains(statsDockCompositionText, "GetNvmlSnapshot = context.GetNvmlSnapshot");
+        AssertContains(statsDockCompositionText, "GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,");
+        AssertContains(statsDockCompositionText, "GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,");
+        AssertContains(statsDockCompositionText, "GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot");
         AssertContains(statsDockCompositionText, "InputProvider = statsHardwareRowsInputProvider");
         AssertOccursBefore(statsDockCompositionText, "var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);", "var statsHardwareRowsController = CreateHardwareRowsController(");
         AssertDoesNotContain(statsDockCompositionText, "GetDecodeRowsInput = () =>");
@@ -4385,8 +4445,8 @@ public class StatsHardwareRowsTests
 
     private static object CreateStatsHardwarePipelineTimingMetrics(int decoderCount = 2)
     {
-        var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
-        var perDecoderType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
+        var metricsType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var perDecoderType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+PerDecoderMetrics");
         var perDecoder = Array.CreateInstance(perDecoderType, decoderCount);
         if (decoderCount > 0)
         {

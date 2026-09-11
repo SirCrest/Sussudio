@@ -1,0 +1,380 @@
+[
+  {
+    "Name": "av1-video.mp4",
+    "Length": 3159,
+    "Sha256": "BD0D480B7EE5DB19AAEAE007EDE944838326B05CBA2516E2E34CF45834526F47",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "av1",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "empty.mp4",
+    "Length": 0,
+    "Sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Metadata": null
+  },
+  {
+    "Name": "garbage.mp4",
+    "Length": 30,
+    "Sha256": "FB4C73292D2E2D2884C977CE4BAFB411B5ECDFC38591F8B16499989851761C40",
+    "Metadata": null
+  },
+  {
+    "Name": "h264-audio-long-boundary.mp4",
+    "Length": 14998,
+    "Sha256": "860634022E17EC184E9397A1CDFD1FD585EAD7BD15492A6E06F26D1190DDE789",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "2.500000",
+          "nb_frames": "119"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-audio-short-boundary.mp4",
+    "Length": 10541,
+    "Sha256": "C043D79DD6CAE14606F79C83B810231C7FADF06DE04AE2CAC5287B649DB2775E",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "1.500000",
+          "nb_frames": "72"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-audio-too-long.mp4",
+    "Length": 15102,
+    "Sha256": "A130EDD7C316CA1AD68930259FA1191F4BF79C920AF5CABB23F6FF6FB4942E3C",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "2.520000",
+          "nb_frames": "120"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-audio-too-short.mp4",
+    "Length": 10475,
+    "Sha256": "E5ED5EBB0DDA882860BC6F431CCC71BC0D7A10FC03DBCEC0ABA2A18C7BF96795",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "1.480000",
+          "nb_frames": "71"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-cap-boundary.mp4",
+    "Length": 31032,
+    "Sha256": "A0B50B6E96E839AA594B988166BF06FCD44CB0114F85FDAB158289134ED6FB89",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "42.000000",
+          "nb_frames": "2100"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-dual.mp4",
+    "Length": 22256,
+    "Sha256": "DF41C15226CEE0A1B2D020F9C94A379EF2FC5892DCC5CA970E5393977CB902D7",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "2.000000",
+          "nb_frames": "95"
+        },
+        {
+          "index": 2,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "2.000000",
+          "nb_frames": "95"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-floor-boundary.mp4",
+    "Length": 1534,
+    "Sha256": "D396D03992D048A05A77C106D75057D70FE7B226F2A0501850F9368D3C3D12A3",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "0.100000",
+          "nb_frames": "5"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-percent-boundary.mp4",
+    "Length": 8135,
+    "Sha256": "563764C63EB73D6D7B8B0AC810B5F2B8A2C4F94AA71FB308BEB617616E6A6D3C",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "9.500000",
+          "nb_frames": "475"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-program.mp4",
+    "Length": 12881,
+    "Sha256": "D4F3CD8C74A3A50E7546180F3168D8E4E7D73B521243F95CFA30368AD9E103B8",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        },
+        {
+          "index": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "time_base": "1/48000",
+          "duration": "2.000000",
+          "nb_frames": "95"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "h264-video.mp4",
+    "Length": 2864,
+    "Sha256": "1BCC08BE22651F602CFEDAA95767B8AEEC0C9F28ACC3BFED062D0F471CA979EA",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "header-without-packets.mp4",
+    "Length": 1248,
+    "Sha256": "DA8B5D6AD078391F435BBF6C5630FE41A02DDEF8BF3D373235550983643A0BEF",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "hevc-hdr-explicit.mp4",
+    "Length": 6120,
+    "Sha256": "FF1EFE9CEA4410058DE32672BB3FE1B681B69ACF3B12877B7B173FDA4E7FC75B",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p10le",
+          "color_space": "bt2020nc",
+          "color_transfer": "smpte2084",
+          "color_primaries": "bt2020",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        }
+      ]
+    }
+  },
+  {
+    "Name": "hevc-sdr.mp4",
+    "Length": 6116,
+    "Sha256": "9ADC7CBE2674F5E5159A2FCFFCB9C6A1F5B31D4AE2008F707483CA5ADF967B6D",
+    "Metadata": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "index": 0,
+          "codec_name": "hevc",
+          "codec_type": "video",
+          "width": 64,
+          "height": 64,
+          "pix_fmt": "yuv420p10le",
+          "time_base": "1/12800",
+          "duration": "2.000000",
+          "nb_frames": "100"
+        }
+      ]
+    }
+  }
+]

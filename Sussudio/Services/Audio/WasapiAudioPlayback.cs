@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -206,16 +206,16 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 desiredFormat,
                 out var closestMatch);
 
+            if (closestMatch != IntPtr.Zero)
+            {
+                WasapiComInterop.CoTaskMemFree(closestMatch);
+                closestMatch = IntPtr.Zero;
+            }
+
             string formatMode;
             bool initialized;
             if (hr == WasapiComInterop.S_OK)
             {
-                if (closestMatch != IntPtr.Zero)
-                {
-                    WasapiComInterop.CoTaskMemFree(closestMatch);
-                    closestMatch = IntPtr.Zero;
-                }
-
                 initialized = WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat);
                 if (!initialized)
                 {
@@ -234,12 +234,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
             }
             else
             {
-                if (closestMatch != IntPtr.Zero)
-                {
-                    WasapiComInterop.CoTaskMemFree(closestMatch);
-                    closestMatch = IntPtr.Zero;
-                }
-
                 const uint autoConvertFlags =
                     WasapiComInterop.AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM |
                     WasapiComInterop.AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
@@ -348,7 +342,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioPlayback.InitializeAsync: {ex.Message}");
+            Logger.Log($"Cleaning up and rethrowing from WasapiAudioPlayback.InitializeAsync: {ex.Message}");
             renderEvent?.Dispose();
             WasapiComInterop.ReleaseComObject(ref audioRenderClient);
             WasapiComInterop.ReleaseComObject(ref audioClient3);
@@ -416,7 +410,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioPlayback.Start: {ex.Message}");
+            Logger.Log($"Cleaning up and rethrowing from WasapiAudioPlayback.Start: {ex.Message}");
             Interlocked.Exchange(ref _started, 0);
             if (_renderThread?.IsAlive != true)
             {

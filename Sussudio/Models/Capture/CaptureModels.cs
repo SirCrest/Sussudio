@@ -86,12 +86,6 @@ public sealed class AudioLevelEventArgs : EventArgs
     public bool Clipped { get; }
 }
 
-// Recording/monitoring audio topology reported in diagnostics.
-public enum AudioPathMode
-{
-    PostMuxDefault
-}
-
 // Bounded audio-transition trace returned through automation for stutter/ramp
 // investigations.
 public sealed class AudioRampTraceSnapshot
@@ -163,7 +157,6 @@ public class CaptureSettings
     public bool MicrophoneEnabled { get; set; }
     public string? MicrophoneDeviceId { get; set; }
     public string? MicrophoneDeviceName { get; set; }
-    public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public bool ForceMjpegDecode { get; set; }
     public bool FlashbackGpuDecode { get; set; } = true;
     public int FlashbackBufferMinutes { get; set; } = 5;
@@ -267,7 +260,9 @@ public static class NvencPresetParser
     {
         if (string.IsNullOrWhiteSpace(value))
             return NvencPreset.Auto;
-        return Enum.TryParse<NvencPreset>(value, ignoreCase: true, out var result) ? result : NvencPreset.Auto;
+        return Enum.TryParse<NvencPreset>(value, ignoreCase: true, out var result) && Enum.IsDefined(result)
+            ? result
+            : NvencPreset.Auto;
     }
 }
 
@@ -284,7 +279,9 @@ public static class SplitEncodeModeParser
         if (string.Equals(value, "3-way", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(value, "3", StringComparison.OrdinalIgnoreCase))
             return SplitEncodeMode.ThreeWay;
-        return Enum.TryParse<SplitEncodeMode>(value, ignoreCase: true, out var result) ? result : SplitEncodeMode.Auto;
+        return Enum.TryParse<SplitEncodeMode>(value, ignoreCase: true, out var result) && Enum.IsDefined(result)
+            ? result
+            : SplitEncodeMode.Auto;
     }
 
     /// <summary>Returns the wire/UI string for a SplitEncodeMode value.</summary>
@@ -299,6 +296,170 @@ public static class SplitEncodeModeParser
 public sealed record SplitEncodeSupport(bool Supports2Way, bool Supports3Way)
 {
     public static SplitEncodeSupport NvencUnavailable { get; } = new(false, false);
+}
+
+public class MediaFormat
+{
+    private static readonly string[] HdrSubtypeTokens =
+    {
+        "P010",
+        "P016",
+        "I010",
+        "Y210",
+        "Y410",
+        "Y416",
+        "R10G10B10",
+        "XR10"
+    };
+
+    public uint Width { get; set; }
+    public uint Height { get; set; }
+    public double FrameRate { get; set; }
+    public uint FrameRateNumerator { get; set; }
+    public uint FrameRateDenominator { get; set; }
+    public string PixelFormat { get; set; } = string.Empty;
+    public bool IsHdr { get; set; }
+
+    public double FrameRateExact
+    {
+        get
+        {
+            if (FrameRateNumerator > 0 && FrameRateDenominator > 0)
+            {
+                return (double)FrameRateNumerator / FrameRateDenominator;
+            }
+
+            return FrameRate;
+        }
+    }
+
+    public string FrameRateRational =>
+        FrameRateNumerator > 0 && FrameRateDenominator > 0
+            ? $"{FrameRateNumerator}/{FrameRateDenominator}"
+            : string.Empty;
+
+    public string DisplayName
+    {
+        get
+        {
+            var fps = FrameRateExact;
+            var rationalSuffix = string.IsNullOrWhiteSpace(FrameRateRational)
+                ? string.Empty
+                : $" ({FrameRateRational})";
+            return $"{Width}x{Height} @ {fps:0.###}fps{rationalSuffix}{(IsHdr ? " (HDR)" : "")}";
+        }
+    }
+
+    public override string ToString() => DisplayName;
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is MediaFormat other)
+        {
+            var hasRational = FrameRateNumerator > 0 && FrameRateDenominator > 0;
+            var otherHasRational = other.FrameRateNumerator > 0 && other.FrameRateDenominator > 0;
+            var rationalMatches = hasRational && otherHasRational
+                ? FrameRateNumerator == other.FrameRateNumerator &&
+                  FrameRateDenominator == other.FrameRateDenominator
+                : Math.Abs(FrameRateExact - other.FrameRateExact) < 0.01;
+
+            return Width == other.Width &&
+                   Height == other.Height &&
+                   rationalMatches &&
+                   PixelFormat == other.PixelFormat &&
+                   IsHdr == other.IsHdr;
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        if (FrameRateNumerator > 0 && FrameRateDenominator > 0)
+        {
+            return HashCode.Combine(
+                Width,
+                Height,
+                FrameRateNumerator,
+                FrameRateDenominator,
+                PixelFormat,
+                IsHdr);
+        }
+
+        return HashCode.Combine(Width, Height, Math.Round(FrameRateExact, 0), PixelFormat, IsHdr);
+    }
+
+    public static int GetPixelFormatPriority(string? pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return 100;
+        }
+
+        if (pixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (pixelFormat.Equals("YUY2", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (pixelFormat.Equals("MJPG", StringComparison.OrdinalIgnoreCase))
+        {
+            return 2;
+        }
+
+        if (pixelFormat.Equals("BGRA8", StringComparison.OrdinalIgnoreCase) ||
+            pixelFormat.Equals("RGB32", StringComparison.OrdinalIgnoreCase))
+        {
+            return 3;
+        }
+
+        if (IsHdrPixelFormat(pixelFormat))
+        {
+            return 20;
+        }
+
+        return 10;
+    }
+
+    public static bool IsHdrPixelFormat(string? pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return false;
+        }
+
+        foreach (var token in HdrSubtypeTokens)
+        {
+            if (pixelFormat.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return pixelFormat.Contains("BT2020", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("ST2084", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("HDR", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsTrue10BitPixelFormat(string? pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return false;
+        }
+
+        return pixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("P016", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("I010", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("Y210", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("Y410", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("Y416", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("R10G10B10", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("XR10", StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 // Capture device option returned by Media Foundation enumeration.
@@ -357,6 +518,26 @@ public enum CaptureSessionState
     CleaningUp,
     Faulted,
     Disposed
+}
+
+internal enum CaptureErrorOriginKind
+{
+    SessionTransition,
+    AudioCaptureRegistration
+}
+
+internal readonly record struct CaptureErrorOrigin(CaptureErrorOriginKind Kind, long Generation);
+
+public sealed class CaptureErrorEventArgs : EventArgs
+{
+    internal CaptureErrorEventArgs(Exception exception, CaptureErrorOrigin origin)
+    {
+        Exception = exception;
+        Origin = origin;
+    }
+
+    public Exception Exception { get; }
+    internal CaptureErrorOrigin Origin { get; }
 }
 
 /// <summary>

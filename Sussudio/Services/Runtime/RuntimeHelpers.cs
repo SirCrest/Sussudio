@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Sussudio.Services.Runtime;
@@ -171,6 +172,7 @@ internal static class AtomicCounter
 {
     public static bool TryDecrement(ref int target) => TrySubtract(ref target, 1);
 
+    // Callers supply a positive amount; false means the full amount was unavailable.
     public static bool TrySubtract(ref int target, int amount)
     {
         while (true)
@@ -184,9 +186,62 @@ internal static class AtomicCounter
             var next = Math.Max(0, current - amount);
             if (Interlocked.CompareExchange(ref target, next, current) == current)
             {
-                return true;
+                return current >= amount;
             }
         }
+    }
+}
+
+// Bounded-queue admission shared by the recording and flashback encoder sinks.
+// Both sinks publish onto a bounded Channel from a hot capture callback, and both
+// need the same three steps: claim a depth slot, record the high-water mark when
+// the write lands, and give the slot back when the channel refuses. That sequence
+// was open-coded seven times across the two sinks (video, gpu, cuda and audio
+// lanes) and every copy was byte-identical, so a drift in one lane would have been
+// invisible. The rollback stays a caller-supplied delegate because each sink tags
+// its underflow diagnostic with its own log prefix.
+internal static class QueueAdmission
+{
+    // Matches the sinks' own `DecrementQueueDepth(ref int, string)`, so a method
+    // group converts without allocating per call.
+    internal delegate void DepthRollback(ref int depth, string queueName);
+
+    // Video/gpu/cuda lanes: the observed depth feeds the lane's high-water mark.
+    public static bool TryWrite<T>(
+        Channel<T> queue,
+        T packet,
+        ref int depth,
+        ref int maxDepth,
+        string queueName,
+        DepthRollback rollback)
+    {
+        var observed = Interlocked.Increment(ref depth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            AtomicMax.Update(ref maxDepth, observed);
+            return true;
+        }
+
+        rollback(ref depth, $"{queueName}_write_failed");
+        return false;
+    }
+
+    // Audio lanes track depth but no high-water mark.
+    public static bool TryWrite<T>(
+        Channel<T> queue,
+        T packet,
+        ref int depth,
+        string queueName,
+        DepthRollback rollback)
+    {
+        Interlocked.Increment(ref depth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            return true;
+        }
+
+        rollback(ref depth, $"{queueName}_write_failed");
+        return false;
     }
 }
 
@@ -306,6 +361,54 @@ internal static class RingBufferHelpers
         }
 
         return result;
+    }
+}
+
+// Shared join of an encoder sink's background encoding task during dispose.
+// Both sinks keep the first failure so the caller can surface it later; the
+// failure must never escape dispose, and neither sink may block differently
+// from the other. Ownership of the retained exception stays with each sink.
+internal static class EncodingTaskHelpers
+{
+    // Both encoder sinks defer the same drain when the encoding task outlives their
+    // dispose timeout: await it off the dispose path, keep the first failure, then
+    // finalize exactly once. Only the completion tag differs, so the async
+    // exception-handling shape lives here rather than drifting in two copies.
+    public static void DrainDeferred(
+        Task encodingTask,
+        Action<Exception> recordFailure,
+        Action finalize,
+        string completeTag)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await encodingTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                recordFailure(ex);
+            }
+            finally
+            {
+                finalize();
+                Logger.Log(completeTag);
+            }
+        });
+    }
+
+    public static Exception? ObserveCompletion(Task encodingTask)
+    {
+        try
+        {
+            encodingTask.GetAwaiter().GetResult();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            return ex;
+        }
     }
 }
 
@@ -469,6 +572,23 @@ public sealed class ProcessRunResult
     public string StdOut { get; init; } = string.Empty;
     public string StdErr { get; init; } = string.Empty;
     public Exception? StartException { get; init; }
+    public Exception? StdOutReadException { get; init; }
+    public Exception? StdErrReadException { get; init; }
+
+    internal Exception? GetOutputReadFailure()
+    {
+        static IOException Describe(string stream, Exception cause)
+            => new($"{stream} read failed ({cause.GetType().Name}: {cause.Message})", cause);
+
+        var stdoutFailure = StdOutReadException is { } stdout ? Describe("stdout", stdout) : null;
+        var stderrFailure = StdErrReadException is { } stderr ? Describe("stderr", stderr) : null;
+        if (stdoutFailure != null && stderrFailure != null)
+        {
+            return new AggregateException("Process output reads failed.", stdoutFailure, stderrFailure);
+        }
+
+        return stdoutFailure ?? stderrFailure;
+    }
 }
 
 public interface IProcessSupervisor
@@ -574,10 +694,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             var canReadOutputs = process.HasExited;
             var stdout = canReadOutputs
                 ? await TryReadWithTimeoutAsync(stdoutTask, outputReadTimeoutMs)
-                : string.Empty;
+                : (Output: string.Empty, ReadException: (Exception?)null);
             var stderr = canReadOutputs
                 ? await TryReadWithTimeoutAsync(stderrTask, outputReadTimeoutMs)
-                : string.Empty;
+                : (Output: string.Empty, ReadException: (Exception?)null);
 
             if (!canReadOutputs)
             {
@@ -593,8 +713,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
                 ExitConfirmed = process.HasExited,
                 ProcessId = processId,
                 ExitCode = process.HasExited ? process.ExitCode : null,
-                StdOut = stdout,
-                StdErr = stderr
+                StdOut = stdout.Output,
+                StdErr = stderr.Output,
+                StdOutReadException = stdout.ReadException,
+                StdErrReadException = stderr.ReadException
             };
         }
     }
@@ -605,9 +727,29 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         {
             process.Kill(entireProcessTree: true);
         }
-        catch
+        catch (Exception ex) when (!HasExitedSafely(process))
         {
-            // Best-effort - process may have already exited.
+            // An already-exited process is the expected race and stays quiet; a live
+            // one that resisted termination can hold handles and is worth recording.
+            Logger.Log($"PROCESS_KILL_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+        catch (Exception ex)
+        {
+            // The process exited between the kill attempt and the liveness check.
+            Logger.Log($"PROCESS_KILL_RACE_EXITED type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static bool HasExitedSafely(Process process)
+    {
+        try
+        {
+            return process.HasExited;
+        }
+        catch (Exception)
+        {
+            // Treat an unreadable exit state as exited so the filter stays quiet.
+            return true;
         }
     }
 
@@ -665,15 +807,15 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         }
     }
 
-    private static async Task<string> TryReadWithTimeoutAsync(Task<string> readTask, int timeoutMs)
+    private static async Task<(string Output, Exception? ReadException)> TryReadWithTimeoutAsync(Task<string> readTask, int timeoutMs)
     {
         try
         {
-            return await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+            return (await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs)), null);
         }
-        catch
+        catch (Exception ex)
         {
-            return string.Empty;
+            return (string.Empty, ex);
         }
     }
 }

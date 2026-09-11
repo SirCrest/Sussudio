@@ -15,9 +15,10 @@ namespace McpServer.Tools;
 public static class PreviewColorProbeTools
 {
     [McpServerTool, Description("Probe the active preview renderer mode, negotiated subtype, and available color metadata. Reports D3D11 input/output color spaces when available; extended MF attributes are shown only when provided by the active pipeline.")]
-    public static async Task<CallToolResult> probe_preview_color(PipeClient pipeClient)
+    public static async Task<CallToolResult> probe_preview_color(PipeClient pipeClient, CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbePreviewColor).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbePreviewColor, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -139,9 +140,10 @@ public static class PreviewColorProbeTools
 public static class VideoSourceProbeTools
 {
     [McpServerTool, Description("Query the live video source's supported formats during preview. Shows P010/NV12 availability, current format, memory preference, and full format table without starting recording.")]
-    public static async Task<CallToolResult> probe_video_source(PipeClient pipeClient)
+    public static async Task<CallToolResult> probe_video_source(PipeClient pipeClient, CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbeVideoSource).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.ProbeVideoSource, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -222,8 +224,10 @@ public static class PreviewFrameCaptureTools
     [McpServerTool, Description("Capture the next rendered preview frame from the D3D11 swap chain back buffer, save it as BMP or 16-bit RGB PNG, and report frame statistics with diagnosis hints.")]
     public static async Task<CallToolResult> capture_preview_frame(
         PipeClient pipeClient,
-        [Description("Optional output path. Use .png for 16-bit RGB capture; other paths use BMP. Defaults to ./temp/preview_capture.bmp")] string? outputPath = null)
+        [Description("Optional output path. Use .png for 16-bit RGB capture; other paths use BMP. Defaults to ./temp/preview_capture.bmp")] string? outputPath = null,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var effectiveOutputPath = string.IsNullOrWhiteSpace(outputPath)
             ? Path.Combine(Environment.CurrentDirectory, "temp", "preview_capture.bmp")
             : outputPath;
@@ -233,7 +237,7 @@ public static class PreviewFrameCaptureTools
             ["outputPath"] = effectiveOutputPath
         };
 
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CapturePreviewFrame, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Command failed."));
@@ -399,8 +403,10 @@ public static class WindowScreenshotTools
     [McpServerTool, Description("Capture the entire application window (including UI chrome, margins, letterbox areas, and video preview) as a PNG screenshot. Use .bmp extension for uncompressed BMP.")]
     public static async Task<CallToolResult> capture_window_screenshot(
         PipeClient pipeClient,
-        [Description("Optional output path for the screenshot. Use .png (default) for compressed or .bmp for uncompressed.")] string? outputPath = null)
+        [Description("Optional output path for the screenshot. Use .png (default) for compressed or .bmp for uncompressed.")] string? outputPath = null,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var effectiveOutputPath = string.IsNullOrWhiteSpace(outputPath)
             ? Path.Combine(Environment.CurrentDirectory, "temp", "window_screenshot.png")
             : outputPath;
@@ -410,7 +416,7 @@ public static class WindowScreenshotTools
             ["outputPath"] = effectiveOutputPath
         };
 
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.CaptureWindowScreenshot, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Screenshot failed."));

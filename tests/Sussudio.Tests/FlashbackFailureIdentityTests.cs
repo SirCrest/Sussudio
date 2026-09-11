@@ -138,7 +138,7 @@ public sealed class FlashbackFailureIdentityTests
                 .Invoke(_exporter, new object?[]
                 {
                     input, TimeSpan.Zero, TimeSpan.FromSeconds(1), OutputPath,
-                    true, false, null, cancellationToken
+                    true, null, cancellationToken
                 })!;
 
         public void Dispose()

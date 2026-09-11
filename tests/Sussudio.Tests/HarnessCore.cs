@@ -1,6 +1,7 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
@@ -27,6 +28,21 @@ static partial class Program
 
     private static int Main(string[] args)
     {
+        if (Sussudio.Tests.AppProcessStartupTests.TryRunChildProcess(args, out var startupExitCode))
+        {
+            return startupExitCode;
+        }
+
+        if (Sussudio.Tests.NativeFfmpegCapabilitiesTests.TryRunChildProcess(args, out var nativeExitCode))
+        {
+            return nativeExitCode;
+        }
+
+        if (Sussudio.Tests.PresentMonCancellationTests.TryRunChildProcess(args, out var presentMonExitCode))
+        {
+            return presentMonExitCode;
+        }
+
         var assemblyPath = ResolveAssemblyPath(args);
         if (!File.Exists(assemblyPath))
         {
@@ -95,14 +111,25 @@ static partial class Program
     private static string GetToolAssemblyRelativePath(string toolName, string targetFramework, string assemblyName)
         => Path.Combine("tools", toolName, "bin", ActiveTestConfiguration, targetFramework, assemblyName);
 
-    private static string? InferConfigurationFromOutputPath(string path)
+    internal static string? InferConfigurationFromOutputPath(string path)
     {
+        // Output is bin/<Configuration>/<TFM>[/<RID>] without an explicit platform and
+        // bin/<Platform>/<Configuration>/<TFM>[/<RID>] with one, so the first segment under
+        // bin is the configuration only in the former. Anchor on the TFM instead: building
+        // with -p:Platform=x64 otherwise reports "x64" as the configuration and sends every
+        // artifact lookup to a directory no build ever writes.
+        var segmentsFromPath = new List<string>();
         var directory = new DirectoryInfo(path);
         while (directory != null)
         {
+            segmentsFromPath.Add(directory.Name);
             if (directory.Parent?.Name.Equals("bin", StringComparison.OrdinalIgnoreCase) == true)
             {
-                return directory.Name;
+                segmentsFromPath.Reverse();
+                var targetFrameworkIndex = segmentsFromPath.FindIndex(IsTargetFrameworkSegment);
+                return targetFrameworkIndex > 0
+                    ? segmentsFromPath[targetFrameworkIndex - 1]
+                    : segmentsFromPath[0];
             }
 
             directory = directory.Parent;
@@ -110,6 +137,13 @@ static partial class Program
 
         return null;
     }
+
+    private static bool IsTargetFrameworkSegment(string segment)
+        => segment.StartsWith("netstandard", StringComparison.OrdinalIgnoreCase)
+            || segment.StartsWith("netcoreapp", StringComparison.OrdinalIgnoreCase)
+            || (segment.StartsWith("net", StringComparison.OrdinalIgnoreCase)
+                && segment.Length > 3
+                && char.IsDigit(segment[3]));
 
     private enum ConfigSetterExpectation
     {
@@ -268,11 +302,33 @@ static partial class Program
 
     private static void AssertNearlyEqual(double expected, double actual, double tolerance, string fieldName)
     {
-        if (Math.Abs(expected - actual) > tolerance)
+        if (!(Math.Abs(expected - actual) <= tolerance))
         {
             throw new InvalidOperationException(
                 $"Assertion failed for {fieldName}: expected '{expected}', actual '{actual}', tolerance '{tolerance}'.");
         }
+    }
+
+    // The app assembly is loaded reflectively, so the ErrorOccurred argument type
+    // cannot be named here. Bind the observer to whichever event-args type the
+    // loaded assembly declares and hand back the raw exception it carries.
+    internal static Delegate ObserveCaptureErrors(object owner, Action<Exception> observe)
+    {
+        var errorEvent = owner.GetType().GetEvent("ErrorOccurred")
+            ?? throw new InvalidOperationException(
+                $"{owner.GetType().FullName} does not declare an ErrorOccurred event.");
+        var handlerType = errorEvent.EventHandlerType!;
+        var argument = Expression.Parameter(handlerType.GetGenericArguments()[0], "error");
+        var handler = Expression.Lambda(
+                handlerType,
+                Expression.Invoke(
+                    Expression.Constant(observe),
+                    Expression.Property(argument, "Exception")),
+                Expression.Parameter(typeof(object), "sender"),
+                argument)
+            .Compile();
+        errorEvent.AddEventHandler(owner, handler);
+        return handler;
     }
 
     private static void AssertContains(string value, string token)
@@ -826,29 +882,6 @@ static partial class Program
         return source.Substring(startIndex, closeBrace - startIndex + 1);
     }
 
-    private static object BuildRecordingContext(
-        bool usePostMuxAudio,
-        string? videoPath = null,
-        string? audioTempPath = null,
-        string? finalPath = null)
-    {
-        var settings = BuildSettings(hdrEnabled: false);
-        var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
-        var context = RuntimeHelpers.GetUninitializedObject(contextType);
-        SetPropertyBackingField(context, "Settings", settings);
-        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
-        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
-        SetPropertyBackingField(context, "FrameRateArg", "60");
-        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
-        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
-        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
-        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
-        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
-        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
-        SetPropertyBackingField(context, "HdrPipelineActive", false);
-        return context;
-    }
-
     private static object BuildDevice(string id = "device-1")
     {
         var device = CreateInstance("Sussudio.Models.CaptureDevice");
@@ -1145,7 +1178,7 @@ static partial class Program
         SetPrivateField(pipeline, "_decoders", CreateEmptyArrayFieldValue(pipelineType, "_decoders"));
         SetPrivateField(pipeline, "_reorderFrames", Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(
             typeof(long),
-            RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+DecodedFrame")))!);
+            RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline+DecodedFrame")))!);
         SetPrivateField(pipeline, "_knownMissingSequences", new SortedSet<long>());
         SetPrivateField(pipeline, "_reorderLock", new object());
         SetPrivateField(pipeline, "_emitSignal", new AutoResetEvent(false));
@@ -1648,6 +1681,26 @@ static partial class Program
         return process;
     }
 
+    // Stderr has to be consumed or a chatty server fills the pipe buffer and blocks, but the
+    // read is expected to fail once the process is torn down, and this runs unawaited where a
+    // throw would surface as an unobserved task exception instead of a test failure.
+    private static void DrainStandardErrorInBackground(Process process)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
+            }
+            catch (IOException)
+            {
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        });
+    }
+
     private static async Task WriteJsonRpcLineAsync(Process process, string json, CancellationToken cancellationToken)
     {
         await process.StandardInput.WriteLineAsync(CompactJsonLine(json))
@@ -1704,7 +1757,12 @@ static partial class Program
                 process.StandardInput.Close();
             }
         }
-        catch
+        catch (InvalidOperationException)
+        {
+            // Raced with the process exiting between HasExited and Close; the Kill below
+            // still runs, so there is nothing to recover here.
+        }
+        catch (IOException)
         {
         }
 
@@ -1757,7 +1815,7 @@ static partial class Program
     private static async Task<string> InvokeMcpToolStringAsync(Type type, string methodName, params object?[] args)
     {
         var method = ResolveMcpToolMethod(type, methodName, args.Length);
-        var task = method.Invoke(null, args) as Task
+        var task = method.Invoke(null, CompleteMcpToolArguments(method, args)) as Task
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
         await task.ConfigureAwait(false);
         var result = task.GetType().GetProperty("Result")?.GetValue(task)
@@ -1770,7 +1828,7 @@ static partial class Program
     private static async Task<object> InvokeMcpToolResultAsync(Type type, string methodName, params object?[] args)
     {
         var method = ResolveMcpToolMethod(type, methodName, args.Length);
-        var task = method.Invoke(null, args) as Task
+        var task = method.Invoke(null, CompleteMcpToolArguments(method, args)) as Task
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
         await task.ConfigureAwait(false);
         return task.GetType().GetProperty("Result")?.GetValue(task)
@@ -1793,11 +1851,37 @@ static partial class Program
             return matchingMethod;
         }
 
+        matchingMethod = methods.SingleOrDefault(method =>
+        {
+            var parameters = method.GetParameters();
+            return parameters.Length == argumentCount + 1 &&
+                   parameters[^1].ParameterType == typeof(CancellationToken) &&
+                   parameters[^1].IsOptional;
+        });
+        if (matchingMethod != null)
+        {
+            return matchingMethod;
+        }
+
         var shapes = string.Join(
             ", ",
             methods.Select(method => $"{method.Name}({string.Join(", ", method.GetParameters().Select(parameter => parameter.ParameterType.Name))})"));
         throw new InvalidOperationException(
             $"{type.FullName}.{methodName} had no overload accepting {argumentCount} argument(s). Available: {shapes}");
+    }
+
+    private static object?[] CompleteMcpToolArguments(MethodInfo method, object?[] args)
+    {
+        if (method.GetParameters().Length == args.Length)
+        {
+            return args;
+        }
+
+        // ResolveMcpToolMethod permits only one omitted optional request token.
+        var completed = new object?[args.Length + 1];
+        Array.Copy(args, completed, args.Length);
+        completed[^1] = CancellationToken.None;
+        return completed;
     }
 
     private static string GetMcpToolResultText(object? result)
@@ -2208,6 +2292,52 @@ static partial class Program
             payload.ValueKind is not JsonValueKind.Object and not JsonValueKind.Null)
         {
             throw new InvalidOperationException($"Pipe request {requestNumber} envelope payload had unexpected kind {payload.ValueKind}.");
+        }
+    }
+
+    // Temp-artifact cleanup runs in finally blocks, where throwing would replace the real
+    // test failure with a cleanup error, and a leftover temp file only costs disk. Only the
+    // exceptions a losing cleanup race actually produces are absorbed: a bad path or a null
+    // argument is a defect in the test itself and still fails loudly.
+    internal static void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    internal static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    internal static void TryClearReadOnlyAttribute(string path)
+    {
+        try
+        {
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
         }
     }
 

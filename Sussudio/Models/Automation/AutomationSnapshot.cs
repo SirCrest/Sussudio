@@ -295,7 +295,9 @@ public sealed class AutomationSnapshot
     public string RecordingBitrateInfo { get; init; } = string.Empty;
 
     public string RecordingBackend { get; init; } = "None";
+    // Historical wire label retained for existing automation clients, not a mux selection.
     public string AudioPathMode { get; init; } = "None";
+    // Current recording backends do not run a separate post-mux operation.
     public string MuxResult { get; init; } = "NotAttempted";
     public string RecordingIntegrityStatus { get; init; } = "NotStarted";
     public bool RecordingIntegrityComplete { get; init; }

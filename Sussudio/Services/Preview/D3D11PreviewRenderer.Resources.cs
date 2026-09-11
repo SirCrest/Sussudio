@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SharpGen.Runtime;
@@ -79,7 +80,7 @@ internal sealed class SharedD3DDeviceManager : IDisposable
 
     public uint ResetToken { get; private set; }
 
-    public bool TryCreateDeviceReference(out ID3D11Device? device, out string reason)
+    public bool TryCreateDeviceReference([NotNullWhen(true)] out ID3D11Device? device, out string reason)
     {
         lock (_sync)
         {
@@ -518,7 +519,7 @@ internal sealed partial class D3D11PreviewRenderer
             _nv12UVSRV = null;
             _nv12LastYPtr = IntPtr.Zero;
             _nv12LastUVPtr = IntPtr.Zero;
-            Logger.Log($"D3D11 preview NV12 SRV creation failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_NV12_SRV_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             return false;
         }
     }
@@ -602,7 +603,7 @@ internal sealed partial class D3D11PreviewRenderer
             {
                 _nv12PS?.Dispose();
                 _nv12PS = null;
-                Logger.Log($"D3D11 preview NV12 shader compile failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                Logger.Log($"D3D11_PREVIEW_NV12_SHADER_COMPILE_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             var samplerDescription = new SamplerDescription
@@ -625,7 +626,7 @@ internal sealed partial class D3D11PreviewRenderer
                 16, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
 
             Logger.Log(
-                $"D3D11 HDR shaders compiled (VS={vertexShaderBytecode.Length}b TonemapPS={pixelShaderBytecode.Length}b PassthroughPS={passthroughBytecode.Length}b Nv12PS={(_nv12PS != null ? "ok" : "unavailable")}).");
+                $"D3D11_PREVIEW_HDR_SHADERS_COMPILED (VS={vertexShaderBytecode.Length}b TonemapPS={pixelShaderBytecode.Length}b PassthroughPS={passthroughBytecode.Length}b Nv12PS={(_nv12PS != null ? "ok" : "unavailable")}).");
         }
         catch (Exception ex)
         {
@@ -641,7 +642,7 @@ internal sealed partial class D3D11PreviewRenderer
             _linearSampler = null;
             _viewportCB?.Dispose();
             _viewportCB = null;
-            Logger.Log($"D3D11 HDR tonemap shader compile failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_HDR_SHADER_COMPILE_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
     }
 
@@ -844,8 +845,8 @@ internal sealed partial class D3D11PreviewRenderer
         BindSwapChainToPanel(swapChain);
         CompileTonemapShaders();
 
-        Logger.Log($"D3D11 preview device created featureLevel={featureLevel} shared={sharedDeviceActive}.");
-        Logger.Log($"D3D11 preview swap chain created width={pixelWidth} height={pixelHeight} buffers={_swapChainBufferCount} renderQueue={_maxPendingFrames} sync={_presentSyncInterval} latency={_dxgiMaxFrameLatency} waitable={_waitableSwapChainEnabled}.");
+        Logger.Log($"D3D11_PREVIEW_DEVICE_CREATED featureLevel={featureLevel} shared={sharedDeviceActive}.");
+        Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_CREATED width={pixelWidth} height={pixelHeight} buffers={_swapChainBufferCount} renderQueue={_maxPendingFrames} sync={_presentSyncInterval} latency={_dxgiMaxFrameLatency} waitable={_waitableSwapChainEnabled}.");
     }
 
     private (IDXGISwapChain1 SwapChain, int PixelWidth, int PixelHeight) InitializeCompositionSwapChain(ID3D11Device device)
@@ -958,16 +959,16 @@ internal sealed partial class D3D11PreviewRenderer
                 _swapChain3.SetColorSpace1(initialColorSpace);
                 _outputColorSpaceLabel = wantHdr ? "HDR10-PQ (BT.2020)" : "sRGB (BT.709)";
                 Interlocked.Exchange(ref _swapChainColorSpaceDirty, 0);
-                Logger.Log($"D3D11 preview HDR-capable swap chain: srgb={srgbOk} hdr10={hdr10Ok} initial={initialColorSpace}.");
+                Logger.Log($"D3D11_PREVIEW_HDR_SWAPCHAIN srgb={srgbOk} hdr10={hdr10Ok} initial={initialColorSpace}.");
                 return;
             }
 
-            Logger.Log($"D3D11 preview HDR color space check: srgb={srgbOk}({srgbSupport}) hdr10={hdr10Ok}({hdr10Support}). Falling back to B8G8R8A8.");
+            Logger.Log($"D3D11_PREVIEW_HDR_COLOR_SPACE_CHECK srgb={srgbOk}({srgbSupport}) hdr10={hdr10Ok}({hdr10Support}). Falling back to B8G8R8A8.");
             RecreateSdrCompositionSwapChain(device, pixelWidth, pixelHeight, swapChainFlags);
             return;
         }
 
-        Logger.Log("D3D11 preview IDXGISwapChain3 unavailable - HDR passthrough not supported.");
+        Logger.Log("D3D11_PREVIEW_HDR_PASSTHROUGH_UNAVAILABLE reason=IDXGISwapChain3_unsupported");
         RecreateSdrCompositionSwapChain(device, pixelWidth, pixelHeight, swapChainFlags);
     }
 
@@ -1020,7 +1021,7 @@ internal sealed partial class D3D11PreviewRenderer
         using var mediaSwapChain = _swapChain.QueryInterfaceOrNull<IDXGISwapChainMedia>();
         if (mediaSwapChain == null)
         {
-            Logger.Log("D3D11 preview media present duration unavailable: IDXGISwapChainMedia not supported.");
+            Logger.Log("D3D11_PREVIEW_MEDIA_PRESENT_DURATION_UNAVAILABLE reason=IDXGISwapChainMedia_unsupported");
             return;
         }
 
@@ -1033,15 +1034,15 @@ internal sealed partial class D3D11PreviewRenderer
                 out var closestSmaller,
                 out var closestLarger);
             Logger.Log(
-                $"D3D11 preview media present duration support desired={desiredDuration} " +
+                $"D3D11_PREVIEW_MEDIA_PRESENT_DURATION_SUPPORT desired={desiredDuration} " +
                 $"smaller={closestSmaller} larger={closestLarger}");
 
             mediaSwapChain.SetPresentDuration(desiredDuration);
-            Logger.Log($"D3D11 preview media present duration set desired={desiredDuration} fps={fps:0.###}");
+            Logger.Log($"D3D11_PREVIEW_MEDIA_PRESENT_DURATION_SET desired={desiredDuration} fps={fps:0.###}");
         }
         catch (Exception ex)
         {
-            Logger.Log($"D3D11 preview media present duration failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_MEDIA_PRESENT_DURATION_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
     }
 
@@ -1061,7 +1062,7 @@ internal sealed partial class D3D11PreviewRenderer
 
         if (result.Failure)
         {
-            Logger.Log($"D3D11 hardware device creation failed: 0x{result.Code:X8}. Falling back to WARP.");
+            Logger.Log($"D3D11_PREVIEW_DEVICE_CREATE_FAILED hr=0x{result.Code:X8}. Falling back to WARP.");
             result = D3D11.D3D11CreateDevice(
                 adapter: null,
                 DriverType.Warp,
@@ -1114,14 +1115,14 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext = null;
             _device?.Dispose();
             _device = null;
-            Logger.Log($"D3D11 shared device init failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}; falling back to renderer-owned device.");
+            Logger.Log($"D3D11_PREVIEW_SHARED_DEVICE_INIT_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}; falling back to renderer-owned device.");
             return false;
         }
     }
 
     private void HandleDeviceLost(Exception ex)
     {
-        Logger.Log($"D3D11 preview device lost ({ex.GetType().Name}); recreating device.");
+        Logger.Log($"D3D11_PREVIEW_DEVICE_LOST type={ex.GetType().Name} action=recreate");
 
         // If Stop() is pending, bail. Stop() will unbind the swap chain from
         // the panel while D3D resources are still alive, then the finally block
@@ -1464,7 +1465,7 @@ internal sealed partial class D3D11PreviewRenderer
             _configuredInputHeight = height;
             _configuredHdr = isHdr;
 
-            Logger.Log($"D3D11 video processor created input={width}x{height} output={outputWidth}x{outputHeight} hdr={isHdr}.");
+            Logger.Log($"D3D11_PREVIEW_VIDEO_PROCESSOR_CREATED input={width}x{height} output={outputWidth}x{outputHeight} hdr={isHdr}.");
         }
 
         if (!useExternalTexture)
@@ -1551,20 +1552,16 @@ internal sealed partial class D3D11PreviewRenderer
 
         _inputColorSpaceLabel = inputColorSpace.ToString();
         _outputColorSpaceLabel = outputColorSpace.ToString();
-        Logger.Log($"D3D11 preview color space input={_inputColorSpaceLabel} output={_outputColorSpaceLabel} mode=VideoProcessor.");
+        Logger.Log($"D3D11_PREVIEW_COLOR_SPACE input={_inputColorSpaceLabel} output={_outputColorSpaceLabel} mode=VideoProcessor.");
     }
 
     private void CleanupD3DResources()
     {
+        // Keep every native owner intact until the panel acknowledges detach.
+        UnbindSwapChainFromPanel();
         DisposeProcessorResources();
         DisposeFrameCaptureStagingResources();
         DisposeInputTextureResources();
-
-        // Stop() unbinds the panel before waking the render thread, while the
-        // swap chain is still alive. Cleanup can then release the DXGI objects
-        // without leaving SwapChainPanel holding a stale native reference.
-        Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
-        Interlocked.Exchange(ref _swapChainAddress, 0);
 
         _swapChain3?.Dispose();
         _swapChain3 = null;

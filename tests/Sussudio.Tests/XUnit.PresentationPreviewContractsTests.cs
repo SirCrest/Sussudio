@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -938,6 +938,7 @@ public sealed class PresentationPreviewMainWindowInitialContractsTests
         => global::Program.StatsSectionChrome_LivesInFocusedPartial();
 }
 
+[Collection(RecoveryEnvironmentCollection.Name)]
 public sealed class PresentationPreviewRuntimeShellContractsTests
 {
     public PresentationPreviewRuntimeShellContractsTests()
@@ -994,16 +995,16 @@ public sealed class PresentationPreviewRuntimePolicyContractsTests
         => global::Program.PreviewRuntimeSnapshotHealthInputFactory_ProjectsControllerInputs();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotSurfaceProjectionPolicyPreservesVisibilityAndHealthFields()
-        => global::Program.PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesVisibilityAndHealthFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesVisibilityAndHealthFields();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotStartupProjectionPolicyPreservesSampledStartupFields()
-        => global::Program.PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesSampledStartupFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields();
 
     [Fact]
-    public Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicyPreservesRendererAndEventFields()
-        => global::Program.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields();
+    public Task PreviewRuntimeSnapshotMapperPreservesRendererAndEventFields()
+        => global::Program.PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields();
 
     [Fact]
     public Task PreviewRuntimeD3DFrameCounterPolicyPreservesCpuFallbackCounters()
@@ -1018,28 +1019,28 @@ public sealed class PresentationPreviewRuntimePolicyContractsTests
         => global::Program.PreviewRuntimeD3DRendererStatePolicy_PreservesNullRendererDefaults();
 
     [Fact]
-    public Task PreviewRuntimeD3DDisplayCadencePolicyPreservesNullRendererDefaults()
-        => global::Program.PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults();
+    public Task PreviewRuntimeSnapshotProjectionPreservesDisplayCadenceMetrics()
+        => global::Program.PreviewRuntimeSnapshotProjection_PreservesDisplayCadenceMetrics();
 
     [Fact]
-    public Task PreviewRuntimeD3DRenderCpuTimingPolicyPreservesNullRendererDefaults()
-        => global::Program.PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults();
+    public Task PreviewRuntimeSnapshotProjectionPreservesRenderCpuTimingMetrics()
+        => global::Program.PreviewRuntimeSnapshotProjection_PreservesRenderCpuTimingMetrics();
 
     [Fact]
-    public Task PreviewRuntimeD3DPipelineLatencyPolicyPreservesNullRendererDefaults()
-        => global::Program.PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults();
+    public Task PreviewRuntimeSnapshotProjectionPreservesPipelineLatencyMetrics()
+        => global::Program.PreviewRuntimeSnapshotProjection_PreservesPipelineLatencyMetrics();
 
     [Fact]
-    public Task PreviewRuntimeD3DFrameStatisticsPolicyPreservesNullRendererDefaults()
-        => global::Program.PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults();
+    public Task PreviewRuntimeSnapshotProjectionPreservesFrameStatisticsMetrics()
+        => global::Program.PreviewRuntimeSnapshotProjection_PreservesFrameStatisticsMetrics();
 
     [Fact]
-    public Task PreviewRuntimeD3DFrameLatencyWaitPolicyPreservesNullRendererDefaults()
-        => global::Program.PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults();
+    public Task PreviewRuntimeSnapshotProjectionPreservesFrameLatencyWaitMetrics()
+        => global::Program.PreviewRuntimeSnapshotProjection_PreservesFrameLatencyWaitMetrics();
 
     [Fact]
-    public Task PreviewRuntimeD3DFrameOwnershipPolicyPreservesNullRendererDefaults()
-        => global::Program.PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults();
+    public Task PreviewRuntimeSnapshotProjectionPreservesFrameOwnershipMetrics()
+        => global::Program.PreviewRuntimeSnapshotProjection_PreservesFrameOwnershipMetrics();
 }
 
 public sealed class PresentationPreviewCaptureOptionContractsTests
@@ -1168,7 +1169,6 @@ static partial class Program
         AssertContains(metricsText, "public readonly record struct FrameLatencyWaitMetrics(");
         AssertContains(metricsText, "public readonly record struct FrameOwnershipMetrics(");
         AssertContains(metricsText, "public readonly record struct DxgiFrameStatisticsMetrics(");
-        AssertContains(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
         AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertContains(metricsText, "private static double TicksToMs(long ticks)");
         AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
@@ -1288,7 +1288,8 @@ static partial class Program
         AssertContains(metricsText, "private void ResetPresentCadence()");
         AssertContains(metricsText, "var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));");
         AssertContains(metricsText, "Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);");
-        AssertContains(metricsText, "private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)");
+        AssertContains(metricsText, "RingBufferHelpers.Copy(");
+        AssertDoesNotContain(metricsText, "CopyRecentRing(");
         AssertContains(metricsText, "private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)");
         AssertContains(metricsText, "private static double TicksToMs(long ticks)");
         AssertContains(metricsText, "private static bool IsValidRenderCpuStageMs(double value)");
@@ -1389,7 +1390,7 @@ static partial class Program
         AssertContains(videoProcessorPipelineText, "ApplyColorSpaces(isHdr);");
         AssertContains(videoProcessorPipelineText, "_videoDevice.CreateVideoProcessorOutputView(");
         AssertContains(videoProcessorPipelineText, "_videoContext1.VideoProcessorSetStreamColorSpace1(");
-        AssertContains(videoProcessorPipelineText, "D3D11 preview color space input=");
+        AssertContains(videoProcessorPipelineText, "D3D11_PREVIEW_COLOR_SPACE input=");
         AssertContains(resourcesText, "private void CleanupD3DResources()");
         AssertContains(resourcesText, "DisposeInputTextureResources();");
         AssertContains(resourcesText, "DisposeShaderPipelineResources();");
@@ -3674,7 +3675,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewPropertyChangedHandler = ExtractMemberCode(previewPropertyChangedText, "TryHandlePreviewPropertyChangedAsync");
         var previewVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs")
             .Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
         var previewLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs")
             .Replace("\r\n", "\n");
@@ -3688,26 +3689,25 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertOccursBefore(previewButtonClick, "await Task.WhenAll(audioFadeOutTask, previewFadeOutTask);", "await viewModel.StopPreviewAsync(userInitiated: true);");
 
         var uiFadeOut = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeOutAsync");
-        AssertContains(uiFadeOut, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
-        AssertContains(uiFadeOut, "To = 0,");
-        AssertContains(uiFadeOut, "_context.ViewModel.PreviewVolume = 0;");
-        AssertContains(uiFadeOut, "PREVIEW_AUDIO_FADE_OUT_STARTED");
+        AssertContains(uiFadeOut, "_context.VolumeController.BeginTransition(\"preview_stop\")");
+        AssertContains(uiFadeOut, "StartStoryboardAsync(_operation, muteOutput: true, durationMs)");
+        AssertContains(previewAudioFadeControllerText, "PREVIEW_AUDIO_FADE_OUT_STARTED");
 
         var vmStopRamp = ExtractMemberCode(previewVolumeTransitionText, "RampPreviewVolumeDownForStopAsync");
         AssertContains(vmStopRamp, "_previewAudioVolumeTransitionController.RampDownForStopAsync(cancellationToken)");
 
-        var vmRampDown = ExtractMemberCode(audioVolumeTransitionText, "RampDownForAudioTransitionAsync");
-        AssertContains(vmRampDown, "VolumeSaveOverride = persistedVolume;");
-        AssertContains(vmRampDown, "_context.SetPreviewVolume(startingVolume * eased);");
-        AssertContains(vmRampDown, "_context.SetPreviewVolume(0);");
+        var vmRampDown = ExtractMemberCode(audioVolumeTransitionText, "RunRampAsync");
+        AssertContains(vmRampDown, "BeginWriter(operation, muteOutput, cancellationToken)");
+        AssertContains(vmRampDown, "writer.StartingVolume * Math.Pow(1.0 - t, 2.0)");
+        AssertContains(vmRampDown, "TryApplyTransient(writer, value)");
 
         var stopPreview = ExtractTextBetween(
             previewLifecycleControllerText,
             "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
             "\n}\n");
-        AssertContains(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);");
-        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "_context.RaisePreviewStopRequested();");
-        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
+        AssertContains(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)");
+        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)", "_context.RaisePreviewStopRequested();");
+        AssertOccursBefore(stopPreview, "await _context.RampPreviewVolumeDownForStopAsync(cancellationToken)", "await _context.SessionCoordinator.StopAudioPreviewAsync(cancellationToken);");
 
         AssertDoesNotContain(previewPropertyChangedHandler, "ViewModel_PreviewRendererStopRequested(");
         var previewReinitStop = ExtractMemberCode(previewReinitText, "ViewModel_PreviewRendererStopRequested");
@@ -3752,11 +3752,13 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(recordingFormatRefresh, "support.HasAv1)");
 
         var splitEncodeRefresh = ExtractMemberCode(recordingCapabilityControllerText, "RefreshSplitEncodeCapabilitiesAsync");
-        AssertContains(splitEncodeRefresh, "if (!support.Supports2Way)");
-        AssertContains(splitEncodeRefresh, "modes.Remove(\"2-way\");");
-        AssertContains(splitEncodeRefresh, "if (!support.Supports3Way)");
-        AssertContains(splitEncodeRefresh, "modes.Remove(\"3-way\");");
-        AssertContains(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(\"Auto\");");
+        AssertContains(splitEncodeRefresh, "await _context.GetSplitEncodeSupportAsync()");
+        AssertContains(splitEncodeRefresh, "if (support.Supports2Way) modes.Add(\"2-way\");");
+        AssertContains(splitEncodeRefresh, "if (support.Supports3Way) modes.Add(\"3-way\");");
+        AssertContains(splitEncodeRefresh, "var selectedMode = _context.GetSelectedSplitEncodeMode();");
+        AssertContains(splitEncodeRefresh, "modes.Add(selectedMode);");
+        AssertContains(splitEncodeRefresh, "SPLIT_ENCODE_PROBE_INCONCLUSIVE");
+        AssertDoesNotContain(splitEncodeRefresh, "_context.SetSelectedSplitEncodeMode(");
 
         AssertContains(rootViewModelText, "=> _deviceRefreshController.RefreshDevicesAsync(cancellationToken);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
@@ -3848,16 +3850,14 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(primeAudioAdapter, "_previewAudioFadeController.PrimeFadeIn();");
 
         var primeAudio = ExtractMemberCode(previewAudioFadeControllerText, "PrimeFadeIn");
-        AssertContains(primeAudio, "_context.ViewModel.VolumeSaveOverride = volumeTarget;");
-        AssertContains(primeAudio, "_context.ViewModel.PreviewVolume = 0;");
-        AssertContains(primeAudio, "_context.PreviewVolumeSlider.Value = 0;");
+        AssertContains(primeAudio, "_context.VolumeController.PrimeForAudioTransition(\"preview_start\")");
 
         var startAudioFadeAdapter = ExtractMemberCode(previewAudioFadeText, "StartPreviewAudioFadeIn");
         AssertContains(startAudioFadeAdapter, "_previewAudioFadeController.StartFadeIn(durationMs);");
 
         var startAudioFade = ExtractMemberCode(previewAudioFadeControllerText, "StartFadeIn");
-        AssertContains(startAudioFade, "Storyboard.SetTarget(volumeAnimation, _context.PreviewVolumeSlider);");
-        AssertContains(startAudioFade, "CompleteFadeIn(applyTarget: true)");
+        AssertContains(startAudioFade, "StartStoryboardAsync(_operation, muteOutput: false, durationMs)");
+        AssertContains(previewAudioFadeControllerText, "Storyboard.SetTarget(volumeAnimation, animationValue);");
 
         AssertContains(previewFadeInText, "=> _previewFadeInController.Schedule();");
         var schedulePreviewFadeIn = ExtractMemberCode(previewFadeInControllerText, "Schedule");
@@ -3872,7 +3872,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         var initialAudioBindings = ExtractMemberCode(audioControlBindingControllerText, "ApplyInitialAudioControlBindings");
         AssertContains(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();");
-        AssertContains(initialAudioBindings, "_context.CancelPreviewAudioFadeInForUser();");
+        AssertContains(initialAudioBindings, "_context.ViewModel.SetPreviewVolumeFromUser(e.NewValue / 100.0);");
         AssertOccursBefore(initialAudioBindings, "_context.PrimePreviewAudioFadeIn();", "_context.PreviewVolumeSlider.ValueChanged +=");
 
         var previewButtonClick = ExtractMemberCode(previewActionsText, "PreviewButton_Click");
@@ -3880,7 +3880,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         var previewButtonActionControllerText = ReadRepoFile("Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs")
             .Replace("\r\n", "\n");
         var togglePreviewAsync = ExtractMemberCode(previewButtonActionControllerText, "TogglePreviewAsync");
-        AssertContains(togglePreviewAsync, "if (!viewModel.IsPreviewing)\n        {\n            _context.RevealPreviewUnavailablePlaceholder();\n        }");
+        AssertContains(togglePreviewAsync, "finally\n        {\n            if (!viewModel.IsPreviewing)\n            {\n                _context.RevealPreviewUnavailablePlaceholder();\n            }\n        }");
 
         var mainWindowLoaded = ExtractMemberCode(startupText, "MainWindow_Loaded");
         AssertContains(mainWindowLoaded, "=> _launchStartupController.HandleLoaded(nameof(MainWindow_Loaded));");
@@ -4164,16 +4164,16 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
         AssertContains(viewModelFlashbackStateText, "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(viewModelCaptureStateText, "private const int PreviewReinitializeDebounceMs = 250;");
-        AssertContains(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(viewModelSharedStateText, "private int _previewReinitializeGeneration;");
+        AssertDoesNotContain(viewModelPreviewStateText, "private int _previewReinitializeGeneration;");
+        AssertContains(rawPreviewReinitializeControllerText, "private int _previewReinitializeGeneration;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "=> _previewLifecycleController.ReinitializeDeviceAsync(reason);");
         AssertContains(rawPreviewLifecycleControllerText, "=> _previewReinitializeController.ReinitializeDeviceAsync(reason);");
-        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
+        AssertContains(rawPreviewReinitializeControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
         AssertContains(rawPreviewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(rawPreviewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
+        AssertContains(rawPreviewReinitializeControllerText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
         AssertContains(rawPreviewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
-        AssertContains(rawPreviewReinitializeControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
+        AssertContains(rawPreviewReinitializeControllerText, "\"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(true);");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
         AssertContains(rawPreviewReinitializeControllerText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
         AssertContains(rawPreviewReinitializeControllerText, "_context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);");
@@ -4373,12 +4373,12 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewReinitializeControllerText, "private readonly MainViewModelPreviewReinitializeControllerContext _context;");
         AssertDoesNotContain(previewReinitializeControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(previewReinitializeControllerText, "_viewModel.");
-        AssertContains(previewReinitializeControllerText, "var reinitializeGeneration = _context.IncrementReinitializeGeneration();");
+        AssertContains(previewReinitializeControllerText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
         AssertContains(previewReinitializeControllerText, "await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);");
-        AssertContains(previewReinitializeControllerText, "_context.ReadReinitializeGeneration() != reinitializeGeneration");
+        AssertContains(previewReinitializeControllerText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
         AssertContains(previewReinitializeControllerText, "await _context.AwaitWithTimeoutAsync(");
         AssertContains(previewReinitializeControllerText, "FlashbackCycleBeforeReinitializeTimeoutMs");
-        AssertContains(previewReinitializeControllerText, "await _context.WaitReinitializeGateAsync();");
+        AssertContains(previewReinitializeControllerText, "await _previewReinitializeGate.WaitAsync().ConfigureAwait(true);");
         AssertContains(previewReinitializeControllerText, "await _context.NotifyPreviewReinitRequestedAsync(reason);");
         AssertContains(previewReinitializeControllerText, "await _context.NotifyRendererStopAsync();");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StopPreviewAsync(userInitiated: false, teardownPipeline: true, CancellationToken.None);");
@@ -4393,7 +4393,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewReinitializeControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.InitializeDeviceAsync().ConfigureAwait(true);");
         AssertContains(previewReinitializeControllerText, "await _previewLifecycleController.StartPreviewAsync(userInitiated: false).ConfigureAwait(true);");
-        AssertContains(previewReinitializeControllerText, "_context.ReleaseReinitializeGate();");
+        AssertContains(previewReinitializeControllerText, "_previewReinitializeGate.Release();");
         AssertDoesNotContain(previewStateText, "private async Task ReinitializeDeviceAsync(string reason)");
         AssertContains(rootText, "private Task ReinitializeDeviceAsync(string reason)");
         AssertContains(previewStateText, "public Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)");
@@ -4586,107 +4586,68 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
 
     internal static Task PreviewRuntimeD3DProjection_OwnsPolicyGroups()
     {
-        var previewRuntimeD3DProjectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs").Replace("\r\n", "\n");
-        var agentMapText = ReadRepoFile("docs/architecture/AGENT_MAP.md").Replace("\r\n", "\n");
-        var cleanupPlanText = ReadRepoFile("docs/architecture/cleanup-plan.md").Replace("\r\n", "\n");
+        var projectionText = ReadRepoFile("Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs").Replace("\r\n", "\n");
+        var projectionClassText = ExtractTextBetween(projectionText,
+            "internal sealed class PreviewRuntimeD3DProjection",
+            "internal readonly record struct PreviewRuntimeD3DFrameCounters");
+        var buildText = ExtractMemberCode(projectionClassText, "Build");
+        var agentMapText = Regex.Replace(ReadRepoFile("docs/architecture/AGENT_MAP.md"), @"\s+", " ");
+        var cleanupPlanText = Regex.Replace(ReadRepoFile("docs/architecture/cleanup-plan.md"), @"\s+", " ");
 
-        AssertContains(previewRuntimeD3DProjectionText, "internal sealed class PreviewRuntimeD3DProjection");
-        AssertContains(previewRuntimeD3DProjectionText, "public bool GpuActive { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "public long D3DFramesDropped { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameCounters(PreviewRuntimeD3DFrameCounters frameCounters)");
-        AssertContains(previewRuntimeD3DProjectionText, "FramesArrived = frameCounters.FramesArrived;");
-        AssertContains(previewRuntimeD3DProjectionText, "public string RendererMode { get; private set; } = \"None\";");
-        AssertContains(previewRuntimeD3DProjectionText, "public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; private set; } = Array.Empty<PreviewSlowFrameDiagnostic>();");
-        AssertContains(previewRuntimeD3DProjectionText, "public string GpuPlaybackState { get; private set; } = \"None\";");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyRendererState(PreviewRuntimeD3DRendererState rendererState)");
-        AssertContains(previewRuntimeD3DProjectionText, "GpuPlaybackState = rendererState.GpuPlaybackState;");
-        AssertContains(previewRuntimeD3DProjectionText, "public double[] DisplayCadenceRecentIntervalsMs { get; private set; } = Array.Empty<double>();");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyDisplayCadence(PreviewRuntimeD3DDisplayCadence displayCadence)");
-        AssertContains(previewRuntimeD3DProjectionText, "DisplayCadenceRecentIntervalsMs = displayCadence.RecentIntervalsMs;");
-        AssertContains(previewRuntimeD3DProjectionText, "public double D3DInputUploadCpuAvgMs { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyRenderCpuTiming(PreviewRuntimeD3DRenderCpuTiming renderCpuTiming)");
-        AssertContains(previewRuntimeD3DProjectionText, "D3DInputUploadCpuAvgMs = renderCpuTiming.InputUploadAverageMs;");
-        AssertContains(previewRuntimeD3DProjectionText, "public double EstimatedPipelineLatencyMs { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyPipelineLatency(PreviewRuntimeD3DPipelineLatency pipelineLatency)");
-        AssertContains(previewRuntimeD3DProjectionText, "EstimatedPipelineLatencyMs = pipelineLatency.EstimatedPipelineLatencyMs;");
-        AssertContains(previewRuntimeD3DProjectionText, "public long D3DLastSubmittedPreviewPresentId { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameOwnership(PreviewRuntimeD3DFrameOwnership frameOwnership)");
-        AssertContains(previewRuntimeD3DProjectionText, "D3DLastSubmittedSourceSequenceNumber = frameOwnership.LastSubmittedSourceSequenceNumber;");
-        AssertContains(previewRuntimeD3DProjectionText, "public long D3DFrameStatsPresentCount { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameStatistics(PreviewRuntimeD3DFrameStatistics frameStatistics)");
-        AssertContains(previewRuntimeD3DProjectionText, "D3DFrameStatsPresentCount = frameStatistics.PresentCount;");
-        AssertContains(previewRuntimeD3DProjectionText, "public bool D3DFrameLatencyWaitEnabled { get; private set; }");
-        AssertContains(previewRuntimeD3DProjectionText, "private void ApplyFrameLatencyWait(PreviewRuntimeD3DFrameLatencyWait frameLatencyWait)");
-        AssertContains(previewRuntimeD3DProjectionText, "D3DFrameLatencyWaitEnabled = frameLatencyWait.Enabled;");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DProjection Build(PreviewRuntimeSnapshotInput input)");
-        AssertContains(previewRuntimeD3DProjectionText, "var frameCounters = PreviewRuntimeD3DFrameCounterPolicy.Evaluate(input);");
-        AssertContains(previewRuntimeD3DProjectionText, "var d3d = input.D3DRenderer;");
-        AssertContains(previewRuntimeD3DProjectionText, "var rendererState = PreviewRuntimeD3DRendererStatePolicy.Evaluate(d3d, input.IsPreviewing);");
-        AssertContains(previewRuntimeD3DProjectionText, "var displayCadence = PreviewRuntimeD3DDisplayCadencePolicy.Evaluate(d3d, input.PreviewMinPresentationIntervalMs);");
-        AssertContains(previewRuntimeD3DProjectionText, "var renderCpuTiming = PreviewRuntimeD3DRenderCpuTimingPolicy.Evaluate(d3d);");
-        AssertContains(previewRuntimeD3DProjectionText, "var pipelineLatency = PreviewRuntimeD3DPipelineLatencyPolicy.Evaluate(d3d);");
-        AssertContains(previewRuntimeD3DProjectionText, "var frameOwnership = PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate(d3d);");
-        AssertContains(previewRuntimeD3DProjectionText, "var frameStatistics = PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate(d3d);");
-        AssertContains(previewRuntimeD3DProjectionText, "var frameLatencyWait = PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate(d3d);");
-        AssertContains(previewRuntimeD3DProjectionText, "var projection = new PreviewRuntimeD3DProjection();");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameCounters(frameCounters);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyRendererState(rendererState);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyDisplayCadence(displayCadence);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyRenderCpuTiming(renderCpuTiming);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyPipelineLatency(pipelineLatency);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameLatencyWait(frameLatencyWait);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameStatistics(frameStatistics);");
-        AssertContains(previewRuntimeD3DProjectionText, "projection.ApplyFrameOwnership(frameOwnership);");
-        AssertContains(previewRuntimeD3DProjectionText, "return projection;");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameCounterPolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameCounters Evaluate(PreviewRuntimeSnapshotInput input)");
-        AssertContains(previewRuntimeD3DProjectionText, "FramesArrived: gpuActive ? d3dFramesSubmitted : input.FramesArrived,");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DRendererStatePolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DRendererState Evaluate(D3D11PreviewRenderer? d3d, bool isPreviewing)");
-        AssertContains(previewRuntimeD3DProjectionText, "RendererMode: d3d?.RendererMode ?? (isPreviewing ? \"CpuSoftwareBitmap\" : \"None\"),");
-        AssertContains(previewRuntimeD3DProjectionText, "RecentSlowFrames: d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DDisplayCadencePolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DDisplayCadence Evaluate(");
-        AssertContains(previewRuntimeD3DProjectionText, "RecentIntervalsMs: displayCadence?.RecentIntervalsMs ?? Array.Empty<double>(),");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DRenderCpuTimingPolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DRenderCpuTiming Evaluate(D3D11PreviewRenderer? d3d)");
-        AssertContains(previewRuntimeD3DProjectionText, "SampleCount: renderCpuTiming?.TotalFrame.SampleCount ?? 0,");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DPipelineLatencyPolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DPipelineLatency Evaluate(D3D11PreviewRenderer? d3d)");
-        AssertContains(previewRuntimeD3DProjectionText, "EstimatedPipelineLatencyMs: pipelineLatency?.AverageMs ?? 0);");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameStatisticsPolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameStatistics Evaluate(D3D11PreviewRenderer? d3d)");
-        AssertContains(previewRuntimeD3DProjectionText, "PresentCount: frameStats?.PresentCount ?? -1,");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameLatencyWaitPolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameLatencyWait Evaluate(D3D11PreviewRenderer? d3d)");
-        AssertContains(previewRuntimeD3DProjectionText, "SampleCount: frameLatencyWait?.Timing.SampleCount ?? 0,");
-        AssertContains(previewRuntimeD3DProjectionText, "internal static class PreviewRuntimeD3DFrameOwnershipPolicy");
-        AssertContains(previewRuntimeD3DProjectionText, "public static PreviewRuntimeD3DFrameOwnership Evaluate(D3D11PreviewRenderer? d3d)");
-        AssertContains(previewRuntimeD3DProjectionText, "LastSubmittedSourceSequenceNumber: frameOwnership?.LastSubmittedSourceSequenceNumber ?? -1,");
-        AssertContains(previewRuntimeD3DProjectionText, "LastDroppedSourceSequenceNumber: frameOwnership?.LastDroppedSourceSequenceNumber ?? -1,");
+        AssertContains(projectionText, "internal sealed class PreviewRuntimeD3DProjection");
+        AssertContains(buildText, "var frameCounters = PreviewRuntimeD3DFrameCounterPolicy.Evaluate(input);");
+        AssertContains(buildText, "var rendererState = PreviewRuntimeD3DRendererStatePolicy.Evaluate(d3d, input.IsPreviewing);");
+        AssertContains(projectionText, "private void ApplyFrameCounters(PreviewRuntimeD3DFrameCounters frameCounters)");
+        AssertContains(projectionText, "private void ApplyRendererState(PreviewRuntimeD3DRendererState rendererState)");
+        AssertContains(projectionText, "FramesArrived: gpuActive ? d3dFramesSubmitted : input.FramesArrived,");
+        AssertContains(projectionText, "RendererMode: d3d?.RendererMode ?? (isPreviewing ? \"CpuSoftwareBitmap\" : \"None\"),");
+        AssertContains(projectionText, "RecentSlowFrames: d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>(),");
 
-        AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
-        AssertContains(agentMapText, "owns the renderer projection data contract, D3D policy records");
-        AssertContains(agentMapText, "assignment from evaluated policy records");
-        AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
-        AssertContains(cleanupPlanText, "renderer projection data contract, D3D policy records");
-        AssertContains(cleanupPlanText, "evaluated policy records");
-        foreach (var removedFile in new[]
+        var previousSampleIndex = buildText.IndexOf("PreviewRuntimeD3DRendererStatePolicy.Evaluate(", StringComparison.Ordinal);
+        foreach (var getter in new[]
         {
-            "PreviewRuntimeD3DFrameCounterPolicy.cs",
-            "PreviewRuntimeD3DRendererStatePolicy.cs",
-            "PreviewRuntimeD3DDisplayCadencePolicy.cs",
-            "PreviewRuntimeD3DRenderCpuTimingPolicy.cs",
-            "PreviewRuntimeD3DPipelineLatencyPolicy.cs",
-            "PreviewRuntimeD3DFrameOwnershipPolicy.cs",
-            "PreviewRuntimeD3DFrameStatisticsPolicy.cs",
-            "PreviewRuntimeD3DFrameLatencyWaitPolicy.cs"
+            "GetPresentCadenceMetrics", "GetRenderCpuTimingMetrics", "GetFrameOwnershipMetrics",
+            "GetDxgiFrameStatisticsMetrics", "GetFrameLatencyWaitMetrics", "GetPipelineLatencyMetrics"
         })
         {
-            AssertEqual(
-                false,
+            AssertEqual(1, Regex.Matches(projectionText, Regex.Escape(getter + "(")).Count, $"{getter} is sampled once");
+            var sampleIndex = buildText.IndexOf(getter + "(", StringComparison.Ordinal);
+            AssertEqual(true, sampleIndex > previousSampleIndex, $"{getter} retains renderer sampling order");
+            previousSampleIndex = sampleIndex;
+        }
+        AssertContains(buildText, "GetPresentCadenceMetrics(input.PreviewMinPresentationIntervalMs)");
+
+        foreach (var group in new[]
+        {
+            (Apply: "ApplyDisplayCadence", Metric: "PresentCadenceMetrics", Removed: "DisplayCadence"),
+            (Apply: "ApplyRenderCpuTiming", Metric: "RenderCpuTimingMetrics", Removed: "RenderCpuTiming"),
+            (Apply: "ApplyPipelineLatency", Metric: "PipelineLatencyMetrics", Removed: "PipelineLatency"),
+            (Apply: "ApplyFrameOwnership", Metric: "FrameOwnershipMetrics", Removed: "FrameOwnership"),
+            (Apply: "ApplyFrameStatistics", Metric: "DxgiFrameStatisticsMetrics", Removed: "FrameStatistics"),
+            (Apply: "ApplyFrameLatencyWait", Metric: "FrameLatencyWaitMetrics", Removed: "FrameLatencyWait")
+        })
+        {
+            AssertContains(projectionText, $"private void {group.Apply}(D3D11PreviewRenderer.{group.Metric}?");
+            AssertDoesNotContain(projectionText, $"internal readonly record struct PreviewRuntimeD3D{group.Removed}(");
+            AssertDoesNotContain(projectionText, $"internal static class PreviewRuntimeD3D{group.Removed}Policy");
+        }
+
+        foreach (var documentation in new[] { agentMapText, cleanupPlanText })
+        {
+            AssertContains(documentation, "PreviewRuntimeSnapshotControllers.cs");
+            AssertContains(documentation, "direct projection of sampled renderer metric groups");
+        }
+        foreach (var removedFile in new[]
+        {
+            "PreviewRuntimeD3DFrameCounterPolicy.cs", "PreviewRuntimeD3DRendererStatePolicy.cs",
+            "PreviewRuntimeD3DDisplayCadencePolicy.cs", "PreviewRuntimeD3DRenderCpuTimingPolicy.cs",
+            "PreviewRuntimeD3DPipelineLatencyPolicy.cs", "PreviewRuntimeD3DFrameOwnershipPolicy.cs",
+            "PreviewRuntimeD3DFrameStatisticsPolicy.cs", "PreviewRuntimeD3DFrameLatencyWaitPolicy.cs"
+        })
+        {
+            AssertEqual(false,
                 File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", removedFile)),
-                $"{removedFile} folded into PreviewRuntimeSnapshotControllers.cs");
+                $"{removedFile} remains folded into PreviewRuntimeSnapshotControllers.cs");
         }
 
         return Task.CompletedTask;
@@ -4725,7 +4686,9 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertDoesNotContain(previewRendererText, "private Task StopPreviewRendererAsync()");
         AssertContains(previewRendererText, "StopPreviewRendererAsync = _previewRendererHostController.StopAsync");
         AssertContains(previewRendererText, "private void StopPreviewForShutdown()");
-        AssertContains(previewRendererText, "=> _previewRendererHostController.StopForShutdown();");
+        var stopPreviewForShutdown = ExtractMemberCode(previewRendererText, "StopPreviewForShutdown");
+        AssertContains(stopPreviewForShutdown, "ViewModel.DisposePreviewAudioVolume();");
+        AssertOccursBefore(stopPreviewForShutdown, "ViewModel.DisposePreviewAudioVolume();", "_previewRendererHostController.StopForShutdown();");
         AssertContains(previewRendererText, "=> _previewRendererHostController.RendererReinitUnsafeWindows;");
         AssertContains(mainWindowText, "InitializePreviewRendererHostController();");
         AssertContains(previewRendererHostControllerText, "internal sealed class PreviewRendererHostControllerContext");
@@ -4849,9 +4812,6 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
             previewRuntimeSnapshotControllerText,
             "internal static class PreviewRuntimeSnapshotMapper",
             "internal sealed class PreviewRuntimeSnapshotHealthInput");
-        var previewRuntimeSnapshotSurfaceProjectionPolicyText = previewRuntimeSnapshotControllerText;
-        var previewRuntimeSnapshotStartupProjectionPolicyText = previewRuntimeSnapshotControllerText;
-        var previewRuntimeSnapshotGpuPlaybackProjectionPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthPolicyText = previewRuntimeSnapshotControllerText;
         var previewRuntimeSnapshotHealthInputFactoryText = previewRuntimeSnapshotHealthPolicyText;
         var previewRuntimeSnapshotModelText = ReadRepoFile("Sussudio/Models/Automation/AutomationModels.cs").Replace("\r\n", "\n");
@@ -4886,8 +4846,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupSession.ShouldRefreshMissingSignalsForSnapshot");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "startupMissingSignals = startupSignals.BuildMissingSignals();");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "var signature = new PreviewRuntimeSnapshotSignature(");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var previewRuntimeEpoch = PreviewRuntimeSnapshotEpoch(signature);");
-        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private long PreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "var previewRuntimeEpoch = GetOrAdvancePreviewRuntimeSnapshotEpoch(signature);");
+        AssertContains(previewRuntimeSnapshotSamplingControllerText, "private long GetOrAdvancePreviewRuntimeSnapshotEpoch(PreviewRuntimeSnapshotSignature signature)");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "lock (_previewRuntimeSnapshotEpochLock)");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "Interlocked.Increment(ref _previewRuntimeSnapshotEpoch);");
         AssertContains(previewRuntimeSnapshotSamplingControllerText, "return Interlocked.Read(ref _previewRuntimeSnapshotEpoch);");
@@ -4916,31 +4876,11 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(previewRuntimeSnapshotControllerText, "return PreviewRuntimeSnapshotMapper.Build(input, d3dProjection, health, DateTimeOffset.UtcNow);");
         AssertContains(previewRuntimeSnapshotMapperText, "internal static class PreviewRuntimeSnapshotMapper");
         AssertContains(previewRuntimeSnapshotMapperText, "public static PreviewRuntimeSnapshot Build(");
-        AssertContains(previewRuntimeSnapshotMapperText, "var surface = PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate(input, d3dProjection, health);");
-        AssertContains(previewRuntimeSnapshotMapperText, "var startup = PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate(input, health);");
-        AssertContains(previewRuntimeSnapshotMapperText, "var gpuPlayback = PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate(input, d3dProjection);");
         AssertContains(previewRuntimeSnapshotMapperText, "return new PreviewRuntimeSnapshot");
         AssertContains(previewRuntimeSnapshotMapperText, "TimestampUtc = timestampUtc,");
-        AssertContains(previewRuntimeSnapshotMapperText, "IsPreviewing = surface.IsPreviewing,");
-        AssertContains(previewRuntimeSnapshotMapperText, "FramesArrived = surface.FramesArrived,");
-        AssertContains(previewRuntimeSnapshotMapperText, "StartupState = startup.State,");
-        AssertContains(previewRuntimeSnapshotMapperText, "StartupElapsedMs = startup.ElapsedMs,");
-        AssertContains(previewRuntimeSnapshotMapperText, "BlankSuspected = surface.BlankSuspected,");
-        AssertContains(previewRuntimeSnapshotMapperText, "StallSuspected = surface.StallSuspected,");
-        AssertContains(previewRuntimeSnapshotMapperText, "GpuPlaybackState = gpuPlayback.PlaybackState,");
-        AssertContains(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = gpuPlayback.PositionEventCount");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "internal static class PreviewRuntimeSnapshotSurfaceProjectionPolicy");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "public static PreviewRuntimeSnapshotSurfaceProjection Evaluate(");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "GpuActive: d3dProjection.GpuActive,");
-        AssertContains(previewRuntimeSnapshotSurfaceProjectionPolicyText, "BlankSuspected: health.BlankSuspected,");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "internal static class PreviewRuntimeSnapshotStartupProjectionPolicy");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "public static PreviewRuntimeSnapshotStartupProjection Evaluate(");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "ElapsedMs: health.StartupElapsedMs,");
-        AssertContains(previewRuntimeSnapshotStartupProjectionPolicyText, "RecoveryAttemptCount: input.StartupRecoveryAttemptCount,");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "internal static class PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "public static PreviewRuntimeSnapshotGpuPlaybackProjection Evaluate(");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PlaybackState: d3dProjection.GpuPlaybackState,");
-        AssertContains(previewRuntimeSnapshotGpuPlaybackProjectionPolicyText, "PositionEventCount: input.GpuPositionEventCount);");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "PreviewRuntimeSnapshotSurfaceProjection");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "PreviewRuntimeSnapshotStartupProjection");
+        AssertDoesNotContain(previewRuntimeSnapshotControllerText, "PreviewRuntimeSnapshotGpuPlaybackProjection");
         AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "internal static class PreviewRuntimeSnapshotHealthInputFactory");
         AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "public static PreviewRuntimeSnapshotHealthInput Build(");
         AssertContains(previewRuntimeSnapshotHealthInputFactoryText, "RendererAttached = d3dProjection.RendererAttached,");
@@ -4969,7 +4909,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(agentMapText, "MainWindow.xaml.cs");
         AssertContains(agentMapText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(agentMapText, "PreviewRuntimeSnapshotMapper.cs");
-        AssertContains(agentMapText, "surface/startup/GPU playback projection policies");
+        AssertContains(agentMapText, "direct surface/startup/GPU playback mapping");
         AssertContains(agentMapText, "health input factory");
         AssertContains(cleanupPlanText, "MainWindow.xaml.cs");
         AssertContains(cleanupPlanText, "surface/frame");
@@ -4977,20 +4917,12 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(cleanupPlanText, "D3D renderer diagnostics");
         AssertContains(cleanupPlanText, "PreviewRuntimeSnapshotControllers.cs");
         AssertDoesNotContain(cleanupPlanText, "PreviewRuntimeSnapshotMapper.cs");
-        AssertContains(cleanupPlanText, "surface/startup/GPU playback projection policies");
+        AssertContains(cleanupPlanText, "direct surface/startup/GPU playback mapping");
         AssertContains(cleanupPlanText, "health input factory");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Controllers", "Preview", "Renderer", "PreviewRuntimeSnapshotMapper.cs")),
             "Preview runtime snapshot mapper stays folded into the snapshot controller owner");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuActive = d3dProjection.GpuActive,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "FramesArrived = d3dProjection.FramesArrived,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "BlankSuspected = health.BlankSuspected,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StallSuspected = health.StallSuspected,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupElapsedMs = health.StartupElapsedMs,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "StartupRecoveryAttemptCount = input.StartupRecoveryAttemptCount,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPlaybackState = d3dProjection.GpuPlaybackState,");
-        AssertDoesNotContain(previewRuntimeSnapshotMapperText, "GpuPositionEventCount = input.GpuPositionEventCount");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "return new PreviewRuntimeSnapshot\n        {");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "BlankSuspected = health.BlankSuspected,");
         AssertDoesNotContain(previewRuntimeSnapshotControllerBuildText, "StallSuspected = health.StallSuspected,");
@@ -5037,8 +4969,8 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
                       ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingControllerContext.");
         var sampler = Activator.CreateInstance(samplerType, context)
                       ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotSamplingController.");
-        var epochMethod = samplerType.GetMethod("PreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
-                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotEpoch method not found.");
+        var epochMethod = samplerType.GetMethod("GetOrAdvancePreviewRuntimeSnapshotEpoch", BindingFlags.Instance | BindingFlags.NonPublic)
+                          ?? throw new InvalidOperationException("GetOrAdvancePreviewRuntimeSnapshotEpoch method not found.");
         var signatureConstructor = signatureType.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Single(constructor => constructor.GetParameters().Length == 26);
         var requestedUtc = DateTimeOffset.UtcNow.AddMilliseconds(-250);
@@ -5156,82 +5088,91 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeD3DFrameStatisticsPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeSnapshotProjection_PreservesFrameStatisticsMetrics()
     {
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameStatisticsPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameStatisticsPolicy.Evaluate not found.");
+        var metrics = CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics",
+            11L, 12L, 13L, "DXGI_ERROR_FRAME_STATISTICS_DISJOINT", 14L, 15L, 16L, 17L, 18L, 19L, 20L, 21L);
+        AssertPreviewMetricSnapshots("ApplyFrameStatistics", metrics,
+            ("D3DFrameStatsSampleCount", 0L, 11L),
+            ("D3DFrameStatsSuccessCount", 0L, 12L),
+            ("D3DFrameStatsFailureCount", 0L, 13L),
+            ("D3DFrameStatsLastError", string.Empty, "DXGI_ERROR_FRAME_STATISTICS_DISJOINT"),
+            ("D3DFrameStatsPresentCount", -1L, 14L),
+            ("D3DFrameStatsPresentRefreshCount", -1L, 15L),
+            ("D3DFrameStatsSyncRefreshCount", -1L, 16L),
+            ("D3DFrameStatsSyncQpcTime", 0L, 17L),
+            ("D3DFrameStatsLastPresentDelta", 0L, 18L),
+            ("D3DFrameStatsLastPresentRefreshDelta", 0L, 19L),
+            ("D3DFrameStatsLastSyncRefreshDelta", 0L, 20L),
+            ("D3DFrameStatsMissedRefreshCount", 0L, 21L));
 
-        var frameStatistics = evaluate.Invoke(null, new object[] { null! })
-                              ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameStatisticsPolicy returned null.");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "SampleCount"), "null D3D frame-stat sample count");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "SuccessCount"), "null D3D frame-stat success count");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "FailureCount"), "null D3D frame-stat failure count");
-        AssertEqual(string.Empty, GetStringProperty(frameStatistics, "LastError"), "null D3D frame-stat last error");
-        AssertEqual(-1L, GetLongProperty(frameStatistics, "PresentCount"), "null D3D present-count sentinel");
-        AssertEqual(-1L, GetLongProperty(frameStatistics, "PresentRefreshCount"), "null D3D present-refresh sentinel");
-        AssertEqual(-1L, GetLongProperty(frameStatistics, "SyncRefreshCount"), "null D3D sync-refresh sentinel");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "SyncQpcTime"), "null D3D sync QPC time");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "LastPresentDelta"), "null D3D present delta");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "LastPresentRefreshDelta"), "null D3D present-refresh delta");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "LastSyncRefreshDelta"), "null D3D sync-refresh delta");
-        AssertEqual(0L, GetLongProperty(frameStatistics, "MissedRefreshCount"), "null D3D missed-refresh count");
-
+        AssertPreviewMetricSnapshots("ApplyFrameStatistics", CreatePreviewRendererMetric("DxgiFrameStatisticsMetrics"),
+            ("D3DFrameStatsPresentCount", -1L, 0L),
+            ("D3DFrameStatsPresentRefreshCount", -1L, 0L),
+            ("D3DFrameStatsSyncRefreshCount", -1L, 0L),
+            ("D3DFrameStatsLastError", string.Empty, string.Empty));
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeD3DFrameLatencyWaitPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeSnapshotProjection_PreservesFrameLatencyWaitMetrics()
     {
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameLatencyWaitPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameLatencyWaitPolicy.Evaluate not found.");
+        var timing = CreatePreviewRendererMetric("CpuStageTimingMetrics", 66, 6.7d, 6.8d, 6.9d, 7d);
+        var metrics = CreatePreviewRendererMetric("FrameLatencyWaitMetrics",
+            true, false, 61L, 62L, 63L, 64L, 0xFFFFFFF0u, 6.5d, timing);
+        AssertPreviewMetricSnapshots("ApplyFrameLatencyWait", metrics,
+            ("D3DFrameLatencyWaitEnabled", false, true),
+            ("D3DFrameLatencyWaitHandleActive", false, false),
+            ("D3DFrameLatencyWaitCallCount", 0L, 61L),
+            ("D3DFrameLatencyWaitSignaledCount", 0L, 62L),
+            ("D3DFrameLatencyWaitTimeoutCount", 0L, 63L),
+            ("D3DFrameLatencyWaitUnexpectedResultCount", 0L, 64L),
+            ("D3DFrameLatencyWaitLastResult", 0u, 0xFFFFFFF0u),
+            ("D3DFrameLatencyWaitLastMs", 0d, 6.5d),
+            ("D3DFrameLatencyWaitSampleCount", 0, 66),
+            ("D3DFrameLatencyWaitAvgMs", 0d, 6.7d),
+            ("D3DFrameLatencyWaitP95Ms", 0d, 6.8d),
+            ("D3DFrameLatencyWaitP99Ms", 0d, 6.9d),
+            ("D3DFrameLatencyWaitMaxMs", 0d, 7d));
 
-        var frameLatencyWait = evaluate.Invoke(null, new object[] { null! })
-                               ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameLatencyWaitPolicy returned null.");
-        AssertEqual(false, GetBoolProperty(frameLatencyWait, "Enabled"), "null D3D frame-latency wait enabled");
-        AssertEqual(false, GetBoolProperty(frameLatencyWait, "HandleActive"), "null D3D frame-latency wait handle active");
-        AssertEqual(0L, GetLongProperty(frameLatencyWait, "CallCount"), "null D3D frame-latency wait call count");
-        AssertEqual(0L, GetLongProperty(frameLatencyWait, "SignaledCount"), "null D3D frame-latency wait signaled count");
-        AssertEqual(0L, GetLongProperty(frameLatencyWait, "TimeoutCount"), "null D3D frame-latency wait timeout count");
-        AssertEqual(0L, GetLongProperty(frameLatencyWait, "UnexpectedResultCount"), "null D3D frame-latency wait unexpected-result count");
-        AssertEqual(0u, GetPropertyValue(frameLatencyWait, "LastResult"), "null D3D frame-latency wait last result");
-        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "LastWaitMs"), "null D3D frame-latency wait last wait");
-        AssertEqual(0, GetIntProperty(frameLatencyWait, "SampleCount"), "null D3D frame-latency wait sample count");
-        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "AverageMs"), "null D3D frame-latency wait average");
-        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "P95Ms"), "null D3D frame-latency wait p95");
-        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "P99Ms"), "null D3D frame-latency wait p99");
-        AssertEqual(0d, GetDoubleProperty(frameLatencyWait, "MaxMs"), "null D3D frame-latency wait max");
-
+        var activeHandleMetrics = CreatePreviewRendererMetric("FrameLatencyWaitMetrics",
+            false, true, 0L, 0L, 0L, 0L, 0u, 0d, timing);
+        AssertPreviewMetricSnapshots("ApplyFrameLatencyWait", activeHandleMetrics,
+            ("D3DFrameLatencyWaitEnabled", false, false),
+            ("D3DFrameLatencyWaitHandleActive", false, true));
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeD3DFrameOwnershipPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeSnapshotProjection_PreservesFrameOwnershipMetrics()
     {
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DFrameOwnershipPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameOwnershipPolicy.Evaluate not found.");
+        var metrics = CreatePreviewRendererMetric("FrameOwnershipMetrics",
+            1001L, 1002L, 1003L, 1004L, 1005L,
+            2001L, 2002L, 2003L, 2004L, 2005L, 2.6d, 2.7d,
+            3001L, 3002L, 3003L, 3004L, 3005L, "replaced by newer frame");
+        AssertPreviewMetricSnapshots("ApplyFrameOwnership", metrics,
+            ("D3DLastSubmittedPreviewPresentId", 0L, 1001L),
+            ("D3DLastSubmittedSourceSequenceNumber", -1L, 1002L),
+            ("D3DLastSubmittedSourcePtsTicks", 0L, 1003L),
+            ("D3DLastSubmittedQpc", 0L, 1004L),
+            ("D3DLastSubmittedUtcUnixMs", 0L, 1005L),
+            ("D3DLastRenderedPreviewPresentId", 0L, 2001L),
+            ("D3DLastRenderedSourceSequenceNumber", -1L, 2002L),
+            ("D3DLastRenderedSourcePtsTicks", 0L, 2003L),
+            ("D3DLastRenderedQpc", 0L, 2004L),
+            ("D3DLastRenderedUtcUnixMs", 0L, 2005L),
+            ("D3DLastRenderedSchedulerToPresentMs", 0d, 2.6d),
+            ("D3DLastRenderedPipelineLatencyMs", 0d, 2.7d),
+            ("D3DLastDroppedPreviewPresentId", 0L, 3001L),
+            ("D3DLastDroppedSourceSequenceNumber", -1L, 3002L),
+            ("D3DLastDroppedSourcePtsTicks", 0L, 3003L),
+            ("D3DLastDroppedQpc", 0L, 3004L),
+            ("D3DLastDroppedUtcUnixMs", 0L, 3005L),
+            ("D3DLastDropReason", string.Empty, "replaced by newer frame"));
 
-        var frameOwnership = evaluate.Invoke(null, new object[] { null! })
-                             ?? throw new InvalidOperationException("PreviewRuntimeD3DFrameOwnershipPolicy returned null.");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedPreviewPresentId"), "null D3D submitted present id");
-        AssertEqual(-1L, GetLongProperty(frameOwnership, "LastSubmittedSourceSequenceNumber"), "null D3D submitted source sequence sentinel");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedSourcePtsTicks"), "null D3D submitted source PTS");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedQpc"), "null D3D submitted QPC");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastSubmittedUtcUnixMs"), "null D3D submitted UTC");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedPreviewPresentId"), "null D3D rendered present id");
-        AssertEqual(-1L, GetLongProperty(frameOwnership, "LastRenderedSourceSequenceNumber"), "null D3D rendered source sequence sentinel");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedSourcePtsTicks"), "null D3D rendered source PTS");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedQpc"), "null D3D rendered QPC");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastRenderedUtcUnixMs"), "null D3D rendered UTC");
-        AssertEqual(0d, GetDoubleProperty(frameOwnership, "LastRenderedSchedulerToPresentMs"), "null D3D scheduler-to-present");
-        AssertEqual(0d, GetDoubleProperty(frameOwnership, "LastRenderedPipelineLatencyMs"), "null D3D pipeline latency");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedPreviewPresentId"), "null D3D dropped present id");
-        AssertEqual(-1L, GetLongProperty(frameOwnership, "LastDroppedSourceSequenceNumber"), "null D3D dropped source sequence sentinel");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedSourcePtsTicks"), "null D3D dropped source PTS");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedQpc"), "null D3D dropped QPC");
-        AssertEqual(0L, GetLongProperty(frameOwnership, "LastDroppedUtcUnixMs"), "null D3D dropped UTC");
-        AssertEqual(string.Empty, GetStringProperty(frameOwnership, "LastDropReason"), "null D3D drop reason");
-
+        AssertPreviewMetricSnapshots("ApplyFrameOwnership", CreatePreviewRendererMetric("FrameOwnershipMetrics"),
+            ("D3DLastSubmittedSourceSequenceNumber", -1L, 0L),
+            ("D3DLastRenderedSourceSequenceNumber", -1L, 0L),
+            ("D3DLastDroppedSourceSequenceNumber", -1L, 0L),
+            ("D3DLastDropReason", string.Empty, string.Empty));
         return Task.CompletedTask;
     }
 
@@ -5270,79 +5211,116 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeD3DDisplayCadencePolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeSnapshotProjection_PreservesDisplayCadenceMetrics()
     {
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DDisplayCadencePolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeD3DDisplayCadencePolicy.Evaluate not found.");
+        var intervals = new[] { 8.1d, 8.2d };
+        var metrics = CreatePreviewRendererMetric("PresentCadenceMetrics",
+            19, 118.5d, 8.33d, 8.44d, 8.55d, 8.66d, 8.77d, 110.1d, 111.2d, 159.3d, intervals, 0.45d, 7L, 6.7d);
+        AssertPreviewMetricSnapshots("ApplyDisplayCadence", metrics,
+            ("DisplayCadenceSampleCount", 0, 19),
+            ("DisplayCadenceObservedFps", 0d, 118.5d),
+            ("DisplayCadenceExpectedIntervalMs", 0d, 8.33d),
+            ("DisplayCadenceAverageIntervalMs", 0d, 8.44d),
+            ("DisplayCadenceP95IntervalMs", 0d, 8.55d),
+            ("DisplayCadenceP99IntervalMs", 0d, 8.66d),
+            ("DisplayCadenceMaxIntervalMs", 0d, 8.77d),
+            ("DisplayCadenceOnePercentLowFps", 0d, 110.1d),
+            ("DisplayCadenceFivePercentLowFps", 0d, 111.2d),
+            ("DisplayCadenceSampleDurationMs", 0d, 159.3d),
+            ("DisplayCadenceRecentIntervalsMs", Array.Empty<double>(), intervals),
+            ("DisplayCadenceJitterStdDevMs", 0d, 0.45d),
+            ("DisplayCadenceSlowFrameCount", 0L, 7L),
+            ("DisplayCadenceSlowFramePercent", 0d, 6.7d));
 
-        var displayCadence = evaluate.Invoke(null, new object[] { null!, 8.33d })
-                             ?? throw new InvalidOperationException("PreviewRuntimeD3DDisplayCadencePolicy returned null.");
-        AssertEqual(0, GetIntProperty(displayCadence, "SampleCount"), "null D3D display cadence sample count");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "ObservedFps"), "null D3D display cadence observed fps");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "ExpectedIntervalMs"), "null D3D display cadence expected interval");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "AverageIntervalMs"), "null D3D display cadence average interval");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "P95IntervalMs"), "null D3D display cadence p95 interval");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "P99IntervalMs"), "null D3D display cadence p99 interval");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "MaxIntervalMs"), "null D3D display cadence max interval");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "OnePercentLowFps"), "null D3D display cadence one-percent low");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "FivePercentLowFps"), "null D3D display cadence five-percent low");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "SampleDurationMs"), "null D3D display cadence sample duration");
-        var recentIntervals = GetPropertyValue(displayCadence, "RecentIntervalsMs") as Array
-                              ?? throw new InvalidOperationException("RecentIntervalsMs was not an array.");
-        AssertEqual(0, recentIntervals.Length, "null D3D display cadence recent interval count");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "JitterStdDevMs"), "null D3D display cadence jitter");
-        AssertEqual(0L, GetLongProperty(displayCadence, "SlowFrameCount"), "null D3D display cadence slow-frame count");
-        AssertEqual(0d, GetDoubleProperty(displayCadence, "SlowFramePercent"), "null D3D display cadence slow-frame percent");
-
+        AssertPreviewMetricSnapshots("ApplyDisplayCadence", CreatePreviewRendererMetric("PresentCadenceMetrics"),
+            ("DisplayCadenceRecentIntervalsMs", Array.Empty<double>(), Array.Empty<double>()));
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeD3DRenderCpuTimingPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeSnapshotProjection_PreservesRenderCpuTimingMetrics()
     {
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DRenderCpuTimingPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeD3DRenderCpuTimingPolicy.Evaluate not found.");
-
-        var renderCpuTiming = evaluate.Invoke(null, new object[] { null! })
-                              ?? throw new InvalidOperationException("PreviewRuntimeD3DRenderCpuTimingPolicy returned null.");
-        AssertEqual(0, GetIntProperty(renderCpuTiming, "SampleCount"), "null D3D render CPU timing sample count");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadAverageMs"), "null D3D input-upload average");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadP95Ms"), "null D3D input-upload p95");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadP99Ms"), "null D3D input-upload p99");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "InputUploadMaxMs"), "null D3D input-upload max");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitAverageMs"), "null D3D render-submit average");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitP95Ms"), "null D3D render-submit p95");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitP99Ms"), "null D3D render-submit p99");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "RenderSubmitMaxMs"), "null D3D render-submit max");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallAverageMs"), "null D3D present-call average");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallP95Ms"), "null D3D present-call p95");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallP99Ms"), "null D3D present-call p99");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "PresentCallMaxMs"), "null D3D present-call max");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameAverageMs"), "null D3D total-frame average");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameP95Ms"), "null D3D total-frame p95");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameP99Ms"), "null D3D total-frame p99");
-        AssertEqual(0d, GetDoubleProperty(renderCpuTiming, "TotalFrameMaxMs"), "null D3D total-frame max");
-
+        var inputUpload = CreatePreviewRendererMetric("CpuStageTimingMetrics", 11, 1.1d, 1.2d, 1.3d, 1.4d);
+        var renderSubmit = CreatePreviewRendererMetric("CpuStageTimingMetrics", 22, 2.1d, 2.2d, 2.3d, 2.4d);
+        var presentCall = CreatePreviewRendererMetric("CpuStageTimingMetrics", 33, 3.1d, 3.2d, 3.3d, 3.4d);
+        var totalFrame = CreatePreviewRendererMetric("CpuStageTimingMetrics", 44, 4.1d, 4.2d, 4.3d, 4.4d);
+        var metrics = CreatePreviewRendererMetric("RenderCpuTimingMetrics", inputUpload, renderSubmit, presentCall, totalFrame);
+        AssertPreviewMetricSnapshots("ApplyRenderCpuTiming", metrics,
+            ("D3DCpuTimingSampleCount", 0, 44),
+            ("D3DInputUploadCpuAvgMs", 0d, 1.1d),
+            ("D3DInputUploadCpuP95Ms", 0d, 1.2d),
+            ("D3DInputUploadCpuP99Ms", 0d, 1.3d),
+            ("D3DInputUploadCpuMaxMs", 0d, 1.4d),
+            ("D3DRenderSubmitCpuAvgMs", 0d, 2.1d),
+            ("D3DRenderSubmitCpuP95Ms", 0d, 2.2d),
+            ("D3DRenderSubmitCpuP99Ms", 0d, 2.3d),
+            ("D3DRenderSubmitCpuMaxMs", 0d, 2.4d),
+            ("D3DPresentCallAvgMs", 0d, 3.1d),
+            ("D3DPresentCallP95Ms", 0d, 3.2d),
+            ("D3DPresentCallP99Ms", 0d, 3.3d),
+            ("D3DPresentCallMaxMs", 0d, 3.4d),
+            ("D3DTotalFrameCpuAvgMs", 0d, 4.1d),
+            ("D3DTotalFrameCpuP95Ms", 0d, 4.2d),
+            ("D3DTotalFrameCpuP99Ms", 0d, 4.3d),
+            ("D3DTotalFrameCpuMaxMs", 0d, 4.4d));
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeD3DPipelineLatencyPolicy_PreservesNullRendererDefaults()
+    internal static Task PreviewRuntimeSnapshotProjection_PreservesPipelineLatencyMetrics()
     {
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DPipelineLatencyPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeD3DPipelineLatencyPolicy.Evaluate not found.");
-
-        var pipelineLatency = evaluate.Invoke(null, new object[] { null! })
-                              ?? throw new InvalidOperationException("PreviewRuntimeD3DPipelineLatencyPolicy returned null.");
-        AssertEqual(0, GetIntProperty(pipelineLatency, "SampleCount"), "null D3D pipeline latency sample count");
-        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "AverageMs"), "null D3D pipeline latency average");
-        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "P95Ms"), "null D3D pipeline latency p95");
-        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "P99Ms"), "null D3D pipeline latency p99");
-        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "MaxMs"), "null D3D pipeline latency max");
-        AssertEqual(0d, GetDoubleProperty(pipelineLatency, "EstimatedPipelineLatencyMs"), "null estimated pipeline latency");
-
+        var metrics = CreatePreviewRendererMetric("PipelineLatencyMetrics", 51, 5.1d, 5.2d, 5.3d, 5.4d);
+        AssertPreviewMetricSnapshots("ApplyPipelineLatency", metrics,
+            ("D3DPipelineLatencySampleCount", 0, 51),
+            ("D3DPipelineLatencyAvgMs", 0d, 5.1d),
+            ("D3DPipelineLatencyP95Ms", 0d, 5.2d),
+            ("D3DPipelineLatencyP99Ms", 0d, 5.3d),
+            ("D3DPipelineLatencyMaxMs", 0d, 5.4d),
+            ("EstimatedPipelineLatencyMs", 0d, 5.1d));
         return Task.CompletedTask;
+    }
+
+    private static object CreatePreviewRendererMetric(string typeName, params object?[] arguments)
+        => Activator.CreateInstance(RequireType($"Sussudio.Services.Preview.D3D11PreviewRenderer+{typeName}"), arguments)
+           ?? throw new InvalidOperationException($"Failed to create renderer metric {typeName}.");
+
+    private static void AssertPreviewMetricSnapshots(
+        string applyMethod,
+        object metrics,
+        params (string Field, object Absent, object Present)[] expectedFields)
+    {
+        var absentSnapshot = BuildPreviewMetricSnapshot();
+        var presentSnapshot = BuildPreviewMetricSnapshot(applyMethod, metrics);
+        foreach (var expected in expectedFields)
+        {
+            // Object equality for arrays also verifies that projection preserves the sampled array reference.
+            AssertEqual(expected.Absent, GetPropertyValue(absentSnapshot, expected.Field), $"{expected.Field} without renderer metrics");
+            AssertEqual(expected.Present, GetPropertyValue(presentSnapshot, expected.Field), $"{expected.Field} with renderer metrics");
+        }
+    }
+
+    private static object BuildPreviewMetricSnapshot(string? applyMethod = null, object? metrics = null)
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var input = Activator.CreateInstance(inputType)
+                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+        SetPropertyOrBackingField(input, "PreviewMinPresentationIntervalMs", 8.33d);
+
+        if (applyMethod == null)
+        {
+            var controller = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotController");
+            return controller.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new[] { input })
+                   ?? throw new InvalidOperationException("PreviewRuntimeSnapshotController.Build returned null.");
+        }
+
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var projection = projectionType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)!.Invoke(null, new[] { input })
+                         ?? throw new InvalidOperationException("PreviewRuntimeD3DProjection.Build returned null.");
+        InvokeNonPublicInstanceMethod(projection, applyMethod, new[] { metrics });
+        var health = Activator.CreateInstance(RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth"), new object?[] { null, false, false })
+                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+        var mapper = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        return mapper.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)!.Invoke(
+            null, new object[] { input, projection, health, DateTimeOffset.UnixEpoch })
+            ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
     }
 
     internal static Task PreviewRuntimeSnapshotHealthPolicy_PreservesSuspicionRules()
@@ -5450,127 +5428,162 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeSnapshotSurfaceProjectionPolicy_PreservesVisibilityAndHealthFields()
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesVisibilityAndHealthFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
         var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotSurfaceProjectionPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy.Evaluate not found.");
+        var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build not found.");
+        var timestamp = new DateTimeOffset(2026, 8, 30, 12, 0, 0, TimeSpan.Zero);
 
-        var input = Activator.CreateInstance(inputType)
-                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "IsPreviewing", true);
-        SetPropertyOrBackingField(input, "PlaceholderVisible", false);
-        SetPropertyOrBackingField(input, "GpuElementVisible", true);
-        SetPropertyOrBackingField(input, "CpuElementVisible", false);
+        foreach (var active in new[] { true, false })
+        {
+            var input = Activator.CreateInstance(inputType)
+                        ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+            SetPropertyOrBackingField(input, "PreviewRuntimeEpoch", 73L);
+            SetPropertyOrBackingField(input, "IsPreviewing", active);
+            SetPropertyOrBackingField(input, "PlaceholderVisible", !active);
+            SetPropertyOrBackingField(input, "GpuElementVisible", active);
+            SetPropertyOrBackingField(input, "CpuElementVisible", !active);
+            // The final counters must come from the resolved projection, not the sampled CPU input.
+            SetPropertyOrBackingField(input, "FramesArrived", 901L);
+            SetPropertyOrBackingField(input, "FramesDisplayed", 807L);
+            SetPropertyOrBackingField(input, "FramesDropped", 94L);
 
-        var d3dProjection = Activator.CreateInstance(projectionType)
-                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-        SetPropertyOrBackingField(d3dProjection, "GpuActive", true);
-        SetPropertyOrBackingField(d3dProjection, "RendererAttached", true);
-        SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
-        SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
-        SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
+            var d3dProjection = Activator.CreateInstance(projectionType)
+                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            SetPropertyOrBackingField(d3dProjection, "GpuActive", !active);
+            SetPropertyOrBackingField(d3dProjection, "RendererAttached", active);
+            SetPropertyOrBackingField(d3dProjection, "FramesArrived", 101L);
+            SetPropertyOrBackingField(d3dProjection, "FramesDisplayed", 99L);
+            SetPropertyOrBackingField(d3dProjection, "FramesDropped", 2L);
 
-        var health = Activator.CreateInstance(healthType, new object?[] { null, true, false })
-                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
-        var surface = evaluate.Invoke(null, new object?[] { input, d3dProjection, health })
-                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotSurfaceProjectionPolicy returned null.");
+            var health = Activator.CreateInstance(healthType, new object?[] { null, active, !active })
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+            var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, timestamp })
+                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
 
-        AssertEqual(true, GetBoolProperty(surface, "IsPreviewing"), "surface projection previewing");
-        AssertEqual(true, GetBoolProperty(surface, "GpuActive"), "surface projection GPU active");
-        AssertEqual(false, GetBoolProperty(surface, "PlaceholderVisible"), "surface projection placeholder visible");
-        AssertEqual(true, GetBoolProperty(surface, "GpuElementVisible"), "surface projection GPU element visible");
-        AssertEqual(false, GetBoolProperty(surface, "CpuElementVisible"), "surface projection CPU element visible");
-        AssertEqual(true, GetBoolProperty(surface, "RendererAttached"), "surface projection renderer attached");
-        AssertEqual(101L, GetLongProperty(surface, "FramesArrived"), "surface projection frames arrived");
-        AssertEqual(99L, GetLongProperty(surface, "FramesDisplayed"), "surface projection frames displayed");
-        AssertEqual(2L, GetLongProperty(surface, "FramesDropped"), "surface projection frames dropped");
-        AssertEqual(true, GetBoolProperty(surface, "BlankSuspected"), "surface projection blank suspected");
-        AssertEqual(false, GetBoolProperty(surface, "StallSuspected"), "surface projection stall suspected");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task PreviewRuntimeSnapshotStartupProjectionPolicy_PreservesSampledStartupFields()
-    {
-        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
-        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotStartupProjectionPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy.Evaluate not found.");
-        var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "FirstVisual");
-        var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", "MediaOpened");
-        var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", "D3D11VideoProcessor");
-
-        var input = Activator.CreateInstance(inputType)
-                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "StartupState", "WaitingForFirstVisual");
-        SetPropertyOrBackingField(input, "StartupAttemptId", "attempt-42");
-        SetPropertyOrBackingField(input, "StartupTimeoutMs", 1250);
-        SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", true);
-        SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", false);
-        SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", true);
-        SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
-        SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
-        SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
-        SetPropertyOrBackingField(input, "StartupMissingSignals", "FirstVisual");
-        SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", 5);
-        SetPropertyOrBackingField(input, "StartupLastFailureReason", "visual-timeout");
-        SetPropertyOrBackingField(input, "FirstVisualConfirmed", true);
-
-        var health = Activator.CreateInstance(healthType, new object?[] { 456.25d, true, false })
-                     ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
-        var startup = evaluate.Invoke(null, new object?[] { input, health })
-                      ?? throw new InvalidOperationException("PreviewRuntimeSnapshotStartupProjectionPolicy returned null.");
-
-        AssertEqual("WaitingForFirstVisual", GetStringProperty(startup, "State"), "startup projection state");
-        AssertEqual("attempt-42", GetStringProperty(startup, "AttemptId"), "startup projection attempt id");
-        AssertEqual(456.25d, GetDoubleProperty(startup, "ElapsedMs"), "startup projection elapsed");
-        AssertEqual(1250, GetIntProperty(startup, "TimeoutMs"), "startup projection timeout");
-        AssertEqual(true, GetBoolProperty(startup, "GpuSignalMediaOpened"), "startup projection media opened signal");
-        AssertEqual(false, GetBoolProperty(startup, "GpuSignalFirstFrame"), "startup projection first frame signal");
-        AssertEqual(true, GetBoolProperty(startup, "GpuSignalPlaybackAdvancing"), "startup projection playback signal");
-        AssertEqual(requiredSignals, GetPropertyValue(startup, "RequiredSignals"), "startup projection required signals");
-        AssertEqual(receivedSignals, GetPropertyValue(startup, "ReceivedSignals"), "startup projection received signals");
-        AssertEqual(startupStrategy, GetPropertyValue(startup, "Strategy"), "startup projection strategy");
-        AssertEqual("FirstVisual", GetStringProperty(startup, "MissingSignals"), "startup projection missing signals");
-        AssertEqual(5, GetIntProperty(startup, "RecoveryAttemptCount"), "startup projection recovery count");
-        AssertEqual("visual-timeout", GetStringProperty(startup, "LastFailureReason"), "startup projection failure reason");
-        AssertEqual(true, GetBoolProperty(startup, "FirstVisualConfirmed"), "startup projection first visual confirmed");
+            AssertEqual(timestamp, GetPropertyValue(snapshot, "TimestampUtc"), "snapshot supplied timestamp");
+            AssertEqual(73L, GetLongProperty(snapshot, "PreviewRuntimeEpoch"), "snapshot sampled epoch");
+            AssertEqual(active, GetBoolProperty(snapshot, "IsPreviewing"), "snapshot previewing");
+            AssertEqual(!active, GetBoolProperty(snapshot, "GpuActive"), "snapshot GPU active");
+            AssertEqual(!active, GetBoolProperty(snapshot, "PlaceholderVisible"), "snapshot placeholder visible");
+            AssertEqual(active, GetBoolProperty(snapshot, "GpuElementVisible"), "snapshot GPU element visible");
+            AssertEqual(!active, GetBoolProperty(snapshot, "CpuElementVisible"), "snapshot CPU element visible");
+            AssertEqual(active, GetBoolProperty(snapshot, "RendererAttached"), "snapshot renderer attached");
+            AssertEqual(101L, GetLongProperty(snapshot, "FramesArrived"), "snapshot projected frames arrived");
+            AssertEqual(99L, GetLongProperty(snapshot, "FramesDisplayed"), "snapshot projected frames displayed");
+            AssertEqual(2L, GetLongProperty(snapshot, "FramesDropped"), "snapshot projected frames dropped");
+            AssertEqual(active, GetBoolProperty(snapshot, "BlankSuspected"), "snapshot blank suspected");
+            AssertEqual(!active, GetBoolProperty(snapshot, "StallSuspected"), "snapshot stall suspected");
+        }
 
         return Task.CompletedTask;
     }
 
-    internal static Task PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy_PreservesRendererAndEventFields()
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesSampledStartupFields()
     {
         var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
         var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
-        var policyType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy");
-        var evaluate = policyType.GetMethod("Evaluate", BindingFlags.Public | BindingFlags.Static)
-                       ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy.Evaluate not found.");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build not found.");
 
-        var input = Activator.CreateInstance(inputType)
-                    ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
-        SetPropertyOrBackingField(input, "GpuPositionEventCount", 42L);
+        foreach (var hasAttempt in new[] { true, false })
+        {
+            var requiredSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", hasAttempt ? "FirstVisual" : "MediaOpened");
+            var receivedSignals = ParseEnum("Sussudio.Models.PreviewStartupSignalFlags", hasAttempt ? "MediaOpened" : "None");
+            var startupStrategy = ParseEnum("Sussudio.Models.PreviewStartupStrategy", hasAttempt ? "D3D11VideoProcessor" : "CpuSoftwareBitmap");
+            var state = hasAttempt ? "WaitingForFirstVisual" : "Idle";
+            var attemptId = hasAttempt ? "attempt-42" : null;
+            var missingSignals = hasAttempt ? "FirstVisual" : null;
+            var failureReason = hasAttempt ? "visual-timeout" : null;
+            double? elapsedMs = hasAttempt ? 456.25d : null;
+            var timeoutMs = hasAttempt ? 1250 : 730;
+            var recoveryCount = hasAttempt ? 5 : 0;
 
-        var d3dProjection = Activator.CreateInstance(projectionType)
-                            ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
-        SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", "Rendering");
-        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", 3840);
-        SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", 2160);
-        SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", 1234.5d);
+            var input = Activator.CreateInstance(inputType)
+                        ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+            SetPropertyOrBackingField(input, "StartupState", state);
+            SetPropertyOrBackingField(input, "StartupAttemptId", attemptId);
+            SetPropertyOrBackingField(input, "StartupTimeoutMs", timeoutMs);
+            SetPropertyOrBackingField(input, "StartupGpuSignalMediaOpened", hasAttempt);
+            SetPropertyOrBackingField(input, "StartupGpuSignalFirstFrame", !hasAttempt);
+            SetPropertyOrBackingField(input, "StartupGpuSignalPlaybackAdvancing", hasAttempt);
+            SetPropertyOrBackingField(input, "StartupRequiredSignals", requiredSignals);
+            SetPropertyOrBackingField(input, "StartupReceivedSignals", receivedSignals);
+            SetPropertyOrBackingField(input, "StartupStrategy", startupStrategy);
+            SetPropertyOrBackingField(input, "StartupMissingSignals", missingSignals);
+            SetPropertyOrBackingField(input, "StartupRecoveryAttemptCount", recoveryCount);
+            SetPropertyOrBackingField(input, "StartupLastFailureReason", failureReason);
+            SetPropertyOrBackingField(input, "FirstVisualConfirmed", !hasAttempt);
 
-        var gpuPlayback = evaluate.Invoke(null, new object?[] { input, d3dProjection })
-                          ?? throw new InvalidOperationException("PreviewRuntimeSnapshotGpuPlaybackProjectionPolicy returned null.");
+            var d3dProjection = Activator.CreateInstance(projectionType)
+                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            var health = Activator.CreateInstance(healthType, new object?[] { elapsedMs, true, false })
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+            var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, DateTimeOffset.UnixEpoch })
+                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
 
-        AssertEqual("Rendering", GetStringProperty(gpuPlayback, "PlaybackState"), "GPU playback projection state");
-        AssertEqual(3840, GetIntProperty(gpuPlayback, "NaturalVideoWidth"), "GPU playback projection natural width");
-        AssertEqual(2160, GetIntProperty(gpuPlayback, "NaturalVideoHeight"), "GPU playback projection natural height");
-        AssertEqual(1234.5d, GetDoubleProperty(gpuPlayback, "PositionMs"), "GPU playback projection position");
-        AssertEqual(42L, GetLongProperty(gpuPlayback, "PositionEventCount"), "GPU playback projection event count");
+            AssertEqual(state, GetStringProperty(snapshot, "StartupState"), "snapshot startup state");
+            AssertEqual(attemptId, GetPropertyValue(snapshot, "StartupAttemptId"), "snapshot startup attempt id");
+            AssertEqual(elapsedMs, GetPropertyValue(snapshot, "StartupElapsedMs"), "snapshot startup elapsed");
+            AssertEqual(timeoutMs, GetIntProperty(snapshot, "StartupTimeoutMs"), "snapshot startup timeout");
+            AssertEqual(hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalMediaOpened"), "snapshot media opened signal");
+            AssertEqual(!hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalFirstFrame"), "snapshot first frame signal");
+            AssertEqual(hasAttempt, GetBoolProperty(snapshot, "StartupGpuSignalPlaybackAdvancing"), "snapshot playback signal");
+            AssertEqual(requiredSignals, GetPropertyValue(snapshot, "StartupRequiredSignals"), "snapshot required signals");
+            AssertEqual(receivedSignals, GetPropertyValue(snapshot, "StartupReceivedSignals"), "snapshot received signals");
+            AssertEqual(startupStrategy, GetPropertyValue(snapshot, "StartupStrategy"), "snapshot startup strategy");
+            AssertEqual(missingSignals, GetPropertyValue(snapshot, "StartupMissingSignals"), "snapshot missing signals");
+            AssertEqual(recoveryCount, GetIntProperty(snapshot, "StartupRecoveryAttemptCount"), "snapshot recovery count");
+            AssertEqual(failureReason, GetPropertyValue(snapshot, "StartupLastFailureReason"), "snapshot failure reason");
+            AssertEqual(!hasAttempt, GetBoolProperty(snapshot, "FirstVisualConfirmed"), "snapshot first visual confirmed");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal static Task PreviewRuntimeSnapshotMapper_PreservesRendererAndEventFields()
+    {
+        var inputType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotInput");
+        var projectionType = RequireType("Sussudio.Controllers.PreviewRuntimeD3DProjection");
+        var healthType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotHealth");
+        var mapperType = RequireType("Sussudio.Controllers.PreviewRuntimeSnapshotMapper");
+        var build = mapperType.GetMethod("Build", BindingFlags.Public | BindingFlags.Static)
+                    ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build not found.");
+
+        foreach (var sample in new[]
+        {
+            (State: "Rendering", Width: 3840, Height: 2160, PositionMs: 1234.5d, EventCount: 42L),
+            (State: "Idle", Width: 1920, Height: 1080, PositionMs: 987.25d, EventCount: 17L)
+        })
+        {
+            var input = Activator.CreateInstance(inputType)
+                        ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotInput.");
+            SetPropertyOrBackingField(input, "GpuPositionEventCount", sample.EventCount);
+
+            var d3dProjection = Activator.CreateInstance(projectionType)
+                                ?? throw new InvalidOperationException("Failed to create PreviewRuntimeD3DProjection.");
+            SetPropertyOrBackingField(d3dProjection, "GpuPlaybackState", sample.State);
+            SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoWidth", sample.Width);
+            SetPropertyOrBackingField(d3dProjection, "GpuNaturalVideoHeight", sample.Height);
+            SetPropertyOrBackingField(d3dProjection, "GpuPositionMs", sample.PositionMs);
+
+            var health = Activator.CreateInstance(healthType, new object?[] { null, false, false })
+                         ?? throw new InvalidOperationException("Failed to create PreviewRuntimeSnapshotHealth.");
+            var snapshot = build.Invoke(null, new object?[] { input, d3dProjection, health, DateTimeOffset.UnixEpoch })
+                           ?? throw new InvalidOperationException("PreviewRuntimeSnapshotMapper.Build returned null.");
+
+            AssertEqual(sample.State, GetStringProperty(snapshot, "GpuPlaybackState"), "snapshot GPU playback state");
+            AssertEqual(sample.Width, GetIntProperty(snapshot, "GpuNaturalVideoWidth"), "snapshot GPU natural width");
+            AssertEqual(sample.Height, GetIntProperty(snapshot, "GpuNaturalVideoHeight"), "snapshot GPU natural height");
+            AssertEqual(sample.PositionMs, GetDoubleProperty(snapshot, "GpuPositionMs"), "snapshot GPU position");
+            AssertEqual(sample.EventCount, GetLongProperty(snapshot, "GpuPositionEventCount"), "snapshot GPU event count");
+        }
 
         return Task.CompletedTask;
     }
@@ -5698,89 +5711,55 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     internal static Task MainViewModelAudioMonitoring_PreservesVolumePersistenceAndRampedRouting()
     {
         var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
-        AssertNotNull(viewModelType.GetProperty("SuppressVolumeSave", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SuppressVolumeSave");
-        AssertNotNull(viewModelType.GetProperty("VolumeSaveOverride", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.VolumeSaveOverride");
+        AssertNotNull(viewModelType.GetMethod("SetPreviewVolumeFromUser", BindingFlags.Instance | BindingFlags.NonPublic), "explicit preview-volume input");
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
+        var viewModel = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.cs");
+        var audio = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
+        var owner = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs");
+        var request = ExtractMemberCode(owner, "SetUserVolume");
+        var publish = ExtractMemberCode(owner, "PublishEffectiveVolumeCore");
+        var writer = ExtractMemberCode(owner, "BeginWriter");
+        var current = ExtractMemberCode(owner, "IsCurrentWriterCore");
+        var restore = ExtractMemberCode(owner, "RestoreAfterUnavailableAudio");
+        var monitor = ExtractMemberCode(audio, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
+        var input = ExtractMemberCode(audio, "ApplyAudioInputSelectionAsync");
 
-        var audioStateCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioState.cs");
-        var transitionCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs");
-        var previewChanged = ExtractMemberCode(audioStateCode, "OnPreviewVolumeChanged");
-        var handlePreviewChanged = ExtractMemberCode(transitionCode, "HandlePreviewVolumeChanged");
-        var rampDown = ExtractMemberCode(transitionCode, "RampDownForAudioTransitionAsync");
-        var rampUp = ExtractMemberCode(transitionCode, "RampUpForAudioTransitionAsync");
-        var primeTransition = ExtractMemberCode(transitionCode, "PrimeForAudioTransition");
-        var restoreTransition = ExtractMemberCode(transitionCode, "RestoreAfterUnavailableAudio");
-        var monitoringTransition = ExtractMemberCode(audioStateCode, "SetAudioMonitoringEnabledWithVolumeTransitionAsync");
-        var audioPreviewChanged = ExtractMemberCode(audioStateCode, "OnIsAudioPreviewEnabledChanged");
-        var applyAudioInputSelection = ExtractMemberCode(audioStateCode, "ApplyAudioInputSelectionAsync");
-
-        AssertContains(audioStateCode, "get => _previewAudioVolumeTransitionController.SuppressVolumeSave;");
-        AssertContains(audioStateCode, "set => _previewAudioVolumeTransitionController.SuppressVolumeSave = value;");
-        AssertContains(audioStateCode, "get => _previewAudioVolumeTransitionController.VolumeSaveOverride;");
-        AssertContains(audioStateCode, "set => _previewAudioVolumeTransitionController.VolumeSaveOverride = value;");
-        AssertContains(previewChanged, "_previewAudioVolumeTransitionController.HandlePreviewVolumeChanged(value);");
-        AssertContains(audioStateCode, "internal void SavePreviewVolume() => SaveSettings();");
-        AssertContains(audioStateCode, "private async Task RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.PreviewVolumeTransitions.cs")), "MainViewModel.PreviewVolumeTransitions.cs folded into audio state");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioMonitoring.cs")), "MainViewModel.AudioMonitoring.cs folded into audio state");
-        AssertDoesNotContain(audioStateCode, "private const int PreviewAudioRampDownSteps");
-        AssertContains(transitionCode, "internal sealed class PreviewAudioVolumeTransitionController");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.Ramps.cs")), "PreviewAudioVolumeTransitionController.Ramps.cs folded into PreviewAudioTransitionControllers.cs");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "PreviewAudioVolumeTransitionController.cs")), "preview audio volume transition controller folded into PreviewAudioTransitionControllers.cs");
-        AssertContains(transitionCode, "private const int RampDownSteps = 18;");
-        AssertContains(transitionCode, "private const int RampDownDelayMs = 25;");
-        AssertContains(transitionCode, "private const int RampUpSteps = 30;");
-        AssertContains(transitionCode, "private const int RampUpDelayMs = 30;");
-
-        AssertContains(handlePreviewChanged, "if (!SuppressVolumeSave)");
-        AssertContains(handlePreviewChanged, "VolumeSaveOverride = null;");
-        AssertContains(handlePreviewChanged, "_context.SetSessionPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));");
-        AssertOccursBefore(handlePreviewChanged, "VolumeSaveOverride = null;", "_context.SetSessionPreviewVolume");
-
-        AssertContains(rampDown, "var persistedVolume = PersistedVolumeTarget;");
-        AssertContains(rampDown, "VolumeSaveOverride = persistedVolume;");
-        AssertContains(rampDown, "_context.SetPreviewVolume(startingVolume * eased);");
-        AssertContains(rampDown, "_context.SetPreviewVolume(0);");
-        AssertContains(rampUp, "VolumeSaveOverride = volumeTarget;");
-        AssertContains(rampUp, "_context.SetPreviewVolume(volumeTarget * eased);");
-        AssertContains(rampUp, "VolumeSaveOverride = null;");
-        AssertContains(primeTransition, "var volumeTarget = PersistedVolumeTarget;");
-        AssertContains(primeTransition, "_context.SetPreviewVolume(0);");
-        AssertContains(restoreTransition, "_context.SetPreviewVolume(volumeTarget);");
-
-        AssertContains(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);");
-        AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
-        AssertContains(monitoringTransition, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);");
-        AssertContains(monitoringTransition, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);");
-        AssertContains(monitoringTransition, "await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);");
-        AssertContains(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
-        AssertOccursBefore(monitoringTransition, "var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
-        AssertOccursBefore(monitoringTransition, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);");
-        AssertOccursBefore(monitoringTransition, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
-
-        AssertContains(audioPreviewChanged, "if (value && !IsAudioEnabled)");
-        AssertContains(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)");
-        AssertContains(audioPreviewChanged, "if (!value && !IsRecording)");
-        AssertContains(audioPreviewChanged, "if (IsPreviewing && IsInitialized)");
-        AssertContains(audioPreviewChanged, "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
-        AssertContains(audioStateCode, "private async Task ApplyAudioInputSelectionAsync");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AudioInputSelection.cs")), "MainViewModel.AudioInputSelection.cs folded into audio state");
-        AssertOccursBefore(audioPreviewChanged, "if (value && !IsAudioEnabled)", "IsAudioPreviewEnabled = false;");
-        AssertOccursBefore(audioPreviewChanged, "if (_suppressAudioPreviewEnabledChangeOperation)", "if (!value && !IsRecording)");
-        AssertOccursBefore(audioPreviewChanged, "if (!value && !IsRecording)", "ResetAudioMeter();");
-        AssertOccursBefore(audioPreviewChanged, "if (IsPreviewing && IsInitialized)", "SetAudioMonitoringEnabledWithVolumeTransitionAsync(value, description, teardownCapture: false)");
-
-        AssertContains(applyAudioInputSelection, "if (IsCustomAudioInputEnabled)");
-        AssertContains(applyAudioInputSelection, "audioDeviceId = SelectedAudioInputDevice?.Id;");
-        AssertContains(applyAudioInputSelection, "audioDeviceId = SelectedDevice?.AudioDeviceId;");
-        AssertContains(applyAudioInputSelection, "var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;");
-        AssertContains(applyAudioInputSelection, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);");
-        AssertContains(applyAudioInputSelection, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
-        AssertContains(applyAudioInputSelection, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);");
-        AssertOccursBefore(applyAudioInputSelection, "if (IsCustomAudioInputEnabled)", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
-        AssertOccursBefore(applyAudioInputSelection, "await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
-        AssertOccursBefore(applyAudioInputSelection, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);");
-
+        AssertContains(viewModel, "_previewAudioVolumeTransitionController.RequestedVolume");
+        AssertContains(ExtractMemberCode(viewModel, "SetPreviewVolumeAsync"), "SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0))");
+        AssertContains(audio, "internal void SavePreviewVolume() => SaveSettings();");
+        AssertContains(audio, "_previewAudioVolumeTransitionController.HandlePreviewVolumeChanged(value);");
+        AssertDoesNotContain(audio, "SuppressVolumeSave");
+        AssertDoesNotContain(audio, "VolumeSaveOverride");
+        AssertContains(request, "_requestedVolume = Math.Clamp(value, 0.0, 1.0);");
+        AssertContains(request, "_userRevision++;");
+        AssertContains(request, "RevokeWriterCore()");
+        AssertContains(request, "PublishEffectiveVolumeCore(_holdingMuted ? 0 : _requestedVolume)");
+        AssertContains(publish, "_context.SetSessionPreviewVolume((float)_effectiveVolume);");
+        AssertContains(writer, "muteOutput ? 0 : _requestedVolume");
+        AssertContains(current, "writer.OperationGeneration == _operationGeneration");
+        AssertContains(current, "writer.WriterGeneration == _writerGeneration");
+        AssertContains(current, "writer.UserRevision == _userRevision");
+        AssertContains(restore, "IsCurrentOperationCore(operation)");
+        AssertContains(restore, "PublishEffectiveVolumeCore(_requestedVolume)");
+        AssertContains(owner, "private const int RampDownSteps = 18;");
+        AssertContains(owner, "private const int RampDownDelayMs = 25;");
+        AssertContains(owner, "private const int RampUpSteps = 30;");
+        AssertContains(owner, "private const int RampUpDelayMs = 30;");
+        AssertContains(monitor, "PrimePreviewVolumeForAudioTransition(reason)");
+        AssertContains(monitor, "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);");
+        AssertOccursBefore(monitor, "PrimePreviewVolumeForAudioTransition(reason)", "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);");
+        AssertOccursBefore(monitor, "await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);");
+        AssertOccursBefore(monitor, "await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);", "await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);");
+        AssertContains(monitor, "await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);");
+        AssertContains(monitor, "RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);");
+        AssertContains(input, "var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;");
+        AssertContains(input, "audioDeviceId = SelectedAudioInputDevice?.Id;");
+        AssertContains(input, "audioDeviceId = SelectedDevice?.AudioDeviceId;");
+        AssertOccursBefore(input, "await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, traceSession: false);", "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);");
+        AssertOccursBefore(input, "await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);", "await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false);");
+        AssertContains(input, "RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);");
+        AssertContains(audio, "_previewAudioVolumeTransitionController.Dispose();");
+        AssertContains(audio, "_audioRampTraceRecorder.Dispose();");
         return Task.CompletedTask;
     }
 
@@ -5891,11 +5870,11 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     {
         var traceModelsText = ReadRepoFile("Sussudio/Models/Capture/CaptureModels.cs").Replace("\r\n", "\n");
         var audioMonitoringText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
-        var audioVolumeTransitionText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs")
+        var audioVolumeTransitionText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs")
             .Replace("\r\n", "\n");
         var audioRampTraceText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
         var rootText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/ViewModels/PreviewAudioTransitionControllers.cs").Replace("\r\n", "\n");
+        var audioRampTraceRecorderRootText = ReadRepoFile("Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs").Replace("\r\n", "\n");
         var audioRampTraceRecorderText = audioRampTraceRecorderRootText;
         var playbackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs").Replace("\r\n", "\n");
         var playbackRenderText = playbackText;
@@ -5949,7 +5928,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(audioVolumeTransitionText, "BeginTraceSession(");
         AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"volume-set\")");
         AssertContains(audioVolumeTransitionText, "RecordTracePoint(\"primed\"");
-        AssertContains(audioVolumeTransitionText, "public Task RampDownForStopAsync(CancellationToken cancellationToken)");
+        AssertContains(audioVolumeTransitionText, "public async Task<PreviewAudioVolumeOperation> RampDownForStopAsync(CancellationToken cancellationToken)");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-started\"");
         AssertContains(audioMonitoringText, "RecordAudioRampTracePoint(\"monitoring-stopped\"");
         AssertContains(audioRampTraceText, "GetAudioRampTraceSnapshotAsync");
@@ -6205,7 +6184,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(rootText, "public async Task<bool> SetAudioModeAsync(");
         AssertContains(rootText, "public async Task<bool> SetAnalogGainPercentAsync(");
         AssertContains(rootText, "internal sealed record DeviceAudioControlState(");
-        var deviceSupportText = ReadRepoFile("Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs")
+        var deviceSupportText = ReadRepoFile("Sussudio/Services/NativeXu/KsExtensionUnitNative.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private static readonly int[] InputByteIndexes");
@@ -6510,7 +6489,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
         AssertContains(compositionText, "_deviceAudioRequestController = controllerGraph.DeviceAudioRequestController;");
         AssertContains(compositionText, "_recordingCapabilityController = controllerGraph.RecordingCapabilityController;");
         AssertContains(compositionText, "_captureSettingsAutomationController = controllerGraph.CaptureSettingsAutomationController;");
-        AssertContains(compositionText, "_recordingSettingsAutomationController = controllerGraph.RecordingSettingsAutomationController;");
+        AssertContains(compositionText, "_recordingSettingsController = controllerGraph.RecordingSettingsController;");
         AssertContains(compositionText, "_captureModeOptionRebuildController = controllerGraph.CaptureModeOptionRebuildController;");
         AssertDoesNotContain(rootText, "_resolutionOptionRebuildController");
         AssertDoesNotContain(compositionText, "_resolutionOptionRebuildController");
@@ -6636,7 +6615,7 @@ private readonly record struct D3D11PreviewRendererDiagnosticsContractSources(
     internal static Task MainViewModelUiDispatchController_UsesDependencyCompositionContext()
     {
         var controllerGraphText = ReadMainViewModelControllerGraphSource();
-        var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs").Replace("\r\n", "\n");
+        var uiDispatchControllerText = ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs").Replace("\r\n", "\n");
 
         AssertContains(controllerGraphText, "private sealed class MainViewModelControllerGraph");
         AssertContains(controllerGraphText, "private static MainViewModelUiDispatchController CreateUiDispatchController(MainViewModel viewModel)");
@@ -6707,10 +6686,11 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(controllerGraphText, "RampPreviewVolumeDownForStopAsync = viewModel.RampPreviewVolumeDownForStopAsync,");
         AssertContains(controllerGraphText, "CreateReinitializeController = controller => new MainViewModelPreviewReinitializeController(");
         AssertContains(controllerGraphText, "new MainViewModelPreviewReinitializeControllerContext");
-        AssertContains(controllerGraphText, "IncrementReinitializeGeneration = () => Interlocked.Increment(ref viewModel._previewReinitializeGeneration),");
-        AssertContains(controllerGraphText, "ReadReinitializeGeneration = () => Volatile.Read(ref viewModel._previewReinitializeGeneration),");
+        AssertDoesNotContain(controllerGraphText, "IncrementReinitializeGeneration =");
+        AssertDoesNotContain(controllerGraphText, "ReadReinitializeGeneration =");
         AssertContains(controllerGraphText, "PreviewReinitializeDebounceMs = PreviewReinitializeDebounceMs,");
-        AssertContains(controllerGraphText, "ClearPendingFlashbackCycleIfSameAndCompleted = task =>");
+        AssertContains(controllerGraphText, "PendingFlashbackCycleTask = () => viewModel._recordingSettingsController.PendingApplication,");
+        AssertContains(controllerGraphText, "ClearPendingFlashbackCycleIfSameAndCompleted = task => viewModel._recordingSettingsController.ClearPendingIfSameAndCompleted(task),");
         AssertContains(controllerGraphText, "FlashbackCycleBeforeReinitializeTimeoutMs = FlashbackCycleBeforeReinitializeTimeoutMs,");
         AssertContains(controllerGraphText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
         AssertContains(controllerGraphText, "SelectedDevice = () => viewModel.SelectedDevice,");
@@ -6738,9 +6718,12 @@ internal static Task MainViewModelPresentationControllers_UseDependencyCompositi
         AssertContains(previewStateText, "public partial bool IsPreviewing");
         AssertContains(previewStateText, "public partial bool IsPreviewReinitializing");
         AssertContains(previewStateText, "public partial bool IsInitialized");
-        AssertContains(previewStateText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
-        AssertContains(previewStateText, "private int _previewReinitializeGeneration;");
-        AssertContains(previewStateText, "private bool _cancelPreviewRestartAfterReinitialize;");
+        AssertDoesNotContain(previewStateText, "private readonly SemaphoreSlim _previewReinitializeGate");
+        AssertDoesNotContain(previewStateText, "private int _previewReinitializeGeneration;");
+        AssertDoesNotContain(previewStateText, "private bool _cancelPreviewRestartAfterReinitialize;");
+        AssertContains(previewReinitializeControllerText, "private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);");
+        AssertContains(previewReinitializeControllerText, "private int _previewReinitializeGeneration;");
+        AssertContains(previewReinitializeControllerText, "private bool _cancelPreviewRestartAfterReinitialize;");
         AssertContains(previewStateText, "public event EventHandler? PreviewStartRequested;");
         AssertContains(previewStateText, "public event EventHandler? PreviewStopRequested;");
         AssertContains(previewStateText, "public event Func<string, Task>? PreviewReinitRequested;");
@@ -6852,7 +6835,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         var deviceRefreshControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var deviceAudioRequestControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var captureSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
-        var recordingSettingsAutomationControllerText = captureSettingsAutomationControllerText;
+        var recordingSettingsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var captureModeOptionRebuildControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var frameRateTimingResolverText = captureModeOptionRebuildControllerText;
@@ -6871,7 +6854,7 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(controllerGraphText, "var deviceAudioRequestController = CreateDeviceAudioRequestController(viewModel);");
         AssertContains(controllerGraphText, "var recordingCapabilityController = CreateRecordingCapabilityController(viewModel);");
         AssertContains(controllerGraphText, "var captureSettingsAutomationController = CreateCaptureSettingsAutomationController(viewModel);");
-        AssertContains(controllerGraphText, "var recordingSettingsAutomationController = CreateRecordingSettingsAutomationController(viewModel);");
+        AssertContains(controllerGraphText, "var recordingSettingsController = CreateRecordingSettingsController(viewModel);");
         AssertContains(controllerGraphText, "var deviceFormatProbeController = CreateDeviceFormatProbeController(viewModel);");
         AssertContains(controllerGraphText, "var deviceRefreshController = CreateDeviceRefreshController(viewModel, previewLifecycleController);");
         AssertOccursBefore(
@@ -6939,19 +6922,28 @@ internal static Task MainViewModelCaptureDeviceControllers_UseDependencyComposit
         AssertContains(controllerGraphText, "new MainViewModelCaptureSettingsAutomationControllerContext");
         AssertContains(controllerGraphText, "CaptureSelectionSnapshot = viewModel.CaptureSelectionSnapshot,");
         AssertContains(controllerGraphText, "RestoreCaptureSelectionSnapshotIfUnchanged = viewModel.RestoreCaptureSelectionSnapshotIfUnchanged,");
-        AssertContains(controllerGraphText, "SetSuppressFormatChangeReinitialize = value => viewModel._suppressFormatChangeReinitialize = value,");
+        AssertContains(controllerGraphText, "ApplyCaptureSelectionWithoutReinitialize = viewModel.ApplyCaptureSelectionWithoutReinitialize,");
+        foreach (var source in new[] { controllerGraphText, captureSettingsAutomationControllerText, deviceFormatProbeControllerText })
+        {
+            AssertDoesNotContain(source, "SetSuppressFormatChangeReinitialize");
+            AssertDoesNotContain(source, "IsSuppressFormatChangeReinitialize");
+        }
+        AssertContains(captureSettingsAutomationControllerText, "Action<Action> ApplyCaptureSelectionWithoutReinitialize");
+        AssertContains(deviceFormatProbeControllerText, "Action<Action> ApplyCaptureSelectionWithoutReinitialize");
         AssertContains(controllerGraphText, "ReinitializeDeviceWithResultAsync = viewModel.ReinitializeDeviceWithResultAsync,");
 
-        AssertContains(recordingSettingsAutomationControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
-        AssertContains(recordingSettingsAutomationControllerText, "public async Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
-        AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
-        AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
-        AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
-        AssertContains(recordingSettingsAutomationControllerText, "_context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertContains(controllerGraphText, "private static MainViewModelRecordingSettingsAutomationController CreateRecordingSettingsAutomationController(MainViewModel viewModel)");
-        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsAutomationControllerContext");
+        AssertContains(recordingSettingsControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsController");
+        AssertContains(recordingSettingsControllerText, "public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsControllerContext");
+        AssertContains(recordingSettingsControllerText, "private readonly MainViewModelRecordingSettingsControllerContext _context;");
+        AssertDoesNotContain(recordingSettingsControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingSettingsControllerText, "_viewModel.");
+        AssertContains(recordingSettingsControllerText, "_context.ApplyAsync(_context.CaptureSelection(), kind, cancellationToken)");
+        AssertContains(controllerGraphText, "private static MainViewModelRecordingSettingsController CreateRecordingSettingsController(MainViewModel viewModel)");
+        AssertContains(controllerGraphText, "new MainViewModelRecordingSettingsControllerContext");
+        AssertMemberContains(controllerGraphText, "CreateRecordingSettingsController", "ApplyAsync = viewModel._sessionCoordinator.ApplyRecordingSettingsAsync,");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "class MainViewModelRecordingSettingsController");
 
         AssertContains(recordingCapabilityControllerText, "namespace Sussudio.Controllers;");
         AssertContains(recordingCapabilityControllerText, "internal sealed class MainViewModelRecordingCapabilityController");
@@ -7102,8 +7094,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeLifecycleControllerText, "var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();");
         AssertContains(runtimeLifecycleControllerText, "_context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);");
         AssertContains(runtimeLifecycleControllerText, "_context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCapture();");
-        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfo();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot();");
+        AssertContains(runtimeLifecycleControllerText, "_context.UpdateLiveCaptureInfoWithoutSnapshot();");
         AssertContains(runtimeLifecycleControllerText, "SetupTimer();");
         AssertContains(runtimeLifecycleControllerText, "_context.UpdateDiskSpace();");
 
@@ -7114,7 +7106,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeEventIngressControllerText, "private readonly MainViewModelRuntimeEventIngressControllerContext _context;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.");
-        AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertContains(runtimeEventIngressControllerText, "_context.RecoverCaptureErrorAsync(error.Origin)");
+        AssertContains(runtimeEventIngressControllerText, "if (!_context.IsCaptureErrorCurrent(error.Origin))");
         AssertContains(runtimeEventIngressControllerText, "_context.ReinitializeDeviceAsync(\"system resume\")");
         AssertContains(controllerGraphText, "private static MainViewModelRuntimeEventIngressController CreateRuntimeEventIngressController(");
         AssertContains(controllerGraphText, "new MainViewModelRuntimeEventIngressControllerContext");
@@ -7124,7 +7117,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             "runtime event ingress controller folded into MainViewModelLifecycleController.cs");
         AssertContains(runtimeEventIngressControllerText, "public required Func<CaptureRuntimeSnapshot> GetRuntimeSnapshot { get; init; }");
         AssertContains(runtimeEventIngressControllerText, "public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }");
-        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"audio device invalidated\")");
+        AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.RecoverCaptureErrorAsync(");
         AssertDoesNotContain(runtimeEventIngressControllerText, "_viewModel.ReinitializeDeviceAsync(\"system resume\")");
         AssertEqual(
             true,
@@ -7135,7 +7128,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(runtimeEventIngressControllerText, "_context.AttachCaptureStatusChanged(OnCaptureStatusChanged);");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachCaptureErrorOccurred(OnCaptureError);");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);");
-        AssertContains(runtimeEventIngressControllerText, "_context.AttachFrameCaptured(OnFrameCaptured);");
+        AssertDoesNotContain(runtimeEventIngressControllerText, "OnFrameCaptured");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);");
         AssertContains(runtimeEventIngressControllerText, "_context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);");
@@ -7152,7 +7145,16 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(controllerGraphText, "MainViewModelRuntimeLifecycleController runtimeLifecycleController)");
         AssertContains(controllerGraphText, "new MainViewModelDisposalController(\n                new MainViewModelDisposalControllerContext");
         AssertContains(controllerGraphText, "TryBeginDispose = () => Interlocked.Exchange(ref viewModel._disposeState, 1) == 0,");
-        AssertContains(controllerGraphText, "CancelPendingAudioControlWork = deviceAudioRequestController.CancelPendingAudioControlWork,");
+        var cancelPendingAudioControlWork = ExtractTextBetween(
+            controllerGraphText,
+            "CancelPendingAudioControlWork = () =>",
+            "StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,");
+        AssertContains(cancelPendingAudioControlWork, "viewModel.DisposePreviewAudioVolume();");
+        AssertContains(cancelPendingAudioControlWork, "deviceAudioRequestController.CancelPendingAudioControlWork();");
+        AssertOccursBefore(
+            cancelPendingAudioControlWork,
+            "viewModel.DisposePreviewAudioVolume();",
+            "deviceAudioRequestController.CancelPendingAudioControlWork();");
         AssertContains(controllerGraphText, "StopRuntimeForDispose = runtimeLifecycleController.StopForDispose,");
         AssertContains(controllerGraphText, "CleanupSessionCoordinatorAsync = () => viewModel._sessionCoordinator.CleanupAsync(),");
         AssertContains(controllerGraphText, "AwaitWithTimeoutAsync = AwaitWithTimeoutAsync,");
@@ -7182,7 +7184,8 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(disposalControllerText, "_context.CancelActiveFlashbackExport();");
         AssertContains(disposalControllerText, "_context.CancelPendingAudioControlWork();");
         AssertContains(disposalControllerText, "_context.StopRuntimeForDispose();");
-        AssertContains(disposalControllerText, "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS");
+        AssertContains(disposalControllerText, "GetOrStartDisposalTask()");
+        AssertContains(disposalControllerText, "_context.CompleteRuntimeDispose();");
         AssertContains(disposalControllerText, "SUSSUDIO_VIEWMODEL_DISPOSE_TIMEOUT_MS");
         AssertDoesNotContain(disposalText, "_captureService.StatusChanged -= OnCaptureStatusChanged;");
         AssertDoesNotContain(disposalText, "SystemEvents.PowerModeChanged -= OnSystemPowerModeChanged;");
@@ -7365,7 +7368,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
     {
         var closeLifecycleText = ReadRepoFile("Sussudio/MainWindow.xaml.cs").Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs").Replace("\r\n", "\n");
-        var appClosingControllerText = closeLifecycleControllerText;
+        var appClosingControllerText = ExtractTextBetween(
+            closeLifecycleControllerText,
+            "internal sealed class WindowAppClosingControllerContext",
+            "internal sealed class WindowCloseRecordingFinalizationController");
         var closeRequestControllerText = closeLifecycleControllerText;
 
         AssertContains(closeLifecycleText, "private readonly WindowCloseLifecycleController _windowCloseLifecycleController = new();");
@@ -7393,10 +7399,12 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
 
         AssertContains(appClosingControllerText, "internal sealed class WindowAppClosingControllerContext");
         AssertContains(appClosingControllerText, "internal sealed class WindowAppClosingController");
-        AssertContains(appClosingControllerText, "public async Task HandleClosingAsync(AppWindowClosingEventArgs args)");
+        AssertContains(appClosingControllerText, "public Task HandleClosingAsync(AppWindowClosingEventArgs args)");
         AssertContains(appClosingControllerText, "LogWindowClosingTrigger();");
         AssertContains(appClosingControllerText, "if (_context.IsRecording() || _context.IsRecordingTransitioning())");
-        AssertContains(appClosingControllerText, "args.Cancel = true;");
+        AssertContains(appClosingControllerText, "=> HandleClosingCoreAsync(() => args.Cancel = true);");
+        AssertContains(appClosingControllerText, "private async Task HandleClosingCoreAsync(Action cancelClose)");
+        AssertOccursBefore(appClosingControllerText, "cancelClose();", "_context.LifecycleController.TryBeginRecordingStop()");
         AssertContains(appClosingControllerText, "_context.LifecycleController.ClearRequested();");
         AssertContains(appClosingControllerText, "_context.LifecycleController.TryBeginRecordingStop()");
         AssertContains(appClosingControllerText, "var stopped = await _context.StopRecordingBeforeCloseAsync();");
@@ -7408,6 +7416,13 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(appClosingControllerText, "_context.RequestWindowClose();");
         AssertContains(appClosingControllerText, "_context.LifecycleController.EndRecordingStop();");
         AssertContains(appClosingControllerText, "WINDOW_CLOSING_TRIGGER ");
+        AssertContains(appClosingControllerText, "catch (Exception ex)");
+        AssertContains(appClosingControllerText, "WINDOW_CLOSE_PREPARE_FAILED");
+        AssertOccursBefore(appClosingControllerText, "_context.LifecycleController.ResetRequestedAfterFailure();", "_context.LifecycleController.CompleteRequest(ex);");
+        AssertContains(appClosingControllerText, "_context.SetStatusText($\"Close paused: {ex.Message} Close again to retry.\");");
+        AssertContains(appClosingControllerText, "finally\n        {\n            _context.LifecycleController.EndRecordingStop();");
+        AssertContains(closeLifecycleText, "SetStatusText = value => ViewModel.StatusText = value,");
+        AssertContains(closeLifecycleText, "PrepareForCloseAsync = ViewModel.DisposeAsync,");
 
         AssertContains(closeLifecycleControllerText, "internal sealed class WindowCloseLifecycleController");
         AssertContains(closeLifecycleControllerText, "private int _closeRequested;");
@@ -7473,7 +7488,10 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
             .Replace("\r\n", "\n");
         var closeLifecycleControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs")
             .Replace("\r\n", "\n");
-        var appClosingControllerText = closeLifecycleControllerText;
+        var appClosingControllerText = ExtractTextBetween(
+            closeLifecycleControllerText,
+            "internal sealed class WindowAppClosingControllerContext",
+            "internal sealed class WindowCloseRecordingFinalizationController");
         var closeRequestControllerText = closeLifecycleControllerText;
         var closeRecordingFinalizationControllerText = ReadRepoFile("Sussudio/Controllers/Window/WindowControllers.cs")
             .Replace("\r\n", "\n");
@@ -7481,7 +7499,11 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(windowCtorText, "RegisterCloseLifecycle(appWindow);");
         AssertContains(closeLifecycleText, "appWindow.Closing += MainWindow_Closing;");
         AssertContains(closeLifecycleText, "_windowAppClosingController.HandleClosingAsync(args)");
-        AssertContains(appClosingControllerText, "args.Cancel = true;");
+        AssertContains(appClosingControllerText, "=> HandleClosingCoreAsync(() => args.Cancel = true);");
+        AssertOccursBefore(appClosingControllerText, "cancelClose();", "await _context.StopRecordingBeforeCloseAsync();");
+        AssertOccursBefore(appClosingControllerText, "await _context.StopRecordingBeforeCloseAsync();", "await _context.PrepareForCloseAsync();");
+        AssertOccursBefore(appClosingControllerText, "await _context.PrepareForCloseAsync();", "_context.LifecycleController.AllowAfterRecordingStop();");
+        AssertOccursBefore(appClosingControllerText, "_context.LifecycleController.AllowAfterRecordingStop();", "_context.RequestWindowClose();");
         AssertContains(closeLifecycleText, "TryStopRecordingBeforeCloseAsync");
         AssertContains(appClosingControllerText, "if (_context.IsRecording() || _context.IsRecordingTransitioning())");
         AssertContains(appClosingControllerText, "await _context.PrepareForCloseAsync();");
@@ -8880,7 +8902,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         var recordingRuntimeText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var recordingCapabilityControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs").Replace("\r\n", "\n");
         var automationSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var automationRecordingControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs").Replace("\r\n", "\n");
+        var recordingSettingsControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs").Replace("\r\n", "\n");
         var recordingSettingsPolicyText = ReadRepoFile("Sussudio/ViewModels/ViewModelBuilders.cs").Replace("\r\n", "\n");
 
         AssertContains(recordingRuntimeText, "private void RebuildRecordingFormatOptions()");
@@ -8900,18 +8922,26 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(captureModeTransactionsText, "RebuildRecordingFormatOptions();");
         AssertDoesNotContain(captureModeTransactionsText, "RecordingSettingsSelectionPolicy.Select(");
         AssertContains(automationSettingsText, "=> RunPersistedSettingsAutomationAsync(");
-        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.IsHdrCompatible(matched)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ParseVideoQuality(_context.GetSelectedQuality())");
-        AssertContains(automationRecordingControllerText, "namespace Sussudio.Controllers;");
-        AssertContains(automationRecordingControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationController");
-        AssertContains(automationRecordingControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
-        AssertContains(automationRecordingControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
-        AssertDoesNotContain(automationRecordingControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(automationRecordingControllerText, "_viewModel.");
-        AssertContains(automationRecordingControllerText, "RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps)");
-        AssertContains(automationRecordingControllerText, "public async Task SetRecordingFormatAsync");
+        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsController.SetRecordingFormatAsync(format, cancellationToken)");
+        AssertContains(recordingSettingsControllerText, "_context.IsHdrCompatibleFormat(matched)");
+        AssertContains(recordingSettingsControllerText, "_context.ClampCustomBitrateMbps(bitrateMbps)");
+        AssertContains(recordingSettingsControllerText, "namespace Sussudio.Controllers;");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsController");
+        AssertContains(recordingSettingsControllerText, "internal sealed class MainViewModelRecordingSettingsControllerContext");
+        AssertContains(recordingSettingsControllerText, "private readonly MainViewModelRecordingSettingsControllerContext _context;");
+        AssertDoesNotContain(recordingSettingsControllerText, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(recordingSettingsControllerText, "_viewModel.");
+        AssertContains(recordingSettingsControllerText, "public Task SetRecordingFormatAsync");
+        AssertContains(recordingSettingsControllerText, "using (SuppressPropertyReactions())");
+        AssertContains(recordingSettingsControllerText, "_context.ApplyAsync(_context.CaptureSelection(), kind, cancellationToken)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "IsHdrCompatibleFormat = RecordingSettingsSelectionPolicy.IsHdrCompatible,");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "ClampCustomBitrateMbps = RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps,");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "CaptureSelection = () => new RecordingSettingsSelection(");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "RecordingSettingsSelectionPolicy.ParseRecordingFormat(viewModel.SelectedRecordingFormat)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "RecordingSettingsSelectionPolicy.ParseVideoQuality(viewModel.SelectedQuality)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "viewModel.CustomBitrateMbps,");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "NvencPresetParser.Parse(viewModel.SelectedPreset)");
+        AssertMemberContains(automationSettingsText, "CreateRecordingSettingsController", "SplitEncodeModeParser.Parse(viewModel.SelectedSplitEncodeMode)");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationRecordingFormat.cs")),
@@ -9439,7 +9469,7 @@ internal static Task MainViewModelRuntimeControllers_UseDependencyCompositionCon
         AssertContains(retargetApplierText, "private DeviceFormatProbeRetargetDecision DecideDeviceFormatProbeRetarget(");
         AssertContains(retargetApplierText, "DeviceFormatProbeRetargetPolicy.Decide(new DeviceFormatProbeRetargetRequest(");
         AssertContains(retargetApplierText, "_context.SetSelectedResolution(retargetDecision.TargetResolution);");
-        AssertContains(retargetApplierText, "_context.RebuildFrameRateOptions();");
+        AssertContains(retargetApplierText, "_context.ApplyCaptureSelectionWithoutReinitialize(_context.RebuildFrameRateOptions);");
         AssertContains(retargetApplierText, "_context.SetSelectedResolution(previousResolution);");
         AssertContains(retargetApplierText, "_context.GetCaptureRuntimeSnapshot();");
         AssertDoesNotContain(retargetPolicyText, "EnqueueUiOperation(");

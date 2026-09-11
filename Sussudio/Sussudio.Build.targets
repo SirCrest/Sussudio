@@ -7,6 +7,46 @@
     <LatestBuildRoot>$(MSBuildProjectDirectory)\..\latest-build\</LatestBuildRoot>
   </PropertyGroup>
 
+  <!-- Keep the SDK's configuration-dependent initialization body and ordering,
+       but run it explicitly after normal process admission. Its module hook
+       otherwise runs before Main, including in private native-probe children.
+       Only an obj copy is changed; the NuGet source remains untouched. -->
+  <Target Name="DeferWindowsAppRuntimeInitialization"
+          AfterTargets="WindowsAppRuntimeAutoInitializer"
+          Condition="'$(WindowsAppSdkAutoInitialize)' == 'true'">
+    <ItemGroup>
+      <_WindowsAppRuntimeInitializerSource Include="@(Compile)"
+          Condition="'%(Compile.Filename)%(Compile.Extension)' == 'WindowsAppRuntimeAutoInitializer.cs'" />
+    </ItemGroup>
+    <Error Condition="'@(_WindowsAppRuntimeInitializerSource->Count())' != '1'"
+           Text="Expected one Windows App SDK common initializer source; review deferred startup integration after the SDK change." />
+    <ReadLinesFromFile File="@(_WindowsAppRuntimeInitializerSource)">
+      <Output TaskParameter="Lines" ItemName="_WindowsAppRuntimeInitializerLine" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_WindowsAppRuntimeInitializerHook Include="@(_WindowsAppRuntimeInitializerLine)"
+          Condition="'%(_WindowsAppRuntimeInitializerLine.Identity)' == '[global::System.Runtime.CompilerServices.ModuleInitializer]'" />
+    </ItemGroup>
+    <Error Condition="'@(_WindowsAppRuntimeInitializerHook->Count())' != '1'"
+           Text="Expected one Windows App SDK module-initializer attribute; review deferred startup integration after the SDK change." />
+    <ItemGroup>
+      <_WindowsAppRuntimeInitializerLine Remove="@(_WindowsAppRuntimeInitializerHook)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_DeferredWindowsAppRuntimeInitializer>$(IntermediateOutputPath)Generated Files\WindowsAppSDK\WindowsAppRuntimeStartup.g.cs</_DeferredWindowsAppRuntimeInitializer>
+      <DefineConstants>$(DefineConstants);SUSSUDIO_EXPLICIT_WINDOWS_APP_RUNTIME_STARTUP</DefineConstants>
+    </PropertyGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)Generated Files\WindowsAppSDK" />
+    <WriteLinesToFile File="$(_DeferredWindowsAppRuntimeInitializer)"
+                      Lines="@(_WindowsAppRuntimeInitializerLine)"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" Encoding="UTF-8" />
+    <ItemGroup>
+      <Compile Remove="@(_WindowsAppRuntimeInitializerSource)" />
+      <Compile Include="$(_DeferredWindowsAppRuntimeInitializer)" />
+      <FileWrites Include="$(_DeferredWindowsAppRuntimeInitializer)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Strip WinUI satellite locale folders that SatelliteResourceLanguages doesn't cover.
        English-only: keep en-US/en-us. Remove all other ??-?? directories. -->
   <Target Name="StripUnwantedLocales"

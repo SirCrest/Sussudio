@@ -7,6 +7,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.Win32;
 using Sussudio.Models;
 using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Controllers;
@@ -118,19 +119,9 @@ internal sealed class MainViewModelRuntimeLifecycleControllerContext
     public required Action<string> SetRecordingTime { get; init; }
     public required Action UpdateRecordingStats { get; init; }
     public required Action UpdateFlashbackBitrate { get; init; }
+    public required Action UpdateFlashbackHealthStatus { get; init; }
+    public required Action StopFlashbackHealthPresentation { get; init; }
     public required Action DisposeAudioDeviceWatcher { get; init; }
-
-    public void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot snapshot)
-        => UpdateLiveCaptureInfoWithSnapshot(snapshot);
-
-    public void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot snapshot)
-        => UpdateHdrRuntimeStatusFromCaptureWithSnapshot(snapshot);
-
-    public void UpdateLiveCaptureInfo()
-        => UpdateLiveCaptureInfoWithoutSnapshot();
-
-    public void UpdateHdrRuntimeStatusFromCapture()
-        => UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot();
 }
 
 /// <summary>
@@ -156,8 +147,9 @@ internal sealed class MainViewModelRuntimeLifecycleController
         var latestSourceTelemetry = _context.GetLatestSourceTelemetrySnapshot();
         _context.SetLatestSourceTelemetrySnapshot(latestSourceTelemetry);
         _context.ApplySourceTelemetrySnapshot(latestSourceTelemetry, false);
-        _context.UpdateHdrRuntimeStatusFromCapture();
-        _context.UpdateLiveCaptureInfo();
+        _context.UpdateHdrRuntimeStatusFromCaptureWithoutSnapshot();
+        _context.UpdateLiveCaptureInfoWithoutSnapshot();
+        _context.UpdateFlashbackHealthStatus();
 
         SetupTimer();
         _context.UpdateDiskSpace();
@@ -166,9 +158,13 @@ internal sealed class MainViewModelRuntimeLifecycleController
     public void StopForDispose()
     {
         _timer?.Stop();
+        _context.StopFlashbackHealthPresentation();
         _eventIngressController.Detach();
         _context.DisposeAudioDeviceWatcher();
     }
+
+    public void CompleteDispose()
+        => _eventIngressController.DetachCleanupHandoff();
 
     private void SetupTimer()
     {
@@ -177,6 +173,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
         _timer.Tick += (s, e) =>
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
+            _context.UpdateFlashbackHealthStatus();
 
             if (_context.IsRecording())
             {
@@ -191,7 +188,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
 
             if (_context.IsPreviewing() || _context.IsRecording())
             {
-                _context.UpdateLiveCaptureInfo(runtimeSnapshot);
+                _context.UpdateLiveCaptureInfoWithSnapshot(runtimeSnapshot);
             }
             else
             {
@@ -200,7 +197,7 @@ internal sealed class MainViewModelRuntimeLifecycleController
 
             _context.UpdateDiskSpace();
             _context.RefreshSourceTelemetrySummaryAge();
-            _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
+            _context.UpdateHdrRuntimeStatusFromCaptureWithSnapshot(runtimeSnapshot);
         };
         _timer.Start();
     }
@@ -215,18 +212,20 @@ internal sealed class MainViewModelDisposalControllerContext
     public required Func<Task> CleanupSessionCoordinatorAsync { get; init; }
     public required Func<Task> DisposeSessionCoordinatorAsync { get; init; }
     public required Func<Task> DisposeCaptureServiceAsync { get; init; }
-    public required Action DisposeCaptureService { get; init; }
+    public required Action CompleteRuntimeDispose { get; init; }
     public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }
 }
 
 /// <summary>
-/// Coordinates timed shutdown and disposal of MainViewModel services.
+/// Owns service disposal while callers use a bounded wait for shutdown.
 /// </summary>
 internal sealed class MainViewModelDisposalController
 {
     private const int DefaultDisposeTimeoutMs = 30000;
 
     private readonly MainViewModelDisposalControllerContext _context;
+    private readonly object _disposalLock = new();
+    private Task? _disposalTask;
 
     public MainViewModelDisposalController(MainViewModelDisposalControllerContext context)
     {
@@ -234,87 +233,46 @@ internal sealed class MainViewModelDisposalController
     }
 
     public void Dispose()
-    {
-        var disposeTimeoutMs = GetDisposeTimeoutMs();
-        var disposeTask = Task.Run(DisposeCoreAsync);
-        var completed = Task.WhenAny(disposeTask, Task.Delay(disposeTimeoutMs)).GetAwaiter().GetResult();
-        if (completed != disposeTask)
-        {
-            Logger.Log($"ViewModel dispose timed out after {disposeTimeoutMs} ms.");
-            return;
-        }
-
-        try
-        {
-            disposeTask.GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"ViewModel dispose failed: {ex.Message}");
-        }
-    }
+        => _context.AwaitWithTimeoutAsync(
+            GetOrStartDisposalTask(), GetDisposeTimeoutMs(), "ViewModel disposal").GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
-    {
-        var disposeTimeoutMs = GetDisposeTimeoutMs();
-        var disposeTask = DisposeCoreAsync();
-        var completed = await Task.WhenAny(disposeTask, Task.Delay(disposeTimeoutMs)).ConfigureAwait(false);
-        if (completed != disposeTask)
-        {
-            Logger.Log($"ViewModel async dispose timed out after {disposeTimeoutMs} ms.");
-            return;
-        }
+        => await _context.AwaitWithTimeoutAsync(
+            GetOrStartDisposalTask(), GetDisposeTimeoutMs(), "ViewModel disposal").ConfigureAwait(false);
 
-        try
+    private Task GetOrStartDisposalTask()
+    {
+        lock (_disposalLock)
         {
-            await disposeTask.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"ViewModel async dispose failed: {ex.Message}");
+            // A timed-out caller leaves the actual operation owned here. A later
+            // caller joins it; only a completed failure can start a retry.
+            if (_disposalTask == null || _disposalTask.IsFaulted || _disposalTask.IsCanceled)
+            {
+                _disposalTask = Task.Run(DisposeCoreAsync);
+            }
+
+            return _disposalTask;
         }
     }
 
     private async Task DisposeCoreAsync()
     {
-        if (!_context.TryBeginDispose())
+        if (_context.TryBeginDispose())
         {
-            return;
+            _context.CancelActiveFlashbackExport();
+            _context.CancelPendingAudioControlWork();
+            _context.StopRuntimeForDispose();
         }
 
-        _context.CancelActiveFlashbackExport();
-        _context.CancelPendingAudioControlWork();
-        _context.StopRuntimeForDispose();
-
-        var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-            "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
-            DefaultDisposeTimeoutMs,
-            1000,
-            300000);
-
         await RunDisposeStepAsync(
-            _context.CleanupSessionCoordinatorAsync(),
-            stepTimeoutMs,
-            "Coordinator cleanup",
+            _context.CleanupSessionCoordinatorAsync,
             "ViewModel cleanup during dispose failed").ConfigureAwait(false);
         await RunDisposeStepAsync(
-            _context.DisposeSessionCoordinatorAsync(),
-            stepTimeoutMs,
-            "Coordinator dispose",
+            _context.DisposeSessionCoordinatorAsync,
             "Coordinator dispose failed").ConfigureAwait(false);
 
-        try
-        {
-            await _context.AwaitWithTimeoutAsync(
-                _context.DisposeCaptureServiceAsync(),
-                stepTimeoutMs,
-                "Capture service dispose").ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Capture service async dispose failed: {ex.Message}");
-            _context.DisposeCaptureService();
-        }
+        await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);
+        _context.CompleteRuntimeDispose();
     }
 
     private static int GetDisposeTimeoutMs()
@@ -324,15 +282,11 @@ internal sealed class MainViewModelDisposalController
             1000,
             300000);
 
-    private async Task RunDisposeStepAsync(
-        Task task,
-        int timeoutMs,
-        string operationName,
-        string failureLogPrefix)
+    private static async Task RunDisposeStepAsync(Func<Task> operation, string failureLogPrefix)
     {
         try
         {
-            await _context.AwaitWithTimeoutAsync(task, timeoutMs, operationName).ConfigureAwait(false);
+            await operation().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -348,12 +302,16 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required EventHandler<DeviceService.DeviceFormatProbeCompletedEventArgs> OnDeviceFormatProbeCompleted { get; init; }
     public required Action<EventHandler<string>> AttachCaptureStatusChanged { get; init; }
     public required Action<EventHandler<string>> DetachCaptureStatusChanged { get; init; }
-    public required Action<EventHandler<Exception>> AttachCaptureErrorOccurred { get; init; }
-    public required Action<EventHandler<Exception>> DetachCaptureErrorOccurred { get; init; }
-    public required Action<Action> AttachCapturePreCleanupRequested { get; init; }
-    public required Action<Action> DetachCapturePreCleanupRequested { get; init; }
-    public required Action<EventHandler<ulong>> AttachFrameCaptured { get; init; }
-    public required Action<EventHandler<ulong>> DetachFrameCaptured { get; init; }
+    public required Action<EventHandler<CaptureErrorEventArgs>> AttachCaptureErrorOccurred { get; init; }
+    public required Action<EventHandler<CaptureErrorEventArgs>> DetachCaptureErrorOccurred { get; init; }
+    public required Func<CaptureErrorOrigin, bool> IsCaptureErrorCurrent { get; init; }
+    public required Func<CaptureErrorOrigin, Task> RecoverCaptureErrorAsync { get; init; }
+    public required Action<Action<FlashbackPlaybackStateChange>> AttachFlashbackPlaybackStateChanged { get; init; }
+    public required Action<Action<FlashbackPlaybackStateChange>> DetachFlashbackPlaybackStateChanged { get; init; }
+    public required Action<FlashbackPlaybackStateChange> OnFlashbackPlaybackStateChanged { get; init; }
+    public required Action UpdateFlashbackHealthStatus { get; init; }
+    public required Action<Func<CancellationToken, Task>> AttachCapturePreCleanupRequested { get; init; }
+    public required Action<Func<CancellationToken, Task>> DetachCapturePreCleanupRequested { get; init; }
     public required Action<EventHandler<AudioLevelEventArgs>> AttachAudioLevelUpdated { get; init; }
     public required Action<EventHandler<AudioLevelEventArgs>> DetachAudioLevelUpdated { get; init; }
     public required EventHandler<AudioLevelEventArgs> OnAudioLevelUpdated { get; init; }
@@ -381,7 +339,8 @@ internal sealed class MainViewModelRuntimeEventIngressControllerContext
     public required Func<bool> IsCaptureRecording { get; init; }
     public required Func<bool> IsRecording { get; init; }
     public required Action ResetAudioMeter { get; init; }
-    public required Func<Func<Task>[]> GetPreviewRendererStopHandlers { get; init; }
+    public required Func<Task> NotifyRendererStopAsync { get; init; }
+    public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
     public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
     public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
 }
@@ -404,8 +363,8 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
         _context.AttachCaptureStatusChanged(OnCaptureStatusChanged);
         _context.AttachCaptureErrorOccurred(OnCaptureError);
+        _context.AttachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);
         _context.AttachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
-        _context.AttachFrameCaptured(OnFrameCaptured);
         _context.AttachAudioLevelUpdated(_context.OnAudioLevelUpdated);
         _context.AttachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
         _context.AttachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
@@ -425,8 +384,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
         _context.DetachCaptureStatusChanged(OnCaptureStatusChanged);
         _context.DetachCaptureErrorOccurred(OnCaptureError);
-        _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
-        _context.DetachFrameCaptured(OnFrameCaptured);
+        _context.DetachFlashbackPlaybackStateChanged(_context.OnFlashbackPlaybackStateChanged);
         _context.DetachAudioLevelUpdated(_context.OnAudioLevelUpdated);
         _context.DetachMicrophoneAudioLevelUpdated(_context.OnMicrophoneAudioLevelUpdated);
         _context.DetachSourceTelemetryUpdated(_context.OnSourceTelemetryUpdated);
@@ -434,12 +392,16 @@ internal sealed class MainViewModelRuntimeEventIngressController
         _context.DetachAudioDevicesChanged(_context.OnAudioDevicesChanged);
     }
 
+    public void DetachCleanupHandoff()
+        => _context.DetachCapturePreCleanupRequested(OnCapturePreCleanupRequested);
+
     private void OnCaptureStatusChanged(object? sender, string status)
     {
         if (!_context.TryEnqueueOnUiThread(() =>
         {
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
             _context.SetStatusText(status);
+            _context.UpdateFlashbackHealthStatus();
             _context.UpdateLiveCaptureInfo(runtimeSnapshot);
             _context.UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
         }))
@@ -448,12 +410,19 @@ internal sealed class MainViewModelRuntimeEventIngressController
         }
     }
 
-    private void OnCaptureError(object? sender, Exception ex)
+    private void OnCaptureError(object? sender, CaptureErrorEventArgs error)
     {
+        var ex = error.Exception;
         if (!_context.TryEnqueueOnUiThread(() =>
         {
+            if (!_context.IsCaptureErrorCurrent(error.Origin))
+            {
+                return;
+            }
+
             var runtimeSnapshot = _context.GetRuntimeSnapshot();
             _context.SetStatusText($"Error: {ex.Message}");
+            _context.UpdateFlashbackHealthStatus();
             _context.SetIsInitialized(_context.IsCaptureInitialized());
             _context.SetIsPreviewing(_context.IsVideoPreviewActive());
             _context.SetIsRecording(_context.IsCaptureRecording());
@@ -467,7 +436,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
 
             // An audio device can be invalidated without a system resume event.
             // Reopen capture automatically while preview is active and recording
-            // is stopped. The UI operation queue serializes this with resume recovery.
+            // is stopped. Recovery checks the same origin after its asynchronous waits.
             unchecked
             {
                 const int AudclntDeviceInvalidated = (int)0x88890004;
@@ -478,7 +447,7 @@ internal sealed class MainViewModelRuntimeEventIngressController
                 {
                     Logger.Log("AUDCLNT_E_DEVICE_INVALIDATED received \u2014 scheduling audio rebind.");
                     _context.EnqueueUiOperation(
-                        () => _context.ReinitializeDeviceAsync("audio device invalidated"),
+                        () => _context.RecoverCaptureErrorAsync(error.Origin),
                         "audio device invalidated reinit");
                 }
             }
@@ -488,23 +457,8 @@ internal sealed class MainViewModelRuntimeEventIngressController
         }
     }
 
-    private void OnCapturePreCleanupRequested()
-    {
-        // Fires on a background thread before CaptureService.CleanupAsync disposes
-        // the shared D3D11 device. Stop the renderer first so it cannot submit work
-        // against a device being disposed.
-        var handlers = _context.GetPreviewRendererStopHandlers();
-        foreach (var handler in handlers)
-        {
-            try { handler().GetAwaiter().GetResult(); }
-            catch (Exception ex) { Logger.Log($"PreCleanup renderer stop warning: {ex.Message}"); }
-        }
-    }
-
-    private void OnFrameCaptured(object? sender, ulong frameCount)
-    {
-        // Could update frame count display if needed.
-    }
+    private Task OnCapturePreCleanupRequested(CancellationToken admissionToken)
+        => _context.InvokeOnUiThreadAsync(_context.NotifyRendererStopAsync, admissionToken);
 
     // PowerModeChanged fires on the system thread pool - must not touch UI properties
     // directly. We act only on PowerModes.Resume; Suspend/StatusChange are ignored
@@ -545,7 +499,8 @@ internal sealed class MainViewModelPreviewLifecycleControllerContext
     public required CaptureSessionCoordinator SessionCoordinator { get; init; }
     public required Func<CaptureSettings> BuildCaptureSettings { get; init; }
     public required Func<Func<Task>, CancellationToken, Task> InvokeOnUiThreadAsync { get; init; }
-    public required Func<CancellationToken, Task> RampPreviewVolumeDownForStopAsync { get; init; }
+    public required Func<CancellationToken, Task<PreviewAudioVolumeOperation>> RampPreviewVolumeDownForStopAsync { get; init; }
+    public required Action<PreviewAudioVolumeOperation> RestorePreviewVolumeAfterStopFailed { get; init; }
     public required Func<MainViewModelPreviewLifecycleController, MainViewModelPreviewReinitializeController> CreateReinitializeController { get; init; }
     public required Func<CaptureDevice?> SelectedDevice { get; init; }
     public required Action<CaptureDevice?> SetSelectedDevice { get; init; }
@@ -582,18 +537,15 @@ internal sealed class MainViewModelPreviewLifecycleController
     public void CancelPendingPreviewRestart()
         => _previewReinitializeController.CancelPendingPreviewRestart();
 
+    public bool IsReinitializeAdmitted => _previewReinitializeController.IsReinitializeAdmitted;
+
     public async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
     {
-        var selectedDevice = _context.SelectedDevice();
-        if (selectedDevice == null)
-        {
-            Logger.Log("ERROR: SelectedDevice is NULL");
-            return;
-        }
-
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var selectedDevice = _context.SelectedDevice()
+                ?? throw new InvalidOperationException("No capture device selected.");
             _context.SetStatusText("Initializing device...");
             var settings = _context.BuildCaptureSettings();
             Logger.Log(
@@ -616,6 +568,7 @@ internal sealed class MainViewModelPreviewLifecycleController
             Logger.LogException(ex);
             _context.SetStatusText($"Failed to initialize: {ex.Message}");
             _context.SetIsInitialized(false);
+            throw;
         }
     }
 
@@ -635,27 +588,19 @@ internal sealed class MainViewModelPreviewLifecycleController
             await InitializeDeviceAsync(cancellationToken);
         }
 
-        if (_context.IsInitialized())
+        var settings = _context.BuildCaptureSettings();
+        await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
+
+        _context.SetIsPreviewing(true);
+        _context.SetStatusText("Preview starting...");
+
+        if (_context.ShouldStartAudioPreview())
         {
-            var settings = _context.BuildCaptureSettings();
-            await _context.SessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
-
-            _context.SetIsPreviewing(true);
-            _context.SetStatusText("Preview starting...");
-
-            if (_context.ShouldStartAudioPreview())
-            {
-                await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
-            }
-
-            _context.ApplyLatestSourceTelemetryForPreviewStart();
-            Logger.Log($"PREVIEW_START_READY audio={_context.ShouldStartAudioPreview()}");
+            await _context.SessionCoordinator.StartAudioPreviewAsync(cancellationToken);
         }
-        else
-        {
-            Logger.Log("Cannot start preview - device not initialized");
-            _context.SetStatusText("Cannot start preview - device not initialized");
-        }
+
+        _context.ApplyLatestSourceTelemetryForPreviewStart();
+        Logger.Log($"PREVIEW_START_READY audio={_context.ShouldStartAudioPreview()}");
     }
 
     public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
@@ -735,11 +680,28 @@ internal sealed class MainViewModelPreviewLifecycleController
             CancelPendingPreviewRestart();
         }
 
+        PreviewAudioVolumeOperation? volumeOperation = null;
         if (userInitiated && !_context.IsPreviewReinitializing() && _context.IsAudioPreviewActive())
         {
-            await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);
+            volumeOperation = await _context.RampPreviewVolumeDownForStopAsync(cancellationToken);
         }
 
+        try
+        {
+            await StopPreviewCoreAsync(teardownPipeline, cancellationToken);
+        }
+        catch
+        {
+            if (volumeOperation is { } operation)
+            {
+                _context.RestorePreviewVolumeAfterStopFailed(operation);
+            }
+            throw;
+        }
+    }
+
+    private async Task StopPreviewCoreAsync(bool teardownPipeline, CancellationToken cancellationToken)
+    {
         _context.RaisePreviewStopRequested();
         var commitStoppedState = false;
         try
@@ -795,6 +757,9 @@ internal sealed class MainViewModelPreviewLifecycleController
 
     public Task<bool> ReinitializeDeviceWithResultAsync(string reason)
         => _previewReinitializeController.ReinitializeDeviceWithResultAsync(reason);
+
+    public Task RecoverCaptureErrorAsync(CaptureErrorOrigin origin)
+        => _previewReinitializeController.RecoverCaptureErrorAsync(origin);
 }
 
 /// <summary>
@@ -802,9 +767,11 @@ internal sealed class MainViewModelPreviewLifecycleController
 /// </summary>
 internal sealed class MainViewModelPreviewReinitializeControllerContext
 {
+    public required Func<CaptureErrorOrigin, bool> IsCaptureErrorCurrent { get; init; }
     public required Func<CaptureDevice?> SelectedDevice { get; init; }
     public required Func<MediaFormat?> SelectedFormat { get; init; }
     public required Func<bool> IsRecording { get; init; }
+    public required Func<bool> IsRecordingTransitioning { get; init; }
     public required Func<bool> IsInitialized { get; init; }
     public required Action<bool> SetIsInitialized { get; init; }
     public required Func<bool> IsPreviewing { get; init; }
@@ -812,17 +779,11 @@ internal sealed class MainViewModelPreviewReinitializeControllerContext
     public required Func<bool> IsPreviewReinitializing { get; init; }
     public required Action<bool> SetIsPreviewReinitializing { get; init; }
     public required Action<string> SetStatusText { get; init; }
-    public required Func<bool> CancelPreviewRestartAfterReinitialize { get; init; }
-    public required Action<bool> SetCancelPreviewRestartAfterReinitialize { get; init; }
-    public required Func<int> IncrementReinitializeGeneration { get; init; }
-    public required Func<int> ReadReinitializeGeneration { get; init; }
     public required int PreviewReinitializeDebounceMs { get; init; }
     public required Func<Task?> PendingFlashbackCycleTask { get; init; }
     public required int FlashbackCycleBeforeReinitializeTimeoutMs { get; init; }
     public required Func<Task, int, string, Task> AwaitWithTimeoutAsync { get; init; }
     public required Action<Task> ClearPendingFlashbackCycleIfSameAndCompleted { get; init; }
-    public required Func<Task> WaitReinitializeGateAsync { get; init; }
-    public required Action ReleaseReinitializeGate { get; init; }
     public required Func<string, Task> NotifyPreviewReinitRequestedAsync { get; init; }
     public required Func<Task> NotifyRendererStopAsync { get; init; }
     public required Func<Task?> PendingDeferredCaptureCleanupTask { get; init; }
@@ -836,6 +797,13 @@ internal sealed class MainViewModelPreviewReinitializeController
 {
     private readonly MainViewModelPreviewReinitializeControllerContext _context;
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
+    private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);
+    private int _previewReinitializeGeneration;
+    private bool _cancelPreviewRestartAfterReinitialize;
+
+    // UI-thread admission spans every reinitialize, including device-ready state
+    // without preview. Recording start checks this before its first await.
+    public bool IsReinitializeAdmitted { get; private set; }
 
     public MainViewModelPreviewReinitializeController(
         MainViewModelPreviewReinitializeControllerContext context,
@@ -849,13 +817,13 @@ internal sealed class MainViewModelPreviewReinitializeController
     {
         if (_context.IsPreviewReinitializing())
         {
-            _context.SetCancelPreviewRestartAfterReinitialize(true);
+            _cancelPreviewRestartAfterReinitialize = true;
         }
     }
 
     public void ResetPendingPreviewRestartCancellation()
     {
-        _context.SetCancelPreviewRestartAfterReinitialize(false);
+        _cancelPreviewRestartAfterReinitialize = false;
     }
 
     public async Task ReinitializeDeviceAsync(string reason)
@@ -864,8 +832,23 @@ internal sealed class MainViewModelPreviewReinitializeController
     public async Task<bool> ReinitializeDeviceWithResultAsync(string reason)
         => await ReinitializeDeviceCoreAsync(reason, treatCoalescedAsSuccess: false).ConfigureAwait(true);
 
-    private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)
+    public async Task RecoverCaptureErrorAsync(CaptureErrorOrigin origin)
+        => await ReinitializeDeviceCoreAsync("audio device invalidated", treatCoalescedAsSuccess: true, origin).ConfigureAwait(true);
+
+    private bool IsCaptureErrorCurrent(CaptureErrorOrigin? origin)
+        => origin is null || _context.IsCaptureErrorCurrent(origin.Value);
+
+    private async Task<bool> ReinitializeDeviceCoreAsync(
+        string reason,
+        bool treatCoalescedAsSuccess,
+        CaptureErrorOrigin? errorOrigin = null)
     {
+        // An obsolete recovery must not supersede an unrelated settings request.
+        if (!IsCaptureErrorCurrent(errorOrigin))
+        {
+            return false;
+        }
+
         if (_context.SelectedDevice() == null || _context.SelectedFormat() == null)
         {
             return false;
@@ -878,9 +861,14 @@ internal sealed class MainViewModelPreviewReinitializeController
             return false;
         }
 
-        var reinitializeGeneration = _context.IncrementReinitializeGeneration();
+        var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);
         await Task.Delay(_context.PreviewReinitializeDebounceMs).ConfigureAwait(true);
-        if (_context.ReadReinitializeGeneration() != reinitializeGeneration)
+        if (!IsCaptureErrorCurrent(errorOrigin))
+        {
+            return false;
+        }
+
+        if (Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration)
         {
             Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
             return treatCoalescedAsSuccess;
@@ -894,10 +882,15 @@ internal sealed class MainViewModelPreviewReinitializeController
                 await _context.AwaitWithTimeoutAsync(
                     pendingCycle,
                     _context.FlashbackCycleBeforeReinitializeTimeoutMs,
-                    "Flashback encoder settings cycle before reinitialize").ConfigureAwait(false);
+                    "Flashback encoder settings cycle before reinitialize").ConfigureAwait(true);
             }
             catch (TimeoutException ex)
             {
+                if (!IsCaptureErrorCurrent(errorOrigin))
+                {
+                    return false;
+                }
+
                 Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={_context.FlashbackCycleBeforeReinitializeTimeoutMs}");
                 _context.SetStatusText($"Failed to apply format: {ex.Message}");
                 return false;
@@ -907,10 +900,50 @@ internal sealed class MainViewModelPreviewReinitializeController
                 Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_FAULT reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
             }
 
+            if (!IsCaptureErrorCurrent(errorOrigin))
+            {
+                return false;
+            }
+
             _context.ClearPendingFlashbackCycleIfSameAndCompleted(pendingCycle);
         }
 
-        await _context.WaitReinitializeGateAsync();
+        await _previewReinitializeGate.WaitAsync().ConfigureAwait(true);
+        try
+        {
+            if (!IsCaptureErrorCurrent(errorOrigin))
+            {
+                return false;
+            }
+
+            // A newer request can arrive while the Flashback cycle or another restart owns the gate.
+            if (Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration)
+            {
+                Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
+                return treatCoalescedAsSuccess;
+            }
+
+            // Recording can start while debounce, Flashback, or a previous
+            // reinitialize yields. Admit neither teardown nor a competing start.
+            if (_context.IsRecording() || _context.IsRecordingTransitioning())
+            {
+                Logger.Log($"REINIT_REJECTED_RECORDING reason='{reason}' - recording became active while waiting.");
+                _context.SetStatusText("Stop recording before changing capture settings.");
+                return false;
+            }
+
+            IsReinitializeAdmitted = true;
+            return await ReinitializeAdmittedRequestAsync(reason).ConfigureAwait(true);
+        }
+        finally
+        {
+            IsReinitializeAdmitted = false;
+            _previewReinitializeGate.Release();
+        }
+    }
+
+    private async Task<bool> ReinitializeAdmittedRequestAsync(string reason)
+    {
         var shouldRestartPreview = _context.IsPreviewing();
         var success = false;
         try
@@ -1029,8 +1062,6 @@ internal sealed class MainViewModelPreviewReinitializeController
             {
                 _context.SetIsPreviewReinitializing(false);
             }
-
-            _context.ReleaseReinitializeGate();
         }
 
         return success;
@@ -1054,7 +1085,7 @@ internal sealed class MainViewModelPreviewReinitializeController
             Logger.LogFatalBreadcrumb($"REINIT phase=init_device_done reason={reason}");
         }
 
-        var previewRestartCanceled = _context.CancelPreviewRestartAfterReinitialize();
+        var previewRestartCanceled = _cancelPreviewRestartAfterReinitialize;
         if (_context.IsInitialized() && shouldRestartPreview && !previewRestartCanceled)
         {
             if (logFatalBreadcrumbs)
@@ -1200,6 +1231,13 @@ internal sealed class MainViewModelRecordingTransitionController
             return Task.CompletedTask;
         }
 
+        if (enabled && _previewLifecycleController.IsReinitializeAdmitted)
+        {
+            const string message = "Wait for capture settings to finish applying before starting recording.";
+            _context.SetStatusText(message);
+            throw new InvalidOperationException(message);
+        }
+
         if (Interlocked.CompareExchange(ref _recordingToggleInProgress, 1, 0) != 0)
         {
             Logger.Log("Recording transition rejected: operation already in progress.");
@@ -1316,13 +1354,6 @@ internal sealed class MainViewModelRecordingTransitionController
         if (!_context.IsInitialized())
         {
             await _previewLifecycleController.InitializeDeviceAsync(cancellationToken);
-            if (!_context.IsInitialized())
-            {
-                throw new InvalidOperationException(
-                    string.IsNullOrWhiteSpace(_context.GetStatusText())
-                        ? "Device failed to initialize."
-                        : _context.GetStatusText());
-            }
         }
 
         try

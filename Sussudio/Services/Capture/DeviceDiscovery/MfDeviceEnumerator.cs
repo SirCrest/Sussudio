@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -77,8 +77,8 @@ internal static class MfDeviceEnumerator
                         _ = Marshal.Release(activatePtr);
                         rawReleased = true;
 
-                        var friendlyName = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeFriendlyName);
-                        var symbolicLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
+                        MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeFriendlyName, out var friendlyName);
+                        MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink, out var symbolicLink);
                         if (string.IsNullOrWhiteSpace(symbolicLink))
                         {
                             continue;
@@ -101,9 +101,12 @@ internal static class MfDeviceEnumerator
                             {
                                 _ = Marshal.Release(activatePtr);
                             }
-                            catch
+                            catch (Exception releaseEx)
                             {
-                                // Best effort.
+                                // The activation leaks either way; record why.
+                                Logger.Log(
+                                    $"MF_ACTIVATE_RELEASE_FAIL stage=enumeration_cleanup type={releaseEx.GetType().Name} " +
+                                    $"hr=0x{releaseEx.HResult:X8} msg='{releaseEx.Message}'");
                             }
                         }
 
@@ -124,7 +127,7 @@ internal static class MfDeviceEnumerator
         catch (Exception ex)
         {
             Logger.Log($"MF video device enumeration failed: {ex.Message}");
-            devices.Clear();
+            throw;
         }
         finally
         {
@@ -146,10 +149,10 @@ internal static class MfDeviceEnumerator
                 EDataFlow.eCapture,
                 WasapiComInterop.DEVICE_STATE_ACTIVE,
                 out collection);
-            if (hrEnum < 0 || collection == null)
+            WasapiComInterop.ThrowIfFailed(hrEnum, "IMMDeviceEnumerator.EnumAudioEndpoints(audio_capture)");
+            if (collection == null)
             {
-                Logger.Log($"WASAPI capture endpoint enumeration failed (hr=0x{hrEnum:X8}).");
-                return Task.FromResult(devices);
+                throw new InvalidOperationException("WASAPI capture endpoint enumeration returned no collection.");
             }
 
             WasapiComInterop.ThrowIfFailed(
@@ -189,7 +192,7 @@ internal static class MfDeviceEnumerator
         catch (Exception ex)
         {
             Logger.Log($"WASAPI capture endpoint enumeration threw: {ex.Message}");
-            devices.Clear();
+            throw;
         }
         finally
         {
@@ -294,7 +297,7 @@ internal static class MfDeviceEnumerator
         catch (Exception ex)
         {
             Logger.Log($"MF format probe failed for {symbolicLink}: {ex.Message}");
-            formats.Clear();
+            throw;
         }
         finally
         {
@@ -443,7 +446,7 @@ internal static class MfDeviceEnumerator
                     _ = Marshal.Release(activatePtr);
                     rawReleased = true;
 
-                    var candidateLink = MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink);
+                    MfInteropHelpers.TryReadAllocatedString(activate, ref DevSourceAttributeSourceTypeVidcapSymbolicLink, out var candidateLink);
                     if (!MfInteropHelpers.MatchesSymbolicLink(targetSymbolicLink, candidateLink))
                     {
                         continue;
@@ -462,7 +465,12 @@ internal static class MfDeviceEnumerator
                             if (remainingPtr != IntPtr.Zero)
                             {
                                 try { Marshal.Release(remainingPtr); }
-                                catch { /* Best effort. */ }
+                                catch (Exception releaseEx)
+                                {
+                                    Logger.Log(
+                                        $"MF_ACTIVATE_RELEASE_FAIL stage=skip_remaining index={j} " +
+                                        $"type={releaseEx.GetType().Name} hr=0x{releaseEx.HResult:X8}");
+                                }
                             }
                         }
 
@@ -482,9 +490,12 @@ internal static class MfDeviceEnumerator
                         {
                             _ = Marshal.Release(activatePtr);
                         }
-                        catch
+                        catch (Exception releaseEx)
                         {
-                            // Best effort.
+                            // The activation leaks either way; record why.
+                            Logger.Log(
+                                $"MF_ACTIVATE_RELEASE_FAIL stage=source_cleanup type={releaseEx.GetType().Name} " +
+                                $"hr=0x{releaseEx.HResult:X8} msg='{releaseEx.Message}'");
                         }
                     }
 

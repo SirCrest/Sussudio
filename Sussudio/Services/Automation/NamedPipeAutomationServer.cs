@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.IO;
 using System.IO.Pipes;
@@ -22,6 +22,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     public const string DefaultPipeName = AutomationPipeProtocol.DefaultPipeName;
     private const int MaxRequestCharacters = 1024 * 1024;
     private const int MaxConcurrentConnections = 4;
+    private const int StopWaitTimeoutMs = 5000;
 
     private readonly IAutomationCommandDispatcher _commandDispatcher;
     private readonly string _pipeName;
@@ -144,20 +145,27 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
         try
         {
-            await serverTask.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+            await serverTask.WaitAsync(TimeSpan.FromMilliseconds(StopWaitTimeoutMs), cancellationToken).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
-            // Server loop did not stop within 5s; proceed with cleanup.
+            Logger.Log(
+                $"AUTOMATION_PIPE_STOP_TIMEOUT timeoutMs={StopWaitTimeoutMs} - server loop is still running; proceeding with cleanup.");
         }
         catch (OperationCanceledException)
         {
-            /* Expected during shutdown - server loop cancelled via disposal */
+            // Workers cancel through _cts during shutdown, so the wait observes a
+            // canceled task; a caller token can also abandon a still-draining loop.
         }
 
         _cts?.Dispose();
         _cts = null;
-        Logger.Log("Automation pipe server stopped.");
+
+        // Each worker owns its own exit, so report what the server loop actually did
+        // rather than assuming the bounded wait succeeded.
+        Logger.Log(serverTask.IsCompleted
+            ? "Automation pipe server stopped."
+            : "AUTOMATION_PIPE_STOP_INCOMPLETE - cleanup finished while the server loop was still running.");
     }
 
     public void Dispose()
@@ -242,7 +250,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer pipe dispose: {ex.Message}");
+                Logger.Log($"Suppressed exception in NamedPipeAutomationServer pipe dispose: {ex.Message}");
             }
         }
     }
@@ -264,7 +272,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     };
 
     private AutomationCommandResponse CreateRequestTimeoutResponse()
-        => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", "request-timeout");
+        => CreateErrorResponse($"Request timed out after {_requestTimeoutMs} ms.", AutomationErrorCodes.RequestTimeout);
 
     private static void TraceFallback(string line)
     {
@@ -275,12 +283,11 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
+            Logger.Log($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
         }
     }
 
     public string PipeName => _pipeName;
-    internal bool AuthTokenRequired => _authTokenRequired;
 
     private sealed class ConnectionSession
     {
@@ -319,7 +326,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
                 if (request == null)
                 {
-                    response = CreateErrorResponse("Request payload was empty.", "invalid-request");
+                    response = CreateErrorResponse("Request payload was empty.", AutomationErrorCodes.InvalidRequest);
                 }
                 else
                 {
@@ -334,22 +341,22 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (JsonException ex)
             {
-                response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
+                response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", AutomationErrorCodes.InvalidJson);
             }
             catch (AutomationRequestTooLargeException ex)
             {
-                response = CreateErrorResponse(ex.Message, "request-too-large");
+                response = CreateErrorResponse(ex.Message, AutomationErrorCodes.RequestTooLarge);
             }
             catch (OperationCanceledException)
             {
                 var timedOut = requestTimeout.IsCancellationRequested;
                 response = CreateErrorResponse(
                     timedOut ? $"Request timed out after {_owner._requestTimeoutMs} ms." : "Request canceled.",
-                    timedOut ? "request-timeout" : "canceled");
+                    timedOut ? AutomationErrorCodes.RequestTimeout : AutomationErrorCodes.Canceled);
             }
             catch (Exception ex)
             {
-                response = CreateErrorResponse($"Request execution failed: {ex.Message}", "execution-failed");
+                response = CreateErrorResponse($"Request execution failed: {ex.Message}", AutomationErrorCodes.ExecutionFailed);
             }
             finally
             {
@@ -430,9 +437,13 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
                     return clientPid;
                 }
             }
-            catch
+            catch (ObjectDisposedException)
             {
-                // PID lookup is best-effort.
+                // Client disconnected and the pipe was disposed mid-lookup; the caller logs "?".
+            }
+            catch (InvalidOperationException)
+            {
+                // Pipe is not in a connected state, same outcome.
             }
 
             return 0;
@@ -468,18 +479,13 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
             requestCancellation.Cancel();
             Logger.Log($"Automation command exceeded request timeout; waiting for dispatch to stop: command={request.Command}");
-            if (await WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None).ConfigureAwait(false))
+            var responseAfterCancellation = await dispatchTask.ConfigureAwait(false);
+            if (string.Equals(responseAfterCancellation.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
             {
-                var response = await dispatchTask.ConfigureAwait(false);
-                if (string.Equals(response.ErrorCode, "canceled", StringComparison.OrdinalIgnoreCase))
-                {
-                    response = _owner.CreateRequestTimeoutResponse();
-                }
-
-                return response;
+                responseAfterCancellation = _owner.CreateRequestTimeoutResponse();
             }
 
-            return _owner.CreateRequestTimeoutResponse();
+            return responseAfterCancellation;
         }
 
         private static async Task<bool> WaitForDispatchCompletionAsync(

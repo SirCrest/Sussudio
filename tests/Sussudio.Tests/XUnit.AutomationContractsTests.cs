@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -131,6 +131,15 @@ public sealed class AutomationAppSurfaceContractsTests
     [Fact]
     public Task AutomationPipeServerRequestTimeoutsUseBoundedDispatchCancellation()
         => global::Program.NamedPipeAutomationServer_RequestTimeoutsUseBoundedDispatchCancellation();
+
+    [Theory]
+    [InlineData("canceled", false)]
+    [InlineData("CaNcElEd", false)]
+    [InlineData(null, false)]
+    [InlineData("execution-failed", false)]
+    [InlineData(null, true)]
+    public Task AutomationPipeServerTimeoutWaitsForDispatchAndPreservesOutcome(string? responseError, bool dispatchFaults)
+        => global::Program.NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(responseError, dispatchFaults);
 
     [Fact]
     public Task AutomationPipeServerRequestLimitHandlesCrLfBoundary()
@@ -405,6 +414,20 @@ public sealed class AutomationDispatcherContractsTests
     public Task AutomationDispatcherExtractsBoolPayloadFields()
         => global::Program.AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload();
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("false")]
+    [InlineData("true")]
+    [InlineData("\"false\"")]
+    [InlineData("\"true\"")]
+    [InlineData("0")]
+    [InlineData("1")]
+    [InlineData("null")]
+    [InlineData("\"ignored\"")]
+    [InlineData("{}")]
+    public Task AutomationDispatcherIgnoresLegacyFlashbackExportForce(string? forceJson)
+        => global::Program.AutomationCommandDispatcher_FlashbackExport_IgnoresLegacyForce(forceJson);
+
     [Fact]
     public Task AutomationDispatcherExtractsIntPayloadFields()
         => global::Program.AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload();
@@ -428,6 +451,10 @@ public sealed class AutomationDispatcherContractsTests
     [Fact]
     public Task AutomationDispatcherDefaultsMissingWaitCondition()
         => global::Program.AutomationCommandDispatcher_WaitForCondition_DefaultsMissingConditionToPreviewFrames();
+
+    [Fact]
+    public Task AutomationDispatcherRejectsUndefinedWaitCondition()
+        => global::Program.AutomationCommandDispatcher_WaitForCondition_RejectsUndefinedCondition();
 
     [Fact]
     public Task AutomationDispatcherWaitAndAssertCommandsLiveWithSupportOwners()
@@ -851,7 +878,7 @@ static partial class Program
         AssertContains(customCommandsText, "var condition = ParseWaitCondition(payload);");
         AssertContains(customCommandsText, "Math.Clamp(GetInt(payload, \"timeoutMs\") ?? DefaultWaitTimeoutMs, 250, 300_000)");
         AssertContains(customCommandsText, "WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken)");
-        AssertContains(customCommandsText, "errorCode: met ? null : \"timeout\"");
+        AssertContains(customCommandsText, "errorCode: met ? null : AutomationErrorCodes.Timeout");
         AssertContains(customCommandsText, "private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(");
         AssertContains(customCommandsText, "private static bool ConditionSatisfied(");
         AssertEqual(
@@ -863,7 +890,7 @@ static partial class Program
         AssertContains(customCommandsText, "_diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken)");
         AssertContains(customCommandsText, "var assertions = ParseAssertions(payload);");
         AssertContains(customCommandsText, "TryEvaluateAssertion(snapshot, assertion, out var failure)");
-        AssertContains(customCommandsText, "errorCode: passed ? null : \"assertion-failed\"");
+        AssertContains(customCommandsText, "errorCode: passed ? null : AutomationErrorCodes.AssertionFailed");
         AssertContains(customCommandsText, "private static List<SnapshotAssertion> ParseAssertions(");
         AssertContains(customCommandsText, "private static bool TryEvaluateAssertion(");
         AssertEqual(
@@ -1017,11 +1044,13 @@ static partial class Program
                 return true;
             }
 
-            if (method?.Name == "SetDeviceAudioModeAsync")
+            if (method?.Name.StartsWith("Set", StringComparison.Ordinal) == true)
             {
                 Interlocked.Increment(ref mutationCalls);
-                observedMode = (string?)arguments?[0];
-                return Task.CompletedTask;
+                if (method.Name == "SetDeviceAudioModeAsync")
+                {
+                    observedMode = (string?)arguments?[0];
+                }
             }
 
             return GetDefaultReturnValue(method);
@@ -1032,7 +1061,12 @@ static partial class Program
             CreateConfiguredProxy(windowControlType, (method, _) => GetDefaultReturnValue(method)),
             authToken: null);
 
-        foreach (var payload in new[] { "{\"mode\":\"anlog\"}", "{\"mode\":\"HDMI\\u0000\"}" })
+        foreach (var payload in new[]
+        {
+            "{}", "{\"mode\":null}", "{\"mode\":7}", "{\"mode\":\"\"}",
+            "{\"mode\":\" \"}", "{\"mode\":\"anlog\"}", "{\"mode\":\"HDMI \"}",
+            "{\"mode\":\"Embedded\"}", "{\"mode\":\"HDMI\\u0000\"}"
+        })
         {
             var response = await ExecuteAutomationCommandAsync(
                     dispatcher,
@@ -1044,6 +1078,7 @@ static partial class Program
                 errorCode: "command-failed",
                 status: "error",
                 "invalid audio mode");
+            AssertEqual(0, Volatile.Read(ref mutationCalls), "invalid audio mode invokes no settings mutation");
         }
 
         AssertEqual(0, Volatile.Read(ref mutationCalls), "invalid audio modes do not call the mutation port");
@@ -1379,9 +1414,9 @@ static partial class Program
         AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
         AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
         AssertContains(dispatcherText, "CryptographicOperations.FixedTimeEquals(expected, actual)");
-        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTH_FAILED\"");
-        AssertContains(dispatcherText, "errorCode: authorized ? null : \"unauthorized\"");
-        AssertContains(dispatcherText, "errorCode: \"unauthorized\"");
+        AssertContains(dispatcherText, "Logger.LogEvent(\"AUTO-AUTH-FAILED\"");
+        AssertContains(dispatcherText, "errorCode: authorized ? null : AutomationErrorCodes.Unauthorized");
+        AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.Unauthorized");
         AssertContains(dispatcherText, "status: authorized ? AutomationResponseStatus.Ok : AutomationResponseStatus.Error");
     }
 
@@ -1465,9 +1500,9 @@ static partial class Program
         AssertContains(windowCommandsText, "_closeArmActionId = armed ? actionId : null;");
         AssertContains(windowCommandsText, "Window close arm state requested: {(armed ? \"armed\" : \"disarmed\")}.");
         AssertContains(windowCommandsText, "if (action == AutomationWindowAction.Close)");
-        AssertContains(windowCommandsText, "window-close-not-armed");
-        AssertContains(windowCommandsText, "window-close-action-id-required");
-        AssertContains(windowCommandsText, "window-close-action-id-mismatch");
+        AssertContains(windowCommandsText, "AutomationErrorCodes.WindowCloseNotArmed");
+        AssertContains(windowCommandsText, "AutomationErrorCodes.WindowCloseActionIdRequired");
+        AssertContains(windowCommandsText, "AutomationErrorCodes.WindowCloseActionIdMismatch");
         AssertContains(windowCommandsText, "_closeArmActionId = null;");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);");
         AssertContains(windowCommandsText, "await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);");
@@ -1503,7 +1538,7 @@ static partial class Program
         AssertContains(customCommandsText, "_diagnosticsHub\n            .VerifyFileAsync(filePath, verificationProfile, cancellationToken)");
         AssertContains(customCommandsText, "_diagnosticsHub.VerifyLastRecordingAsync(cancellationToken)");
         AssertContains(customCommandsText, "HdrParity = verification.HdrParity");
-        AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : \"verification-failed\"");
+        AssertContains(customCommandsText, "errorCode: verification.Succeeded ? null : AutomationErrorCodes.VerificationFailed");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationCommandDispatcher.VerificationCommands.cs")),
@@ -1547,6 +1582,64 @@ static partial class Program
             "visual capture commands folded into AutomationCommandDispatcher.cs");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task AutomationCommandDispatcher_FlashbackExport_IgnoresLegacyForce(string? forceJson)
+    {
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Contracts.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Contracts.IAutomationWindowControl");
+        var snapshot = CreateInstance("Sussudio.Models.AutomationSnapshot");
+        var outputPath = Path.Combine(Path.GetTempPath(), $"fb_legacy_force_{Guid.NewGuid():N}.mp4");
+        const string failureCode = "flashback-export-invalid-output-path";
+        const string message = "Flashback export does not overwrite existing files.";
+        var failureFactory = RequireType("Sussudio.Services.Flashback.FlashbackExportFailureCodes")
+            .GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var failure = failureFactory.Invoke(null, new object?[] { outputPath, message, failureCode, null })!;
+        var exportCalls = 0;
+
+        var viewModel = CreateConfiguredProxy(viewModelType, (method, args) =>
+        {
+            if (method?.Name == "ExportFlashbackAutomationAsync")
+            {
+                exportCalls++;
+                AssertEqual(4, args!.Length, "export port receives no retired force parameter");
+                AssertEqual(12.5, args[0], "export port receives requested seconds");
+                AssertEqual(outputPath, args[1], "export port receives requested output path");
+                AssertEqual(true, args[2], "export port receives requested selection policy");
+                AssertEqual(typeof(CancellationToken), args[3]!.GetType(), "export port receives cancellation token");
+                return CreateTaskFromResult(failure.GetType(), failure);
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var diagnostics = CreateConfiguredProxy(diagnosticsType, (method, _) =>
+            method?.Name == "GetLatestSnapshot" ? snapshot : GetDefaultReturnValue(method));
+        var dispatcher = CreateAutomationCommandDispatcher(
+            viewModel, diagnostics, CreateThrowingProxy(windowControlType), authToken: null);
+        var payload = new Dictionary<string, object?>
+        {
+            ["seconds"] = 12.5,
+            ["outputPath"] = outputPath,
+            ["useSelectionRange"] = true
+        };
+        if (forceJson != null)
+        {
+            payload["force"] = JsonSerializer.Deserialize<JsonElement>(forceJson);
+        }
+
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher,
+            CreateAutomationCommandRequest("FlashbackExport", authToken: null, payloadJson: JsonSerializer.Serialize(payload)))
+            .ConfigureAwait(false);
+
+        AssertEqual(1, exportCalls, "legacy force payload dispatches exactly one export");
+        AssertAutomationResponse(response, success: false, errorCode: failureCode, status: "error", "legacy force preserves export failure");
+        AssertEqual(message, GetPublicProperty(response, "Message"), "legacy force preserves export message");
+        var data = GetPublicProperty(response, "Data")!;
+        AssertEqual("InvalidOutputPath", GetPublicProperty(data, "FailureKind"), "legacy force preserves failure category");
+        AssertEqual(outputPath, GetPublicProperty(data, "OutputPath"), "legacy force preserves output path");
+        AssertEqual(snapshot, GetPublicProperty(response, "Snapshot"), "legacy force preserves response snapshot");
     }
 
     internal static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
@@ -1633,7 +1726,7 @@ static partial class Program
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackBufferMinutesCommandAsync(");
         AssertContains(flashbackCommandsText, "private async Task<AutomationCommandResponse> ExecuteSetFlashbackGpuDecodeCommandAsync(");
         AssertContains(flashbackCommandsText, "_flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken)");
-        AssertContains(flashbackCommandsText, "_flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
+        AssertContains(flashbackCommandsText, "_flashbackPort.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.GetFlashbackSegmentsAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.RestartFlashbackAsync(cancellationToken)");
         AssertContains(flashbackCommandsText, "_flashbackPort.SetFlashbackEnabledAsync(enabled, cancellationToken)");
@@ -1994,6 +2087,20 @@ static partial class Program
         AssertEqual("PreviewFramesActive", blankResult?.ToString(), "WaitForCondition blank condition defaults to PreviewFramesActive");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task AutomationCommandDispatcher_WaitForCondition_RejectsUndefinedCondition()
+    {
+        var dispatcher = CreateNoHardwareAutomationCommandDispatcher();
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher,
+            CreateAutomationCommandRequest(
+                "WaitForCondition",
+                authToken: null,
+                payloadJson: "{\"condition\":\"999\",\"timeoutMs\":250,\"pollMs\":50}"));
+
+        AssertAutomationResponse(response, false, "command-failed", "error", "undefined wait condition");
+        AssertEqual("Invalid wait condition: '999'.", GetPublicProperty(response, "Message"), "undefined wait condition message");
     }
 
     internal static Task AutomationCommandDispatcher_OneFieldHandlers_MatchCatalogPayloadFields()
@@ -2539,12 +2646,27 @@ static partial class Program
         AssertContains(appRootSource, "() => viewModel.StopRecordingForEmergencyAsync(),");
         AssertContains(appRootSource, "viewModel.MarkRecordingFinalizationUnresolved,");
         AssertContains(appRootSource, "TimeSpan.FromSeconds(8));");
-        AssertContains(appRootSource, "private const string SingleInstanceMutexName");
         AssertContains(appRootSource, "protected override void OnLaunched(");
-        AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD second instance detected");
-        AssertContains(appRootSource, "SINGLE_INSTANCE_GUARD mutex setup failed; refusing launch.");
-        AssertContains(appRootSource, "Environment.Exit(1);");
-        AssertDoesNotContain(appRootSource, "proceeding without guard");
+        AssertDoesNotContain(appRootSource, "SingleInstanceMutexName");
+        var startupSource = ReadRepoFile("Sussudio/Services/Runtime/AppProcessStartup.cs");
+        AssertContains(startupSource, "SingleInstanceMutexName");
+        AssertContains(startupSource, "SINGLE_INSTANCE_GUARD second instance detected");
+        AssertContains(startupSource, "SINGLE_INSTANCE_GUARD mutex setup failed; refusing launch.");
+        AssertContains(startupSource, "mutex.ReleaseMutex();");
+        AssertDoesNotContain(startupSource, "Logger.");
+        var entrySource = ReadRepoFile("Sussudio/Program.cs");
+        var childDispatch = entrySource.IndexOf("NativeFfmpegCapabilityProbe.TryRunChildProcess(", StringComparison.Ordinal);
+        var normalAdmission = entrySource.IndexOf("AppProcessStartup.RunNormal(StartApplication)", StringComparison.Ordinal);
+        AssertEqual(true, childDispatch >= 0 && normalAdmission > childDispatch, "private child dispatch precedes normal admission");
+        var comInitialization = entrySource.IndexOf("ComWrappersSupport.InitializeComWrappers();", StringComparison.Ordinal);
+        var applicationStart = entrySource.IndexOf("Application.Start(", StringComparison.Ordinal);
+        var synchronizationContext = entrySource.IndexOf("SynchronizationContext.SetSynchronizationContext(context);", StringComparison.Ordinal);
+        var appConstruction = entrySource.IndexOf("new App();", StringComparison.Ordinal);
+        AssertEqual(
+            true,
+            comInitialization > normalAdmission && applicationStart > comInitialization &&
+            synchronizationContext > applicationStart && appConstruction > synchronizationContext,
+            "admitted startup preserves the generated WinUI sequence");
         AssertContains(appRootSource, "\"APP_START \" +");
         AssertContains(appRootSource, "public partial class App : Application");
         AssertEqual(
@@ -2884,21 +3006,89 @@ static partial class Program
         AssertContains(pipeServerText, "if (await WaitForDispatchCompletionAsync(dispatchTask, requestCancellation.Token).ConfigureAwait(false))");
         AssertContains(pipeServerText, "using var registration = cancellationToken.Register(");
         AssertContains(pipeServerText, "requestCancellation.Cancel();");
-        AssertContains(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
+        AssertDoesNotContain(pipeServerText, "WaitForDispatchCompletionAsync(dispatchTask, CancellationToken.None)");
+        AssertContains(pipeServerText, "var responseAfterCancellation = await dispatchTask.ConfigureAwait(false);");
         AssertContains(pipeServerText, "Automation command exceeded request timeout; waiting for dispatch to stop");
-        AssertContains(pipeServerText, "return _owner.CreateRequestTimeoutResponse();");
+        AssertContains(pipeServerText, "responseAfterCancellation = _owner.CreateRequestTimeoutResponse();");
         AssertDoesNotContain(pipeServerText, "DispatchContinues");
         AssertDoesNotContain(pipeServerText, "ObserveTimedOutDispatch");
         AssertContains(pipeServerText, "Request timed out after {_owner._requestTimeoutMs} ms.");
-        AssertContains(pipeServerText, "\"request-timeout\"");
+        AssertContains(pipeServerText, "AutomationErrorCodes.RequestTimeout");
         AssertContains(pipeServerText, "private const int MaxRequestCharacters = 1024 * 1024;");
         AssertContains(pipeServerText, "ReadRequestLineAsync(reader, requestCancellation.Token)");
         AssertContains(pipeServerText, "request.Length > MaxRequestCharacters + 1");
         AssertContains(pipeServerText, "request.Length == MaxRequestCharacters + 1 && request[^1] != '\\r'");
-        AssertContains(pipeServerText, "\"request-too-large\"");
+        AssertContains(pipeServerText, "AutomationErrorCodes.RequestTooLarge");
         AssertDoesNotContain(pipeServerText, "reader.ReadLineAsync().WaitAsync(requestCancellation.Token)");
 
         return Task.CompletedTask;
+    }
+
+    internal static async Task NamedPipeAutomationServer_TimeoutWaitsForDispatchAndPreservesOutcome(
+        string? responseError,
+        bool dispatchFaults)
+    {
+        var responseType = RequireType("Sussudio.Models.AutomationCommandResponse");
+        var completionType = typeof(TaskCompletionSource<>).MakeGenericType(responseType);
+        var completion = Activator.CreateInstance(completionType, TaskCreationOptions.RunContinuationsAsynchronously)!;
+        var dispatchTask = (Task)completionType.GetProperty("Task")!.GetValue(completion)!;
+        var dispatchCalled = false;
+        var dispatcher = CreateConfiguredProxy(RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher"),
+            (method, arguments) =>
+            {
+                Assert.Equal("ExecuteAsync", method!.Name);
+                Assert.True(((CancellationToken)arguments![1]!).IsCancellationRequested);
+                dispatchCalled = true;
+                return dispatchTask;
+            });
+
+        var pipeName = $"unit-pipe-timeout-{Guid.NewGuid():N}";
+        using var server = CreateNamedPipeAutomationServer(pipeName, false, new byte[] { 1 },
+            _ => CreateTestPipeServerStream(pipeName), () => CreateTestPipeServerStream(pipeName), dispatcher);
+        using var pipe = CreateTestPipeServerStream(pipeName);
+        var sessionType = server.GetType().GetNestedType("ConnectionSession", BindingFlags.NonPublic)!;
+        var session = Activator.CreateInstance(sessionType,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null, args: new object[] { server, pipe, CancellationToken.None }, culture: null)!;
+        var execute = sessionType.GetMethod("ExecuteCommandWithTimeoutAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        using var timeout = new CancellationTokenSource();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(timeout.Token);
+        timeout.Cancel();
+
+        var execution = (Task)execute.Invoke(session, new object[]
+        {
+            CreateAutomationCommandRequest("GetSnapshot", null, "{}"), timeout, cancellation
+        })!;
+        Assert.True(dispatchCalled);
+        Assert.False(execution.IsCompleted, "Request timeout must wait for the admitted dispatch to stop.");
+
+        if (dispatchFaults)
+        {
+            var failure = new InvalidOperationException("dispatch failure after cancellation");
+            completionType.GetMethod("SetException", new[] { typeof(Exception) })!
+                .Invoke(completion, new object[] { failure });
+            var actual = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => execution.WaitAsync(TimeSpan.FromSeconds(5)));
+            Assert.Same(failure, actual);
+            return;
+        }
+
+        var response = Activator.CreateInstance(responseType)!;
+        SetPropertyBackingField(response, "Success", responseError == null);
+        SetPropertyBackingField(response, "ErrorCode", responseError);
+        completionType.GetMethod("SetResult")!.Invoke(completion, new[] { response });
+        await execution.WaitAsync(TimeSpan.FromSeconds(5));
+        var result = execution.GetType().GetProperty("Result")!.GetValue(execution)!;
+        if (string.Equals(responseError, "canceled", StringComparison.OrdinalIgnoreCase))
+        {
+            Assert.NotSame(response, result);
+            AssertAutomationResponse(result, false, "request-timeout", "error", "dispatch canceled after timeout");
+            Assert.Equal("failed", GetAutomationLifecycle(result));
+        }
+        else
+        {
+            Assert.Same(response, result);
+        }
     }
 
     internal static async Task NamedPipeAutomationServer_KeepsDiagnosticsAvailableBesideBusyClients()
@@ -3140,7 +3330,8 @@ static partial class Program
         bool authTokenRequired,
         byte[]? securityDescriptor,
         Func<byte[], NamedPipeServerStream> secureServerStreamFactory,
-        Func<NamedPipeServerStream> defaultServerStreamFactory)
+        Func<NamedPipeServerStream> defaultServerStreamFactory,
+        object? dispatcher = null)
     {
         var serverType = RequireType("Sussudio.Services.Automation.NamedPipeAutomationServer");
         var dispatcherType = RequireType("Sussudio.Services.Contracts.IAutomationCommandDispatcher");
@@ -3150,7 +3341,7 @@ static partial class Program
 
         return (IDisposable)constructor.Invoke(new object?[]
         {
-            CreateThrowingProxy(dispatcherType),
+            dispatcher ?? CreateThrowingProxy(dispatcherType),
             pipeName,
             authTokenRequired,
             (securityDescriptor, "unit-test-security"),
@@ -3764,7 +3955,7 @@ static partial class Program
         AssertContains(stopVideoPreviewCore, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
         AssertContains(stopVideoPreviewCore, "commitStoppedState = true;");
         AssertContains(stopVideoPreviewCore, "if (commitStoppedState)\n                {\n                    _isVideoPreviewActive = false;");
-        AssertContains(stopVideoPreviewCore, "await StopTelemetryPollAsync().ConfigureAwait(false);");
+        AssertContains(stopVideoPreviewCore, "await StopSourceTelemetryPollingAsync().ConfigureAwait(false);");
         AssertContains(stopVideoPreviewCore, "catch (Exception ex) when (stopFailure != null)");
         AssertDoesNotContain(stopVideoPreviewCore, "!keepPipelineAlive) StopTelemetryPoll()");
         var stopPreviewBlock = ExtractTextBetween(
@@ -3817,8 +4008,6 @@ static partial class Program
         foreach (var expectedToken in new[]
         {
             "FLASHBACK_RESTART_OK",
-            "FLASHBACK_FORMAT_CHANGE_OK",
-            "FLASHBACK_ENCODER_SETTINGS_CHANGE_OK",
             "FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK",
             "FLASHBACK_BACKEND_DEFERRED_CLEANUP_RETRY",
             "FLASHBACK_BACKEND_DEFERRED_CLEANUP_GIVE_UP",
@@ -3837,47 +4026,30 @@ static partial class Program
             "FLASHBACK_EXPORT_SEGMENTS_OK",
             "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN",
             "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN",
-            "FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED",
-            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED",
             "FLASHBACK_PLAYBACK_DISPOSE_REQUEST"
         })
         {
             AssertContains(flashbackText, expectedToken);
         }
 
-        var encoderSettingsChange = ExtractTextBetween(
+        var settingsChange = ExtractTextBetween(
             captureServiceText,
-            "public Task CycleFlashbackEncoderSettingsAsync",
-            "private void DisposeCoordinationLocksBestEffort");
-        AssertContains(encoderSettingsChange, "var cycleFailed = false;");
-        AssertContains(encoderSettingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
-        AssertContains(encoderSettingsChange, "cycleFailed = true;");
-        AssertContains(encoderSettingsChange, "if (!cycleFailed)");
-        AssertContains(encoderSettingsChange, "_currentSettings = previousSettings;");
-        AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
-        AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
-        AssertContains(encoderSettingsChange, "await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken)");
-        AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
-        AssertContains(encoderSettingsChange, "string? splitEncodeMode = null");
-        AssertContains(encoderSettingsChange, "_currentSettings.SplitEncodeMode = parsedSplitMode;");
-        AssertContains(
-            encoderSettingsChange,
-            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
-
-        var formatChange = ExtractTextBetween(
-            captureServiceText,
-            "public Task UpdateRecordingFormatAsync",
-            "    public Task CycleFlashbackEncoderSettingsAsync");
-        AssertContains(formatChange, "var cycleFailed = false;");
-        AssertContains(formatChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
-        AssertContains(formatChange, "cycleFailed = true;");
-        AssertContains(formatChange, "if (!cycleFailed)");
-        AssertContains(formatChange, "_currentSettings = previousSettings;");
-        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_ROLLBACK");
-        AssertContains(formatChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
-        AssertContains(formatChange, "await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken)");
-        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED");
-        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(",
+            "private void UpdateEncodingSettings(CaptureSettings source)");
+        AssertContains(settingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
+        AssertContains(settingsChange, "_currentSettings = previousSettings;");
+        AssertContains(settingsChange, "applicationFailure = ex;");
+        AssertContains(settingsChange, "ExceptionDispatchInfo.Capture(applicationFailure).Throw();");
+        AssertContains(settingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
+        AssertContains(settingsChange, "await _rebuildRecordingSettingsBackendAsync(transitionToken)");
+        foreach (var suffix in new[] { "_OK", "_CYCLE_FAIL", "_CYCLE_CANCELLED", "_ROLLBACK" })
+        {
+            AssertContains(settingsChange, "{logPrefix}" + suffix);
+        }
+        AssertContains(settingsChange, "FLASHBACK_FORMAT_CHANGE");
+        AssertContains(settingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE");
+        AssertContains(settingsChange, "RecordingSettingsSelection selection");
+        AssertContains(settingsChange, "selection.ApplyTo(_currentSettings);");
 
         var settingsRebuild = ExtractTextBetween(
             captureServiceText,
@@ -3940,7 +4112,7 @@ static partial class Program
         AssertDoesNotContain(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
         AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = settings.NvencPreset;");
         AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
-        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = SplitEncodeModeParser.ToWireString(settings.SplitEncodeMode)");
+        AssertContains(createFlashbackSessionContext, "SplitEncodeMode = settings.SplitEncodeMode");
         // Flashback must honor user codec/preset settings directly. The legacy snapshot
         // field remains for compatibility, but the old silent AV1->HEVC path must stay gone.
         AssertDoesNotContain(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE");
@@ -4218,8 +4390,6 @@ static partial class Program
             "UpdateAudioInputAsync",
             "UpdateMicrophoneMonitorAsync",
             "RestartFlashbackAsync",
-            "UpdateRecordingFormatAsync",
-            "CycleFlashbackEncoderSettingsAsync",
             "SetFlashbackEnabledAsync",
             "UpdateFlashbackSettingsAsync"
         };
@@ -4355,8 +4525,7 @@ static partial class Program
         var flashbackGuardsText = flashbackText;
 
         AssertContains(flashbackText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "public Task CycleFlashbackEncoderSettingsAsync(");
+        AssertContains(flashbackText, "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(");
         AssertContains(flashbackText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(flashbackStatusText, "internal FlashbackBufferStatus GetFlashbackBufferStatus()");
         AssertContains(flashbackStatusText, "internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()");
@@ -4725,7 +4894,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(flashbackText, "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)");
-        AssertContains(flashbackText, "public Task CycleFlashbackEncoderSettingsAsync(");
+        AssertContains(flashbackText, "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(");
         AssertContains(flashbackText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(flashbackText, "public Task UpdateFlashbackSettingsAsync(int bufferMinutes, bool gpuDecode, CancellationToken cancellationToken = default)");
 
@@ -4766,7 +4935,7 @@ static partial class Program
         var coordinatorText = ReadCaptureSessionCoordinatorSource();
         var cycleMethod = ExtractTextBetween(
             coordinatorText,
-            "public Task CycleFlashbackEncoderSettingsAsync",
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync",
             "public Task SetFlashbackEnabledAsync");
         var queueProcessor = ExtractTextBetween(
             coordinatorText,
@@ -4775,7 +4944,7 @@ static partial class Program
 
         AssertContains(coordinatorText, "_latestFlashbackEncoderCycleGeneration");
         AssertContains(coordinatorText, "_commandsCoalesced");
-        AssertContains(cycleMethod, "coalesceLatest: true");
+        AssertContains(cycleMethod, "coalesceLatest: kind == RecordingSettingsChangeKind.EncoderParameters");
         AssertContains(queueProcessor, "Volatile.Read(ref _latestFlashbackEncoderCycleGeneration)");
         AssertContains(queueProcessor, "CaptureCommandOutcome.Coalesced");
         AssertContains(queueProcessor, "CAP-COORD-SKIP");
@@ -4815,7 +4984,7 @@ static partial class Program
         var restartWithSettings = ExtractTextBetween(
             coordinatorText,
             "public Task RestartFlashbackAsync(CaptureSettings settings",
-            "public Task UpdateRecordingFormatAsync");
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync");
         var setFlashbackEnabled = ExtractTextBetween(
             coordinatorText,
             "public Task SetFlashbackEnabledAsync",
@@ -4845,16 +5014,15 @@ static partial class Program
             coordinatorText,
             "public Task StopRecordingAsync",
             "public Task StartAudioPreviewAsync");
-        var cycleFlashbackEncoder = ExtractTextBetween(
+        var recordingSettings = ExtractTextBetween(
             coordinatorText,
-            "public Task CycleFlashbackEncoderSettingsAsync",
+            "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync",
             "public Task SetFlashbackEnabledAsync");
 
         AssertDoesNotContain(stopVideo, "propagateCancellationToOperation: true");
         AssertDoesNotContain(stopVideoTeardown, "propagateCancellationToOperation: true");
         AssertDoesNotContain(stopRecording, "propagateCancellationToOperation: true");
-        AssertDoesNotContain(cycleFlashbackEncoder, "propagateCancellationToOperation: true");
-        AssertContains(cycleFlashbackEncoder, "coalesceLatest: true");
+        AssertDoesNotContain(recordingSettings, "propagateCancellationToOperation: true");
 
         return Task.CompletedTask;
     }
@@ -5779,7 +5947,7 @@ static partial class Program
         var dispatcherText = ReadAutomationCommandDispatcherFamilyText();
         var viewModelDispatchText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
                 .Replace("\r\n", "\n");
         var flashbackSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
             .Replace("\r\n", "\n");
@@ -5835,15 +6003,18 @@ static partial class Program
         AssertDoesNotContain(interfaceText, "PreviewColorProbeResult ProbePreviewColor();");
         AssertContains(dispatcherText, "await _flashbackPort.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "return CreateFlashbackActionRejectedResponse(");
-        AssertContains(dispatcherText, "errorCode: \"flashback-action-failed\"");
+        AssertContains(dispatcherText, "errorCode: AutomationErrorCodes.FlashbackActionFailed");
         AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
-        AssertContains(dispatcherText, "var force = GetBool(payload, \"force\") ?? false;");
-        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, force, cancellationToken)");
+        AssertContains(dispatcherText, "_ = GetBool(payload, \"force\") ?? false;");
+        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(dispatcherText, "FlashbackExportFailureCodes.Classify(exportResult)");
         AssertContains(dispatcherText, "FailureKind = failureKind");
-        AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+        AssertContains(dispatcherText, "AutomationFlashbackValidation.ValidatePositionMs(positionMs.Value);");
+        var flashbackValidationText = ReadRepoFile("Sussudio.Automation.Contracts/AutomationCommandCatalog.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(flashbackValidationText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");
@@ -6053,60 +6224,36 @@ static partial class Program
     internal static Task MainViewModelAutomation_RecordingSettingsRouteThroughControllerAndFlashbackCycle()
     {
         var viewModelFiles = ReadMainViewModelCodeFiles();
-        var viewModelFlashbackStateText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var flashbackEncoderSettingsText = viewModelFiles["MainViewModel.FlashbackState.cs"];
-        var automationSettingsText = viewModelFiles["MainViewModel.cs"];
-        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs")
-            .Replace("\r\n", "\n");
-        var rawFlashbackEncoderSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.FlashbackState.cs")
-            .Replace("\r\n", "\n");
+        var hooks = viewModelFiles["MainViewModel.FlashbackState.cs"];
+        var viewModel = viewModelFiles["MainViewModel.cs"];
+        var controller = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs");
+        var captureAutomation = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs");
 
-        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedRecordingFormatChanged", "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),");
-        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedRecordingFormatChanged", "_suppressFlashbackFormatCycle is false");
-        AssertContains(rawFlashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask(\n                _sessionCoordinator.UpdateRecordingFormatAsync(format),\n                \"recording format\");");
-        AssertContains(viewModelFlashbackStateText, "private bool _suppressFlashbackFormatCycle;");
-        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "_recordingSettingsAutomationController.SetRecordingFormatAsync(format, cancellationToken)");
-        AssertMemberContains(automationSettingsText, "SetRecordingFormatAsync", "RunPersistedSettingsAutomationAsync(");
-        AssertContains(recordingSettingsAutomationControllerText, "internal sealed class MainViewModelRecordingSettingsAutomationControllerContext");
-        AssertContains(recordingSettingsAutomationControllerText, "private readonly MainViewModelRecordingSettingsAutomationControllerContext _context;");
-        AssertDoesNotContain(recordingSettingsAutomationControllerText, "private readonly MainViewModel _viewModel;");
-        AssertDoesNotContain(recordingSettingsAutomationControllerText, "_viewModel.");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetRecordingFormatAsync", "SetSuppressFlashbackFormatCycle(true);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetRecordingFormatAsync", "RecordingSettingsSelectionPolicy.ParseRecordingFormat(matched)");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetRecordingFormatAsync", "await _context.UpdateRecordingFormatAsync(recordingFormat, cancellationToken)");
-        AssertDoesNotContain(flashbackSettingsText, "public async Task SetRecordingFormatAsync");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetQualityAsync", "SetSuppressFlashbackEncoderSettingsCycle(true);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetQualityAsync", "_context.SetSelectedQuality(matched);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetQualityAsync", "settings.Quality,");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetSplitEncodeModeAsync", "SetSuppressFlashbackEncoderSettingsCycle(true);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetSplitEncodeModeAsync", "return BuildEncoderSettings(splitEncodeMode: _context.GetSelectedSplitEncodeMode());");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetSplitEncodeModeAsync", "settings.SplitEncodeMode,");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetCustomBitrateAsync", "SetSuppressFlashbackEncoderSettingsCycle(true);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetCustomBitrateAsync", "_context.SetCustomBitrateMbps(RecordingSettingsSelectionPolicy.ClampCustomBitrateMbps(bitrateMbps));");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetCustomBitrateAsync", "settings.Bitrate,");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetPresetAsync", "SetSuppressFlashbackEncoderSettingsCycle(true);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetPresetAsync", "_context.SetSelectedPreset(matched);");
-        AssertMemberContains(recordingSettingsAutomationControllerText, "SetPresetAsync", "settings.Preset,");
-        AssertMemberContains(flashbackEncoderSettingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
-        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedQualityChanged", "TrackFlashbackEncoderSettingsCycle(");
-        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedPresetChanged", "TrackFlashbackEncoderSettingsCycle(");
-        AssertMemberContains(flashbackEncoderSettingsText, "OnSelectedSplitEncodeModeChanged", "TrackFlashbackEncoderSettingsCycle(");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "quality: RecordingSettingsSelectionPolicy.ParseVideoQuality(SelectedQuality)");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "customBitrateMbps: CustomBitrateMbps");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "splitEncodeMode: SelectedSplitEncodeMode");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackFlashbackEncoderSettingsCycle", "TrackPendingFlashbackCycleTask(task, description);");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = task;");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "if (ReferenceEquals(_pendingFlashbackCycleTask, t))");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = null;");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "if (t.IsFaulted)");
-        AssertMemberContains(flashbackEncoderSettingsText, "TrackPendingFlashbackCycleTask", "else if (t.IsCanceled)");
-        AssertContains(rawFlashbackEncoderSettingsText, "CycleFlashbackEncoder({description}) failed");
-        AssertContains(rawFlashbackEncoderSettingsText, "CycleFlashbackEncoder({description}) canceled");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackEncoderSettings.cs")), "MainViewModel.FlashbackEncoderSettings.cs folded into FlashbackState");
-        AssertEqual(false, File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.FlashbackSettings.cs")), "MainViewModel.FlashbackSettings.cs folded into FlashbackState");
-
+        foreach (var member in new[] { "SetRecordingFormatAsync", "SetQualityAsync", "SetSplitEncodeModeAsync", "SetCustomBitrateAsync", "SetPresetAsync" })
+        {
+            AssertMemberContains(viewModel, member, "RunPersistedSettingsAutomationAsync(");
+            AssertMemberContains(viewModel, member, "_recordingSettingsController.");
+        }
+        foreach (var member in new[] { "OnSelectedRecordingFormatChanged", "OnSelectedQualityChanged", "OnSelectedSplitEncodeModeChanged", "OnCustomBitrateMbpsChanged", "OnSelectedPresetChanged" })
+        {
+            AssertMemberContains(hooks, member, "_recordingSettingsController.OnSelectionChanged(");
+            AssertMemberContains(hooks, member, "SaveSettings();");
+        }
+        AssertContains(controller, "internal sealed class MainViewModelRecordingSettingsController");
+        AssertContains(controller, "private readonly MainViewModelRecordingSettingsControllerContext _context;");
+        AssertContains(controller, "public IDisposable SuppressPropertyReactions()");
+        AssertContains(controller, "public Task? PendingApplication");
+        AssertContains(controller, "public void ClearPendingIfSameAndCompleted(Task task)");
+        AssertDoesNotContain(controller, "private readonly MainViewModel _viewModel;");
+        AssertDoesNotContain(captureAutomation, "MainViewModelRecordingSettings");
+        AssertDoesNotContain(hooks, "TrackPendingFlashbackCycleTask");
+        AssertDoesNotContain(hooks, "_suppressFlashbackFormatCycle");
+        AssertDoesNotContain(hooks, "_suppressFlashbackEncoderSettingsCycle");
+        AssertDoesNotContain(hooks, "_pendingFlashbackCycleTask");
+        AssertContains(viewModel, "CaptureSelection = () => new RecordingSettingsSelection(");
+        AssertContains(viewModel, "ApplyAsync = viewModel._sessionCoordinator.ApplyRecordingSettingsAsync,");
+        AssertContains(viewModel, "viewModel._recordingSettingsController.PendingApplication");
+        AssertContains(viewModel, "viewModel._recordingSettingsController.ClearPendingIfSameAndCompleted(task)");
         return Task.CompletedTask;
     }
 
@@ -6257,7 +6404,7 @@ static partial class Program
                 .Replace("\r\n", "\n")
             + "\n" + ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs")
                 .Replace("\r\n", "\n")
-            + "\n" + ReadRepoFile("Sussudio/Controllers/UiDispatchControllers.cs")
+            + "\n" + ReadRepoFile("Sussudio/Controllers/Dispatch/UiDispatchControllers.cs")
                 .Replace("\r\n", "\n");
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n")
@@ -6268,7 +6415,10 @@ static partial class Program
         AssertContains(automationAudioText, "public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
-        AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SaveSettingsOrThrow();");
+        var previewVolumeCommand = ExtractMemberCode(automationAudioText, "SetPreviewVolumeAsync");
+        AssertContains(previewVolumeCommand, "return InvokeOnUiThreadAsync(() =>");
+        AssertContains(previewVolumeCommand, "SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0));");
+        AssertOccursBefore(previewVolumeCommand, "SetPreviewVolumeFromUser(", "SaveSettingsOrThrow();");
         AssertContains(automationAudioText, "public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)");
         AssertContains(automationAudioText, "WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);");
@@ -6453,8 +6603,7 @@ static partial class Program
         {
             "SetFlashbackEnabledAsync",
             "RestartFlashbackAsync",
-            "UpdateRecordingFormatAsync",
-            "CycleFlashbackEncoderSettingsAsync",
+            "ApplyRecordingSettingsAsync",
             "UpdateFlashbackSettingsAsync",
             "ExportFlashbackRangeAsync",
             "ExportFlashbackLastNSecondsAsync",
@@ -6480,7 +6629,7 @@ static partial class Program
         }
 
         var viewModelFiles = ReadMainViewModelCodeFiles();
-        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelSettingsAutomationControllers.cs")
+        var recordingSettingsAutomationControllerText = ReadRepoFile("Sussudio/Controllers/ViewModel/MainViewModelRecordingSettingsController.cs")
             .Replace("\r\n", "\n");
         var viewModelText = string.Join("\n", viewModelFiles.Values) + "\n" + recordingSettingsAutomationControllerText;
         var viewModelAudioStateText = viewModelFiles["MainViewModel.AudioState.cs"];
@@ -6576,9 +6725,12 @@ static partial class Program
         AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
         AssertMemberContains(flashbackBufferStatusText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
         AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;");
-        AssertContains(captureServiceText, "ClassifyCaptureFailureSource(object? sender)");
-        AssertContains(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
-        AssertContains(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");
+        AssertContains(captureServiceText, "public void AttachCaptureFailure(");
+        AssertContains(captureServiceText, "new CaptureErrorOrigin(CaptureErrorOriginKind.AudioCaptureRegistration, ++_captureErrorGeneration)");
+        AssertContains(captureServiceText, "private void OnWasapiCaptureFailed(Exception ex, CaptureErrorOrigin origin, string source)");
+        AssertContains(captureServiceText, "if (!IsCaptureErrorCurrent(origin))");
+        AssertDoesNotContain(captureServiceText, "ReferenceEquals(sender, ProgramCapture)");
+        AssertDoesNotContain(captureServiceText, "ReferenceEquals(sender, MicrophoneCapture)");
         AssertContains(captureServiceText, "WASAPI_CAPTURE_FAILED source={source}");
         AssertContains(captureServiceText, "_previewAudioGraph.RecordCaptureFault(source, ex);");
         AssertContains(coordinatorText, "if (Volatile.Read(ref _isDisposed))");
@@ -6688,7 +6840,7 @@ static partial class Program
 
         AssertNoRegex(
             viewModelText,
-            @"\b_captureService\s*\.\s*(SetFlashbackEnabled|RestartFlashbackAsync|UpdateRecordingFormatAsync|CycleFlashbackEncoderSettingsAsync|UpdateFlashbackSettings|ExportFlashback|GetFlashbackSegments|FlashbackPlaybackController|FlashbackBufferManager|FlashbackDiskBytes|FlashbackTotalBytesWritten)\b",
+            @"\b_captureService\s*\.\s*(SetFlashbackEnabled|RestartFlashbackAsync|ApplyRecordingSettingsAsync|UpdateFlashbackSettings|ExportFlashback|GetFlashbackSegments|FlashbackPlaybackController|FlashbackBufferManager|FlashbackDiskBytes|FlashbackTotalBytesWritten)\b",
             "MainViewModel flashback mutating/backend capture-service access");
         AssertNoRegex(
             viewModelText,
@@ -6792,7 +6944,7 @@ static partial class Program
         AssertContains(exportCoreText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(exportCore, "live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames");
         AssertContains(exportCore, "if (preparedExport.ForceRotateFallbackUsed && result.Succeeded)\n            {\n                result = FinalizeResult.Success(");
-        AssertContains(exportCore, "RecordLastFlashbackExportResult(exportId, result);\n            CompleteFlashbackExportDiagnostics(exportId, result);");
+        AssertContains(exportCore, "_flashbackExport.RecordLastFlashbackExportResult(exportId, result);\n            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);");
 
         var backendCleanup = ExtractTextBetween(
             backendResourcesText,
@@ -6903,10 +7055,15 @@ static partial class Program
         AssertContains(disposalText, "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
         AssertContains(disposalText, "CancelFlashbackExportCts(exportCts);");
         AssertContains(rawDisposalText, "private void CancelActiveFlashbackExportForDispose()");
-        AssertContains(disposalControllerText, "_context.CancelActiveFlashbackExport();");
-        AssertContains(disposalControllerText, "_context.StopRuntimeForDispose();");
-        AssertOccursBefore(disposalControllerText, "_context.CancelActiveFlashbackExport();", "_context.StopRuntimeForDispose();");
-        AssertOccursBefore(disposalControllerText, "_context.StopRuntimeForDispose();", "var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(");
+        var disposalCoreText = ExtractTextBetween(
+            disposalControllerText,
+            "private async Task DisposeCoreAsync()",
+            "private static int GetDisposeTimeoutMs()");
+        AssertOccursBefore(disposalCoreText, "_context.CancelActiveFlashbackExport();", "_context.StopRuntimeForDispose();");
+        AssertOccursBefore(disposalCoreText, "_context.StopRuntimeForDispose();", "_context.CleanupSessionCoordinatorAsync,");
+        AssertOccursBefore(disposalCoreText, "_context.CleanupSessionCoordinatorAsync,", "_context.DisposeSessionCoordinatorAsync,");
+        AssertOccursBefore(disposalCoreText, "_context.DisposeSessionCoordinatorAsync,", "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);");
+        AssertOccursBefore(disposalCoreText, "await _context.DisposeCaptureServiceAsync().ConfigureAwait(false);", "_context.CompleteRuntimeDispose();");
         AssertContains(rawDisposalText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(flashbackExportOperationText, "private abstract record ExportFlashbackOutcome");
         AssertContains(flashbackExportOperationText, "private async Task<ExportFlashbackOutcome> ExportFlashbackCoreAsync");
@@ -6989,8 +7146,13 @@ static partial class Program
         var automationUiText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         var automationAudioText = automationUiText;
         var settingsProjectionText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var audioStateText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.AudioState.cs").Replace("\r\n", "\n");
+        var previewVolumeCommand = ExtractMemberCode(automationAudioText, "SetPreviewVolumeAsync");
 
-        AssertContains(automationAudioText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SaveSettingsOrThrow();");
+        AssertContains(previewVolumeCommand, "SetPreviewVolumeFromUser(Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0));");
+        AssertOccursBefore(previewVolumeCommand, "SetPreviewVolumeFromUser(", "SaveSettingsOrThrow();");
+        AssertContains(ExtractMemberCode(audioStateText, "SetPreviewVolumeFromUser"), "_previewAudioVolumeTransitionController.SetUserVolume(value)");
+        AssertContains(ExtractMemberCode(settingsProjectionText, "SaveSettings"), "_previewAudioVolumeTransitionController.RequestedVolume,");
         AssertContains(settingsProjectionText, "PreviewVolume = input.PreviewVolume,");
         AssertContains(automationAudioText, "public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)");
         AssertContains(automationUiText, "public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }");
@@ -7197,7 +7359,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempRoot, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempRoot);
         }
 
         return Task.CompletedTask;
@@ -7366,14 +7528,15 @@ static partial class Program
         AssertContains(captureModeTransactionsText, "AvailableVideoFormats.ToArray()");
         AssertContains(captureModeTransactionsText, "AvailableRecordingFormats.ToArray()");
         AssertContains(captureModeTransactionsText, "_latestSourceTelemetry");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(true);");
-        AssertContains(captureSettingsAutomationControllerText, "_context.SetSuppressFormatChangeReinitialize(false);");
+        AssertContains(captureSettingsAutomationControllerText, "_context.ApplyCaptureSelectionWithoutReinitialize(apply);");
+        AssertDoesNotContain(captureSettingsAutomationControllerText, "SetSuppressFormatChangeReinitialize");
         AssertContains(captureSettingsAutomationControllerText, "return wasPreviewing && _context.GetSelectedFormat() != null;");
         AssertContains(captureSettingsAutomationControllerText, "reinitialized = await _context.ReinitializeDeviceWithResultAsync($\"automation {reason}\")");
         AssertContains(captureSettingsAutomationControllerText, "var restored = await RestoreCaptureSelectionSnapshotIfUnchangedAsync(rollback, attempted).ConfigureAwait(false);");
         AssertContains(captureSettingsAutomationControllerText, "a newer capture selection superseded this request");
         AssertContains(captureSettingsAutomationControllerText, "_captureModeGate.Release();");
-        AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(string reason, bool treatCoalescedAsSuccess)");
+        AssertContains(previewLifecycleControllerText, "private async Task<bool> ReinitializeDeviceCoreAsync(\n        string reason,\n        bool treatCoalescedAsSuccess,\n        CaptureErrorOrigin? errorOrigin = null)");
+        AssertContains(previewLifecycleControllerText, "if (!IsCaptureErrorCurrent(errorOrigin))");
         AssertContains(previewLifecycleControllerText, "private async Task<bool> TryInitializeAndRestartPreviewAsync(");
         AssertEqual(
             4,
@@ -7446,7 +7609,7 @@ static partial class Program
             "public Task SetCustomAudioInputEnabledAsync");
 
         AssertContains(deviceSelectionAutomationText, "public Task RefreshDevicesForAutomationAsync");
-        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);");
+        AssertContains(deviceSelectionAutomationText, "=> InvokeOnUiThreadAsync(() => _deviceRefreshController.RefreshDevicesAsync(cancellationToken, throwOnScanFailure: true), cancellationToken);");
         AssertContains(deviceSelectionAutomationText, "public Task SelectDeviceAsync");
         AssertContains(deviceSelectionAutomationText, "private CaptureDevice? ResolveDevice");
         AssertContains(deviceSelectionAutomationText, "public Task SelectAudioInputDeviceAsync");
@@ -7468,7 +7631,7 @@ static partial class Program
         AssertContains(deviceRefreshControllerText, "private readonly MainViewModelDeviceRefreshControllerContext _context;");
         AssertDoesNotContain(deviceRefreshControllerText, "private readonly MainViewModel _viewModel;");
         AssertDoesNotContain(deviceRefreshControllerText, "_viewModel.");
-        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            _context.SetStatusText(\"Device scan canceled\");\n            throw;\n        }");
+        AssertContains(deviceRefreshControllerText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))\n            {\n                _context.SetStatusText(\"Device scan canceled\");\n            }\n\n            throw;\n        }");
         AssertEqual(
             false,
             File.Exists(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels", "MainViewModel.AutomationAudioInputSelection.cs")),
@@ -7885,9 +8048,14 @@ static partial class Program
         AssertContains(diagnostics.EvaluationText, "private PerformanceEvaluation EvaluatePerformance(");
         AssertContains(diagnostics.EvaluationText, "private static DiagnosticEvaluation BuildDiagnosticEvaluation(");
         AssertContains(diagnostics.EvaluationText, "var lanes = BuildDiagnosticEvaluationLanes(");
-        AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = TryBuildFlashbackDiagnosticEvaluation(");
+        AssertContains(diagnostics.EvaluationText, "var flashbackDiagnostic = FlashbackDiagnosticEvaluator.TryBuildFlashbackDiagnosticEvaluation(");
         AssertContains(diagnostics.EvaluationText, "var realtimeDiagnostic = TryBuildRealtimeDiagnosticEvaluation(");
-        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "private static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
+        // Flashback verdicts now have a named owner instead of sitting in the Evaluation partial.
+        // The nested collaborator keeps reading the hub's private thresholds, which the alert
+        // snapshot path shares and other assertions here pin to the hub root.
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "internal static class FlashbackDiagnosticEvaluator");
+        AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "internal static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
+        AssertDoesNotContain(diagnostics.EvaluationText, "private static DiagnosticEvaluation? TryBuildFlashbackDiagnosticEvaluation(");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackStorageDiagnosticEvaluation(health, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackRecordingDiagnosticEvaluation(health, isRecording, recentFlashbackRecording, lanes)");
         AssertContains(diagnostics.DiagnosticEvaluationFlashbackText, "TryBuildFlashbackExportDiagnosticEvaluation(health, lanes)");
@@ -7979,7 +8147,8 @@ static partial class Program
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private static string BuildVisualLane(CaptureHealthSnapshot health)");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationRenderLane(");
         AssertContains(diagnostics.DiagnosticEvaluationLanesText, "var sourceTarget =");
-        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "private readonly record struct DiagnosticEvaluationLanes(");
+        // internal, not private: FlashbackDiagnosticEvaluator takes it as a parameter.
+        AssertContains(diagnostics.DiagnosticEvaluationLanesText, "internal readonly record struct DiagnosticEvaluationLanes(");
         AssertEqual(
             false,
             System.IO.File.Exists(System.IO.Path.Combine(GetRepoRoot(), "Sussudio", "Services", "Automation", "AutomationDiagnosticsHub.DiagnosticEvaluationLanes.cs")),
@@ -8034,7 +8203,7 @@ static partial class Program
         AssertContains(diagnostics.AlertsText, "private void UpdateAudioSignalAlerts(");
         AssertContains(diagnostics.AlertsText, "\"audio-muted-suspect\"");
         AssertContains(diagnostics.AlertsText, "private void UpdateRecordingGrowthAlerts(");
-        AssertContains(diagnostics.AlertsText, "\"recording-not-growing\"");
+        AssertContains(diagnostics.AlertsText, "RecordingFailureCodes.NotGrowing");
         AssertContains(diagnostics.AlertsText, "var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackRecordingAlerts(snapshot, flashbackRecordingRecent);");
         AssertContains(diagnostics.AlertsText, "UpdateFlashbackPlaybackAlerts(snapshot, nowUnixMs);");
@@ -8556,7 +8725,14 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = await StopRecordingForCleanupAsync(");
         AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = shouldStopRecordingForVerification &&");
         AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = request.StoppedRecordingForVerification");
-        AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
+        AssertContains(diagnosticSessionText, "CancellationTokenSource.CreateLinkedTokenSource(\n                       commandCancellationToken, _pendingSendsCancellation.Token)");
+        AssertContains(diagnosticSessionText, "await _sendGate.WaitAsync(waitCancellation.Token).ConfigureAwait(false);");
+        AssertContains(diagnosticSessionText, "commandCancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(diagnosticSessionText, "ObjectDisposedException.ThrowIf(_disposeRequested, this);");
+        AssertContains(diagnosticSessionText, "private void DisposeResourcesIfIdle()");
+        AssertContains(diagnosticSessionText, "if (!_waiterCancellationComplete || _ownedSends != 0 || _resourcesDisposed)");
+        AssertContains(diagnosticSessionText, "await sendCommandAsync(command, payload, responseTimeoutMs, cancellationToken)");
+        AssertContains(diagnosticSessionText, "sendCommandAsync(command, payload, timeout).WaitAsync(token)");
         AssertContains(diagnosticSessionText, "context.ScenarioCancellationSource.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
         AssertContains(diagnosticSessionText, "context.RecordTerminalException(ex, context.GetLastStage())");
@@ -8662,7 +8838,7 @@ static partial class Program
         {
             HubText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.cs"),
             EvaluationText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
-            DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
+            DiagnosticEvaluationFlashbackText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.FlashbackEvaluation.cs"),
             DiagnosticEvaluationRealtimeText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             DiagnosticEvaluationLanesText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Evaluation.cs"),
             AlertsText = ReadAutomationDiagnosticsHubSourceFile("AutomationDiagnosticsHub.Snapshots.cs"),
@@ -8868,8 +9044,8 @@ static partial class Program
                 + "\n" + ReadDiagnosticSessionFlashbackSegmentPlaybackScenariosSource()
                 + "\n" + ReadDiagnosticSessionFlashbackSupportSource()
                 + "\n" + ReadDiagnosticSessionFlashbackStressScenarioSource()
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionHealthPolicy.cs")
-                + "\n" + ReadNormalizedRepoFile("tools/Common/DiagnosticSessionRunContext.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs")
+                + "\n" + ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionRunContext.cs")
                 + "\n" + ReadDiagnosticSessionMetricsSource()
                 + "\n" + ReadDiagnosticSessionResultFormatterSource()
                 + "\n" + ReadDiagnosticSessionScenarioCatalogSource(),
@@ -8888,12 +9064,12 @@ static partial class Program
 
     private static string ReadDiagnosticSessionScenarioCatalogSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionScenarioCatalog.cs");
+        return ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs");
     }
 
     private static string ReadDiagnosticSessionFlashbackSupportSource()
     {
-        return ReadNormalizedRepoFile("tools/Common/DiagnosticSessionFlashbackSupport.cs");
+        return ReadNormalizedRepoFile("tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs");
     }
 
     private static string ReadNormalizedRepoFile(string path)
@@ -9018,9 +9194,9 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "recentFlashbackRecording.BackpressureEvents > 0");
         AssertContains(diagnostics.SourceFamilyText, "health.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackBackendSettingsUnexpectedlyStale =");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackBackendSettingsStale &&\n            !isRecording");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackBackendSettingsStale &&\n                !isRecording");
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback backend settings differ from requested settings.\"");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackVideoQueueDepth,\n                 health.FlashbackVideoQueueCapacity,\n                 health.FlashbackVideoQueueOldestFrameAgeMs");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackVideoQueueDepth,\n                     health.FlashbackVideoQueueCapacity,\n                     health.FlashbackVideoQueueOldestFrameAgeMs");
         AssertContains(diagnostics.SourceFamilyText, "forceRotate={health.FlashbackForceRotateActive}");
         AssertContains(diagnostics.SourceFamilyText, "queueRejects={health.FlashbackVideoQueueRejectedFrames}");
         AssertContains(diagnostics.SourceFamilyText, "audioQueue={health.FlashbackAudioQueueDepth}/{health.FlashbackAudioQueueCapacity}");
@@ -9033,8 +9209,8 @@ static partial class Program
         AssertContains(diagnostics.SourceFamilyText, "\"Flashback recording path is dropping or backing up.\"");
         AssertContains(diagnostics.SourceFamilyText, "\"flashback_export\"");
         AssertContains(diagnostics.SourceFamilyText, "var flashbackForceRotateRejectWithoutDamage =");
-        AssertContains(diagnostics.SourceFamilyText, "!flashbackForceRotateRejectWithoutDamage &&\n              recentFlashbackRecording.SequenceGaps > 0");
-        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackExportActive ||\n             health.FlashbackForceRotateActive ||\n             health.FlashbackForceRotateRequested ||\n             health.FlashbackForceRotateDraining");
+        AssertContains(diagnostics.SourceFamilyText, "!flashbackForceRotateRejectWithoutDamage &&\n                  recentFlashbackRecording.SequenceGaps > 0");
+        AssertContains(diagnostics.SourceFamilyText, "health.FlashbackExportActive ||\n                 health.FlashbackForceRotateActive ||\n                 health.FlashbackForceRotateRequested ||\n                 health.FlashbackForceRotateDraining");
     }
 
     private static void AssertDiagnosticsRefreshFlashbackPlaybackAndPreviewAlertCoverage(
@@ -9202,7 +9378,7 @@ static partial class Program
         var flashbackBackendText = ReadFlashbackBackendResourcesSource();
         var exportOperationsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
         var exportCoreText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
-        var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Capture/CaptureService.Flashback.cs");
+        var exportDiagnosticsText = ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackExportState.cs");
         var plannerText = ReadNormalizedRepoFile("Sussudio/Services/Flashback/FlashbackExportPlanner.cs");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(exportOperationsText, "internal async Task<FinalizeResult> ExportFlashbackRangeAsync");
@@ -9219,13 +9395,13 @@ static partial class Program
         AssertContains(exportCoreText, "FlashbackExportPlanner.CreateRequest(");
         AssertContains(exportCoreText, "CreateFlashbackExportThrottleDelayProvider");
         AssertContains(plannerText, "internal static class FlashbackExportPlanner");
-        AssertContains(exportDiagnosticsText, "private long BeginFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "private void RecordRejectedFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "private void CompleteFlashbackExportDiagnostics(");
-        AssertContains(exportDiagnosticsText, "private IProgress<ExportProgress> CreateFlashbackExportProgressSink(");
-        AssertContains(exportDiagnosticsText, "private void UpdateFlashbackExportProgress(");
-        AssertContains(exportDiagnosticsText, "private void RecordFlashbackExportForceRotateFallback(");
-        AssertContains(exportDiagnosticsText, "private sealed class FlashbackExportProgressForwarder");
+        AssertContains(exportDiagnosticsText, "public long BeginFlashbackExportDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public void RecordRejectedFlashbackExportDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public void CompleteFlashbackExportDiagnostics(");
+        AssertContains(exportDiagnosticsText, "public IProgress<ExportProgress> CreateFlashbackExportProgressSink(");
+        AssertContains(exportDiagnosticsText, "public void UpdateFlashbackExportProgress(");
+        AssertContains(exportDiagnosticsText, "public void RecordFlashbackExportForceRotateFallback(");
+        AssertContains(exportDiagnosticsText, "public sealed class FlashbackExportProgressForwarder");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
         AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
         AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackBackend.Exporter ??= new FlashbackExporter();\n            }");
@@ -9257,9 +9433,9 @@ static partial class Program
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", FlashbackExportFailureCodes.Cancelled, inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
-        AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
+        AssertContains(captureServiceText, "exportId = _flashbackExport.BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
         AssertContains(captureServiceText, "var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);");
-        AssertContains(captureServiceText, "RecordFlashbackExportForceRotateFallback(");
+        AssertContains(captureServiceText, "_flashbackExport.RecordFlashbackExportForceRotateFallback(");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
         AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
         AssertContains(captureServiceText, "captureBoundarySnapshot: sink => CaptureFlashbackRecordingBoundarySnapshot(sink, recordingBoundary)");
@@ -9273,31 +9449,31 @@ static partial class Program
         AssertContains(captureServiceText, "if (evictionPaused)");
         AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
         AssertContains(flashbackBackendText, "resumeEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
-        AssertContains(captureServiceText, "RecordLastFlashbackExportResult(exportId, failure);");
-        AssertContains(captureServiceText, "private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
-        AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
+        AssertContains(captureServiceText, "_flashbackExport.RecordLastFlashbackExportResult(exportId, failure);");
+        AssertContains(exportDiagnosticsText, "public void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
+        AssertContains(exportDiagnosticsText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
         AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        string failureCode,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
-        AssertContains(captureServiceText, "_lastExportResult = result;");
-        AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
-        AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
-        AssertContains(captureServiceText, "if (_flashbackExportActive)");
-        AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, 0);");
-        AssertContains(captureServiceText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
-        AssertContains(captureServiceText, "active_id={_flashbackExportId}");
-        AssertContains(captureServiceText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
+        AssertContains(exportDiagnosticsText, "_lastExportResult = result;");
+        AssertContains(captureServiceText, "_flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
+        AssertContains(exportDiagnosticsText, "public void RecordRejectedFlashbackExportDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
+        AssertContains(exportDiagnosticsText, "if (_flashbackExportActive)");
+        AssertContains(exportDiagnosticsText, "Volatile.Write(ref _lastFlashbackExportResultId, 0);");
+        AssertContains(exportDiagnosticsText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
+        AssertContains(exportDiagnosticsText, "active_id={_flashbackExportId}");
+        AssertContains(exportDiagnosticsText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
         AssertContains(captureServiceText, "var cancelled = ex is OperationCanceledException && ct.IsCancellationRequested;");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name}");
         AssertContains(captureServiceText, "var failure = FlashbackExportFailureCodes.Create(");
         AssertContains(captureServiceText, "ex is OperationCanceledException && ct.IsCancellationRequested");
         AssertContains(captureServiceText, "FlashbackExportFailureCodes.FromException(ex)");
-        AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
-        AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
-        AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
-        AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
-        AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
-        AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
-        AssertContains(captureServiceText, "FlashbackExportFailureCodes.Classify(result)");
+        AssertContains(captureServiceText, "_flashbackExport.CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);\n            }\n            return failure;");
+        AssertContains(exportDiagnosticsText, "_flashbackExportStartedUtcUnixMs = now;");
+        AssertContains(exportDiagnosticsText, "_flashbackExportCompletedUtcUnixMs = now;");
+        AssertContains(exportDiagnosticsText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
+        AssertContains(exportDiagnosticsText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
+        AssertContains(exportDiagnosticsText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
+        AssertContains(exportDiagnosticsText, "FlashbackExportFailureCodes.Classify(result)");
         AssertDoesNotContain(captureServiceText, "ClassifyFlashbackExportFailureKind");
         AssertDoesNotContain(captureServiceText, "ContainsFlashbackExportFailureText");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", FlashbackExportFailureCodes.BufferInactive, inPoint, outPoint);");
@@ -9321,8 +9497,8 @@ static partial class Program
             "if \\(!double\\.IsFinite\\(seconds\\) \\|\\|\\n\\s*seconds <= 0 \\|\\|\\n\\s*seconds > TimeSpan\\.MaxValue\\.TotalSeconds\\)",
             "Flashback export duration guard");
         AssertContains(dispatcherText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
-        AssertContains(captureServiceText, "? \"Cancelled\"");
-        AssertContains(captureServiceText, "FlashbackExportFailureCodes.IsCancelled(result)");
+        AssertContains(exportDiagnosticsText, "? \"Cancelled\"");
+        AssertContains(exportDiagnosticsText, "FlashbackExportFailureCodes.IsCancelled(result)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
         AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
         AssertContains(captureServiceText, "DisposeCoordinationLocksBestEffort();");
@@ -9339,14 +9515,14 @@ static partial class Program
         AssertDoesNotContain(captureServiceText, "_flashbackBackendLeaseLock.Release();");
         AssertDoesNotContain(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK");
-        AssertContains(captureServiceText, "var rawTotalSegments = progress.TotalSegments;");
-        AssertContains(captureServiceText, "var totalSegments = Math.Max(0, rawTotalSegments);");
-        AssertContains(captureServiceText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");
-        AssertContains(captureServiceText, "Math.Clamp(rawPercent, 0.0, 100.0)");
-        AssertContains(captureServiceText, "FLASHBACK_EXPORT_PROGRESS_NORMALIZED");
-        AssertContains(captureServiceText, "raw_segments={rawSegmentsProcessed}/{rawTotalSegments}");
-        AssertContains(captureServiceText, "raw_percent={rawPercent:0.###} percent={percent:0.###}");
-        AssertContains(captureServiceText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
+        AssertContains(exportDiagnosticsText, "var rawTotalSegments = progress.TotalSegments;");
+        AssertContains(exportDiagnosticsText, "var totalSegments = Math.Max(0, rawTotalSegments);");
+        AssertContains(exportDiagnosticsText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");
+        AssertContains(exportDiagnosticsText, "Math.Clamp(rawPercent, 0.0, 100.0)");
+        AssertContains(exportDiagnosticsText, "FLASHBACK_EXPORT_PROGRESS_NORMALIZED");
+        AssertContains(exportDiagnosticsText, "raw_segments={rawSegmentsProcessed}/{rawTotalSegments}");
+        AssertContains(exportDiagnosticsText, "raw_percent={rawPercent:0.###} percent={percent:0.###}");
+        AssertContains(exportDiagnosticsText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
 
         var flashbackExporterText = ReadFlashbackExporterSource();
         AssertContains(flashbackExporterText, "if (request.Segments is { Count: > 0 })");
@@ -9688,10 +9864,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");
         AssertContains(diagnosticSessionText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario");
-        AssertContains(diagnosticSessionText, "EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(diagnosticSessionText, "EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings)");
         AssertContains(diagnosticSessionText, "private static bool EvaluateFlashbackWarningsSucceeded(");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
-        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.ScenarioPlan, warnings)");
+        AssertContains(diagnosticSessionText, "FlashbackWarningsSucceeded: EvaluateFlashbackWarningsSucceeded(request.RunBootstrap.ScenarioPlan, warnings)");
         AssertContains(diagnosticScenariosText, "internal static class DiagnosticSessionScenarioCatalog");
         AssertDoesNotContain(diagnosticScenariosText, "internal static partial class DiagnosticSessionScenarioCatalog");
         AssertContains(diagnosticScenariosText, "internal static IReadOnlyList<DiagnosticSessionScenarioCatalogEntry> Entries { get; }");

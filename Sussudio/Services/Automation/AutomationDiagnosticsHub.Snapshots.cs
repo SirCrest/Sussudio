@@ -8,6 +8,7 @@ using Sussudio.Models;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Runtime;
 using Sussudio.Services.Telemetry;
+using Sussudio.Services.Recording;
 
 namespace Sussudio.Services.Automation;
 
@@ -873,7 +874,7 @@ public sealed partial class AutomationDiagnosticsHub
         }
         catch (Exception ex)
         {
-            Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
+            Logger.Log($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
             return BuildLastOutputProbe(lastOutputPath, exists: false, sizeBytes: null, isRecording: isRecording);
         }
     }
@@ -1079,7 +1080,7 @@ public sealed partial class AutomationDiagnosticsHub
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
+                    Logger.Log($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
                 }
             }
         }
@@ -1128,7 +1129,7 @@ public sealed partial class AutomationDiagnosticsHub
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
+                    Logger.Log($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
                 }
             }
         }
@@ -1764,7 +1765,7 @@ public sealed partial class AutomationDiagnosticsHub
     private void UpdateRecordingGrowthAlerts(AutomationSnapshot snapshot)
     {
         SetAlertState(
-            "recording-not-growing",
+            RecordingFailureCodes.NotGrowing,
             snapshot.IsRecording && !snapshot.RecordingFileGrowing,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Recording,

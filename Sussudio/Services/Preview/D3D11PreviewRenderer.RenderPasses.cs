@@ -126,7 +126,7 @@ internal sealed partial class D3D11PreviewRenderer
 
         var label = wantHdr ? "HDR10-PQ (BT.2020)" : "sRGB (BT.709)";
         _outputColorSpaceLabel = label;
-        Logger.Log($"D3D11 preview swap chain color space set to {targetColorSpace} ({label}).");
+        Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_COLOR_SPACE_SET colorSpace={targetColorSpace} ({label}).");
     }
 
     private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)
@@ -189,7 +189,7 @@ internal sealed partial class D3D11PreviewRenderer
         int arraySize;
         if (_externalInputViewCacheEnabled && _externalInputViews.TryGetTextureResource(texturePointer, out var retained))
         {
-            mipLevels = retained!.MipLevels;
+            mipLevels = retained.MipLevels;
             arraySize = retained.ArraySize;
         }
         else
@@ -203,7 +203,7 @@ internal sealed partial class D3D11PreviewRenderer
         if (_externalInputViewCacheEnabled && _externalInputViews.TryGet(texturePointer, subresource, out var cached))
         {
             LogExternalInputViewCacheIfDue();
-            return cached!.View;
+            return cached.View;
         }
 
         var createStart = Stopwatch.GetTimestamp();
@@ -316,7 +316,7 @@ internal sealed partial class D3D11PreviewRenderer
         if (data.Length < expectedBytes)
         {
             Logger.Log(
-                $"D3D11 preview raw frame too small: expected={expectedBytes} actual={data.Length} hdr={isHdr}.");
+                $"D3D11_PREVIEW_RAW_FRAME_TOO_SMALL expected={expectedBytes} actual={data.Length} hdr={isHdr}.");
             return false;
         }
 
@@ -359,7 +359,7 @@ internal sealed partial class D3D11PreviewRenderer
             if (!_loggedDirectUploadFallback)
             {
                 _loggedDirectUploadFallback = true;
-                Logger.Log($"D3D11 preview direct texture update failed; falling back to staging upload. type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                Logger.Log($"D3D11_PREVIEW_TEXTURE_UPDATE_FALLBACK type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             return false;

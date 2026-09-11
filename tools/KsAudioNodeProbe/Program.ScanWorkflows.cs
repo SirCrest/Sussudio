@@ -55,11 +55,13 @@ static class KsAudioNodeProbeScanWorkflows
             else
             {
                 Console.WriteLine($"SET failed: {DescribeWin32(setErr)}");
+                return 1;
             }
         }
         else
         {
             Console.WriteLine($"GET failed: {DescribeWin32(getErr)}");
+            return 1;
         }
 
         return 0;

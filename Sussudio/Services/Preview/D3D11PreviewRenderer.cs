@@ -6,8 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
@@ -66,6 +66,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
     private readonly int _dxgiFrameStatisticsSampleIntervalFrames = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL", 2, 1, 120);
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
+    private readonly bool _compositionModeProbeEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_COMPOSITION_MODE_PROBE", 0, 0, 1) != 0;
+    private string _lastCompositionProbeState = string.Empty;
     private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
     private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
     private readonly bool _renderStaleDropEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_RENDER_STALE_DROP", 1, 0, 1) != 0;
@@ -112,7 +114,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private double _panelLogicalWidth = 1.0;
     private double _panelLogicalHeight = 1.0;
     private double _rasterizationScale = 1.0;
-    private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
+    private int _swapChainBound; // Cleared only after the UI acknowledges unbind.
+    private SwapChainUnbindRequest? _pendingSwapChainUnbind;
+    private int _renderThreadCleanupPending;
     private const uint WaitObject0 = 0;
     private const uint WaitTimeout = 258;
     private SafeWaitHandle? _frameLatencyWaitHandle;
@@ -299,7 +303,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Volatile.Write(ref _requestedOutputHeight, target.Height);
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
         SignalFrameReady("panel_size_changed");
-        Logger.Log($"D3D11 preview panel size requested width={pixelWidth} height={pixelHeight} target={target.Width}x{target.Height} scale={rasterizationScale}.");
+        Logger.Log($"D3D11_PREVIEW_PANEL_SIZE width={pixelWidth} height={pixelHeight} target={target.Width}x{target.Height} scale={rasterizationScale}.");
     }
 
     public void SubmitRawFrame(
@@ -729,7 +733,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             _renderThread.Start();
         }
 
-        Logger.Log($"D3D11 preview renderer start width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
+        Logger.Log($"D3D11_PREVIEW_RENDERER_START width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
     }
 
     private void RenderThreadMain()
@@ -770,7 +774,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
         catch (Exception ex)
         {
-            Logger.Log($"D3D11 preview renderer thread failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_RENDER_THREAD_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             NotifyRenderThreadFailed(ex);
         }
         finally
@@ -787,28 +791,17 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             stale.Dispose();
         }
 
-        try
+        // The existing chain must be detached before replacing its resources.
+        // A UI stop can complete this same request inline while we wait.
+        UnbindSwapChainFromPanel();
+        CleanupD3DResources();
+        if (Volatile.Read(ref _stopRequested) != 0)
         {
-            // The capture backend can hand us its shared D3D device after the
-            // render thread has already created a startup swap chain. Rebuilding
-            // directly would leave the first chain attached to SwapChainPanel
-            // while the fields point at the second chain, corrupting WinUI's
-            // native panel state. Unbind before rebuilding the shared-device chain.
-            if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
-            {
-                Interlocked.Exchange(ref _swapChainAddress, 0);
-                UnbindSwapChainFromPanel();
-            }
+            return;
+        }
 
-            CleanupD3DResources();
-            InitializeD3D();
-            Interlocked.Exchange(ref _compositionTransformDirty, 1);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"D3D11 preview shared device rebind failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
-            CleanupD3DResources();
-        }
+        InitializeD3D();
+        Interlocked.Exchange(ref _compositionTransformDirty, 1);
     }
 
     private bool TryApplyPendingCompositionTransformOnRenderThread(out bool skipFrameDispatch)
@@ -840,7 +833,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 return true;
             }
 
-            Logger.Log($"D3D11 preview composition transform update failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            Logger.Log($"D3D11_PREVIEW_COMPOSITION_TRANSFORM_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
 
         return true;
@@ -926,7 +919,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             }
             else
             {
-                Logger.Log($"D3D11 preview render failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                Logger.Log($"D3D11_PREVIEW_RENDER_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
             }
 
             TrackFrameDropped(frame, "render-failed");
@@ -1022,7 +1015,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         _swapChain2 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
         if (_swapChain2 == null)
         {
-            Logger.Log("D3D11 preview waitable swap chain unavailable: IDXGISwapChain2 not supported.");
+            Logger.Log("D3D11_PREVIEW_WAITABLE_SWAPCHAIN_UNAVAILABLE reason=IDXGISwapChain2_unsupported");
             return;
         }
 
@@ -1033,7 +1026,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             _frameLatencyWaitHandle = new SafeWaitHandle(nativeHandle, ownsHandle: true);
         }
 
-        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{nativeHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
+        Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_CONFIGURED handle=0x{nativeHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
     }
 
     private void WaitForFrameLatencySignal()
@@ -1049,7 +1042,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
         if (result != WaitObject0 && result != WaitTimeout)
         {
-            Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
+            Logger.Log($"D3D11_PREVIEW_WAITABLE_SWAPCHAIN_WAIT result={result}.");
         }
     }
 
@@ -1069,7 +1062,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         FailPendingFrameCapture("Render thread exited before frame capture completed.");
-        CleanupD3DResources();
+        try
+        {
+            CleanupD3DResources();
+        }
+        catch (Exception ex)
+        {
+            Volatile.Write(ref _renderThreadCleanupPending, 1);
+            Logger.Log($"D3D11_PREVIEW_RENDER_THREAD_CLEANUP_RETAINED type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+
         Interlocked.Exchange(ref _isRendering, 0);
         Volatile.Write(ref _rendererMode, RendererModeNone);
     }
@@ -1086,7 +1088,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         // and size; replacing a still-attached stale chain later lets WinUI call
         // through a released native reference during SetSwapChain(newPtr).
         Stop();
-        Logger.Log("D3D11 preview renderer render thread stopped for reinit.");
+        Logger.Log("D3D11_PREVIEW_RENDER_THREAD_STOPPED reason=reinit");
     }
 
     public void Stop()
@@ -1106,47 +1108,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Interlocked.Exchange(ref _stopRequested, 1);
         }
 
-        // Wait for any in-flight native render call (VideoProcessorBlt / Present)
-        // to complete before we unbind the swap chain. The render thread sets
-        // _inNativeCall=1 before entering the native call block and clears it after.
-        // Without this gate, the CAS unbind below can yank the swap chain while
-        // the render thread is inside a native D3D call, causing an unrecoverable
-        // AccessViolationException (.NET 8 cannot catch corrupted-state exceptions).
+        // Do not detach the panel while the render thread has a native call in flight.
         WaitForNativeCallToDrainOrThrow("stop");
 
-        // Unbind swap chain from panel BEFORE joining the render thread.
-        // The render thread releases the swap chain and D3D device during cleanup.
-        // If we unbind after that, the panel holds a stale DXGI reference and
-        // SetSwapChain (either null or new chain) hits an AccessViolationException,
-        // a corrupted-state exception .NET Core cannot catch.
-        // Unbinding first, while D3D resources are still alive, avoids this.
-        //
-        // CAS(1->0) ensures exactly one thread performs the unbind. The render
-        // thread's CleanupD3DResources also CAS's this flag before disposing the
-        // swap chain; whoever loses the race skips the native call entirely.
-        if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
-        {
-            Interlocked.Exchange(ref _swapChainAddress, 0);
-            try
-            {
-                if (_dispatcherQueue.HasThreadAccess)
-                {
-                    if (_panel?.XamlRoot != null)
-                    {
-                        var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
-                        panelNative.SetSwapChain(IntPtr.Zero);
-                    }
-                }
-                else
-                {
-                    UnbindSwapChainFromPanel();
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"D3D11 preview swap chain unbind failed: {ex.GetType().Name} msg={ex.Message}");
-            }
-        }
+        // A reset may already have queued an unbind behind this UI callback.
+        // Complete that same request inline before joining its render thread.
+        UnbindSwapChainFromPanel();
 
         // Wake the render thread AFTER the swap chain is safely unbound so it
         // sees _stopRequested and exits without attempting to Present.
@@ -1155,9 +1122,15 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
             {
-                Logger.Log($"D3D11 preview renderer stop timed out after {_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
+                Logger.Log($"D3D11_PREVIEW_RENDERER_STOP_TIMEOUT timeout_ms={_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
                 throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
             }
+        }
+
+        if (Volatile.Read(ref _renderThreadCleanupPending) != 0)
+        {
+            CleanupD3DResources();
+            Volatile.Write(ref _renderThreadCleanupPending, 0);
         }
 
         lock (_lifecycleLock)
@@ -1177,7 +1150,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
         Volatile.Write(ref _rendererMode, RendererModeNone);
         ResetPresentCadence();
-        Logger.Log("D3D11 preview renderer stop completed.");
+        Logger.Log("D3D11_PREVIEW_RENDERER_STOP_OK");
     }
 
     private void WaitForNativeCallToDrainOrThrow(string operation)
@@ -1193,7 +1166,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (stopwatch.ElapsedMilliseconds >= _nativeStopFenceTimeoutMs)
             {
-                Logger.Log($"D3D11 preview renderer {operation} timed out waiting for native render call to return after {_nativeStopFenceTimeoutMs}ms.");
+                Logger.Log($"D3D11_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT op={operation} timeout_ms={_nativeStopFenceTimeoutMs}ms.");
                 throw new TimeoutException("D3D11 preview native render call did not return before timeout.");
             }
 
@@ -1235,8 +1208,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        if (Volatile.Read(ref _disposed) != 0) return;
         Stop();
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         _sharedDevice?.Dispose();
         _sharedDevice = null;
         _frameReadyEvent.Dispose();
@@ -1270,7 +1244,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             0, uniformScale,
             offsetX, offsetY);
 
-        Logger.Log($"D3D11 preview composition transform set scale={uniformScale:F4} offset=({offsetX:F1},{offsetY:F1}) panel={panelLogicalW:F0}x{panelLogicalH:F0} swap={swapW}x{swapH}.");
+        Logger.Log($"D3D11_PREVIEW_COMPOSITION_TRANSFORM_SET scale={uniformScale:F4} offset=({offsetX:F1},{offsetY:F1}) panel={panelLogicalW:F0}x{panelLogicalH:F0} swap={swapW}x{swapH}.");
     }
 
     private void BindSwapChainToPanel(IDXGISwapChain1 swapChain)
@@ -1319,8 +1293,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             }
             finally
             {
+                // Only a disposed wait handle is an expected race here; any other
+                // failure would strand the caller waiting on this fence.
                 try { done.Set(); }
-                catch { /* race with dispose if we aborted; safe to ignore */ }
+                catch (ObjectDisposedException) { /* aborted bind already disposed the fence */ }
             }
         });
 
@@ -1346,7 +1322,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             if (Volatile.Read(ref _stopRequested) != 0)
             {
                 aborted = true;
-                Logger.Log($"D3D11 preview swap-chain binding aborted at {elapsedMs}ms: stop requested during UI dispatcher wait.");
+                Logger.Log($"D3D11_PREVIEW_SWAPCHAIN_BIND_ABORTED elapsed_ms={elapsedMs}ms: stop requested during UI dispatcher wait.");
                 break;
             }
         }
@@ -1370,7 +1346,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             if (uiError is OperationCanceledException)
             {
-                Logger.Log("D3D11 preview swap-chain binding cancelled on UI thread; renderer shutting down.");
+                Logger.Log("D3D11_PREVIEW_SWAPCHAIN_BIND_CANCELLED reason=shutting_down");
                 return;
             }
 
@@ -1378,57 +1354,102 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    private sealed class SwapChainUnbindRequest(IDXGISwapChain1? swapChain)
+    {
+        public IDXGISwapChain1? SwapChain { get; } = swapChain;
+        public TaskCompletionSource<object?> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public int Enqueued;
+    }
+
+    private SwapChainUnbindRequest? GetOrCreateSwapChainUnbindRequest()
+    {
+        lock (_lifecycleLock)
+        {
+            if (Volatile.Read(ref _swapChainBound) == 0)
+            {
+                return null;
+            }
+
+            var request = _pendingSwapChainUnbind;
+            if (request == null || request.Completion.Task.IsCompleted || !ReferenceEquals(request.SwapChain, _swapChain))
+            {
+                request = new SwapChainUnbindRequest(_swapChain);
+                _pendingSwapChainUnbind = request;
+            }
+
+            return request;
+        }
+    }
+
     private void UnbindSwapChainFromPanel()
     {
-        // Must run on UI thread since _panel is a XAML element.
-        // Called from render thread during cleanup, so marshal via dispatcher.
+        var request = GetOrCreateSwapChainUnbindRequest();
+        if (request == null)
+        {
+            return;
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            ExecuteSwapChainUnbindOnUiThread(request);
+        }
+        else if (Interlocked.CompareExchange(ref request.Enqueued, 1, 0) == 0 &&
+                 !_dispatcherQueue.TryEnqueue(() => ExecuteSwapChainUnbindOnUiThread(request)))
+        {
+            request.Completion.TrySetException(new InvalidOperationException("Failed to enqueue swap chain unbind to the UI thread."));
+        }
+
+        // Only the caller's wait expires. The request remains owned so a UI stop
+        // can complete it inline, and a late callback never sees a disposed signal.
+        request.Completion.Task.WaitAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
+    }
+
+    private void ExecuteSwapChainUnbindOnUiThread(SwapChainUnbindRequest request)
+        => ExecuteSwapChainUnbindRequest(request, () =>
+        {
+            if (_panel?.XamlRoot == null)
+            {
+                throw new InvalidOperationException("The preview panel is unavailable for swap chain detach acknowledgement.");
+            }
+
+            var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
+            panelNative.SetSwapChain(IntPtr.Zero);
+        });
+
+    private void ExecuteSwapChainUnbindRequest(SwapChainUnbindRequest request, Action unbind)
+    {
+        lock (_lifecycleLock)
+        {
+            if (request.Completion.Task.IsCompleted)
+            {
+                return;
+            }
+
+            if (!ReferenceEquals(_pendingSwapChainUnbind, request) || !ReferenceEquals(_swapChain, request.SwapChain))
+            {
+                request.Completion.TrySetException(new InvalidOperationException("Swap chain unbind was superseded before UI acknowledgement."));
+                return;
+            }
+        }
+
         try
         {
-            using var done = new ManualResetEventSlim(false);
-            var enqueued = _dispatcherQueue.TryEnqueue(() =>
+            unbind();
+            Interlocked.Exchange(ref _swapChainAddress, 0);
+            Volatile.Write(ref _swapChainBound, 0);
+            lock (_lifecycleLock)
             {
-                try
+                if (ReferenceEquals(_pendingSwapChainUnbind, request))
                 {
-                    // Guard: if the panel is no longer in the visual tree, its native
-                    // COM backing may be released. AccessViolationException from a stale
-                    // vtable pointer is a corrupted-state exception that .NET Core cannot
-                    // catch; it terminates the process. Skip the call entirely.
-                    if (_panel?.XamlRoot == null)
-                    {
-                        done.Set();
-                        return;
-                    }
-
-                    var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
-                    panelNative.SetSwapChain(IntPtr.Zero);
-                }
-                catch
-                {
-                    // Best-effort: panel may already be torn down during app shutdown.
-                    Logger.Log("D3D11 preview swap chain unbind skipped: UI callback failed during cleanup.");
-                }
-                finally
-                {
-                    done.Set();
-                }
-            });
-
-            if (enqueued)
-            {
-                if (!done.Wait(TimeSpan.FromSeconds(2)))
-                {
-                    Logger.Log("D3D11 preview swap chain unbind timed out on UI thread during cleanup.");
+                    _pendingSwapChainUnbind = null;
                 }
             }
-            else
-            {
-                Logger.Log("D3D11 preview swap chain unbind enqueue failed during cleanup.");
-            }
+
+            request.Completion.TrySetResult(null);
         }
         catch (Exception ex)
         {
-            // Dispatcher may be shut down; safe to ignore during cleanup.
-            Logger.Log($"D3D11 preview swap chain unbind ignored during cleanup: {ex.GetType().Name}: {ex.Message}");
+            request.Completion.TrySetException(ex);
         }
     }
 
@@ -1757,7 +1778,7 @@ public readonly record struct PresentCadenceMetrics(
     {
         lock (_presentCadenceLock)
         {
-            return CopyRecentRing(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
+            return RingBufferHelpers.Copy(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
         }
     }
 
@@ -1791,7 +1812,7 @@ public readonly record struct PresentCadenceMetrics(
                 return default;
             }
 
-            var samples = CopyRecentRing(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
+            var samples = RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
             var timing = SummarizeCpuStageTiming(samples);
             return new PipelineLatencyMetrics(
                 timing.SampleCount,
@@ -1806,7 +1827,7 @@ public readonly record struct PresentCadenceMetrics(
     {
         lock (_pipelineLatencyLock)
         {
-            return CopyRecentRing(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, maxSamples);
+            return RingBufferHelpers.Copy(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, maxSamples);
         }
     }
 
@@ -1818,10 +1839,10 @@ public readonly record struct PresentCadenceMetrics(
         double[] totalSamples;
         lock (_renderCpuTimingLock)
         {
-            uploadSamples = CopyRecentRing(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            renderSamples = CopyRecentRing(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            presentSamples = CopyRecentRing(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
-            totalSamples = CopyRecentRing(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            uploadSamples = RingBufferHelpers.Copy(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            renderSamples = RingBufferHelpers.Copy(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            presentSamples = RingBufferHelpers.Copy(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            totalSamples = RingBufferHelpers.Copy(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
         }
 
         return new RenderCpuTimingMetrics(
@@ -1836,7 +1857,7 @@ public readonly record struct PresentCadenceMetrics(
         CpuStageTimingMetrics timing;
         lock (_frameLatencyWaitTimingLock)
         {
-            timing = SummarizeCpuStageTiming(CopyRecentRing(
+            timing = SummarizeCpuStageTiming(RingBufferHelpers.Copy(
                 _frameLatencyWaitTimingWindowMs,
                 _frameLatencyWaitTimingCount,
                 _frameLatencyWaitTimingIndex,
@@ -1913,6 +1934,11 @@ public readonly record struct PresentCadenceMetrics(
             frameCounter % _dxgiFrameStatisticsSampleIntervalFrames != 0)
         {
             return;
+        }
+
+        if (_compositionModeProbeEnabled && frameCounter % 120 == 0)
+        {
+            TraceCompositionMode(frameCounter);
         }
 
         try
@@ -1998,6 +2024,39 @@ public readonly record struct PresentCadenceMetrics(
                 _dxgiFrameStatisticsFailureCount++;
                 _dxgiFrameStatisticsLastError = $"{ex.GetType().Name}:0x{ex.HResult:X8}";
             }
+        }
+    }
+
+    private void TraceCompositionMode(long frameCounter)
+    {
+        // Opt-in diagnostics use a short-lived interface on the render thread.
+        // No retained COM ownership or presentation settings change is needed.
+        try
+        {
+            using var media = _swapChain?.QueryInterfaceOrNull<IDXGISwapChainMedia>();
+            if (media == null)
+            {
+                if (_lastCompositionProbeState != "unavailable")
+                    Logger.Log("D3D11_PREVIEW_COMPOSITION unavailable=IDXGISwapChainMedia");
+                _lastCompositionProbeState = "unavailable";
+                return;
+            }
+
+            var stats = media.FrameStatisticsMedia;
+            var state = stats.CompositionMode.ToString();
+            if (state != _lastCompositionProbeState || frameCounter % 1200 == 0)
+            {
+                Logger.Log($"D3D11_PREVIEW_COMPOSITION mode={state} presentCount={stats.PresentCount} refreshCount={stats.PresentRefreshCount} approvedDuration={stats.ApprovedPresentDuration} swap=0x{_swapChain!.NativePointer.ToInt64():X}");
+            }
+            _lastCompositionProbeState = state;
+        }
+        catch (Exception ex)
+        {
+            // A diagnostic probe must not affect renderer health or frame flow.
+            var state = $"error:0x{ex.HResult:X8}";
+            if (state != _lastCompositionProbeState)
+                Logger.Log($"D3D11_PREVIEW_COMPOSITION {state} type={ex.GetType().Name}");
+            _lastCompositionProbeState = state;
         }
     }
 
@@ -2524,24 +2583,6 @@ public readonly record struct PresentCadenceMetrics(
         }
 
         reason = reason.Length == 0 ? token : $"{reason}+{token}";
-    }
-
-    private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)
-    {
-        var take = Math.Min(Math.Max(0, maxSamples), count);
-        if (take <= 0)
-        {
-            return Array.Empty<double>();
-        }
-
-        var result = new double[take];
-        var start = (index - take + window.Length) % window.Length;
-        for (var i = 0; i < take; i++)
-        {
-            result[i] = window[(start + i) % window.Length];
-        }
-
-        return result;
     }
 
     private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)

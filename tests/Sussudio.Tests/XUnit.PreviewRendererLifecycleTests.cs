@@ -59,6 +59,193 @@ public sealed class PreviewRendererLifecycleTests
         Assert.Equal("flashback-go-live:stale", fixture.Get<string>("_lastDropReason"));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void RendererStopTimeoutRetainsHostOwnerAndAllowsDisposalRetry(bool nativeFenceBlocked)
+    {
+        using var fixture = new RendererFixture();
+        fixture.PrepareForStop();
+        fixture.EnqueueFrame();
+        using var releaseWorker = new ManualResetEventSlim(false);
+        var worker = new Thread(() => releaseWorker.Wait()) { IsBackground = true };
+        worker.Start();
+        fixture.Set("_renderThread", worker);
+        fixture.Set("_nativeStopFenceTimeoutMs", 20);
+        fixture.Set("_renderThreadStopTimeoutMs", 20);
+        fixture.Set("_inNativeCall", nativeFenceBlocked ? 1 : 0);
+        Action firstFrame = () => { };
+        Action<string> failed = _ => { };
+        fixture.Set("FirstFrameRendered", firstFrame);
+        fixture.Set("RenderThreadFailed", failed);
+        var hostType = SussudioAssembly.Load().GetType("Sussudio.Controllers.PreviewRendererHostController", throwOnError: true)!;
+        var host = RuntimeHelpers.GetUninitializedObject(hostType);
+        var ownerField = hostType.GetField("_d3d11Renderer", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        ownerField.SetValue(host, fixture.Instance);
+        try
+        {
+            var failure = Assert.Throws<TargetInvocationException>(() =>
+                hostType.GetMethod("CleanupPreviewResources", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(host, null));
+            Assert.IsType<TimeoutException>(failure.InnerException);
+            Assert.Same(fixture.Instance, ownerField.GetValue(host));
+            Assert.Same(firstFrame, fixture.Get<object>("FirstFrameRendered"));
+            Assert.Same(failed, fixture.Get<object>("RenderThreadFailed"));
+            Assert.Same(worker, fixture.Get<Thread>("_renderThread"));
+            var disposeFailure = Assert.Throws<TargetInvocationException>(() => fixture.Invoke("Dispose"));
+            Assert.IsType<TimeoutException>(disposeFailure.InnerException);
+            Assert.Equal(0, fixture.Get<int>("_disposed"));
+            Assert.Equal(1, fixture.PendingCount);
+            fixture.Get<ManualResetEventSlim>("_frameReadyEvent").Set();
+        }
+        finally
+        {
+            fixture.Set("_inNativeCall", 0);
+            releaseWorker.Set();
+            worker.Join(TimeSpan.FromSeconds(5));
+        }
+
+        fixture.Invoke("Dispose");
+        Assert.Equal(1, fixture.Get<int>("_disposed"));
+        Assert.Null(fixture.Get<Thread?>("_renderThread"));
+        Assert.Equal(0, fixture.PendingCount);
+        Assert.Throws<ObjectDisposedException>(() => fixture.Get<ManualResetEventSlim>("_frameReadyEvent").Wait(0));
+        fixture.Invoke("Dispose");
+    }
+
+    [Fact]
+    public void QueuedUnbindCanCompleteInlineBeforeJoiningItsRenderWorker()
+    {
+        using var fixture = new RendererFixture();
+        fixture.Set("_swapChainBound", 1);
+        fixture.Set("_swapChainAddress", 111L);
+        var request = fixture.Invoke("GetOrCreateSwapChainUnbindRequest")!;
+        var completion = GetUnbindCompletion(request);
+        Exception? workerFailure = null;
+        var worker = new Thread(() =>
+        {
+            try { completion.Task.GetAwaiter().GetResult(); }
+            catch (Exception ex) { workerFailure = ex; }
+        }) { IsBackground = true };
+        worker.Start();
+        try
+        {
+            Assert.Same(request, fixture.Invoke("GetOrCreateSwapChainUnbindRequest"));
+            fixture.AcknowledgeUnbind(request);
+            Assert.True(worker.Join(TimeSpan.FromSeconds(1)));
+            Assert.Null(workerFailure);
+            Assert.True(completion.Task.IsCompletedSuccessfully);
+            Assert.Equal(0, fixture.Get<int>("_swapChainBound"));
+            Assert.Equal(0L, fixture.Get<long>("_swapChainAddress"));
+
+            // The previously queued callback arrives after a newer binding.
+            fixture.Set("_swapChainBound", 1);
+            fixture.Set("_swapChainAddress", 222L);
+            fixture.AcknowledgeUnbind(request);
+            Assert.Equal(1, fixture.Get<int>("_swapChainBound"));
+            Assert.Equal(222L, fixture.Get<long>("_swapChainAddress"));
+        }
+        finally
+        {
+            completion.TrySetResult(null);
+            worker.Join(TimeSpan.FromSeconds(5));
+        }
+    }
+
+    [Fact]
+    public async Task UnbindTimeoutRetainsRequestAndStaleCallbackCannotDetachAnotherChain()
+    {
+        using var fixture = new RendererFixture();
+        fixture.Set("_swapChainBound", 1);
+        fixture.Set("_swapChainAddress", 111L);
+        var request = fixture.Invoke("GetOrCreateSwapChainUnbindRequest")!;
+        var completion = GetUnbindCompletion(request);
+        await Assert.ThrowsAsync<TimeoutException>(() => completion.Task.WaitAsync(TimeSpan.FromMilliseconds(20)));
+        Assert.False(completion.Task.IsCompleted);
+        Assert.Same(request, fixture.Invoke("GetOrCreateSwapChainUnbindRequest"));
+        Assert.Equal(1, fixture.Get<int>("_swapChainBound"));
+
+        fixture.Set("_swapChain", fixture.CreateUninitializedFieldValue("_swapChain"));
+        fixture.Set("_swapChainAddress", 222L);
+        var replacement = fixture.Invoke("GetOrCreateSwapChainUnbindRequest")!;
+        Assert.NotSame(request, replacement);
+        fixture.AcknowledgeUnbind(request);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => completion.Task);
+        Assert.Equal(1, fixture.Get<int>("_swapChainBound"));
+        Assert.Equal(222L, fixture.Get<long>("_swapChainAddress"));
+
+        fixture.AcknowledgeUnbind(replacement);
+        Assert.True(GetUnbindCompletion(replacement).Task.IsCompletedSuccessfully);
+        Assert.Equal(0, fixture.Get<int>("_swapChainBound"));
+        fixture.Set("_swapChain", null);
+    }
+
+    [Fact]
+    public async Task UnavailablePanelRetainsBoundSwapChainUntilAnAcknowledgedRetry()
+    {
+        using var fixture = new RendererFixture();
+        fixture.Set("_swapChainBound", 1);
+        fixture.Set("_swapChainAddress", 111L);
+        var request = fixture.Invoke("GetOrCreateSwapChainUnbindRequest")!;
+
+        fixture.Invoke("ExecuteSwapChainUnbindOnUiThread", request);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => GetUnbindCompletion(request).Task);
+        Assert.Equal(1, fixture.Get<int>("_swapChainBound"));
+        Assert.Equal(111L, fixture.Get<long>("_swapChainAddress"));
+        Assert.Same(request, fixture.Get<object>("_pendingSwapChainUnbind"));
+
+        var retry = fixture.Invoke("GetOrCreateSwapChainUnbindRequest")!;
+        Assert.NotSame(request, retry);
+        fixture.AcknowledgeUnbind(retry);
+        Assert.True(GetUnbindCompletion(retry).Task.IsCompletedSuccessfully);
+        Assert.Equal(0, fixture.Get<int>("_swapChainBound"));
+    }
+
+    [Fact]
+    public void FailedRenderThreadCleanupRetainsNativeHandleUntilStopRetriesAfterUnbind()
+    {
+        using var fixture = new RendererFixture();
+        fixture.PrepareForStop();
+        fixture.PrepareForResourceCleanup();
+        var nativeHandle = fixture.InstallOwnedLatencyEvent();
+        fixture.Set("_swapChainBound", 1);
+        // The offline renderer has no dispatcher. Exercise the real exit cleanup
+        // failure path without entering WinUI or a graphics-driver call.
+        fixture.Invoke("CleanupRenderThreadExit");
+        Assert.Equal(1, fixture.Get<int>("_renderThreadCleanupPending"));
+        Assert.Equal(1, fixture.Get<int>("_swapChainBound"));
+        Assert.True(GetHandleInformation(nativeHandle, out _));
+
+        var request = fixture.Get<object>("_pendingSwapChainUnbind");
+        fixture.AcknowledgeUnbind(request);
+        fixture.Invoke("Dispose");
+        Assert.Equal(0, fixture.Get<int>("_renderThreadCleanupPending"));
+        Assert.Equal(1, fixture.Get<int>("_disposed"));
+        Assert.Null(fixture.Get<Thread?>("_renderThread"));
+        Assert.False(GetHandleInformation(nativeHandle, out _));
+    }
+
+    [Fact]
+    public void UnbindAcknowledgementPrecedesJoinAndResourceRelease()
+    {
+        var stop = ReadMember("D3D11PreviewRenderer.cs", "public void Stop()");
+        AssertBefore(stop, "UnbindSwapChainFromPanel();", "renderThread.Join(");
+        AssertBefore(stop, "renderThread.Join(", "if (Volatile.Read(ref _renderThreadCleanupPending)");
+        AssertBefore(stop, "Volatile.Write(ref _renderThreadCleanupPending, 0);", "_renderThread = null;");
+        var cleanup = ReadMember("D3D11PreviewRenderer.Resources.cs", "private void CleanupD3DResources()");
+        AssertBefore(cleanup, "UnbindSwapChainFromPanel();", "DisposeProcessorResources();");
+        var uiUnbind = ReadMember("D3D11PreviewRenderer.cs", "private void ExecuteSwapChainUnbindOnUiThread(");
+        AssertBefore(uiUnbind, "if (_panel?.XamlRoot == null)", "panelNative.SetSwapChain(IntPtr.Zero);");
+        Assert.Contains("throw new InvalidOperationException", uiUnbind);
+        var acknowledge = ReadMember("D3D11PreviewRenderer.cs", "private void ExecuteSwapChainUnbindRequest(");
+        AssertBefore(acknowledge, "unbind();", "Volatile.Write(ref _swapChainBound, 0);");
+        AssertBefore(acknowledge, "Volatile.Write(ref _swapChainBound, 0);", "request.Completion.TrySetResult(null);");
+        var reset = ReadMember("D3D11PreviewRenderer.cs", "private void HandlePendingSharedDeviceResetOnRenderThread()");
+        AssertBefore(reset, "if (Volatile.Read(ref _stopRequested)", "InitializeD3D();");
+    }
+
+    private static TaskCompletionSource<object?> GetUnbindCompletion(object request)
+        => (TaskCompletionSource<object?>)request.GetType().GetProperty("Completion")!.GetValue(request)!;
+
     [Fact]
     public void DisposingLatencyHandleClosesTheNativeHandleExactlyOnce()
     {
@@ -252,7 +439,43 @@ public sealed class PreviewRendererLifecycleTests
             Set("_requestedOutputHeight", 1);
         }
 
+        public object Instance => _renderer;
         public int PendingCount => Get<int>("_pendingFrameCount");
+
+        public void PrepareForStop()
+        {
+            foreach (var name in new[] { "_presentCadenceLock", "_pipelineLatencyLock", "_renderCpuTimingLock", "_frameLatencyWaitTimingLock", "_slowFrameDiagnosticsLock" })
+            {
+                Set(name, new object());
+            }
+
+            foreach (var name in new[] { "_presentIntervalWindowMs", "_pipelineLatencyWindowMs", "_inputUploadCpuTimingWindowMs", "_renderSubmitCpuTimingWindowMs", "_presentCallTimingWindowMs", "_renderTotalCpuTimingWindowMs", "_frameLatencyWaitTimingWindowMs", "_slowFrameDiagnostics" })
+            {
+                Set(name, Array.CreateInstance(_rendererType.GetField(name, InstanceFlags)!.FieldType.GetElementType()!, 1));
+            }
+
+            var historyType = _rendererType.GetField("_presentFrameTimeHistory", InstanceFlags)!.FieldType;
+            Set("_presentFrameTimeHistory", Activator.CreateInstance(historyType, new object?[] { 1, null }));
+        }
+
+        // Exercise the actual request owner with an explicit successful UI action;
+        // native panel calls require separate validation on an available WinUI surface.
+        public void AcknowledgeUnbind(object request)
+            => Invoke("ExecuteSwapChainUnbindRequest", request, (Action)(() => { }));
+
+        public object CreateUninitializedFieldValue(string name)
+            => RuntimeHelpers.GetUninitializedObject(_rendererType.GetField(name, InstanceFlags)!.FieldType);
+
+        public void PrepareForResourceCleanup()
+        {
+            foreach (var field in _rendererType.GetFields(InstanceFlags).Where(field => field.FieldType.IsArray && field.GetValue(_renderer) == null))
+            {
+                field.SetValue(_renderer, Array.CreateInstance(field.FieldType.GetElementType()!, 0));
+            }
+
+            var cacheType = _rendererType.GetField("_externalInputViews", InstanceFlags)!.FieldType;
+            Set("_externalInputViews", Activator.CreateInstance(cacheType));
+        }
 
         public void EnqueueFrame(long sourceSequence = 1, long presentId = 1, long sourcePts = 1)
         {

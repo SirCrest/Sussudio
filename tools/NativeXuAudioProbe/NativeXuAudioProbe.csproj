@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Sussudio\Services\Audio\NativeXuAudioControlService.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.cs" />
-    <Compile Include="..\..\Sussudio\Services\Capture\NativeXu\KsExtensionUnitNative.cs" Link="Shared\Services\Capture\NativeXu\KsExtensionUnitNative.cs" />
+    <Compile Include="..\..\Sussudio\Services\NativeXu\KsExtensionUnitNative.cs" Link="Shared\Services\NativeXu\KsExtensionUnitNative.cs" />
     <Compile Include="..\..\Sussudio\Services\Contracts\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Contracts\ISourceSignalTelemetryProvider.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtProtocol.cs" Link="Shared\Services\Telemetry\NativeXuAtProtocol.cs" />
     <Compile Include="..\..\Sussudio\Services\Telemetry\NativeXuAtCommandProvider.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.cs" />

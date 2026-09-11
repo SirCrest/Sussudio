@@ -1,4 +1,4 @@
-# Sussudio.Tests Migration Plan
+﻿# Sussudio.Tests Migration Plan
 
 The test project runs regression coverage through xUnit. `Program.Main` in
 `HarnessCore.cs` only performs the offline assembly-load smoke check; it no longer
@@ -26,14 +26,51 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   fence capture, retirement and wait methods through normal-constructor fixtures.
 - `tests/Sussudio.Tests/XUnit.PreviewRendererLifecycleTests.cs` owns stop/reset,
   generation, native latency-handle, and exceptional cache cleanup regressions.
+- `tests/Sussudio.Tests/XUnit.CaptureCleanupBarrierTests.cs` owns renderer
+  acknowledgement before capture release, retained ownership, disposal retry,
+  and close-failure propagation with controlled tasks and inert graphics objects.
+- `tests/Sussudio.Tests/ProcessFailureEvidenceTests.cs` owns redirected-output and
+  file-stat error propagation; `AtomicCounterTests.cs` covers saturating subtraction.
+- `tests/Sussudio.Tests/FlashbackRotationBehaviorTests.cs` executes native rotation
+  failure, original-error retention, and normal audio/microphone finalization.
 - `tests/Sussudio.Tests/XUnit.PreviewRendererPerformanceTests.cs` owns bounded
   texture/subresource cache reuse, eviction, and allocation checks.
 - `tests/Sussudio.Tests/XUnit.StatsUiSamplerTests.cs` owns shared fanout, cadence,
   visibility demand, epoch changes, and exception recovery checks.
-- `tests/Sussudio.Tests/PreviewFrameTimeHistory.Tests.cs` directly tests the pure
+- `tests/Sussudio.Tests/PreviewFrameTimeHistoryTests.cs` directly tests the pure
   linked history/geometry sources, including timestamp gaps and warmed allocations.
-- `tests/Sussudio.Tests/StatsPresentationPolish.Tests.cs` owns motion state and
+- `tests/Sussudio.Tests/StatsPresentationPolishTests.cs` owns motion state and
   human-readable presentation contracts.
+- `tests/Sussudio.Tests/XUnit.CaptureObservationTests.cs` owns published AV
+  sampling, reset, worker retirement, and source-observed format evidence.
+- `tests/Sussudio.Tests/XUnit.DeviceDiscoveryTests.cs` owns failed, canceled,
+  superseded, and successful-empty discovery outcomes.
+- `tests/Sussudio.Tests/XUnit.RecordingSettingsApplicationTests.cs` and
+  `tests/Sussudio.Tests/XUnit.RecordingSettingsRuntimeTests.cs` cover the shared
+  settings owner and complete selection application through the capture coordinator.
+- `tests/Sussudio.Tests/XUnit.LibAvCudaFailureTests.cs` executes sink failure and
+  native frame cleanup. `InProcessRecordingStructureVerifierTests.cs` verifies
+  committed media fixtures, and `LibAvRecordingDrainBehaviorTests.cs` exercises
+  actual queued video and audio encoding into a verified file.
+- `tests/Sussudio.Tests/XUnit.DiagnosticCompositionTests.cs` compares diagnostic
+  fields and scenario contracts with fixtures captured before the refactor.
+- `tests/Sussudio.Tests/XUnit.DiagnosticCancellationTests.cs` covers startup
+  ownership, uncertain transport outcomes, reconciliation, and bounded cleanup.
+- `tests/Sussudio.Tests/XUnit.DiagnosticInfrastructureTests.cs` owns the command
+  channel's send serialization and disposal lifetime, artifact write-failure
+  policy, connect-retry failure evidence, and output-lock contention against a
+  really locked directory.
+- `tests/Sussudio.Tests/XUnit.NativeXuProbePayloadContractsTests.cs` owns I2C
+  frame construction, envelope payload extraction, and experiment payload
+  encode/decode and restore-target contracts.
+- `tests/Sussudio.Tests/XUnit.McpCancellationTests.cs` and
+  `tests/Sussudio.Tests/XUnit.McpPresentMonResultTests.cs` execute MCP cancellation
+  and raw/formatted errors through actual host protocol traffic.
+- `tests/Sussudio.Tests/XUnit.PresentMonCancellationTests.cs` owns probe-child
+  termination, CSV retention, and diagnostic background-process cleanup.
+- `AppProcessStartupTests.cs` checks admission and compiled startup ordering,
+  including a private apphost launch. `NativeFfmpegCapabilitiesTests.cs` covers
+  runtime selection, private probe validation, and bounded child supervision.
 
 - xUnit 2.9 + `xunit.runner.visualstudio` + `Microsoft.NET.Test.Sdk` referenced
   in `Sussudio.Tests.csproj`. `OutputType=Exe` stays for the assembly-load smoke
@@ -49,7 +86,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   ported RecordingStats value-contract check.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy app-surface
   checks, including the bool/visibility converter wrapper class.
-- `MainWindow.ControllerOwnership.Tests.cs` owns source-contract checks for
+- `MainWindowControllerOwnershipTests.cs` owns source-contract checks for
   stats overlay lifecycle and section chrome wiring, with xUnit wrappers in
   `XUnit.PresentationPreviewContractsTests.cs`. The remaining stats
   presentation checks still migrate incrementally from the legacy catalog.
@@ -99,7 +136,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
 - `XUnit.RecordingContractsTests.cs` owns recording contract DTO checks plus
   the former legacy temp artifact finalization and rollback behavior checks
   for recording output cleanup.
-- `MjpegPipeline.Tests.cs` owns the former legacy CPU MJPEG pipeline,
+- `MjpegPipelineTests.cs` owns the former legacy CPU MJPEG pipeline,
   timing metric, stopwatch timeout, software decoder shape, pooled-frame
   lease/fan-out, preview jitter, cadence, queued lease-release, and xUnit
   execution-surface checks.
@@ -124,7 +161,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   fMP4 reopen, seek recovery, in/out marker API, normalization, disposal,
   marker clamp, root state, transition, audio guard checks, command queue, and
   source-shape backing `Program` methods.
-- `MainWindow.ControllerOwnership.Tests.cs` owns the former legacy MainWindow
+- `MainWindowControllerOwnershipTests.cs` owns the former legacy MainWindow
   UI contract and stats snapshot construction/health/renderer metric projection
   checks.
 - `XUnit.AutomationContractsTests.cs` owns the former legacy automation xUnit
@@ -237,7 +274,7 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   present cadence, device-lost, diagnostics, contracts/metrics ownership,
   runtime capture, render setup/resource, and render pipeline checks. The legacy
   D3D catalog hook was removed after the final group moved to xUnit.
-- `ArchitectureGuardrails.Tests.cs` owns the former legacy
+- `ArchitectureGuardrailsTests.cs` owns the former legacy
   AGENT_MAP ownership, path-reference, test-project shape guard,
   architecture-doc reference drift, and migration-inventory guard checks.
 - Additional focused `[Fact]`/`[Theory]` files such as
@@ -245,8 +282,8 @@ implementations and shared fixtures out of the oversized `Program` helper namesp
   `XUnit.ToolContractsTests.cs` (automation client timeout policy,
   advanced command-map alignment, and pipe/tool protocol contracts through
   `AutomationToolContractsProtocolXunitTests`),
-  `XUnit.CoreRuntimeContractsTests.cs`, `MainWindow.ControllerOwnership.Tests.cs`,
-  and `CaptureService.Ownership.Tests.cs` already run through `dotnet test`.
+  `XUnit.CoreRuntimeContractsTests.cs`, `MainWindowControllerOwnershipTests.cs`,
+  and `CaptureServiceOwnershipTests.cs` already run through `dotnet test`.
 
 ## Targeting reality
 
@@ -320,3 +357,9 @@ helper namespace once each xUnit class owns its own checks and fixtures:
   loops into behavioural tests.
 - `untested_critical_subsystems_on_hdr_rail` — needs the integration-test seam
   before meaningful coverage lands.
+- `wall_clock_mcp_process_tests` — `XUnit.McpCancellationTests.cs`'s
+  `AssertMcpCancellationConnectionAbsentAsync` proves a negative (no pipe
+  connection ever arrives) via a finite wall-clock wait
+  (`NoConnectionWindowMs`), because there is no deterministic completion
+  signal for an absence proof. Tracked here in case other process/IPC tests
+  grow the same pattern and need a shared convention.

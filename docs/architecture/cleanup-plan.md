@@ -1,4 +1,4 @@
-# Architecture Cleanup Plan
+﻿# Architecture Cleanup Plan
 
 Navigation reviewed: 2026-09-05. Pending proposals retain their original scope and require live-source verification.
 
@@ -44,9 +44,9 @@ owner, fold it back into that owner and update the source-shape tests and
 
 1. Keep diagnostic-session runner internals aligned by owner.
 
-   `tools/Common/DiagnosticSessionRunner.cs` owns the public compatibility
+   `tools/DiagnosticSession/DiagnosticSessionRunner.cs` owns the public compatibility
    surface plus the visible run phase sequence, while
-   `tools/Common/DiagnosticSessionRunContext.cs` owns the
+   `tools/DiagnosticSession/DiagnosticSessionRunContext.cs` owns the
    cohesive mutable per-run context: snapshot, live-state, disposal, and
    explicit scenario/completion context construction.
    `DiagnosticSessionRunner.cs` owns the
@@ -187,7 +187,7 @@ owner, fold it back into that owner and update the source-shape tests and
    state, bounded ring-buffer storage, snapshot projection, trace session
    start/complete, trace-point capture, sampler loop, delayed sampler
    shutdown, and preview-volume transition mechanics live in
-   `Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, with
+   `Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`, with
    `MainViewModel.AudioState.cs` kept as the automation-facing adapter and
    trace/preview-volume controller wiring owner;
    preview-volume save/override, ramp adapter methods, preview monitoring
@@ -232,10 +232,10 @@ owner, fold it back into that owner and update the source-shape tests and
    selection handlers also live in `MainViewModel.AudioState.cs`,
    capture-mode property handlers live in `MainViewModel.cs`. Shared
    view-model UI dispatcher enqueue/invoke policy now lives in
-   `Sussudio/Controllers/UiDispatchControllers.cs`.
+   `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`.
    The UI dispatch graph-port contract for dispatcher access, disposal state,
    logging, exception logging, and status text projection lives with
-   `Sussudio/Controllers/UiDispatchControllers.cs`, while
+   `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`, while
    `MainViewModel.cs` keeps the stable private adapter names and
    preview event fan-out beside the controller graph handoff;
    periodic timer refresh orchestration and initial
@@ -309,13 +309,14 @@ owner, fold it back into that owner and update the source-shape tests and
    failure/cancellation state repair, and direct use of the preview lifecycle
    owner for recording startup initialization.
    Recording option selections, output path, counters, and transition flags also
-   live in `MainViewModel.cs`. Bounded teardown, dispose timeout policy,
-   watcher disposal, coordinator cleanup/dispose, and capture-service
-   async-dispose fallback through graph-built context ports now live in
+   live in `MainViewModel.cs`. Bounded teardown and caller waits, watcher
+   disposal, coordinator cleanup/dispose, and capture-service disposal through
+   graph-built context ports now live in
    `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs`.
-   The disposal graph-port contract for one-shot disposal entry, teardown
-   cancellations, runtime stop, coordinator cleanup/dispose, and capture-service
-   async/sync disposal fallback lives with that controller.
+   That controller owns one shared disposal task. Caller timeouts retain the
+   active operation, and a completed failure can be retried. The capture cleanup
+   callback stays registered until capture disposal succeeds, preserving the
+   renderer acknowledgement required before shared resources are released.
    `MainViewModel.cs` remains the public refresh/dispose adapter and active
    Flashback export cancellation owner. Automation-facing command entry points,
    capture runtime, health, recording snapshot projection, source/preview
@@ -604,6 +605,51 @@ owner, fold it back into that owner and update the source-shape tests and
 - Run the console harness when source ownership, automation, capture, recording,
   or Flashback contracts move.
 
+## Retained Large Files
+
+The file-size policy in
+[Sussudio-Defragmentation-Goal.md](Sussudio-Defragmentation-Goal.md) requires an
+explicit locality or testability rationale for any file left above 1200 lines,
+measured in non-blank lines the way the generated baseline measures it. Every
+such file is listed below with the reason it stays whole; files inside the
+policy bands (300-800 normally acceptable, 800-1200 a review smell rather than
+an automatic split trigger) are not listed.
+
+`ArchitectureDefragBaseline_DocumentsEveryRetainedLargeFile` enumerates the
+production tree and fails if a file crosses the threshold without an entry here,
+so growth past 1200 lines forces a deliberate decision rather than silence.
+Per-owner lifetimes and invariants for these families are documented in
+[AGENT_MAP.md](AGENT_MAP.md); the entries below give only the locality reason.
+
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.SnapshotProjection.cs` (3009 lines) - Projects one automation snapshot shape consumed by CLI, MCP and tests; the field set is a wire contract asserted field-by-field, so scattering it hides the shape it exists to define.
+- `Sussudio/ViewModels/MainViewModel.cs` (2771 lines) - The binding facade. This project uses manual code-behind binding (PropertyChanged switch plus SetupBindings) instead of x:Bind, so the property surface and its change notifications must stay legible in one place.
+- `Sussudio/Services/Flashback/FlashbackExporter.cs` (2629 lines) - Owns the FFmpeg remux export end to end - packet copy with PTS adjustment and no re-encode - across one unmanaged lifetime; 11 File.Exists guards name the candidate splits that were tried and reverted.
+- `Sussudio/Services/Flashback/FlashbackEncoderSink.cs` (2560 lines) - Owns the Flashback encoder lifetime, its queues and their depth accounting as a single hot-path owner; AGENT_MAP records per-owner lifetimes for this family.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.cs` (2339 lines) - Already the facade third of a deliberate three-file split (facade/thread/submission/metrics, RenderPasses, Resources). AGENT_MAP: reopen only if a named resource or pass collaborator gains an independent test seam.
+- `Sussudio/Services/Capture/CaptureService.Flashback.cs` (2313 lines) - One member of the six-file CaptureService family. AGENT_MAP: do not merge or further split this family just to move a partial count.
+- `Sussudio/Services/Capture/CaptureService.RecordingLifecycle.cs` (2293 lines) - One member of the six-file CaptureService family; owns recording lifecycle transitions whose ordering is the invariant under test.
+- `Sussudio/Services/Flashback/FlashbackPlaybackController.cs` (2203 lines) - Owns public playback command and state admission in a deliberate four-file controller split documented in AGENT_MAP.
+- `Sussudio/MainWindow.xaml.cs` (2141 lines) - XAML companion file. The file-size policy exempts XAML adapters, and every AutomationId-bearing control is wired here.
+- `Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs` (2132 lines) - A single native XU/AT command surface; the command table and its marshalling must be read together to audit a device protocol.
+- `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs` (1881 lines) - One Media Foundation source-reader lifetime including COM activation ownership; splitting it separates acquisition from release.
+- `Sussudio/Services/Capture/CaptureService.RuntimeSnapshots.cs` (1878 lines) - Read-only snapshot projection consumed by UI, automation and verification. The file header states the invariant: this path stays read-only so frequent polling cannot mutate capture behavior.
+- `Sussudio/Services/Flashback/FlashbackDecoder.cs` (1858 lines) - Owns the decoder plus its decoded frame and audio value types, and both the D3D11 GPU-direct and software paths share that lifetime and its buffer ownership rules.
+- `Sussudio/Services/Recording/LibAvRecordingSink.cs` (1834 lines) - Owns the recording encoder lifetime, its queues and their depth accounting as a single hot-path owner.
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.Snapshots.cs` (1764 lines) - Assembles the diagnostics snapshots whose field set is pinned as a wire contract.
+- `Sussudio/Services/Capture/UnifiedVideoCapture.cs` (1619 lines) - One capture lifetime whose stop and disposal ordering is the invariant; the stop-failure stack preservation test depends on that ordering staying in one place.
+- `Sussudio/Services/Flashback/FlashbackBufferManager.cs` (1600 lines) - Owns the active segment plus retained completed segments, disk retention and recovery markers as one retention policy.
+- `Sussudio/Controllers/ViewModel/MainViewModelDeviceControllers.cs` (1600 lines) - Named device-controller owner for the manual binding surface.
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs` (1534 lines) - One dispatch table mapping automation command names and ordinals to handlers; the mapping is an external contract for CLI and MCP.
+- `Sussudio/Services/Capture/CaptureService.HealthSnapshots.cs` (1475 lines) - One member of the six-file CaptureService family; owns health snapshot assembly.
+- `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` (1435 lines) - Decode workers, reorder buffer and emit loop are one _reorderLock-guarded sequencing invariant; MjpegPipelineTests forbids each candidate partial by name, and SoftwareMjpegDecoder is the per-worker leaf this file constructs and disposes.
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.Resources.cs` (1387 lines) - The resource third of the deliberate D3D11PreviewRenderer split; owns device, swap-chain and shader lifetime.
+- `Sussudio/ViewModels/ViewModelSelectionPolicies.cs` (1370 lines) - One selection-policy surface; the policies are compared against each other and read as a set.
+- `Sussudio/Services/Capture/CaptureService.cs` (1318 lines) - Root of the six-file CaptureService family, owning transition serialization and root state. 105 File.Exists guards name candidate splits that were tried and reverted.
+- `Sussudio/Controllers/Flashback/FlashbackUiControllers.cs` (1291 lines) - Named Flashback UI controller owner for the manual binding surface.
+- `Sussudio/Controllers/ViewModel/MainViewModelLifecycleController.cs` (1262 lines) - Owns preview lifecycle admission - debounce, Flashback cycle wait, reinitialize gate - as one ordered sequence that the behavioral tests drive end to end.
+- `Sussudio/Services/Audio/WasapiAudioPlayback.cs` (1249 lines) - One WASAPI render lifetime: worker, queue depth and quarantine share a disposal ordering invariant.
+- `Sussudio/Services/Recording/LibAvEncoder.cs` (1223 lines) - One encoder lifetime spanning configuration, video and audio submission.
+
 ## Completed Slices
 
 Historical checkpoint descriptions, retained for context. Consult
@@ -650,7 +696,7 @@ Changed ownership:
 Diagnostic session scenario names, CLI help text, MCP-compatible description
 text, normalization, setup requirements, export verification metadata, ordering,
 and scenario-level plan lookup now live together in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs`; the runner still owns
+`tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs`; the runner still owns
 execution flow and summary writing.
 
 Automation diagnostics now have named partial owners instead of one large hub
@@ -831,7 +877,7 @@ verification entry points, flashback-export verification profile shaping, event
 publication for explicit verification, last-verification snapshot state,
 post-recording auto-verification gating, and background scheduling.
 `AutomationDiagnosticsHub.Evaluation.cs` owns diagnostic scoring, root
-diagnostic verdict orchestration, Flashback-specific and realtime diagnostic
+diagnostic verdict orchestration, realtime diagnostic
 verdict ordering, final healthy/mixed diagnostic fallback, diagnostic lane text
 orchestration, MJPEG decode lane formatting, recording/audio lane formatting,
 source cadence/source-signal lane formatting, preview
@@ -839,6 +885,14 @@ scheduler/renderer/present/display/visual-cadence lane formatting, Flashback
 recording/export/playback lane formatting, lane DTOs used by diagnostic
 verdicts, shared renderer-drop threshold constants, shared alert-detail
 formatting, and health classifiers used by alerts and diagnostic evaluation.
+`AutomationDiagnosticsHub.FlashbackEvaluation.cs` owns the
+`FlashbackDiagnosticEvaluator` collaborator: Flashback storage, recording,
+encoder-failure, export, export-rotation, backend-settings, degradation and
+playback verdict ordering, plus the recording-condition DTO those branches
+share. It is nested in the hub so it still reads the private Flashback
+thresholds that `AutomationDiagnosticsHub.Snapshots.cs` shares with the alert
+path; the health classifiers it calls stay in the Evaluation root for the same
+reason.
 `AutomationDiagnosticsHub.SnapshotProjection.cs` owns HDR truth
 classification from capture pipeline, source-HDR, and verification metadata
 evidence, plus preview HDR input detection, HDR pixel-format helpers used by
@@ -1124,7 +1178,7 @@ guards also live in `tests/Sussudio.Tests/XUnit.ToolContractsTests.cs`; they req
 `AutomationCommandKind` enum overloads at routing call sites while leaving
 labels and wire IDs catalog-backed, with the dynamic diagnostic-session runner
 channel intentionally remaining string-based.
-`tests/Sussudio.Tests/ArchitectureGuardrails.Tests.cs` owns
+`tests/Sussudio.Tests/ArchitectureGuardrailsTests.cs` owns
   shared implementations for consolidated AGENT_MAP reference resolution,
   test-owner code-span coverage, automation consumer checklist coverage,
   UI/presentation ownership coverage, CaptureService ownership coverage,
@@ -1144,7 +1198,7 @@ capture/recording object factories, tool assembly loading, isolated load
 contexts, and stale-build detection.
 Synthetic MJPEG timing metric factories live with the CaptureService ownership
 and cached-metrics scenarios that use them in
-`tests/Sussudio.Tests/CaptureService.Ownership.Tests.cs`.
+`tests/Sussudio.Tests/CaptureServiceOwnershipTests.cs`.
 
 Shared capture configuration reflection helpers for remaining legacy capture
 model checks now live in `tests/Sussudio.Tests/HarnessCore.cs`.
@@ -1164,7 +1218,7 @@ removal from the legacy offline harness catalog. Keep the public wrapper
 classes in this file unless a group needs independent fixture state.
 
 CPU MJPEG pipeline runtime checks now execute through
-`tests/Sussudio.Tests/MjpegPipeline.Tests.cs`, keeping pipeline,
+`tests/Sussudio.Tests/MjpegPipelineTests.cs`, keeping pipeline,
 cadence, pooled-frame, preview-jitter, queued lease-release contracts, and the
 shared pooled-frame/jitter-buffer helper surface in xUnit after their removal
 from the legacy harness catalog.
@@ -1282,7 +1336,7 @@ finalization owners.
 
 UI-thread dispatching helpers, preview-snapshot-style result dispatch with
 three-attempt enqueue retry, and guarded async event-handler execution now live
-in `Sussudio/Controllers/UiDispatchControllers.cs`.
+in `Sussudio/Controllers/Dispatch/UiDispatchControllers.cs`.
 `Sussudio/MainWindow.xaml.cs` keeps the stable private MainWindow adapter
 names for callers. Window close completion, close-request dispatch, and
 recording finalization are covered by the explicit window close lifecycle
@@ -1346,14 +1400,15 @@ sampling, startup missing-signal refresh, sampled-input assembly, read-only
 preview-state orchestration, and the UI-thread sampled preview snapshot input
 contract shared by the snapshot controller and D3D projection builder. It also
 owns final preview runtime snapshot DTO flattening from sampled input and D3D
-projection, surface/startup/GPU playback projection policies, the health input factory,
+projection, direct surface/startup/GPU playback mapping, the health input factory,
 preview startup elapsed timing, and blank/stall suspicion policy.
 `Sussudio/Controllers/Preview/Renderer/PreviewRuntimeSnapshotControllers.cs` owns the
-renderer projection data contract, D3D policy records, policy evaluation order,
-and assignment from evaluated policy records. It keeps the named policy classes
-for D3D-vs-CPU frame counters, renderer state, display cadence, render CPU
-timing, pipeline latency, frame ownership, DXGI frame statistics, and
-frame-latency wait defaults in one cohesive projection owner.
+renderer projection data contract, independent frame-counter and renderer-state
+policies, renderer metric sampling order, and direct projection of sampled
+renderer metric groups.
+Display cadence, render CPU timing, pipeline latency, frame ownership, DXGI
+frame statistics, and frame-latency wait defaults stay in private Apply methods;
+each renderer metric group is sampled once.
 Close routing/finalization handling remains in the explicit window close
 lifecycle owners below.
 
@@ -1466,10 +1521,12 @@ Device discovery ownership lives in `DeviceService.cs`. Keep capture/audio
 enumeration orchestration, the combined discovery result, device
 priority/capability scoring, audio endpoint association, native XU interface
 path resolution, format cache serialization, and inline/background format
-probing together there.
+probing together there. The service owns MTA worker scheduling for the complete
+discovery scan and audio-only refresh. Background format probes capture device
+identity before scheduling and retain the two-probe concurrency limit.
 
 Native XU Kernel Streaming calls are grouped under
-`Sussudio/Services/Capture/NativeXu/`. Keep KS category constants, DTOs,
+`Sussudio/Services/NativeXu/`. Keep KS category constants, DTOs,
 SetupAPI interface enumeration, handle opening, topology node parsing, XU
 GET/SET transfer shapes, and P/Invoke struct declarations in
 `KsExtensionUnitNative.cs`. Keep shared 4K X identity, selected-interface
@@ -1848,7 +1905,7 @@ Public device command routing now stays with the read/transport owner while
 shared device support continues to enforce identity, selected-interface, and
 transport gates.
 Shared device identity, selected-interface projection, and native transport
-gating live in `Sussudio/Services/Capture/NativeXu/KsExtensionUnitNative.cs`;
+gating live in `Sussudio/Services/NativeXu/KsExtensionUnitNative.cs`;
 the root provider dispatches through that support into telemetry polling.
 
 Selector-4 I2C payload writes stay with the provider's XU transport in
@@ -2221,31 +2278,31 @@ output cadence, target-depth increase/decrease, latency-pressure
 classification, and timer-resolution P/Invoke.
 
 Parallel MJPEG compressed input admission now lives with the bounded work-channel
-owner in `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep startup
+owner in `Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`. Keep startup
 invalid-MJPG drops, work-item construction, compressed byte-budget rejection,
 queue-depth accounting, queue-full rejection, and packet-hash recording beside
 pipeline construction and channel creation.
 
 Parallel MJPEG worker execution now lives with the bounded work-channel owner in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep decoder array
+`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`. Keep decoder array
 ownership, worker thread creation/naming, worker decode-loop execution, worker
 liveness checks, construction, callback storage, channel creation, compressed
 input admission, and startup sequencing together.
 Software MJPEG decode/copy execution now lives with its only worker caller in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`. Keep FFmpeg decoder
+`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs`. Keep FFmpeg decoder
 context allocation, frame/packet ownership, hot MJPEG send/receive,
 format/dimension validation, one-time diagnostics, YUV420-to-NV12 copy,
 disposal, and error-string helpers beside decoder array ownership and worker
 decode-loop execution unless a real named collaborator emerges.
 
 Parallel MJPEG decode pipeline timing now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs` with the bounded
+`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` with the bounded
 work-channel and worker state it samples. Keep timing record structs, timing
 snapshot construction, per-decoder sample windows, packet-hash metric access,
 and stopwatch conversion helpers there beside worker decode ingress.
 
 Parallel MJPEG decode pipeline decoded-frame ordering now lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs` with the rest of the
+`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` with the rest of the
 bounded work-channel owner. Keep strict missing-sequence waits,
 known-missing skips, decoded reorder state, decoded reorder capacity policy,
 emit-loop ordered draining, preview decoded-frame notification, and
@@ -2253,7 +2310,7 @@ reorder/pipeline latency samples there beside construction, queue admission,
 worker execution, lifecycle, and metrics.
 
 Parallel MJPEG decode pipeline lifecycle lives in
-`Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs` with construction,
+`Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs` with construction,
 worker startup, and worker state. Keep stop/dispose, emitter signaling, shutdown
 joins, fatal-callback dispatch, remaining-timeout helpers, decoder disposal,
 queued work-item return, remaining reorder-frame disposal, and emit-signal
@@ -2413,7 +2470,7 @@ empty state, group headers, row rendering, lifecycle, sizing, polling,
 controller composition, and always-on-top behavior.
 Stats overlay lifecycle, stats dock refresh, stats section chrome, and
 diagnostic row pooling contract checks now live in two focused owners:
-`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs` covers overlay
+`tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs` covers overlay
 lifecycle and section chrome through the MainWindow controller ownership
 surface, while
 `tests/Sussudio.Tests/XUnit.ModelContractsTests.cs` covers dock presentation
@@ -2429,7 +2486,10 @@ composition context contracts and presentation-controller graph composition live
 in
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`.
 `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs` keeps the stats dock
-projection refresh adapter.
+projection refresh adapter. Its presentation controller consumes the existing
+`StatsOverlayDockTargetsContext` directly. The shell's
+`RefreshStatsIfDueAndGetSnapshot` forwards to `StatsUiSampler.RefreshIfDueAndGetSnapshot`,
+which collects and publishes a due sample before returning the UI cache.
 Decode and GPU hardware stats row refresh/application over presentation inputs
 now lives in `Sussudio/Controllers/Stats/StatsOverlayCompositionController.cs`;
 live MJPEG/NVML sampling and decode availability policy live in the local
@@ -2768,7 +2828,7 @@ and volume save suppression now live with preview start/stop/reinit event
 routing in `Sussudio/Controllers/Preview/PreviewLifecycleControllers.cs`.
 `Sussudio/MainWindow.xaml.cs` is the XAML-facing adapter.
 Preview-audio volume transition mechanics and ramp diagnostics now live in
-`Sussudio/ViewModels/PreviewAudioTransitionControllers.cs`, which owns
+`Sussudio/Controllers/ViewModel/PreviewAudioTransitionControllers.cs`, which owns
 save suppression/override state, transition priming and restore behavior,
 trace adapters, property-to-session volume forwarding, ramp constants/easing,
 async ramp-down/ramp-up execution, bounded trace storage, trace session
@@ -2893,7 +2953,7 @@ responsive visibility for the complete control-bar label set, and
 capture-settings grid placement together with the rest of shell chrome.
 `MainWindow.xaml.cs` remains the XAML-facing adapter.
 Responsive layout ownership checks live in
-`tests/Sussudio.Tests/MainWindow.ControllerOwnership.Tests.cs`.
+`tests/Sussudio.Tests/MainWindowControllerOwnershipTests.cs`.
 
 Capture, audio, microphone, and encoder selection synchronization now lives in
 `Sussudio/Controllers/Capture/CaptureBindingControllers.cs`. The
@@ -2964,7 +3024,7 @@ pure truncation text policy.
 `MainWindow.xaml.cs` is the XAML-facing adapter used by binding setup,
 property changes, and button events.
 
-Diagnostic session DTOs live in `tools/Common/DiagnosticSessionResult.cs`,
+Diagnostic session DTOs live in `tools/DiagnosticSession/DiagnosticSessionResult.cs`,
 which owns run options, sampled snapshot DTOs, shared tool invocation defaults,
 the ssctl diagnostic-session usage string, explicit scenario phase input
 handoff, immutable completion handoff, mutable in-flight phase state, and the
@@ -3010,7 +3070,7 @@ cadence, preview scheduler, preview D3D, preview visual cadence, process,
 recording verification, and PresentMon fields.
 
 Diagnostic-session result text now lives in
-`tools/Common/DiagnosticSessionResult.cs` beside the public result DTO model.
+`tools/DiagnosticSession/DiagnosticSessionResult.cs` beside the public result DTO model.
 The formatter owns the public `Format(...)` flow, section ordering, and all
 rendered rows: overview, capture mode, recording verification, PresentMon,
 Flashback playback/recording/export, preview scheduler, preview D3D, visual
@@ -3020,7 +3080,7 @@ The runner keeps `Format(...)` as a compatibility wrapper so existing ssctl
 and MCP callers do not need to know about the formatter owner.
 
 Diagnostic-session result construction now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs`. The root owns result phase
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs`. The root owns result phase
 orchestration, artifact-write handoff, summary-write handoff, and final
 summary emission plus summary-write failure repair while the runner keeps the
 phase sequence. It also owns final-result orchestration from analysis and
@@ -3071,12 +3131,12 @@ and source-telemetry DTO projection values live in
 `DiagnosticSessionResultBuilder.cs`.
 
 Diagnostic-session result artifact setup now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs` beside summary writing. It owns
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` beside summary writing. It owns
 result artifact path construction, pre-summary sample, frame-ledger, and
 timeline writes while the builder keeps summary field construction.
 
 Shared diagnostic-session optional text formatting now lives in
-`tools/Common/DiagnosticSessionResult.cs` alongside the human-readable result
+`tools/DiagnosticSession/DiagnosticSessionResult.cs` alongside the human-readable result
 text owner. Keep cross-cutting `FormatOptional(...)` handling there instead of
 reintroducing private duplicates in scenario, result builder, formatter, or
 validation policy files.
@@ -3125,7 +3185,7 @@ Shared option precedence and preview-present field extraction belong to
 `tools/Common/PresentMon/PresentMonProbe.cs`.
 
 Diagnostic-session command sending now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable run
 infrastructure that constructs, owns, and disposes the channel. Scenario setup
 and cleanup pass the channel itself for lifecycle mutations so
 `SetFlashbackEnabled`, `SetPreviewEnabled`, `SetRecordingEnabled`, and
@@ -3133,23 +3193,23 @@ and cleanup pass the channel itself for lifecycle mutations so
 keeps phase orchestration and its public string delegate compatibility.
 
 Diagnostic-session JSON artifact helpers now live in
-`tools/Common/DiagnosticSessionResultBuilder.cs` beside pre-summary artifact
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs` beside pre-summary artifact
 path construction and writes. The runner still owns the session lifecycle,
 while JSON object creation, best-effort file writes, and frame-ledger trace
 construction stay in the result-builder helper section. Snapshot / verification
 response-shape extraction now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable run
 infrastructure that consumes initial snapshots and hands response helpers to
 scenario files.
 
 Diagnostic-session initial snapshot capture now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable initial
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable initial
 snapshot fields. It owns the baseline snapshot capture through
 `AutomationCommandKind.GetSnapshot`, the unknown-state warning, and
 initial-snapshot exception recording while the runner keeps phase ordering.
 
 Diagnostic-session run context now lives in
-`tools/Common/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs`. `DiagnosticSessionRunContext.cs`
 owns the cohesive mutable per-run context: bootstrap, actions, warnings,
 samples, terminal exception state, last-stage tracking, best-effort artifact
 write failure recording, command channel, scenario cancellation source, initial
@@ -3158,32 +3218,32 @@ scenario/completion context construction with the explicit callback/token
 handoffs consumed by scenario and completion phases.
 
 Diagnostic-session live breadcrumbs now live in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable run context
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable run context
 that owns their lifecycle. It owns the `session-live.json` path, payload shape,
 health and warning projection, terminal override mapping, and sampling
 live-state write throttle.
 
 Diagnostic-session run bootstrap now lives in
-`tools/Common/DiagnosticSessionRunContext.cs` beside the mutable per-run
+`tools/DiagnosticSession/DiagnosticSessionRunContext.cs` beside the mutable per-run
 context that consumes it. It owns scenario normalization, scenario-plan
 selection, duration/sample clamping, session identity, output-directory
 creation, and runner process metadata while the runner keeps command-channel
 lifetime and phase ordering.
 
 Diagnostic-session output locking now lives in
-`tools/Common/DiagnosticSessionRunner.cs` beside the phase sequence that
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the phase sequence that
 acquires it. It owns the `.sussudio-diag.lock` file, exclusive
 `FileShare.None` open, delete-on-close cleanup, and concurrent-output-directory
 failure message.
 
 Diagnostic-session background task tracking now lives in
-`tools/Common/DiagnosticSessionRunner.cs`. It owns scenario task registration,
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs`. It owns scenario task registration,
 deterministic await order, normal registered scenario completion, PresentMon and
 deferred Flashback recording-settings task tracking, interrupted-session
 observation, warning collection, and the drain handoff record.
 
 Diagnostic-session scenario activation now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs` beside the scenario metadata
+`tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs` beside the scenario metadata
 that drives setup requirements. It owns initial setup ordering and result
 handoff, Flashback enable/disable for scenario requirements, preview start and
 video-flow wait, recording start and Flashback recording-readiness wait, public
@@ -3197,8 +3257,9 @@ mutations should use `DiagnosticSessionCommandChannel` typed
 `AutomationCommandKind` sends.
 
 Diagnostic-session post-run actions now live in
-`tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
-orders them. The runner owns the public cleanup flow and ordering, recording
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the completion phase that
+orders them. The runner passes the existing cleanup context directly to the
+stop/restore helpers. It owns the public cleanup flow and ordering, recording
 stop for verification, Flashback playback go-live restore, preview stop,
 Flashback enable-state restore, typed automation command sends, cleanup result
 record, deferred Flashback recording-settings restore, last-recording or
@@ -3208,12 +3269,12 @@ Flashback recording validation. Result analysis validation owns the post-cleanup
 warning validator.
 
 Diagnostic-session post-run snapshot fetches now live in
-`tools/Common/DiagnosticSessionRunner.cs` beside the completion phase that
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the completion phase that
 orders them. It owns performance timeline artifact input and final health
 snapshot refresh.
 
 Diagnostic-session scenario metadata now lives in
-`tools/Common/DiagnosticSessionScenarioCatalog.cs`. The catalog owns
+`tools/DiagnosticSession/DiagnosticSessionScenarioCatalog.cs`. The catalog owns
 normalization and entry lookup, scenario names, HelpList/Description text,
 the `Names` projection, requirement queries, export-verification lookup, and
 scenario ordering by composing focused entry groups for core, Flashback
@@ -3225,7 +3286,7 @@ including the preview-cycle grouped predicate, so the runner does not grow
 direct scenario string comparisons.
 
 Diagnostic-session cleanup restore validation now lives in
-`tools/Common/DiagnosticSessionResultBuilder.cs`. It owns warnings
+`tools/DiagnosticSession/DiagnosticSessionResultBuilder.cs`. It owns warnings
 for preview, Flashback, and playback state that remain active after the runner
 attempts cleanup.
 
@@ -3241,12 +3302,12 @@ diagnostics. Startup only delegates selected cycle, lifecycle, and preview-cycle
 scenario registration.
 
 Diagnostic-session sampling now lives in
-`tools/Common/DiagnosticSessionRunner.cs` beside the scenario phase sequence
+`tools/DiagnosticSession/DiagnosticSessionRunner.cs` beside the scenario phase sequence
 that invokes it. Keep the sample append before the optional checkpoint callback
 so checkpoint failures cannot orphan an unseen sample.
 
 Diagnostic-session metric projection now lives in
-`tools/Common/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
+`tools/DiagnosticSession/DiagnosticSessionMetrics.cs`. It owns read-only metric DTOs and
 projections: source, preview, and visual cadence aggregation, visual-cadence
 health classification, D3D metric aggregation, playback command-health deltas,
 shared counter-delta helpers, and Flashback recording/export metrics,
@@ -3259,7 +3320,7 @@ derived outside export-observed relevance gating. These helpers remain
 snapshot-only projections and must not send automation commands.
 
 Diagnostic-session Flashback support helpers now live in
-`tools/Common/DiagnosticSessionFlashbackSupport.cs`, which owns strict export
+`tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`, which owns strict export
 verification payload construction, rotated-export segment-count parsing,
 range-selection cleanup, read-only segment parsing/waits/playback headroom
 polling, and recording/playback/preview warning validation. Keep scenario
@@ -3288,13 +3349,13 @@ policy.
 
 Diagnostic-session Flashback rejected-export scenarios now live with the
 Flashback export scenario owner in
-`tools/Common/DiagnosticSessionFlashbackExportScenarios.cs`. The export scenario
+`tools/DiagnosticSession/DiagnosticSessionFlashbackExportScenarios.cs`. The export scenario
 owner covers selected rejected-export dispatch, inactive-buffer failure-kind and
 last-result assertions, and active-Flashback-recording failure-kind and
 backend-stability assertions.
 
 Diagnostic-session Flashback recording-settings deferral and segment playback
-now live in `tools/Common/DiagnosticSessionFlashbackScenarioTasks.cs`, which
+now live in `tools/DiagnosticSession/DiagnosticSessionFlashbackScenarioTasks.cs`, which
 owns deferred preset state, during-recording command choreography,
 restart/disable rejection policy, active recording backend/file/counter
 stability checks, post-stop preset verification, encoder-frame checks,
@@ -3313,7 +3374,7 @@ playback-boundary headroom polling while the runner keeps scenario command
 sequencing.
 
 Diagnostic-session Flashback snapshot waits are also a support section of
-`tools/Common/DiagnosticSessionFlashbackSupport.cs`. The
+`tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`. The
 `DiagnosticSessionFlashbackWaits` helper owns read-only polling loops for
 preview-active state, Flashback-active state, Flashback-backed recording
 readiness, stress buffer readiness, playback state, boundary crossing,
@@ -3321,7 +3382,7 @@ warmed-playback frame-count/FPS, and position convergence while the runner
 keeps scenario command sequencing.
 
 Diagnostic-session Flashback metrics live in
-`tools/Common/DiagnosticSessionMetrics.cs`, including the
+`tools/DiagnosticSession/DiagnosticSessionMetrics.cs`, including the
 `FlashbackRecordingSessionMetrics`, `FlashbackExportSessionMetrics`,
 `FlashbackPlaybackSessionMetrics`, and `FlashbackPlaybackResultMetrics` handoff
 shapes; recording metric projection; export-relevance and snapshot max
@@ -3334,7 +3395,7 @@ and stage end-snapshot reads. Preserve the final `init` DTO construction unless
 a broader construction pattern replaces it deliberately.
 
 Diagnostic-session Flashback stress orchestration now lives in
-`tools/Common/DiagnosticSessionFlashbackStressScenario.cs`, which owns stress
+`tools/DiagnosticSession/DiagnosticSessionFlashbackStressScenario.cs`, which owns stress
 thresholds, stress/scrub-stress task registration, main stress and scrub-stress
 command choreography, stress export verification, warmed-playback frame/FPS/1%
 low checks, audio-master fallback delta capture/classification, shared
@@ -3342,12 +3403,12 @@ live/empty-queue drain polling, and command-health/latency/final-state warning
 policy while the runner only starts the scenario tasks.
 
 Diagnostic-session Flashback validation is also a section of
-`tools/Common/DiagnosticSessionFlashbackSupport.cs`. It owns recording,
+`tools/DiagnosticSession/DiagnosticSessionFlashbackSupport.cs`. It owns recording,
 playback, and preview scheduler warning thresholds over already projected
 metrics while the runner retains scenario orchestration.
 
 Diagnostic-session health policy now lives in
-`tools/Common/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
+`tools/DiagnosticSession/DiagnosticSessionHealthPolicy.cs`. It owns health severity,
 observation, Flashback warmup filtering, source/preview/Flashback
 health-observation classifiers, sparse cadence tolerances, and tolerated warning
 classification while the runner still owns scenario execution and warning emission.

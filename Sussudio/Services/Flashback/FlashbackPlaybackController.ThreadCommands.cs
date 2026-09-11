@@ -606,7 +606,7 @@ internal sealed partial class FlashbackPlaybackController
         Queue<DecodedVideoFrame> prebufferedFrames,
         Stopwatch pacingStopwatch)
     {
-        cmd = _commandMailbox.ResolveLatestPosition(cmd);
+        cmd = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(cmd);
         while (commandChannel.TryPeek(out var newerSeek) &&
                newerSeek.Kind == CommandKind.Seek)
         {
@@ -616,7 +616,7 @@ internal sealed partial class FlashbackPlaybackController
             }
 
             _commandMailbox.TrackCommandDequeued(newerSeek);
-            newerSeek = _commandMailbox.ResolveLatestPosition(newerSeek);
+            newerSeek = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(newerSeek);
             cmd = newerSeek;
         }
 
@@ -774,7 +774,7 @@ internal sealed partial class FlashbackPlaybackController
         TimeSpan frozenValidStart)
     {
         pendingExactResumeTarget = null;
-        cmd = _commandMailbox.ResolveLatestPosition(cmd);
+        cmd = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(cmd);
         if (!isScrubbing)
         {
             MarkCommandNoOp(CommandKind.UpdateScrub, "not_scrubbing", cmd.Position);
@@ -791,7 +791,7 @@ internal sealed partial class FlashbackPlaybackController
             }
 
             _commandMailbox.TrackCommandDequeued(newer);
-            newer = _commandMailbox.ResolveLatestPosition(newer);
+            newer = _commandMailbox.ResolveLatestPositionAndReleaseCoalescingSlot(newer);
             cmd = newer;
         }
         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };

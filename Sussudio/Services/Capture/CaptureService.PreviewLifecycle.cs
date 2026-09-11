@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 
@@ -118,7 +119,7 @@ public partial class CaptureService
             catch (Exception ex)
             {
                 stopFailure = ex;
-                commitStoppedState = true;
+                commitStoppedState = Volatile.Read(ref _cleanupRequired) == 0;
                 throw;
             }
             finally
@@ -130,7 +131,7 @@ public partial class CaptureService
                     {
                         try
                         {
-                            await StopTelemetryPollAsync().ConfigureAwait(false);
+                            await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
                         }
                         catch (Exception ex) when (stopFailure != null)
                         {
@@ -141,7 +142,7 @@ public partial class CaptureService
             }
 
             StatusChanged?.Invoke(this, "Preview stopped");
-        }, cancellationToken);
+        }, cancellationToken, cleanupRetainedResources: true);
 
     private async Task RecyclePreviewPipelineForStartAsync(
         CaptureSettings settings,
@@ -213,8 +214,8 @@ public partial class CaptureService
         }
         await EnsureFlashbackAudioInputsAsync(settings, transitionToken, "preview_fast_path").ConfigureAwait(false);
         _isVideoPreviewActive = true;
-        // Telemetry may have been stopped via a recording-stop path while preview
-        // was off; StartTelemetryPoll is idempotent (stops any prior timer first).
+        // Native source polling may have stopped while this capture kept running.
+        // Enabling it again reuses the capture-owned telemetry worker.
         StartTelemetryPoll();
         StatusChanged?.Invoke(this, "Preview started");
         return true;
@@ -251,13 +252,13 @@ public partial class CaptureService
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_uvc {(int)settings.Width}x{(int)settings.Height}@{settings.FrameRate:0.###} p010={requireP010} pxfmt={settings.RequestedPixelFormat} mjpeg_hfr={useMjpegHighFrameRateMode}");
             await unifiedVideoCapture.InitializeAsync(
                 _currentDevice!.Id,
-                (int)settings.Width,
-                (int)settings.Height,
-                settings.FrameRate,
-                requireP010,
-                settings.RequestedPixelFormat,
-                useMjpegHighFrameRateMode,
-                settings.MjpegDecoderCount).ConfigureAwait(false);
+                width: (int)settings.Width,
+                height: (int)settings.Height,
+                fps: settings.FrameRate,
+                requireP010: requireP010,
+                requestedPixelFormat: settings.RequestedPixelFormat,
+                useMjpegHighFrameRateMode: useMjpegHighFrameRateMode,
+                mjpegDecoderCount: settings.MjpegDecoderCount).ConfigureAwait(false);
             Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
             unifiedVideoCapture.SetPreviewSink(_videoPipeline.PreviewFrameSink);
             TryApplySharedPreviewDevice(unifiedVideoCapture, _videoPipeline.PreviewFrameSink);
@@ -273,6 +274,13 @@ public partial class CaptureService
                 unifiedVideoCapture.SetSkipCpuReadback(true);
             }
             _videoPipeline.InstallCapture(unifiedVideoCapture);
+            // Kept inline rather than routed through ResetVideoBaselineCounters (its twin in
+            // CaptureService.RecordingLifecycle.cs): CaptureServiceOwnershipTests'
+            // CaptureService_InitializationLivesWithServiceRoot deliberately asserts that BOTH
+            // lifecycle partials spell out this SetActualCaptureFrameRate call, and separately
+            // asserts neither file invokes the telemetry frame-rate correction helper -- so the
+            // rate is provably taken from the negotiated capture here. desloppify flags the
+            // 7-line overlap with the recording path as boilerplate_duplication; the guard wins.
             _lastMfSourceReaderFramesDelivered = 0;
             _lastMfSourceReaderFramesDropped = 0;
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
@@ -294,6 +302,7 @@ public partial class CaptureService
         {
             Logger.Log($"Unified preview start failed: {ex.Message}");
             var previewStartRollbackToken = CancellationToken.None;
+            await StopPreviewRendererBeforeCaptureCleanupAsync(previewStartRollbackToken).ConfigureAwait(false);
             await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken).ConfigureAwait(false);
             _videoPipeline.ClearCapture();
             if (unifiedVideoCapture != null)
@@ -319,9 +328,11 @@ public partial class CaptureService
         CancellationToken transitionToken,
         bool purgeFlashbackSegments)
     {
+        Volatile.Write(ref _cleanupRequired, 1);
+        await StopPreviewRendererBeforeCaptureCleanupAsync(transitionToken).ConfigureAwait(false);
         _recordingBackend.ClearPendingLibAvDrainIfCompletedSuccessfully();
 
-        var unifiedVideoCapture = _videoPipeline.TakeCapture();
+        var unifiedVideoCapture = _videoPipeline.Capture;
         var videoCaptureCleanupDeferred = false;
         if (unifiedVideoCapture != null)
         {
@@ -349,6 +360,7 @@ public partial class CaptureService
                 SetPendingLibAvCleanupTask(
                     Task.WhenAll(pendingLibAvDrainTask, captureCleanupTask),
                     "LibAv+PreviewPipeline");
+                _videoPipeline.ClearCapture();
                 videoCaptureCleanupDeferred = true;
             }
             else
@@ -368,6 +380,7 @@ public partial class CaptureService
         if (unifiedVideoCapture != null && !videoCaptureCleanupDeferred)
         {
             await unifiedVideoCapture.DisposeForPreviewReinitAsync().ConfigureAwait(false);
+            _videoPipeline.ClearCapture();
         }
 
         var capture = _previewAudioGraph.ProgramCapture;
@@ -375,7 +388,6 @@ public partial class CaptureService
         _previewAudioGraph.DetachCapture(
             capture,
             OnWasapiAudioLevelUpdated,
-            OnWasapiCaptureFailed,
             _flashbackBackend.PlaybackController);
         if (capture != null)
         {
@@ -383,6 +395,7 @@ public partial class CaptureService
         }
 
         await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+        Volatile.Write(ref _cleanupRequired, 0);
     }
 
     public int GetNegotiatedVideoWidth() => _videoPipeline.NegotiatedVideoWidth;
@@ -391,6 +404,15 @@ public partial class CaptureService
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
+        if (sink != null)
+        {
+            ThrowIfDisposed();
+            if (Volatile.Read(ref _cleanupRequired) != 0)
+            {
+                throw new InvalidOperationException("Capture cleanup must complete before attaching a preview renderer.");
+            }
+        }
+
         var controller = _flashbackBackend.PlaybackController;
         if (sink == null && controller is { IsDisposed: false, IsInitialized: true })
         {
@@ -430,7 +452,6 @@ public partial class CaptureService
     private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)
     {
         unifiedVideoCapture.FatalErrorOccurred += OnUnifiedVideoCaptureFatalError;
-        unifiedVideoCapture.SetPixelFormatDetectedCallback(fmt => RecordObservedPixelFormat(fmt));
     }
 
     private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)
@@ -441,7 +462,6 @@ public partial class CaptureService
         }
 
         unifiedVideoCapture.FatalErrorOccurred -= OnUnifiedVideoCaptureFatalError;
-        unifiedVideoCapture.SetPixelFormatDetectedCallback(null);
     }
 
     private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)
@@ -458,7 +478,7 @@ public partial class CaptureService
             return;
         }
 
-        if (!d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason) || sharedDevice == null)
+        if (!d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason))
         {
             Logger.Log($"UNIFIED_VIDEO_SHARED_DEVICE_APPLY_SKIP reason={reason}");
             return;
@@ -541,7 +561,6 @@ public partial class CaptureService
             MicrophoneEnabled = source.MicrophoneEnabled,
             MicrophoneDeviceId = source.MicrophoneDeviceId,
             MicrophoneDeviceName = source.MicrophoneDeviceName,
-            AudioPathMode = source.AudioPathMode,
             ForceMjpegDecode = source.ForceMjpegDecode,
             FlashbackGpuDecode = source.FlashbackGpuDecode,
             FlashbackBufferMinutes = source.FlashbackBufferMinutes,
@@ -582,7 +601,7 @@ public partial class CaptureService
                     var wasapiCapture = new WasapiAudioCapture();
                     await wasapiCapture.InitializeAsync(audioId, transitionToken).ConfigureAwait(false);
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    _previewAudioGraph.AttachCaptureFailure(wasapiCapture, "program", OnWasapiCaptureFailed);
                     wasapiCapture.Start();
                     _previewAudioGraph.ProgramCapture = wasapiCapture;
                     createdCaptureForAudioPreview = true;
@@ -620,7 +639,6 @@ public partial class CaptureService
                     _previewAudioGraph.DetachCapture(
                         capture,
                         OnWasapiAudioLevelUpdated,
-                        OnWasapiCaptureFailed,
                         _flashbackBackend.PlaybackController);
                     if (capture != null)
                     {
@@ -656,7 +674,7 @@ public partial class CaptureService
                     wasapiCapture = new WasapiAudioCapture();
                     await wasapiCapture.InitializeAsync(audioDeviceId, transitionToken).ConfigureAwait(false);
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    _previewAudioGraph.AttachCaptureFailure(wasapiCapture, "program", OnWasapiCaptureFailed);
                     wasapiCapture.Start();
                     _previewAudioGraph.ProgramCapture = wasapiCapture;
                 }
@@ -672,7 +690,7 @@ public partial class CaptureService
                     if (wasapiCapture != null)
                     {
                         wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(wasapiCapture);
                         try
                         {
                             await wasapiCapture.DisposeAsync().ConfigureAwait(false);
@@ -742,7 +760,7 @@ public partial class CaptureService
             micCapture = new WasapiAudioCapture();
             await micCapture.InitializeAsync(_micMonitorDeviceId, transitionToken).ConfigureAwait(false);
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.AttachCaptureFailure(micCapture, "microphone", OnWasapiCaptureFailed);
             micCapture.Start();
             if (_flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
             {
@@ -767,7 +785,7 @@ public partial class CaptureService
             if (micCapture != null)
             {
                 micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                _previewAudioGraph.DetachCaptureFailure(micCapture);
                 try
                 {
                     await micCapture.DisposeAsync().ConfigureAwait(false);
@@ -803,7 +821,7 @@ public partial class CaptureService
                 }
 
                 mic.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                mic.CaptureFailed -= OnWasapiCaptureFailed;
+                _previewAudioGraph.DetachCaptureFailure(mic);
                 await mic.DisposeAsync().ConfigureAwait(false);
                 Logger.Log("MIC_MONITOR_STOP");
             }
@@ -838,7 +856,7 @@ public partial class CaptureService
                     nextMicCapture = new WasapiAudioCapture();
                     await nextMicCapture.InitializeAsync(deviceId, transitionToken).ConfigureAwait(false);
                     nextMicCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-                    nextMicCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    _previewAudioGraph.AttachCaptureFailure(nextMicCapture, "microphone", OnWasapiCaptureFailed);
                 }
 
                 await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
@@ -882,7 +900,7 @@ public partial class CaptureService
                     {
                         nextMicCapture.SetAudioWriter(null);
                         nextMicCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                        nextMicCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(nextMicCapture);
                         await nextMicCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
@@ -915,7 +933,7 @@ public partial class CaptureService
             micCapture = new WasapiAudioCapture();
             await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
             micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-            micCapture.CaptureFailed += OnWasapiCaptureFailed;
+            _previewAudioGraph.AttachCaptureFailure(micCapture, "microphone", OnWasapiCaptureFailed);
             micCapture.Start();
             if (_flashbackBackend.Sink is { MicrophoneEnabled: true } fbSink)
             {
@@ -938,7 +956,7 @@ public partial class CaptureService
             if (micCapture != null)
             {
                 micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                _previewAudioGraph.DetachCaptureFailure(micCapture);
                 try { await micCapture.DisposeAsync().ConfigureAwait(false); }
                 catch (Exception disposeEx) { Logger.Log($"{options.DisposeWarningEvent} type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
             }
@@ -950,7 +968,7 @@ public partial class CaptureService
         if (wasapiCapture != null)
         {
             wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-            wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
+            _previewAudioGraph.DetachCaptureFailure(wasapiCapture);
         }
 
         var capture = _previewAudioGraph.ProgramCapture ?? wasapiCapture;
@@ -960,7 +978,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 capture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             try
             {
@@ -993,7 +1010,6 @@ public partial class CaptureService
                 _previewAudioGraph.DetachCapture(
                     capture,
                     OnWasapiAudioLevelUpdated,
-                    OnWasapiCaptureFailed,
                     _flashbackBackend.PlaybackController);
                 if (capture != null)
                 {
@@ -1040,7 +1056,7 @@ public partial class CaptureService
                 {
                     await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
                     newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    newCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    _previewAudioGraph.AttachCaptureFailure(newCapture, "program", OnWasapiCaptureFailed);
                 }
                 catch
                 {
@@ -1049,7 +1065,7 @@ public partial class CaptureService
                     try
                     {
                         newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(newCapture);
                         await newCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
@@ -1066,7 +1082,7 @@ public partial class CaptureService
                     try
                     {
                         newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(newCapture);
                         await newCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception ex)
@@ -1080,7 +1096,6 @@ public partial class CaptureService
                 _previewAudioGraph.DetachCapture(
                     oldCapture,
                     OnWasapiAudioLevelUpdated,
-                    OnWasapiCaptureFailed,
                     _flashbackBackend.PlaybackController);
 
                 _previewAudioGraph.ProgramCapture = null;
@@ -1094,7 +1109,7 @@ public partial class CaptureService
                     try
                     {
                         newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(newCapture);
                         await newCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception disposeEx)
@@ -1116,7 +1131,7 @@ public partial class CaptureService
                     try
                     {
                         newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(newCapture);
                         await newCapture.DisposeAsync().ConfigureAwait(false);
                     }
                     catch (Exception disposeEx)
@@ -1167,7 +1182,6 @@ public partial class CaptureService
                 _previewAudioGraph.DetachCapture(
                     oldCapture,
                     OnWasapiAudioLevelUpdated,
-                    OnWasapiCaptureFailed,
                     _flashbackBackend.PlaybackController);
                 try
                 {
@@ -1194,9 +1208,13 @@ public partial class CaptureService
         AudioLevelUpdated?.Invoke(this, e);
     }
 
-    private void OnWasapiCaptureFailed(object? sender, Exception ex)
+    private void OnWasapiCaptureFailed(Exception ex, CaptureErrorOrigin origin, string source)
     {
-        var source = _previewAudioGraph.ClassifyCaptureFailureSource(sender);
+        if (!IsCaptureErrorCurrent(origin))
+        {
+            return;
+        }
+
         var recordingFaultAttributionActive =
             Volatile.Read(ref _recordingFaultAttributionActive) != 0;
         var requestedSettings = _recordingBackend.SettingsSnapshot ?? _currentSettings;
@@ -1223,9 +1241,7 @@ public partial class CaptureService
         }
 
         Logger.Log($"WASAPI_CAPTURE_FAILED source={source} type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");
-        var statusPrefix = source == "microphone" ? "Microphone capture error" : "Audio capture error";
-        StatusChanged?.Invoke(this, $"{statusPrefix}: {ex.Message}");
-        ErrorOccurred?.Invoke(this, ex);
+        PublishCaptureError(ex, origin);
 
         if (requestedRecordingMicrophoneFailed || requestedRecordingProgramAudioFailed)
         {

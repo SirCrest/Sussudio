@@ -1,6 +1,5 @@
 using System.Globalization;
 using Sussudio.Models;
-using Sussudio.Services.Capture;
 using Sussudio.Services.Telemetry;
 using static NativeXuProbeCommands;
 using static NativeXuProbeFormatting;

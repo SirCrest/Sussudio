@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
@@ -157,8 +157,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             BitRate = context.Settings.GetTargetBitrate(),
             IsP010 = context.HdrPipelineActive,
             CodecName = MapCodecName(context.Settings.Format),
-            NvencPreset = context.Settings.NvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
+            NvencPreset = context.Settings.NvencPreset,
+            SplitEncodeMode = context.Settings.SplitEncodeMode,
             HdrEnabled = context.HdrPipelineActive,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
@@ -365,7 +365,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     }
 
     private static string MapCodecName(RecordingFormat format)
-        => MediaFormat.MapNvencCodecName(format);
+        => EncoderSupport.MapNvencCodecName(format);
 
     private void ResetEncodingCounters()
     {
@@ -585,11 +585,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
     public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.ReconcileDepthAndGetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
     public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
-    public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
-    public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
-    public double VideoQueueLatencyP95Ms => _videoLatencyTracker.GetMetrics().P95Ms;
-    public double VideoQueueLatencyP99Ms => _videoLatencyTracker.GetMetrics().P99Ms;
-    public double VideoQueueLatencyMaxMs => _videoLatencyTracker.GetMetrics().MaxMs;
     public long VideoBackpressureWaitMs => _videoLatencyTracker.BackpressureWaitMs;
     public long VideoBackpressureEvents => _videoLatencyTracker.BackpressureEvents;
     public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
@@ -721,13 +716,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             const string message = "Flashback recording was not active.";
             Logger.Log($"FLASHBACK_RECORDING_END_REJECTED reason='{message}'");
-            return new FinalizeResult
-            {
-                Succeeded = false,
-                OutputPath = _recordingOutputPath ?? string.Empty,
-                StatusMessage = message,
-                PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
-            };
+            return FinalizeResult.Failure(
+                _recordingOutputPath ?? string.Empty,
+                message,
+                _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
+                RecordingFailureCodes.FinalizationFailed);
         }
 
         try
@@ -745,7 +738,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     _recordingOutputPath ?? string.Empty,
                     drainFailure,
                     _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
-                    "recording-flashback-encode-drain-timeout");
+                    RecordingFailureCodes.FlashbackEncodeDrainTimeout);
             }
 
             // Check if the encoding loop crashed during the recording
@@ -753,13 +746,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (failure != null)
             {
                 Logger.Log($"FLASHBACK_RECORDING_FAIL type={failure.GetType().Name} error='{failure.Message}'");
-                return new FinalizeResult
-                {
-                    Succeeded = false,
-                    OutputPath = _recordingOutputPath ?? string.Empty,
-                    StatusMessage = $"Flashback recording failed: {failure.Message}",
-                    PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
-                };
+                return FinalizeResult.Failure(
+                    _recordingOutputPath ?? string.Empty,
+                    $"Flashback recording failed: {failure.Message}",
+                    _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>(),
+                    RecordingFailureCodes.FlashbackEncodeFailed);
             }
 
             // Use the PTS latched when the exact pre-boundary video packet retired.
@@ -772,7 +763,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 Succeeded = true,
                 OutputPath = _recordingOutputPath ?? string.Empty,
-                StatusMessage = "Flashback recording ready (single .ts file)",
+                StatusMessage = "Flashback recording ready for export",
                 PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
             };
         }
@@ -961,7 +952,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 CancelEncodingCts("stop_timeout");
                 CompletePendingForceRotateWithEmptyResult();
                 Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
-                return FinalizeResult.Failure(outputPath, "Stopped (flashback encode drain timed out)");
+                return FinalizeResult.Failure(
+                    outputPath,
+                    "Stopped (flashback encode drain timed out)",
+                    null,
+                    RecordingFailureCodes.FlashbackEncodeDrainTimeout);
             }
 
             try
@@ -977,7 +972,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (_encodingFailure != null)
         {
             Logger.Log($"FLASHBACK_SINK_STOP_FAIL type={_encodingFailure.GetType().Name} msg={_encodingFailure.Message}");
-            return FinalizeResult.Failure(outputPath, $"Stopped (flashback encode failed: {_encodingFailure.Message})");
+            return FinalizeResult.Failure(
+                outputPath,
+                $"Stopped (flashback encode failed: {_encodingFailure.Message})",
+                null,
+                RecordingFailureCodes.FlashbackEncodeFailed);
         }
 
         Logger.Log(
@@ -1027,7 +1026,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
         if (ReferenceEquals(completedTask, _encodingTask))
         {
-            ObserveEncodingTaskCompletion(_encodingTask);
+            _encodingFailure ??= EncodingTaskHelpers.ObserveCompletion(_encodingTask);
             FinalizeDisposeCore();
             return;
         }
@@ -1043,34 +1042,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return;
         }
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await encodingTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _encodingFailure ??= ex;
-            }
-            finally
-            {
-                FinalizeDisposeCore();
-                Logger.Log("FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
-            }
-        });
-    }
-
-    private void ObserveEncodingTaskCompletion(Task encodingTask)
-    {
-        try
-        {
-            encodingTask.GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            _encodingFailure ??= ex;
-        }
+        EncodingTaskHelpers.DrainDeferred(
+            encodingTask,
+            ex => _encodingFailure ??= ex,
+            FinalizeDisposeCore,
+            "FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
     }
 
     private void FinalizeDisposeCore()
@@ -1615,47 +1591,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return texture == IntPtr.Zero ? "null_texture" : null;
     }
 
+    // QueueAdmission owns the claim/high-water/rollback sequence shared with
+    // LibAvRecordingSink; these lanes supply only their own counters and log tag.
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _videoQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, "video", DecrementQueueDepth);
 
     private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _gpuQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, "gpu", DecrementQueueDepth);
 
     private static bool TryWriteAudioPacket(
         Channel<AudioSamplePacket> queue,
         AudioSamplePacket packet,
         ref int queueDepth,
         string queueName)
-    {
-        Interlocked.Increment(ref queueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            return true;
-        }
-
-        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth);
 
     private void TrackVideoQueueRejected(string reason)
     {
@@ -1834,21 +1783,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
+    // AtomicCounter owns the clamped CAS loop; this sink keeps its own underflow tag.
     private static void DecrementQueueDepth(ref int target, string queueName)
     {
-        while (true)
+        if (!AtomicCounter.TryDecrement(ref target))
         {
-            var current = Volatile.Read(ref target);
-            if (current <= 0)
-            {
-                Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={current - 1}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
-            {
-                return;
-            }
+            Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={Volatile.Read(ref target) - 1}");
         }
     }
 
@@ -2001,7 +1941,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 // Handle force-rotate requests from the export thread (must run on encoding thread)
                 if (Volatile.Read(ref _forceRotateRequested))
                 {
-                    if (ProcessPendingForceRotate(videoQueue, audioQueue, microphoneQueue, gpuQueue))
+                    if (DrainAndRotateForceRotateRequest(videoQueue, audioQueue, microphoneQueue, gpuQueue))
                     {
                         madeProgress = true;
                         continue;
@@ -2101,16 +2041,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_SINK_ENCODING_LOOP_FATAL type={ex.GetType().Name} msg={ex.Message}");
-            _encodingFailure = ex;
+            FailEncoding(ex);
             CompletePendingForceRotateWithEmptyResult();
-            lock (_sync) { _started = false; }
-
-            // Notify the owning service so it can surface the failure
-            try { _onFatalError?.Invoke(ex); }
-            catch (Exception callbackEx)
-            {
-                Logger.Log($"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
-            }
 
             // Register the active segment so PurgeAllSegments can clean it up
             if (_tsFilePath != null)
@@ -2363,13 +2295,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private bool RotateSegment(TimeSpan currentPts, string? preparedPath = null)
     {
-        string? completedPath = null;
+        var completedPath = _tsFilePath;
+        var completedStartPts = _segmentStartPts;
+        var completedStartBytes = Interlocked.Read(ref _segmentStartBytes);
+        var completedSegmentBytes = 0L;
         string? newPath = null;
         var encoderRotated = false;
         try
         {
-            completedPath = _tsFilePath;
-            var completedStartPts = _segmentStartPts;
             newPath = preparedPath ?? _bufferManager.GenerateSegmentPath();
 
             // RotateOutput flushes encoder queues, writes trailer, then resets
@@ -2378,8 +2311,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             var result = _rotateOutputOverride is null
                 ? _encoder.RotateOutput(newPath)
                 : _rotateOutputOverride(newPath);
-            var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));
             encoderRotated = true;
+            completedSegmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, completedStartBytes);
 
             _segmentStartPts = currentPts;
             _tsFilePath = newPath;
@@ -2390,7 +2323,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _bufferManager.MarkActiveSegmentStart(newPath, _segmentStartPts);
             Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);
 
-            _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);
+            _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, completedSegmentBytes);
 
             // Update disk bytes tracking.
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
@@ -2400,38 +2333,34 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             Logger.Log(
                 $"FLASHBACK_SINK_ROTATE new_segment='{Path.GetFileName(newPath)}' " +
-                $"prev_bytes={segmentBytes} " +
+                $"prev_bytes={completedSegmentBytes} " +
                 $"segment_start_ms={(long)currentPts.TotalMilliseconds}");
             return true;
         }
         catch (Exception ex)
         {
+            var terminalFailure = encoderRotated || !_encoder.IsEncoding;
             if (newPath != null && !encoderRotated)
             {
-                if (preparedPath != null)
+                try
                 {
-                    _bufferManager.AbandonReservedSegmentPath(newPath);
+                    if (preparedPath != null)
+                    {
+                        _bufferManager.AbandonReservedSegmentPath(newPath);
+                    }
+                    else
+                    {
+                        _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+                    }
                 }
-                else
+                catch (Exception cleanupEx)
                 {
-                    _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+                    Logger.Log($"FLASHBACK_SINK_ROTATE_ABANDON_FAIL path='{newPath}' type={cleanupEx.GetType().Name} msg={cleanupEx.Message}");
                 }
             }
 
             Interlocked.Increment(ref _segmentRotationFailures);
-
-            // A wedged rotation (e.g. persistent file-handle contention) never
-            // completes the active segment and eviction can't reclaim it. After
-            // repeated consecutive failures, fail the encoder so the fatal path
-            // (preserve + auto-restart, see CaptureService) gets a fresh sink and
-            // segment file rather than growing the active segment unbounded.
             var consecutive = Interlocked.Increment(ref _consecutiveRotationFailures);
-            if (consecutive >= MaxConsecutiveRotationFailures)
-            {
-                Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_ESCALATE consecutive={consecutive}");
-                FailEncoding(new IOException(
-                    $"Flashback segment rotation failed {consecutive} consecutive times: {ex.Message}", ex));
-            }
 
             // Register the segment that was open before the rotation attempt so its
             // data remains visible in the buffer index even though rotation failed.
@@ -2439,21 +2368,40 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 try
                 {
-                    var failPts = ResolveEncoderPts();
-                    if (failPts > _segmentStartPts)
+                    var failPts = encoderRotated ? currentPts : ResolveEncoderPts();
+                    if (failPts > completedStartPts)
                     {
-                        var failSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));
-                        _bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);
+                        var failSegmentBytes = encoderRotated
+                            ? completedSegmentBytes
+                            : NonNegativeByteDelta(_encoder.TotalBytesWritten, completedStartBytes);
+                        _bufferManager.OnSegmentCompleted(completedPath, completedStartPts, failPts, failSegmentBytes);
                         Logger.Log(
                             $"FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTERED " +
                             $"path='{completedPath}' frames={_encoder.VideoPacketsWritten} " +
-                            $"start_ms={(long)_segmentStartPts.TotalMilliseconds} end_ms={(long)failPts.TotalMilliseconds}");
+                            $"start_ms={(long)completedStartPts.TotalMilliseconds} end_ms={(long)failPts.TotalMilliseconds}");
                     }
                 }
                 catch (Exception segmentEx)
                 {
                     Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTER_FAIL type={segmentEx.GetType().Name} msg={segmentEx.Message}");
                 }
+            }
+
+            if (terminalFailure)
+            {
+                // Stop this drain before another packet can obscure the original
+                // rotation error with EnsureOpen. The encoding loop publishes it.
+                Logger.Log($"FLASHBACK_SINK_ROTATE_TERMINAL type={ex.GetType().Name} msg={ex.Message}");
+                throw;
+            }
+
+            // Only failures before the native transition can retain a usable
+            // output. Bound those retries so a stuck path cannot grow forever.
+            if (consecutive >= MaxConsecutiveRotationFailures)
+            {
+                Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_ESCALATE consecutive={consecutive}");
+                FailEncoding(new IOException(
+                    $"Flashback segment rotation failed {consecutive} consecutive times: {ex.Message}", ex));
             }
 
             // Advance _segmentStartPts to prevent infinite retry on every frame.
@@ -2631,7 +2579,16 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());
     }
 
-    private bool ProcessPendingForceRotate(
+    /// <summary>
+    /// Drains queued packets and rotates the active segment to service a pending force-rotate
+    /// request, if one exists.
+    /// Returns <see langword="true"/> on every skip/abort path (no pending request, the request
+    /// was already completed, the drain was aborted, or rotation could not begin) — the caller
+    /// should loop immediately without further processing. Returns <see langword="false"/> only
+    /// when the request was actually rotated (or abandoned) and completed via
+    /// <c>localRequest.Complete(...)</c>.
+    /// </summary>
+    private bool DrainAndRotateForceRotateRequest(
         Channel<VideoFramePacket> videoQueue,
         Channel<AudioSamplePacket> audioQueue,
         Channel<AudioSamplePacket>? microphoneQueue,
@@ -2676,101 +2633,27 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             var forceRotateDrainAborted = ShouldAbortForceRotateDrain(localRequest, "before_drain", inFlightCount);
             if (!forceRotateDrainAborted)
             {
-                // Snapshot the depth queued when this phase started. Below the
-                // guard ratio, producers may keep trickling packets in during the
-                // drain (see GetVideoEnqueueRejectReason) — bound by the snapshot
-                // so a sustained trickle can't extend the drain indefinitely.
-                // Anything enqueued after this point lands in the post-rotation
-                // segment, which is harmless (exports cut by PTS range).
-                var audioDrainBudget = Volatile.Read(ref _audioQueueDepth);
-                var audioRounds = 0;
-                while (DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    audioRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (audioRounds * AudioDrainBatchLimit >= audioDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "audio", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _audioQueueDepth), AudioDrainBatchLimit, "audio",
+                    () => DrainAudioPackets(audioQueue.Reader, AudioDrainBatchLimit), ref inFlightCount);
             }
             if (!forceRotateDrainAborted && _microphoneEnabled && microphoneQueue != null)
             {
-                var microphoneDrainBudget = Volatile.Read(ref _microphoneQueueDepth);
-                var microphoneRounds = 0;
-                while (DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    microphoneRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (microphoneRounds * AudioDrainBatchLimit >= microphoneDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "microphone", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _microphoneQueueDepth), AudioDrainBatchLimit, "microphone",
+                    () => DrainMicrophonePackets(microphoneQueue.Reader, AudioDrainBatchLimit), ref inFlightCount);
             }
             if (!forceRotateDrainAborted && gpuQueue != null)
             {
-                var gpuDrainBudget = Volatile.Read(ref _gpuQueueDepth);
-                var gpuRounds = 0;
-                while (DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    gpuRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (gpuRounds * GpuDrainBatchLimit >= gpuDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "gpu", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _gpuQueueDepth), GpuDrainBatchLimit, "gpu",
+                    () => DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit), ref inFlightCount);
             }
             if (!forceRotateDrainAborted)
             {
-                var videoDrainBudget = Volatile.Read(ref _videoQueueDepth);
-                var videoRounds = 0;
-                while (DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit))
-                {
-                    inFlightCount++;
-                    videoRounds++;
-                    if (ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount))
-                    {
-                        forceRotateDrainAborted = true;
-                        break;
-                    }
-
-                    if (videoRounds * VideoDrainBatchLimit >= videoDrainBudget)
-                    {
-                        break;
-                    }
-                }
-
-                forceRotateDrainAborted = forceRotateDrainAborted ||
-                    ShouldAbortForceRotateDrain(localRequest, "video", inFlightCount);
+                forceRotateDrainAborted = !TryDrainForceRotatePhase(
+                    localRequest, Volatile.Read(ref _videoQueueDepth), VideoDrainBatchLimit, "video",
+                    () => DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit), ref inFlightCount);
             }
 
             if (inFlightCount > 0)
@@ -2813,7 +2696,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 _bufferManager.AbandonReservedSegmentPath(localRequest.PreparedPath);
             }
-            localRequest.Complete(_bufferManager.GetValidSegmentPaths(localIn, localOut));
+            localRequest.Complete(_bufferManager.GetExistingCompletedSegmentPathsInRange(localIn, localOut));
             return false;
         }
         catch (Exception ex)
@@ -2829,6 +2712,35 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 Volatile.Write(ref _forceRotateDraining, false);
             }
         }
+    }
+
+    private static bool TryDrainForceRotatePhase(
+        ForceRotateRequest request,
+        int queuedAtStart,
+        int batchLimit,
+        string phase,
+        Func<bool> drainBatch,
+        ref int inFlightRounds)
+    {
+        // Bound each phase by its starting depth so producer trickle cannot extend
+        // it indefinitely. Preserve the initial drain attempt even for a zero snapshot.
+        var rounds = 0;
+        while (drainBatch())
+        {
+            inFlightRounds++;
+            rounds++;
+            if (ShouldAbortForceRotateDrain(request, phase, inFlightRounds))
+            {
+                return false;
+            }
+
+            if (rounds * batchLimit >= queuedAtStart)
+            {
+                break;
+            }
+        }
+
+        return !ShouldAbortForceRotateDrain(request, phase, inFlightRounds);
     }
 
     private bool TryCancelForceRotate(ForceRotateRequest request)
@@ -2868,8 +2780,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (pendingRequest != null)
         {
-            _bufferManager.AbandonReservedSegmentPath(pendingRequest.PreparedPath);
-            pendingRequest.CompleteEmpty();
+            try
+            {
+                _bufferManager.AbandonReservedSegmentPath(pendingRequest.PreparedPath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_ABANDON_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+            finally
+            {
+                pendingRequest.CompleteEmpty();
+            }
         }
     }
 

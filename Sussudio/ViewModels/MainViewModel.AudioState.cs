@@ -5,10 +5,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Sussudio.Controllers;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Capture;
 using Sussudio.Services.Telemetry;
+using Sussudio.Services.NativeXu;
 
 namespace Sussudio.ViewModels;
 
@@ -39,6 +41,7 @@ public partial class MainViewModel
     private int _audioEnabledChangeGeneration;
     private readonly SemaphoreSlim _audioMonitoringTransitionGate = new(1, 1);
     private int _audioInputSwitchGeneration;
+    private long _audioDeviceRefreshGeneration;
     private bool _suppressAudioPreviewEnabledChangeOperation;
     private bool _suppressMicrophoneMonitorUpdate;
 
@@ -118,6 +121,7 @@ public partial class MainViewModel
             previousMicrophoneId,
             savedMicrophoneId);
 
+        Interlocked.Increment(ref _audioDeviceRefreshGeneration);
         ReplaceCollection(AudioInputDevices, selection.AvailableDevices);
         ReplaceCollection(MicrophoneDevices, selection.AvailableDevices);
         SelectedAudioInputDevice = selection.SelectedAudioInputDevice;
@@ -136,11 +140,23 @@ public partial class MainViewModel
 
     private async Task RefreshAudioDeviceListAsync()
     {
+        if (Volatile.Read(ref _disposeState) != 0)
+        {
+            return;
+        }
+
+        var refreshGeneration = Interlocked.Increment(ref _audioDeviceRefreshGeneration);
         try
         {
+            var audioDevices = (await _deviceService.EnumerateAudioCaptureEndpointsAsync()).ToList();
+            if (Volatile.Read(ref _disposeState) != 0 ||
+                refreshGeneration != Volatile.Read(ref _audioDeviceRefreshGeneration))
+            {
+                return;
+            }
+
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
-            var audioDevices = (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList();
             var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
             var selection = AudioDeviceSelectionPolicy.SelectRefresh(
                 audioDevices,
@@ -264,7 +280,8 @@ public partial class MainViewModel
         Logger.Log($"  Audio device: {audioDeviceName ?? "(none)"}");
 
         var shouldRampMonitoring = IsPreviewing && _captureService.IsAudioPreviewActive;
-        var volumeTarget = _previewAudioVolumeTransitionController.PersistedVolumeTarget;
+        var volumeOperation = shouldRampMonitoring ? _previewAudioVolumeTransitionController.BeginTransition(reason) : default;
+        var volumeTarget = _previewAudioVolumeTransitionController.RequestedVolume;
         var traceSessionId = shouldRampMonitoring
             ? BeginAudioRampTraceSession(reason, volumeTarget)
             : 0;
@@ -272,7 +289,7 @@ public partial class MainViewModel
         {
             if (shouldRampMonitoring)
             {
-                await RampPreviewVolumeDownForAudioTransitionAsync(reason, traceSession: false);
+                await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, traceSession: false);
             }
 
             if (generation != 0 && generation != Volatile.Read(ref _audioInputSwitchGeneration))
@@ -280,7 +297,7 @@ public partial class MainViewModel
                 Logger.Log($"AUDIO_INPUT_SWITCH_SKIP reason=stale_generation captured={generation} current={Volatile.Read(ref _audioInputSwitchGeneration)}");
                 if (shouldRampMonitoring)
                 {
-                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);
                 }
 
                 return;
@@ -293,13 +310,21 @@ public partial class MainViewModel
             {
                 if (_captureService.IsAudioPreviewActive && IsAudioEnabled && IsAudioPreviewEnabled)
                 {
-                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, traceSession: false);
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, traceSession: false);
                 }
                 else
                 {
-                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);
                 }
             }
+        }
+        catch
+        {
+            if (shouldRampMonitoring)
+            {
+                RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);
+            }
+            throw;
         }
         finally
         {
@@ -310,21 +335,15 @@ public partial class MainViewModel
         }
     }
 
-    internal bool SuppressVolumeSave
-    {
-        get => _previewAudioVolumeTransitionController.SuppressVolumeSave;
-        set => _previewAudioVolumeTransitionController.SuppressVolumeSave = value;
-    }
+    internal PreviewAudioVolumeTransitionController PreviewVolumeController => _previewAudioVolumeTransitionController;
 
-    /// <summary>
-    /// When non-null, SaveSettings writes this value for PreviewVolume instead of the
-    /// current animation-transient property value. Set during preview volume
-    /// fade-in/out to prevent intermediate 0 values from corrupting persisted settings.
-    /// </summary>
-    internal double? VolumeSaveOverride
+    internal void SetPreviewVolumeFromUser(double value)
+        => _previewAudioVolumeTransitionController.SetUserVolume(value);
+
+    internal void DisposePreviewAudioVolume()
     {
-        get => _previewAudioVolumeTransitionController.VolumeSaveOverride;
-        set => _previewAudioVolumeTransitionController.VolumeSaveOverride = value;
+        _previewAudioVolumeTransitionController.Dispose();
+        _audioRampTraceRecorder.Dispose();
     }
 
     partial void OnPreviewVolumeChanged(double value)
@@ -388,14 +407,17 @@ public partial class MainViewModel
         Func<Task>? afterMonitoringStarted = null,
         CancellationToken cancellationToken = default)
     {
+        var volumeOperation = enabled
+            ? PrimePreviewVolumeForAudioTransition(reason)
+            : _previewAudioVolumeTransitionController.BeginTransition(reason);
         var traceSessionId = BeginAudioRampTraceSession(
             reason,
-            enabled ? _previewAudioVolumeTransitionController.PersistedVolumeTarget : 0);
+            enabled ? _previewAudioVolumeTransitionController.RequestedVolume : 0);
         try
         {
             if (enabled)
             {
-                var volumeTarget = PrimePreviewVolumeForAudioTransition(reason);
+                var volumeTarget = _previewAudioVolumeTransitionController.RequestedVolume;
                 await _sessionCoordinator.UpdateAudioMonitoringAsync(true, cancellationToken);
                 RecordAudioRampTracePoint("monitoring-started", reason, volumeTarget);
                 Exception? afterMonitoringStartedFailure = null;
@@ -414,11 +436,11 @@ public partial class MainViewModel
 
                 if (_captureService.IsAudioPreviewActive)
                 {
-                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeTarget, reason, cancellationToken, traceSession: false);
+                    await RampPreviewVolumeUpForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);
                 }
                 else
                 {
-                    RestorePreviewVolumeAfterUnavailableAudio(volumeTarget, reason);
+                    RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);
                 }
 
                 if (afterMonitoringStartedFailure != null)
@@ -429,7 +451,7 @@ public partial class MainViewModel
                 return;
             }
 
-            await RampPreviewVolumeDownForAudioTransitionAsync(reason, cancellationToken, traceSession: false);
+            await RampPreviewVolumeDownForAudioTransitionAsync(volumeOperation, reason, cancellationToken, traceSession: false);
             if (teardownCapture)
             {
                 await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
@@ -440,6 +462,11 @@ public partial class MainViewModel
                 await _sessionCoordinator.UpdateAudioMonitoringAsync(false, cancellationToken);
                 RecordAudioRampTracePoint("monitoring-stopped", reason, targetVolume: 0, note: "muted");
             }
+        }
+        catch
+        {
+            RestorePreviewVolumeAfterUnavailableAudio(volumeOperation, reason);
+            throw;
         }
         finally
         {
@@ -619,34 +646,33 @@ public partial class MainViewModel
         return Math.Clamp(level, 0, 1);
     }
 
-    private async Task RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)
+    private async Task<PreviewAudioVolumeOperation> RampPreviewVolumeDownForStopAsync(CancellationToken cancellationToken)
         => await _previewAudioVolumeTransitionController.RampDownForStopAsync(cancellationToken);
 
-    private async Task RampPreviewVolumeDownForAudioTransitionAsync(
+    private void RestorePreviewVolumeAfterStopFailed(PreviewAudioVolumeOperation operation)
+        => _previewAudioVolumeTransitionController.RestoreAfterUnavailableAudio(operation, "preview_stop_failed");
+
+    private Task RampPreviewVolumeDownForAudioTransitionAsync(
+        PreviewAudioVolumeOperation operation,
         string reason,
         CancellationToken cancellationToken = default,
         bool traceSession = true)
-        => await _previewAudioVolumeTransitionController.RampDownForAudioTransitionAsync(
-            reason,
-            cancellationToken,
-            traceSession);
+        => _previewAudioVolumeTransitionController.RampDownForAudioTransitionAsync(
+            operation, reason, cancellationToken, traceSession);
 
-    private double PrimePreviewVolumeForAudioTransition(string reason)
+    private PreviewAudioVolumeOperation PrimePreviewVolumeForAudioTransition(string reason)
         => _previewAudioVolumeTransitionController.PrimeForAudioTransition(reason);
 
-    private async Task RampPreviewVolumeUpForAudioTransitionAsync(
-        double volumeTarget,
+    private Task RampPreviewVolumeUpForAudioTransitionAsync(
+        PreviewAudioVolumeOperation operation,
         string reason,
         CancellationToken cancellationToken = default,
         bool traceSession = true)
-        => await _previewAudioVolumeTransitionController.RampUpForAudioTransitionAsync(
-            volumeTarget,
-            reason,
-            cancellationToken,
-            traceSession);
+        => _previewAudioVolumeTransitionController.RampUpForAudioTransitionAsync(
+            operation, reason, cancellationToken, traceSession);
 
-    private void RestorePreviewVolumeAfterUnavailableAudio(double volumeTarget, string reason)
-        => _previewAudioVolumeTransitionController.RestoreAfterUnavailableAudio(volumeTarget, reason);
+    private void RestorePreviewVolumeAfterUnavailableAudio(PreviewAudioVolumeOperation operation, string reason)
+        => _previewAudioVolumeTransitionController.RestoreAfterUnavailableAudio(operation, reason);
 
     internal void SavePreviewVolume() => SaveSettings();
 
@@ -754,7 +780,7 @@ public partial class MainViewModel
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainViewModel mic volume readback: {ex.Message}");
+                Logger.Log($"Suppressed exception in MainViewModel mic volume readback: {ex.Message}");
             }
         }
 

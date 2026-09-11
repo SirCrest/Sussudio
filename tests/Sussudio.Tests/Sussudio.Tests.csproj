@@ -13,9 +13,11 @@
     -->
     <IsTestProject>true</IsTestProject>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Json" />
+    <PackageReference Include="FFmpeg.AutoGen" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -23,16 +25,25 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Sussudio.Automation.Contracts\Sussudio.Automation.Contracts.csproj" />
     <!-- Execute the complete managed controller logic with test-only UI boundaries. -->
-    <Compile Include="..\..\Sussudio\Controllers\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\Dispatch\UiDispatchControllers.cs" Link="Production\UiDispatchControllers.cs" />
     <!-- Dependency-free production policies executed directly by their unit tests. -->
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewOutputSizePolicy.cs" Link="Production\PreviewOutputSizePolicy.cs" />
     <Compile Include="..\..\Sussudio\Services\Automation\PreviewPacingSlowStageClassifier.cs" Link="Production\PreviewPacingSlowStageClassifier.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Audio\AudioControlBindingController.cs" Link="Production\AudioControlBindingController.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Capture\CaptureBindingControllers.cs" Link="Production\CaptureBindingControllers.cs" />
+    <Compile Include="..\..\Sussudio\Services\Runtime\AppProcessStartup.cs" Link="Production\AppProcessStartup.cs" />
+    <Compile Include="..\..\Sussudio\Models\Recording\RecordingSettingsSelection.cs" Link="Production\RecordingSettingsSelection.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\ViewModel\MainViewModelRecordingSettingsController.cs" Link="Production\MainViewModelRecordingSettingsController.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Pure telemetry/geometry code is tested directly without loading WinUI. -->
     <Compile Include="..\..\Sussudio\Services\Preview\PreviewFrameTimeHistory.cs" Link="Production\PreviewFrameTimeHistory.cs" />
     <Compile Include="..\..\Sussudio\Controllers\Stats\FrameTimeGraphGeometry.cs" Link="Production\FrameTimeGraphGeometry.cs" />
+    <Compile Include="..\..\Sussudio\Services\Preview\PreviewInputViewCache.cs" Link="Production\PreviewInputViewCache.cs" />
+    <Compile Include="..\..\Sussudio\Controllers\ViewModel\PreviewAudioTransitionControllers.cs" Link="Production\PreviewAudioTransitionControllers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures\RecordingStructure\*.mp4" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\RecordingStructure\manifest.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

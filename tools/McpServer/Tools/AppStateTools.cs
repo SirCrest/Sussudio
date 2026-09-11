@@ -13,9 +13,10 @@ namespace McpServer.Tools;
 public static class AppStateTools
 {
     [McpServerTool, Description("Get the full application state snapshot including device, preview, recording, HDR, audio, and performance status")]
-    public static async Task<CallToolResult> get_app_state(PipeClient pipeClient)
+    public static async Task<CallToolResult> get_app_state(PipeClient pipeClient, CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -27,9 +28,10 @@ public static class AppStateTools
     }
 
     [McpServerTool(UseStructuredContent = true), Description("Get the raw structured application state snapshot for agent consumption.")]
-    public static async Task<CallToolResult> get_app_state_raw(PipeClient pipeClient)
+    public static async Task<CallToolResult> get_app_state_raw(PipeClient pipeClient, CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         return McpToolResultFactory.FromStructuredResponse(response, "Snapshot", "Snapshot data was not available.");
     }
 
@@ -46,14 +48,16 @@ public static class DiagnosticsTools
     [McpServerTool, Description("Get recent diagnostic events with severity, category, and timestamps")]
     public static async Task<CallToolResult> get_diagnostics(
         PipeClient pipeClient,
-        [Description("Maximum number of events to return (default: 50)")] int maxEvents = 50)
+        [Description("Maximum number of events to return (default: 50)")] int maxEvents = 50,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var payload = new Dictionary<string, object?>
         {
             ["maxEvents"] = maxEvents
         };
 
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetDiagnostics, payload, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -93,9 +97,10 @@ public static class DiagnosticsTools
 public static class MemoryDiagnosticsTools
 {
     [McpServerTool, Description("Get memory, GC, and thread pool diagnostics for the running application. Shows working set, managed heap, GC collection counts, pause time, fragmentation, and thread pool utilization.")]
-    public static async Task<CallToolResult> get_memory_diagnostics(PipeClient pipeClient)
+    public static async Task<CallToolResult> get_memory_diagnostics(PipeClient pipeClient, CancellationToken cancellationToken = default)
     {
-        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var response = await pipeClient.SendCommandAsync(AutomationCommandKind.GetSnapshot, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return McpToolResultFactory.FromResponse(response, GetMessage(response));
@@ -149,8 +154,10 @@ public static class DiagnosticSessionTools
         [Description("Capture PresentMon during the session.")] bool presentMon = false,
         [Description("Optional PresentMon executable path.")] string? presentMonPath = null,
         [Description("Verify the last recording after the session. Recording scenarios verify automatically.")] bool verifyRecording = false,
-        [Description("Leave preview/recording/flashback running after the session instead of restoring what this tool started.")] bool leaveRunning = false)
+        [Description("Leave preview/recording/flashback running after the session instead of restoring what this tool started.")] bool leaveRunning = false,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var result = await DiagnosticSessionRunner.RunAsync(
                 new DiagnosticSessionOptions
                 {
@@ -163,13 +170,10 @@ public static class DiagnosticSessionTools
                     VerifyRecording = verifyRecording,
                     LeaveRunning = leaveRunning
                 },
-                (command, payload, responseTimeoutMs) => pipeClient.SendCommandAsync(command, payload, responseTimeoutMs))
+                (command, payload, responseTimeoutMs, commandToken) => pipeClient.SendCommandAsync(command, payload, responseTimeoutMs, commandToken),
+                cancellationToken)
             .ConfigureAwait(false);
 
-        return new CallToolResult
-        {
-            Content = [new TextContentBlock { Text = DiagnosticSessionRunner.Format(result) }],
-            IsError = !result.Success
-        };
+        return McpToolResultFactory.FromText(DiagnosticSessionRunner.Format(result), isError: !result.Success);
     }
 }

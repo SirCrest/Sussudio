@@ -306,6 +306,7 @@ internal sealed class MainViewModelDeviceRefreshController
 {
     private readonly MainViewModelDeviceRefreshControllerContext _context;
     private readonly MainViewModelPreviewLifecycleController _previewLifecycleController;
+    private long _refreshRequestGeneration;
 
     public MainViewModelDeviceRefreshController(
         MainViewModelDeviceRefreshControllerContext context,
@@ -320,23 +321,40 @@ internal sealed class MainViewModelDeviceRefreshController
         bool throwOnScanFailure = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var requestGeneration = Interlocked.Increment(ref _refreshRequestGeneration);
         _context.SetStatusText("Scanning for devices...");
 
         try
         {
             var discoveryStopwatch = Stopwatch.StartNew();
-            var scanGeneration = _context.IncrementDeviceScanGeneration();
-            var previousAudioId = _context.GetSelectedAudioInputDeviceId();
-            var previousMicrophoneId = _context.GetSelectedMicrophoneDeviceId();
-            var previousDeviceId = _context.GetSelectedDeviceId();
             var discovery = await _context.EnumerateCaptureDeviceDiscoveryAsync()
                 .ConfigureAwait(true);
             cancellationToken.ThrowIfCancellationRequested();
+            if (requestGeneration != Volatile.Read(ref _refreshRequestGeneration))
+            {
+                if (throwOnScanFailure)
+                {
+                    throw new InvalidOperationException("Device scan superseded by a newer refresh.");
+                }
+
+                return;
+            }
+
+            if (!discovery.Succeeded)
+            {
+                throw new InvalidOperationException(discovery.Error);
+            }
+
             var audioDevices = discovery.AudioInputDevices.ToList();
             var devices = discovery.CaptureDevices;
             cancellationToken.ThrowIfCancellationRequested();
             discoveryStopwatch.Stop();
 
+            var previousAudioId = _context.GetSelectedAudioInputDeviceId();
+            var previousMicrophoneId = _context.GetSelectedMicrophoneDeviceId();
+            var previousDeviceId = _context.GetSelectedDeviceId();
+            // Only a committed scan invalidates probes for the retained device list.
+            var scanGeneration = _context.IncrementDeviceScanGeneration();
             _context.ApplyStartupAudioDeviceScan(
                 audioDevices,
                 devices,
@@ -358,6 +376,7 @@ internal sealed class MainViewModelDeviceRefreshController
                 await ApplySuccessfulDeviceScanAsync(
                     discoveryStopwatch.ElapsedMilliseconds,
                     previousDeviceId,
+                    requestGeneration,
                     cancellationToken);
             }
             else
@@ -368,12 +387,20 @@ internal sealed class MainViewModelDeviceRefreshController
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            _context.SetStatusText("Device scan canceled");
+            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
+            {
+                _context.SetStatusText("Device scan canceled");
+            }
+
             throw;
         }
         catch (Exception ex)
         {
-            _context.SetStatusText($"Error scanning devices: {ex.Message}");
+            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
+            {
+                _context.SetStatusText($"Error scanning devices: {ex.Message}");
+            }
+
             if (throwOnScanFailure)
             {
                 throw;
@@ -384,6 +411,7 @@ internal sealed class MainViewModelDeviceRefreshController
     private async Task ApplySuccessfulDeviceScanAsync(
         long discoveryElapsedMs,
         string? previousDeviceId,
+        long requestGeneration,
         CancellationToken cancellationToken)
     {
         var devices = _context.GetDevices();
@@ -416,7 +444,10 @@ internal sealed class MainViewModelDeviceRefreshController
         catch (Exception ex)
         {
             Logger.Log($"Auto-start preview failed after device scan: {ex.Message}");
-            _context.SetStatusText($"Preview failed to start: {ex.Message}");
+            if (requestGeneration == Volatile.Read(ref _refreshRequestGeneration))
+            {
+                _context.SetStatusText($"Preview failed to start: {ex.Message}");
+            }
         }
     }
 }
@@ -438,7 +469,7 @@ internal sealed class MainViewModelDeviceFormatProbeControllerContext
     public required Func<string?> GetSelectedResolution { get; init; }
     public required Func<double> GetSelectedFrameRate { get; init; }
     public required Func<MediaFormat?> GetSelectedFormat { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action<CaptureDevice, bool> RebuildSelectedDeviceCapabilities { get; init; }
     public required Func<MainViewModelDeviceFormatProbeRetargetApplier> CreateRetargetApplier { get; init; }
 }
@@ -474,8 +505,12 @@ internal sealed class MainViewModelDeviceFormatProbeController
 
             if (!e.Succeeded)
             {
-                _context.SetPendingSdrAutoSelectionForDeviceChange(false);
-                _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
+                if (string.Equals(_context.GetSelectedDevice()?.Id, target.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    _context.SetPendingSdrAutoSelectionForDeviceChange(false);
+                    _context.SetPendingSdrAutoFriendlyFrameRateBucket(null);
+                }
+
                 Logger.Log($"Format probe failed for {e.DeviceName}: {e.Error}");
                 return;
             }
@@ -517,14 +552,14 @@ internal sealed class MainViewModelDeviceFormatProbeController
                 Logger.Log($"Refreshing selected-device capabilities during active capture for {e.DeviceName} (preserveSelection={!allowProbeDrivenRetarget}).");
             }
 
-            _context.SetSuppressFormatChangeReinitialize(preserveActiveSelection);
-            try
+            if (preserveActiveSelection)
+            {
+                _context.ApplyCaptureSelectionWithoutReinitialize(
+                    () => _context.RebuildSelectedDeviceCapabilities(selectedDevice, false));
+            }
+            else
             {
                 _context.RebuildSelectedDeviceCapabilities(selectedDevice, false);
-            }
-            finally
-            {
-                _context.SetSuppressFormatChangeReinitialize(false);
             }
 
             var selectedResolution = _context.GetSelectedResolution();
@@ -566,7 +601,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplierContext
     public required Func<string, bool> AvailableResolutionsContains { get; init; }
     public required Action<bool> SetIsRebuildingModeOptions { get; init; }
     public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action RebuildFrameRateOptions { get; init; }
     public required Func<string, Task> ReinitializeDeviceAsync { get; init; }
     public required Func<Func<Task>, string, bool> EnqueueUiOperation { get; init; }
@@ -641,15 +676,7 @@ internal sealed class MainViewModelDeviceFormatProbeRetargetApplier
                 _context.SetIsRebuildingModeOptions(false);
             }
 
-            _context.SetSuppressFormatChangeReinitialize(true);
-            try
-            {
-                _context.RebuildFrameRateOptions();
-            }
-            finally
-            {
-                _context.SetSuppressFormatChangeReinitialize(false);
-            }
+            _context.ApplyCaptureSelectionWithoutReinitialize(_context.RebuildFrameRateOptions);
 
             _context.EnqueueUiOperation(
                 () => _context.ReinitializeDeviceAsync(retargetDecision.ReinitializeReason!),
@@ -784,8 +811,7 @@ internal sealed class MainViewModelCaptureModeOptionRebuildControllerContext
     public required Action<bool> SetIsRebuildingModeOptions { get; init; }
     public required Action<bool> SetIsApplyingAutomaticResolutionSelection { get; init; }
     public required Action<bool> SetIsApplyingAutomaticFrameRateSelection { get; init; }
-    public required Func<bool> IsSuppressFormatChangeReinitialize { get; init; }
-    public required Action<bool> SetSuppressFormatChangeReinitialize { get; init; }
+    public required Action<Action> ApplyCaptureSelectionWithoutReinitialize { get; init; }
     public required Action<double?> SetDetectedSourceFrameRate { get; init; }
     public required Action<string?> SetDetectedSourceFrameRateArg { get; init; }
     public required Action<string> SetSourceFrameRateOrigin { get; init; }
@@ -850,32 +876,14 @@ internal sealed class MainViewModelCaptureModeOptionRebuildController
             _context.ClearPendingSavedVideoFormat();
             if (_context.AvailableVideoFormats.Any(format => string.Equals(format, pendingSaved, StringComparison.OrdinalIgnoreCase)))
             {
-                var previousSuppress = _context.IsSuppressFormatChangeReinitialize();
-                _context.SetSuppressFormatChangeReinitialize(true);
-                try
-                {
-                    _context.SetSelectedVideoFormat(pendingSaved);
-                }
-                finally
-                {
-                    _context.SetSuppressFormatChangeReinitialize(previousSuppress);
-                }
+                _context.ApplyCaptureSelectionWithoutReinitialize(() => _context.SetSelectedVideoFormat(pendingSaved));
                 return;
             }
         }
 
         if (!_context.AvailableVideoFormats.Any(format => string.Equals(format, _context.GetSelectedVideoFormat(), StringComparison.OrdinalIgnoreCase)))
         {
-            var previousSuppress = _context.IsSuppressFormatChangeReinitialize();
-            _context.SetSuppressFormatChangeReinitialize(true);
-            try
-            {
-                _context.SetSelectedVideoFormat("Auto");
-            }
-            finally
-            {
-                _context.SetSuppressFormatChangeReinitialize(previousSuppress);
-            }
+            _context.ApplyCaptureSelectionWithoutReinitialize(() => _context.SetSelectedVideoFormat("Auto"));
         }
     }
 
@@ -1391,6 +1399,8 @@ internal sealed class MainViewModelFrameRateTimingResolver
 /// </summary>
 internal sealed class MainViewModelRecordingCapabilityControllerContext
 {
+    public Func<Task<EncoderSupport>> GetEncoderSupportAsync { get; init; } = FfmpegRuntimeLocator.GetEncoderSupportAsync;
+    public Func<Task<SplitEncodeSupport>> GetSplitEncodeSupportAsync { get; init; } = FfmpegRuntimeLocator.GetSplitEncodeSupportAsync;
     public required string DefaultRecordingFormat { get; init; }
     public required string HevcRecordingFormat { get; init; }
     public required string Av1RecordingFormat { get; init; }
@@ -1432,23 +1442,41 @@ internal sealed class MainViewModelRecordingCapabilityController
     }
 
     public void RebuildRecordingFormatOptions()
+        => RebuildRecordingFormatOptions(preserveSelectedFormat: false);
+
+    private void RebuildRecordingFormatOptions(bool preserveSelectedFormat)
     {
+        var requestedFormat = _context.GetSelectedRecordingFormat();
         var selection = RecordingSettingsSelectionPolicy.Select(
             _detectedRecordingFormats,
             _context.GetAvailableRecordingFormats(),
-            _context.GetSelectedRecordingFormat(),
+            requestedFormat,
             _context.IsHdrEnabled(),
             _context.DefaultRecordingFormat,
             _context.HevcRecordingFormat,
             _context.Av1RecordingFormat);
 
+        if (preserveSelectedFormat && !string.IsNullOrWhiteSpace(requestedFormat))
+        {
+            var formats = selection.AvailableFormats.ToList();
+            if (!formats.Contains(requestedFormat, StringComparer.OrdinalIgnoreCase)) formats.Add(requestedFormat);
+            selection = selection with { AvailableFormats = formats, SelectedFormat = requestedFormat };
+            if (!_detectedRecordingFormats.Contains(requestedFormat, StringComparer.OrdinalIgnoreCase))
+            {
+                _context.SetStatusText($"The selected recording format '{requestedFormat}' is unavailable in this FFmpeg runtime. Choose another format to change it.");
+            }
+        }
+
         _context.ReplaceAvailableRecordingFormats(selection.AvailableFormats);
 
         var previousSelection = _context.GetSelectedRecordingFormat();
-        _context.SetSelectedRecordingFormat(selection.SelectedFormat);
         if (string.Equals(previousSelection, selection.SelectedFormat, StringComparison.Ordinal))
         {
             _context.NotifySelectedRecordingFormatChanged();
+        }
+        else
+        {
+            _context.SetSelectedRecordingFormat(selection.SelectedFormat);
         }
 
         if (_context.IsHdrEnabled() &&
@@ -1469,7 +1497,7 @@ internal sealed class MainViewModelRecordingCapabilityController
 
     private async Task RefreshRecordingFormatCapabilitiesAsync()
     {
-        var support = await FfmpegRuntimeLocator.GetEncoderSupportAsync();
+        var support = await _context.GetEncoderSupportAsync();
         var formats = new List<string>();
 
         if (support.HasH264Nvenc)
@@ -1498,7 +1526,7 @@ internal sealed class MainViewModelRecordingCapabilityController
                 Logger.Log("FFMPEG_MISSING: encoder probe returned zero codecs. Recording unavailable.");
             }
 
-            RebuildRecordingFormatOptions();
+            RebuildRecordingFormatOptions(preserveSelectedFormat: true);
             Logger.Log($"Recording formats refreshed: {string.Join(", ", _detectedRecordingFormats)}");
         }
 
@@ -1517,27 +1545,40 @@ internal sealed class MainViewModelRecordingCapabilityController
 
     private async Task RefreshSplitEncodeCapabilitiesAsync()
     {
-        var modes = new List<string> { "Auto", "Disabled", "2-way", "3-way" };
-        var support = await FfmpegRuntimeLocator.GetSplitEncodeSupportAsync();
-        if (!support.Supports2Way)
+        SplitEncodeSupport support;
+        try
         {
-            modes.Remove("2-way");
+            support = await _context.GetSplitEncodeSupportAsync();
         }
-
-        if (!support.Supports3Way)
+        catch (Exception ex)
         {
-            modes.Remove("3-way");
+            Logger.Log($"SPLIT_ENCODE_PROBE_INCONCLUSIVE error='{ex.Message}'");
+            void ShowFailure() => _context.SetStatusText("Split encode availability could not be checked. Your selected mode is unchanged.");
+            if (_context.HasUiThreadAccess())
+            {
+                ShowFailure();
+            }
+            else if (!_context.TryEnqueueOnUiThread(ShowFailure))
+            {
+                Logger.Log("SPLIT_ENCODE_PROBE_FAILURE_UI_ENQUEUE_FAILED");
+            }
+            return;
         }
 
         void ApplyModes()
         {
-            _context.ReplaceAvailableSplitEncodeModes(modes);
-
-            if (!_context.AvailableSplitEncodeModesContains(_context.GetSelectedSplitEncodeMode()))
+            var modes = new List<string> { "Auto", "Disabled" };
+            if (support.Supports2Way) modes.Add("2-way");
+            if (support.Supports3Way) modes.Add("3-way");
+            // Read the selection on the UI thread after the asynchronous trial.
+            // Keeping it in the collection also prevents ComboBox fallback writes.
+            var selectedMode = _context.GetSelectedSplitEncodeMode();
+            if (!modes.Contains(selectedMode, StringComparer.OrdinalIgnoreCase))
             {
-                _context.SetSelectedSplitEncodeMode("Auto");
+                modes.Add(selectedMode);
+                _context.SetStatusText($"The selected split mode '{selectedMode}' is unavailable in this FFmpeg runtime. Choose another mode to change it.");
             }
-
+            _context.ReplaceAvailableSplitEncodeModes(modes);
             Logger.Log($"Split encode modes refreshed: {string.Join(", ", _context.GetAvailableSplitEncodeModes())}");
         }
 
@@ -1549,7 +1590,7 @@ internal sealed class MainViewModelRecordingCapabilityController
         {
             if (!_context.TryEnqueueOnUiThread(ApplyModes))
             {
-                Logger.Log($"SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED modes={modes.Count}");
+                Logger.Log("SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
             }
         }
     }

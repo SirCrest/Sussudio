@@ -282,19 +282,15 @@ internal static class AutomationPipeClient
         int responseTimeoutMs,
         string? authToken = null,
         CancellationToken cancellationToken = default)
-    {
-        var result = await SendCommandWithResultAsync(
+        => await SendCommandAsync(
                 pipeName,
-                commandName,
+                AutomationPipeProtocol.ResolveCommand(commandName),
                 payload,
                 connectTimeoutMs,
                 responseTimeoutMs,
                 authToken,
-                includeResponseElement: false,
                 cancellationToken)
             .ConfigureAwait(false);
-        return result.ResponseJson;
-    }
 
     internal static async Task<string> SendCommandAsync(
         string pipeName,
@@ -304,10 +300,28 @@ internal static class AutomationPipeClient
         int responseTimeoutMs,
         string? authToken = null,
         CancellationToken cancellationToken = default)
+        => await SendCommandAsync(
+                pipeName,
+                (int)kind,
+                payload,
+                connectTimeoutMs,
+                responseTimeoutMs,
+                authToken,
+                cancellationToken)
+            .ConfigureAwait(false);
+
+    private static async Task<string> SendCommandAsync(
+        string pipeName,
+        int commandValue,
+        object? payload,
+        int connectTimeoutMs,
+        int responseTimeoutMs,
+        string? authToken,
+        CancellationToken cancellationToken)
     {
         var result = await SendCommandWithResultAsync(
                 pipeName,
-                kind,
+                commandValue,
                 payload,
                 connectTimeoutMs,
                 responseTimeoutMs,
@@ -577,68 +591,59 @@ internal static class AutomationPipeClient
 
 internal static class AutomationCommandTransport
 {
-    public static async Task<JsonElement> SendCommandAsync(
+    // The kind-typed and name-typed overloads differ only in which command key they
+    // resolve the default timeout from and hand to the client; the unwrap and the two
+    // synthetic-error arms are shared through SendAndUnwrapAsync so the error contract
+    // cannot drift between them.
+    public static Task<JsonElement> SendCommandAsync(
         string pipeName,
         AutomationCommandKind kind,
         object? payload = null,
-        int? responseTimeoutOverrideMs = null,
-        int? responseTimeoutMs = null,
+        int? sessionResponseTimeoutMs = null,
+        int? callResponseTimeoutMs = null,
         AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
         CancellationToken cancellationToken = default)
-    {
-        var effectiveResponseTimeoutMs = responseTimeoutMs
-            ?? responseTimeoutOverrideMs
-            ?? AutomationPipeProtocol.GetDefaultResponseTimeout(kind);
+        => SendAndUnwrapAsync(
+            unknownCommandHandling,
+            () => AutomationPipeClient.SendCommandWithResultAsync(
+                pipeName,
+                kind,
+                payload,
+                AutomationPipeProtocol.DefaultConnectTimeoutMs,
+                callResponseTimeoutMs
+                    ?? sessionResponseTimeoutMs
+                    ?? AutomationPipeProtocol.GetDefaultResponseTimeout(kind),
+                includeResponseElement: true,
+                cancellationToken: cancellationToken));
 
-        try
-        {
-            var result = await AutomationPipeClient.SendCommandWithResultAsync(
-                    pipeName,
-                    kind,
-                    payload,
-                    AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                    effectiveResponseTimeoutMs,
-                    includeResponseElement: true,
-                    cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
-
-            return result.ResponseElement
-                ?? throw new JsonException("Automation pipe returned invalid JSON.");
-        }
-        catch (ArgumentException ex) when (unknownCommandHandling == AutomationUnknownCommandHandling.ReturnSyntheticError)
-        {
-            return AutomationSyntheticErrorResponse.Create(ex.Message, "unknown-command");
-        }
-        catch (Exception ex) when (AutomationSyntheticErrorResponse.CanCreateFromException(ex))
-        {
-            return AutomationSyntheticErrorResponse.Create(ex);
-        }
-    }
-
-    public static async Task<JsonElement> SendCommandAsync(
+    public static Task<JsonElement> SendCommandAsync(
         string pipeName,
         string commandName,
         object? payload = null,
-        int? responseTimeoutOverrideMs = null,
-        int? responseTimeoutMs = null,
+        int? sessionResponseTimeoutMs = null,
+        int? callResponseTimeoutMs = null,
         AutomationUnknownCommandHandling unknownCommandHandling = AutomationUnknownCommandHandling.ReturnSyntheticError,
         CancellationToken cancellationToken = default)
-    {
-        var effectiveResponseTimeoutMs = responseTimeoutMs
-            ?? responseTimeoutOverrideMs
-            ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName);
+        => SendAndUnwrapAsync(
+            unknownCommandHandling,
+            () => AutomationPipeClient.SendCommandWithResultAsync(
+                pipeName,
+                commandName,
+                payload,
+                AutomationPipeProtocol.DefaultConnectTimeoutMs,
+                callResponseTimeoutMs
+                    ?? sessionResponseTimeoutMs
+                    ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName),
+                includeResponseElement: true,
+                cancellationToken: cancellationToken));
 
+    private static async Task<JsonElement> SendAndUnwrapAsync(
+        AutomationUnknownCommandHandling unknownCommandHandling,
+        Func<Task<AutomationPipeCommandResult>> send)
+    {
         try
         {
-            var result = await AutomationPipeClient.SendCommandWithResultAsync(
-                    pipeName,
-                    commandName,
-                    payload,
-                    AutomationPipeProtocol.DefaultConnectTimeoutMs,
-                    effectiveResponseTimeoutMs,
-                    includeResponseElement: true,
-                    cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
+            var result = await send().ConfigureAwait(false);
 
             return result.ResponseElement
                 ?? throw new JsonException("Automation pipe returned invalid JSON.");

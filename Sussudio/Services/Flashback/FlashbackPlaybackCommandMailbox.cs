@@ -234,7 +234,7 @@ internal sealed class FlashbackPlaybackCommandMailbox
         }
     }
 
-    internal Command ResolveLatestPosition(Command command)
+    internal Command ResolveLatestPositionAndReleaseCoalescingSlot(Command command)
     {
         lock (_slotSync)
         {

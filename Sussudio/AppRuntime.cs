@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Management;
 using System.Runtime.CompilerServices;
@@ -141,7 +142,7 @@ public static class RuntimePaths
         return true;
     }
 
-    private static bool TryCreateDirectoryInfo(string startPath, out DirectoryInfo? directory)
+    private static bool TryCreateDirectoryInfo(string startPath, [NotNullWhen(true)] out DirectoryInfo? directory)
     {
         try
         {
@@ -257,8 +258,12 @@ public static class RuntimePaths
 // counted and reported in aggregate by the background writer.
 public static class Logger
 {
+    // Failures inside the logger itself report through Trace, never through
+    // Logger.Log: routing them back into this class would re-enter the write
+    // path that is already failing. Everywhere else in the app, diagnostics
+    // go to Logger.Log so they reach the log file operators actually read.
     private const int MaxDrainBatchEntries = 256;
-    private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("Sussudio_Debug.log");
+    private static readonly string LogFilePath;
 
     private static readonly object LockObject = new();
     private static readonly Channel<string> LogChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
@@ -296,18 +301,22 @@ public static class Logger
 #else
         VerboseEnabled = false;
 #endif
-        var fileIoOk = true;
-        try
+        LogFilePath = TryResolveLogFilePath(() => RuntimePaths.GetRepoLogFile("Sussudio_Debug.log"));
+        var fileIoOk = !string.IsNullOrEmpty(LogFilePath);
+        if (fileIoOk)
         {
-            RotatePriorLog();
-            var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
-            File.WriteAllText(LogFilePath, header);
-        }
-        catch
-        {
-            // Best-effort: Logger init must not throw — if the log file is
-            // locked we proceed without it. The InitState below records this.
-            fileIoOk = false;
+            try
+            {
+                RotatePriorLog();
+                var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
+                File.WriteAllText(LogFilePath, header);
+            }
+            catch
+            {
+                // Keep the resolved path so later writes can recover from a
+                // transient file lock. InitState still records the startup failure.
+                fileIoOk = false;
+            }
         }
 
         try
@@ -319,6 +328,31 @@ public static class Logger
         {
             LogWriterTask = Task.CompletedTask;
             InitState = LoggerInitState.WriterStartFailed;
+        }
+    }
+
+    internal static string TryResolveLogFilePath(Func<string> resolvePath)
+    {
+        try
+        {
+            return resolvePath();
+        }
+        catch (Exception ex)
+        {
+            TraceFallback($"Logger directory resolution failed: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
+    private static void TraceFallback(string message)
+    {
+        try
+        {
+            Trace.WriteLine(message);
+        }
+        catch
+        {
+            // A failing diagnostic listener must not break the logging fallback.
         }
     }
 
@@ -402,6 +436,12 @@ public static class Logger
 
     private static void WriteDirect(string entry)
     {
+        if (string.IsNullOrEmpty(LogFilePath))
+        {
+            TraceFallback(entry);
+            return;
+        }
+
         lock (LockObject)
         {
             try
@@ -423,7 +463,7 @@ public static class Logger
         }
 
         var mtime = File.GetLastWriteTime(LogFilePath);
-        var rotated = RuntimePaths.GetRepoLogFile($"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
+        var rotated = Path.Combine(Path.GetDirectoryName(LogFilePath)!, $"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
         try
         {
             if (File.Exists(rotated))
@@ -561,6 +601,7 @@ public static class Logger
         }
     }
 
+    /// <summary>Returns the log path, or an empty string if its directory could not be resolved.</summary>
     public static string GetLogFilePath() => LogFilePath;
 }
 

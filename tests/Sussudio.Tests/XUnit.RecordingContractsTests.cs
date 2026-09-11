@@ -150,7 +150,7 @@ public sealed class CoreRuntimeRecordingContractsTests
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -430,6 +430,10 @@ public sealed class RecordingModelContractsTests
         => global::Program.LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches();
 
     [Fact]
+    public Task LibAvRecordingP010EncodeRoundTrip()
+        => global::Program.LibAvRecordingSink_P010EncodeRoundTrip();
+
+    [Fact]
     public Task LibAvRecordingEncodingLoopAndPacketDrainsLiveWithSinkRoot()
         => global::Program.LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot();
 
@@ -486,7 +490,7 @@ public sealed class RecordingModelContractsTests
         finally
         {
             (manager as IDisposable)?.Dispose();
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         static void SetBackingField(object instance, string name, object value)
@@ -565,11 +569,11 @@ public sealed class RecordingModelContractsTests
 
     [Fact]
     public Task FlashbackBufferManagerValidSegmentLookupSkipsMissingFiles()
-        => global::Program.FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles();
+        => global::Program.FlashbackBufferManager_ResolvePlaybackSegmentPathWithFallback_SkipsMissingFiles();
 
     [Fact]
     public Task FlashbackBufferManagerStaleLeftEdgeLookupUsesOldestSegment()
-        => global::Program.FlashbackBufferManager_GetValidSegmentFileForPosition_StaleLeftEdgeUsesOldest();
+        => global::Program.FlashbackBufferManager_ResolvePlaybackSegmentPathWithFallback_StaleLeftEdgeUsesOldest();
 
     [Fact]
     public Task FlashbackBufferManagerGetNextSegmentFileWalksForwardThroughSegments()
@@ -588,8 +592,8 @@ public sealed class RecordingModelContractsTests
         => global::Program.FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments();
 
     [Fact]
-    public Task FlashbackBufferManagerGetValidSegmentPathsReturnsOverlappingSegments()
-        => global::Program.FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping();
+    public Task FlashbackBufferManagerGetExistingCompletedSegmentPathsInRangeReturnsOverlappingSegments()
+        => global::Program.FlashbackBufferManager_GetExistingCompletedSegmentPathsInRange_ReturnsOverlapping();
 
     [Fact]
     public Task FlashbackBufferManagerSegmentInfoSkipsMissingFiles()
@@ -655,178 +659,29 @@ public sealed class RecordingModelContractsTests
 public class RecordingArtifactManagerTests
 {
     [Fact]
-    public void ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
+    public async Task ArtifactManager_RollbackAsync_DeletesOnlyTheCurrentOutput()
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"sussudio-rollback-{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
         try
         {
-            var finalPath = Path.Combine(tempDir, "video.mp4");
-            File.WriteAllText(finalPath, "video-data");
+            var outputPath = Path.Combine(tempDir, "current.mp4");
+            var unrelatedPath = Path.Combine(tempDir, "existing-audio.m4a");
+            File.WriteAllBytes(outputPath, new byte[] { 1, 2 });
+            var unrelatedBytes = new byte[] { 3, 4 };
+            File.WriteAllBytes(unrelatedPath, unrelatedBytes);
 
             var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
-            var context = BuildRecordingContext(usePostMuxAudio: false, finalPath: finalPath);
+            var context = BuildRecordingContext(outputPath);
+            var rollback = manager.GetType().GetMethod("RollbackAsync")!;
+            await (Task)rollback.Invoke(manager, new object?[] { context, CancellationToken.None })!;
 
-            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
-                ?? throw new InvalidOperationException("FinalizeContext not found");
-            var result = finalizeMethod.Invoke(manager, new object?[] { context, true, null })!;
-
-            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
-            AssertEqual(finalPath, GetStringProperty(result, "OutputPath"), "OutputPath");
+            Assert.False(File.Exists(outputPath));
+            Assert.Equal(unrelatedBytes, File.ReadAllBytes(unrelatedPath));
         }
         finally
         {
-            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
-        }
-    }
-
-    [Fact]
-    public void ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails()
-    {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        try
-        {
-            var videoPath = Path.Combine(tempDir, "vid.mp4");
-            var audioPath = Path.Combine(tempDir, "aud.m4a");
-            var finalPath = Path.Combine(tempDir, "final.mp4");
-            File.WriteAllText(videoPath, "video-data");
-            File.WriteAllText(audioPath, "audio-data");
-            File.WriteAllBytes(finalPath, Array.Empty<byte>());
-
-            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
-            var context = BuildRecordingContext(
-                usePostMuxAudio: true,
-                videoPath: videoPath,
-                audioTempPath: audioPath,
-                finalPath: finalPath);
-
-            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
-                ?? throw new InvalidOperationException("FinalizeContext not found");
-            var result = finalizeMethod.Invoke(manager, new object?[] { context, false, "encoder error" })!;
-
-            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
-            var preserved = ((IEnumerable)GetPropertyValue(result, "PreservedArtifacts")!).Cast<object>().Select(path => (string)path).ToArray();
-            Assert.Equal(new[] { videoPath, audioPath }, preserved);
-
-            if (File.Exists(finalPath))
-            {
-                throw new InvalidOperationException("Expected empty final file to be deleted");
-            }
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
-        }
-    }
-
-    [Fact]
-    public void ArtifactManager_FinalizeContext_RejectsEmptyDirectOutput()
-    {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        try
-        {
-            var emptyFinalPath = Path.Combine(tempDir, "empty-final.mp4");
-            File.WriteAllBytes(emptyFinalPath, Array.Empty<byte>());
-
-            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
-            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
-                ?? throw new InvalidOperationException("FinalizeContext not found");
-
-            var directContext = BuildRecordingContext(usePostMuxAudio: false, finalPath: emptyFinalPath);
-            var directResult = finalizeMethod.Invoke(manager, new object?[] { directContext, true, null })!;
-            AssertEqual(false, GetBoolProperty(directResult, "Succeeded"), "Direct empty output finalize fails");
-            AssertContains(GetStringProperty(directResult, "StatusMessage"), "final output invalid");
-            AssertContains(GetStringProperty(directResult, "StatusMessage"), "output file is empty");
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
-        }
-    }
-
-    [Fact]
-    public void ArtifactManager_FinalizeContext_RejectsMissingPostMuxOutput()
-    {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        try
-        {
-            var videoPath = Path.Combine(tempDir, "vid.mp4");
-            var audioPath = Path.Combine(tempDir, "aud.m4a");
-            var missingFinalPath = Path.Combine(tempDir, "missing-final.mp4");
-            File.WriteAllText(videoPath, "video-data");
-            File.WriteAllText(audioPath, "audio-data");
-
-            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
-            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
-                ?? throw new InvalidOperationException("FinalizeContext not found");
-
-            var muxContext = BuildRecordingContext(
-                usePostMuxAudio: true,
-                videoPath: videoPath,
-                audioTempPath: audioPath,
-                finalPath: missingFinalPath);
-            var muxResult = finalizeMethod.Invoke(manager, new object?[] { muxContext, true, null })!;
-            AssertEqual(false, GetBoolProperty(muxResult, "Succeeded"), "Mux success with missing final output fails");
-            AssertContains(GetStringProperty(muxResult, "StatusMessage"), "output file is missing");
-            var preserved = ((IEnumerable)GetPropertyValue(muxResult, "PreservedArtifacts")!).Cast<object>().Select(path => (string)path).ToArray();
-            Assert.Equal(new[] { videoPath, audioPath }, preserved);
-            AssertEqual(true, File.Exists(videoPath), "Invalid mux final preserves video temp");
-            AssertEqual(true, File.Exists(audioPath), "Invalid mux final preserves audio temp");
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
-        }
-    }
-
-    [Fact]
-    public async Task ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled()
-    {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(tempDir);
-        try
-        {
-            var videoPath = Path.Combine(tempDir, "vid.mp4");
-            var audioPath = Path.Combine(tempDir, "aud.m4a");
-            var finalPath = Path.Combine(tempDir, "final.mp4");
-            File.WriteAllText(videoPath, "v");
-            File.WriteAllText(audioPath, "a");
-            File.WriteAllText(finalPath, "f");
-
-            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
-            var context = BuildRecordingContext(
-                usePostMuxAudio: true,
-                videoPath: videoPath,
-                audioTempPath: audioPath,
-                finalPath: finalPath);
-
-            var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
-                ?? throw new InvalidOperationException("RollbackAsync not found");
-            var task = rollbackMethod.Invoke(manager, new object?[] { context, CancellationToken.None }) as Task
-                ?? throw new InvalidOperationException("RollbackAsync did not return Task");
-            await task;
-
-            if (File.Exists(videoPath))
-            {
-                throw new InvalidOperationException("Expected video temp to be deleted");
-            }
-
-            if (File.Exists(audioPath))
-            {
-                throw new InvalidOperationException("Expected audio temp to be deleted");
-            }
-
-            if (File.Exists(finalPath))
-            {
-                throw new InvalidOperationException("Expected final output to be deleted");
-            }
-        }
-        finally
-        {
-            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
+            Directory.Delete(tempDir, recursive: true);
         }
     }
 
@@ -843,25 +698,18 @@ public class RecordingArtifactManagerTests
         await task;
     }
 
-    private static object BuildRecordingContext(
-        bool usePostMuxAudio,
-        string? videoPath = null,
-        string? audioTempPath = null,
-        string? finalPath = null)
+    private static object BuildRecordingContext(string outputPath)
     {
-        var settings = BuildSettings();
         var contextType = RequireType("Sussudio.Services.Contracts.RecordingContext");
         var context = RuntimeHelpers.GetUninitializedObject(contextType);
-        SetPropertyBackingField(context, "Settings", settings);
-        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(context, "Settings", BuildSettings());
         SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
         SetPropertyBackingField(context, "FrameRateArg", "60");
         SetPropertyBackingField(context, "EffectiveWidth", 1920u);
         SetPropertyBackingField(context, "EffectiveHeight", 1080u);
         SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
-        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
-        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
-        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
+        SetPropertyBackingField(context, "VideoOutputPath", outputPath);
+        SetPropertyBackingField(context, "FinalOutputPath", outputPath);
         SetPropertyBackingField(context, "HdrPipelineActive", false);
         return context;
     }
@@ -997,7 +845,6 @@ public class RecordingContractsTests
         Assert.Equal("30", (string)requestType.GetProperty("FrameRateArg")!.GetValue(request)!);
         Assert.Equal("nv12", (string)requestType.GetProperty("VideoInputPixelFormat")!.GetValue(request)!);
         Assert.False((bool)requestType.GetProperty("IsFullRangeInput")!.GetValue(request)!);
-        Assert.False((bool)requestType.GetProperty("UsePostMuxAudio")!.GetValue(request)!);
         Assert.True((bool)requestType.GetProperty("ReserveFinalOutputFile")!.GetValue(request)!);
     }
 
@@ -1288,8 +1135,9 @@ static partial class Program
 
         AssertContains(queueText, "public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
         AssertContains(queueText, "public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)");
-        AssertContains(queueText, "private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
-        AssertContains(queueText, "private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)");
+        AssertContains(
+            queueText,
+            "private bool TryEnqueueChannelPacket(\n        Channel<AudioSamplePacket> queue,\n        AudioSamplePacket packet,\n        ref int queueDepth,\n        ref long dropsBacklogEviction,\n        AudioChannelState channel)");
         AssertContains(queueText, "private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)");
         AssertContains(queueText, "private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);");
         AssertEqual(
@@ -1355,7 +1203,7 @@ static partial class Program
         AssertContains(verifierSource, "ffmpeg.avformat_open_input");
         AssertContains(verifierSource, "ffmpeg.avformat_find_stream_info");
         AssertContains(verifierSource, "ResolveStreamDurationSeconds");
-        AssertContains(verifierSource, "recording-audio-duration-mismatch");
+        AssertContains(verifierSource, "RecordingFailureCodes.AudioDurationMismatch");
         AssertContains(verifierSource, ".Failure(failureCode, detail, outputBytes)");
         AssertContains(verifierSource, ".WithTrackEvidence(requestedTracks, observedTracks)");
         AssertContains(verifierSource, ".Success(outputBytes)");
@@ -1364,38 +1212,10 @@ static partial class Program
     }
 
     internal static Task LibAvRecordingSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
-    {
-        var libAvSource = ReadLibAvRecordingSinkSource();
-        var encodingLoopText = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
-            .Replace("\r\n", "\n");
+        => Sussudio.Tests.LibAvRecordingDrainBehaviorTests.VerifyAudioInterleavingAsync();
 
-        AssertContains(libAvSource, "private const int VideoDrainBatchLimit = 24;");
-        AssertContains(libAvSource, "private const int AudioDrainBatchLimit = 128;");
-        AssertContains(libAvSource, "private const int GpuDrainBatchLimit = 16;");
-        AssertContains(libAvSource, "private const int CudaDrainBatchLimit = 16;");
-        AssertContains(libAvSource, "DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit)");
-        AssertContains(libAvSource, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
-        AssertContains(libAvSource, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
-        AssertContains(libAvSource, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(libAvSource, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(libAvSource, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
-
-        var loopBlock = ExtractSourceBlock(
-            encodingLoopText,
-            "private void EncodingLoop(CancellationToken cancellationToken)",
-            "            _encoder.FlushAndClose();");
-        AssertOccursBefore(loopBlock, "DrainAudioPackets(audioQueue.Reader)", "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
-        AssertOccursBefore(loopBlock, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)", "// Audio again catches samples");
-
-        var secondAudioDrainBlock = ExtractSourceBlock(
-            loopBlock,
-            "// Audio again catches samples",
-            "if (videoQueue.Reader.Completion.IsCompleted");
-        AssertContains(secondAudioDrainBlock, "DrainAudioPackets(audioQueue.Reader)");
-        AssertContains(secondAudioDrainBlock, "DrainMicrophonePackets(microphoneQueue.Reader)");
-
-        return Task.CompletedTask;
-    }
+    internal static Task LibAvRecordingSink_P010EncodeRoundTrip()
+        => Sussudio.Tests.LibAvRecordingDrainBehaviorTests.VerifyP010EncodeRoundTripAsync();
 
     internal static Task LibAvRecordingSink_EncodingLoopAndPacketDrainsLiveWithSinkRoot()
     {
@@ -1403,7 +1223,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "private void EncodingLoop(CancellationToken cancellationToken)");
-        AssertContains(rootText, "DrainAudioPackets(audioQueue.Reader)");
+        AssertContains(rootText, "DrainChannelPackets(audioQueue.Reader, ref _audioQueueDepth, _audioChannel)");
         AssertContains(rootText, "DrainCudaPackets(cudaQueue.Reader, CudaDrainBatchLimit)");
         AssertContains(rootText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
         AssertContains(rootText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
@@ -1422,8 +1242,7 @@ static partial class Program
         AssertContains(rootText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(rootText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
         AssertContains(rootText, "private unsafe bool DrainCudaPackets(ChannelReader<CudaFramePacket> reader, int maxPackets = int.MaxValue)");
-        AssertContains(rootText, "private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)");
-        AssertContains(rootText, "private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)");
+        AssertContains(rootText, "private bool DrainChannelPackets(ChannelReader<AudioSamplePacket> reader, ref int queueDepth, AudioChannelState channel)");
         AssertContains(rootText, "Marshal.Release(packet.Texture);");
         AssertContains(rootText, "ffmpeg.av_frame_free(&frame);");
         AssertContains(rootText, "ReturnVideoPacket(packet);");
@@ -1448,7 +1267,7 @@ static partial class Program
         AssertContains(rootText, "TaskCreationOptions.LongRunning");
         AssertContains(rootText, "LIBAV_SINK_START output='{context.FinalOutputPath}'");
         AssertContains(rootText, "private LibAvEncoderOptions CreateOptions(RecordingContext context)");
-        AssertContains(rootText, "SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode)");
+        AssertContains(rootText, "SplitEncodeMode = context.Settings.SplitEncodeMode");
         AssertContains(rootText, "private void InitializeVideoSessionQueues()");
         AssertContains(rootText, "_cudaQueue = Channel.CreateBounded<CudaFramePacket>");
         AssertContains(rootText, "_gpuQueue = Channel.CreateBounded<GpuFramePacket>");
@@ -1742,30 +1561,28 @@ static partial class Program
         AssertContains(libAvSource, "public long VideoSequenceGaps");
         AssertContains(libAvSource, "public long VideoQueueOldestFrameAgeMs");
         AssertContains(libAvSource, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
-        AssertContains(libAvSource, "public double VideoQueueLatencyP95Ms");
-        AssertContains(libAvSource, "public double VideoQueueLatencyP99Ms");
         AssertContains(libAvSource, "public long VideoBackpressureWaitMs");
         AssertContains(libAvSource, "public long VideoBackpressureEvents");
         AssertDoesNotContain(libAvSource, "_videoLatencyTracker.RecordBackpressure(backpressureStartTick");
         AssertContains(libAvSource, "_videoLatencyTracker.TrackEnqueueUnderLock(packet.EnqueueTick)");
         AssertContains(libAvSource, "_videoLatencyTracker.TrackDequeueUnderLock(packet.EnqueueTick)");
         AssertContains(libAvSource, "_videoLatencyTracker.RecordPacketDequeued(packet.EnqueueTick, packet.SequenceNumber)");
+        // The claim/high-water/rollback sequence now lives in QueueAdmission
+        // (behaviorally covered by QueueAdmissionTests) and is shared with
+        // FlashbackEncoderSink; each lane here supplies only its own counters and tag.
         AssertContains(libAvSource, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
-        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _videoQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(libAvSource, "AtomicMax.Update(ref _videoQueueMaxDepth, depth);");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, \"video\", DecrementQueueDepth)");
         AssertContains(libAvSource, "public int GpuQueueMaxDepth");
         AssertContains(libAvSource, "public int CudaQueueMaxDepth");
         AssertContains(libAvSource, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
-        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _gpuQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(libAvSource, "AtomicMax.Update(ref _gpuQueueMaxDepth, depth);");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, \"gpu\", DecrementQueueDepth)");
         AssertContains(libAvSource, "private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)");
-        AssertContains(libAvSource, "var depth = Interlocked.Increment(ref _cudaQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
-        AssertContains(libAvSource, "AtomicMax.Update(ref _cudaQueueMaxDepth, depth);");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref _cudaQueueDepth, \"cuda_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref _cudaQueueDepth, ref _cudaQueueMaxDepth, \"cuda\", DecrementQueueDepth)");
         AssertContains(libAvSource, "private static bool TryWriteAudioPacket(");
-        AssertContains(libAvSource, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertContains(libAvSource, "QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth)");
+        AssertDoesNotContain(libAvSource, "var depth = Interlocked.Increment(ref _videoQueueDepth);");
+        AssertDoesNotContain(libAvSource, "var depth = Interlocked.Increment(ref _gpuQueueDepth);");
+        AssertDoesNotContain(libAvSource, "var depth = Interlocked.Increment(ref _cudaQueueDepth);");
         AssertContains(libAvSource, "private static void DecrementQueueDepth(ref int target, string queueName)");
         AssertContains(libAvSource, "LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertContains(libAvSource, "private void SignalWork(string operation)");
@@ -1863,8 +1680,6 @@ static partial class Program
         AssertContains(flashbackSource, "public long VideoSequenceGaps");
         AssertContains(flashbackSource, "public long VideoQueueOldestFrameAgeMs");
         AssertContains(flashbackSource, "public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics");
-        AssertContains(flashbackSource, "public double VideoQueueLatencyP95Ms");
-        AssertContains(flashbackSource, "public double VideoQueueLatencyP99Ms");
         AssertContains(flashbackSource, "public long VideoBackpressureWaitMs");
         AssertContains(flashbackSource, "public long VideoBackpressureEvents");
         AssertDoesNotContain(flashbackSource, "_videoLatencyTracker.RecordBackpressure(backpressureStartTick");
@@ -2555,7 +2370,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(rootText, "public sealed class RecordingVerifier : IRecordingVerifier");
-        AssertContains(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
         AssertContains(rootText, "private static CadenceMetrics ComputeCadenceMetrics(");
         AssertContains(rootText, "private static double? TryGetFrameTimestampSeconds(JsonElement frame)");
         AssertContains(rootText, "private static double? TryGetJsonDouble(JsonElement element, string propertyName)");
@@ -2578,7 +2393,7 @@ static partial class Program
 
         AssertContains(rootText, "public async Task<RecordingVerificationResult> VerifyAsync(");
         AssertContains(rootText, "private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(");
-        AssertContains(rootText, "private async Task<CadenceMetrics?> AnalyzeCadenceMetricsAsync(");
+        AssertContains(rootText, "private async Task<CadenceProbeResult> AnalyzeCadenceMetricsAsync(");
         AssertContains(rootText, "private static Dictionary<string, string> ParseKeyValueOutput(string output)");
         AssertContains(rootText, "private static double? TryParseRational(string? value)");
         AssertContains(rootText, "private ProcessSpec CreateFfprobeProcessSpec(");
@@ -2780,7 +2595,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2805,7 +2620,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2839,7 +2654,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2871,7 +2686,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2903,7 +2718,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2935,7 +2750,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -2969,7 +2784,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3002,7 +2817,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3033,7 +2848,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3065,7 +2880,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3114,7 +2929,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3184,7 +2999,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3217,7 +3032,7 @@ static partial class Program
         }
         finally
         {
-            try { File.Delete(tempFile); } catch { }
+            global::Program.TryDeleteFile(tempFile);
         }
     }
 
@@ -3636,7 +3451,17 @@ static partial class Program
         AssertContains(backendSource, "public FlashbackBufferManager? BufferManager { get; set; }");
         AssertContains(backendSource, "public FlashbackEncoderSink? Sink { get; set; }");
         AssertContains(backendSource, "public FlashbackExporter? Exporter { get; set; }");
-        AssertContains(backendSource, "public FlashbackPlaybackController? PlaybackController { get; set; }");
+        var playbackProperty = ExtractDeclaredMemberCode(
+            backendSource,
+            "public FlashbackPlaybackController? PlaybackController");
+        AssertContains(playbackProperty, "get => Volatile.Read(ref _playbackController);");
+        AssertContains(playbackProperty, "set => ReplacePlaybackController(value);");
+        var replacePlaybackController = ExtractDeclaredMemberCode(
+            backendSource,
+            "private void ReplacePlaybackController(");
+        AssertContains(replacePlaybackController, "Interlocked.Increment(ref _playbackControllerGeneration)");
+        AssertContains(replacePlaybackController, "previous.StateChanged -= _playbackStateChangedHandler;");
+        AssertContains(replacePlaybackController, "controller.StateChanged += _playbackStateChangedHandler;");
         AssertContains(backendSource, "public CaptureSettings? SettingsSnapshot { get; set; }");
         AssertContains(backendSource, "public bool HasAnyResource");
         AssertContains(backendSource, "public bool PreserveSegmentsAfterFailedRecordingFinalize { get; private set; }");
@@ -3758,7 +3583,7 @@ static partial class Program
         // Stop must never throw — a wedged or self-join pipeline must not block reinit/preview-stop.
         // StopAndDisposeMjpegPipeline logs UNIFIED_VIDEO_MJPEG_STOP_TIMEOUT and forces cleanup.
         var unifiedVideoCapture = CreateInstance("Sussudio.Services.Capture.UnifiedVideoCapture");
-        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Capture.Mjpeg.ParallelMjpegDecodePipeline");
         var pipeline = CreateUninitializedObject(pipelineType);
         SeedPipelineStopFailureState(pipeline, pipelineType);
 
@@ -3878,17 +3703,17 @@ static partial class Program
         AssertContains(settingsText, "public Task UpdateFlashbackSettingsAsync(");
         AssertContains(settingsText, "_currentSettings.FlashbackBufferMinutes = bufferMinutes;");
         AssertContains(settingsText, "_flashbackBackend.PlaybackController.GpuDecodeEnabled = gpuDecode;");
-        AssertContains(settingsText, "public Task UpdateRecordingFormatAsync(");
-        AssertContains(settingsText, "await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken)");
+        AssertContains(settingsText, "internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(");
+        AssertContains(settingsText, "await _rebuildRecordingSettingsBackendAsync(transitionToken)");
         AssertContains(settingsText, "private async Task RebuildFlashbackPreviewBackendForSettingsChangeAsync(");
         AssertContains(settingsText, "await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: false)");
         AssertContains(settingsText, "var committedRebuildToken = CancellationToken.None;");
         AssertContains(settingsText, "await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, currentSettings, committedRebuildToken)");
         AssertContains(settingsText, "var previousSettings = CloneCaptureSettings(_currentSettings);");
-        AssertContains(settingsText, "FLASHBACK_FORMAT_CHANGE_ROLLBACK");
+        AssertContains(settingsText, "FLASHBACK_FORMAT_CHANGE");
+        AssertContains(settingsText, "{logPrefix}_ROLLBACK");
         AssertContains(settingsText, "private void UpdateEncodingSettings(CaptureSettings source)");
-        AssertContains(settingsText, "public Task CycleFlashbackEncoderSettingsAsync(");
-        AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
+        AssertContains(settingsText, "FLASHBACK_ENCODER_SETTINGS_CHANGE");
         AssertContains(backendResourcesText, "FLASHBACK_BUFFER_CLEANUP_PRESERVE_RECOVERY mode={mode} reason='{request.Reason}'");
         AssertContains(backendResourcesText, "FLASHBACK_BUFFER_CLEANUP_RETIRE mode={mode} reason='{request.Reason}'");
         AssertContains(backendResourcesText, "request.BufferManager.MarkSessionRetiredForStartupCleanup(request.Reason);");
@@ -4057,7 +3882,8 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
-        AssertContains(captureServiceText, "FinalizeResult.Failure(fallbackOutputPath, $\"Unified video recording stop failed: {ex.Message}\");");
+        AssertContains(captureServiceText, "$\"Unified video recording stop failed: {ex.Message}\",");
+        AssertContains(captureServiceText, "RecordingFailureCodes.UnifiedStopFailed);");
         AssertContains(captureServiceText, "StopUnifiedVideoRecordingForLibAvFinalizeAsync(");
         AssertContains(captureServiceText, "StopAndDisposeLibAvSinkForFinalizeAsync(");
         AssertContains(captureServiceText, "DisposeIdleLibAvPreviewResourcesAfterRecordingAsync(");
@@ -4355,7 +4181,7 @@ static partial class Program
         AssertContains(lifecycleText, "RecordingFinalizationRecoveryArtifacts.PreserveUnresolvedWithArtifacts(");
         AssertContains(lifecycleText, "var unresolvedResult = EnsureRecordingFailureRecovery(");
         AssertContains(lifecycleText, "private FinalizeResult FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
-        AssertContains(lifecycleText, "recording-program-audio-integrity-failed");
+        AssertContains(lifecycleText, "RecordingFailureCodes.ProgramAudioIntegrityFailed");
         AssertContains(libAvFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
         AssertContains(flashbackFinalizeText, "FoldRequestedProgramAudioIntegrityIntoFinalizeResult(");
         AssertContains(lifecycleText, "_recordingLifecyclePhase = RecordingLifecyclePhase.Finalizing;");
@@ -4472,11 +4298,17 @@ static partial class Program
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("MapNvencPreset not found.");
 
-        AssertEqual("p4", method.Invoke(null, new object?[] { null })!.ToString(), "null → p4");
-        AssertEqual("p4", method.Invoke(null, new object[] { "Auto" })!.ToString(), "Auto → p4");
-        AssertEqual("p1", method.Invoke(null, new object[] { "Fast" })!.ToString(), "Fast → p1");
-        AssertEqual("p7", method.Invoke(null, new object[] { "Slow" })!.ToString(), "Slow → p7");
-        AssertEqual("custom", method.Invoke(null, new object[] { "custom" })!.ToString(), "custom passthrough");
+        var presetType = RequireType("Sussudio.Models.NvencPreset");
+        foreach (var (name, expected) in new[]
+        {
+            ("Auto", "p4"), ("P1", "p1"), ("P2", "p2"), ("P3", "p3"),
+            ("P4", "p4"), ("P5", "p5"), ("P6", "p6"), ("P7", "p7"),
+            ("Fast", "p1"), ("Slow", "p7")
+        })
+        {
+            var preset = Enum.Parse(presetType, name);
+            AssertEqual(expected, method.Invoke(null, new[] { preset })!.ToString(), $"{name} maps to {expected}");
+        }
 
         return Task.CompletedTask;
     }
@@ -4502,7 +4334,7 @@ static partial class Program
         AssertContains(sourceText, "TryMapSplitEncodeMode(options.SplitEncodeMode, out var splitEncodeMode)");
         AssertContains(sourceText, "ffmpeg.av_opt_set_int(codecContext->priv_data, \"split_encode_mode\", splitEncodeMode, 0)");
         AssertContains(sourceText, "splitEncodeMode is 2 or 3");
-        AssertContains(sourceText, "public string SplitEncodeMode { get; init; } = \"Auto\";");
+        AssertContains(sourceText, "public SplitEncodeMode SplitEncodeMode { get; init; } = SplitEncodeMode.Auto;");
         AssertDoesNotContain(sourceText, "\"repeat_headers\"");
         // Suppression forwarder stays on LibAvEncoder for caller compatibility.
         AssertContains(sourceText, "internal static IDisposable SuppressRecoverableSeekFfmpegLogs()");
@@ -4511,7 +4343,7 @@ static partial class Program
         // Suppression implementation lives with FFmpeg runtime resolution and log callback routing.
         var suppressionText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
-        AssertContains(suppressionText, "internal static bool ShouldSuppressRecoverableSeekFfmpegLog(string message)");
+        AssertContains(suppressionText, "internal static bool TryConsumeRecoverableSeekFfmpegLog(string message)");
         AssertContains(suppressionText, "[ThreadStatic]\n    private static int _recoverableSeekLogSuppressionDepth;");
         AssertContains(suppressionText, "message.Contains(\"Could not find ref with POC\", StringComparison.Ordinal)");
         AssertContains(suppressionText, "message.Contains(\"Error constructing the frame RPS\", StringComparison.Ordinal)");
@@ -4848,7 +4680,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         var initializationText = rootText;
 
-        AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime = false)");
+        AssertContains(initializationText, "public static void InitializeFFmpeg(bool requireNativeRuntime)");
         AssertContains(initializationText, "public void Initialize(LibAvEncoderOptions options)");
         AssertContains(initializationText, "ThrowIfError(ffmpeg.avcodec_open2(_videoCodecCtx, codec, null), \"avcodec_open2\");");
         AssertContains(initializationText, "ApplyMuxerOptions(options.ContainerFormat, options.FragmentedMp4, &muxerOptions, \"open\");");
@@ -4927,8 +4759,8 @@ static partial class Program
         AssertContains(initializationText, "private void ApplyEncoderPrivateOptions(AVCodecContext* codecContext, LibAvEncoderOptions options)");
         AssertContains(initializationText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static string? GetVideoBitstreamFilterSpec(LibAvEncoderOptions options)");
-        AssertContains(initializationText, "private static string MapNvencPreset(string? preset)");
-        AssertContains(initializationText, "private static bool TryMapSplitEncodeMode(string? splitEncodeMode, out long value)");
+        AssertContains(initializationText, "private static string MapNvencPreset(NvencPreset preset)");
+        AssertContains(initializationText, "private static bool TryMapSplitEncodeMode(SplitEncodeMode splitEncodeMode, out long value)");
         AssertContains(initializationText, "private static AVRational ResolveFrameRate(LibAvEncoderOptions options)");
         AssertContains(initializationText, "private static bool IsSampleFormatSupported(AVCodec* codec, AVSampleFormat sampleFormat)");
         AssertEqual(
@@ -5230,8 +5062,8 @@ static partial class Program
                 ?? throw new InvalidOperationException("FlashbackBufferManager.OnSegmentCompleted not found.");
             var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
-            var getValidSegmentPaths = manager.GetType().GetMethod("GetValidSegmentPaths")
-                ?? throw new InvalidOperationException("FlashbackBufferManager.GetValidSegmentPaths not found.");
+            var getCompletedSegmentPaths = manager.GetType().GetMethod("GetExistingCompletedSegmentPathsInRange")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.GetExistingCompletedSegmentPathsInRange not found.");
             var getSegmentInfoList = manager.GetType().GetMethod("GetSegmentInfoList")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.GetSegmentInfoList not found.");
 
@@ -5261,7 +5093,7 @@ static partial class Program
                 2000L
             });
 
-            var paths = ((IEnumerable<string>)getValidSegmentPaths.Invoke(manager, new object[]
+            var paths = ((IEnumerable<string>)getCompletedSegmentPaths.Invoke(manager, new object[]
             {
                 TimeSpan.FromSeconds(15),
                 TimeSpan.FromSeconds(19)
@@ -5282,7 +5114,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -5384,7 +5216,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -5417,8 +5249,8 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-            try { Directory.Delete(outsideDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
+            global::Program.TryDeleteDirectory(outsideDir);
         }
 
         return Task.CompletedTask;
@@ -5450,8 +5282,8 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
-            try { Directory.Delete(outsideDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
+            global::Program.TryDeleteDirectory(outsideDir);
         }
 
         return Task.CompletedTask;
@@ -5491,7 +5323,7 @@ static partial class Program
         AssertContains(source, "public void UpdateLatestPts(TimeSpan pts)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
         AssertContains(source, "public void UpdateDiskBytes(long activeSegmentBytes)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
 
-        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        global::Program.TryDeleteDirectory(tempDir);
         return Task.CompletedTask;
     }
 
@@ -5532,7 +5364,7 @@ static partial class Program
         AssertContains(source, "FLASHBACK_PURGE_SKIP reason=disposed");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
 
-        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        global::Program.TryDeleteDirectory(tempDir);
         return Task.CompletedTask;
     }
 
@@ -5579,7 +5411,7 @@ static partial class Program
         AssertContains(source, "FLASHBACK_BUFFER_EVICT_SKIP reason=recovery_preserved");
         AssertContains(source, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
 
-        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        global::Program.TryDeleteDirectory(tempDir);
         return Task.CompletedTask;
     }
 
@@ -5657,11 +5489,11 @@ static partial class Program
         AssertContains(queryText, "public int SegmentCount");
         AssertContains(queryText, "public string? ActiveFilePath");
         AssertContains(queryText, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)");
-        AssertContains(queryText, "public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)");
+        AssertContains(queryText, "public string? ResolvePlaybackSegmentPathWithFallback(TimeSpan absolutePts)");
         AssertContains(queryText, "private static string? GetOldestExistingSegmentPath(IEnumerable<string> completedPaths)");
         AssertContains(queryText, "public string? GetNextSegmentFile(string currentPath)");
         AssertContains(queryText, "public TimeSpan? GetSegmentStartPts(string path)");
-        AssertContains(queryText, "public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)");
+        AssertContains(queryText, "public IReadOnlyList<string> GetExistingCompletedSegmentPathsInRange(TimeSpan inPoint, TimeSpan outPoint)");
         AssertContains(pathSafetyText, "private bool IsPathInSessionDirectory(string path)");
         AssertContains(pathSafetyText, "FlashbackSessionRecoveryScanner.EnsureTrailingDirectorySeparator");
         AssertContains(pathSafetyText, "FlashbackSessionRecoveryScanner.IsPathUnderDirectory(fullPath, sessionRoot)");
@@ -5765,7 +5597,7 @@ static partial class Program
         var manager = CreateInitializedBufferManager(tempDir);
 
         var source = ReadFlashbackBufferManagerSource();
-        AssertContains(source, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)\n        => GetValidSegmentFileForPosition(absolutePts);");
+        AssertContains(source, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)\n        => ResolvePlaybackSegmentPathWithFallback(absolutePts);");
 
         // Add 3 segments: 0-5s, 5-10s, 10-15s
         var seg0 = Path.Combine(tempDir, "seg0.ts");
@@ -5797,7 +5629,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles()
+    internal static Task FlashbackBufferManager_ResolvePlaybackSegmentPathWithFallback_SkipsMissingFiles()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -5810,7 +5642,7 @@ static partial class Program
         AddCompletedSegment(manager, missingOldest, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
         AddCompletedSegment(manager, existingFallback, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
 
-        var method = manager.GetType().GetMethod("GetValidSegmentFileForPosition")!;
+        var method = manager.GetType().GetMethod("ResolvePlaybackSegmentPathWithFallback")!;
 
         var fallback = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(2) }) as string;
         AssertEqual(existingFallback, fallback!, "Missing target should fall back to first existing completed segment");
@@ -5822,7 +5654,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_GetValidSegmentFileForPosition_StaleLeftEdgeUsesOldest()
+    internal static Task FlashbackBufferManager_ResolvePlaybackSegmentPathWithFallback_StaleLeftEdgeUsesOldest()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -5835,7 +5667,7 @@ static partial class Program
 
         AddCompletedSegment(manager, oldest, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
 
-        var method = manager.GetType().GetMethod("GetValidSegmentFileForPosition")!;
+        var method = manager.GetType().GetMethod("ResolvePlaybackSegmentPathWithFallback")!;
         var fallback = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(1) }) as string;
 
         AssertEqual(oldest, fallback!, "Position before first segment should use oldest existing segment, not active");
@@ -5972,7 +5804,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping()
+    internal static Task FlashbackBufferManager_GetExistingCompletedSegmentPathsInRange_ReturnsOverlapping()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -5992,7 +5824,7 @@ static partial class Program
         AddCompletedSegment(manager, s2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
         AddCompletedSegment(manager, s3, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(20), 500);
 
-        var method = manager.GetType().GetMethod("GetValidSegmentPaths")!;
+        var method = manager.GetType().GetMethod("GetExistingCompletedSegmentPathsInRange")!;
 
         var result = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(12) })!;
         AssertEqual(3, GetCountProperty(result), "3s-12s should span 3 segments");
@@ -6205,7 +6037,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6254,7 +6086,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6306,7 +6138,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6365,7 +6197,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6402,7 +6234,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6449,7 +6281,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6494,7 +6326,7 @@ static partial class Program
         }
         finally
         {
-            try { Directory.Delete(tempDir, true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6559,7 +6391,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6623,7 +6455,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6719,7 +6551,7 @@ static partial class Program
         {
             if (!string.IsNullOrWhiteSpace(activePath) && File.Exists(activePath))
             {
-                try { File.SetAttributes(activePath, FileAttributes.Normal); } catch { }
+                global::Program.TryClearReadOnlyAttribute(activePath);
             }
 
             if (manager is IDisposable disposable)
@@ -6727,7 +6559,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6779,7 +6611,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;
@@ -6847,7 +6679,7 @@ static partial class Program
                 disposable.Dispose();
             }
 
-            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            global::Program.TryDeleteDirectory(tempDir);
         }
 
         return Task.CompletedTask;

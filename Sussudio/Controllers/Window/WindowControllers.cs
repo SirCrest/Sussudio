@@ -514,16 +514,41 @@ internal sealed class WindowCloseLifecycleController
         return AwaitWindowCloseRequestAsync(completion.Task, closeCompletionTask);
     }
 
+    // RO_E_CLOSED / RPC_E_DISCONNECTED: the two HRESULTs a window that has
+    // already closed reports, whatever CLR exception type wraps them.
+    private const int WindowAlreadyClosedHResult = unchecked((int)0x80000013);
+    private const int WindowDisconnectedHResult = unchecked((int)0x80010108);
+
     public static bool IsCloseAlreadyInProgressException(Exception ex)
     {
-        if (ex is InvalidOperationException && string.IsNullOrWhiteSpace(ex.Message))
+        if (ex is null)
+        {
+            return false;
+        }
+
+        if (ex.HResult == WindowAlreadyClosedHResult || ex.HResult == WindowDisconnectedHResult)
         {
             return true;
         }
 
-        var message = ex.Message ?? string.Empty;
-        return message.IndexOf("closing", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               message.IndexOf("closed", StringComparison.OrdinalIgnoreCase) >= 0;
+        // WinUI raises a bare InvalidOperationException for a redundant Close().
+        // ObjectDisposedException derives from InvalidOperationException but always
+        // describes a disposed resource rather than window lifecycle, so it is
+        // excluded: its "Cannot access a closed stream" text used to match the
+        // substring test below and record an unrelated failure as a completed
+        // close, skipping the rethrow that would have surfaced it.
+        if (ex is not InvalidOperationException || ex is ObjectDisposedException)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(ex.Message))
+        {
+            return true;
+        }
+
+        return ex.Message.Contains("closing", StringComparison.OrdinalIgnoreCase) ||
+               ex.Message.Contains("closed", StringComparison.OrdinalIgnoreCase);
     }
 
     private Task GetCompletionTask(CancellationToken cancellationToken)
@@ -599,7 +624,7 @@ internal sealed class WindowCloseRequestController
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainWindow.RequestWindowClose: {ex.Message}");
+            Logger.Log($"Cleaning up and rethrowing from MainWindow.RequestWindowClose: {ex.Message}");
             _context.LifecycleController.ResetRequestedAfterFailure();
             _context.LifecycleController.CompleteRequest(ex);
             throw;
@@ -613,6 +638,7 @@ internal sealed class WindowAppClosingControllerContext
     public required Func<bool> IsRecording { get; init; }
     public required Func<bool> IsRecordingTransitioning { get; init; }
     public required Func<string> GetStatusText { get; init; }
+    public required Action<string> SetStatusText { get; init; }
     public required Func<Task<bool>> StopRecordingBeforeCloseAsync { get; init; }
     public required Func<ValueTask> PrepareForCloseAsync { get; init; }
     public required Func<bool> IsEmergencyClosePending { get; init; }
@@ -628,7 +654,10 @@ internal sealed class WindowAppClosingController
         _context = context;
     }
 
-    public async Task HandleClosingAsync(AppWindowClosingEventArgs args)
+    public Task HandleClosingAsync(AppWindowClosingEventArgs args)
+        => HandleClosingCoreAsync(() => args.Cancel = true);
+
+    private async Task HandleClosingCoreAsync(Action cancelClose)
     {
         LogWindowClosingTrigger();
 
@@ -639,7 +668,7 @@ internal sealed class WindowAppClosingController
             return;
         }
 
-        args.Cancel = true;
+        cancelClose();
         _context.LifecycleController.ClearRequested();
 
         if (!_context.LifecycleController.TryBeginRecordingStop())
@@ -675,6 +704,13 @@ internal sealed class WindowAppClosingController
             _context.LifecycleController.CompleteRequest();
             _context.RequestWindowClose();
         }
+        catch (Exception ex)
+        {
+            Logger.Log($"WINDOW_CLOSE_PREPARE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+            _context.LifecycleController.ResetRequestedAfterFailure();
+            _context.LifecycleController.CompleteRequest(ex);
+            _context.SetStatusText($"Close paused: {ex.Message} Close again to retry.");
+        }
         finally
         {
             _context.LifecycleController.EndRecordingStop();
@@ -694,7 +730,7 @@ internal sealed class WindowAppClosingController
         }
         catch (Exception logEx)
         {
-            System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
+            Logger.Log($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
         }
     }
 }
@@ -947,7 +983,7 @@ internal sealed class WindowShutdownCleanupController
         }
         catch (Exception logEx)
         {
-            Trace.TraceWarning($"WINDOW_CLOSED_TRIGGER log failed: {logEx.Message}");
+            Logger.Log($"WINDOW_CLOSED_TRIGGER log failed: {logEx.Message}");
         }
     }
 }

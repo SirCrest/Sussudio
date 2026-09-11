@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Contracts;
 using Sussudio.Services.Flashback;
 using Sussudio.Services.Gpu;
@@ -70,6 +72,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private long _lastVideoFrameArrivedTick;
     private Action<string>? _pixelFormatDetectedCallback;
     private int _pixelFormatObserverFired;
+    private PixelFormatObservation? _pixelFormatObservation;
+
+    // A format notification is evidence from an actual frame callback. It is
+    // sampled once per source session, not once per recording or for every frame.
+    internal sealed record PixelFormatObservation(string PixelFormat);
+
+    internal PixelFormatObservation? GetPixelFormatObservation()
+        => Volatile.Read(ref _pixelFormatObservation);
     private volatile bool _previewSuppressed;
     private readonly bool _pooledCpuFanoutEnabled =
         EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_CAPTURE_POOLED_FANOUT", 1, 0, 1) != 0;
@@ -377,6 +387,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
             Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
             Interlocked.Exchange(ref _visualCadenceCpuDataUnavailable, 0);
+            Volatile.Write(ref _pixelFormatObservation, null);
             Interlocked.Exchange(ref _pixelFormatObserverFired, 0);
             _frameLedger.Reset();
         }
@@ -461,9 +472,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             capture = _capture;
         }
 
-        readCts?.Cancel();
         try
         {
+            readCts?.Cancel();
             if (capture != null)
             {
                 await capture.StopAsync().ConfigureAwait(false);
@@ -561,7 +572,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         if (stopException != null)
         {
-            throw stopException;
+            ExceptionDispatchInfo.Capture(stopException).Throw();
         }
     }
 
@@ -965,6 +976,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             return;
         }
 
+        Volatile.Write(ref _pixelFormatObservation, new PixelFormatObservation(format));
         Volatile.Read(ref _pixelFormatDetectedCallback)?.Invoke(format);
     }
 
@@ -1109,13 +1121,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            var ownedLease = lease;
+            PooledVideoFrameLease? ownedLease = lease;
             try
             {
                 var previewPresentId = Interlocked.Increment(ref _livePreviewPresentId);
                 var submitTick = Stopwatch.GetTimestamp();
                 previewSink.SubmitRawFrameLease(
-                    ownedLease!,
+                    ownedLease,
                     isHdr: isP010,
                     PreviewFrameTracking.Default with
                     {
@@ -1349,7 +1361,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             {
                 try
                 {
-                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease!);
+                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease);
                     lease = null;
                     if (accepted)
                     {
@@ -1455,7 +1467,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             {
                 try
                 {
-                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease!);
+                    var accepted = leaseEncoder.TryEnqueueRawVideoFrame(lease);
                     lease = null;
                     RecordFlashbackRecordingAccounting(sink, accepted, frame.SequenceNumber, accepted ? null : "queue_rejected");
                     RecordFlashbackEnqueue(frame.SequenceNumber, accepted, accepted ? null : "queue_rejected");

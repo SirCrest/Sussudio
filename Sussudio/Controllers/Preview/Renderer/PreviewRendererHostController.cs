@@ -349,23 +349,21 @@ internal sealed class PreviewRendererHostController
 
     private void CleanupPreviewResources()
     {
-        // Clean up composition shadow
-        _context.ClearVideoFrameShadow();
-
-        // Clean up D3D11 preview
-        _context.PreviewContentGrid.SizeChanged -= _context.PreviewContentGridSizeChangedHandler;
         var renderer = _d3d11Renderer;
-        _d3d11Renderer = null;
+        // Keep the owner, sink, and callbacks available if Stop times out.
+        renderer?.Stop();
+        _context.ViewModel.SetPreviewFrameSink(null);
         if (renderer != null)
         {
+            renderer.Dispose();
             _context.GetPreviewSwapChainPanel().SizeChanged -= _context.PreviewSwapChainPanelSizeChangedHandler;
             renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
             renderer.RenderThreadFailed -= OnD3DRendererRenderThreadFailed;
-            renderer.Stop();
-            renderer.Dispose();
+            _d3d11Renderer = null;
         }
 
-        _context.ViewModel.SetPreviewFrameSink(null);
+        _context.ClearVideoFrameShadow();
+        _context.PreviewContentGrid.SizeChanged -= _context.PreviewContentGridSizeChangedHandler;
         _context.SetGpuPreviewVisibility(Visibility.Collapsed);
         _context.ResetPreviewSignalState();
 

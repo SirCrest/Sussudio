@@ -888,10 +888,10 @@ internal sealed partial class FlashbackPlaybackController
             if (newPosition < TimeSpan.Zero) newPosition = TimeSpan.Zero;
             PlaybackPosition = newPosition;
 
-            if (CheckOutPoint(newPosition, pacingStopwatch))
+            if (PauseIfOutPointReached(newPosition, pacingStopwatch))
                 return false;
 
-            if (CheckNearLiveEdge(decoder, videoFrame.Pts, newPosition, ref fileOpen))
+            if (SnapToLiveIfNearLiveEdge(decoder, videoFrame.Pts, newPosition, ref fileOpen))
                 return false;
 
             // Use the encoder's frame rate as ground truth - the buffer manager knows
@@ -950,7 +950,7 @@ internal sealed partial class FlashbackPlaybackController
         var currentOpenFilePath = _currentOpenFilePath;
 
         if (IsActiveFmp4Segment(currentOpenFilePath) &&
-            CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false))
+            SnapToLiveIfNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false))
         {
             pacingStopwatch.Restart();
             return false;
@@ -1241,7 +1241,7 @@ internal sealed partial class FlashbackPlaybackController
         RestoreLiveAfterPlaybackDecodeError(decoder, ref fileOpen);
     }
 
-    private bool CheckNearLiveEdge(
+    private bool SnapToLiveIfNearLiveEdge(
         FlashbackDecoder decoder,
         TimeSpan absoluteFramePts,
         TimeSpan bufferPosition,

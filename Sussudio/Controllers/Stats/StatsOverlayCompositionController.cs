@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Sussudio.Models;
+using Sussudio.Services.Capture.Mjpeg;
 using Sussudio.Services.Gpu;
 using Sussudio.Services.Preview;
 using Sussudio.ViewModels;
@@ -462,171 +463,12 @@ internal sealed class FrameTimeOverlayPresentationController
         }
     }
 }
-internal sealed class StatsDockControllerGraphContext
-{
-    public required Func<bool> IsWindowClosing { get; init; }
-    public required FrameworkElement StatsDockPanel { get; init; }
-    public required StatsOverlayDockTargetsContext DockTargets { get; init; }
-
-    /// <summary>
-    /// Derived rather than restated: the diagnostics panel is one of the dock targets, and the
-    /// row-chrome controllers read it often enough to be worth naming directly.
-    /// </summary>
-    public StackPanel DiagnosticsContent => DockTargets.DiagnosticsContent;
-
-    public required Func<StatsSnapshot> GetStatsSnapshot { get; init; }
-    public required Func<ParallelMjpegDecodePipeline.PipelineTimingMetrics?> GetMjpegPipelineTimingDetails { get; init; }
-    public required Func<int?> GetPendingPreviewFrameCount { get; init; }
-    public required Func<NvmlSnapshot?> GetNvmlSnapshot { get; init; }
-}
-
-internal sealed class StatsDockControllerGraph
-{
-    private readonly StatsDockRefreshController _refreshController;
-
-    public StatsDockControllerGraph(StatsDockControllerGraphContext context)
-    {
-        var statsDockPresentationController = CreatePresentationController(context);
-        var statsDockRowChromeController = CreateRowChromeController(context);
-        var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);
-        var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);
-        var statsHardwareRowsController = CreateHardwareRowsController(
-            context,
-            statsDockRowChromeController,
-            statsHardwareRowsInputProvider);
-
-        _refreshController = CreateRefreshController(
-            context,
-            statsDockPresentationController,
-            statsDiagnosticRowsController,
-            statsHardwareRowsController);
-    }
-
-    public void RefreshDock(StatsSnapshot snapshot, bool refreshDetails)
-        => _refreshController.RefreshDock(snapshot, refreshDetails);
-
-    public void RefreshDiagnosticsSection()
-        => _refreshController.RefreshDiagnosticsSection();
-
-    private static StatsDockPresentationController CreatePresentationController(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsDockPresentationController(new StatsDockPresentationControllerContext
-        {
-            SessionStateValue = context.DockTargets.SessionStateValue,
-            SummaryCaptureValue = context.DockTargets.SummaryCaptureValue,
-            SummaryPreviewValue = context.DockTargets.SummaryPreviewValue,
-            SummaryRecordingValue = context.DockTargets.SummaryRecordingValue,
-            SummaryRendererFpsValue = context.DockTargets.SummaryRendererFpsValue,
-            SummaryVisualFpsValue = context.DockTargets.SummaryVisualFpsValue,
-            SummaryLatencyValue = context.DockTargets.SummaryLatencyValue,
-            SourceResolutionValue = context.DockTargets.SourceResolutionValue,
-            SourceFrameRateValue = context.DockTargets.SourceFrameRateValue,
-            SourceHdrValue = context.DockTargets.SourceHdrValue,
-            SourceFormatValue = context.DockTargets.SourceFormatValue,
-            TelemetryOriginValue = context.DockTargets.TelemetryOriginValue,
-            AdcOnOffValue = context.DockTargets.AdcOnOffValue,
-            AdcGainValue = context.DockTargets.AdcGainValue,
-            SourceFpsValue = context.DockTargets.SourceFpsValue,
-            SourceExpectedFpsValue = context.DockTargets.SourceExpectedFpsValue,
-            SourceAvgValue = context.DockTargets.SourceAvgValue,
-            SourceP95Value = context.DockTargets.SourceP95Value,
-            SourceJitterValue = context.DockTargets.SourceJitterValue,
-            SourceGapsValue = context.DockTargets.SourceGapsValue,
-            SourceDropsValue = context.DockTargets.SourceDropsValue,
-            PreviewFpsValue = context.DockTargets.PreviewFpsValue,
-            PreviewAvgValue = context.DockTargets.PreviewAvgValue,
-            PreviewP95Value = context.DockTargets.PreviewP95Value,
-            PreviewSlowValue = context.DockTargets.PreviewSlowValue,
-            VisualFpsValue = context.DockTargets.VisualFpsValue,
-            VisualMotionValue = context.DockTargets.VisualMotionValue,
-            PipelineLatencyValue = context.DockTargets.PipelineLatencyValue,
-            SourceDeliveredValue = context.DockTargets.SourceDeliveredValue,
-            SourceDroppedValue = context.DockTargets.SourceDroppedValue,
-            RendererRenderedValue = context.DockTargets.RendererRenderedValue,
-            RendererDroppedValue = context.DockTargets.RendererDroppedValue,
-            PerformanceScoreValue = context.DockTargets.PerformanceScoreValue,
-            AvSyncDriftValue = context.DockTargets.AvSyncDriftValue,
-            AvSyncDriftRateValue = context.DockTargets.AvSyncDriftRateValue,
-            AvSyncEncoderRow = context.DockTargets.AvSyncEncoderRow,
-            AvSyncEncoderValue = context.DockTargets.AvSyncEncoderValue,
-            EncoderSection = context.DockTargets.EncoderSection,
-            EncoderCodecValue = context.DockTargets.EncoderCodecValue,
-            EncoderResolutionValue = context.DockTargets.EncoderResolutionValue,
-            EncoderFrameRateValue = context.DockTargets.EncoderFrameRateValue,
-            EncoderBitrateValue = context.DockTargets.EncoderBitrateValue
-        });
-    }
-
-    private static StatsDockRowChromeController CreateRowChromeController(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
-        {
-            ResourceOwner = context.StatsDockPanel
-        });
-    }
-
-    private static StatsDiagnosticRowsController CreateDiagnosticRowsController(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
-        {
-            ResourceOwner = context.StatsDockPanel,
-            DiagnosticsContent = context.DiagnosticsContent
-        });
-    }
-
-    private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(
-        StatsDockControllerGraphContext context)
-    {
-        return new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
-        {
-            GetMjpegPipelineTimingDetails = context.GetMjpegPipelineTimingDetails,
-            GetPendingPreviewFrameCount = context.GetPendingPreviewFrameCount,
-            GetNvmlSnapshot = context.GetNvmlSnapshot
-        });
-    }
-
-    private static StatsHardwareRowsController CreateHardwareRowsController(
-        StatsDockControllerGraphContext context,
-        StatsDockRowChromeController statsDockRowChromeController,
-        StatsHardwareRowsInputProvider statsHardwareRowsInputProvider)
-    {
-        return new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
-        {
-            DecodeSection = context.DockTargets.DecodeSection,
-            DecodeContent = context.DockTargets.DecodeContent,
-            GpuContent = context.DockTargets.GpuContent,
-            RowChromeController = statsDockRowChromeController,
-            InputProvider = statsHardwareRowsInputProvider
-        });
-    }
-
-    private static StatsDockRefreshController CreateRefreshController(
-        StatsDockControllerGraphContext context,
-        StatsDockPresentationController statsDockPresentationController,
-        StatsDiagnosticRowsController statsDiagnosticRowsController,
-        StatsHardwareRowsController statsHardwareRowsController)
-    {
-        return new StatsDockRefreshController(new StatsDockRefreshControllerContext
-        {
-            IsWindowClosing = context.IsWindowClosing,
-            IsStatsDockVisible = () => context.StatsDockPanel.Visibility == Visibility.Visible,
-            IsDiagnosticsSectionVisible = () => context.DiagnosticsContent.Visibility == Visibility.Visible,
-            GetStatsSnapshot = context.GetStatsSnapshot,
-            DockPresentationController = statsDockPresentationController,
-            DiagnosticRowsController = statsDiagnosticRowsController,
-            HardwareRowsController = statsHardwareRowsController
-        });
-    }
-}
 
 internal sealed class StatsOverlayCompositionController : IDisposable
 {
     private readonly StatsOverlayCompositionControllerContext _context;
     private readonly StatsOverlayController _statsOverlayController;
-    private readonly StatsDockControllerGraph _statsDockControllerGraph;
+    private readonly StatsDockRefreshController _statsDockRefreshController;
     private readonly StatsSnapshotProvider _statsSnapshotProvider;
     private readonly StatsUiSampler _sampler;
     private readonly DispatcherQueueTimer _statsPollTimer;
@@ -664,7 +506,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
             Log = context.Shell.Log
         });
         _frameTimeOverlayPresentationController = CreateFrameTimeOverlayPresentationController(context);
-        _statsDockControllerGraph = CreateDockControllerGraph(context);
+        _statsDockRefreshController = CreateDockRefreshController(context);
         _statsOverlayController = CreateOverlayController(context);
         _statsSectionChromeController = CreateSectionChromeController(context);
     }
@@ -712,8 +554,8 @@ internal sealed class StatsOverlayCompositionController : IDisposable
     public void HideDockPanel(bool immediate = false)
         => _statsOverlayController.HideDockPanel(immediate);
 
-    public StatsSnapshot GetStatsSnapshot()
-        => _sampler.GetSnapshot();
+    public StatsSnapshot RefreshStatsIfDueAndGetSnapshot()
+        => _sampler.RefreshIfDueAndGetSnapshot();
 
     public IDisposable SubscribeToStats(Action<StatsSnapshot> receiveSnapshot)
         => _sampler.Subscribe(sample => receiveSnapshot(sample.Snapshot));
@@ -761,7 +603,7 @@ internal sealed class StatsOverlayCompositionController : IDisposable
             IsPreviewing = context.SnapshotSources.IsPreviewing,
             SetStatsVisible = context.Shell.SetStatsVisible,
             Sampler = _sampler,
-            UpdateStatsDock = _statsDockControllerGraph.RefreshDock,
+            UpdateStatsDock = _statsDockRefreshController.RefreshDock,
             UpdateFrameTimeOverlay = UpdateFrameTimeOverlay,
             SetGraphActive = _frameTimeGraph.SetActive
         });
@@ -773,21 +615,88 @@ internal sealed class StatsOverlayCompositionController : IDisposable
         {
             StatsDockPanel = context.Shell.StatsDockPanel,
             DiagnosticsContent = context.DockTargets.DiagnosticsContent,
-            RefreshDiagnosticsSection = _statsDockControllerGraph.RefreshDiagnosticsSection
+            RefreshDiagnosticsSection = _statsDockRefreshController.RefreshDiagnosticsSection
         });
     }
 
-    private StatsDockControllerGraph CreateDockControllerGraph(StatsOverlayCompositionControllerContext context)
+    private StatsDockRefreshController CreateDockRefreshController(StatsOverlayCompositionControllerContext context)
     {
-        return new StatsDockControllerGraph(new StatsDockControllerGraphContext
+        var statsDockPresentationController = new StatsDockPresentationController(context.DockTargets);
+        var statsDockRowChromeController = CreateRowChromeController(context);
+        var statsDiagnosticRowsController = CreateDiagnosticRowsController(context);
+        var statsHardwareRowsInputProvider = CreateHardwareRowsInputProvider(context);
+        var statsHardwareRowsController = CreateHardwareRowsController(
+            context,
+            statsDockRowChromeController,
+            statsHardwareRowsInputProvider);
+
+        return CreateRefreshController(
+            context,
+            statsDockPresentationController,
+            statsDiagnosticRowsController,
+            statsHardwareRowsController);
+    }
+
+    private static StatsDockRowChromeController CreateRowChromeController(
+        StatsOverlayCompositionControllerContext context)
+    {
+        return new StatsDockRowChromeController(new StatsDockRowChromeControllerContext
         {
-            IsWindowClosing = context.Shell.IsWindowClosing,
-            StatsDockPanel = context.Shell.StatsDockPanel,
-            DockTargets = context.DockTargets,
-            GetStatsSnapshot = GetStatsSnapshot,
+            ResourceOwner = context.Shell.StatsDockPanel
+        });
+    }
+
+    private static StatsDiagnosticRowsController CreateDiagnosticRowsController(
+        StatsOverlayCompositionControllerContext context)
+    {
+        return new StatsDiagnosticRowsController(new StatsDiagnosticRowsControllerContext
+        {
+            ResourceOwner = context.Shell.StatsDockPanel,
+            DiagnosticsContent = context.DockTargets.DiagnosticsContent
+        });
+    }
+
+    private static StatsHardwareRowsInputProvider CreateHardwareRowsInputProvider(
+        StatsOverlayCompositionControllerContext context)
+    {
+        return new StatsHardwareRowsInputProvider(new StatsHardwareRowsInputProviderContext
+        {
             GetMjpegPipelineTimingDetails = context.HardwareSources.GetMjpegPipelineTimingDetails,
             GetPendingPreviewFrameCount = context.HardwareSources.GetPendingPreviewFrameCount,
             GetNvmlSnapshot = context.HardwareSources.GetNvmlSnapshot
+        });
+    }
+
+    private static StatsHardwareRowsController CreateHardwareRowsController(
+        StatsOverlayCompositionControllerContext context,
+        StatsDockRowChromeController statsDockRowChromeController,
+        StatsHardwareRowsInputProvider statsHardwareRowsInputProvider)
+    {
+        return new StatsHardwareRowsController(new StatsHardwareRowsControllerContext
+        {
+            DecodeSection = context.DockTargets.DecodeSection,
+            DecodeContent = context.DockTargets.DecodeContent,
+            GpuContent = context.DockTargets.GpuContent,
+            RowChromeController = statsDockRowChromeController,
+            InputProvider = statsHardwareRowsInputProvider
+        });
+    }
+
+    private StatsDockRefreshController CreateRefreshController(
+        StatsOverlayCompositionControllerContext context,
+        StatsDockPresentationController statsDockPresentationController,
+        StatsDiagnosticRowsController statsDiagnosticRowsController,
+        StatsHardwareRowsController statsHardwareRowsController)
+    {
+        return new StatsDockRefreshController(new StatsDockRefreshControllerContext
+        {
+            IsWindowClosing = context.Shell.IsWindowClosing,
+            IsStatsDockVisible = () => context.Shell.StatsDockPanel.Visibility == Visibility.Visible,
+            IsDiagnosticsSectionVisible = () => context.DockTargets.DiagnosticsContent.Visibility == Visibility.Visible,
+            RefreshStatsIfDueAndGetSnapshot = RefreshStatsIfDueAndGetSnapshot,
+            DockPresentationController = statsDockPresentationController,
+            DiagnosticRowsController = statsDiagnosticRowsController,
+            HardwareRowsController = statsHardwareRowsController
         });
     }
 
@@ -846,52 +755,6 @@ internal enum StatsDockSimpleRowPool
     Gpu
 }
 
-internal sealed class StatsDockPresentationControllerContext
-{
-    public required TextBlock SessionStateValue { get; init; }
-    public required TextBlock SummaryCaptureValue { get; init; }
-    public required TextBlock SummaryPreviewValue { get; init; }
-    public required TextBlock SummaryRecordingValue { get; init; }
-    public required TextBlock SummaryRendererFpsValue { get; init; }
-    public required TextBlock SummaryVisualFpsValue { get; init; }
-    public required TextBlock SummaryLatencyValue { get; init; }
-    public required TextBlock SourceResolutionValue { get; init; }
-    public required TextBlock SourceFrameRateValue { get; init; }
-    public required TextBlock SourceHdrValue { get; init; }
-    public required TextBlock SourceFormatValue { get; init; }
-    public required TextBlock TelemetryOriginValue { get; init; }
-    public required TextBlock AdcOnOffValue { get; init; }
-    public required TextBlock AdcGainValue { get; init; }
-    public required TextBlock SourceFpsValue { get; init; }
-    public required TextBlock SourceExpectedFpsValue { get; init; }
-    public required TextBlock SourceAvgValue { get; init; }
-    public required TextBlock SourceP95Value { get; init; }
-    public required TextBlock SourceJitterValue { get; init; }
-    public required TextBlock SourceGapsValue { get; init; }
-    public required TextBlock SourceDropsValue { get; init; }
-    public required TextBlock PreviewFpsValue { get; init; }
-    public required TextBlock PreviewAvgValue { get; init; }
-    public required TextBlock PreviewP95Value { get; init; }
-    public required TextBlock PreviewSlowValue { get; init; }
-    public required TextBlock VisualFpsValue { get; init; }
-    public required TextBlock VisualMotionValue { get; init; }
-    public required TextBlock PipelineLatencyValue { get; init; }
-    public required TextBlock SourceDeliveredValue { get; init; }
-    public required TextBlock SourceDroppedValue { get; init; }
-    public required TextBlock RendererRenderedValue { get; init; }
-    public required TextBlock RendererDroppedValue { get; init; }
-    public required TextBlock PerformanceScoreValue { get; init; }
-    public required TextBlock AvSyncDriftValue { get; init; }
-    public required TextBlock AvSyncDriftRateValue { get; init; }
-    public required UIElement AvSyncEncoderRow { get; init; }
-    public required TextBlock AvSyncEncoderValue { get; init; }
-    public required UIElement EncoderSection { get; init; }
-    public required TextBlock EncoderCodecValue { get; init; }
-    public required TextBlock EncoderResolutionValue { get; init; }
-    public required TextBlock EncoderFrameRateValue { get; init; }
-    public required TextBlock EncoderBitrateValue { get; init; }
-}
-
 internal sealed class StatsDockPresentationController
 {
     private static readonly SolidColorBrush MetricNeutralBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xF1, 0xF1, 0xF1));
@@ -900,9 +763,9 @@ internal sealed class StatsDockPresentationController
     private static readonly SolidColorBrush MetricWarningBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0xC8, 0x57));
     private static readonly SolidColorBrush MetricBadBrush = new(Windows.UI.Color.FromArgb(0xFF, 0xFF, 0x6B, 0x6B));
 
-    private readonly StatsDockPresentationControllerContext _context;
+    private readonly StatsOverlayDockTargetsContext _context;
 
-    public StatsDockPresentationController(StatsDockPresentationControllerContext context)
+    public StatsDockPresentationController(StatsOverlayDockTargetsContext context)
     {
         _context = context;
     }
@@ -1263,7 +1126,7 @@ internal sealed class StatsDockRefreshControllerContext
     public required Func<bool> IsWindowClosing { get; init; }
     public required Func<bool> IsStatsDockVisible { get; init; }
     public required Func<bool> IsDiagnosticsSectionVisible { get; init; }
-    public required Func<StatsSnapshot> GetStatsSnapshot { get; init; }
+    public required Func<StatsSnapshot> RefreshStatsIfDueAndGetSnapshot { get; init; }
     public required StatsDockPresentationController DockPresentationController { get; init; }
     public required StatsDiagnosticRowsController DiagnosticRowsController { get; init; }
     public required StatsHardwareRowsController HardwareRowsController { get; init; }
@@ -1299,7 +1162,7 @@ internal sealed class StatsDockRefreshController
 
     public void RefreshDiagnosticsSection()
     {
-        var snapshot = _context.GetStatsSnapshot();
+        var snapshot = _context.RefreshStatsIfDueAndGetSnapshot();
         UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
     }
 

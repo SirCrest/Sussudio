@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 using Sussudio.Models;
 using Sussudio.Services.Contracts;
-using Sussudio.Services.Flashback;
 using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Recording;
@@ -18,7 +17,7 @@ namespace Sussudio.Services.Recording;
 // Bounded-queue recording sink that isolates capture callbacks from libav.
 // Capture threads enqueue raw/GPU/CUDA video and audio quickly; one encoding
 // task drains the queues and serializes every LibAvEncoder call.
-public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder, ICudaVideoFrameEncoder
+public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
@@ -76,6 +75,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private long _audioDropsBacklogEviction;
     private long _microphoneDropsQueueSaturated;
     private long _microphoneDropsBacklogEviction;
+    private long _workSignalAlreadySignaled;
     private long _gpuFramesEnqueued;
     private long _gpuFramesDropped;
     private long _cudaFramesEnqueued;
@@ -84,6 +84,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private int _videoQueueMaxDepth;
     private int _audioQueueDepth;
     private int _microphoneQueueDepth;
+    private readonly AudioChannelState _audioChannel;
+    private readonly AudioChannelState _microphoneChannel;
     private int _gpuQueueDepth;
     private int _gpuQueueMaxDepth;
     private int _cudaQueueDepth;
@@ -108,6 +110,26 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     {
         _videoLatencyTracker = new VideoQueueLatencyTracker(
             "LIBAV_SINK", _videoQueueSync, VideoQueueLatencyWindowSize);
+        _audioChannel = new AudioChannelState
+        {
+            Label = "audio",
+            EvictLabel = "audio_evict",
+            AfterEvictLabel = "audio_after_evict",
+            LogTag = "LIBAV_SINK_AUDIO_EVICT",
+            EnqueueSignal = "audio_enqueue",
+            AfterEvictSignal = "audio_after_evict",
+            SendSamples = _encoder.SendAudioSamples,
+        };
+        _microphoneChannel = new AudioChannelState
+        {
+            Label = "microphone",
+            EvictLabel = "microphone_evict",
+            AfterEvictLabel = "microphone_after_evict",
+            LogTag = "LIBAV_SINK_MIC_EVICT",
+            EnqueueSignal = "microphone_enqueue",
+            AfterEvictSignal = "microphone_after_evict",
+            SendSamples = _encoder.SendMicrophoneSamples,
+        };
     }
 
     public event EventHandler<long>? FrameEncoded;
@@ -185,6 +207,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _audioQueueDepth, 0);
             Interlocked.Exchange(ref _microphoneQueueDepth, 0);
+            Interlocked.Exchange(ref _workSignalAlreadySignaled, 0);
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
                 _cts.Token,
@@ -300,7 +323,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private void ResetVideoDiagnostics() => _videoLatencyTracker.ResetAll();
 
     private static string MapCodecName(RecordingFormat format)
-        => MediaFormat.MapNvencCodecName(format);
+        => EncoderSupport.MapNvencCodecName(format);
 
     private static (int? Numerator, int? Denominator) ResolveFrameRateParts(RecordingContext context)
     {
@@ -336,8 +359,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             FrameRateDenominator = frameRateDenominator,
             BitRate = context.Settings.GetTargetBitrate(),
             IsP010 = context.HdrPipelineActive,
-            NvencPreset = context.Settings.NvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(context.Settings.SplitEncodeMode),
+            NvencPreset = context.Settings.NvencPreset,
+            SplitEncodeMode = context.Settings.SplitEncodeMode,
             HdrEnabled = context.HdrPipelineActive,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
@@ -385,16 +408,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
     public long MicrophoneDropsQueueSaturated => Interlocked.Read(ref _microphoneDropsQueueSaturated);
     public long MicrophoneDropsBacklogEviction => Interlocked.Read(ref _microphoneDropsBacklogEviction);
+    public long WorkSignalAlreadySignaledCount => Interlocked.Read(ref _workSignalAlreadySignaled);
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
     public long LastVideoQueueLatencyMs => _videoLatencyTracker.LastLatencyMs;
     public long VideoQueueOldestFrameAgeMs => _videoLatencyTracker.ReconcileDepthAndGetOldestFrameAgeMs(Volatile.Read(ref _videoQueueDepth));
     public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => _videoLatencyTracker.GetMetrics();
-    public int VideoQueueLatencySampleCount => _videoLatencyTracker.GetMetrics().SampleCount;
-    public double VideoQueueLatencyAvgMs => _videoLatencyTracker.GetMetrics().AverageMs;
-    public double VideoQueueLatencyP95Ms => _videoLatencyTracker.GetMetrics().P95Ms;
-    public double VideoQueueLatencyP99Ms => _videoLatencyTracker.GetMetrics().P99Ms;
-    public double VideoQueueLatencyMaxMs => _videoLatencyTracker.GetMetrics().MaxMs;
     public long VideoBackpressureWaitMs => _videoLatencyTracker.BackpressureWaitMs;
     public long VideoBackpressureEvents => _videoLatencyTracker.BackpressureEvents;
     public long LastVideoBackpressureWaitMs => _videoLatencyTracker.LastBackpressureWaitMs;
@@ -434,10 +453,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 var madeProgress = false;
 
-                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                madeProgress = DrainChannelPackets(audioQueue.Reader, ref _audioQueueDepth, _audioChannel) || madeProgress;
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
-                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                    madeProgress = DrainChannelPackets(microphoneQueue.Reader, ref _microphoneQueueDepth, _microphoneChannel) || madeProgress;
                 }
 
                 if (cudaQueue != null)
@@ -453,10 +472,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
                 // Audio again catches samples that arrived while video encoding
                 // was consuming its bounded batch.
-                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                madeProgress = DrainChannelPackets(audioQueue.Reader, ref _audioQueueDepth, _audioChannel) || madeProgress;
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
-                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                    madeProgress = DrainChannelPackets(microphoneQueue.Reader, ref _microphoneQueueDepth, _microphoneChannel) || madeProgress;
                 }
 
                 if (videoQueue.Reader.Completion.IsCompleted &&
@@ -526,18 +545,22 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 _encoder.Dispose();
             }
-            catch
+            catch (Exception disposeEx)
             {
-                // Preserve the original failure.
+                // Preserve the original failure; a faulting dispose leaves evidence.
+                Logger.Log($"LIBAV_SINK_ENCODER_DISPOSE_FAIL_DURING_FAILURE type={disposeEx.GetType().Name} msg={disposeEx.Message}");
             }
 
             try
             {
                 OnEncodingFailed?.Invoke(ex);
             }
-            catch
+            catch (Exception callbackEx)
             {
-                // Best effort: callback must not mask the original failure.
+                // The callback boundary stays nonthrowing so the original encoder
+                // failure survives, but a faulting subscriber leaves evidence.
+                Logger.Log(
+                    $"LIBAV_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg='{callbackEx.Message}'");
             }
         }
     }
@@ -686,7 +709,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     "Stopped (recording sink was disposed before verification completed)",
-                    "recording-sink-disposed-before-verification");
+                    RecordingFailureCodes.SinkDisposedBeforeVerification);
         }
 
         // Cancellation is honored only before stop commits. Once the writers are
@@ -725,7 +748,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     timeoutStatus,
-                    "recording-finalization-timeout",
+                    RecordingFailureCodes.FinalizationTimeout,
                     cleanupPending: true);
             }
 
@@ -744,7 +767,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 context,
                 outputPath,
                 "Recording failed (finalization worker was unavailable)",
-                "recording-finalization-worker-missing");
+                RecordingFailureCodes.FinalizationWorkerMissing);
         }
 
         if (_encodingFailure != null)
@@ -754,7 +777,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 context,
                 outputPath,
                 $"Recording failed (libav finalization failed: {_encodingFailure.Message})",
-                "recording-libav-finalization-failed",
+                RecordingFailureCodes.LibavFinalizationFailed,
                 verificationCompleted: _structureVerificationCompleted);
         }
 
@@ -764,7 +787,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 context,
                 outputPath,
                 "Recording failed (structural verification did not complete)",
-                "recording-structure-verification-incomplete");
+                RecordingFailureCodes.StructureVerificationIncomplete);
         }
 
         if (context?.HdrPipelineActive == true)
@@ -779,7 +802,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s)",
-                    "recording-finalization-timeout",
+                    RecordingFailureCodes.FinalizationTimeout,
                     verificationCompleted: true);
             }
 
@@ -796,7 +819,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     context,
                     outputPath,
                     $"Recording failed (finalization exceeded {finalizationTimeoutMs / 1000}s during HDR validation)",
-                    "recording-finalization-timeout",
+                    RecordingFailureCodes.FinalizationTimeout,
                     verificationCompleted: true);
             }
 
@@ -814,7 +837,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                         context,
                         outputPath,
                         $"Stopped (hdr validation failed: {validationDetail})",
-                        "recording-hdr-validation-failed",
+                        RecordingFailureCodes.HdrValidationFailed,
                         verificationCompleted: true);
                 }
             }
@@ -913,7 +936,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
         if (ReferenceEquals(completedTask, _encodingTask))
         {
-            ObserveEncodingTaskCompletion(_encodingTask);
+            _encodingFailure ??= EncodingTaskHelpers.ObserveCompletion(_encodingTask);
             FinalizeDisposeCore();
             return;
         }
@@ -929,34 +952,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return;
         }
 
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await encodingTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _encodingFailure ??= ex;
-            }
-            finally
-            {
-                FinalizeDisposeCore();
-                Logger.Log("LIBAV_SINK_DISPOSE_DEFERRED_COMPLETE");
-            }
-        });
-    }
-
-    private void ObserveEncodingTaskCompletion(Task encodingTask)
-    {
-        try
-        {
-            encodingTask.GetAwaiter().GetResult();
-        }
-        catch (Exception ex)
-        {
-            _encodingFailure ??= ex;
-        }
+        EncodingTaskHelpers.DrainDeferred(
+            encodingTask,
+            ex => _encodingFailure ??= ex,
+            FinalizeDisposeCore,
+            "LIBAV_SINK_DISPOSE_DEFERRED_COMPLETE");
     }
 
     private void FinalizeDisposeCore()
@@ -1110,10 +1110,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     Logger.Log($"LIBAV_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
                 }
             }
-            catch (Exception ex)
-            {
-                Logger.Log($"LIBAV_SINK_CUDA_DRAIN_FAIL type={ex.GetType().Name} msg={ex.Message}");
-            }
             finally
             {
                 if (frame != null)
@@ -1129,15 +1125,33 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return drainedAny;
     }
 
-    private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)
+    // Per-channel labels/tags/delegate so the audio and microphone Drain/TryEnqueue
+    // pairs can share one implementation. Queue depth and drop counters stay ref
+    // parameters threaded by the caller, since a plain class cannot hold a ref field.
+    // ReadOnlySpan<byte> is a ref struct, so it cannot be a generic argument to
+    // Action<T> on net8.0 (CS9244). A purpose-built delegate takes it fine.
+    private delegate void SendSamplesCallback(ReadOnlySpan<byte> samples);
+
+    private sealed class AudioChannelState
+    {
+        public required string Label;            // "audio" | "microphone" -- passed to DecrementQueueDepth
+        public required string EvictLabel;        // "audio_evict" | "microphone_evict"
+        public required string AfterEvictLabel;   // "audio_after_evict" | "microphone_after_evict"
+        public required string LogTag;             // "LIBAV_SINK_AUDIO_EVICT" | "LIBAV_SINK_MIC_EVICT"
+        public required string EnqueueSignal;       // "audio_enqueue" | "microphone_enqueue" -- SignalWork tag
+        public required string AfterEvictSignal;    // "audio_after_evict" | "microphone_after_evict" -- SignalWork tag
+        public required SendSamplesCallback SendSamples; // _encoder.SendAudioSamples | _encoder.SendMicrophoneSamples
+    }
+
+    private bool DrainChannelPackets(ChannelReader<AudioSamplePacket> reader, ref int queueDepth, AudioChannelState channel)
     {
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            DecrementQueueDepth(ref _audioQueueDepth, "audio");
+            DecrementQueueDepth(ref queueDepth, channel.Label);
             try
             {
-                _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
+                channel.SendSamples(packet.Buffer.AsSpan(0, packet.Length));
             }
             finally
             {
@@ -1150,26 +1164,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return drainedAny;
     }
 
-    private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)
-    {
-        var drainedAny = false;
-        while (reader.TryRead(out var packet))
-        {
-            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone");
-            try
-            {
-                _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
-            }
-            finally
-            {
-                ReturnBuffer(packet.Buffer);
-            }
-
-            drainedAny = true;
-        }
-
-        return drainedAny;
-    }
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
         Exception? overloadFailure = null;
@@ -1286,44 +1280,16 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return VideoEnqueueResult.Overloaded;
     }
 
+    // QueueAdmission owns the claim/high-water/rollback sequence shared with
+    // FlashbackEncoderSink; these lanes supply only their own counters and log tag.
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _videoQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _videoQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _videoQueueDepth, ref _videoQueueMaxDepth, "video", DecrementQueueDepth);
 
     private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _gpuQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _gpuQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _gpuQueueDepth, ref _gpuQueueMaxDepth, "gpu", DecrementQueueDepth);
 
     private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)
-    {
-        var depth = Interlocked.Increment(ref _cudaQueueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            AtomicMax.Update(ref _cudaQueueMaxDepth, depth);
-            return true;
-        }
-
-        DecrementQueueDepth(ref _cudaQueueDepth, "cuda_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref _cudaQueueDepth, ref _cudaQueueMaxDepth, "cuda", DecrementQueueDepth);
 
     private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)
     {
@@ -1562,7 +1528,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private void SignalWork(string operation)
     {
         try { _workAvailable.Release(); }
-        catch (SemaphoreFullException) { /* Best-effort: semaphore already signaled — work loop will pick it up */ }
+        catch (SemaphoreFullException)
+        {
+            // Best-effort: semaphore already signaled — work loop will pick it up.
+            var alreadySignaled = Interlocked.Increment(ref _workSignalAlreadySignaled);
+            if (alreadySignaled == 1 || alreadySignaled % 30 == 0)
+            {
+                Logger.Log($"LIBAV_SINK_WORK_SIGNAL_ALREADY_SIGNALED op={operation} count={alreadySignaled}");
+            }
+        }
         catch (ObjectDisposedException)
         {
             Logger.Log($"LIBAV_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
@@ -1604,21 +1578,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
     }
 
+    // AtomicCounter owns the clamped CAS loop; this sink keeps its own underflow tag.
     private static void DecrementQueueDepth(ref int target, string queueName)
     {
-        while (true)
+        if (!AtomicCounter.TryDecrement(ref target))
         {
-            var current = Volatile.Read(ref target);
-            if (current <= 0)
-            {
-                Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
-                return;
-            }
-
-            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
-            {
-                return;
-            }
+            Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
         }
     }
 
@@ -1635,7 +1600,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueAudioPacket(queue, packet))
+        if (TryEnqueueChannelPacket(queue, packet, ref _audioQueueDepth, ref _audioDropsBacklogEviction, _audioChannel))
         {
             return Task.CompletedTask;
         }
@@ -1663,7 +1628,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
-        if (TryEnqueueMicrophonePacket(queue, packet))
+        if (TryEnqueueChannelPacket(queue, packet, ref _microphoneQueueDepth, ref _microphoneDropsBacklogEviction, _microphoneChannel))
         {
             return Task.CompletedTask;
         }
@@ -1697,7 +1662,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         Interlocked.Exchange(ref queueDepth, 0);
     }
 
-    private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
+    private bool TryEnqueueChannelPacket(
+        Channel<AudioSamplePacket> queue,
+        AudioSamplePacket packet,
+        ref int queueDepth,
+        ref long dropsBacklogEviction,
+        AudioChannelState channel)
     {
         if (_cts?.IsCancellationRequested == true)
         {
@@ -1705,65 +1675,28 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return false;
         }
 
-        if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio"))
+        if (TryWriteAudioPacket(queue, packet, ref queueDepth, channel.Label))
         {
-            SignalWork("audio_enqueue");
+            SignalWork(channel.EnqueueSignal);
             return true;
         }
 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
-            DecrementQueueDepth(ref _audioQueueDepth, "audio_evict");
-            var evicted = Interlocked.Increment(ref _audioDropsBacklogEviction);
+            DecrementQueueDepth(ref queueDepth, channel.EvictLabel);
+            var evicted = Interlocked.Increment(ref dropsBacklogEviction);
             if (evicted == 1 || evicted % 120 == 0)
             {
                 // Log evicted audio bytes so A/V drift from dropped audio is traceable.
                 Logger.Log(
-                    $"LIBAV_SINK_AUDIO_EVICT evicted={evicted} dropped_bytes={evictedPacket.Length} " +
-                    $"queue_depth={Volatile.Read(ref _audioQueueDepth)}");
+                    $"{channel.LogTag} evicted={evicted} dropped_bytes={evictedPacket.Length} " +
+                    $"queue_depth={Volatile.Read(ref queueDepth)}");
             }
 
             ReturnBuffer(evictedPacket.Buffer);
-            if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio_after_evict"))
+            if (TryWriteAudioPacket(queue, packet, ref queueDepth, channel.AfterEvictLabel))
             {
-                SignalWork("audio_after_evict");
-                return true;
-            }
-        }
-
-        ReturnBuffer(packet.Buffer);
-        return false;
-    }
-
-    private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
-    {
-        if (_cts?.IsCancellationRequested == true)
-        {
-            ReturnBuffer(packet.Buffer);
-            return false;
-        }
-
-        if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone"))
-        {
-            SignalWork("microphone_enqueue");
-            return true;
-        }
-
-        if (queue.Reader.TryRead(out var evictedPacket))
-        {
-            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone_evict");
-            var evicted = Interlocked.Increment(ref _microphoneDropsBacklogEviction);
-            if (evicted == 1 || evicted % 120 == 0)
-            {
-                Logger.Log(
-                    $"LIBAV_SINK_MIC_EVICT evicted={evicted} dropped_bytes={evictedPacket.Length} " +
-                    $"queue_depth={Volatile.Read(ref _microphoneQueueDepth)}");
-            }
-
-            ReturnBuffer(evictedPacket.Buffer);
-            if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone_after_evict"))
-            {
-                SignalWork("microphone_after_evict");
+                SignalWork(channel.AfterEvictSignal);
                 return true;
             }
         }
@@ -1777,16 +1710,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         AudioSamplePacket packet,
         ref int queueDepth,
         string queueName)
-    {
-        Interlocked.Increment(ref queueDepth);
-        if (queue.Writer.TryWrite(packet))
-        {
-            return true;
-        }
-
-        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
-        return false;
-    }
+        => QueueAdmission.TryWrite(queue, packet, ref queueDepth, queueName, DecrementQueueDepth);
 
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
 }
@@ -1993,7 +1917,7 @@ internal static class HdrValidationRunner
     {
         if (context == null)
         {
-            return (false, "recording-context-missing");
+            return (false, RecordingFailureCodes.ContextMissing);
         }
 
         if (string.IsNullOrWhiteSpace(outputPath) || !File.Exists(outputPath))
@@ -2044,6 +1968,16 @@ internal static class HdrValidationRunner
             Arguments = arguments,
             TimeoutMs = ValidationTimeoutMs
         }, cancellationToken).ConfigureAwait(false);
+
+        return ReadValidationResult(result);
+    }
+
+    internal static (bool Success, string Detail) ReadValidationResult(ProcessRunResult result)
+    {
+        if (result.GetOutputReadFailure() is { } readFailure)
+        {
+            return (false, $"validator-output-read-failed: {readFailure.Message}");
+        }
 
         if (!result.Started)
         {

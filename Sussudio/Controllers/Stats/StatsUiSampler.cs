@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using Sussudio.Models;
+using Sussudio.ViewModels;
 
 namespace Sussudio.Controllers;
 
@@ -78,14 +79,17 @@ internal sealed class StatsUiSampler : IDisposable
     {
         if (!_disposed && HasSubscribers)
         {
-            CollectIfDue();
+            CollectAndPublishIfDue();
         }
     }
 
-    public StatsSnapshot GetSnapshot()
+    /// <summary>
+    /// Returns the shared UI snapshot, collecting and publishing a new sample when due.
+    /// </summary>
+    public StatsSnapshot RefreshIfDueAndGetSnapshot()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        CollectIfDue();
+        CollectAndPublishIfDue();
         return _current?.Snapshot
             ?? throw new InvalidOperationException("The capture session changed while collecting UI stats; retry on the next sample.");
     }
@@ -94,7 +98,7 @@ internal sealed class StatsUiSampler : IDisposable
         => _current != null && _current.CaptureSessionEpoch == epoch &&
            ElapsedMs(_current.CollectedTick, now) < LabelIntervalMs;
 
-    private void CollectIfDue()
+    private void CollectAndPublishIfDue()
     {
         if (_collecting)
         {

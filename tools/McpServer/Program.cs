@@ -41,26 +41,42 @@ namespace McpServer
                 : configuredPipeName;
         }
 
-        public Task<JsonElement> SendCommandAsync(
+        public async Task<JsonElement> SendCommandAsync(
             string commandName,
             Dictionary<string, object?>? payload = null,
-            int? responseTimeoutMs = null)
-            => AutomationCommandTransport.SendCommandAsync(
+            int? responseTimeoutMs = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await AutomationCommandTransport.SendCommandAsync(
                 _pipeName,
                 commandName,
                 payload,
-                responseTimeoutMs: responseTimeoutMs,
-                unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError);
+                callResponseTimeoutMs: responseTimeoutMs,
+                unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            // Shared tools retain synthetic pipe-canceled responses; MCP requests
+            // must remain cancelled after the transport has released its pipe.
+            cancellationToken.ThrowIfCancellationRequested();
+            return response;
+        }
 
-        public Task<JsonElement> SendCommandAsync(
+        public async Task<JsonElement> SendCommandAsync(
             AutomationCommandKind kind,
             Dictionary<string, object?>? payload = null,
-            int? responseTimeoutMs = null)
-            => AutomationCommandTransport.SendCommandAsync(
+            int? responseTimeoutMs = null,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await AutomationCommandTransport.SendCommandAsync(
                 _pipeName,
                 kind,
                 payload,
-                responseTimeoutMs: responseTimeoutMs,
-                unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError);
+                callResponseTimeoutMs: responseTimeoutMs,
+                unknownCommandHandling: AutomationUnknownCommandHandling.ReturnSyntheticError,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            return response;
+        }
     }
 }

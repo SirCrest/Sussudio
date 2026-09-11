@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.ExceptionServices;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,6 +22,14 @@ public partial class CaptureService
     public int FlashbackSegmentCount => _flashbackBackend.BufferManager?.SegmentCount ?? 0;
     internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackBackend.PlaybackController;
     internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBackend.BufferManager;
+    internal event Action<FlashbackPlaybackStateChange> FlashbackPlaybackStateChanged
+    {
+        add => _flashbackBackend.PlaybackStateChanged += value;
+        remove => _flashbackBackend.PlaybackStateChanged -= value;
+    }
+    internal bool IsCurrentFlashbackPlaybackStateChange(FlashbackPlaybackStateChange change)
+        => _flashbackBackend.IsCurrentPlaybackStateChange(change);
+    internal void PreWarmFlashbackPlayback() => _flashbackBackend.PreWarmPlayback();
     public long FlashbackOutputBytes => _flashbackBackend.Sink?.OutputBytes ?? 0;
     public long FlashbackTotalBytesWritten => _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
     public string? EncoderCodecName => _flashbackBackend.Sink?.CodecName;
@@ -28,7 +37,7 @@ public partial class CaptureService
     public int EncoderWidth => _flashbackBackend.Sink?.EncoderWidth ?? 0;
     public int EncoderHeight => _flashbackBackend.Sink?.EncoderHeight ?? 0;
     public double EncoderFrameRate => _flashbackBackend.Sink?.EncoderFrameRate ?? 0;
-    public FinalizeResult? LastExportResult => _lastExportResult;
+    public FinalizeResult? LastExportResult => _flashbackExport.LastExportResult;
 
     internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
     {
@@ -443,56 +452,87 @@ public partial class CaptureService
         }, cancellationToken);
 
     /// <summary>
-    /// Updates the recording format and cycles the flashback encoder so the buffer
-    /// uses the new codec. No-op if not previewing or if a recording is active.
+    /// Applies a complete recording selection and rebuilds the Flashback encoder when
+    /// available. Desired settings are retained for later when application is deferred.
     /// </summary>
-    public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
+    internal async Task<RecordingSettingsApplyDisposition> ApplyRecordingSettingsAsync(
+        RecordingSettingsSelection selection,
+        RecordingSettingsChangeKind kind,
+        CancellationToken cancellationToken = default)
+    {
+        var disposition = RecordingSettingsApplyDisposition.Accepted;
+        Exception? applicationFailure = null;
+        await RunTransitionAsync(CurrentSessionState, async transitionToken =>
         {
-            if (_currentSettings == null || format == _currentSettings.Format)
+            if (_currentSettings == null)
+            {
                 return;
+            }
 
             var previousSettings = CloneCaptureSettings(_currentSettings);
+            var changed = !selection.Matches(_currentSettings);
+            selection.ApplyTo(_currentSettings);
+            var logPrefix = kind == RecordingSettingsChangeKind.RecordingFormat
+                ? "FLASHBACK_FORMAT_CHANGE"
+                : "FLASHBACK_ENCODER_SETTINGS_CHANGE";
+
             if (_isRecording)
             {
-                Logger.Log($"FLASHBACK_FORMAT_CHANGE_BLOCKED reason=recording_active format={format}");
-                _currentSettings.Format = format;
-                if (IsFlashbackRecordingBackendActive())
+                if (changed && IsFlashbackRecordingBackendActive())
+                {
                     _pendingFlashbackSettingsChange = true;
+                }
+                Logger.Log($"{logPrefix}_BLOCKED reason=recording_active format={selection.RequestedFormat}");
+                disposition = RecordingSettingsApplyDisposition.Deferred;
                 return;
             }
 
-            _currentSettings.Format = format;
-
-            var cycleFailed = false;
-            if (_flashbackBackend.Sink != null)
+            if (_flashbackBackend.Sink == null)
             {
-                try
-                {
-                    await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
-                {
-                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED format={format} type={ex.GetType().Name} error='{ex.Message}'");
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    cycleFailed = true;
-                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
-                }
+                disposition = RecordingSettingsApplyDisposition.Deferred;
+                return;
             }
 
-            if (!cycleFailed)
+            if (selection.Matches(_flashbackBackend.SettingsSnapshot))
             {
-                Logger.Log($"FLASHBACK_FORMAT_CHANGE_OK format={format}");
+                disposition = RecordingSettingsApplyDisposition.Applied;
+                return;
             }
-            else
+
+            try
+            {
+                await _rebuildRecordingSettingsBackendAsync(transitionToken).ConfigureAwait(false);
+                if (_flashbackBackend.Sink != null && !selection.Matches(_flashbackBackend.SettingsSnapshot))
+                {
+                    throw new InvalidOperationException("Flashback encoder settings did not match the requested selection after rebuild.");
+                }
+                disposition = _flashbackBackend.Sink != null
+                    ? RecordingSettingsApplyDisposition.Applied
+                    : RecordingSettingsApplyDisposition.Deferred;
+                Logger.Log($"{logPrefix}_OK format={selection.RequestedFormat} quality={selection.Quality} bitrate={selection.CustomBitrateMbps} preset={selection.NvencPreset} split={selection.SplitEncodeMode} disposition={disposition}");
+            }
+            catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
+            {
+                Logger.Log($"{logPrefix}_CYCLE_CANCELLED format={selection.RequestedFormat} type={ex.GetType().Name} error='{ex.Message}'");
+                throw;
+            }
+            catch (Exception ex)
             {
                 _currentSettings = previousSettings;
-                Logger.Log($"FLASHBACK_FORMAT_CHANGE_ROLLBACK format={format} restored={_currentSettings.Format}");
+                applicationFailure = ex;
+                Logger.Log($"{logPrefix}_CYCLE_FAIL format={selection.RequestedFormat} quality={selection.Quality} bitrate={selection.CustomBitrateMbps} preset={selection.NvencPreset} split={selection.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
+                Logger.Log($"{logPrefix}_ROLLBACK format={_currentSettings.Format} quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode}");
             }
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
+
+        // Keep the existing transition/recovery policy after a rejected rebuild,
+        // but let awaitable callers observe that the requested settings failed.
+        if (applicationFailure != null)
+        {
+            ExceptionDispatchInfo.Capture(applicationFailure).Throw();
+        }
+        return disposition;
+    }
 
     /// <summary>
     /// Updates encoding-related fields in the active capture settings so that
@@ -510,10 +550,7 @@ public partial class CaptureService
     private void UpdateEncodingSettings(CaptureSettings source)
     {
         if (_currentSettings == null) return;
-        _currentSettings.Format = source.Format;
-        _currentSettings.Quality = source.Quality;
-        _currentSettings.NvencPreset = source.NvencPreset;
-        _currentSettings.CustomBitrateMbps = source.CustomBitrateMbps;
+        RecordingSettingsSelection.From(source).ApplyTo(_currentSettings);
         _currentSettings.AudioEnabled = source.AudioEnabled;
         _currentSettings.MicrophoneEnabled = source.MicrophoneEnabled;
         _currentSettings.MicrophoneDeviceId = source.MicrophoneDeviceId;
@@ -525,94 +562,6 @@ public partial class CaptureService
         if (_isRecording && IsFlashbackRecordingBackendActive())
             _pendingFlashbackSettingsChange = true;
     }
-
-    /// <summary>
-    /// Cycles the flashback encoder when encoder-affecting settings change
-    /// (bitrate, quality, preset, split encode). Updates <see cref="_currentSettings"/> and
-    /// restarts the flashback buffer so new recordings use the updated params.
-    /// No-op if not previewing or recording is active.
-    /// </summary>
-    public Task CycleFlashbackEncoderSettingsAsync(
-        VideoQuality? quality = null,
-        double? customBitrateMbps = null,
-        string? nvencPreset = null,
-        string? splitEncodeMode = null,
-        CancellationToken cancellationToken = default)
-        => RunTransitionAsync(CurrentSessionState, async transitionToken =>
-        {
-            if (_currentSettings == null) return;
-
-            var previousSettings = CloneCaptureSettings(_currentSettings);
-            var changed = false;
-            if (quality.HasValue && quality.Value != _currentSettings.Quality)
-            {
-                _currentSettings.Quality = quality.Value;
-                changed = true;
-            }
-            if (customBitrateMbps.HasValue && Math.Abs(customBitrateMbps.Value - _currentSettings.CustomBitrateMbps) > 0.01)
-            {
-                _currentSettings.CustomBitrateMbps = customBitrateMbps.Value;
-                changed = true;
-            }
-            if (nvencPreset != null)
-            {
-                var parsedPreset = NvencPresetParser.Parse(nvencPreset);
-                if (parsedPreset != _currentSettings.NvencPreset)
-                {
-                    _currentSettings.NvencPreset = parsedPreset;
-                    changed = true;
-                }
-            }
-            if (splitEncodeMode != null)
-            {
-                var parsedSplitMode = SplitEncodeModeParser.Parse(splitEncodeMode);
-                if (parsedSplitMode != _currentSettings.SplitEncodeMode)
-                {
-                    _currentSettings.SplitEncodeMode = parsedSplitMode;
-                    changed = true;
-                }
-            }
-
-            if (!changed) return;
-
-            if (_isRecording)
-            {
-                Logger.Log("FLASHBACK_ENCODER_SETTINGS_CHANGE_BLOCKED reason=recording_active");
-                if (IsFlashbackRecordingBackendActive())
-                    _pendingFlashbackSettingsChange = true;
-                return;
-            }
-
-            var cycledBuffer = _flashbackBackend.Sink != null;
-            var cycleFailed = false;
-            if (_flashbackBackend.Sink != null)
-            {
-                try
-                {
-                    await RebuildFlashbackPreviewBackendForSettingsChangeAsync(transitionToken).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
-                {
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    cycleFailed = true;
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} type={ex.GetType().Name} error='{ex.Message}'");
-                }
-            }
-
-            if (!cycleFailed)
-            {
-                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_OK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode} cycled={cycledBuffer}");
-            }
-            else
-            {
-                _currentSettings = previousSettings;
-                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} split={_currentSettings.SplitEncodeMode}");
-            }
-        }, cancellationToken);
 
     /// <summary>
     /// Retires the current Flashback history for bounded startup cleanup and
@@ -906,6 +855,7 @@ public partial class CaptureService
             ThrowIfRecordingStartupFailed();
             _recordingBackend.InstallFlashback(activeFlashbackSink, fbRecordingContext, settings);
             _isRecording = true;
+            EnsureCaptureTelemetrySampling();
             _flashbackRecordingStartBytes = _flashbackBackend.BufferManager?.TotalBytesWritten ?? 0;
             PublishRecordingStartedOutcome(fbRecordingContext);
             _recordingStopwatch.Restart();
@@ -970,7 +920,6 @@ public partial class CaptureService
             _previewAudioGraph.DetachCapture(
                 staleProgramCapture,
                 OnWasapiAudioLevelUpdated,
-                OnWasapiCaptureFailed,
                 _flashbackBackend.PlaybackController);
             await staleProgramCapture.DisposeAsync().ConfigureAwait(false);
             Logger.Log($"FLASHBACK_AUDIO_CAPTURE_REPLACED reason='{reason}' terminal_worker=true");
@@ -985,7 +934,7 @@ public partial class CaptureService
                 {
                     await wasapiCapture.InitializeAsync(audioDeviceId, cancellationToken).ConfigureAwait(false);
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    _previewAudioGraph.AttachCaptureFailure(wasapiCapture, "program", OnWasapiCaptureFailed);
                     _previewAudioGraph.ProgramCapture = wasapiCapture;
                     await wasapiCapture.StartAndWaitForRecordingReadyAsync(cancellationToken).ConfigureAwait(false);
                     wasapiCapture = null;
@@ -1002,7 +951,7 @@ public partial class CaptureService
                             _previewAudioGraph.ProgramCapture = null;
                         }
                         wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
-                        wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        _previewAudioGraph.DetachCaptureFailure(wasapiCapture);
                         try { await wasapiCapture.DisposeAsync().ConfigureAwait(false); }
                         catch (Exception disposeEx) { Logger.Log($"FLASHBACK_AUDIO_CAPTURE_RESTORE_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
                     }
@@ -1038,7 +987,7 @@ public partial class CaptureService
             {
                 await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
                 micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
-                micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                _previewAudioGraph.AttachCaptureFailure(micCapture, "microphone", OnWasapiCaptureFailed);
                 _previewAudioGraph.MicrophoneCapture = micCapture;
                 await micCapture.StartAndWaitForRecordingReadyAsync(cancellationToken).ConfigureAwait(false);
                 micCapture = null;
@@ -1068,7 +1017,7 @@ public partial class CaptureService
                         _previewAudioGraph.MicrophoneCapture = null;
                     }
                     micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
-                    micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                    _previewAudioGraph.DetachCaptureFailure(micCapture);
                     try { await micCapture.DisposeAsync().ConfigureAwait(false); }
                     catch (Exception disposeEx) { Logger.Log($"MIC_MONITOR_RESTORE_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
                 }
@@ -1191,8 +1140,8 @@ public partial class CaptureService
             FrameRateNumerator = fpsNum,
             FrameRateDenominator = fpsDen,
             CodecName = codecName,
-            NvencPreset = flashbackNvencPreset.ToString(),
-            SplitEncodeMode = SplitEncodeModeParser.ToWireString(settings.SplitEncodeMode),
+            NvencPreset = flashbackNvencPreset,
+            SplitEncodeMode = settings.SplitEncodeMode,
             IsP010 = isP010,
             BitRate = settings.GetTargetBitrate(),
             HdrEnabled = hdrRequested,
@@ -1342,7 +1291,7 @@ public partial class CaptureService
                         ? "Recording failed (emergency Flashback finalization exceeded five seconds; cleanup continues in quarantine)."
                         : "Recording failed (Flashback finalization made no progress for 30 seconds or exceeded 120 seconds; cleanup continues in quarantine).",
                     Array.Empty<string>(),
-                    "recording-flashback-finalization-timeout",
+                    RecordingFailureCodes.FlashbackFinalizationTimeout,
                     cleanupPending: true,
                     recoveryPath: null,
                     verificationCompleted: false,
@@ -1452,7 +1401,7 @@ public partial class CaptureService
 
         _recordingStopwatch.Stop();
         _isRecording = false;
-        if (!_isVideoPreviewActive) await StopTelemetryPollAsync().ConfigureAwait(false);
+        if (!_isVideoPreviewActive) await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
         _recordingBackend.ClearContextAndSettings();
         PublishRecordingFinalizedOutcome(fbResult, updateOutputPath: false);
 
@@ -1538,7 +1487,7 @@ public partial class CaptureService
         var started = Environment.TickCount64;
         var absoluteDeadline = started + absoluteWindowMs;
         var progressDeadline = started + progressWindowMs;
-        var observedProgressUtc = Interlocked.Read(ref _flashbackExportLastProgressUtcUnixMs);
+        var observedProgressUtc = _flashbackExport.ReadLastProgressUtcUnixMs();
 
         while (!finalizeTask.IsCompleted)
         {
@@ -1559,7 +1508,7 @@ public partial class CaptureService
                 return true;
             }
 
-            var progressUtc = Interlocked.Read(ref _flashbackExportLastProgressUtcUnixMs);
+            var progressUtc = _flashbackExport.ReadLastProgressUtcUnixMs();
             if (progressUtc != observedProgressUtc)
             {
                 observedProgressUtc = progressUtc;
@@ -1683,7 +1632,7 @@ public partial class CaptureService
     {
         var result = FlashbackExportFailureCodes.Create(outputPath, statusMessage, failureCode);
         Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
-        RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
+        _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
         return result;
     }
 
@@ -1699,7 +1648,6 @@ public partial class CaptureService
         bool requireCompleteLiveEdge = false,
         bool exportOperationLockAlreadyHeld = false,
         bool throttleHighResolutionBaseline = true,
-        bool force = false,
         FlashbackExportRangeResolver? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackBackend.Sink;
@@ -1756,8 +1704,8 @@ public partial class CaptureService
                 }
             }
 
-            exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
-            var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
+            exportId = _flashbackExport.BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
+            var diagnosticProgress = _flashbackExport.CreateFlashbackExportProgressSink(exportId, progress);
 
             var preparedExport = PrepareFlashbackExportRequest(
                 bufferManager,
@@ -1767,7 +1715,6 @@ public partial class CaptureService
                 outPoint,
                 outputPath,
                 requireCompleteLiveEdge,
-                force,
                 throttleHighResolutionBaseline,
                 ct);
             if (preparedExport.FailureResult is { } preparationFailure)
@@ -1785,8 +1732,8 @@ public partial class CaptureService
                     $"{result.StatusMessage} (live-edge partial fallback: active segment was not closed before timeout; export may omit the newest frames)");
             }
 
-            RecordLastFlashbackExportResult(exportId, result);
-            CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
+            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
             return result;
         }
         catch (Exception ex)
@@ -1804,12 +1751,12 @@ public partial class CaptureService
                 cancelled ? FlashbackExportFailureCodes.Cancelled : FlashbackExportFailureCodes.FromException(ex));
             if (exportId != 0)
             {
-                RecordLastFlashbackExportResult(exportId, failure);
-                CompleteFlashbackExportDiagnostics(exportId, failure);
+                _flashbackExport.RecordLastFlashbackExportResult(exportId, failure);
+                _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, failure);
             }
             else
             {
-                RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);
+                _flashbackExport.RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);
             }
             return failure;
         }
@@ -1834,13 +1781,12 @@ public partial class CaptureService
         TimeSpan outPoint,
         string outputPath,
         bool requireCompleteLiveEdge,
-        bool force,
         bool throttleHighResolutionBaseline,
         CancellationToken ct)
     {
         var forceRotateResult = flashbackSink?.ForceRotateForExport(inPoint, outPoint, ct);
         var stableSegmentPaths = FlashbackExportPlanner.NeedsStableSegmentPaths(forceRotateResult)
-            ? bufferManager.GetValidSegmentPaths(inPoint, outPoint)
+            ? bufferManager.GetExistingCompletedSegmentPathsInRange(inPoint, outPoint)
             : null;
         var liveEdgePlan = FlashbackExportPlanner.PlanLiveEdge(
             forceRotateResult,
@@ -1860,8 +1806,8 @@ public partial class CaptureService
                     _ => FlashbackExportFailureCodes.Failed
                 },
                 liveEdgePlan.PreservedArtifacts);
-            RecordLastFlashbackExportResult(exportId, result);
-            CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
+            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
             LogFlashbackExportLiveEdgeFailure(
                 liveEdgePlan.FailureKind,
                 liveEdgePlan.PreservedArtifacts,
@@ -1872,7 +1818,7 @@ public partial class CaptureService
 
         if (liveEdgePlan.ForceRotateFallbackUsed)
         {
-            RecordFlashbackExportForceRotateFallback(
+            _flashbackExport.RecordFlashbackExportForceRotateFallback(
                 exportId,
                 liveEdgePlan.SegmentPaths?.Count ?? 0,
                 inPoint,
@@ -1891,15 +1837,14 @@ public partial class CaptureService
             inPoint,
             outPoint,
             outputPath,
-            force,
             normalizedSegmentPaths,
             segmentMetadata,
             selectedSegmentPaths is { Count: > 0 } ? null : bufferManager.ActiveFilePath);
         if (requestPlan.FailureMessage is { } requestFailureMessage)
         {
             var result = FlashbackExportFailureCodes.Create(outputPath, requestFailureMessage, FlashbackExportFailureCodes.InputUnavailable);
-            RecordLastFlashbackExportResult(exportId, result);
-            CompleteFlashbackExportDiagnostics(exportId, result);
+            _flashbackExport.RecordLastFlashbackExportResult(exportId, result);
+            _flashbackExport.CompleteFlashbackExportDiagnostics(exportId, result);
             return FlashbackExportPreparationResult.Failure(result);
         }
 
@@ -2077,362 +2022,6 @@ public partial class CaptureService
             new(null, result, false);
     }
 
-    private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)
-    {
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            _lastExportResult = result;
-            Volatile.Write(ref _lastFlashbackExportResultId, exportId);
-        }
-    }
-
-    private long BeginFlashbackExportDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
-    {
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            var exportId = Interlocked.Increment(ref _flashbackExportId);
-            _flashbackExportActive = true;
-            _flashbackExportStatus = "Running";
-            _flashbackExportOutputPath = outputPath;
-            _flashbackExportStartedUtcUnixMs = now;
-            _flashbackExportLastProgressUtcUnixMs = now;
-            _flashbackExportCompletedUtcUnixMs = 0;
-            _flashbackExportSegmentsProcessed = 0;
-            _flashbackExportTotalSegments = 0;
-            _flashbackExportPercent = 0;
-            _flashbackExportInPointMs = (long)inPoint.TotalMilliseconds;
-            _flashbackExportOutPointMs = outPoint == TimeSpan.MaxValue ? -1 : (long)outPoint.TotalMilliseconds;
-            _flashbackExportMessage = string.Empty;
-            _flashbackExportFailureKind = string.Empty;
-
-            return exportId;
-        }
-    }
-
-    private void RecordRejectedFlashbackExportDiagnostics(
-        string outputPath,
-        FinalizeResult result,
-        TimeSpan? inPoint = null,
-        TimeSpan? outPoint = null)
-    {
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            if (_flashbackExportActive)
-            {
-                _lastExportResult = result;
-                Volatile.Write(ref _lastFlashbackExportResultId, 0);
-                Logger.Log(
-                    "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED " +
-                    $"active_id={_flashbackExportId} status='{_flashbackExportStatus}' " +
-                    $"rejected_status='{result.StatusMessage}' output='{outputPath}'");
-                return;
-            }
-
-            var exportId = Interlocked.Increment(ref _flashbackExportId);
-            _flashbackExportId = exportId;
-            _flashbackExportActive = false;
-            _flashbackExportStatus = FlashbackExportFailureCodes.IsCancelled(result) ? "Cancelled" : "Failed";
-            _flashbackExportOutputPath = outputPath;
-            _flashbackExportStartedUtcUnixMs = now;
-            _flashbackExportLastProgressUtcUnixMs = now;
-            _flashbackExportCompletedUtcUnixMs = now;
-            _flashbackExportSegmentsProcessed = 0;
-            _flashbackExportTotalSegments = 0;
-            _flashbackExportPercent = 0;
-            _flashbackExportInPointMs = inPoint.HasValue ? (long)inPoint.Value.TotalMilliseconds : 0;
-            _flashbackExportOutPointMs = outPoint.HasValue
-                ? outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds
-                : 0;
-            _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = FlashbackExportFailureCodes.Classify(result);
-            RecordLastFlashbackExportResult(exportId, result);
-        }
-    }
-
-    private void CompleteFlashbackExportDiagnostics(long exportId, FinalizeResult result)
-    {
-        if (Volatile.Read(ref _flashbackExportId) != exportId)
-        {
-            return;
-        }
-
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            if (_flashbackExportId != exportId)
-            {
-                return;
-            }
-
-            _flashbackExportActive = false;
-            _flashbackExportStatus = result.Succeeded
-                ? "Succeeded"
-                : FlashbackExportFailureCodes.IsCancelled(result)
-                    ? "Cancelled"
-                    : "Failed";
-            var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;
-            _flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;
-            _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = FlashbackExportFailureCodes.Classify(result);
-            if (result.Succeeded && _flashbackExportPercent < 100)
-            {
-                _flashbackExportPercent = 100;
-            }
-        }
-    }
-
-    private IProgress<ExportProgress> CreateFlashbackExportProgressSink(
-        long exportId,
-        IProgress<ExportProgress>? innerProgress)
-    {
-        return new FlashbackExportProgressForwarder(progress =>
-        {
-            UpdateFlashbackExportProgress(exportId, progress);
-            try
-            {
-                innerProgress?.Report(progress);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'");
-            }
-        });
-    }
-
-    private void UpdateFlashbackExportProgress(long exportId, ExportProgress progress)
-    {
-        if (Volatile.Read(ref _flashbackExportId) != exportId)
-        {
-            return;
-        }
-
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            if (_flashbackExportId != exportId || !_flashbackExportActive)
-            {
-                return;
-            }
-
-            var rawTotalSegments = progress.TotalSegments;
-            var rawSegmentsProcessed = progress.SegmentsProcessed;
-            var rawPercent = progress.Percent;
-            var totalSegments = Math.Max(0, rawTotalSegments);
-            var segmentsProcessed = Math.Max(0, rawSegmentsProcessed);
-            if (totalSegments > 0 && segmentsProcessed > totalSegments)
-            {
-                segmentsProcessed = totalSegments;
-            }
-
-            var percent = double.IsFinite(rawPercent)
-                ? Math.Clamp(rawPercent, 0.0, 100.0)
-                : 0.0;
-            if (rawTotalSegments != totalSegments ||
-                rawSegmentsProcessed != segmentsProcessed ||
-                !double.IsFinite(rawPercent) ||
-                rawPercent != percent)
-            {
-                Logger.Log(
-                    $"FLASHBACK_EXPORT_PROGRESS_NORMALIZED id={exportId} " +
-                    $"raw_segments={rawSegmentsProcessed}/{rawTotalSegments} " +
-                    $"segments={segmentsProcessed}/{totalSegments} " +
-                    $"raw_percent={rawPercent:0.###} percent={percent:0.###}");
-            }
-
-            _flashbackExportSegmentsProcessed = segmentsProcessed;
-            _flashbackExportTotalSegments = totalSegments;
-            _flashbackExportPercent = percent;
-            _flashbackExportLastProgressUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        }
-    }
-
-    private void RecordFlashbackExportForceRotateFallback(
-        long exportId,
-        int segmentCount,
-        TimeSpan inPoint,
-        TimeSpan outPoint)
-    {
-        if (Volatile.Read(ref _flashbackExportId) != exportId)
-        {
-            return;
-        }
-
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            if (_flashbackExportId != exportId)
-            {
-                return;
-            }
-
-            _flashbackExportForceRotateFallbacks++;
-            _flashbackExportLastForceRotateFallbackUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            _flashbackExportLastForceRotateFallbackSegments = Math.Max(0, segmentCount);
-            _flashbackExportLastForceRotateFallbackInPointMs = (long)inPoint.TotalMilliseconds;
-            _flashbackExportLastForceRotateFallbackOutPointMs = outPoint == TimeSpan.MaxValue
-                ? -1
-                : (long)outPoint.TotalMilliseconds;
-        }
-    }
-
-    private FlashbackExportHealthSnapshotFields CaptureFlashbackExportHealthSnapshotFields(
-        long snapshotUtcUnixMs)
-    {
-        FlashbackExportHealthSnapshotFields export;
-        lock (_flashbackExportDiagnosticsLock)
-        {
-            export = new FlashbackExportHealthSnapshotFields(
-                _flashbackExportActive,
-                _flashbackExportId,
-                _flashbackExportStatus,
-                _flashbackExportOutputPath,
-                _flashbackExportStartedUtcUnixMs,
-                _flashbackExportLastProgressUtcUnixMs,
-                _flashbackExportCompletedUtcUnixMs,
-                _flashbackExportSegmentsProcessed,
-                _flashbackExportTotalSegments,
-                _flashbackExportPercent,
-                _flashbackExportInPointMs,
-                _flashbackExportOutPointMs,
-                _flashbackExportMessage,
-                _flashbackExportFailureKind,
-                _flashbackExportForceRotateFallbacks,
-                _flashbackExportLastForceRotateFallbackUtcUnixMs,
-                _flashbackExportLastForceRotateFallbackSegments,
-                _flashbackExportLastForceRotateFallbackInPointMs,
-                _flashbackExportLastForceRotateFallbackOutPointMs,
-                _lastFlashbackExportResultId,
-                _lastExportResult,
-                0,
-                0,
-                0,
-                0);
-        }
-
-        var elapsedMs = ComputeFlashbackExportElapsedMs(
-            export.Active,
-            export.StartedUtcUnixMs,
-            export.CompletedUtcUnixMs,
-            snapshotUtcUnixMs);
-        var lastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(
-            export.Active,
-            export.StartedUtcUnixMs,
-            export.LastProgressUtcUnixMs,
-            snapshotUtcUnixMs);
-        var outputBytes = GetFileLengthOrZero(
-            !string.IsNullOrWhiteSpace(export.OutputPath)
-                ? export.OutputPath
-                : export.LastResult?.OutputPath);
-        var throughputBytesPerSec = elapsedMs > 0
-            ? outputBytes / (elapsedMs / 1000.0)
-            : 0;
-
-        return export with
-        {
-            ElapsedMs = elapsedMs,
-            LastProgressAgeMs = lastProgressAgeMs,
-            OutputBytes = outputBytes,
-            ThroughputBytesPerSec = throughputBytesPerSec
-        };
-    }
-
-    private static long ComputeFlashbackExportElapsedMs(
-        bool active,
-        long startedUtcUnixMs,
-        long completedUtcUnixMs,
-        long nowUtcUnixMs)
-    {
-        if (startedUtcUnixMs <= 0)
-        {
-            return 0;
-        }
-
-        var endUtcUnixMs = active
-            ? nowUtcUnixMs
-            : completedUtcUnixMs > 0
-                ? completedUtcUnixMs
-                : nowUtcUnixMs;
-
-        return Math.Max(0, endUtcUnixMs - startedUtcUnixMs);
-    }
-
-    private static long ComputeFlashbackExportLastProgressAgeMs(
-        bool active,
-        long startedUtcUnixMs,
-        long lastProgressUtcUnixMs,
-        long nowUtcUnixMs)
-    {
-        if (!active)
-        {
-            return 0;
-        }
-
-        var referenceUtcUnixMs = lastProgressUtcUnixMs > 0
-            ? lastProgressUtcUnixMs
-            : startedUtcUnixMs;
-
-        return referenceUtcUnixMs > 0
-            ? Math.Max(0, nowUtcUnixMs - referenceUtcUnixMs)
-            : 0;
-    }
-
-    private static long GetFileLengthOrZero(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return 0;
-        }
-
-        try
-        {
-            return new FileInfo(path).Length;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    private sealed class FlashbackExportProgressForwarder : IProgress<ExportProgress>
-    {
-        private readonly Action<ExportProgress> _onProgress;
-
-        public FlashbackExportProgressForwarder(Action<ExportProgress> onProgress)
-        {
-            _onProgress = onProgress;
-        }
-
-        public void Report(ExportProgress value)
-            => _onProgress(value);
-    }
-
-    private readonly record struct FlashbackExportHealthSnapshotFields(
-        bool Active,
-        long Id,
-        string Status,
-        string OutputPath,
-        long StartedUtcUnixMs,
-        long LastProgressUtcUnixMs,
-        long CompletedUtcUnixMs,
-        int SegmentsProcessed,
-        int TotalSegments,
-        double Percent,
-        long InPointMs,
-        long OutPointMs,
-        string Message,
-        string FailureKind,
-        long ForceRotateFallbacks,
-        long LastForceRotateFallbackUtcUnixMs,
-        int LastForceRotateFallbackSegments,
-        long LastForceRotateFallbackInPointMs,
-        long LastForceRotateFallbackOutPointMs,
-        long LastResultId,
-        FinalizeResult? LastResult,
-        long ElapsedMs,
-        long LastProgressAgeMs,
-        long OutputBytes,
-        double ThroughputBytesPerSec);
-
     // Flashback export entry points: range export, last-N-seconds export, and
     // operation-specific range resolution before the shared core pipeline runs.
     internal async Task<FinalizeResult> ExportFlashbackRangeAsync(
@@ -2440,8 +2029,7 @@ public partial class CaptureService
         IProgress<ExportProgress>? progress,
         CancellationToken ct,
         TimeSpan? inPointFilePts = null,
-        TimeSpan? outPointFilePts = null,
-        bool force = false)
+        TimeSpan? outPointFilePts = null)
     {
         var snapshotResult = await SnapshotFlashbackExportBackendAsync(
                 outputPath,
@@ -2465,7 +2053,6 @@ public partial class CaptureService
                 snapshotBufferManager: snapshot.BufferManager,
                 snapshotExporter: snapshot.Exporter,
                 exportOperationLockAlreadyHeld: true,
-                force: force,
                 resolveRangeAfterEvictionPaused: CreateFlashbackExportRangeResolver(
                     inPoint,
                     outPoint,
@@ -2476,8 +2063,7 @@ public partial class CaptureService
 
     internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
         double seconds, string outputPath,
-        IProgress<ExportProgress>? progress, CancellationToken ct,
-        bool force = false)
+        IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         if (ct.IsCancellationRequested)
         {
@@ -2511,7 +2097,6 @@ public partial class CaptureService
                 snapshotBufferManager: snapshot.BufferManager,
                 snapshotExporter: snapshot.Exporter,
                 exportOperationLockAlreadyHeld: true,
-                force: force,
                 resolveRangeAfterEvictionPaused: CreateFlashbackExportLastNRangeResolver(seconds))
             .ConfigureAwait(false);
     }

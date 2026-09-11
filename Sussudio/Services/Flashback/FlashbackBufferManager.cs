@@ -12,7 +12,7 @@ using Sussudio.Services.Recording;
 namespace Sussudio.Services.Flashback;
 
 /// <summary>
-/// Manages a single MPEG-TS flashback buffer file.
+/// Manages the active Flashback buffer segment and retained completed segments.
 /// Tracks buffered duration via PTS updates from the encoder.
 /// Owns disk retention and recovery markers; it does not control live capture.
 /// </summary>
@@ -887,8 +887,8 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Returns the active .ts segment path, generating a new one on first call
-    /// after <see cref="StartCaptureAsync"/> or after segment rotation. The
+    /// Returns the active segment path using the configured extension, generating
+    /// a new one on first call after <see cref="Initialize"/> or after segment rotation. The
     /// "Acquire" prefix flags the side effect (segment-index increment and
     /// active-path assignment); callers that just want to peek at the current
     /// path without creating one should add a peek API rather than reuse this.
@@ -1183,7 +1183,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// For compatibility: single file means 1 "segment" when active, 0 otherwise.
+    /// Counts existing completed segment files plus the existing active segment file.
     /// </summary>
     public int SegmentCount
     {
@@ -1296,18 +1296,19 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Returns an existing segment file path containing the given absolute PTS, or the active segment
-    /// as fallback when it exists.
+    /// Resolves an existing playback segment using the fallback policy of
+    /// <see cref="ResolvePlaybackSegmentPathWithFallback"/>.
     /// </summary>
     public string? GetSegmentFileForPosition(TimeSpan absolutePts)
-        => GetValidSegmentFileForPosition(absolutePts);
+        => ResolvePlaybackSegmentPathWithFallback(absolutePts);
 
     /// <summary>
-    /// Returns a validated segment file path for the given position.
-    /// This checks that the file still exists (hasn't been evicted between lookup and open).
-    /// If the target segment was evicted, falls back to the oldest available segment.
+    /// Returns an existing completed segment containing the requested PTS when available.
+    /// Before the completed range, prefers the oldest existing completed segment, then the active file.
+    /// For other missing positions, prefers the active file, then the oldest existing completed segment.
+    /// The returned fallback may not contain the requested PTS; existence is checked at lookup time.
     /// </summary>
-    public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)
+    public string? ResolvePlaybackSegmentPathWithFallback(TimeSpan absolutePts)
     {
         string? targetPath = null;
         var beforeFirstCompletedSegment = false;
@@ -1429,7 +1430,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             : null;
     }
 
-    public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)
+    /// <summary>
+    /// Returns existing completed segment paths overlapping the requested range for export.
+    /// The active segment is excluded until rotation completes it.
+    /// </summary>
+    public IReadOnlyList<string> GetExistingCompletedSegmentPathsInRange(TimeSpan inPoint, TimeSpan outPoint)
     {
         List<string> paths;
         lock (_indexLock)
@@ -1485,7 +1490,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     /// <summary>
     /// Pauses eviction and marks the recording start PTS.
-    /// While paused, the .ts file grows without evicting old frames.
+    /// While paused, the active segment file grows without evicting old frames.
     /// </summary>
     public void PauseEviction()
     {

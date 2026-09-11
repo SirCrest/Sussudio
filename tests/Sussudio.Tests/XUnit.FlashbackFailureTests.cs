@@ -165,17 +165,17 @@ public sealed class FlashbackFailureTests
 
     private static void AssertDiagnostics(object result, string expectedStatus, string expectedKind)
     {
-        var captureType = TypeOf("Sussudio.Services.Capture.CaptureService");
-        var service = RuntimeHelpers.GetUninitializedObject(captureType);
-        GC.SuppressFinalize(service);
-        captureType.GetField("_flashbackExportDiagnosticsLock", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .SetValue(service, new object());
+        var stateType = TypeOf("Sussudio.Services.Flashback.FlashbackExportState");
+        var state = RuntimeHelpers.GetUninitializedObject(stateType);
+        GC.SuppressFinalize(state);
+        stateType.GetField("_flashbackExportDiagnosticsLock", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(state, new object());
 
-        InvokeInstance(service, "RecordRejectedFlashbackExportDiagnostics", "output.mp4", result, null, null);
+        InvokeInstance(state, "RecordRejectedFlashbackExportDiagnostics", "output.mp4", result, null, null);
         AssertFields();
 
-        var exportId = InvokeInstance(service, "BeginFlashbackExportDiagnostics", TimeSpan.Zero, TimeSpan.FromSeconds(1), "output.mp4");
-        InvokeInstance(service, "CompleteFlashbackExportDiagnostics", exportId, result);
+        var exportId = InvokeInstance(state, "BeginFlashbackExportDiagnostics", TimeSpan.Zero, TimeSpan.FromSeconds(1), "output.mp4");
+        InvokeInstance(state, "CompleteFlashbackExportDiagnostics", exportId, result);
         AssertFields();
 
         void AssertFields()
@@ -186,7 +186,7 @@ public sealed class FlashbackFailureTests
         }
 
         object? ReadField(string name)
-            => captureType.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(service);
+            => stateType.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(state);
     }
 
     private static void AssertFailure(object result, string expectedCode, string expectedKind)

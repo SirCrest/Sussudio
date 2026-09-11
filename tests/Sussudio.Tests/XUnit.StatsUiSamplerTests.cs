@@ -63,6 +63,40 @@ public sealed class StatsUiSamplerTests
     }
 
     [Fact]
+    public void ExplicitRefreshPublishesOnlyWhenDueAndReturnsTheSharedSnapshot()
+    {
+        using var fixture = new SamplerFixture();
+        var received = new List<object>();
+        using var consumer = fixture.Subscribe(received.Add);
+        var initialSnapshot = Get<object>(Assert.Single(received), "Snapshot");
+
+        Assert.Same(initialSnapshot, fixture.RefreshAt(249));
+        Assert.Single(received);
+        Assert.Equal(1, fixture.HealthCalls);
+        Assert.Equal(1, fixture.SnapshotCalls);
+
+        var refreshedSnapshot = fixture.RefreshAt(250);
+        Assert.Equal(2, received.Count);
+        Assert.NotSame(initialSnapshot, refreshedSnapshot);
+        Assert.Same(Get<object>(received[1], "Snapshot"), refreshedSnapshot);
+        Assert.Equal(1, fixture.HealthCalls);
+        Assert.Equal(2, fixture.SnapshotCalls);
+
+        Assert.Same(refreshedSnapshot, fixture.RefreshAt(499));
+        Assert.Equal(2, received.Count);
+        Assert.Equal(1, fixture.HealthCalls);
+        Assert.Equal(2, fixture.SnapshotCalls);
+
+        var healthRefreshedSnapshot = fixture.RefreshAt(500);
+        Assert.Equal(3, received.Count);
+        Assert.Same(Get<object>(received[2], "Snapshot"), healthRefreshedSnapshot);
+        Assert.Equal(2, fixture.HealthCalls);
+        Assert.Equal(3, fixture.SnapshotCalls);
+        Assert.Equal(new[] { true, false, true }, fixture.RefreshDetails);
+        Assert.Equal(new[] { true }, fixture.DemandChanges);
+    }
+
+    [Fact]
     public void AnimationFrequencyTicksDoNotIncreaseCollectionRate()
     {
         using var fixture = new SamplerFixture();
@@ -191,7 +225,7 @@ public sealed class StatsUiSamplerTests
             var assembly = SussudioAssembly.Load();
             _samplerType = assembly.GetType("Sussudio.Controllers.StatsUiSampler", throwOnError: true)!;
             var healthType = assembly.GetType("Sussudio.Models.CaptureHealthSnapshot", throwOnError: true)!;
-            var snapshotType = assembly.GetType("Sussudio.StatsSnapshot", throwOnError: true)!;
+            var snapshotType = assembly.GetType("Sussudio.ViewModels.StatsSnapshot", throwOnError: true)!;
             var constructor = _samplerType.GetConstructors().Single();
             var parameters = constructor.GetParameters();
             _sampler = constructor.Invoke(new object[]
@@ -246,6 +280,12 @@ public sealed class StatsUiSamplerTests
         {
             Tick = tick;
             _samplerType.GetMethod("Tick")!.Invoke(_sampler, null);
+        }
+
+        public object RefreshAt(long tick)
+        {
+            Tick = tick;
+            return _samplerType.GetMethod("RefreshIfDueAndGetSnapshot")!.Invoke(_sampler, null)!;
         }
 
         public void Dispose() => ((IDisposable)_sampler).Dispose();
