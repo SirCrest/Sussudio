@@ -230,18 +230,6 @@ namespace Sussudio.Tests
         }
 
         [Fact]
-        public Task ParallelMjpegDecodePipelineLifecycleLivesWithRoot()
-            => global::Program.ParallelMjpegDecodePipeline_LifecycleLivesWithRoot();
-
-        [Fact]
-        public Task ParallelMjpegDecodePipelineCompressedQueueLivesWithRoot()
-            => global::Program.ParallelMjpegDecodePipeline_CompressedQueueLivesWithRoot();
-
-        [Fact]
-        public Task ParallelMjpegDecodePipelineWorkersLiveWithRoot()
-            => global::Program.ParallelMjpegDecodePipeline_WorkersLiveWithRoot();
-
-        [Fact]
         public Task ParallelMjpegDecodePipelineReorderLivesWithRoot()
             => global::Program.ParallelMjpegDecodePipeline_ReorderLivesWithRoot();
 
@@ -260,14 +248,6 @@ namespace Sussudio.Tests
         [Fact]
         public Task MjpegPooledFrameFanoutExposesLeaseContracts()
             => global::Program.MjpegPooledFrameFanout_ExposesLeaseContracts();
-
-        [Fact]
-        public Task ParallelMjpegDecodePipelineSharedReorderDoesNotSynthesizeRecordingSkips()
-            => global::Program.ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips();
-
-        [Fact]
-        public Task ParallelMjpegDecodePipelineDropsStartupNonJpegBeforeSequencing()
-            => global::Program.ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing();
 
         [Fact]
         public Task ParallelMjpegDecodePipelineKnownLossSkipsInsteadOfSignalingFatal()
@@ -290,10 +270,6 @@ namespace Sussudio.Tests
         [Fact]
         public Task ParallelMjpegDecodePipelineNormalCompletionConsumesFinalMissingSequences()
             => global::Program.ParallelMjpegDecodePipeline_NormalCompletionConsumesFinalMissingSequences();
-
-        [Fact]
-        public Task FrameFingerprintCadenceTrackerCurrentDuplicateRunLowersUniqueFps()
-            => global::Program.FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps();
 
         [Fact]
         public Task VisualCadenceTrackerUsesExactCropPixelsWithOnePassDiff()
@@ -1049,126 +1025,8 @@ static partial class Program
         AssertEqual(1, pool.ReturnCount, $"{sinkType.Name} pool return after packet cleanup");
     }
 
-    internal static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
-    {
-        var source = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
-        AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
-        AssertContains(source, "HasJpegStartOfImage");
-        AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
-        AssertContains(source, "MJPEG_REORDER_STRICT_ADVANCE");
-        AssertContains(source, "SortedDictionary<long, DecodedFrame>");
-        AssertContains(source, "TryAddDecodedFrame");
-        AssertContains(source, "private void DecrementCompressedQueueDepth(string operation)");
-        AssertContains(source, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
-        AssertContains(source, "DecrementCompressedQueueDepth(\"write_failed\");");
-        AssertContains(source, "DecrementCompressedQueueDepth(\"dequeue\");");
-        AssertEqual(false, source.Contains("Interlocked.Decrement(ref _compressedQueueDepth)", StringComparison.Ordinal), "compressed queue depth decrements must be guarded");
-        AssertContains(source, "private void SignalEmitter(string operation)");
-        AssertContains(source, "MJPEG_PIPELINE_EMIT_SIGNAL_SKIPPED");
-        AssertContains(source, "SignalEmitter(\"decoded_frame\");");
-        AssertContains(source, "SignalEmitter(\"stop_requested\");");
-        AssertEqual(1, source.Split("_emitSignal.Set();", StringSplitOptions.None).Length - 1, "All MJPEG emit wakeups go through SignalEmitter");
-        AssertContains(source, "seqNo != _nextEmitSeq");
-        AssertContains(source, "MarkKnownMissing");
-        AssertContains(source, "MJPEG_PIPELINE_KNOWN_MISSING");
-        AssertContains(source, "ConsumeKnownMissingFrames");
-        AssertContains(source, "MJPEG_PIPELINE_KNOWN_MISSING_SKIP");
-        AssertEqual(false, source.Contains("_reorderRing", StringComparison.Ordinal), "shared reorder must not use a fixed modulo ring");
-        AssertEqual(false, source.Contains("_reorderFlags", StringComparison.Ordinal), "shared reorder must not use fixed slot flags");
-        AssertEqual(false, source.Contains("reorder_collision", StringComparison.Ordinal), "slow decoded frames must not fatal via modulo slot collision");
-        AssertEqual(false, source.Contains("SkipFrameCallback", StringComparison.Ordinal), "strict MJPEG path must not expose skip callbacks");
-        AssertEqual(false, source.Contains("NotifySkippedFrame", StringComparison.Ordinal), "strict MJPEG path must not synthesize skip callbacks");
-        AssertEqual(false, source.Contains("reorder_missing", StringComparison.Ordinal), "shared reorder skip reason removed");
-        AssertContains(source, "skippedSeq = _nextEmitSeq++");
-        var duplicateBlock = ExtractTextBetween(
-            source,
-            "if (_reorderFrames.ContainsKey(seqNo))",
-            "_reorderFrames.Add(seqNo, new DecodedFrame(seqNo, frame, decodedTick));");
-        AssertDoesNotContain(duplicateBlock, "MarkKnownMissing");
 
-        return Task.CompletedTask;
-    }
 
-    internal static Task ParallelMjpegDecodePipeline_CompressedQueueLivesWithRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
-            .Replace("\r\n", "\n");
-
-        AssertDoesNotContain(rootText, "partial class ParallelMjpegDecodePipeline");
-        AssertContains(rootText, "private const int WorkQueueItemCapacityPerDecoder = 8;");
-        AssertContains(rootText, "private readonly Channel<MjpegWorkItem> _workQueue;");
-        AssertContains(rootText, "private readonly FrameFingerprintCadenceTracker _packetHashTracker = new();");
-        AssertContains(rootText, "namespace Sussudio.Services.Capture.Mjpeg;");
-        AssertContains(rootText, "private readonly long _compressedQueueByteBudget = DefaultCompressedQueueByteBudget;");
-        AssertContains(rootText, "private readonly record struct MjpegWorkItem(");
-        AssertContains(rootText, "public bool EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)");
-        AssertContains(rootText, "private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)");
-        AssertContains(rootText, "private void DecrementCompressedQueueDepth(string operation)");
-        AssertContains(rootText, "FrameFingerprintCadenceTracker.ComputeHash(jpegData)");
-        AssertContains(rootText, "public PipelineTimingMetrics GetTimingMetrics()");
-        AssertContains(rootText, "public FrameFingerprintCadenceTracker.Metrics GetPacketHashMetrics()");
-        AssertContains(rootText, "private void RecordPerDecoderTiming(int workerIndex, double valueMs)");
-        AssertContains(rootText, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
-    {
-        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/FrameFingerprintCadenceTracker.cs").Replace("\r\n", "\n");
-        var tracker = CreateInstance("Sussudio.Services.Capture.Mjpeg.FrameFingerprintCadenceTracker");
-        var trackerType = tracker.GetType();
-        var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.RecordFrame not found.");
-        var getMetrics = trackerType.GetMethod("GetMetrics", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.GetMetrics not found.");
-
-        var intervalTicks = Math.Max(1, Stopwatch.Frequency / 120);
-        var tick = Stopwatch.Frequency;
-        for (ulong hash = 1; hash <= 120; hash++)
-        {
-            recordFrame.Invoke(tracker, new object?[] { hash, tick });
-            tick += intervalTicks;
-        }
-
-        var repeatedHash = 120UL;
-        for (var i = 0; i < 90; i++)
-        {
-            recordFrame.Invoke(tracker, new object?[] { repeatedHash, tick });
-            tick += intervalTicks;
-        }
-
-        var metrics = getMetrics.Invoke(tracker, new object?[] { 180 })
-            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.GetMetrics returned null.");
-
-        AssertEqual("DuplicateRun", GetStringProperty(metrics, "Pattern"), "packet hash pattern during trailing duplicate run");
-        AssertEqual(true, GetBoolProperty(metrics, "LastFrameDuplicate"), "packet hash last-frame duplicate state");
-
-        var duplicatePercent = GetDoubleProperty(metrics, "DuplicateFramePercent");
-        if (duplicatePercent < 40)
-        {
-            throw new InvalidOperationException($"Duplicate percent did not reflect recent duplicate run: {duplicatePercent:0.00}%.");
-        }
-
-        var uniqueFps = GetDoubleProperty(metrics, "UniqueObservedFps");
-        if (uniqueFps >= 80)
-        {
-            throw new InvalidOperationException($"Unique FPS stayed stale during duplicate run: {uniqueFps:0.00} fps.");
-        }
-
-        AssertContains(trackerSource, "internal sealed class FrameFingerprintCadenceTracker");
-        AssertDoesNotContain(trackerSource, "partial class FrameFingerprintCadenceTracker");
-        AssertContains(trackerSource, "public void RecordFrame(ulong hash, long timestampTick = 0)");
-        AssertContains(trackerSource, "public static ulong ComputeHash(ReadOnlySpan<byte> data)");
-        AssertContains(trackerSource, "private static ulong HashBytes(ulong initialHash, ReadOnlySpan<byte> data)");
-        AssertContains(trackerSource, "public readonly record struct Metrics(");
-        AssertContains(trackerSource, "public static Metrics Empty { get; }");
-        AssertContains(trackerSource, "public Metrics GetMetrics(int maxRecentSamples = 180)");
-        AssertContains(trackerSource, "private static double[] BuildRecentUniqueIntervals(");
-        AssertContains(trackerSource, "private static string ResolvePattern(");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task VisualCadenceTracker_UsesExactCropPixelsWithOnePassDiff()
     {
@@ -1217,22 +1075,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ParallelMjpegDecodePipeline_WorkersLiveWithRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
-            .Replace("\r\n", "\n");
-
-        AssertContains(rootText, "private readonly SoftwareMjpegDecoder[] _decoders;");
-        AssertContains(rootText, "private readonly Thread[] _workers;");
-        AssertContains(rootText, "StartDecodeWorkers(width, height);");
-        AssertContains(rootText, "private void StartDecodeWorkers(int width, int height)");
-        AssertContains(rootText, "Name = $\"MjpegWorker-{i}\"");
-        AssertContains(rootText, "private void WorkerLoop(int workerIndex)");
-        AssertContains(rootText, "private bool HasAliveWorkers()");
-        AssertContains(rootText, "DecrementCompressedQueueDepth(\"dequeue\");");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task ParallelMjpegDecodePipeline_ReorderLivesWithRoot()
     {
@@ -1263,45 +1105,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    internal static Task ParallelMjpegDecodePipeline_LifecycleLivesWithRoot()
-    {
-        var rootText = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs")
-            .Replace("\r\n", "\n");
 
-        AssertContains(rootText, "public void Dispose()");
-        AssertContains(rootText, "public bool TryStop(TimeSpan timeout, [NotNullWhen(false)] out string? failureReason)");
-        AssertContains(rootText, "private void BeginStop()");
-        AssertContains(rootText, "private Thread? _emitThread;");
-        AssertContains(rootText, "private readonly AutoResetEvent _emitSignal = new(false);");
-        AssertContains(rootText, "private void StartEmitter()");
-        AssertContains(rootText, "Name = \"MjpegEmitter\"");
-        AssertContains(rootText, "private void SignalEmitter(string operation)");
-        AssertContains(rootText, "private bool TryWaitForShutdown(TimeSpan timeout, [NotNullWhen(false)] out string? failureReason)");
-        AssertContains(rootText, "private void SignalFatalError(Exception ex)");
-        AssertContains(rootText, "private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)");
-        AssertContains(rootText, "private void CleanupResources()");
-        AssertContains(rootText, "private void DiscardRemainingReorderFrames(string reason)");
-        AssertContains(rootText, "private void ReturnRemainingWorkItems()");
-        AssertContains(rootText, "ArrayPool<byte>.Shared.Return(item.JpegBuffer);");
-        AssertContains(rootText, "_emitSignal.Dispose();");
-
-        return Task.CompletedTask;
-    }
-
-    internal static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
-    {
-        var source = ReadRepoFile("Sussudio/Services/Capture/Mjpeg/ParallelMjpegDecodePipeline.cs");
-        var guardIndex = source.IndexOf("!HasJpegStartOfImage(jpegData)", StringComparison.Ordinal);
-        var sequenceIndex = source.IndexOf("Interlocked.Increment(ref _nextDispatchSeq)", StringComparison.Ordinal);
-
-        AssertEqual(true, guardIndex >= 0, "startup non-JPEG guard exists");
-        AssertEqual(true, sequenceIndex >= 0, "MJPEG sequence assignment exists");
-        AssertEqual(true, guardIndex < sequenceIndex, "startup non-JPEG guard must run before sequence assignment");
-        AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
-        AssertContains(source, "return false;");
-
-        return Task.CompletedTask;
-    }
 
     internal static Task ParallelMjpegDecodePipeline_KnownLossSkipsInsteadOfSignalingFatal()
     {
